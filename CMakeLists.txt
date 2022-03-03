@@ -141,6 +141,13 @@ elseif(ANDROID)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     option(LITECORE_DYNAMIC_ICU "If enabled, search for ICU at runtime so as not to depend on a specific version" OFF)
     include("${PROJECT_SOURCE_DIR}/cmake/platform_linux_desktop.cmake")
+elseif(EMSCRIPTEN)
+    # Emscripten does not actually support shared libraries and instead
+    # just builds a static library for compatibility with existing
+    # build setups. We just set this property to suppress a CMake warning.
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+
+    include("${PROJECT_SOURCE_DIR}/cmake/platform_emscripten.cmake")
 else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
 endif(MSVC)

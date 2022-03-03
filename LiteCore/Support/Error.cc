@@ -37,7 +37,7 @@
 #    include <android/log.h>
 #endif
 
-#if defined(__clang__) && !defined(__ANDROID__)  // For logBacktrace:
+#if defined(__clang__) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__) // For logBacktrace:
 #    include <execinfo.h>                        // Not available in Windows?
 #    include <cxxabi.h>
 #endif

@@ -36,7 +36,7 @@ namespace litecore {
     using namespace fleece;
 
 
-#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
+#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER) || defined(__EMSCRIPTEN__)
     // digittoint is a BSD function, not available on Android, Linux, etc.
     int digittoint(char ch) {
         int d = ch - '0';
@@ -264,7 +264,7 @@ namespace litecore {
     }
 
 
-#if !__APPLE__ && !defined(_MSC_VER) && !LITECORE_USES_ICU
+#if !__APPLE__ && !defined(_MSC_VER) && !LITECORE_USES_ICU && !defined(__EMSCRIPTEN__)
 
     // Stub implementation for when case conversion is unavailable
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {

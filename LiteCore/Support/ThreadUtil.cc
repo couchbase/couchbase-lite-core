@@ -36,13 +36,18 @@
 #    ifndef HAVE_PTHREAD_GETNAME_NP
 #        include <sys/prctl.h>
 #    endif
+#ifdef __EMSCRIPTEN__
+#   include <emscripten/threading.h>
+#endif
 
 namespace litecore {
 
     void SetThreadName(const char* name) {
 #    ifdef __APPLE__
         pthread_setname_np(name);
-#    else
+#elif defined(__EMSCRIPTEN__)
+        emscripten_set_thread_name(pthread_self(), name);
+#else
         pthread_setname_np(pthread_self(), name);
 #    endif
     }
@@ -70,7 +75,9 @@ namespace litecore {
         tid = syscall(SYS_gettid);
 #    elif defined(HAVE_NR_GETTID)
         tid = syscall(__NR_gettid);
-#    endif
+#elif defined(__EMSCRIPTEN__)
+        tid = gettid();
+#endif
 
         s << "(" << tid << ")";
         return s.str();

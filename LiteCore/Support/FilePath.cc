@@ -50,7 +50,7 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__EMSCRIPTEN__)
 static int copyfile(const char* from, const char* to) {
     int         read_fd, write_fd;
     off_t       offset = 0;
@@ -73,7 +73,31 @@ static int copyfile(const char* from, const char* to) {
         return write_fd;
     }
 
-    size_t  expected = stat_buf.st_size;
+     #ifdef __EMSCRIPTEN__
+    static const size_t kBufSize = 1024;
+    uint8_t buf[kBufSize];
+    while (offset < stat_buf.st_size) {
+        auto bytes_left_to_read = (size_t)(stat_buf.st_size - offset);
+        auto max_bytes_to_read = std::min(bytes_left_to_read, kBufSize);
+        ssize_t bytes_read;
+        if ((bytes_read = read(read_fd, &buf, max_bytes_to_read)) < 0) {
+            int e = errno;
+            close(read_fd);
+            close(write_fd);
+            errno = e;
+            return -1;
+        }
+        offset = offset + bytes_read;
+        if (write(write_fd, &buf, bytes_read) < 0) {
+            int e = errno;
+            close(read_fd);
+            close(write_fd);
+            errno = e;
+            return -1;
+        }
+    }
+    #else
+   size_t  expected = stat_buf.st_size;
     ssize_t bytes    = 0;
     while ( bytes < expected ) {
         expected -= bytes;
@@ -98,6 +122,7 @@ static int copyfile(const char* from, const char* to) {
             return -1;
         }
     }
+#endif
 
     if ( close(read_fd) < 0 ) {
         int e = errno;

@@ -27,7 +27,7 @@ namespace litecore {
 
     using namespace fleece;
 
-#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
+#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER) || defined(__EMSCRIPTEN__)
     // Converts a decimal or hex digit to its integer equivalent (0..15), or 0 if not a digit.
     // (This function is part of <ctype.h> in BSD and Apple OSs.)
     int digittoint(char ch);
