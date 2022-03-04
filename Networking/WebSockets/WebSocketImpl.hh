@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <memory>
@@ -76,6 +77,14 @@ namespace litecore { namespace websocket {
         virtual void receiveComplete(size_t byteCount) =0;
         virtual void requestClose(int status, fleece::slice message) =0;
 
+        enum SocketLifecycleState: int {
+            SOCKET_UNINIT,
+            SOCKET_OPENING,
+            SOCKET_OPENED,
+            SOCKET_CLOSING,
+            SOCKET_CLOSED
+        };
+
     private:
         template <const bool isServer>
         friend class uWS::WebSocketProtocol;
@@ -99,6 +108,8 @@ namespace litecore { namespace websocket {
         void receivedPong();
         void startResponseTimer(std::chrono::seconds timeout);
         void timedOut();
+        void callCloseSocket();
+        void callRequestClose(int status, fleece::slice message);
 
         Parameters const _parameters;
         bool _framing;
@@ -111,7 +122,6 @@ namespace litecore { namespace websocket {
         size_t _bufferedBytes {0};                  // # bytes written but not yet completed
         size_t _deliveredBytes;                     // Temporary count of bytes sent to delegate
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
-        bool _closed {false};                       // Sent onWebSocketClosed to delegate?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
         std::unique_ptr<actor::Timer> _responseTimer;
@@ -121,6 +131,7 @@ namespace litecore { namespace websocket {
         bool _didConnect {false};
         int _opToSend;
         fleece::alloc_slice _msgToSend;
+        std::atomic_int _socketLCState {SOCKET_UNINIT};
 
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened
