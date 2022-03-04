@@ -130,7 +130,7 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::onConnect() {
         int expected = SOCKET_OPENING;
         if (! atomic_compare_exchange_strong(&_socketLCState, &expected, (int)SOCKET_OPENED) ){
-            logInfo("WebSocket already closed or is closing, ignoring onConnect...");
+            logInfo("WebSocket not in 'Openning' state, ignoring onConnect...");
             return;
         }
 
