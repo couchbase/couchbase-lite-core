@@ -81,7 +81,7 @@ namespace litecore::actor {
     class AsyncProvider final : public AsyncProviderBase {
     public:
         using ResultType = Result<T>;
-        using ThenType = typename _ThenType<T>::type;
+        using ThenType = typename _ThenType<T>::type;   // `ThenType` is `T` unless `T` is `void`
 
         /// Creates a new empty AsyncProvider.
         static Retained<AsyncProvider> create()            {return new AsyncProvider;}
@@ -113,22 +113,6 @@ namespace litecore::actor {
             precondition(!_result);
             _result.emplace(args...);
             _gotResult(lock);
-        }
-
-        /// Sets the result to be the `T` return value of the callback.
-        /// If the callback throws an exception, it is caught and stored as an error result.
-        template <typename LAMBDA>
-        void setResultFromCallback(LAMBDA &&callback) {
-            bool duringCallback = true;
-            try {
-                auto result = callback();
-                duringCallback = false;
-                setResult(std::move(result));
-            } catch (...) {
-                if (!duringCallback)
-                    throw;
-                setResult(error::convertCurrentException());
-            }
         }
 
         /// Returns the result, a `Result<T>` containing either a value or an error.
@@ -172,7 +156,7 @@ namespace litecore::actor {
         { }
 
         template <typename U>
-        Async<U> _now(std::function<Async<U>(ThenType&&)> &callback) {
+        Async<U> _now(std::function<Async<U>(ThenType&&)> &&callback) {
             if (hasError())
                 return Async<U>(error());
             try {
@@ -269,7 +253,7 @@ namespace litecore::actor {
         auto then(LAMBDA &&callback) && {
             // U is the return type of the lambda with any `Async<...>` removed
             using U = unwrap_async<RV>;
-            return _then<U>(std::forward<LAMBDA>(callback));
+            return _then<U>(std::function<RV(T&&)>(std::forward<LAMBDA>(callback)));
         }
 
 
@@ -350,7 +334,7 @@ namespace litecore::actor {
             return result();
         }
 
-        /// Returns the error result, else nullptr.
+        /// Returns the error.
         C4Error error() const                             {return provider()->error();}
 
     private:
@@ -377,20 +361,11 @@ namespace litecore::actor {
             auto uProvider = Async<U>::makeProvider();
             if (canCallNow()) {
                 // Result is available now, so call the callback:
-                if (C4Error x = error())
-                    uProvider->setResult(x);
-                else
-                    uProvider->setResultFromCallback([&]{return callback(moveResult());});
+                uProvider->setResult(moveResult().then(callback));
             } else {
                 _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
-                    auto provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
-                    if (auto x = provider.error())
-                        uProvider->setError(*x);
-                    else {
-                        uProvider->setResultFromCallback([&]{
-                            return callback(provider.moveResult());
-                        });
-                    }
+                    auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                    uProvider->setResult(provider.moveResult().then(callback));
                 });
             }
             return uProvider->asyncValue();
@@ -403,14 +378,14 @@ namespace litecore::actor {
         Async<U> _then(std::function<Async<U>(ThenType&&)> &&callback) {
             if (canCallNow()) {
                 // If I'm ready, just call the callback and pass on the Async<U> it returns:
-                return provider()->_now(callback);
+                return provider()->_now(std::move(callback));
             } else {
                 // Otherwise wait for my result...
                 auto uProvider = Async<U>::makeProvider();
                 _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) mutable {
                     // Invoke the callback, then wait to resolve the Async<U> it returns:
                     auto &tProvider = dynamic_cast<AsyncProvider<T>&>(provider);
-                    auto asyncU = tProvider._now(callback);
+                    auto asyncU = tProvider._now(std::move(callback));
                     std::move(asyncU).thenProvider([uProvider](auto &provider) {
                         // Then finally resolve the async I returned:
                         uProvider->setResult(provider.result());

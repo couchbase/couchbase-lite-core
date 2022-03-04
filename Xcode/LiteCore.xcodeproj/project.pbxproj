@@ -1171,6 +1171,7 @@
 		276943881DCD4AAD00DB2555 /* c4Observer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Observer.h; sourceTree = "<group>"; };
 		2769438B1DCD502A00DB2555 /* c4Observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Observer.cc; sourceTree = "<group>"; };
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
+		27697DD727D19B25006F5BB5 /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
 		276993E125390C3300FDF699 /* VectorRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VectorRecord.hh; sourceTree = "<group>"; };
 		276993E525390C3300FDF699 /* VectorRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecord.cc; sourceTree = "<group>"; };
 		276CE67C2267991400B681AC /* n1ql.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = n1ql.cc; sourceTree = "<group>"; };
@@ -2934,6 +2935,7 @@
 			children = (
 				27DF3BC326867F2600A57A1E /* Actors.md */,
 				277C5C4827AC4E0E001BE212 /* Async.md */,
+				27697DD727D19B25006F5BB5 /* Result.md */,
 				27DF3BC426867F2600A57A1E /* logo.png */,
 				27DF3BC526867F2600A57A1E /* BLIP Protocol.md */,
 			);

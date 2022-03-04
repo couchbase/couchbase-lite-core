@@ -55,14 +55,19 @@ namespace litecore::actor {
 
 
     void AsyncProviderBase::notifyObserver(Observer &observer, Actor *actor) {
-        if (actor && actor != Actor::currentActor()) {
-            // Schedule a call on my Actor:
-            actor->asCurrentActor([observer, provider=fleece::retained(this)] {
-                observer(*provider);
-            });
-        } else {
-            // ... or call it synchronously:
-            observer(*this);
+        try {
+            if (actor && actor != Actor::currentActor()) {
+                // Schedule a call on my Actor:
+                actor->asCurrentActor([observer, provider=fleece::retained(this)] {
+                    observer(*provider);
+                });
+            } else {
+                // ... or call it synchronously:
+                observer(*this);
+            }
+        } catch (...) {
+            // we do not want an exception from the observer to propagate
+            C4Error::warnCurrentException("AsyncProviderBase::notifyObserver");
         }
     }
 
@@ -83,46 +88,12 @@ namespace litecore::actor {
     }
 
 
-//    C4Error AsyncProviderBase::c4Error() const {
-//        return _error ? C4Error::fromException(*_error) : C4Error{};
-//    }
-//
-//
-//    void AsyncProviderBase::setError(const C4Error &c4err) {
-//        precondition(c4err.code != 0);
-//        unique_lock<decltype(_mutex)> lock(_mutex);
-//        precondition(!_error);
-//        _error = make_unique<litecore::error>(c4err);
-//        _gotResult(lock);
-//    }
-//
-//
-//    void AsyncProviderBase::setError(const std::exception &x) {
-//        auto e = litecore::error::convertException(x);
-//        unique_lock<decltype(_mutex)> lock(_mutex);
-//        precondition(!_error);
-//        _error = make_unique<litecore::error>(move(e));
-//        _gotResult(lock);
-//    }
-//
-//
-//    void AsyncProviderBase::throwIfError() const {
-//        if (_error)
-//            throw *_error;
-//    }
-
-
 #pragma mark - ASYNC BASE:
     
 
     bool AsyncBase::canCallNow() const {
         return ready() && (_onActor == nullptr || _onActor == Actor::currentActor());
     }
-
-
-//    C4Error AsyncBase::c4Error() const {
-//        return _provider->c4Error();
-//    }
 
 
     void AsyncBase::blockUntilReady() {
