@@ -266,8 +266,6 @@ namespace litecore { namespace blip {
                 msg->disconnected();
                 return;
             }
-            if (msg->_number == 0)
-                msg->_number = ++_lastMessageNo;
             if (BLIPLog.willLog(LogLevel::Verbose)) {
                 if (!msg->isAck() || BLIPLog.willLog(LogLevel::Debug))
                     logVerbose("Sending %s", msg->description().c_str());
@@ -283,7 +281,9 @@ namespace litecore { namespace blip {
         void requeue(MessageOut *msg, bool andWrite =false) {
             DebugAssert(!_outbox.contains(msg));
             auto i = _outbox.end();
-            if (msg->urgent() && _outbox.size() > 1) {
+            // Only allow unnumbered msg to be inserted.
+            // Numbered msg must be appended
+            if (msg->_number == 0 && msg->urgent() && _outbox.size() > 1) {
                 // High-priority gets queued after the last existing high-priority message,
                 // leaving one regular-priority message in between if possible:
                 const bool isNew = (msg->_bytesSent == 0);
@@ -347,6 +347,10 @@ namespace litecore { namespace blip {
                 Retained<MessageOut> msg(_outbox.pop());
                 if (!msg)
                     break;
+
+                // Assign the message number for new requests.
+                if (msg->_number == 0)
+                    msg->_number = ++_lastMessageNo;
 
                 FrameFlags frameFlags;
                 {
