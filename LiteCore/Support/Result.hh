@@ -11,18 +11,17 @@
 //
 
 #pragma once
+#include "c4Error.h"
 #include "Defer.hh"             // for CONCATENATE()
 #include "function_ref.hh"
 #include <type_traits>
 #include <variant>
 #include <betterassert.hh>
 
-struct C4Error;
-
 namespace litecore {
     template <typename T> class Result;
 
-    // !!! Documentation is at Replicator/docs/Result.md !!!
+    // !!! Documentation is at docs/Result.md !!!
 
     namespace {
         // Magic template gunk. `unwrap_Result<T>` removes a layer of `Result<...>` from type T
@@ -71,7 +70,7 @@ namespace litecore {
 
         /// Transforms a `Result<T>` to a `Result<U>` by passing the value through a function.
         /// - If I have a value, I pass it to `fn` and return its result.
-        ///   * If `fn` throws an exception, it's caught and returned (thanks to `TryResult()`.)
+        ///   * If `fn` throws an exception, it's caught and returned (thanks to `CatchResult()`.)
         /// - If I have an error, `fn` is _not_ called, and I return my error.
         /// @param fn  A function/lambda that takes a `T&&` and returns `U` or `Result<U>`.
         /// @return  The result of `fn`, or else my current error, as a `Result<U>`.
@@ -152,7 +151,7 @@ namespace litecore {
     /// catching any exception and returning it as an error. Returns `Result<T>`.
     template <typename T>
     [[nodiscard]]
-    Result<T> TryResult(fleece::function_ref<T()> fn) noexcept {
+    Result<T> CatchResult(fleece::function_ref<T()> fn) noexcept {
         try {
             return fn();
         } catch (std::exception &x) {
@@ -165,7 +164,7 @@ namespace litecore {
     /// catching any exception and returning it as an error. Returns `Result<T>`.
     template <typename T>
     [[nodiscard]]
-    Result<T> TryResult(fleece::function_ref<Result<T>()> fn) noexcept {
+    Result<T> CatchResult(fleece::function_ref<Result<T>()> fn) noexcept {
         try {
             return fn();
         } catch (std::exception &x) {
@@ -177,7 +176,7 @@ namespace litecore {
     // (specialization needed for T=void)
     template <>
     [[nodiscard]]
-    inline Result<void> TryResult(fleece::function_ref<void()> fn) noexcept {
+    inline Result<void> CatchResult(fleece::function_ref<void()> fn) noexcept {
         try {
             fn();
             return {};
@@ -187,13 +186,13 @@ namespace litecore {
     }
 
 
-    // (this helps the compiler deduce T when TryResult() is called with a lambda)
+    // (this helps the compiler deduce T when CatchResult() is called with a lambda)
     template <typename LAMBDA,
               typename RV = std::invoke_result_t<LAMBDA>, // return value
               typename T = unwrap_Result<RV>>             // RV with `Result<...>` stripped off
     [[nodiscard]]
-    inline Result<T> TryResult(LAMBDA fn) noexcept {
-        return TryResult<T>(fleece::function_ref<RV()>(std::move(fn)));
+    inline Result<T> CatchResult(LAMBDA fn) noexcept {
+        return CatchResult<T>(fleece::function_ref<RV()>(std::move(fn)));
     }
 
     
@@ -219,7 +218,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<T>::_then(fleece::function_ref<U(T&&)> const& fn) noexcept {
         if (ok())
-            return TryResult([&]{return fn(std::move(_value()));});
+            return CatchResult([&]{return fn(std::move(_value()));});
         else
             return error();
     }
@@ -229,7 +228,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<T>::_then(fleece::function_ref<Result<U>(T&&)> const& fn) noexcept {
         if (ok())
-            return TryResult([&]{return fn(std::move(_value()));});
+            return CatchResult([&]{return fn(std::move(_value()));});
         else
             return error();
     }
@@ -239,7 +238,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<void>::_then(fleece::function_ref<U()> const& fn) noexcept {
         if (ok())
-            return TryResult(fn);
+            return CatchResult(fn);
         else
             return error();
     }
@@ -248,7 +247,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<void>::_then(fleece::function_ref<Result<U>()> const& fn) noexcept {
         if (ok())
-            return TryResult(fn);
+            return CatchResult(fn);
         else
             return error();
     }

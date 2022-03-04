@@ -206,6 +206,7 @@
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
+		27697DDC27D2B32D006F5BB5 /* ResultTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27697DDB27D2B32D006F5BB5 /* ResultTest.cc */; };
 		276993E625390C3300FDF699 /* VectorRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276993E525390C3300FDF699 /* VectorRecord.cc */; };
 		276CE6832267991500B681AC /* n1ql.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE67C2267991400B681AC /* n1ql.cc */; settings = {COMPILER_FLAGS = "-Wno-unreachable-code"; }; };
 		276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
@@ -1171,6 +1172,7 @@
 		2769438B1DCD502A00DB2555 /* c4Observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Observer.cc; sourceTree = "<group>"; };
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
 		27697DD727D19B25006F5BB5 /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
+		27697DDB27D2B32D006F5BB5 /* ResultTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ResultTest.cc; sourceTree = "<group>"; };
 		276993E125390C3300FDF699 /* VectorRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VectorRecord.hh; sourceTree = "<group>"; };
 		276993E525390C3300FDF699 /* VectorRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecord.cc; sourceTree = "<group>"; };
 		276CE67C2267991400B681AC /* n1ql.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = n1ql.cc; sourceTree = "<group>"; };
@@ -1837,6 +1839,7 @@
 				2771991B2272498300B18E0A /* QueryParserTest.hh */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				2723410F211B5FC400DA9437 /* QueryTest.hh */,
+				27697DDB27D2B32D006F5BB5 /* ResultTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
@@ -2105,6 +2108,7 @@
 			isa = PBXGroup;
 			children = (
 				2745B7CB26825F970012A17A /* index.html */,
+				27697DD727D19B25006F5BB5 /* Result.md */,
 				2745B7CC26825F970012A17A /* overview */,
 			);
 			name = docs;
@@ -2933,7 +2937,6 @@
 			children = (
 				27DF3BC326867F2600A57A1E /* Actors.md */,
 				277C5C4827AC4E0E001BE212 /* Async.md */,
-				27697DD727D19B25006F5BB5 /* Result.md */,
 				27DF3BC426867F2600A57A1E /* logo.png */,
 				27DF3BC526867F2600A57A1E /* BLIP Protocol.md */,
 			);
@@ -3953,6 +3956,7 @@
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
+				27697DDC27D2B32D006F5BB5 /* ResultTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				277C5C4627AB1EB4001BE212 /* AsyncTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
