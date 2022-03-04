@@ -422,30 +422,59 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::callCloseSocket() {
-        int curState = atomic_exchange(&_socketLCState, (int)SOCKET_CLOSING);
-        if (curState == SOCKET_CLOSED || curState == SOCKET_CLOSING) {
-            return;
+        int expected[] = {SOCKET_OPENING, SOCKET_OPENED};
+        int i = 0;
+        for (; i < 2; ++i) {
+            if (atomic_compare_exchange_strong(&_socketLCState, &expected[i], (int)SOCKET_CLOSING)) {
+                if (i == 0) {
+                    logVerbose("Calling closeSocket before the socket is connected");
+                }
+                // else: This is the usual case: from OPENED to CLOSING
+                break;
+            }
         }
-        closeSocket();
-        startResponseTimer(kCloseTimeout);
+        if (i < 2) {
+            closeSocket();
+            startResponseTimer(kCloseTimeout);
+        } else {
+            logVerbose("Calling closeSocket when the socket is %s", expected[1] == SOCKET_CLOSING ?
+                       "pending close" : "already closed");
+        }
     }
 
     void WebSocketImpl::callRequestClose(int status, fleece::slice message) {
-        int curState = atomic_exchange(&_socketLCState, (int)SOCKET_CLOSING);
-        if (curState == SOCKET_CLOSED || curState == SOCKET_CLOSING) {
-            return;
+        int expected[] = {SOCKET_OPENING, SOCKET_OPENED};
+        int i = 0;
+        for (; i < 2; ++i) {
+            if (atomic_compare_exchange_strong(&_socketLCState, &expected[i], (int)SOCKET_CLOSING)) {
+                if (i == 0) {
+                    logVerbose("Calling requestClose before the socket is connected");
+                }
+                // else: This is the usual case: from OPENED to CLOSING
+                break;
+            }
         }
-        requestClose(status, message);
-        startResponseTimer(kCloseTimeout);
+        if (i < 2) {
+            requestClose(status, message);
+            startResponseTimer(kCloseTimeout);
+        } else {
+            logVerbose("Calling requestClose when the socket is %s", expected[1] == SOCKET_CLOSING ?
+                       "pending close" : "is already closed");
+        }
     }
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
+        int currState = SOCKET_UNINIT;
         switch (_socketLCState.load()) {
             case SOCKET_CLOSING:
+                logVerbose("Calling close when the socket is pending close");
+                return;
             case SOCKET_CLOSED:
+                logVerbose("Calling close when the socket is already closed");
                 return;
             case SOCKET_OPENED:
+                currState = SOCKET_OPENED;
                 logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
                 if (_framing) {
                     alloc_slice closeMsg;
@@ -469,7 +498,10 @@ namespace litecore { namespace websocket {
                     sendOp(closeMsg, uWS::CLOSE);
                     return;
                 }
-            default:
+            case SOCKET_OPENING:
+                if (currState != SOCKET_OPENED) {
+                    logVerbose("Calling close before the socket is connected");
+                }
                 if (_framing) {
                     logInfo("Closing socket before connection established...");
                     // The web socket is being requested to close before it's even connected, so just
@@ -479,6 +511,8 @@ namespace litecore { namespace websocket {
                     callRequestClose(status, message);
                 }
                 return;
+            default:
+                DebugAssert(false);
         }
     }
 
@@ -527,8 +561,21 @@ namespace litecore { namespace websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
-        if (atomic_exchange(&_socketLCState, (int)SOCKET_CLOSED) == SOCKET_CLOSED) {
-            return;
+        switch (atomic_exchange(&_socketLCState, (int)SOCKET_CLOSED)) {
+            case SOCKET_OPENING:
+                logVerbose("Calling onClose before the socket is connected");
+                break;
+            case SOCKET_OPENED:
+                logVerbose("Calling onClose before calling closeSocket/requestClose");
+                break;
+            case SOCKET_CLOSING:
+                // The usual case: CLOSING -> CLOSED
+                break;
+            case SOCKET_CLOSED:
+                logVerbose("Calling of onClose is ignored because it is already called.");
+                return;
+            default:
+                DebugAssert(false);
         }
         {
             lock_guard<mutex> lock(_mutex);
