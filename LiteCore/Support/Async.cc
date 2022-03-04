@@ -102,11 +102,11 @@ namespace litecore::actor {
             condition_variable _cond;
 
             _provider->setObserver(nullptr, [&](AsyncProviderBase &provider) {
-                unique_lock<decltype(_mutex)> lock(_mutex);
+                unique_lock<mutex> lock(_mutex);
                 _cond.notify_one();
             });
 
-            unique_lock<decltype(_mutex)> lock(_mutex);
+            unique_lock<mutex> lock(_mutex);
             _cond.wait(lock, [&]{return ready();});
         }
     }

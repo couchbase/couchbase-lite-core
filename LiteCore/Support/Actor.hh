@@ -188,15 +188,6 @@ namespace litecore::actor {
             return provider->asyncValue();
         }
 
-        // Specialization of `asCurrentActor` where `fn` returns void.
-        template <>
-        auto _asCurrentActor<void>(std::function<void()> fn) {
-            if (currentActor() == this)
-                fn();
-            else
-                _mailbox.enqueue("asCurrentActor", ACTOR_BIND_FN0(fn));
-        }
-
         // Implementation of `asCurrentActor` where `fn` itself returns an `Async`.
         template <typename U>
         Async<U> _asCurrentActor(std::function<Async<U>()> fn) {
@@ -211,6 +202,16 @@ namespace litecore::actor {
 
         Mailbox _mailbox;
     };
+
+
+    // Specialization of `asCurrentActor` where `fn` returns void.
+    template <>
+    inline auto Actor::_asCurrentActor<void>(std::function<void()> fn) {
+        if (currentActor() == this)
+            fn();
+        else
+            _mailbox.enqueue("asCurrentActor", ACTOR_BIND_FN0(fn));
+    }
 
 #undef ACTOR_BIND_METHOD
 #undef ACTOR_BIND_METHOD0
