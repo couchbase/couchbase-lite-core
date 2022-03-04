@@ -13,7 +13,6 @@
 #include "Async.hh"
 #include "Actor.hh"
 #include "c4Error.h"
-#include "c4Internal.hh"
 #include "Logging.hh"
 #include "betterassert.hh"
 
