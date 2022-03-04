@@ -1,26 +1,31 @@
 //
 // Result.hh
 //
-// Copyright © 2022 Couchbase. All rights reserved.
+// Copyright 2022-Present Couchbase, Inc.
+//
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #pragma once
 #include "Defer.hh"             // for CONCATENATE()
 #include "function_ref.hh"
-#include <optional>
+#include <type_traits>
 #include <variant>
 #include <betterassert.hh>
 
 struct C4Error;
 
 namespace litecore {
-    struct error;
-    template <typename T, typename ERR =C4Error> class Result;
+    template <typename T> class Result;
+
+    // !!! Documentation is at Replicator/docs/Result.md !!!
 
     namespace {
-        // Magic template gunk. `unwrap_Result<T>` removes a layer of `Result<...>` from a type:
-        // - `unwrap_Result<string>` is `string`.
-        // - `unwrap_Result<Result<string>> is `string`.
+        // Magic template gunk. `unwrap_Result<T>` removes a layer of `Result<...>` from type T
         template <typename T> T _unwrap_Result(T*);
         template <typename T> T _unwrap_Result(Result<T>*);
         template <typename T> using unwrap_Result = decltype(_unwrap_Result((T*)nullptr));
@@ -28,18 +33,18 @@ namespace litecore {
 
 
     /// Represents the return value of a function that can fail.
-    /// It contains either a value of type T, or an error of type ERR (defaulting to C4Error).
-    template <typename T, typename ERR>
+    /// It contains either a value of type T, or a C4Error.
+    template <typename T>
     class Result {
     public:
         /// Constructs a successful Result from a value.
-        Result(const T &val) noexcept         :_result(val) { }
-        Result(T &&val) noexcept              :_result(std::move(val)) { }
+        Result(const T &val) noexcept           :_result(val) { }
+        Result(T &&val) noexcept                :_result(std::move(val)) { }
 
         /// Constructs a failure Result from an error.
         /// The error must not be the empty/null/0 value.
-        Result(const ERR &err) noexcept         :_result(err) {precondition(err);}
-        Result(ERR &&err) noexcept              :_result(std::move(err)) {precondition(err);}
+        Result(const C4Error &err) noexcept     :_result(err) {precondition(err);}
+        Result(C4Error &&err) noexcept          :_result(std::move(err)) {precondition(err);}
 
         /// True if successful.
         bool ok() const noexcept                {return _result.index() == 0;}
@@ -51,11 +56,11 @@ namespace litecore {
         T& value() &                            {return *std::get_if<0>(&_result);}
         T value() &&                            {return std::move(*std::get_if<0>(&_result));}
 
-        /// Returns the error, or the default empty/null/0 error if none.
-        ERR error() const noexcept              {auto e = errorPtr(); return e ? *e : ERR{};}
+        /// Returns the error, or an empty C4Error with code==0 if none.
+        C4Error error() const noexcept          {auto e = errorPtr(); return e ? *e : C4Error{};}
 
         /// Returns a pointer to the error, or `nullptr` if there is none.
-        const ERR* errorPtr() const noexcept    {return std::get_if<1>(&_result);}
+        const C4Error* errorPtr() const noexcept {return std::get_if<1>(&_result);}
 
         /// Transforms a `Result<T>` to a `Result<U>` by passing the value through a function.
         /// - If I have a value, I pass it to `fn` and return its result.
@@ -67,7 +72,7 @@ namespace litecore {
                   typename RV = std::invoke_result_t<LAMBDA,T&&>,
                   typename U = unwrap_Result<RV>>
         [[nodiscard]]
-        Result<U,ERR> then(LAMBDA fn) && noexcept {
+        Result<U> then(LAMBDA fn) && noexcept {
             return _then<U>(fleece::function_ref<RV(T&&)>(std::forward<LAMBDA>(fn)));
         }
 
@@ -84,35 +89,35 @@ namespace litecore {
 
     private:
         template <typename U>
-        Result<U,ERR> _then(fleece::function_ref<U(T&&)> const& fn) noexcept;
+        Result<U> _then(fleece::function_ref<U(T&&)> const& fn) noexcept;
         template <typename U>
-        Result<U,ERR> _then(fleece::function_ref<Result<U,ERR>(T&&)> const& fn) noexcept;
+        Result<U> _then(fleece::function_ref<Result<U>(T&&)> const& fn) noexcept;
 
-        std::variant<T,ERR> _result;
+        std::variant<T,C4Error> _result;
     };
 
 
-    // Specialization of `Result` when there is no value; just represents success or an error.
+    // Specialization of `Result` when there is no value; it just represents success or an error.
     // - The `success` constructor takes no arguments. Or you can construct with `kC4NoError`.
     // - There is no `value` method.
     // - The `then` callback takes no arguments.
-    template<typename ERR>
-    class Result<void, ERR> {
+    template<>
+    class Result<void> {
     public:
-        Result() noexcept                       :_error{} { }
-        Result(const ERR &err) noexcept         :_error(err) { }
-        Result(ERR &&err) noexcept              :_error(std::move(err)) { }
+        Result() noexcept                           :_error{} { }
+        Result(const C4Error &err) noexcept         :_error(err) { }
+        Result(C4Error &&err) noexcept              :_error(std::move(err)) { }
 
-        bool ok() const noexcept                {return !_error;}
-        bool isError() const noexcept           {return !!_error;}
-        const ERR& error() const noexcept       {return _error;}
-        const ERR* errorPtr() const noexcept    {return _error ? &_error : nullptr;}
+        bool ok() const noexcept                    {return !_error;}
+        bool isError() const noexcept               {return !!_error;}
+        const C4Error& error() const noexcept       {return _error;}
+        const C4Error* errorPtr() const noexcept    {return _error ? &_error : nullptr;}
 
         template <typename LAMBDA,
                   typename RV = std::invoke_result_t<LAMBDA>,
                   typename U = unwrap_Result<RV>>
         [[nodiscard]]
-        Result<U,ERR> then(LAMBDA fn) && noexcept {
+        Result<U> then(LAMBDA fn) && noexcept {
             return _then<U>(fleece::function_ref<RV()>(std::forward<LAMBDA>(fn)));
         }
 
@@ -124,15 +129,15 @@ namespace litecore {
 
     private:
         template <typename U>
-        Result<U,ERR> _then(fleece::function_ref<U()> const& fn) noexcept;
+        Result<U> _then(fleece::function_ref<U()> const& fn) noexcept;
         template <typename U>
-        Result<U,ERR> _then(fleece::function_ref<Result<U,ERR>()> const& fn) noexcept;
+        Result<U> _then(fleece::function_ref<Result<U>()> const& fn) noexcept;
 
-        ERR _error;
+        C4Error _error;
     };
 
 
-    /// Runs a function returning `T` (or `Result<T>`) in a try/catch block,
+    /// Runs a function returning `T` in a try/catch block,
     /// catching any exception and returning it as an error. Returns `Result<T>`.
     template <typename T>
     [[nodiscard]]
@@ -145,8 +150,8 @@ namespace litecore {
     }
 
 
-    /// Runs a function returning `Result<T>` in a try/catch block, catching any exception and
-    /// returning it as an error. Returns `Result<T>`.
+    /// Runs a function returning `Result<T>` in a try/catch block,
+    /// catching any exception and returning it as an error. Returns `Result<T>`.
     template <typename T>
     [[nodiscard]]
     Result<T> TryResult(fleece::function_ref<Result<T>()> fn) noexcept {
@@ -158,6 +163,7 @@ namespace litecore {
     }
 
 
+    // (specialization needed for T=void)
     template <>
     [[nodiscard]]
     inline Result<void> TryResult(fleece::function_ref<void()> fn) noexcept {
@@ -172,8 +178,8 @@ namespace litecore {
 
     // (this helps the compiler deduce T when TryResult() is called with a lambda)
     template <typename LAMBDA,
-              typename RV = std::invoke_result_t<LAMBDA>,
-              typename T = unwrap_Result<RV>>
+              typename RV = std::invoke_result_t<LAMBDA>, // return value
+              typename T = unwrap_Result<RV>>             // RV with `Result<...>` stripped off
     [[nodiscard]]
     inline Result<T> TryResult(LAMBDA fn) noexcept {
         return TryResult<T>(fleece::function_ref<RV()>(std::move(fn)));
@@ -197,20 +203,20 @@ namespace litecore {
     //---- Method implementations
 
 
-    template<typename T, typename ERR>
+    template<typename T>
     template <typename U>
     [[nodiscard]]
-    Result<U,ERR> Result<T,ERR>::_then(fleece::function_ref<U(T&&)> const& fn) noexcept {
+    Result<U> Result<T>::_then(fleece::function_ref<U(T&&)> const& fn) noexcept {
         if (ok())
             return TryResult([&]{return fn(std::move(value()));});
         else
             return error();
     }
 
-    template<typename T, typename ERR>
+    template<typename T>
     template <typename U>
     [[nodiscard]]
-    Result<U,ERR> Result<T,ERR>::_then(fleece::function_ref<Result<U,ERR>(T&&)> const& fn) noexcept {
+    Result<U> Result<T>::_then(fleece::function_ref<Result<U>(T&&)> const& fn) noexcept {
         if (ok())
             return TryResult([&]{return fn(std::move(value()));});
         else
@@ -218,20 +224,18 @@ namespace litecore {
     }
 
 
-    template<typename ERR>
     template <typename U>
     [[nodiscard]]
-    Result<U,ERR> Result<void,ERR>::_then(fleece::function_ref<U()> const& fn) noexcept {
+    Result<U> Result<void>::_then(fleece::function_ref<U()> const& fn) noexcept {
         if (ok())
             return TryResult(fn);
         else
             return error();
     }
 
-    template<typename ERR>
     template <typename U>
     [[nodiscard]]
-    Result<U,ERR> Result<void,ERR>::_then(fleece::function_ref<Result<U,ERR>()> const& fn) noexcept {
+    Result<U> Result<void>::_then(fleece::function_ref<Result<U>()> const& fn) noexcept {
         if (ok())
             return TryResult(fn);
         else
