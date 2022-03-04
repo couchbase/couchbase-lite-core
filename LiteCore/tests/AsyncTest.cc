@@ -204,8 +204,8 @@ TEST_CASE("TryResult", "[Async]") {
 
 TEST_CASE("TRY", "[Async]") {
     auto fn = [](int x) -> Result<size_t> {
-        TRY_RESULT(string str, rfunc(x));
-        TRY_RESULT(string str2, rfunc(x));
+        TRY(string str, rfunc(x));
+        TRY(string str2, rfunc(x));
         return str.size();
     };
 

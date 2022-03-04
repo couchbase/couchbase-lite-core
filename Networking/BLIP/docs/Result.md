@@ -1,6 +1,6 @@
 #  The Useful `Result<T>` Type
 
-(Last updated March 3 2022 by Jens)
+(Last updated March 4 2022 by Jens)
 
 **Result** is a utility class template for improving error handling without exceptions, inspired by languages like Swift and Rust.
 
@@ -14,7 +14,7 @@ In these situations we’ve been using the same calling convention we use in the
 
 - You can construct one from either a `T` or a `C4Error`.
 - Boolean methods `ok()` and `isError()` tell you which it holds.
-- `value()` returns the value, but if there’s an error it throws it instead. (So check first!)
+- `value()` returns the value … but if there’s an error it throws it instead. (So check first!)
 - `error()` returns the error if there is one, or else a default error with `code==0`.
 
 Result’s main job is as the return value of a function that can fail:
@@ -93,5 +93,25 @@ Here’s an example that goes the other direction, `string` to `double`, and the
 Result<double> root = parseDouble(str).then( [](double n) {return sqareRoot(n);} );
 ```
 
+### TRY()
 
+This one’s sort of an experiment to emulate Swift’s `try` statement (`try mightFail()`). Here’s an example:
 
+```c++
+Result<string> rootStr(double n) {
+	TRY(double root, squareRoot(n));
+    return std::to_string(root);
+}
+```
+
+TRY calls `squareRoot(n)`; if it succeeds, it declares `root` and assigns the value to it. If it fails, though, it *returns the error from the enclosing function* (`rootStr`).
+
+The `TRY` expression in the example is equivalent to:
+
+```c++
+auto __ = squareRoot(n);
+if (__.isError()) return __.error();
+double root = __.value();
+```
+
+The syntax is ugly, but I think it’s the best that can be done in standard C++. (GCC and Clang have an extension that would make it a lot prettier, but MSVC doesn’t.)

@@ -160,7 +160,7 @@ namespace litecore::actor {
             if (hasError())
                 return Async<U>(error());
             try {
-                return callback(moveResult().value());
+                return callback(moveResult()._value());
             } catch (const std::exception &x) {
                 return Async<U>(C4Error::fromException(x));
             }
@@ -272,7 +272,7 @@ namespace litecore::actor {
                 if (provider.hasError())
                     result->setResult(provider.error());
                 else {
-                    callback(provider.moveResult().value());
+                    callback(provider.moveResult()._value());
                     result->setResult(Result<void>());
                 }
             });
@@ -407,7 +407,7 @@ namespace litecore::actor {
                 if (provider.hasError())
                     errorCallback(provider.error());
                 else
-                    callback(provider.moveResult().value());
+                    callback(provider.moveResult()._value());
             });
         }
 

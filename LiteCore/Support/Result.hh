@@ -52,9 +52,16 @@ namespace litecore {
         /// True if not successful.
         bool isError() const noexcept           {return _result.index() != 0;}
 
-        /// Returns the value. You must test first, as this will fail if there is an error!
-        T& value() &                            {return *std::get_if<0>(&_result);}
-        T value() &&                            {return std::move(*std::get_if<0>(&_result));}
+        /// Returns the value. Or if there's an error, throws it as an exception(!)
+        T& value() & {
+            if (auto e = errorPtr(); _usuallyFalse(e != nullptr)) e->raise();
+            return *std::get_if<0>(&_result);
+        }
+
+        T value() && {
+            if (auto e = errorPtr(); _usuallyFalse(e != nullptr)) e->raise();
+            return std::move(*std::get_if<0>(&_result));
+        }
 
         /// Returns the error, or an empty C4Error with code==0 if none.
         C4Error error() const noexcept          {auto e = errorPtr(); return e ? *e : C4Error{};}
@@ -86,6 +93,10 @@ namespace litecore {
                 fn(error());
             return *this;
         }
+
+        // `_value` is faster than `value`, but you MUST have preflighted or it'll deref NULL.
+        T& _value() & noexcept                  {return *std::get_if<0>(&_result);}
+        T _value() && noexcept                  {return std::move(*std::get_if<0>(&_result));}
 
     private:
         template <typename U>
@@ -192,11 +203,11 @@ namespace litecore {
     ///   name (`foo`) or a declaration (`int foo`).
     /// - If the result is an error, that error is returned from the current function, which should
     ///   have a return type of `Result<>` or `C4Error`.
-    #define TRY_RESULT(VAR, EXPR)   \
+    #define TRY(VAR, EXPR)   \
         auto CONCATENATE(rslt, __LINE__) = (EXPR); \
         if (CONCATENATE(rslt, __LINE__).isError()) \
             return CONCATENATE(rslt, __LINE__).error(); \
-        VAR = std::move(CONCATENATE(rslt, __LINE__)).value();
+        VAR = std::move(CONCATENATE(rslt, __LINE__))._value();
     // (`CONCATENATE(rslt, __LINE__)` is just a clumsy way to create a unique variable name.)
 
 
@@ -208,7 +219,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<T>::_then(fleece::function_ref<U(T&&)> const& fn) noexcept {
         if (ok())
-            return TryResult([&]{return fn(std::move(value()));});
+            return TryResult([&]{return fn(std::move(_value()));});
         else
             return error();
     }
@@ -218,7 +229,7 @@ namespace litecore {
     [[nodiscard]]
     Result<U> Result<T>::_then(fleece::function_ref<Result<U>(T&&)> const& fn) noexcept {
         if (ok())
-            return TryResult([&]{return fn(std::move(value()));});
+            return TryResult([&]{return fn(std::move(_value()));});
         else
             return error();
     }
