@@ -281,9 +281,7 @@ namespace litecore { namespace blip {
         void requeue(MessageOut *msg, bool andWrite =false) {
             DebugAssert(!_outbox.contains(msg));
             auto i = _outbox.end();
-            // Only allow unnumbered msg to be inserted.
-            // Numbered msg must be appended
-            if (msg->_number == 0 && msg->urgent() && _outbox.size() > 1) {
+            if (msg->urgent() && _outbox.size() > 1) {
                 // High-priority gets queued after the last existing high-priority message,
                 // leaving one regular-priority message in between if possible:
                 const bool isNew = (msg->_bytesSent == 0);
