@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
 #include <chrono>
 #include <cstdlib>

@@ -16,6 +16,7 @@
 #include "BLIPInternal.hh"
 #include "Codec.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
@@ -238,7 +239,7 @@ namespace litecore { namespace blip {
             slice_istream checksumSlice{checksum, Codec::kChecksumSize};
             codec.readAndVerifyChecksum(checksumSlice);
 
-            bodyBytesReceived = _in->bytesWritten();
+            bodyBytesReceived = expert(*_in).bytesWritten();
 
             if (!(frameFlags & kMoreComing)) {
                 // Completed!
@@ -330,7 +331,7 @@ namespace litecore { namespace blip {
             if (!_bodyAsFleece && _body != "null"_sl)
                 Warn("MessageIn::JSONBody: Body does not contain valid JSON: %.*s", SPLAT(_body));
         }
-        return fleece::Value::fromData(_bodyAsFleece);
+        return fleece::ValueFromData(_bodyAsFleece);
     }
 
 

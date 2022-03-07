@@ -20,6 +20,7 @@
 #include "Server.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <condition_variable>
 #include <functional>
 #include <mutex>
