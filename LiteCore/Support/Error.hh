@@ -144,6 +144,10 @@ namespace litecore {
         return a.domain == error::LiteCore && a.code == code;
     }
 
+    static inline bool operator!= (const error &a, const error &b) noexcept {return !(a == b);}
+    static inline bool operator!= (const error &a, error::LiteCoreError code) noexcept
+                                                                            {return !(a == code);}
+
 
 // Like C assert() but throws an exception instead of aborting
 #ifdef __FILE_NAME__

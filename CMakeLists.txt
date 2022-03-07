@@ -286,6 +286,8 @@ target_include_directories(
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
     vendor/mbedtls/crypto/include
+    vendor/Monocypher/src
+    vendor/Monocypher/src/optional
     vendor/sockpp/include
 )
 

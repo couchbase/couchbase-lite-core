@@ -90,6 +90,7 @@ add_executable(
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}REST/Response.cc
     ${TOP}Crypto/CertificateTest.cc
+    ${TOP}Crypto/SignatureTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
     main.cpp
 )

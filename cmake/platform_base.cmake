@@ -33,6 +33,8 @@ function(set_litecore_source_base)
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
+        Crypto/Signing.cc
+        Crypto/SignedDict.cc
         LiteCore/BlobStore/BlobStreams.cc
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
@@ -82,6 +84,8 @@ function(set_litecore_source_base)
         LiteCore/Storage/UnicodeCollator.cc
         Networking/Address.cc
         Networking/HTTP/CookieStore.cc
+        vendor/Monocypher/src/monocypher.c
+        vendor/Monocypher/src/optional/monocypher-ed25519.c
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
         vendor/SQLiteCpp/src/Database.cpp
