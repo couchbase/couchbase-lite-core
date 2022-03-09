@@ -57,6 +57,7 @@ public:
     void setParameters(slice parameters);
 
     alloc_slice fullTextMatched(const C4FullTextMatch&);
+    std::exception_ptr current_exception();
 
     // Running the query:
 

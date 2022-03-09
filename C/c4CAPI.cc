@@ -1318,6 +1318,11 @@ C4Query* c4query_new2(C4Database *database,
         *outErrorPos = -1;
     return tryCatch<C4Query*>(outError, [&]{
         C4Query *query = database->newQuery(language, expression, outErrorPos).detach();
+        std::exception_ptr eptr = query->current_exception();
+        if (eptr) {
+            c4query_release(query);
+            std::rethrow_exception(eptr);
+        }
         if (!query)
             c4error_return(LiteCoreDomain, kC4ErrorInvalidQuery, {}, outError);
         return query;

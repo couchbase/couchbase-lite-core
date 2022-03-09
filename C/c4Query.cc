@@ -92,6 +92,9 @@ alloc_slice C4Query::fullTextMatched(const C4FullTextMatch &term) {
     return _query->getMatchedText((Query::FullTextTerm&)term);
 }
 
+std::exception_ptr C4Query::current_exception() {
+    return _query->eptr;
+}
 
 alloc_slice C4Query::parameters() const noexcept {
     LOCK(_mutex);

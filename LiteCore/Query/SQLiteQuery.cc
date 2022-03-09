@@ -69,63 +69,67 @@ namespace litecore {
         {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
-
-            switch (language) {
-                case QueryLanguage::kJSON:
-                    _json = queryStr;
-                    break;
-                case QueryLanguage::kN1QL: {
-                    unsigned errPos;
-                    FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
-                    if (!result) {
-                        throw Query::parseError("N1QL syntax error", errPos);
-                    } else if (!hasKeyCaseEquivalent((MutableDict*)result, "from")) {
-                        throw error(error::LiteCore, error::InvalidQuery,
-                                    format("%s", "N1QL error: missing the FROM clause"));
+            try {
+                switch (language) {
+                    case QueryLanguage::kJSON:
+                        _json = queryStr;
+                        break;
+                    case QueryLanguage::kN1QL: {
+                        unsigned errPos;
+                        FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
+                        if (!result) {
+                            throw Query::parseError("N1QL syntax error", errPos);
+                        } else if (!hasKeyCaseEquivalent((MutableDict*)result, "from")) {
+                            throw error(error::LiteCore, error::InvalidQuery,
+                                        format("%s", "N1QL error: missing the FROM clause"));
+                        }
+                        _json = ((MutableDict*)result)->toJSON(true);
+                        logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
+                        FLMutableDict_Release(result);
+                        break;
                     }
-                    _json = ((MutableDict*)result)->toJSON(true);
-                    logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
-                    FLMutableDict_Release(result);
-                    break;
                 }
+
+                QueryParser qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
+                qp.parseJSON(_json);
+                string sql = qp.SQL();
+                logInfo("Compiled as %s", sql.c_str());
+
+                // Collect the KeyStores read by this query:
+                for (const string &table : qp.collectionTablesUsed())
+                    _keyStores.push_back(&dataFile.keyStoreFromTable(table));
+
+                // Collect the (required) query parameters:
+                _parameters = qp.parameters();
+                for (auto p = _parameters.begin(); p != _parameters.end();) {
+                    if (hasPrefix(*p, "opt_"))
+                        p = _parameters.erase(p);       // Optional param, don't warn if it's unbound
+                    else
+                        ++p;
+                }
+
+                // Collect the FTS tables used:
+                _ftsTables = qp.ftsTablesUsed();
+                for (auto &ftsTable : _ftsTables) {
+                    if (!dataFile.tableExists(ftsTable))
+                        error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
+                }
+
+                // If expiration is queried, ensure the table(s) have the expiration column:
+                if (qp.usesExpiration()) {
+                    for (auto ks : _keyStores)
+                        ks->addExpiration();
+                }
+
+                LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
+                _statement = dataFile.compile(sql.c_str());
+
+                _1stCustomResultColumn = qp.firstCustomResultColumn();
+                _columnTitles = qp.columnTitles();
+            } catch (...) {
+                eptr = std::current_exception();
+                return;
             }
-
-            QueryParser qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
-            qp.parseJSON(_json);
-            string sql = qp.SQL();
-            logInfo("Compiled as %s", sql.c_str());
-
-            // Collect the KeyStores read by this query:
-            for (const string &table : qp.collectionTablesUsed())
-                _keyStores.push_back(&dataFile.keyStoreFromTable(table));
-
-            // Collect the (required) query parameters:
-            _parameters = qp.parameters();
-            for (auto p = _parameters.begin(); p != _parameters.end();) {
-                if (hasPrefix(*p, "opt_"))
-                    p = _parameters.erase(p);       // Optional param, don't warn if it's unbound
-                else
-                    ++p;
-            }
-
-            // Collect the FTS tables used:
-            _ftsTables = qp.ftsTablesUsed();
-            for (auto &ftsTable : _ftsTables) {
-                if (!dataFile.tableExists(ftsTable))
-                    error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
-            }
-
-            // If expiration is queried, ensure the table(s) have the expiration column:
-            if (qp.usesExpiration()) {
-                for (auto ks : _keyStores)
-                    ks->addExpiration();
-            }
-
-            LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
-            _statement = dataFile.compile(sql.c_str());
-            
-            _1stCustomResultColumn = qp.firstCustomResultColumn();
-            _columnTitles = qp.columnTitles();
         }
 
 

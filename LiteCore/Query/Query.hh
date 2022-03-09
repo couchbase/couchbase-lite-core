@@ -84,6 +84,7 @@ namespace litecore {
         };
 
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
+        std::exception_ptr eptr;
 
     protected:
         Query(DataFile&, slice expression, QueryLanguage language);

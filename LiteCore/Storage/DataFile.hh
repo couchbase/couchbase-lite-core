@@ -30,6 +30,12 @@ namespace fleece { namespace impl {
     class PersistentSharedKeys;
 } }
 
+template<> struct std::hash<fleece::Retained<litecore::Query>> : public std::hash<const void*> {
+    std::size_t operator()(const fleece::Retained<litecore::Query>& x) const noexcept {
+        return std::hash<const void*>::operator()(x.get());
+    }
+};
+
 namespace litecore {
 
     class Query;
@@ -140,8 +146,8 @@ namespace litecore {
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
 
         // to be called only by Query:
-        void registerQuery(Query *query)        {_queries.insert(query);}
-        void unregisterQuery(Query *query)      {_queries.erase(query);}
+        void registerQuery(Query *query);
+        void unregisterQuery(Query *query);
 
         //////// KEY-STORES:
 
@@ -283,7 +289,7 @@ namespace litecore {
         mutable KeyStore*       _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
-        std::unordered_set<Query*> _queries;                    // Query objects
+        std::unordered_set<Retained<Query>> _queries;           // Query objects
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

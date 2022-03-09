@@ -127,6 +127,13 @@ namespace litecore {
         return filePath().dataSize();
     }
 
+    void DataFile::registerQuery(Query *query) {
+        _queries.insert(query);
+    }
+
+    void DataFile::unregisterQuery(Query *query) {
+        _queries.erase(query);
+    }
 
     void DataFile::close(bool forDelete) {
         // https://github.com/couchbase/couchbase-lite-core/issues/776

@@ -2376,6 +2376,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
         CHECK(e->getRowCount() == 10);
     } else {
         ExpectingExceptions _;
-        CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
+        auto rethrow = [](Retained<Query> q) {
+            if (q && q->eptr) {
+                std::rethrow_exception(q->eptr);
+            }
+            return q;
+        };
+        CHECK_THROWS_WITH(rethrow(db->compileQuery(queryStr, QueryLanguage::kN1QL)), "N1QL error: missing the FROM clause");
     }
 }
