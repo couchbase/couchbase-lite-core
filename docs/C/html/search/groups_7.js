@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['network_20listener_3a_20rest_20api_20and_20sync_20server_2125',['Network Listener: REST API and Sync Server',['../group___listener.html',1,'']]]
+  ['miscellaneous_20functions_2179',['Miscellaneous Functions',['../group___miscellaneous.html',1,'']]],
+  ['mutable_20values_2180',['Mutable Values',['../group___mutable.html',1,'']]]
 ];
