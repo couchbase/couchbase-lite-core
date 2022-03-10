@@ -138,9 +138,8 @@ namespace litecore {
         //    other classes with interest in the data file do not continue to
         //    operate on it
         _closeSignaled = true;
-        for (auto &query : _queries)
-            query->close();
-        _queries.clear();
+
+        closeAllQueries();
 
         for (auto& i : _keyStores) {
             i.second->close();
@@ -346,6 +345,29 @@ namespace litecore {
             _documentKeys = keys;
         }
         return keys;
+    }
+
+#pragma mark - QUERIES:
+
+
+    void DataFile::registerQuery(Query *query) {
+        unique_lock<mutex> lock(_queriesMutex);
+        _queries.insert(query);
+    }
+
+
+    void DataFile::unregisterQuery(Query *query) {
+        unique_lock<mutex> lock(_queriesMutex);
+        printf("DataFile::unregisterQuery\n");
+        _queries.erase(query);
+    }
+
+
+    void DataFile::closeAllQueries() {
+        unique_lock<mutex> lock(_queriesMutex);
+        for (auto &query : _queries)
+            query->close();
+        _queries.clear();
     }
 
 
