@@ -453,6 +453,9 @@ CBL {
 		FLValue_IsEqual;
 		FLValue_ToJSON5;
 
+		c4client_new;
+		c4client_getDoc;
+
 
 		c4db_URINameFromPath;
 

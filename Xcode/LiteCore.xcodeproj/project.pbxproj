@@ -26,6 +26,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		1A5726B227D74A8900A9B412 /* c4ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */; };
+		1AE26CC727D9C432003C3043 /* c4ConnectedClient.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		1AE26CC927D9C488003C3043 /* c4ConnectedClient_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
 		2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
 		2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -831,6 +834,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1A5726AF27D7474900A9B412 /* c4ConnectedClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClient.hh; sourceTree = "<group>"; };
+		1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient.cc; sourceTree = "<group>"; };
+		1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4ConnectedClient.h; sourceTree = "<group>"; };
+		1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient_CAPI.cc; sourceTree = "<group>"; };
+		1AE26CCA27D9D456003C3043 /* c4ConnectedClientImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClientImpl.hh; sourceTree = "<group>"; };
 		2700BB4D216FF2DA00797537 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
 		2700BB59217005A900797537 /* CoreMLPredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoreMLPredictiveModel.hh; sourceTree = "<group>"; };
 		2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CoreMLPredictiveModel.mm; sourceTree = "<group>"; };
@@ -2022,6 +2030,7 @@
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
 				274D18862617B4300018D39C /* c4Socket.hh */,
+				1A5726AF27D7474900A9B412 /* c4ConnectedClient.hh */,
 			);
 			path = Cpp_include;
 			sourceTree = "<group>";
@@ -2633,6 +2642,9 @@
 				27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
+				1AE26CCA27D9D456003C3043 /* c4ConnectedClientImpl.hh */,
+				1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */,
+				1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */,
 			);
 			name = "API implementation";
 			sourceTree = "<group>";
@@ -3125,6 +3137,7 @@
 				2743E33525F8554F006F696D /* c4QueryTypes.h */,
 				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
 				274D18852617B3660018D39C /* c4SocketTypes.h */,
+				1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
 			path = include;
@@ -3264,6 +3277,7 @@
 				27B649542069723900FC12F7 /* c4Query.h in Headers */,
 				27B649552069723900FC12F7 /* c4Replicator.h in Headers */,
 				27B649562069723900FC12F7 /* c4Socket.h in Headers */,
+				1AE26CC727D9C432003C3043 /* c4ConnectedClient.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4218,6 +4232,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
+				1AE26CC927D9C488003C3043 /* c4ConnectedClient_CAPI.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
@@ -4298,6 +4313,7 @@
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
+				1A5726B227D74A8900A9B412 /* c4ConnectedClient.cc in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,

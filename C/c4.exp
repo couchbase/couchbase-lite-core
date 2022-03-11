@@ -414,5 +414,8 @@ _FLDictIterator_End
 _FLValue_IsEqual
 _FLValue_ToJSON5
 
+_c4client_new
+_c4client_getDoc
+
 # Apple specific
 _FLEncoder_WriteNSObject

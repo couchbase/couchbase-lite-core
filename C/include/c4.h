@@ -25,3 +25,4 @@
 #include "c4Query.h"
 #include "c4Replicator.h"
 #include "c4Socket.h"
+#include "c4ConnectedClient.h"
