@@ -169,6 +169,8 @@ typedef struct C4SocketFactory C4SocketFactory;
 /** An open stream for writing data to a blob. */
 typedef struct C4WriteStream C4WriteStream;
 
+/** Opaque reference to a Connected Client. */
+typedef struct C4ConnectedClient C4ConnectedClient;
 
 #pragma mark - REFERENCE COUNTING:
 

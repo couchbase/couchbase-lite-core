@@ -33,3 +33,4 @@
 #include "c4Query.hh"
 #include "c4Replicator.hh"
 #include "c4Socket.hh"
+#include "c4ConnectedClient.hh"
