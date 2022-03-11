@@ -14,6 +14,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"
 #include <limits>
 #include <sstream>
 
@@ -64,7 +65,7 @@ namespace litecore { namespace repl {
 
         if (_remote) {
             enc.writeKey("remote"_sl);
-            enc.writeRaw(_remote.toJSON());
+            expert(enc).writeRaw(_remote.toJSON());
         }
         
         enc.endDict();

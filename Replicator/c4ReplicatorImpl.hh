@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <algorithm>
 #include <atomic>
 #include <mutex>

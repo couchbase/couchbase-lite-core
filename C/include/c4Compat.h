@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "fleece/Base.h"
+#include "fleece/CompilerSupport.h"
 
 #ifdef _MSC_VER
 #  define C4INLINE __forceinline
