@@ -346,7 +346,7 @@ if __name__ == '__main__':
         elif v == "android":
             final_variants |= {"android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a"}
         elif v == "java":
-            final_variants |= {"centos6", "macosx", "windows-win64"}
+            final_variants |= {"linux", "macosx", "windows-win64"}
         elif v == "windows":
             final_variants |= {"windows-win64", "windows-win64-store", "windows-win32", "windows-win32-store", "windows-arm-store"}
         elif v == "macos":
