@@ -21,7 +21,7 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                             public fleece::InstanceCountedIn<C4Database>,
                             C4Base  {
     
-    static Retained<C4ConnectedClient> newClient(litecore::websocket::WebSocket* NONNULL, C4Slice options);
+    static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
                                 
     virtual litecore::actor::Async<C4DocResponse> getDoc(C4Slice, C4Slice, C4Slice, bool) noexcept=0;
 };

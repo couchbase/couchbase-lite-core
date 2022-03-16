@@ -18,9 +18,9 @@
 using namespace litecore::client;
 using namespace fleece;
 
-/*static*/ Retained<C4ConnectedClient> C4ConnectedClient::newClient(litecore::websocket::WebSocket* socket, C4Slice options) {
+/*static*/ Retained<C4ConnectedClient> C4ConnectedClient::newClient(const C4ConnectedClientParameters &params) {
     try {
-        return new C4ConnectedClientImpl(socket, options);
+        return new C4ConnectedClientImpl(params);
     } catch (...) {
         throw;
     }
