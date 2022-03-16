@@ -10,9 +10,10 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Base.hh"
+#include "c4Base.h"
 #include "ConnectedClient.hh"
 #include "C4ConnectedClient.hh"
+#include "c4Socket+Internal.hh"
 
 namespace litecore::client {
 
@@ -22,25 +23,38 @@ namespace litecore::client {
     
     struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
     public:
-        C4ConnectedClientImpl(WebSocket* NONNULL, C4Slice options) { };
+        C4ConnectedClientImpl(const C4ConnectedClientParameters &params) {
+            if (params.socketFactory) {
+                // Keep a copy of the C4SocketFactory struct in case original is invalidated:
+                _customSocketFactory = *params.socketFactory;
+                _socketFactory = &_customSocketFactory;
+            }
+            
+            auto webSocket = new repl::C4SocketImpl(alloc_slice(params.url),
+                                                    Role::Client,
+                                                    alloc_slice(params.options),
+                                                    _socketFactory);
+            _client = new ConnectedClient(webSocket, *this, fleece::AllocedDict(params.options));
+            _client->start();
+        }
     
     protected:
 #pragma mark - ConnectedClient Delegate
         
-        virtual void clientGotHTTPResponse(ConnectedClient* NONNULL client,
+        virtual void clientGotHTTPResponse(ConnectedClient* C4NONNULL client,
                                            int status,
                                            const websocket::Headers &headers) {
             // TODO: implement
         }
-        virtual void clientGotTLSCertificate(ConnectedClient* NONNULL client,
+        virtual void clientGotTLSCertificate(ConnectedClient* C4NONNULL client,
                                              slice certData) {
             // TODO: implement
         }
-        virtual void clientStatusChanged(ConnectedClient* NONNULL client,
+        virtual void clientStatusChanged(ConnectedClient* C4NONNULL client,
                                          ConnectedClient::ActivityLevel level) {
             // TODO: implement
         }
-        virtual void clientConnectionClosed(ConnectedClient* NONNULL client, const CloseStatus& status)  {
+        virtual void clientConnectionClosed(ConnectedClient* C4NONNULL client, const CloseStatus& status)  {
             // TODO: implement
         }
         
@@ -63,7 +77,10 @@ namespace litecore::client {
         }
 
     private:
-        Retained<ConnectedClient>        _client;
+        Retained<ConnectedClient>           _client;
+        const C4SocketFactory* C4NULLABLE   _socketFactory {nullptr};
+        C4SocketFactory                     _customSocketFactory {};  // Storage for *_socketFactory if non-null
+        void* C4NULLABLE                    _nativeHandle;
     };
 
 }

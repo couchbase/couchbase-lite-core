@@ -18,9 +18,9 @@
 
 using namespace litecore::repl;
 
-C4ConnectedClient* c4client_new(C4Socket *openSocket, C4Slice options, C4Error *outError) noexcept {
+C4ConnectedClient* c4client_new(C4ConnectedClientParameters params, C4Error *outError) noexcept {
     try {
-        return C4ConnectedClient::newClient(WebSocketFrom(openSocket), options).detach();
+        return C4ConnectedClient::newClient(params).detach();
     } catchError(outError);
     return nullptr;
 }
@@ -38,8 +38,9 @@ void c4client_getDoc(C4ConnectedClient* client,
         res.then([=](C4DocResponse response) {
             return callback(client, response, context);
         }).onError([&](C4Error err) {
-            if (outError)
-                *outError = err;
+            // TODO: Handle the error here:
+            
+            printf("\n Error occured: %s\n", err.description().c_str());
         });
     } catchError(outError);
     return;

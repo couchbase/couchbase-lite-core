@@ -24,6 +24,14 @@ typedef struct {
     bool deleted;
 } C4DocResponse;
 
+/** Parameters describing a connected client, used when creating a C4ConnectedClient. */
+typedef struct C4ConnectedClientParameters {
+    C4Slice                             url;               ///<URL with database to connect
+    C4Slice                             options;           ///< Fleece-encoded dictionary of optional parameters.
+    const C4SocketFactory* C4NULLABLE   socketFactory;     ///< Custom C4SocketFactory
+    void* C4NULLABLE                    callbackContext;   ///< Value to be passed to the callbacks.
+} C4ConnectedClientParameters;
+
 /** Callback for getting the document result.
  
  @param client   The client that initiated the callback.
@@ -33,12 +41,10 @@ typedef void (*C4ConnectedClientDocumentResultCallback)(C4ConnectedClient* clien
                                                 C4DocResponse doc,
                                                 void * C4NULLABLE context);
 /** Creates a new connected client
-    @param socket  The web socket through which it is connected
-    @param options  Fleece-encoded dictionary of optional parameters.
+    @param params  Connected Client parameters (see above.)
     @param error  Error will be written here if the function fails.
     @result A new C4ConnectedClient, or NULL on failure. */
-C4ConnectedClient* c4client_new(C4Socket* socket,
-                                C4Slice options,
+C4ConnectedClient* c4client_new(C4ConnectedClientParameters params,
                                 C4Error* error) C4API;
 
 /** Gets the current revision of a document from the server.
