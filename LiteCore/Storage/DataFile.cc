@@ -358,7 +358,6 @@ namespace litecore {
 
     void DataFile::unregisterQuery(Query *query) {
         unique_lock<mutex> lock(_queriesMutex);
-        printf("DataFile::unregisterQuery\n");
         _queries.erase(query);
     }
 
