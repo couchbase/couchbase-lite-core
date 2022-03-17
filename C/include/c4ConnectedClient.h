@@ -69,5 +69,11 @@ void c4client_getDoc(C4ConnectedClient*,
                      void * C4NULLABLE context,
                      C4Error* error) C4API;
 
+void c4client_start(C4ConnectedClient*) C4API;
+
+void c4client_stop(C4ConnectedClient*) C4API;
+
+void c4client_free(C4ConnectedClient*) C4API;
+
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END

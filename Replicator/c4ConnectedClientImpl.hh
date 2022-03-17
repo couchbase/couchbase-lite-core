@@ -43,26 +43,26 @@ namespace litecore::client {
         
         virtual void clientGotHTTPResponse(ConnectedClient* C4NONNULL client,
                                            int status,
-                                           const websocket::Headers &headers) {
+                                           const websocket::Headers &headers) override {
             // TODO: implement
         }
         virtual void clientGotTLSCertificate(ConnectedClient* C4NONNULL client,
-                                             slice certData) {
+                                             slice certData) override {
             // TODO: implement
         }
         virtual void clientStatusChanged(ConnectedClient* C4NONNULL client,
-                                         ConnectedClient::ActivityLevel level) {
+                                         ConnectedClient::ActivityLevel level) override {
             // TODO: implement
         }
-        virtual void clientConnectionClosed(ConnectedClient* C4NONNULL client, const CloseStatus& status)  {
+        virtual void clientConnectionClosed(ConnectedClient* C4NONNULL client, const CloseStatus& status) override {
             // TODO: implement
         }
         
 #pragma mark -
-        virtual Async<C4DocResponse> getDoc(C4Slice docID,
+        Async<C4DocResponse> getDoc(C4Slice docID,
                                             C4Slice collectionID,
                                             C4Slice unlessRevID,
-                                            bool asFleece) noexcept {
+                                            bool asFleece) noexcept override {
             return _client->getDoc(docID,
                                    collectionID,
                                    unlessRevID,
@@ -75,11 +75,21 @@ namespace litecore::client {
                 };
             });
         }
+        
+        virtual void start() noexcept override {
+            _client->start();
+        }
+        
+        virtual void stop() noexcept override {
+            _client->stop();
+        }
                 
     private:
         ~C4ConnectedClientImpl() {
             if (_client)
-                _client->stop();
+                _client->terminate();
+            
+            _client = nullptr;
         }
         
         alloc_slice effectiveURL(slice);

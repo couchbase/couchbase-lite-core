@@ -45,3 +45,18 @@ void c4client_getDoc(C4ConnectedClient* client,
     } catchError(outError);
     return;
 }
+
+void c4client_start(C4ConnectedClient* client) noexcept {
+    client->start();
+}
+
+void c4client_stop(C4ConnectedClient* client) noexcept {
+    client->stop();
+}
+
+void c4client_free(C4ConnectedClient* client) noexcept {
+    if (!client)
+        return;
+    release(client);
+}
+
