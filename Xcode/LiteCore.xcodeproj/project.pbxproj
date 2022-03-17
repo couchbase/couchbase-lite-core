@@ -27,6 +27,7 @@
 
 /* Begin PBXBuildFile section */
 		1A5726B227D74A8900A9B412 /* c4ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */; };
+		1A6F835127E305710055C9F8 /* c4ConnectedClientImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1A6F835027E305710055C9F8 /* c4ConnectedClientImpl.cc */; };
 		1AE26CC727D9C432003C3043 /* c4ConnectedClient.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1AE26CC927D9C488003C3043 /* c4ConnectedClient_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
@@ -836,6 +837,7 @@
 /* Begin PBXFileReference section */
 		1A5726AF27D7474900A9B412 /* c4ConnectedClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClient.hh; sourceTree = "<group>"; };
 		1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient.cc; sourceTree = "<group>"; };
+		1A6F835027E305710055C9F8 /* c4ConnectedClientImpl.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClientImpl.cc; sourceTree = "<group>"; };
 		1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4ConnectedClient.h; sourceTree = "<group>"; };
 		1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient_CAPI.cc; sourceTree = "<group>"; };
 		1AE26CCA27D9D456003C3043 /* c4ConnectedClientImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClientImpl.hh; sourceTree = "<group>"; };
@@ -2643,6 +2645,7 @@
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 				1AE26CCA27D9D456003C3043 /* c4ConnectedClientImpl.hh */,
+				1A6F835027E305710055C9F8 /* c4ConnectedClientImpl.cc */,
 				1A5726B127D74A8900A9B412 /* c4ConnectedClient.cc */,
 				1AE26CC827D9C488003C3043 /* c4ConnectedClient_CAPI.cc */,
 			);
@@ -4346,6 +4349,7 @@
 				2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
+				1A6F835127E305710055C9F8 /* c4ConnectedClientImpl.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D9655C23355DC900F4A51C /* SecureSymmetricCrypto.cc in Sources */,
 				27469D05233D58D900A1EE1A /* c4Certificate.cc in Sources */,
