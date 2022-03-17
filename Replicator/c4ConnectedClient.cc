@@ -25,4 +25,3 @@ using namespace fleece;
         throw;
     }
 }
-

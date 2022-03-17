@@ -19,11 +19,16 @@ C4_ASSUME_NONNULL_BEGIN
 
 struct C4ConnectedClient  : public fleece::RefCounted,
                             public fleece::InstanceCountedIn<C4Database>,
-                            C4Base  {
+                            C4Base
+{
     
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
                                 
     virtual litecore::actor::Async<C4DocResponse> getDoc(C4Slice, C4Slice, C4Slice, bool) noexcept=0;
+
+    virtual void start() noexcept=0;
+
+    virtual void stop() noexcept=0;
 };
 
 C4_ASSUME_NONNULL_END

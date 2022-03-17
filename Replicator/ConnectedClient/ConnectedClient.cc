@@ -45,7 +45,7 @@ namespace litecore::client {
 
 
     void ConnectedClient::setStatus(ActivityLevel status) {
-        if (status != _status) {
+        if (status != _status && _delegate) {
             _status = status;
             _delegate->clientStatusChanged(this, status);
         }
@@ -75,6 +75,10 @@ namespace litecore::client {
             connection().close(closeCode, message);
             setStatus(kC4Stopping);
         }
+    }
+
+    void ConnectedClient::terminate() {
+        _delegate = nullptr;
     }
 
 

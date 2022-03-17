@@ -58,7 +58,10 @@ namespace litecore::client {
         };
 
         void start();
+        
         void stop();
+        
+        void terminate();
 
         //---- CRUD!
 
