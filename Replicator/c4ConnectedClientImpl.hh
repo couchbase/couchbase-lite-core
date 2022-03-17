@@ -17,11 +17,11 @@
 
 namespace litecore::client {
 
-    using namespace litecore::client;
     using namespace litecore::websocket;
     using namespace litecore::actor;
     
     struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
+        
     public:
         C4ConnectedClientImpl(const C4ConnectedClientParameters &params) {
             if (params.socketFactory) {
@@ -30,9 +30,9 @@ namespace litecore::client {
                 _socketFactory = &_customSocketFactory;
             }
             
-            auto webSocket = new repl::C4SocketImpl(alloc_slice(params.url),
+            auto webSocket = new repl::C4SocketImpl(effectiveURL(params.url),
                                                     Role::Client,
-                                                    alloc_slice(params.options),
+                                                    socketOptions(),
                                                     _socketFactory);
             _client = new ConnectedClient(webSocket, *this, fleece::AllocedDict(params.options));
             _client->start();
@@ -75,12 +75,19 @@ namespace litecore::client {
                 };
             });
         }
-
+                
     private:
+        ~C4ConnectedClientImpl() {
+            if (_client)
+                _client->stop();
+        }
+        
+        alloc_slice effectiveURL(slice);
+        alloc_slice socketOptions();
+        
         Retained<ConnectedClient>           _client;
         const C4SocketFactory* C4NULLABLE   _socketFactory {nullptr};
         C4SocketFactory                     _customSocketFactory {};  // Storage for *_socketFactory if non-null
-        void* C4NULLABLE                    _nativeHandle;
     };
 
 }
