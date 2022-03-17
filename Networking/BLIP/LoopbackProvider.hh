@@ -103,8 +103,12 @@ namespace litecore { namespace websocket {
         void received(Message *message,
                       actor::delay_t latency = actor::delay_t::zero())
         {
-            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_queueMessage), retained(message));
-            _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_dequeueMessage));
+            if (latency == actor::delay_t::zero()) {
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_received), retained(message));
+            } else {
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_queueMessage), retained(message));
+                _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_dequeueMessage));
+            }
         }
 
         void closed(CloseReason reason =kWebSocketClose,
