@@ -1,6 +1,10 @@
 function(setup_build)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
+    if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
+        cmake_path(REMOVE_EXTENSION LITECORE_PREBUILT_LIB OUTPUT_VARIABLE FilesToCopy)
+    else()
+        set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
+    endif()
 
     target_sources(
         C4Tests PRIVATE
