@@ -36,11 +36,15 @@ typedef struct C4ConnectedClientParameters {
  
  @param client   The client that initiated the callback.
  @param doc  Resuting document response.
+ @param err Error will be written here if the get-document fails.
  @param context  user-defined parameter given when registering the callback. */
 typedef void (*C4ConnectedClientDocumentResultCallback)(C4ConnectedClient* client,
-                                                C4DocResponse doc,
-                                                void * C4NULLABLE context);
-/** Creates a new connected client
+                                                        C4DocResponse doc,
+                                                        C4Error err,
+                                                        void * C4NULLABLE context);
+/** Creates a new connected client and starts it automatically.
+    \note No need to call the c4client_start().
+ 
     @param params  Connected Client parameters (see above.)
     @param error  Error will be written here if the function fails.
     @result A new C4ConnectedClient, or NULL on failure. */
@@ -69,10 +73,17 @@ void c4client_getDoc(C4ConnectedClient*,
                      void * C4NULLABLE context,
                      C4Error* error) C4API;
 
+/** Tells a connected client to start.
+    \note This function is thread-safe.*/
 void c4client_start(C4ConnectedClient*) C4API;
 
+/** Tells a replicator to stop.
+    \note This function is thread-safe.  */
 void c4client_stop(C4ConnectedClient*) C4API;
 
+/** Frees a connected client reference.
+    Does not stop the connected client -- if the client still has other internal references,
+    it will keep going. If you need the client to stop, call \ref c4client_stop first. */
 void c4client_free(C4ConnectedClient*) C4API;
 
 C4API_END_DECLS
