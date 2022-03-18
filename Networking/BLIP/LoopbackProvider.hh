@@ -38,7 +38,7 @@ namespace litecore { namespace websocket {
         class Driver;
     private:
         Retained<Driver> _driver;
-        actor::delay_t _latency;
+        const actor::delay_t _latency;
 
     public:
 
@@ -320,7 +320,7 @@ namespace litecore { namespace websocket {
             friend class LoopbackWebSocket;
 
             Retained<LoopbackWebSocket> _webSocket;
-            actor::delay_t _latency {0.0};
+            const actor::delay_t _latency {0.0};
             Retained<LoopbackWebSocket> _peer;
             websocket::Headers _responseHeaders;
             std::atomic<size_t> _bufferedBytes {0};
