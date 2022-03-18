@@ -32,71 +32,54 @@ Here is a list of the current values you can expect from each variant:
 """
 
 import argparse
-import hashlib
 import os
-
+from fetch_litecore_base import download_variant, VALID_PLATFORMS, resolve_platform_path, import_platform_extensions, calculate_variants, check_variant, conditional_print, set_quiet
 from git import Repo
-from fetch_litecore_base import conditional_print, check_variant, download_variant, resolve_platform_path, import_platform_extensions, calculate_variants, VALID_PLATFORMS, set_quiet
 
-def calculate_sha(ce: str, ee: str) -> str:
-    """Calculates the SHA to use for download based on CE and EE repository path
-    
-    Parameters
-    ----------
-    ce : str
-        The path to the LiteCore CE repo
-    ee : str
-        The path to the EE repo, or None if CE is to be used
+def validate_build(build: str):
+    build_parts = build.split('-')
+    if len(build_parts) < 2:
+        print(f"!!! Malformed build {build}.  Must be of the form 3.1.0-97 or 3.1.0-97-EE")
+        exit(1)
 
-    Returns
-    -------
-    str
-        The hash to use to find the relevant download artifact on the build server
-    """
+    return build_parts
 
-    CE_repo = Repo(ce)
-    CE_sha = str(CE_repo.head.commit)
-    print(f"--- CE SHA detected as {CE_sha}")
-
-    if not ee:
-        return CE_sha
+def download_litecore(variants, debug: bool, dry: bool, build: str, repo: str, ee: bool, output_path: str) -> int:
+    download_folder = ""
+    if build is None:
+        ce_repo = Repo(repo)
+        for line in ce_repo.commit().message.splitlines():
+            if line.startswith("Build-To-Use:"):
+                build = line.split(":")[1].strip()
+                build_parts = validate_build(build)
+                download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{build_parts[0]}/{build_parts[1]}"
         
-    EE_repo = Repo(ee)
-    EE_sha = str(EE_repo.head.commit)
-    print(f"--- EE SHA detected as {EE_sha}")
+    if download_folder == "":
+        print("!!! Build-To-Use not found in commit message, aborting...")
+        exit(1)
 
-    amalgamation = CE_sha + EE_sha
-    m = hashlib.sha1()
-    m.update(amalgamation.encode('ascii'))
-    final_sha = m.digest().hex()
-    print(f"--- Final SHA: {final_sha}")
-    return final_sha
+    build_parts = validate_build(build)
+    download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{build_parts[0]}/{build_parts[1]}"
 
-def download_litecore(variants, debug: bool, dry: bool, sha: str, ce: str, ee: str, output_path: str) -> int:
-    if not sha:
-        sha = calculate_sha(ce, ee)
-
-    download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/sha/{sha[0:2]}/{sha}"
     conditional_print(f"--- Using URL {download_folder}/<filename>")
     
     failed_count = 0
     for v in variants:
         if dry:
-            failed_count += check_variant(download_folder, v, None, debug, output_path)
+            failed_count += check_variant(download_folder, v, build, debug, output_path)
         else:
-            failed_count += download_variant(download_folder, v, None, debug, output_path)
+            failed_count += download_variant(download_folder, v, build, debug, output_path)
 
     return failed_count
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Fetch a specific prebuilt LiteCore by SHA')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Fetch a specific prebuilt LiteCore by build version')
     parser.add_argument('-v', '--variants', nargs='+', type=str, help='A space separated list of variants to download', required=True, choices=VALID_PLATFORMS, metavar="PLATFORM")
     parser.add_argument('-d', '--debug', action='store_true', help='If specified, download debug variants')
     parser.add_argument('-D', '--dry-run', action='store_true', help='Check for existience of indicated artifacts, but do not perform download')
-    parser.add_argument('-s', '--sha', type=str, help="The SHA to download.  If not provided, calculated based on the provided CE and (optionally) EE repos.  Required if CE not specified.")
-    parser.add_argument('--ce', type=str, help="The path to the CE LiteCore repo.  Required if SHA not specified.")
-    parser.add_argument('--ee', type=str, help="The path to the EE LiteCore repo")
+    parser.add_argument('-b', '--build', type=str, help="The build version to download (e.g. 3.1.0-97 or 3.1.0-97-EE).  Required if repo is not specified.")
+    parser.add_argument('--ee', action='store_true', help="If specified, download the enterprise variant of LiteCore")
+    parser.add_argument('-r', '--repo', type=str, help="The path to the CE LiteCore repo.  Required if build not specified.")
     parser.add_argument('-x', '--ext-path', type=str, help="The path in which the platform specific extensions to this script are defined (platform_fetch.py).  If a relative path is passed, it will be relative to fetch_litecore.py.  By default it is the current working directory.",
         default=os.getcwd())
     parser.add_argument('-o', '--output', type=str, help="The directory in which to save the downloaded artifacts", default=os.getcwd())
@@ -104,8 +87,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not args.sha and not args.ce:
-        print("!!! Neither SHA nor CE repo path nor build defined, aborting...")
+    if not args.build and not args.repo:
+        print("!!! Neither CE repo path nor build defined, aborting...")
         parser.print_usage()
         exit(-1)
 
@@ -114,4 +97,4 @@ if __name__ == '__main__':
 
     final_variants = calculate_variants(args.variants)
     set_quiet(args.quiet)
-    exit(download_litecore(final_variants, args.debug, args.dry_run, args.sha, args.ce, args.ee, args.output))
+    exit(download_litecore(final_variants, args.debug, args.dry_run, args.build, args.repo, args.ee, args.output))
