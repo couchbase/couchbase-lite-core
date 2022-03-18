@@ -21,13 +21,16 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                             public fleece::InstanceCountedIn<C4Database>,
                             C4Base
 {
-    
+    /// Creates a new ConnectedClient
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
-                                
+                    
+    /// Gets the current revision of a document from the server.
     virtual litecore::actor::Async<C4DocResponse> getDoc(C4Slice, C4Slice, C4Slice, bool) noexcept=0;
 
+    /// Tells a connected client to start.
     virtual void start() noexcept=0;
 
+    /// Tells a replicator to stop.
     virtual void stop() noexcept=0;
 };
 

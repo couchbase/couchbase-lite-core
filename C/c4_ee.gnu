@@ -455,6 +455,9 @@ CBL {
 
 		c4client_new;
 		c4client_getDoc;
+		c4client_start;
+		c4client_stop;
+		c4client_free;
 
 
 		c4db_URINameFromPath;

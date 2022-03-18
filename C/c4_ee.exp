@@ -455,6 +455,9 @@ _FLValue_ToJSON5
 
 _c4client_new
 _c4client_getDoc
+_c4client_start
+_c4client_stop
+_c4client_free
 
 
 _c4db_URINameFromPath

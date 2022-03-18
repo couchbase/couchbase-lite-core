@@ -103,5 +103,4 @@ namespace litecore::client {
         const C4SocketFactory* C4NULLABLE   _socketFactory {nullptr};
         C4SocketFactory                     _customSocketFactory {};  // Storage for *_socketFactory if non-null
     };
-
 }
