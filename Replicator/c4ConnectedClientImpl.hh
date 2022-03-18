@@ -14,6 +14,7 @@
 #include "ConnectedClient.hh"
 #include "C4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
+#include "c4Internal.hh"
 
 namespace litecore::client {
 
@@ -77,10 +78,12 @@ namespace litecore::client {
         }
         
         virtual void start() noexcept override {
+            LOCK(_mutex);
             _client->start();
         }
         
         virtual void stop() noexcept override {
+            LOCK(_mutex);
             _client->stop();
         }
                 
@@ -95,6 +98,7 @@ namespace litecore::client {
         alloc_slice effectiveURL(slice);
         alloc_slice socketOptions();
         
+        mutable std::mutex                  _mutex;
         Retained<ConnectedClient>           _client;
         const C4SocketFactory* C4NULLABLE   _socketFactory {nullptr};
         C4SocketFactory                     _customSocketFactory {};  // Storage for *_socketFactory if non-null

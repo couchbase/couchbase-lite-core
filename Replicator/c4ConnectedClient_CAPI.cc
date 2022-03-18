@@ -36,11 +36,9 @@ void c4client_getDoc(C4ConnectedClient* client,
     try {
         auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
         res.then([=](C4DocResponse response) {
-            return callback(client, response, context);
-        }).onError([&](C4Error err) {
-            // TODO: Handle the error here:
-            
-            printf("\n Error occured: %s\n", err.description().c_str());
+            return callback(client, response, {}, context);
+        }).onError([=](C4Error err) {
+            return callback(client, {}, err, context);
         });
     } catchError(outError);
     return;
