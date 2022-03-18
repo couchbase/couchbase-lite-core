@@ -10,7 +10,6 @@
 // the file licenses/APL2.txt.
 //
 
-
 #include "c4ConnectedClientImpl.hh"
 #include "Replicator.hh"
 
