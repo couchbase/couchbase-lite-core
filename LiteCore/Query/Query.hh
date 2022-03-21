@@ -87,13 +87,17 @@ namespace litecore {
 
     protected:
         Query(DataFile&, slice expression, QueryLanguage language);
-        virtual ~Query();
+        virtual ~Query() { disposing(); }
+        // disposing() should be called as the first statement in destructor.
+        // This applies to derived classes as well.
+        virtual void disposing();
         virtual std::string loggingIdentifier() const override;
         
     private:
         DataFile* _dataFile;
         alloc_slice _expression;
         QueryLanguage _language;
+        bool _disposed {false};
     };
 
 

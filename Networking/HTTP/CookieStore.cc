@@ -16,6 +16,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
+#include "fleece/Expert.hh"
 #include <iterator>
 #include <regex>
 #include <string>
@@ -189,7 +190,7 @@ namespace litecore { namespace net {
     CookieStore::CookieStore(slice data) {
         if (data.size == 0)
             return;
-        Array cookies = Value::fromData(data).asArray();
+        Array cookies = ValueFromData(data).asArray();
         if (!cookies) {
             Warn("Couldn't parse persisted cookie store!");
             return;

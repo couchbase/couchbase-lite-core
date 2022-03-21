@@ -14,6 +14,7 @@
 #include "Certificate.hh"
 #include "Address.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <functional>
 #include <memory>
 #include <thread>

@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Message.hh"
 #include "Logging.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
 #include <functional>
 

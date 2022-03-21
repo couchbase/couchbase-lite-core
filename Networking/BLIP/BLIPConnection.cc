@@ -266,8 +266,6 @@ namespace litecore { namespace blip {
                 msg->disconnected();
                 return;
             }
-            if (msg->_number == 0)
-                msg->_number = ++_lastMessageNo;
             if (BLIPLog.willLog(LogLevel::Verbose)) {
                 if (!msg->isAck() || BLIPLog.willLog(LogLevel::Debug))
                     logVerbose("Sending %s", msg->description().c_str());
@@ -347,6 +345,10 @@ namespace litecore { namespace blip {
                 Retained<MessageOut> msg(_outbox.pop());
                 if (!msg)
                     break;
+
+                // Assign the message number for new requests.
+                if (msg->_number == 0)
+                    msg->_number = ++_lastMessageNo;
 
                 FrameFlags frameFlags;
                 {

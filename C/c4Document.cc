@@ -29,6 +29,7 @@
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
+#include "fleece/FLExpert.h"
 #include "FleeceImpl.hh"
 #include "DeepIterator.hh"
 

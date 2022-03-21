@@ -14,6 +14,7 @@
 #include "c4ReplicatorTypes.h"
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 
 namespace litecore { namespace repl {
 
