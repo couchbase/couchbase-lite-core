@@ -73,7 +73,7 @@ Details:
         print("SLACK_WEBHOOK_URL not set, skipping slack ping...")
         return
 
-    with requests.post(os.environ["SLACK_WEBHOOK_URL"], json={"text": f"@here {message_to_send}"}) as r:
+    with requests.post(os.environ["SLACK_WEBHOOK_URL"], json={"text": f"<!here> {message_to_send}"}) as r:
         r.raise_for_status()
 
 if __name__ == "__main__":
