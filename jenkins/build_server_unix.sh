@@ -11,9 +11,10 @@
 set -x
 # Global define
 PRODUCT=${1}
-BLD_NUM=${2}
-VERSION=${3}
+VERSION=${2}
+BLD_NUM=${3}
 EDITION=${4}
+SHA_VERSION=${5}
 
 if [[ -z "${WORKSPACE}" ]]; then
     WORKSPACE=`pwd`
@@ -62,10 +63,12 @@ ios_xcode_proj="couchbase-lite-core/Xcode/LiteCore.xcodeproj"
 macosx_lib="libLiteCore.dylib"
 
 #create artifacts dir for publishing to latestbuild
-ARTIFACTS_DIR=${WORKSPACE}/artifacts/${VERSION:0:2}/${VERSION}
-mkdir -p ${ARTIFACTS_DIR}
+ARTIFACTS_SHA_DIR=${WORKSPACE}/artifacts/${PRODUCT}/sha/${SHA_VERSION:0:2}/${SHA_VERSION}
+ARTIFACTS_BUILD_DIR=${WORKSPACE}/artifacts/${PRODUCT}/${VERSION}/${BLD_NUM}
+mkdir -p ${ARTIFACTS_SHA_DIR}
+mkdir -p ${ARTIFACTS_BUILD_DIR}
 
-echo VERSION=${VERSION}
+echo SHA_VERSION=${SHA_VERSION}
 # Global define end
 
 build_xcode_binaries () {
@@ -120,8 +123,8 @@ create_pkgs () {
     # Create zip package
     for FLAVOR in release debug
     do
-        PACKAGE_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}.${PKG_TYPE}
-        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
+        PACKAGE_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-${FLAVOR}.${PKG_TYPE}
+        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
         echo
         echo  "=== Creating ${WORKSPACE}/${PACKAGE_NAME} package ==="
         echo
@@ -151,16 +154,16 @@ create_prop () {
     pushd ${WORKSPACE}
     echo "PRODUCT=${PRODUCT}"  >> ${PROP_FILE}
     echo "BLD_NUM=${BLD_NUM}"  >> ${PROP_FILE}
-    echo "VERSION=${VERSION}" >> ${PROP_FILE}
+    echo "VERSION=${SHA_VERSION}" >> ${PROP_FILE}
     echo "PKG_TYPE=${PKG_TYPE}" >> ${PROP_FILE}
     if [[ ${OS} == 'ios' ]]; then
-        echo "DEBUG_IOS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "RELEASE_IOS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "DEBUG_IOS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "RELEASE_IOS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
     else
-        echo "DEBUG_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "RELEASE_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "SYMBOLS_DEBUG_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "SYMBOLS_RELEASE_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "DEBUG_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "RELEASE_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_DEBUG_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug-symbols.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_RELEASE_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release-symbols.${PKG_TYPE}" >> ${PROP_FILE}
     fi
 
     echo
@@ -174,21 +177,25 @@ create_prop () {
 
 prep_artifacts () {
     # Prepare artifact directory for latestbuild publishing
-    pushd ${ARTIFACTS_DIR}
 
-    # Nexus strips "release" from ${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}.  It also transforms
-    # ${PRODUCT}-${OS}-${VERSION}-<debug|release>-symbols.${PKG_TYPE} to 
-    # ${PRODUCT}-${OS}-${VERSION}-symbols-<release|debug>.${PKG_TYPE}.  In order to minic this on
+    # Nexus strips "release" from ${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}.  It also transforms
+    # ${PRODUCT}-${OS}-${SHA_VERSION}-<debug|release>-symbols.${PKG_TYPE} to
+    # ${PRODUCT}-${OS}-${SHA_VERSION}-symbols-<release|debug>.${PKG_TYPE}.  In order to minic this on
     # latestbuild, these pkgs are renamed accordingly during copy
 
-    cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE} ${PRODUCT}-${OS}-debug.${PKG_TYPE}
-    cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE} ${PRODUCT}-${OS}.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE} ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}-debug.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE} ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}.${PKG_TYPE}
+
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE} ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}-debug.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE} ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}.${PKG_TYPE}
 
     if [[ ${OS} != 'ios' ]]; then
-        cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}  ${PRODUCT}-${OS}-symbols-debug.${PKG_TYPE}
-        cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE} ${PRODUCT}-${OS}-symbols-release.${PKG_TYPE}
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug-symbols.${PKG_TYPE}  ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}-symbols-debug.${PKG_TYPE}
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release-symbols.${PKG_TYPE} ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}-symbols.${PKG_TYPE}
+
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug-symbols.${PKG_TYPE}  ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}-symbols-debug.${PKG_TYPE}
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release-symbols.${PKG_TYPE} ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}-symbols.${PKG_TYPE}
     fi
-    popd
 }
 
 

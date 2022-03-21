@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Fleece Value Accessors</title>
+<title>LiteCore: Fleece Values</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -63,31 +63,16 @@ $(function() {
 
 <div class="header">
   <div class="summary">
-<a href="#define-members">Macros</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
-<div class="title">Fleece Value Accessors</div>  </div>
+<div class="title">Fleece Values</div>  </div>
 </div><!--header-->
 <div class="contents">
 
 <p>The core Fleece data type is FLValue: a reference to a value in Fleece-encoded data.  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:ga98e9c44ddd1863d8dec00473072c264a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga98e9c44ddd1863d8dec00473072c264a">FLTimestampNone</a>&#160;&#160;&#160;INT64_MIN</td></tr>
-<tr class="memdesc:ga98e9c44ddd1863d8dec00473072c264a"><td class="mdescLeft">&#160;</td><td class="mdescRight">A value representing a missing timestamp; returned when a date cannot be parsed.  <a href="group___f_l_value.html#ga98e9c44ddd1863d8dec00473072c264a">More...</a><br /></td></tr>
-<tr class="separator:ga98e9c44ddd1863d8dec00473072c264a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:ga154a21cd670c72d154c8bb78b4b3a5d3"><td class="memItemLeft" align="right" valign="top">typedef int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a></td></tr>
-<tr class="memdesc:ga154a21cd670c72d154c8bb78b4b3a5d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">A timestamp, expressed as milliseconds since the Unix epoch (1-1-1970 midnight UTC.)  <a href="group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3">More...</a><br /></td></tr>
-<tr class="separator:ga154a21cd670c72d154c8bb78b4b3a5d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
 <tr class="memitem:ga014bcb88cbd4bdea3eea9db300bc5b2c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga014bcb88cbd4bdea3eea9db300bc5b2c">FLValueType</a> { <br />
@@ -105,90 +90,90 @@ Enumerations</h2></td></tr>
 <tr class="memdesc:ga014bcb88cbd4bdea3eea9db300bc5b2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Types of Fleece values.  <a href="group___f_l_value.html#ga014bcb88cbd4bdea3eea9db300bc5b2c">More...</a><br /></td></tr>
 <tr class="separator:ga014bcb88cbd4bdea3eea9db300bc5b2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ga12ee00fa93cb9fb1c8fc52860dcc96e2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_value.html#ga014bcb88cbd4bdea3eea9db300bc5b2c">FLValueType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga12ee00fa93cb9fb1c8fc52860dcc96e2">FLValue_GetType</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga12ee00fa93cb9fb1c8fc52860dcc96e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the data type of an arbitrary Value.  <a href="group___f_l_value.html#ga12ee00fa93cb9fb1c8fc52860dcc96e2">More...</a><br /></td></tr>
-<tr class="separator:ga12ee00fa93cb9fb1c8fc52860dcc96e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9ae43e49d403ae5cec5ed634cdc85574"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga9ae43e49d403ae5cec5ed634cdc85574">FLValue_IsInteger</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga9ae43e49d403ae5cec5ed634cdc85574"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents an integer.  <a href="group___f_l_value.html#ga9ae43e49d403ae5cec5ed634cdc85574">More...</a><br /></td></tr>
-<tr class="separator:ga9ae43e49d403ae5cec5ed634cdc85574"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaca6cb5060aa001d2aef5a79470187732"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaca6cb5060aa001d2aef5a79470187732">FLValue_IsUnsigned</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gaca6cb5060aa001d2aef5a79470187732"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents an integer &gt;= 2^63.  <a href="group___f_l_value.html#gaca6cb5060aa001d2aef5a79470187732">More...</a><br /></td></tr>
-<tr class="separator:gaca6cb5060aa001d2aef5a79470187732"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac5d1f1608c47b374da88f2cb93f90c00"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gac5d1f1608c47b374da88f2cb93f90c00">FLValue_IsDouble</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:gac5d1f1608c47b374da88f2cb93f90c00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents a 64-bit floating-point number.  <a href="group___f_l_value.html#gac5d1f1608c47b374da88f2cb93f90c00">More...</a><br /></td></tr>
-<tr class="separator:gac5d1f1608c47b374da88f2cb93f90c00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaafdd786b3d06b21121f3fb15c264e24e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaafdd786b3d06b21121f3fb15c264e24e">FLValue_AsBool</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gaafdd786b3d06b21121f3fb15c264e24e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to boolean.  <a href="group___f_l_value.html#gaafdd786b3d06b21121f3fb15c264e24e">More...</a><br /></td></tr>
-<tr class="separator:gaafdd786b3d06b21121f3fb15c264e24e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafa6c8121369adaedd9a64a97b2a363c7"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gafa6c8121369adaedd9a64a97b2a363c7">FLValue_AsInt</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gafa6c8121369adaedd9a64a97b2a363c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to an integer.  <a href="group___f_l_value.html#gafa6c8121369adaedd9a64a97b2a363c7">More...</a><br /></td></tr>
-<tr class="separator:gafa6c8121369adaedd9a64a97b2a363c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf4d0eb4c6edc674c61dd5e1292ae96f1"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaf4d0eb4c6edc674c61dd5e1292ae96f1">FLValue_AsUnsigned</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gaf4d0eb4c6edc674c61dd5e1292ae96f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to an unsigned integer.  <a href="group___f_l_value.html#gaf4d0eb4c6edc674c61dd5e1292ae96f1">More...</a><br /></td></tr>
-<tr class="separator:gaf4d0eb4c6edc674c61dd5e1292ae96f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac66d37c258f8beb38bfbe1002330f811"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gac66d37c258f8beb38bfbe1002330f811">FLValue_AsFloat</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gac66d37c258f8beb38bfbe1002330f811"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to a 32-bit floating point number.  <a href="group___f_l_value.html#gac66d37c258f8beb38bfbe1002330f811">More...</a><br /></td></tr>
-<tr class="separator:gac66d37c258f8beb38bfbe1002330f811"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad8c7bfa87157f7ac165a94614b2419b9"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad8c7bfa87157f7ac165a94614b2419b9">FLValue_AsDouble</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gad8c7bfa87157f7ac165a94614b2419b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to a 32-bit floating point number.  <a href="group___f_l_value.html#gad8c7bfa87157f7ac165a94614b2419b9">More...</a><br /></td></tr>
-<tr class="separator:gad8c7bfa87157f7ac165a94614b2419b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6cdf295e82daa16d4abc1d0c71bb2b41"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga6cdf295e82daa16d4abc1d0c71bb2b41">FLValue_AsString</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga6cdf295e82daa16d4abc1d0c71bb2b41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the exact contents of a string value, or null for all other types.  <a href="group___f_l_value.html#ga6cdf295e82daa16d4abc1d0c71bb2b41">More...</a><br /></td></tr>
-<tr class="separator:ga6cdf295e82daa16d4abc1d0c71bb2b41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga16d6bed282e53a530772a1a8bbf38592"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga16d6bed282e53a530772a1a8bbf38592">FLValue_AsTimestamp</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga16d6bed282e53a530772a1a8bbf38592"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a value to a timestamp, in milliseconds since Unix epoch, or INT64_MIN on failure.  <a href="group___f_l_value.html#ga16d6bed282e53a530772a1a8bbf38592">More...</a><br /></td></tr>
-<tr class="separator:ga16d6bed282e53a530772a1a8bbf38592"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabafd1ea5b4cb28665cd2c10a8042468e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gabafd1ea5b4cb28665cd2c10a8042468e">FLValue_AsData</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gabafd1ea5b4cb28665cd2c10a8042468e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the exact contents of a data value, or null for all other types.  <a href="group___f_l_value.html#gabafd1ea5b4cb28665cd2c10a8042468e">More...</a><br /></td></tr>
-<tr class="separator:gabafd1ea5b4cb28665cd2c10a8042468e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga18c67651cd6e58093d5a3be06aae07d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga18c67651cd6e58093d5a3be06aae07d8">FLValue_AsArray</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga18c67651cd6e58093d5a3be06aae07d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">If a FLValue represents an array, returns it cast to FLArray, else NULL.  <a href="group___f_l_value.html#ga18c67651cd6e58093d5a3be06aae07d8">More...</a><br /></td></tr>
-<tr class="separator:ga18c67651cd6e58093d5a3be06aae07d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad1dc09167e1c37e3cfae9152d22b2d86"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad1dc09167e1c37e3cfae9152d22b2d86">FLValue_AsDict</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gad1dc09167e1c37e3cfae9152d22b2d86"><td class="mdescLeft">&#160;</td><td class="mdescRight">If a FLValue represents a dictionary, returns it as an FLDict, else NULL.  <a href="group___f_l_value.html#gad1dc09167e1c37e3cfae9152d22b2d86">More...</a><br /></td></tr>
-<tr class="separator:gad1dc09167e1c37e3cfae9152d22b2d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2d9f9dd804594a7a2aa9f865eee23ada"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga2d9f9dd804594a7a2aa9f865eee23ada">FLValue_ToString</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:ga2d9f9dd804594a7a2aa9f865eee23ada"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string representation of any scalar value.  <a href="group___f_l_value.html#ga2d9f9dd804594a7a2aa9f865eee23ada">More...</a><br /></td></tr>
-<tr class="separator:ga2d9f9dd804594a7a2aa9f865eee23ada"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8245f0fa404b45fe3f56420ab58f2555"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga8245f0fa404b45fe3f56420ab58f2555">FLValue_IsEqual</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v1, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v2) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga8245f0fa404b45fe3f56420ab58f2555"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compares two values for equality.  <a href="group___f_l_value.html#ga8245f0fa404b45fe3f56420ab58f2555">More...</a><br /></td></tr>
-<tr class="separator:ga8245f0fa404b45fe3f56420ab58f2555"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga36121dc7d66de32aadb2dbd1dd437ee0">FLValue_IsMutable</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is mutable.  <a href="group___f_l_value.html#ga36121dc7d66de32aadb2dbd1dd437ee0">More...</a><br /></td></tr>
-<tr class="separator:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga616f1402c801430fd85c22a5a5b615b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga616f1402c801430fd85c22a5a5b615b6">FLValue_NewString</a> (<a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
-<tr class="memdesc:ga616f1402c801430fd85c22a5a5b615b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a string value on the heap.  <a href="group___f_l_value.html#ga616f1402c801430fd85c22a5a5b615b6">More...</a><br /></td></tr>
-<tr class="separator:ga616f1402c801430fd85c22a5a5b615b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafe94f44e9423d550628cc6a1a4f110ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gafe94f44e9423d550628cc6a1a4f110ee">FLValue_NewData</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="memdesc:gafe94f44e9423d550628cc6a1a4f110ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a data/blob value on the heap.  <a href="group___f_l_value.html#gafe94f44e9423d550628cc6a1a4f110ee">More...</a><br /></td></tr>
-<tr class="separator:gafe94f44e9423d550628cc6a1a4f110ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ga49e1400fb063717c297119931e15c501"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">kFLNullValue</a></td></tr>
-<tr class="memdesc:ga49e1400fb063717c297119931e15c501"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constant null value (not a NULL pointer!)  <a href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">More...</a><br /></td></tr>
+<tr class="memitem:ga49e1400fb063717c297119931e15c501"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_f_l_base_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">kFLNullValue</a></td></tr>
+<tr class="memdesc:ga49e1400fb063717c297119931e15c501"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constant null value (like a JSON <code>null</code>, not a NULL pointer!)  <a href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">More...</a><br /></td></tr>
 <tr class="separator:ga49e1400fb063717c297119931e15c501"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8e4f6ccbc67fe5df8620b9dc1c780a22"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">kFLUndefinedValue</a></td></tr>
+<tr class="memitem:ga8e4f6ccbc67fe5df8620b9dc1c780a22"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_f_l_base_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">kFLUndefinedValue</a></td></tr>
 <tr class="memdesc:ga8e4f6ccbc67fe5df8620b9dc1c780a22"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constant undefined value.  <a href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">More...</a><br /></td></tr>
 <tr class="separator:ga8e4f6ccbc67fe5df8620b9dc1c780a22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader">Ref-counting (mutable values only)</h2></td></tr>
-<tr class="memitem:gad4be845483cb5d8d5728d0681f00e50d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad4be845483cb5d8d5728d0681f00e50d">FLValue_Retain</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:gad4be845483cb5d8d5728d0681f00e50d"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this value is mutable (and thus heap-based) its ref-count is incremented.  <a href="group___f_l_value.html#gad4be845483cb5d8d5728d0681f00e50d">More...</a><br /></td></tr>
-<tr class="separator:gad4be845483cb5d8d5728d0681f00e50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad9722234a46fa70152469c2499e9246c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad9722234a46fa70152469c2499e9246c">FLValue_Release</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:gad9722234a46fa70152469c2499e9246c"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this value is mutable (and thus heap-based) its ref-count is decremented, and if it reaches zero the value is freed.  <a href="group___f_l_value.html#gad9722234a46fa70152469c2499e9246c">More...</a><br /></td></tr>
-<tr class="separator:gad9722234a46fa70152469c2499e9246c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa5c46cdbf9d49a49b9fbd52becf2bf78"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaa5c46cdbf9d49a49b9fbd52becf2bf78">FLArray_Retain</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> v)</td></tr>
-<tr class="separator:gaa5c46cdbf9d49a49b9fbd52becf2bf78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0ddab799a4c5a408b46b71c00ef945b2"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga0ddab799a4c5a408b46b71c00ef945b2">FLArray_Release</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> v)</td></tr>
-<tr class="separator:ga0ddab799a4c5a408b46b71c00ef945b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6acff14f3e0893c06975a7b64079383f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga6acff14f3e0893c06975a7b64079383f">FLDict_Retain</a> (<a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> v)</td></tr>
-<tr class="separator:ga6acff14f3e0893c06975a7b64079383f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaafc47667d4c5aea2ce19c7518ab2e896"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaafc47667d4c5aea2ce19c7518ab2e896">FLDict_Release</a> (<a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> v)</td></tr>
-<tr class="separator:gaafc47667d4c5aea2ce19c7518ab2e896"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Accessors</h2></td></tr>
+<tr class="memitem:gaa0c26aa3eb304387c56066c5d7abd0e5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_value.html#ga014bcb88cbd4bdea3eea9db300bc5b2c">FLValueType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaa0c26aa3eb304387c56066c5d7abd0e5">FLValue_GetType</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gaa0c26aa3eb304387c56066c5d7abd0e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the data type of an arbitrary value.  <a href="group___f_l_value.html#gaa0c26aa3eb304387c56066c5d7abd0e5">More...</a><br /></td></tr>
+<tr class="separator:gaa0c26aa3eb304387c56066c5d7abd0e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ef5f68d5356cf455a6a07654d93ceed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga5ef5f68d5356cf455a6a07654d93ceed">FLValue_IsInteger</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga5ef5f68d5356cf455a6a07654d93ceed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents an integer.  <a href="group___f_l_value.html#ga5ef5f68d5356cf455a6a07654d93ceed">More...</a><br /></td></tr>
+<tr class="separator:ga5ef5f68d5356cf455a6a07654d93ceed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga26743362054fee33f99a742a3299dbe4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga26743362054fee33f99a742a3299dbe4">FLValue_IsUnsigned</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga26743362054fee33f99a742a3299dbe4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents an integer &gt;= 2^63.  <a href="group___f_l_value.html#ga26743362054fee33f99a742a3299dbe4">More...</a><br /></td></tr>
+<tr class="separator:ga26743362054fee33f99a742a3299dbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b7ad9163cf1fd88fa103116f2d47345"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga5b7ad9163cf1fd88fa103116f2d47345">FLValue_IsDouble</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:ga5b7ad9163cf1fd88fa103116f2d47345"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is non-NULL and represents a 64-bit floating-point number.  <a href="group___f_l_value.html#ga5b7ad9163cf1fd88fa103116f2d47345">More...</a><br /></td></tr>
+<tr class="separator:ga5b7ad9163cf1fd88fa103116f2d47345"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ced12b09efa9b9a8f4e4da866336393"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga4ced12b09efa9b9a8f4e4da866336393">FLValue_AsBool</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga4ced12b09efa9b9a8f4e4da866336393"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to boolean.  <a href="group___f_l_value.html#ga4ced12b09efa9b9a8f4e4da866336393">More...</a><br /></td></tr>
+<tr class="separator:ga4ced12b09efa9b9a8f4e4da866336393"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga06e05458c131bf1a64d4591e84bf17e0"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga06e05458c131bf1a64d4591e84bf17e0">FLValue_AsInt</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga06e05458c131bf1a64d4591e84bf17e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to an integer.  <a href="group___f_l_value.html#ga06e05458c131bf1a64d4591e84bf17e0">More...</a><br /></td></tr>
+<tr class="separator:ga06e05458c131bf1a64d4591e84bf17e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacc2e8e18782ccfc15e868f6edbe2e02b"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gacc2e8e18782ccfc15e868f6edbe2e02b">FLValue_AsUnsigned</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gacc2e8e18782ccfc15e868f6edbe2e02b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to an unsigned integer.  <a href="group___f_l_value.html#gacc2e8e18782ccfc15e868f6edbe2e02b">More...</a><br /></td></tr>
+<tr class="separator:gacc2e8e18782ccfc15e868f6edbe2e02b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga28a1feb9240d900b65e4940414f6b0ed"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga28a1feb9240d900b65e4940414f6b0ed">FLValue_AsFloat</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga28a1feb9240d900b65e4940414f6b0ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to a 32-bit floating point number.  <a href="group___f_l_value.html#ga28a1feb9240d900b65e4940414f6b0ed">More...</a><br /></td></tr>
+<tr class="separator:ga28a1feb9240d900b65e4940414f6b0ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabad177ad24aff72fd2fdd6e04ba87e0e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gabad177ad24aff72fd2fdd6e04ba87e0e">FLValue_AsDouble</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gabad177ad24aff72fd2fdd6e04ba87e0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value coerced to a 32-bit floating point number.  <a href="group___f_l_value.html#gabad177ad24aff72fd2fdd6e04ba87e0e">More...</a><br /></td></tr>
+<tr class="separator:gabad177ad24aff72fd2fdd6e04ba87e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f1a002ea8c8259d2bedb53950973460"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga1f1a002ea8c8259d2bedb53950973460">FLValue_AsString</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga1f1a002ea8c8259d2bedb53950973460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the exact contents of a string value, or null for all other types.  <a href="group___f_l_value.html#ga1f1a002ea8c8259d2bedb53950973460">More...</a><br /></td></tr>
+<tr class="separator:ga1f1a002ea8c8259d2bedb53950973460"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0a1028042618ab79a0bc971689d79692"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga0a1028042618ab79a0bc971689d79692">FLValue_AsTimestamp</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga0a1028042618ab79a0bc971689d79692"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a value to a timestamp, in milliseconds since Unix epoch, or INT64_MIN on failure.  <a href="group___f_l_value.html#ga0a1028042618ab79a0bc971689d79692">More...</a><br /></td></tr>
+<tr class="separator:ga0a1028042618ab79a0bc971689d79692"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4201adc4e82c80e4aa0659c4f4fe70ab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga4201adc4e82c80e4aa0659c4f4fe70ab">FLValue_AsData</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga4201adc4e82c80e4aa0659c4f4fe70ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the exact contents of a data value, or null for all other types.  <a href="group___f_l_value.html#ga4201adc4e82c80e4aa0659c4f4fe70ab">More...</a><br /></td></tr>
+<tr class="separator:ga4201adc4e82c80e4aa0659c4f4fe70ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f8c01d22faf96bcc6d608d9dd32ef81"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga1f8c01d22faf96bcc6d608d9dd32ef81">FLValue_AsArray</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga1f8c01d22faf96bcc6d608d9dd32ef81"><td class="mdescLeft">&#160;</td><td class="mdescRight">If a FLValue represents an array, returns it cast to FLArray, else NULL.  <a href="group___f_l_value.html#ga1f8c01d22faf96bcc6d608d9dd32ef81">More...</a><br /></td></tr>
+<tr class="separator:ga1f8c01d22faf96bcc6d608d9dd32ef81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6b596eaead1003a29f2ed7fbbfcfb57f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga6b596eaead1003a29f2ed7fbbfcfb57f">FLValue_AsDict</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga6b596eaead1003a29f2ed7fbbfcfb57f"><td class="mdescLeft">&#160;</td><td class="mdescRight">If a FLValue represents a dictionary, returns it as an FLDict, else NULL.  <a href="group___f_l_value.html#ga6b596eaead1003a29f2ed7fbbfcfb57f">More...</a><br /></td></tr>
+<tr class="separator:ga6b596eaead1003a29f2ed7fbbfcfb57f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3653b6f97e4274fe6db5c6bbea64ad60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga3653b6f97e4274fe6db5c6bbea64ad60">FLValue_ToString</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:ga3653b6f97e4274fe6db5c6bbea64ad60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string representation of any scalar value.  <a href="group___f_l_value.html#ga3653b6f97e4274fe6db5c6bbea64ad60">More...</a><br /></td></tr>
+<tr class="separator:ga3653b6f97e4274fe6db5c6bbea64ad60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga15b7fd52cf7680987ed2d55755e2145e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga15b7fd52cf7680987ed2d55755e2145e">FLValue_IsEqual</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v1, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v2) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga15b7fd52cf7680987ed2d55755e2145e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compares two values for equality.  <a href="group___f_l_value.html#ga15b7fd52cf7680987ed2d55755e2145e">More...</a><br /></td></tr>
+<tr class="separator:ga15b7fd52cf7680987ed2d55755e2145e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7cead1bf7f9af6f771b70c3855728190"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga7cead1bf7f9af6f771b70c3855728190">FLValue_IsMutable</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga7cead1bf7f9af6f771b70c3855728190"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is mutable.  <a href="group___f_l_value.html#ga7cead1bf7f9af6f771b70c3855728190">More...</a><br /></td></tr>
+<tr class="separator:ga7cead1bf7f9af6f771b70c3855728190"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Reference-Counting</h2></td></tr>
+<tr><td class="ititle" colspan="2"><p><a class="anchor" id="amgrpe21a46697abba738e1b3ec0c76c7e5ad"></a>Retaining a value extends its lifespan (and that of any values contained in it) until at least such time that it's released.</p>
+<ul>
+<li>If the value comes from an <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>, the doc's ref-count will be incremented.</li>
+<li>If the value is mutable (heap-based), it has its own ref-count that will be incremented. <dl class="section warning"><dt>Warning</dt><dd>Values obtained from <a class="el" href="group___obscure.html#gaee5130b1ff0cada002af03a7e4aa2cb7">FLValue_FromData</a> don't match either of those critera. Their lifespan is entirely determined by the caller-provided data pointer, so the retain call can't do anything about it. In this situation Fleece will throw an exception like "Can't retain immutable Value that's not part of a Doc." </dd></dl>
+</li>
+</ul>
+</td></tr>
+<tr class="memitem:gaa60b402a0e623d68fd46a5506c1e1675"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaa60b402a0e623d68fd46a5506c1e1675">FLValue_Retain</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:gaa60b402a0e623d68fd46a5506c1e1675"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increments the ref-count of a mutable value, or of an immutable value's <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>.  <a href="group___f_l_value.html#gaa60b402a0e623d68fd46a5506c1e1675">More...</a><br /></td></tr>
+<tr class="separator:gaa60b402a0e623d68fd46a5506c1e1675"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa413874ed5b4ad3143b28369bf6b9140"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaa413874ed5b4ad3143b28369bf6b9140">FLValue_Release</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:gaa413874ed5b4ad3143b28369bf6b9140"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrements the ref-count of a mutable value, or of an immutable value's <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>.  <a href="group___f_l_value.html#gaa413874ed5b4ad3143b28369bf6b9140">More...</a><br /></td></tr>
+<tr class="separator:gaa413874ed5b4ad3143b28369bf6b9140"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39b06a665f96faf8ff0761ae0bfb1bb9"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga39b06a665f96faf8ff0761ae0bfb1bb9">FLArray_Retain</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v)</td></tr>
+<tr class="separator:ga39b06a665f96faf8ff0761ae0bfb1bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f08f44f09babdd2b7ba624fd5ccef5d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga1f08f44f09babdd2b7ba624fd5ccef5d">FLArray_Release</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v)</td></tr>
+<tr class="separator:ga1f08f44f09babdd2b7ba624fd5ccef5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4cf12a028b37087aab8674bf8c96ab93"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga4cf12a028b37087aab8674bf8c96ab93">FLDict_Retain</a> (<a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v)</td></tr>
+<tr class="separator:ga4cf12a028b37087aab8674bf8c96ab93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0977f85fb5638b373a9117a39aeeef47"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga0977f85fb5638b373a9117a39aeeef47">FLDict_Release</a> (<a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v)</td></tr>
+<tr class="separator:ga0977f85fb5638b373a9117a39aeeef47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>The core Fleece data type is FLValue: a reference to a value in Fleece-encoded data. </p>
@@ -197,41 +182,9 @@ Variables</h2></td></tr>
 <li>Scalar data types &ndash; numbers, booleans, null, strings, data &ndash; can be accessed using individual functions of the form <code>FLValue_As...</code>; these return the scalar value, or a default zero/false/null value if the value is not of that type.</li>
 <li>Collections &ndash; arrays and dictionaries &ndash; have their own "subclasses": FLArray and FLDict. These have the same pointer values as an FLValue but are not type-compatible in C. To coerce an FLValue to a collection type, call FLValue_AsArray or FLValue_AsDict. If the value is not of that type, NULL is returned. (FLArray and FLDict are documented fully in their own sections.)</li>
 </ul>
-<p>It's always safe to pass a NULL value to an accessor; that goes for FLDict and FLArray as well as FLValue. The result will be a default value of that type, e.g. false or 0 or NULL, unless otherwise specified. </p>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="ga98e9c44ddd1863d8dec00473072c264a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga98e9c44ddd1863d8dec00473072c264a">&#9670;&nbsp;</a></span>FLTimestampNone</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define FLTimestampNone&#160;&#160;&#160;INT64_MIN</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A value representing a missing timestamp; returned when a date cannot be parsed. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ga154a21cd670c72d154c8bb78b4b3a5d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga154a21cd670c72d154c8bb78b4b3a5d3">&#9670;&nbsp;</a></span>FLTimestamp</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int64_t <a class="el" href="group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A timestamp, expressed as milliseconds since the Unix epoch (1-1-1970 midnight UTC.) </p>
-
-</div>
-</div>
+<dl class="section note"><dt>Note</dt><dd>It's safe to pass a <code>NULL</code> pointer to an <code>FLValue</code>, <code>FLArray</code> or <code>FLDict</code> function parameter, except where specifically noted. </dd>
+<dd>
+Conversion/accessor functions that take <code>FLValue</code> won't complain if the value isn't of the desired subtype; they'll just return some default like 0 or <code>NULL</code>. For example, <a class="el" href="group___f_l_value.html#ga06e05458c131bf1a64d4591e84bf17e0">FLValue_AsInt</a> will return 0 if passed a non-integer value or NULL. </dd></dl>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="ga014bcb88cbd4bdea3eea9db300bc5b2c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga014bcb88cbd4bdea3eea9db300bc5b2c">&#9670;&nbsp;</a></span>FLValueType</h2>
@@ -248,7 +201,8 @@ Variables</h2></td></tr>
 <p>Types of Fleece values. </p>
 <p>Basically JSON, with the addition of Data (raw blob). </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2caca767e3bb3dfde57b95c368b59b16c8c"></a>kFLUndefined&#160;</td><td class="fielddoc"><p>Type of a NULL pointer, i.e. no such value, like JSON <code>undefined</code>. Also the type of a value created by <a class="el" href="group___f_l_encoder.html#ga5ea7752719836fe0cf3228bced68e881" title="Writes an undefined value to an encoder.">FLEncoder_WriteUndefined()</a>. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2caca767e3bb3dfde57b95c368b59b16c8c"></a>kFLUndefined&#160;</td><td class="fielddoc"><p>Type of a NULL pointer, i.e. </p>
+<p>no such value, like JSON <code>undefined</code>. Also the type of <a class="el" href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">kFLUndefinedValue</a>, and of a value created by <a class="el" href="group___f_l_encoder.html#ga5ea7752719836fe0cf3228bced68e881">FLEncoder_WriteUndefined()</a>. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2cab0720bb289b8b6844eeea08b3a372ac1"></a>kFLNull&#160;</td><td class="fielddoc"><p>Equivalent to a JSON 'null'. </p>
 </td></tr>
@@ -262,15 +216,15 @@ Variables</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2ca01c74f9f95901f642a5afe449e618f1a"></a>kFLArray&#160;</td><td class="fielddoc"><p>An array of values. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2cad06f7505402821d1d49b022081aea2a4"></a>kFLDict&#160;</td><td class="fielddoc"><p>A mapping of strings to values. </p>
+<tr><td class="fieldname"><a id="gga014bcb88cbd4bdea3eea9db300bc5b2cad06f7505402821d1d49b022081aea2a4"></a>kFLDict&#160;</td><td class="fielddoc"><p>A mapping of strings to values (AKA "object" in JSON.) </p>
 </td></tr>
 </table>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga0ddab799a4c5a408b46b71c00ef945b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0ddab799a4c5a408b46b71c00ef945b2">&#9670;&nbsp;</a></span>FLArray_Release()</h2>
+<a id="ga1f08f44f09babdd2b7ba624fd5ccef5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1f08f44f09babdd2b7ba624fd5ccef5d">&#9670;&nbsp;</a></span>FLArray_Release()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -281,7 +235,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">static void FLArray_Release </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -295,8 +249,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa5c46cdbf9d49a49b9fbd52becf2bf78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa5c46cdbf9d49a49b9fbd52becf2bf78">&#9670;&nbsp;</a></span>FLArray_Retain()</h2>
+<a id="ga39b06a665f96faf8ff0761ae0bfb1bb9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39b06a665f96faf8ff0761ae0bfb1bb9">&#9670;&nbsp;</a></span>FLArray_Retain()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -305,9 +259,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> FLArray_Retain </td>
+          <td class="memname">static <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_Retain </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -321,8 +275,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaafc47667d4c5aea2ce19c7518ab2e896"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaafc47667d4c5aea2ce19c7518ab2e896">&#9670;&nbsp;</a></span>FLDict_Release()</h2>
+<a id="ga0977f85fb5638b373a9117a39aeeef47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0977f85fb5638b373a9117a39aeeef47">&#9670;&nbsp;</a></span>FLDict_Release()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -333,7 +287,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">static void FLDict_Release </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -347,8 +301,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6acff14f3e0893c06975a7b64079383f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6acff14f3e0893c06975a7b64079383f">&#9670;&nbsp;</a></span>FLDict_Retain()</h2>
+<a id="ga4cf12a028b37087aab8674bf8c96ab93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4cf12a028b37087aab8674bf8c96ab93">&#9670;&nbsp;</a></span>FLDict_Retain()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -357,9 +311,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> FLDict_Retain </td>
+          <td class="memname">static <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLDict_Retain </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -373,17 +327,17 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga18c67651cd6e58093d5a3be06aae07d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga18c67651cd6e58093d5a3be06aae07d8">&#9670;&nbsp;</a></span>FLValue_AsArray()</h2>
+<a id="ga1f8c01d22faf96bcc6d608d9dd32ef81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1f8c01d22faf96bcc6d608d9dd32ef81">&#9670;&nbsp;</a></span>FLValue_AsArray()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> FLValue_AsArray </td>
+          <td class="memname"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLValue_AsArray </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -393,8 +347,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaafdd786b3d06b21121f3fb15c264e24e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaafdd786b3d06b21121f3fb15c264e24e">&#9670;&nbsp;</a></span>FLValue_AsBool()</h2>
+<a id="ga4ced12b09efa9b9a8f4e4da866336393"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4ced12b09efa9b9a8f4e4da866336393">&#9670;&nbsp;</a></span>FLValue_AsBool()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -403,7 +357,7 @@ Variables</h2></td></tr>
           <td class="memname">bool FLValue_AsBool </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -414,8 +368,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gabafd1ea5b4cb28665cd2c10a8042468e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabafd1ea5b4cb28665cd2c10a8042468e">&#9670;&nbsp;</a></span>FLValue_AsData()</h2>
+<a id="ga4201adc4e82c80e4aa0659c4f4fe70ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4201adc4e82c80e4aa0659c4f4fe70ab">&#9670;&nbsp;</a></span>FLValue_AsData()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -424,7 +378,7 @@ Variables</h2></td></tr>
           <td class="memname"><a class="el" href="struct_f_l_slice.html">FLSlice</a> FLValue_AsData </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -434,17 +388,17 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gad1dc09167e1c37e3cfae9152d22b2d86"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad1dc09167e1c37e3cfae9152d22b2d86">&#9670;&nbsp;</a></span>FLValue_AsDict()</h2>
+<a id="ga6b596eaead1003a29f2ed7fbbfcfb57f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6b596eaead1003a29f2ed7fbbfcfb57f">&#9670;&nbsp;</a></span>FLValue_AsDict()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> FLValue_AsDict </td>
+          <td class="memname"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLValue_AsDict </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -454,8 +408,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gad8c7bfa87157f7ac165a94614b2419b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad8c7bfa87157f7ac165a94614b2419b9">&#9670;&nbsp;</a></span>FLValue_AsDouble()</h2>
+<a id="gabad177ad24aff72fd2fdd6e04ba87e0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabad177ad24aff72fd2fdd6e04ba87e0e">&#9670;&nbsp;</a></span>FLValue_AsDouble()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -464,7 +418,7 @@ Variables</h2></td></tr>
           <td class="memname">double FLValue_AsDouble </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -475,8 +429,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gac66d37c258f8beb38bfbe1002330f811"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac66d37c258f8beb38bfbe1002330f811">&#9670;&nbsp;</a></span>FLValue_AsFloat()</h2>
+<a id="ga28a1feb9240d900b65e4940414f6b0ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga28a1feb9240d900b65e4940414f6b0ed">&#9670;&nbsp;</a></span>FLValue_AsFloat()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -485,7 +439,7 @@ Variables</h2></td></tr>
           <td class="memname">float FLValue_AsFloat </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -496,8 +450,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gafa6c8121369adaedd9a64a97b2a363c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafa6c8121369adaedd9a64a97b2a363c7">&#9670;&nbsp;</a></span>FLValue_AsInt()</h2>
+<a id="ga06e05458c131bf1a64d4591e84bf17e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga06e05458c131bf1a64d4591e84bf17e0">&#9670;&nbsp;</a></span>FLValue_AsInt()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -506,7 +460,7 @@ Variables</h2></td></tr>
           <td class="memname">int64_t FLValue_AsInt </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -517,8 +471,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6cdf295e82daa16d4abc1d0c71bb2b41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6cdf295e82daa16d4abc1d0c71bb2b41">&#9670;&nbsp;</a></span>FLValue_AsString()</h2>
+<a id="ga1f1a002ea8c8259d2bedb53950973460"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1f1a002ea8c8259d2bedb53950973460">&#9670;&nbsp;</a></span>FLValue_AsString()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -527,7 +481,7 @@ Variables</h2></td></tr>
           <td class="memname"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> FLValue_AsString </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -537,17 +491,17 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga16d6bed282e53a530772a1a8bbf38592"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga16d6bed282e53a530772a1a8bbf38592">&#9670;&nbsp;</a></span>FLValue_AsTimestamp()</h2>
+<a id="ga0a1028042618ab79a0bc971689d79692"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0a1028042618ab79a0bc971689d79692">&#9670;&nbsp;</a></span>FLValue_AsTimestamp()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a> FLValue_AsTimestamp </td>
+          <td class="memname"><a class="el" href="group__types.html#ga154a21cd670c72d154c8bb78b4b3a5d3">FLTimestamp</a> FLValue_AsTimestamp </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -561,8 +515,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaf4d0eb4c6edc674c61dd5e1292ae96f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf4d0eb4c6edc674c61dd5e1292ae96f1">&#9670;&nbsp;</a></span>FLValue_AsUnsigned()</h2>
+<a id="gacc2e8e18782ccfc15e868f6edbe2e02b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacc2e8e18782ccfc15e868f6edbe2e02b">&#9670;&nbsp;</a></span>FLValue_AsUnsigned()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -571,7 +525,7 @@ Variables</h2></td></tr>
           <td class="memname">uint64_t FLValue_AsUnsigned </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -582,8 +536,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga12ee00fa93cb9fb1c8fc52860dcc96e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga12ee00fa93cb9fb1c8fc52860dcc96e2">&#9670;&nbsp;</a></span>FLValue_GetType()</h2>
+<a id="gaa0c26aa3eb304387c56066c5d7abd0e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa0c26aa3eb304387c56066c5d7abd0e5">&#9670;&nbsp;</a></span>FLValue_GetType()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -592,19 +546,19 @@ Variables</h2></td></tr>
           <td class="memname"><a class="el" href="group___f_l_value.html#ga014bcb88cbd4bdea3eea9db300bc5b2c">FLValueType</a> FLValue_GetType </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the data type of an arbitrary Value. </p>
-<p>(If the parameter is a NULL pointer, returns <code>kFLUndefined</code>.) </p>
+<p>Returns the data type of an arbitrary value. </p>
+<p>If the parameter is a NULL pointer, returns <code>kFLUndefined</code>. </p>
 
 </div>
 </div>
-<a id="gac5d1f1608c47b374da88f2cb93f90c00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac5d1f1608c47b374da88f2cb93f90c00">&#9670;&nbsp;</a></span>FLValue_IsDouble()</h2>
+<a id="ga5b7ad9163cf1fd88fa103116f2d47345"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5b7ad9163cf1fd88fa103116f2d47345">&#9670;&nbsp;</a></span>FLValue_IsDouble()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -613,7 +567,7 @@ Variables</h2></td></tr>
           <td class="memname">bool FLValue_IsDouble </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -623,8 +577,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga8245f0fa404b45fe3f56420ab58f2555"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8245f0fa404b45fe3f56420ab58f2555">&#9670;&nbsp;</a></span>FLValue_IsEqual()</h2>
+<a id="ga15b7fd52cf7680987ed2d55755e2145e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga15b7fd52cf7680987ed2d55755e2145e">&#9670;&nbsp;</a></span>FLValue_IsEqual()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -632,13 +586,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool FLValue_IsEqual </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>v2</em>&#160;</td>
         </tr>
         <tr>
@@ -654,8 +608,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga9ae43e49d403ae5cec5ed634cdc85574"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9ae43e49d403ae5cec5ed634cdc85574">&#9670;&nbsp;</a></span>FLValue_IsInteger()</h2>
+<a id="ga5ef5f68d5356cf455a6a07654d93ceed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5ef5f68d5356cf455a6a07654d93ceed">&#9670;&nbsp;</a></span>FLValue_IsInteger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -664,7 +618,7 @@ Variables</h2></td></tr>
           <td class="memname">bool FLValue_IsInteger </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -674,8 +628,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga36121dc7d66de32aadb2dbd1dd437ee0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga36121dc7d66de32aadb2dbd1dd437ee0">&#9670;&nbsp;</a></span>FLValue_IsMutable()</h2>
+<a id="ga7cead1bf7f9af6f771b70c3855728190"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7cead1bf7f9af6f771b70c3855728190">&#9670;&nbsp;</a></span>FLValue_IsMutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -684,7 +638,7 @@ Variables</h2></td></tr>
           <td class="memname">bool FLValue_IsMutable </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -694,8 +648,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaca6cb5060aa001d2aef5a79470187732"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaca6cb5060aa001d2aef5a79470187732">&#9670;&nbsp;</a></span>FLValue_IsUnsigned()</h2>
+<a id="ga26743362054fee33f99a742a3299dbe4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga26743362054fee33f99a742a3299dbe4">&#9670;&nbsp;</a></span>FLValue_IsUnsigned()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -704,7 +658,7 @@ Variables</h2></td></tr>
           <td class="memname">bool FLValue_IsUnsigned </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -715,50 +669,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gafe94f44e9423d550628cc6a1a4f110ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafe94f44e9423d550628cc6a1a4f110ee">&#9670;&nbsp;</a></span>FLValue_NewData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_NewData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Allocates a data/blob value on the heap. </p>
-<p>This is rarely needed &ndash; usually you'd just add data to a mutable Array or Dict directly using one of their "...SetData or "...AppendData" methods. </p>
-
-</div>
-</div>
-<a id="ga616f1402c801430fd85c22a5a5b615b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga616f1402c801430fd85c22a5a5b615b6">&#9670;&nbsp;</a></span>FLValue_NewString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_NewString </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Allocates a string value on the heap. </p>
-<p>This is rarely needed &ndash; usually you'd just add a string to a mutable Array or Dict directly using one of their "...SetString" or "...AppendString" methods. </p>
-
-</div>
-</div>
-<a id="gad9722234a46fa70152469c2499e9246c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad9722234a46fa70152469c2499e9246c">&#9670;&nbsp;</a></span>FLValue_Release()</h2>
+<a id="gaa413874ed5b4ad3143b28369bf6b9140"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa413874ed5b4ad3143b28369bf6b9140">&#9670;&nbsp;</a></span>FLValue_Release()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -767,40 +679,40 @@ Variables</h2></td></tr>
           <td class="memname">void FLValue_Release </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>If this value is mutable (and thus heap-based) its ref-count is decremented, and if it reaches zero the value is freed. </p>
-<p>If the value is not mutable, this call does nothing. </p>
+<p>Decrements the ref-count of a mutable value, or of an immutable value's <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>. </p>
+<p>If the ref-count reaches zero the corresponding object is freed. </p><dl class="section warning"><dt>Warning</dt><dd>It is illegal to call this on a value obtained from <a class="el" href="group___obscure.html#gaee5130b1ff0cada002af03a7e4aa2cb7">FLValue_FromData</a>. </dd></dl>
 
 </div>
 </div>
-<a id="gad4be845483cb5d8d5728d0681f00e50d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad4be845483cb5d8d5728d0681f00e50d">&#9670;&nbsp;</a></span>FLValue_Retain()</h2>
+<a id="gaa60b402a0e623d68fd46a5506c1e1675"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa60b402a0e623d68fd46a5506c1e1675">&#9670;&nbsp;</a></span>FLValue_Retain()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_Retain </td>
+          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLValue_Retain </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>If this value is mutable (and thus heap-based) its ref-count is incremented. </p>
-<p>Otherwise, this call does nothing. </p>
+<p>Increments the ref-count of a mutable value, or of an immutable value's <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>. </p>
+<dl class="section warning"><dt>Warning</dt><dd>It is illegal to call this on a value obtained from <a class="el" href="group___obscure.html#gaee5130b1ff0cada002af03a7e4aa2cb7">FLValue_FromData</a>. </dd></dl>
 
 </div>
 </div>
-<a id="ga2d9f9dd804594a7a2aa9f865eee23ada"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2d9f9dd804594a7a2aa9f865eee23ada">&#9670;&nbsp;</a></span>FLValue_ToString()</h2>
+<a id="ga3653b6f97e4274fe6db5c6bbea64ad60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3653b6f97e4274fe6db5c6bbea64ad60">&#9670;&nbsp;</a></span>FLValue_ToString()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -809,7 +721,7 @@ Variables</h2></td></tr>
           <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLValue_ToString </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -831,7 +743,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> kFLNullValue</td>
+          <td class="memname"><a class="el" href="_f_l_base_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> kFLNullValue</td>
         </tr>
       </table>
   </td>
@@ -841,7 +753,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>A constant null value (not a NULL pointer!) </p>
+<p>A constant null value (like a JSON <code>null</code>, not a NULL pointer!) </p>
 
 </div>
 </div>
@@ -855,7 +767,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> kFLUndefinedValue</td>
+          <td class="memname"><a class="el" href="_f_l_base_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> kFLUndefinedValue</td>
         </tr>
       </table>
   </td>
@@ -866,6 +778,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>A constant undefined value. </p>
+<p>This is not a NULL pointer, but its type is <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2caca767e3bb3dfde57b95c368b59b16c8c">kFLUndefined</a>. It can be stored in an <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> or <a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> if you really, really need to store an undefined/empty value, not just a JSON <code>null</code>. </p>
 
 </div>
 </div>

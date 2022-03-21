@@ -22,9 +22,9 @@ if [ ! -f C/tests/C4Tests ]; then
 fi
 
 pushd LiteCore/tests
-LiteCoreTestsQuiet=1 ./CppTests -r list
+./CppTests -r quiet
 popd
 
 pushd C/tests
-LiteCoreTestsQuiet=1 ./C4Tests -r list
+./C4Tests -r quiet
 popd

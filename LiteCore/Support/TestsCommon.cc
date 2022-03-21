@@ -74,7 +74,7 @@ void InitTestLogging() {
             string path = logDir.path();
             C4Log("Beginning binary logging to %s", path.c_str());
             C4Error error;
-            if (!c4log_writeToBinaryFile({kC4LogVerbose, slice(path), 16*1024, 1, false},
+            if (!c4log_writeToBinaryFile({kC4LogDebug, slice(path), 16*1024, 1, false},
                                          &error)) {
                 C4WarnError("TestsCommon: Can't log to binary file, %.*s",
                             SPLAT(c4error_getDescription(error)));
