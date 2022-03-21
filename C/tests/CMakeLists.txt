@@ -77,12 +77,25 @@ target_compile_definitions(
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
-target_link_libraries(
-    C4Tests PRIVATE
-    LiteCore
-    BLIPStatic
-    FleeceBase
-)
+if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
+    message(STATUS "Skipping LiteCore build, using ${LITECORE_PREBUILT_LIB}")
+    target_link_libraries(
+        C4Tests PRIVATE
+        ${LITECORE_PREBUILT_LIB}
+        FleeceBase
+    )
+
+    target_include_directories(
+        C4Tests PRIVATE
+        ${TOP}C/include
+    )
+else()
+    target_link_libraries(
+        C4Tests PRIVATE
+        LiteCore
+        FleeceBase
+    )
+endif()
 
 target_include_directories(
     C4Tests PRIVATE
