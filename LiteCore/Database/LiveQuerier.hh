@@ -13,7 +13,7 @@
 #pragma once
 #include "c4Base.h"
 #include "Actor.hh"
-#include "InstanceCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "BackgroundDB.hh"
 #include "Query.hh"
 #include "Logging.hh"

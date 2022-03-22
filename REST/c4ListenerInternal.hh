@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4Listener.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 
 namespace litecore { namespace REST {
     class Listener;

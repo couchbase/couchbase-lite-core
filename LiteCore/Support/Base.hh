@@ -13,9 +13,9 @@
 #pragma once
 
 #include "fleece/slice.hh"
-#include "PlatformCompat.hh"
-#include "function_ref.hh"
-#include "RefCounted.hh"
+#include "fleece/PlatformCompat.hh"
+#include "fleece/function_ref.hh"
+#include "fleece/RefCounted.hh"
 #include "c4Base.h"
 #include <memory>
 #include <stddef.h>

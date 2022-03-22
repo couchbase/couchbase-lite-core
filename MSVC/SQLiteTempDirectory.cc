@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 #include <sqlite3.h>

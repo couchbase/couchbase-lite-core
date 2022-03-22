@@ -14,7 +14,7 @@
 #include "VersionVector.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "slice_stream.hh"
 #include <math.h>

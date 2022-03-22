@@ -21,7 +21,7 @@
 #include "Base64.hh"
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include <chrono>
 
 using namespace litecore::actor;

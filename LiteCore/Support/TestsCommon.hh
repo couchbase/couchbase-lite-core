@@ -13,7 +13,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "JSON5.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <chrono>
 #include <iostream>
 #include <set>

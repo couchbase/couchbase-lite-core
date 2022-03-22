@@ -356,6 +356,13 @@ install (
     OPTIONAL
 )
 
+file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
+file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
+list(FILTER FLEECE_HEADERS EXCLUDE REGEX .*Expert.hh?)
+
+install(FILES ${LITECORE_HEADERS} DESTINATION include)
+install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
+
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
