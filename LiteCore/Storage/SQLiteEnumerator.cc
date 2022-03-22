@@ -81,7 +81,9 @@ namespace litecore {
         sql << (options.contentOption >= kEntireBody     ? ", extra" : ", length(extra)");
         sql << (mayHaveExpiration() ? ", expiration" : ", 0");
         sql << " FROM kv_" << name();
-        
+        if (options.onlyConflicts)
+            sql << " INDEXED BY kv_" << name() << "_conflicts";
+
         bool writeAnd = false;
         if (bySequence) {
             sql << " WHERE sequence > ?";
