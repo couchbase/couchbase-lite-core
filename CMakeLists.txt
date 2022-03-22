@@ -5,7 +5,7 @@ This is the CMake project for building the Couchbase LiteCore project.  This is 
 It makes use of a lot of source and sublibraries and some cannot be used on their own.  Here are a description of the
 targets that result from this project:
 
-BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
+BLIPObjects - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
@@ -247,11 +247,6 @@ target_compile_definitions(
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
-target_compile_definitions(
-    LiteCoreStatic PUBLIC
-    -DLITECORE_EXPORTS
-)
-
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
          PRIVATE
@@ -332,9 +327,9 @@ target_include_directories(
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(
     LiteCoreStatic INTERFACE
+    $<TARGET_OBJECTS:BLIPObjects>
     FleeceStatic
     SQLite3_UnicodeSN
-    BLIPStatic
     mbedcrypto
     mbedtls
     mbedx509
