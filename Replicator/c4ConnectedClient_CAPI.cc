@@ -1,7 +1,7 @@
 //
-// c4ConnectedClient.cpp
+// c4ConnectedClient_CAPI.cpp
 //
-// Copyright 2017-Present Couchbase, Inc.
+// Copyright 2022-Present Couchbase, Inc.
 //
 // Use of this software is governed by the Business Source License included
 // in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
@@ -18,9 +18,9 @@
 
 using namespace litecore::repl;
 
-C4ConnectedClient* c4client_new(C4ConnectedClientParameters params, C4Error *outError) noexcept {
+C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Error *outError) noexcept {
     try {
-        return C4ConnectedClient::newClient(params).detach();
+        return C4ConnectedClient::newClient(*params).detach();
     } catchError(outError);
     return nullptr;
 }
@@ -36,9 +36,9 @@ void c4client_getDoc(C4ConnectedClient* client,
     try {
         auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
         res.then([=](C4DocResponse response) {
-            return callback(client, response, {}, context);
+            return callback(client, &response, nullptr, context);
         }).onError([=](C4Error err) {
-            return callback(client, {}, err, context);
+            return callback(client, nullptr, &err, context);
         });
     } catchError(outError);
     return;

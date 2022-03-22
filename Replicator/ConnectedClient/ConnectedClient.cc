@@ -24,6 +24,7 @@
 #include "MessageBuilder.hh"
 #include "NumConversion.hh"
 #include "WebSocketInterface.hh"
+#include "c4Internal.hh"
 
 namespace litecore::client {
     using namespace std;
@@ -45,9 +46,12 @@ namespace litecore::client {
 
 
     void ConnectedClient::setStatus(ActivityLevel status) {
-        if (status != _status && _delegate) {
+        if (status != _status) {
             _status = status;
-            _delegate->clientStatusChanged(this, status);
+            
+            LOCK(_mutex);
+            if (_delegate)
+                _delegate->clientStatusChanged(this, status);
         }
     }
 
@@ -78,6 +82,7 @@ namespace litecore::client {
     }
 
     void ConnectedClient::terminate() {
+        LOCK(_mutex);
         _delegate = nullptr;
     }
 
@@ -86,6 +91,7 @@ namespace litecore::client {
 
 
     void ConnectedClient::onTLSCertificate(slice certData) {
+        LOCK(_mutex);
         if (_delegate)
             _delegate->clientGotTLSCertificate(this, certData);
     }
@@ -94,8 +100,10 @@ namespace litecore::client {
     void ConnectedClient::onHTTPResponse(int status, const websocket::Headers &headers) {
         asCurrentActor([=] {
             logVerbose("Got HTTP response from server, status %d", status);
+            LOCK(_mutex);
             if (_delegate)
                 _delegate->clientGotHTTPResponse(this, status, headers);
+            
             if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
                 gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
                                        "Incompatible replication protocol "
@@ -145,7 +153,8 @@ namespace litecore::client {
                 }
                 gotError(C4Error::make(domain, code, status.message));
             }
-
+            
+            LOCK(_mutex);
             if (_delegate)
                 _delegate->clientConnectionClosed(this, status);
 

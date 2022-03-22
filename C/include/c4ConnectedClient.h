@@ -17,10 +17,10 @@ C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
 /** Result of a successful `c4client_getDoc` call. */
-typedef struct {
-    C4Slice docID;
-    C4Slice revID;
-    C4Slice body;
+typedef struct C4DocResponse {
+    C4HeapSlice docID;
+    C4HeapSlice revID;
+    C4HeapSlice body;
     bool deleted;
 } C4DocResponse;
 
@@ -35,20 +35,23 @@ typedef struct C4ConnectedClientParameters {
 /** Callback for getting the document result.
  
  @param client   The client that initiated the callback.
- @param doc  Resuting document response.
+ @param doc  Resuting document response, NULL on failure.
  @param err Error will be written here if the get-document fails.
  @param context  user-defined parameter given when registering the callback. */
 typedef void (*C4ConnectedClientDocumentResultCallback)(C4ConnectedClient* client,
-                                                        C4DocResponse doc,
-                                                        C4Error err,
+                                                        const C4DocResponse* C4NULLABLE doc,
+                                                        C4Error* C4NULLABLE err,
                                                         void * C4NULLABLE context);
+
+typedef C4ConnectedClientDocumentResultCallback C4ConnectedClientDocumentResultCallback;
+
 /** Creates a new connected client and starts it automatically.
     \note No need to call the c4client_start().
  
     @param params  Connected Client parameters (see above.)
     @param error  Error will be written here if the function fails.
     @result A new C4ConnectedClient, or NULL on failure. */
-C4ConnectedClient* c4client_new(C4ConnectedClientParameters params,
+C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
                                 C4Error* error) C4API;
 
 /** Gets the current revision of a document from the server.
@@ -69,7 +72,7 @@ void c4client_getDoc(C4ConnectedClient*,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
                      bool asFleece,
-                     C4ConnectedClientDocumentResultCallback C4NULLABLE callback,
+                     C4ConnectedClientDocumentResultCallback callback,
                      void * C4NULLABLE context,
                      C4Error* error) C4API;
 

@@ -137,6 +137,7 @@ namespace litecore::client {
         bool                        _observing = false;
         bool                        _registeredChangesHandler = false;
         bool                        _remoteUsesVersionVectors = false;
+        mutable std::mutex          _mutex;
     };
 
 }
