@@ -19,9 +19,5 @@ using namespace litecore::client;
 using namespace fleece;
 
 /*static*/ Retained<C4ConnectedClient> C4ConnectedClient::newClient(const C4ConnectedClientParameters &params) {
-    try {
-        return new C4ConnectedClientImpl(params);
-    } catch (...) {
-        throw;
-    }
+    return new C4ConnectedClientImpl(params);
 }
