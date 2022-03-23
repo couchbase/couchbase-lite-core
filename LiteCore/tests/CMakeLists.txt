@@ -146,5 +146,4 @@ target_link_libraries(
     LiteCoreREST_Static
     LiteCoreWebSocket
     ${END_GROUP_FLAG}
-    $<TARGET_OBJECTS:BLIPObjects>
 )

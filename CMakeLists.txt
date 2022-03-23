@@ -327,12 +327,16 @@ target_include_directories(
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(
     LiteCoreStatic INTERFACE
-    $<TARGET_OBJECTS:BLIPObjects>
     FleeceStatic
     SQLite3_UnicodeSN
     mbedcrypto
     mbedtls
     mbedx509
+)
+
+target_link_libraries(
+    LiteCoreStatic PRIVATE
+    BLIPObjects
 )
 
 if(USE_COUCHBASE_SQLITE)
