@@ -37,6 +37,10 @@ from fetch_litecore_base import download_variant, VALID_PLATFORMS, resolve_platf
 from git import Repo
 
 def validate_build(build: str):
+    if build == None:
+        print("Build is None, aborting...")
+        exit(1)
+
     build_parts = build.split('-')
     if len(build_parts) < 2:
         print(f"!!! Malformed build {build}.  Must be of the form 3.1.0-97 or 3.1.0-97-EE")
@@ -51,16 +55,11 @@ def download_litecore(variants, debug: bool, dry: bool, build: str, repo: str, e
         for line in ce_repo.commit().message.splitlines():
             if line.startswith("Build-To-Use:"):
                 build = line.split(":")[1].strip()
-                build_parts = validate_build(build)
-                download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{build_parts[0]}/{build_parts[1]}"
-        
-    if download_folder == "":
-        print("!!! Build-To-Use not found in commit message, aborting...")
-        exit(1)
-
+                if ee:
+                    build += "-EE"
+    
     build_parts = validate_build(build)
     download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{build_parts[0]}/{build_parts[1]}"
-
     conditional_print(f"--- Using URL {download_folder}/<filename>")
     
     failed_count = 0
