@@ -83,6 +83,7 @@ if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
         C4Tests PRIVATE
         ${LITECORE_PREBUILT_LIB}
         FleeceBase
+        Threads::Threads
     )
 
     target_include_directories(
