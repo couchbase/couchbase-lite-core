@@ -48,15 +48,21 @@ def validate_build(build: str):
 
     return build_parts
 
+def get_cbl_build(repo: str) -> str:
+    ce_repo = Repo(repo)
+    build = ""
+    for line in ce_repo.commit().message.splitlines():
+        if line.startswith("Build-To-Use:"):
+            build = line.split(":")[1].strip()
+
+    return build
+
 def download_litecore(variants, debug: bool, dry: bool, build: str, repo: str, ee: bool, output_path: str) -> int:
     download_folder = ""
     if build is None:
-        ce_repo = Repo(repo)
-        for line in ce_repo.commit().message.splitlines():
-            if line.startswith("Build-To-Use:"):
-                build = line.split(":")[1].strip()
-                if ee:
-                    build += "-EE"
+        build = get_cbl_build(repo)
+        if ee:
+            build += "-EE"
     
     build_parts = validate_build(build)
     download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{build_parts[0]}/{build_parts[1]}"
