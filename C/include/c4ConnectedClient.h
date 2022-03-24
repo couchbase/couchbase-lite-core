@@ -38,12 +38,12 @@ typedef struct C4ConnectedClientParameters {
  @param doc  Resuting document response, NULL on failure.
  @param err Error will be written here if the get-document fails.
  @param context  user-defined parameter given when registering the callback. */
-typedef void (*C4ConnectedClientDocumentResultCallback)(C4ConnectedClient* client,
+typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
                                                         const C4DocResponse* C4NULLABLE doc,
                                                         C4Error* C4NULLABLE err,
                                                         void * C4NULLABLE context);
 
-typedef C4ConnectedClientDocumentResultCallback C4ConnectedClientDocumentResultCallback;
+typedef C4ConnectedClientGetDocumentCallback C4ConnectedClientGetDocumentCallback;
 
 /** Creates a new connected client and starts it automatically.
     \note No need to call the c4client_start().
@@ -72,7 +72,7 @@ void c4client_getDoc(C4ConnectedClient*,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
                      bool asFleece,
-                     C4ConnectedClientDocumentResultCallback callback,
+                     C4ConnectedClientGetDocumentCallback callback,
                      void * C4NULLABLE context,
                      C4Error* error) C4API;
 
