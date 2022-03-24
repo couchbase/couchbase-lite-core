@@ -44,6 +44,7 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
+set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
 project (LiteCore)
 include(CMakeDependentOption)
