@@ -10,9 +10,11 @@
 // the file licenses/APL2.txt.
 //
 
+#pragma once
+
 #include "c4Base.h"
 #include "ConnectedClient.hh"
-#include "C4ConnectedClient.hh"
+#include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
 

@@ -13,7 +13,6 @@
 #include "c4Base.hh"
 #include "c4ConnectedClient.hh"
 #include "c4ConnectedClientImpl.hh"
-#include "ConnectedClient.hh"
 
 using namespace litecore::client;
 using namespace fleece;
