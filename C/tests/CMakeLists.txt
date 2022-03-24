@@ -11,7 +11,6 @@ as follows:
 The test runner depends on multiple other libraries from multiple git repositories:
 
 - LiteCore shared library (../..)
-- BLIP static library (../../Networking/BLIP)
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
