@@ -165,11 +165,26 @@ public:
         }
     }
     
+    static inline string& append_platform(string& input) {
+        #if defined(_MSC_VER)
+            input += "_helium_windows";
+        #elif defined(__APPLE__)
+            input += "_helium_macos";
+        #elif defined(__linux__)
+            input += "_helium_linux";
+        #else
+            #error "Unknown platform"
+        #endif
+
+        return input;
+    }
     
     string generateShowfast(Benchmark &mark, double scale, string title, const char* items = nullptr) {
         if(isEncrypted()) {
             title += "_encrypted";
         }
+
+        append_platform(title);
         
         FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeJSON, 0, false);
         FLEncoder_BeginArray(enc, 4);
@@ -204,6 +219,8 @@ public:
         if(isEncrypted()) {
             title += "_encrypted";
         }
+
+        append_platform(title);
         
         int64_t int_value = (int64_t)value;
         
