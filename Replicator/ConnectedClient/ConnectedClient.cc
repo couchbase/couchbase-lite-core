@@ -100,9 +100,11 @@ namespace litecore::client {
     void ConnectedClient::onHTTPResponse(int status, const websocket::Headers &headers) {
         asCurrentActor([=] {
             logVerbose("Got HTTP response from server, status %d", status);
-            LOCK(_mutex);
-            if (_delegate)
-                _delegate->clientGotHTTPResponse(this, status, headers);
+            {
+                LOCK(_mutex);
+                if (_delegate)
+                    _delegate->clientGotHTTPResponse(this, status, headers);
+            }
             
             if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
                 gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
@@ -153,10 +155,11 @@ namespace litecore::client {
                 }
                 gotError(C4Error::make(domain, code, status.message));
             }
-            
-            LOCK(_mutex);
-            if (_delegate)
-                _delegate->clientConnectionClosed(this, status);
+            {
+                LOCK(_mutex);
+                if (_delegate)
+                    _delegate->clientConnectionClosed(this, status);
+            }
 
             _selfRetain = nullptr;  // balances the self-retain in start()
         });
