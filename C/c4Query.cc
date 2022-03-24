@@ -306,8 +306,17 @@ void C4Query::liveQuerierStopped() {
     // CBL-2673: Wait until _bgQuerier is done with its async stuff before freeing it
     // and its delegate, otherwise a race could cause a liveQuerierUpdated call to
     // a garbage delegate.
-    _bgQuerier = nullptr;
-    _bgQuerierDelegate = nullptr;
+    //
+    // Retain and Release the C4Query object to make sure that the object is not
+    // freed until the end as setting _bgQuerierDelegate (retaining the C4QueryObject)
+    // could trigger the freeing chain including the _mutex itself.
+    c4query_retain(this);
+    {
+        LOCK(_mutex);
+        _bgQuerier = nullptr;
+        _bgQuerierDelegate = nullptr;
+    }
+    c4query_release(this);
 }
 
 void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
