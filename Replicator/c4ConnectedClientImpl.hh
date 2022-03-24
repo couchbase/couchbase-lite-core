@@ -70,12 +70,7 @@ namespace litecore::client {
                                    collectionID,
                                    unlessRevID,
                                    asFleece).then([](DocResponse a) -> C4DocResponse {
-                return C4DocResponse {
-                    .docID = a.docID,
-                    .body = a.body,
-                    .revID = a.revID,
-                    .deleted = a.deleted,
-                };
+                return { a.docID, a.revID, a.body, a.deleted };
             });
         }
         
