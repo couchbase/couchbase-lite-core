@@ -13,7 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "Async.hh"
-#include "C4ConnectedClient.h"
+#include "c4ConnectedClient.h"
 
 C4_ASSUME_NONNULL_BEGIN
 

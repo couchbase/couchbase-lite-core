@@ -109,6 +109,10 @@ function(set_litecore_source_base)
         Replicator/RevFinder.cc
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
+	Replicator/c4ConnectedClient_CAPI.cc
+	Replicator/c4ConnectedClient.cc
+	Replicator/c4ConnectedClientImpl.cc
+	Replicator/ConnectedClient/ConnectedClient.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc

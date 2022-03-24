@@ -1,5 +1,5 @@
 //
-// c4ConnectedClient_CAPI.cpp
+// c4ConnectedClient_CAPI.cc
 //
 // Copyright 2022-Present Couchbase, Inc.
 //
