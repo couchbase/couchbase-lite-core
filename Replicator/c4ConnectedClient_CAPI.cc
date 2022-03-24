@@ -30,7 +30,7 @@ void c4client_getDoc(C4ConnectedClient* client,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
                      bool asFleece,
-                     C4ConnectedClientDocumentResultCallback callback,
+                     C4ConnectedClientGetDocumentCallback callback,
                      void *context,
                      C4Error* outError) noexcept {
     try {
