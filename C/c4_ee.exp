@@ -473,5 +473,11 @@ _c4keypair_privateKeyData
 _c4keypair_publicKeyData
 _c4keypair_publicKeyDigest
 
+_c4client_new
+_c4client_getDoc
+_c4client_start
+_c4client_stop
+_c4client_free
+
 # Apple specific
 _FLEncoder_WriteNSObject
