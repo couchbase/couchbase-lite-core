@@ -472,6 +472,12 @@ CBL {
 		c4keypair_privateKeyData;
 		c4keypair_publicKeyData;
 		c4keypair_publicKeyDigest;
+
+		c4client_new;
+		c4client_getDoc;
+		c4client_start;
+		c4client_stop;
+		c4client_free;
 	local:
 		*;
 };
