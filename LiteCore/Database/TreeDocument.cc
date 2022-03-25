@@ -20,11 +20,13 @@
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "RevTreeRecord.hh"
+#include "DeepIterator.hh"
 #include "Delimiter.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+#include "SecureSymmetricCrypto.hh"
 #include "FleeceImpl.hh"
 #include "slice_stream.hh"
 #include <ctime>
@@ -589,7 +591,9 @@ namespace litecore {
             if (!body)
                 return false;
 
-            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion);
+            DatabaseImpl* db = _collection->dbImpl();
+            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion,
+                db->dataFile()->documentKeys());
 
             C4ErrorCode errorCode = {};
             int httpStatus;
@@ -640,14 +644,51 @@ namespace litecore {
             return true;
         }
 
+        static bool hasEncryptables(slice body, SharedKeys* sk) {
+#ifndef COUCHBASE_ENTERPRISE
+            return false;
+#else
+            const Value* v = Value::fromTrustedData(body);
+            if (v == nullptr) {
+                return false;
+            }
 
-        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted) {
+            struct AuxDoc : public Doc {
+                AuxDoc(slice body, SharedKeys* sk)
+                : Doc(alloc_slice(body), Doc::kTrusted, sk)
+                {}
+            };
+            AuxDoc doc(body, sk);
+
+            bool ret = false;
+            for (DeepIterator i(doc.asDict()); i; ++i) {
+                const Dict* dict = i.value()->asDict();
+                if (dict) {
+                    const Value* objType = dict->get(C4Document::kObjectTypeProperty);
+                    if (objType && objType->asString() == C4Document::kObjectType_Encryptable) {
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+            return ret;
+#endif
+        }
+
+        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted, SharedKeys* sk) {
             // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
             uint8_t delByte = deleted;
-            SHA1 digest = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
-                                         << delByte << body)
-                           .finish();
+            SHA1 digest;
+            if (hasEncryptables(body, sk)) {
+                mutable_slice mslice(digest.asSlice());
+                SecureRandomize(mslice);
+            } else {
+                SHA1 tmp = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
+                                            << delByte << body)
+                            .finish();
+                digest.setDigest(tmp.asSlice());
+            }
             // Derive new rev's generation #:
             unsigned generation = 1;
             if (parentRevID.buf) {
