@@ -419,6 +419,7 @@ CBL {
 		c4client_start;
 		c4client_stop;
 		c4client_free;
+		c4client_updateDoc;
 	local:
 		*;
 };
