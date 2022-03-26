@@ -12,6 +12,7 @@
 
 #pragma once
 #include "c4Base.h"
+#include "c4DocumentTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -32,19 +33,6 @@ typedef struct C4ConnectedClientParameters {
     void* C4NULLABLE                    callbackContext;   ///< Value to be passed to the callbacks.
 } C4ConnectedClientParameters;
 
-/** Callback for getting the document result.
- 
- @param client   The client that initiated the callback.
- @param doc  Resuting document response, NULL on failure.
- @param err Error will be written here if the get-document fails.
- @param context  user-defined parameter given when registering the callback. */
-typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
-                                                        const C4DocResponse* C4NULLABLE doc,
-                                                        C4Error* C4NULLABLE err,
-                                                        void * C4NULLABLE context);
-
-typedef C4ConnectedClientGetDocumentCallback C4ConnectedClientGetDocumentCallback;
-
 /** Creates a new connected client and starts it automatically.
     \note No need to call the c4client_start().
  
@@ -53,6 +41,19 @@ typedef C4ConnectedClientGetDocumentCallback C4ConnectedClientGetDocumentCallbac
     @result A new C4ConnectedClient, or NULL on failure. */
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
                                 C4Error* error) C4API;
+
+/** Callback for getting the document result.
+ 
+ @param client   The client that initiated the callback.
+ @param doc  Resulting document response, NULL on failure.
+ @param err Error will be written here if the get-document fails.
+ @param context  user-defined parameter given when registering the callback. */
+typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
+                                                        const C4DocResponse* C4NULLABLE doc,
+                                                        C4Error* C4NULLABLE err,
+                                                        void * C4NULLABLE context);
+
+typedef C4ConnectedClientGetDocumentCallback C4ConnectedClientGetDocumentCallback;
 
 /** Gets the current revision of a document from the server.
     
@@ -66,7 +67,7 @@ C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
  @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
  @param callback Callback for getting document.
  @param context Client value passed to getDocument callback
- @param error  On failure, the error info will be stored here. */
+ @param outError  On failure, the error info will be stored here. */
 void c4client_getDoc(C4ConnectedClient*,
                      C4Slice docID,
                      C4Slice collectionID,
@@ -74,7 +75,38 @@ void c4client_getDoc(C4ConnectedClient*,
                      bool asFleece,
                      C4ConnectedClientGetDocumentCallback callback,
                      void * C4NULLABLE context,
-                     C4Error* error) C4API;
+                     C4Error* outError) C4API;
+
+/** Callback for updating the document result.
+ 
+ @param client   The client that initiated the callback.
+ @param err Error will be written here if the get-document fails.
+ @param context  user-defined parameter given when registering the callback. */
+typedef void (*C4ConnectedClientUpdateDocumentCallback)(C4ConnectedClient* client,
+                                                        C4Error* C4NULLABLE err,
+                                                        void * C4NULLABLE context);
+
+typedef C4ConnectedClientUpdateDocumentCallback C4ConnectedClientUpdateDocumentCallback;
+
+/** Pushes a new document revision to the server.
+ @param docID  The document ID.
+ @param collectionID  The name of the document's collection, or `nullslice` for default.
+ @param revID  The ID of the parent revision on the server,
+                      or `nullslice` if this is a new document.
+ @param revisionFlags  Flags of this revision.
+ @param fleeceData  The document body encoded as Fleece (without shared keys!)
+ @param callback Callback once the document is updated.
+ @param context Client value passed to updateDocument callback
+ @param outError  On failure, the error info will be stored here. */
+void c4client_updateDoc(C4ConnectedClient* client,
+                        C4Slice docID,
+                        C4Slice collectionID,
+                        C4Slice revID,
+                        C4RevisionFlags revisionFlags,
+                        C4Slice fleeceData,
+                        C4ConnectedClientUpdateDocumentCallback callback,
+                        void * C4NULLABLE context,
+                        C4Error* outError) C4API;
 
 /** Tells a connected client to start.
     \note This function is thread-safe.*/

@@ -58,3 +58,23 @@ void c4client_free(C4ConnectedClient* client) noexcept {
     release(client);
 }
 
+void c4client_updateDoc(C4ConnectedClient* client,
+                        C4Slice docID,
+                        C4Slice collectionID,
+                        C4Slice revID,
+                        C4RevisionFlags revisionFlags,
+                        C4Slice fleeceData,
+                        C4ConnectedClientUpdateDocumentCallback callback,
+                        void * C4NULLABLE context,
+                        C4Error* outError) noexcept {
+    try {
+        auto res = client->updateDoc(docID, collectionID, revID, revisionFlags, fleeceData);
+        res.then([=](C4Error err) {
+            return callback(client, &err, context);
+        });
+    } catchError(outError);
+    return;
+    
+    
+}
+

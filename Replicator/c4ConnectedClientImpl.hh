@@ -22,6 +22,7 @@ namespace litecore::client {
 
     using namespace litecore::websocket;
     using namespace litecore::actor;
+    using namespace fleece;             // FIXME: hardcoded revID `_sl` is using this!
     
     struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
         
@@ -72,6 +73,19 @@ namespace litecore::client {
                                    asFleece).then([](DocResponse a) -> C4DocResponse {
                 return { a.docID, a.revID, a.body, a.deleted };
             });
+        }
+        
+        Async<void> updateDoc(C4Slice docID,
+                              C4Slice collectionID,
+                              C4Slice parentRevisionID,
+                              C4RevisionFlags flags,
+                              C4Slice fleeceData) noexcept override {
+            return _client->putDoc(docID,
+                                   collectionID,
+                                   "2-c001d00d"_sl, // TODO: putDoc needs to generate new revID
+                                   parentRevisionID,
+                                   flags,
+                                   fleeceData);
         }
         
         virtual void start() noexcept override {
