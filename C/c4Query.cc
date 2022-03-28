@@ -215,7 +215,15 @@ public:
     }
 
     void liveQuerierStopped() override {
+        // There is circular retain ref between LiveQuerierDelegate and C4Query object.
+        // The circular ref will be broken when _query->liveQuerierStopped() is called
+        // as the LiveQuerierDelegate object will be set to NULL and be freed.
+        // However, if nobody else has retained the _query object, the _query object would
+        // be freed as well. To ensure that _query lives beyound the liveQuerierStopped() call,
+        // addtional retain and release on the _query object are added here.
+        c4query_retain(_query);
         _query->liveQuerierStopped();
+        c4query_release(_query);
     }
 
     // CBL-2673: Since the live querier is async, the C4Query *must* outlive the 
@@ -306,17 +314,9 @@ void C4Query::liveQuerierStopped() {
     // CBL-2673: Wait until _bgQuerier is done with its async stuff before freeing it
     // and its delegate, otherwise a race could cause a liveQuerierUpdated call to
     // a garbage delegate.
-    //
-    // Retain and Release the C4Query object to make sure that the object is not
-    // freed until the end as setting _bgQuerierDelegate (retaining the C4QueryObject)
-    // could trigger the freeing chain including the _mutex itself.
-    c4query_retain(this);
-    {
-        LOCK(_mutex);
-        _bgQuerier = nullptr;
-        _bgQuerierDelegate = nullptr;
-    }
-    c4query_release(this);
+    LOCK(_mutex);
+    _bgQuerier = nullptr;
+    _bgQuerierDelegate = nullptr;
 }
 
 void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
