@@ -11,7 +11,7 @@
 //
 
 #include "UnicodeCollator.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "SQLiteCpp/SQLiteCpp.h"

@@ -17,7 +17,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "Endian.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "c4Private.h"
 #include "PlatformIO.hh"
 #include "Stopwatch.hh"

@@ -13,7 +13,7 @@
 #pragma once
 #include "Response.hh"
 #include "HTTPTypes.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "Writer.hh"
 #include <functional>

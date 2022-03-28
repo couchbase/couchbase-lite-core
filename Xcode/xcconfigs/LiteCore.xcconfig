@@ -12,7 +12,7 @@
 //  the file licenses/APL2.txt.
 //
 
-HEADER_SEARCH_PATHS          = $(inherited)   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/fleece/Fleece/Mutable   $(SRCROOT)/../vendor/SQLiteCpp/include/   $(SRCROOT)/../vendor/fleece/vendor/   $(SRCROOT)/../LiteCore/Support   $(SRCROOT)/../vendor/fleece/vendor/date/include
+HEADER_SEARCH_PATHS          = $(inherited)   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/fleece/Fleece/Mutable   $(SRCROOT)/../vendor/SQLiteCpp/include/   $(SRCROOT)/../vendor/fleece/vendor/   $(SRCROOT)/../LiteCore/Support   $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../C/Cpp_include
 
 // Use the LiteCore C++ API
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_API=1

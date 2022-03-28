@@ -19,8 +19,8 @@
 #endif
 
 #include "c4Base.h"
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/slice.hh"
 
 C4_ASSUME_NONNULL_BEGIN

@@ -18,7 +18,7 @@
 #include "c4Replicator.hh"
 #include "c4ListenerInternal.hh"
 #include "Server.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "StringUtil.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <condition_variable>

@@ -12,7 +12,7 @@
 
 #include "UnicodeCollator.hh"
 #include "Logging.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include <sqlite3.h>
 #include <algorithm>

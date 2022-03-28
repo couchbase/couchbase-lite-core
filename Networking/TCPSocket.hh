@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "Address.hh"
 #include "HTTPTypes.hh"
 #include "fleece/Fleece.hh"

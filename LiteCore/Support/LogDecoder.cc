@@ -18,7 +18,7 @@
 #include <cstring>
 #include <chrono>
 #include <algorithm>
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "date/date.h"
 #include "ParseDate.hh"
 

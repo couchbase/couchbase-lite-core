@@ -17,7 +17,7 @@
 #include "c4DocumentTypes.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/slice.hh"
 #include <mutex>
 #include <unordered_map>

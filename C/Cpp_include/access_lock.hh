@@ -13,7 +13,7 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include <functional>
 #include <mutex>
 #include <type_traits>

@@ -14,7 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
