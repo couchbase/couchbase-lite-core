@@ -219,11 +219,10 @@ public:
         // The circular ref will be broken when _query->liveQuerierStopped() is called
         // as the LiveQuerierDelegate object will be set to NULL and be freed.
         // However, if nobody else has retained the _query object, the _query object would
-        // be freed as well. To ensure that _query lives beyound the liveQuerierStopped() call,
-        // addtional retain and release on the _query object are added here.
-        c4query_retain(_query);
-        _query->liveQuerierStopped();
-        c4query_release(_query);
+        // be freed immediately. To ensure that _query lives beyound the liveQuerierStopped()
+        // call, wrap the _query in a Retained object which is a smart pointer.
+        Retained<C4Query> q = _query;
+        q->liveQuerierStopped();
     }
 
     // CBL-2673: Since the live querier is async, the C4Query *must* outlive the 
