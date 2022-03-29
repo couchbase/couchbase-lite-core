@@ -12,7 +12,7 @@ set -e
 shopt -s extglob dotglob
 
 CMAKE_VER="3.18.1"
-NDK_VER="21.2.6472646"
+NDK_VER="23.1.7779620"
 
 function usage() {
     echo "Usage: $0 <sdk path>"
