@@ -17,12 +17,15 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "RevID.hh"
+#include "Record.hh"
+#include "SecureDigest.hh"
 
 namespace litecore::client {
 
     using namespace litecore::websocket;
     using namespace litecore::actor;
-    using namespace fleece;             // FIXME: hardcoded revID `_sl` is using this!
+    using namespace std;
     
     struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
         
@@ -80,9 +83,17 @@ namespace litecore::client {
                               C4Slice parentRevisionID,
                               C4RevisionFlags flags,
                               C4Slice fleeceData) noexcept override {
+            
+            FLValue v = FLValue_FromData(fleeceData, kFLTrusted);
+            FLDict dict = FLValue_AsDict(v);
+            
+            alloc_slice generatedRev = generateRevID(dict,
+                                                     parentRevisionID ? revidBuffer(parentRevisionID) : revid(),
+                                                     convertDocumentFlags(flags));
+            
             return _client->putDoc(docID,
                                    collectionID,
-                                   "2-c001d00d"_sl, // TODO: putDoc needs to generate new revID
+                                   revid(generatedRev).expanded(),
                                    parentRevisionID,
                                    flags,
                                    fleeceData);
@@ -108,6 +119,8 @@ namespace litecore::client {
         
         alloc_slice effectiveURL(slice);
         alloc_slice socketOptions();
+        DocumentFlags convertDocumentFlags(C4DocumentFlags flags);
+        alloc_slice generateRevID(fleece::Dict body, revid parentRevID, DocumentFlags flags);
         
         mutable std::mutex                  _mutex;
         Retained<ConnectedClient>           _client;
