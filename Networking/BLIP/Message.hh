@@ -12,7 +12,7 @@
 
 #pragma once
 #include "BLIPProtocol.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "slice_stream.hh"
 #include <functional>

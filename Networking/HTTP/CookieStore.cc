@@ -15,7 +15,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "fleece/Expert.hh"
 #include <iterator>
 #include <regex>

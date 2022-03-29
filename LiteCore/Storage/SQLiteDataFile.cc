@@ -30,7 +30,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "SecureRandomize.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "fleece/Fleece.hh"
 #include <mutex>
 #include <sqlite3.h>

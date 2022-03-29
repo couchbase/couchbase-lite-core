@@ -16,7 +16,7 @@
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/Expert.hh"
 #include <vector>
 

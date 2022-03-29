@@ -14,7 +14,7 @@
 #include "Writer.hh"
 #include "Stopwatch.hh"
 #include "Timer.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "Logging.hh"
 #include <stdarg.h>
 #include <iosfwd>

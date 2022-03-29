@@ -12,8 +12,8 @@
 
 #pragma once
 #include "Error.hh"
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>

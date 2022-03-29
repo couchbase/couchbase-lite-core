@@ -11,8 +11,8 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "Request.hh"
 #include "c4Base.h"
 #include <atomic>

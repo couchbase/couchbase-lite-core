@@ -80,7 +80,7 @@ function(setup_litecore_build_linux)
         LiteCore/Unix
     )
 
-    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPStatic)
+    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat=2"

@@ -17,7 +17,7 @@
 #include "Increment.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include <sstream>

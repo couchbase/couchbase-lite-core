@@ -21,7 +21,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include <algorithm>
 #include <assert.h>
 #include <atomic>

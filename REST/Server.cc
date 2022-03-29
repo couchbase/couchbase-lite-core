@@ -21,7 +21,7 @@
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include <mutex>
 
 // TODO: Remove these pragmas when doc-comments in sockpp are fixed

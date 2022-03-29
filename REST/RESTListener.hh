@@ -16,7 +16,7 @@
 #include "Listener.hh"
 #include "Server.hh"
 #include "FilePath.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include <memory>
 #include <mutex>
 #include <set>

@@ -14,8 +14,8 @@
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"          // For fleece::InstanceCountedIn
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"          // For fleece::InstanceCountedIn
 #include <mutex>
 #include <vector>
 #include <unordered_map>
