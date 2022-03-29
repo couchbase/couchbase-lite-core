@@ -9,6 +9,7 @@ function(setup_build)
         C4Tests PRIVATE
         mbedcrypto
         mbedx509
+        Threads::Threads
     )
 
     target_link_options(
