@@ -591,9 +591,7 @@ namespace litecore {
             if (!body)
                 return false;
 
-            DatabaseImpl* db = _collection->dbImpl();
-            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion,
-                db->dataFile()->documentKeys());
+            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion);
 
             C4ErrorCode errorCode = {};
             int httpStatus;
@@ -660,27 +658,25 @@ namespace litecore {
             };
             AuxDoc doc(body, sk);
 
-            bool ret = false;
             for (DeepIterator i(doc.asDict()); i; ++i) {
                 const Dict* dict = i.value()->asDict();
                 if (dict) {
                     const Value* objType = dict->get(C4Document::kObjectTypeProperty);
                     if (objType && objType->asString() == C4Document::kObjectType_Encryptable) {
-                        ret = true;
-                        break;
+                        return true;
                     }
                 }
             }
-            return ret;
+            return false;
 #endif
         }
 
-        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted, SharedKeys* sk) {
+        revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted) {
             // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
             uint8_t delByte = deleted;
             SHA1 digest;
-            if (hasEncryptables(body, sk)) {
+            if (hasEncryptables(body, _collection->dbImpl()->dataFile()->documentKeys())) {
                 mutable_slice mslice(digest.asSlice());
                 SecureRandomize(mslice);
             } else {
