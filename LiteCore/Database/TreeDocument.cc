@@ -651,14 +651,8 @@ namespace litecore {
                 return false;
             }
 
-            struct AuxDoc : public Doc {
-                AuxDoc(slice body, SharedKeys* sk)
-                : Doc(alloc_slice(body), Doc::kTrusted, sk)
-                {}
-            };
-            AuxDoc doc(body, sk);
-
-            for (DeepIterator i(doc.asDict()); i; ++i) {
+            Scope scope(body, sk);
+            for (DeepIterator i(v->asDict()); i; ++i) {
                 const Dict* dict = i.value()->asDict();
                 if (dict) {
                     const Value* objType = dict->get(C4Document::kObjectTypeProperty);
