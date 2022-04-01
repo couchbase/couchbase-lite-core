@@ -50,10 +50,7 @@ function Make-Package() {
 
     Write-Host "Creating pkg - pkgdir:$directory, pkgname:$filename, arch:$architecture, flavor:$config"
     Push-Location $directory
-    & 7za a -tzip -mx9 $env:WORKSPACE\$filename include `
-        "$(Get-Location)\bin\LiteCore.dll" `
-        "$(Get-Location)\lib\LiteCore.lib" `
-        "$(Get-Location)\bin\LiteCore.pdb"
+    & 7za a -tzip -mx9 $env:WORKSPACE\$filename *
 
     if($LASTEXITCODE -ne 0) {
         throw "Zip failed"
