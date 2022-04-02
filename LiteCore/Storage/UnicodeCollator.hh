@@ -109,4 +109,6 @@ namespace litecore {
 
     // for platform implementors only (default implementation of ContainsUTF8)
     bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext &ctx);
+
+    std::vector<std::string> SupportedLocales();
 }
