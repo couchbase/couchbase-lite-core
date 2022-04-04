@@ -167,7 +167,7 @@ namespace litecore::repl {
                 break;
             case MessageProgress::kAwaitingReply:
                 logDebug("Transmitted 'rev' %.*s #%.*s (seq #%" PRIu64 ")",
-                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                         SPLAT(rev->docID), SPLAT(rev->revID), static_cast<uint64_t>(rev->sequence));
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);
                 maybeSendMoreRevs();
