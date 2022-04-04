@@ -1,0 +1,17 @@
+{
+    "manifests": {
+        "manifests/validation.xml": {
+             "release": "toy",
+             "release_name": "Couchbase Lite Core - Toy",
+             "production": true,
+             "interval": 1440,
+             "restricted": false,
+             "start_build": 1,
+             "keep_git": true,
+             "do-build": false,
+             "module_projects": [
+                 "couchbase-lite-core"
+             ]
+         }
+    }
+}
