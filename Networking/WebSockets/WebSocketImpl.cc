@@ -434,8 +434,8 @@ namespace litecore { namespace websocket {
             }
         }
         if (i < 2) {
-            closeSocket();
             startResponseTimer(kCloseTimeout);
+            closeSocket();
         } else {
             logVerbose("Calling closeSocket when the socket is %s", expected[1] == SOCKET_CLOSING ?
                        "pending close" : "already closed");
@@ -455,8 +455,8 @@ namespace litecore { namespace websocket {
             }
         }
         if (i < 2) {
-            requestClose(status, message);
             startResponseTimer(kCloseTimeout);
+            requestClose(status, message);
         } else {
             logVerbose("Calling requestClose when the socket is %s", expected[1] == SOCKET_CLOSING ?
                        "pending close" : "is already closed");
