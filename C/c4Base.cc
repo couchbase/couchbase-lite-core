@@ -114,7 +114,7 @@ C4SliceResult c4_getEnvironmentInfo() C4API {
 
     auto locales = SupportedLocales();
     e.beginArray(locales.size());
-    for (const auto locale : locales) {
+    for (const auto& locale : locales) {
         e.writeString(locale);
     }
     e.endArray();
