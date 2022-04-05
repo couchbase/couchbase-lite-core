@@ -22,3 +22,6 @@
 [submodule "vendor/fleece"]
 	path = vendor/fleece
 	url = https://github.com/couchbase/fleece
+[submodule "tools"]
+	path = tools
+	url = https://github.com/couchbaselabs/litecore-download-script
