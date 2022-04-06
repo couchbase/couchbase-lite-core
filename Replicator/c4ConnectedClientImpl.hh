@@ -114,8 +114,6 @@ namespace litecore::client {
         
         alloc_slice effectiveURL(slice);
         alloc_slice socketOptions();
-        DocumentFlags convertDocumentFlags(C4DocumentFlags flags);
-        alloc_slice generateRevID(fleece::Dict body, revid parentRevID, DocumentFlags flags);
         
         mutable std::mutex                  _mutex;
         Retained<ConnectedClient>           _client;
