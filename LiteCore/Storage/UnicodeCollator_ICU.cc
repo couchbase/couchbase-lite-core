@@ -14,7 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "icu_shim.h"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/Exception.h"
 #include <sqlite3.h>
@@ -151,6 +151,16 @@ namespace litecore {
         if (rc != SQLITE_OK)
             throw SQLite::Exception(dbHandle, rc);
         return context;
+    }
+
+    vector<string> SupportedLocales() {
+        vector<string> locales;
+        int32_t localeCount = lc_ucol_countAvailable();
+        for (int32_t i = 0; i < localeCount; i++) {
+            locales.push_back(lc_ucol_getAvailable(i));
+        }
+
+        return locales;
     }
 }
 

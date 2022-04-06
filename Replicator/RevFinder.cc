@@ -12,6 +12,7 @@
 
 #include "RevFinder.hh"
 #include "Replicator.hh"
+#include "Pusher.hh"
 #include "ReplicatorTuning.hh"
 #include "IncomingRev.hh"
 #include "DBAccess.hh"
@@ -140,9 +141,11 @@ namespace litecore::repl {
                 sequences.reserve(nChanges);
 
                 auto &encoder = response.jsonBody();
+                auto getConflictRevIDs =  req->boolProperty(Pusher::kConflictIncludesRevProperty);
                 encoder.beginArray();
-                int requested = proposed ? findProposedRevs(changes, encoder, sequences)
-                                         : findRevs(changes, encoder, sequences);
+                int requested = proposed 
+                    ? findProposedRevs(changes, encoder, getConflictRevIDs ,sequences)
+                    : findRevs(changes, encoder, sequences);
                 encoder.endArray();
 
                 // CBL-1399: Important that the order be call expectSequences and *then* respond
@@ -184,7 +187,7 @@ namespace litecore::repl {
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
     int RevFinder::findRevs(Array changes,
-                            Encoder &encoder,
+                            JSONEncoder &encoder,
                             vector<ChangeSequence> &sequences)
     {
         // Compile the docIDs/revIDs into parallel vectors:
@@ -300,7 +303,8 @@ namespace litecore::repl {
 
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
     int RevFinder::findProposedRevs(Array changes,
-                                    Encoder &encoder,
+                                    JSONEncoder &encoder,
+                                    bool conflictIncludesRev,
                                     vector<ChangeSequence> &sequences)
     {
         unsigned itemsWritten = 0, requested = 0;
@@ -332,7 +336,17 @@ namespace litecore::repl {
                         SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status, SPLAT(currentRevID));
                 while (itemsWritten++ < i)
                     encoder.writeInt(0);
-                encoder.writeInt(status);
+
+                if(status == 409 && conflictIncludesRev) {
+                    encoder.beginDict(2);
+                    encoder.writeKey("status"_sl);
+                    encoder.writeInt(409);
+                    encoder.writeKey("rev"_sl);
+                    encoder.writeString(currentRevID);
+                    encoder.endDict();
+                } else {
+                    encoder.writeInt(status);
+                }
             }
         }
         return requested;

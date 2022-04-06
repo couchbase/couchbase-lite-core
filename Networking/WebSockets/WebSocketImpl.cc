@@ -19,6 +19,36 @@
 #include <functional>
 #include <string>
 
+#include <thread>
+#include <vector>
+struct C4Socket;
+namespace c4SocketTrace {
+    using namespace std;
+
+    struct Event {
+        C4Socket*   socket;
+        int64_t     timestamp;
+        thread::id  tid;
+        string      func;
+        string      remark;
+
+        Event(const C4Socket* sock, const string& f);
+        Event(const C4Socket* sock, const string& f, const string& rem);
+        operator string();
+    };
+
+    class EventQueue : public vector<Event> {
+    public:
+        void addEvent(const C4Socket* sock, const string& f);
+        void addEvent(const C4Socket* sock, const string& f, const string& rem);
+    private:
+        mutex mut;
+    };
+
+    EventQueue& traces();
+}
+
+
 using namespace std;
 using namespace uWS;
 using namespace fleece;
@@ -87,6 +117,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::connect() {
         logInfo("Connecting...");
+        _socketLCState.store(SOCKET_OPENING);
         startResponseTimer(chrono::seconds(kConnectTimeoutSecs));
     }
 
@@ -97,13 +128,12 @@ namespace litecore { namespace websocket {
     }
 
     void WebSocketImpl::onConnect() {
-        if(_closed) {
-            // If the WebSocket has already been closed, which only happens in rare cases
-            // such as stopping a Replicator during the connecting phase, then don't continue...
-            warn("WebSocket already closed, ignoring onConnect...");
+        int expected = SOCKET_OPENING;
+        if (! atomic_compare_exchange_strong(&_socketLCState, &expected, (int)SOCKET_OPENED) ){
+            logInfo("WebSocket not in 'Openning' state, ignoring onConnect...");
             return;
         }
-        
+
         logInfo("Connected!");
         _didConnect = true;
         _responseTimer->stop();
@@ -114,6 +144,7 @@ namespace litecore { namespace websocket {
         // called once, so no locking is needed.)
         if (_framing) {
             if (heartbeatInterval() > 0) {
+                logVerbose("Setting ping timer to %d...", heartbeatInterval());
                 _pingTimer.reset(new actor::Timer(bind(&WebSocketImpl::sendPing, this)));
                 schedulePing();
             }
@@ -132,8 +163,11 @@ namespace litecore { namespace websocket {
         bool writeable;
         {
             lock_guard<std::mutex> lock(_mutex);
-            if (_closeSent && opcode != CLOSE)
+            if (_closeSent && opcode != CLOSE) {
+                warn("sendOp refusing to send msg type %d after close", (int)opcode);
                 return false;
+            }
+
             if (_framing) {
                 frame.resize(message.size + 10); // maximum space needed
                 size_t newSize;
@@ -179,7 +213,7 @@ namespace litecore { namespace websocket {
         if (disconnect) {
             // My close message has gone through; now I can disconnect:
             logInfo("sent close echo; disconnecting socket now");
-            closeSocket();
+            callCloseSocket();
         } else if (notify) {
             delegate().onWebSocketWriteable();
         }
@@ -245,8 +279,10 @@ namespace litecore { namespace websocket {
         }
 
         // Body:
-        if (_curMessageLength + length > _curMessage.size)
+        if (_curMessageLength + length > _curMessage.size) {
+            warn("Overflow in WebSocketImpl::handleFragment");
             return false; // overflow!
+        }
 
         // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
@@ -294,7 +330,7 @@ namespace litecore { namespace websocket {
     // Called from inside _protocol->consume(), with the _mutex locked
     void WebSocketImpl::protocolError() {
         _protocolError = true;
-        closeSocket();
+        callCloseSocket();
     }
 
 
@@ -329,8 +365,11 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::sendPing() {
         {
             lock_guard<mutex> lock(_mutex);
-            if (!_pingTimer)
+            if (!_pingTimer) {
+                warn("Ping timer not available, giving up on sendPing...");
                 return;
+            }
+
             schedulePing();
             startResponseTimer(kPongTimeout);
             // exit scope to release the lock -- this is needed before calling sendOp,
@@ -358,10 +397,21 @@ namespace litecore { namespace websocket {
         logError("No response received after %lld sec -- disconnecting",
                  (long long)_curTimeout.count());
         _timedOut = true;
-        if (_framing)
-            closeSocket();
-        else
-            requestClose(504, "Timed out"_sl);
+        switch (_socketLCState.load()) {
+            case SOCKET_OPENING:
+                if (_framing)
+                    callCloseSocket();
+                else
+                    callRequestClose(504, "Timed out"_sl);
+                break;
+            case SOCKET_CLOSING: {
+                    CloseStatus status = {kNetworkError, kNetErrTimeout, nullslice};
+                    onClose(status);
+                }
+                break;
+            default:
+                break;
+        }
     }
 
 
@@ -371,40 +421,98 @@ namespace litecore { namespace websocket {
     // See <https://tools.ietf.org/html/rfc6455#section-7>
 
 
+    void WebSocketImpl::callCloseSocket() {
+        int expected[] = {SOCKET_OPENING, SOCKET_OPENED};
+        int i = 0;
+        for (; i < 2; ++i) {
+            if (atomic_compare_exchange_strong(&_socketLCState, &expected[i], (int)SOCKET_CLOSING)) {
+                if (i == 0) {
+                    logVerbose("Calling closeSocket before the socket is connected");
+                }
+                // else: This is the usual case: from OPENED to CLOSING
+                break;
+            }
+        }
+        if (i < 2) {
+            startResponseTimer(kCloseTimeout);
+            closeSocket();
+        } else {
+            logVerbose("Calling closeSocket when the socket is %s", expected[1] == SOCKET_CLOSING ?
+                       "pending close" : "already closed");
+        }
+    }
+
+    void WebSocketImpl::callRequestClose(int status, fleece::slice message) {
+        int expected[] = {SOCKET_OPENING, SOCKET_OPENED};
+        int i = 0;
+        for (; i < 2; ++i) {
+            if (atomic_compare_exchange_strong(&_socketLCState, &expected[i], (int)SOCKET_CLOSING)) {
+                if (i == 0) {
+                    logVerbose("Calling requestClose before the socket is connected");
+                }
+                // else: This is the usual case: from OPENED to CLOSING
+                break;
+            }
+        }
+        if (i < 2) {
+            startResponseTimer(kCloseTimeout);
+            requestClose(status, message);
+        } else {
+            logVerbose("Calling requestClose when the socket is %s", expected[1] == SOCKET_CLOSING ?
+                       "pending close" : "is already closed");
+        }
+    }
+
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
-        if(!_didConnect && _framing) {
-            // The web socket is being requested to close before it's even connected, so just
-            // shortcut to the callback and make sure that onConnect does nothing now
-            closeSocket();
-            _closed = true;
-            
-            // CBL-1088: If this is not called here, it never will be since the above _closed = true
-            // prevents it from happening later.  This means that the Replicator using this connection
-            // will never be informed of the connection close and will never reach the stopped state
-            delegate().onWebSocketClose({kWebSocketClose, status, message});
-            return;
-        }
-        
-        logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
-        if (_framing) {
-            alloc_slice closeMsg;
-            {
-                std::lock_guard<std::mutex> lock(_mutex);
-                if (_closeSent || _closeReceived)
+        int currState = SOCKET_UNINIT;
+        switch (_socketLCState.load()) {
+            case SOCKET_CLOSING:
+                logVerbose("Calling close when the socket is pending close");
+                return;
+            case SOCKET_CLOSED:
+                logVerbose("Calling close when the socket is already closed");
+                return;
+            case SOCKET_OPENED:
+                currState = SOCKET_OPENED;
+                logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
+                if (_framing) {
+                    alloc_slice closeMsg;
+                    {
+                        std::lock_guard<std::mutex> lock(_mutex);
+                        if (_closeSent || _closeReceived) {
+                            logVerbose("Close already processed (_closeSent: %d, _closeReceived: %d), exiting WebSocketImpl::close()",
+                                (int)_closeSent, (int)_closeReceived);
+                            return;
+                        }
+
+                        closeMsg = alloc_slice(2 + message.size);
+                        auto size = ClientProtocol::formatClosePayload((char*)closeMsg.buf,
+                                                                       (uint16_t)status,
+                                                                       (char*)message.buf, message.size);
+                        closeMsg.shorten(size);
+                        _closeSent = true;
+                        _closeMessage = closeMsg;
+                        startResponseTimer(kCloseTimeout);
+                    }
+                    sendOp(closeMsg, uWS::CLOSE);
                     return;
-                closeMsg = alloc_slice(2 + message.size);
-                auto size = ClientProtocol::formatClosePayload((char*)closeMsg.buf,
-                                                               (uint16_t)status,
-                                                               (char*)message.buf, message.size);
-                closeMsg.shorten(size);
-                _closeSent = true;
-                _closeMessage = closeMsg;
-                startResponseTimer(kCloseTimeout);
-            }
-            sendOp(closeMsg, uWS::CLOSE);
-        } else {
-            requestClose(status, message);
+                }
+            case SOCKET_OPENING:
+                if (currState != SOCKET_OPENED) {
+                    logVerbose("Calling close before the socket is connected");
+                }
+                if (_framing) {
+                    logInfo("Closing socket before connection established...");
+                    // The web socket is being requested to close before it's even connected, so just
+                    // shortcut to the callback and make sure that onConnect does nothing now
+                    callCloseSocket();
+                } else {
+                    callRequestClose(status, message);
+                }
+                return;
+            default:
+                DebugAssert(false);
         }
     }
 
@@ -417,7 +525,7 @@ namespace litecore { namespace websocket {
         if (_closeSent) {
             // I initiated the close; the peer has confirmed, so disconnect the socket now:
             logInfo("Close confirmed by peer; disconnecting socket now");
-            closeSocket();
+            callCloseSocket();
         } else {
             // Peer is initiating a close. Save its message and echo it:
             if (willLog()) {
@@ -439,7 +547,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::onCloseRequested(int status, fleece::slice message) {
         DebugAssert(!_framing);
-        requestClose(status, message);
+        callRequestClose(status, message);
     }
 
 
@@ -453,11 +561,24 @@ namespace litecore { namespace websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
+        switch (atomic_exchange(&_socketLCState, (int)SOCKET_CLOSED)) {
+            case SOCKET_OPENING:
+                logVerbose("Calling onClose before the socket is connected");
+                break;
+            case SOCKET_OPENED:
+                logVerbose("Calling onClose before calling closeSocket/requestClose");
+                break;
+            case SOCKET_CLOSING:
+                // The usual case: CLOSING -> CLOSED
+                break;
+            case SOCKET_CLOSED:
+                logVerbose("Calling of onClose is ignored because it is already called.");
+                return;
+            default:
+                DebugAssert(false);
+        }
         {
             lock_guard<mutex> lock(_mutex);
-
-            if (_closed)
-                return; // Guard against multiple calls to onClose
 
             _pingTimer.reset();
 
@@ -520,11 +641,21 @@ namespace litecore { namespace websocket {
                 logError("WebSocket failed to connect! (reason=%-s %d)",
                          status.reasonName(), status.code);
             }
-
-            _closed = true;
         }
-
+#if 0
         delegate().onWebSocketClose(status);
+#else
+        Delegate* dele = &delegate();
+        if (dele == nullptr) {
+            if (willLog(LogLevel::Error)) {
+                logError("delegate is NULL in WebSocketImpl::onClose, dumping traces: ");
+                for (auto &event : c4SocketTrace::traces()) {
+                    logError("%s", string(event).c_str());
+                }
+            }
+        }
+        dele->onWebSocketClose(status);
+#endif
     }
 
 } }

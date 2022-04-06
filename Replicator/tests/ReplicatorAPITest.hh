@@ -15,6 +15,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include "c4Certificate.h"
 #include "c4Replicator.h"
 #include "Address.hh"

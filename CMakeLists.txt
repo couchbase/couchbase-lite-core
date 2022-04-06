@@ -5,7 +5,7 @@ This is the CMake project for building the Couchbase LiteCore project.  This is 
 It makes use of a lot of source and sublibraries and some cannot be used on their own.  Here are a description of the
 targets that result from this project:
 
-BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
+BLIPObjects - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
@@ -44,6 +44,7 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
+set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
 project (LiteCore)
 include(CMakeDependentOption)
@@ -64,6 +65,7 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
+set(LITECORE_PREBUILT_LIB "" CACHE STRING "If set, C4Tests will use the prebuilt LiteCore instead of building it from source")
 
 option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
 
@@ -246,11 +248,6 @@ target_compile_definitions(
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
-target_compile_definitions(
-    LiteCoreStatic PUBLIC
-    -DLITECORE_EXPORTS
-)
-
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
          PRIVATE
@@ -333,10 +330,14 @@ target_link_libraries(
     LiteCoreStatic INTERFACE
     FleeceStatic
     SQLite3_UnicodeSN
-    BLIPStatic
     mbedcrypto
     mbedtls
     mbedx509
+)
+
+target_link_libraries(
+    LiteCoreStatic PRIVATE
+    BLIPObjects
 )
 
 if(USE_COUCHBASE_SQLITE)
@@ -352,8 +353,16 @@ install (
     TARGETS LiteCore
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
     OPTIONAL
 )
+
+file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
+file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
+list(FILTER FLEECE_HEADERS EXCLUDE REGEX .*Expert.hh?)
+
+install(FILES ${LITECORE_HEADERS} DESTINATION include)
+install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
 ### TESTS:
 

@@ -224,7 +224,7 @@ namespace litecore {
         unsigned _1stCustomResultColumn;    // Column index of the 1st column declared in JSON
 
     protected:
-        ~SQLiteQuery() =default;
+        ~SQLiteQuery() { disposing(); }
         string loggingClassName() const override    {return "Query";}
 
     private:

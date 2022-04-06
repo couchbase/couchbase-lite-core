@@ -27,11 +27,17 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+
     RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID, ContentOption content)
     :_store(store), _rec(docID)
     {
         (void)read(content);
     }
+
+#pragma GCC diagnostic pop
 
     RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec)
     :_store(store), _rec(rec)

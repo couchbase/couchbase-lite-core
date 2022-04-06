@@ -577,7 +577,7 @@ namespace litecore {
                         alloc_slice revID = _doc.revID().expanded();
                         db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                                                      ((_flags & kRevDeleted) ? "Deleted" : "Saved"),
-                                                     SPLAT(_docID), SPLAT(revID), _sequence);
+                                                     SPLAT(_docID), SPLAT(revID), (uint64_t)_sequence);
                     }
                     asInternal(collection())->documentSaved(this);
                     return true;

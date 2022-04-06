@@ -24,6 +24,7 @@
 #include <memory>
 #include <sstream>
 #include <cinttypes>
+#include <deque>
 
 namespace litecore { namespace websocket {
     class LoopbackProvider;
@@ -37,7 +38,7 @@ namespace litecore { namespace websocket {
         class Driver;
     private:
         Retained<Driver> _driver;
-        actor::delay_t _latency;
+        const actor::delay_t _latency;
 
     public:
 
@@ -102,7 +103,12 @@ namespace litecore { namespace websocket {
         void received(Message *message,
                       actor::delay_t latency = actor::delay_t::zero())
         {
-            _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_received), retained(message));
+            if (latency == actor::delay_t::zero()) {
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_received), retained(message));
+            } else {
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_queueMessage), retained(message));
+                _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_dequeueMessage));
+            }
         }
 
         void closed(CloseReason reason =kWebSocketClose,
@@ -227,6 +233,17 @@ namespace litecore { namespace websocket {
                 }
             }
 
+            void _queueMessage(Retained<Message> message) {
+                _msgWaitBuffer.push_back(message);
+            }
+
+            void _dequeueMessage() {
+                Assert(_msgWaitBuffer.size() > 0);
+                Retained<Message> msg = _msgWaitBuffer.front();
+                _msgWaitBuffer.pop_front();
+                _received(msg);
+            }
+
             virtual void _received(Retained<Message> message) {
                 if (!connected())
                     return;
@@ -303,11 +320,12 @@ namespace litecore { namespace websocket {
             friend class LoopbackWebSocket;
 
             Retained<LoopbackWebSocket> _webSocket;
-            actor::delay_t _latency {0.0};
+            const actor::delay_t _latency {0.0};
             Retained<LoopbackWebSocket> _peer;
             websocket::Headers _responseHeaders;
             std::atomic<size_t> _bufferedBytes {0};
             State _state {State::unconnected};
+            std::deque<Retained<Message>> _msgWaitBuffer;
         };
     };
 

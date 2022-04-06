@@ -13,7 +13,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "Writer.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <map>
 
 namespace fleece {

@@ -508,12 +508,25 @@ namespace litecore {
     }
 
 
+
+    static string aliasOfFromEntry(const Value *value, const string& defaultAlias) {
+        auto dict = requiredDict(value, "FROM item");
+        string ret {optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
+        if (ret.empty()) {
+            ret = string {optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                         "COLLECTION in FROM item")};
+        }
+        return ret.empty() ? defaultAlias : ret;
+    }
+
+
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                aliasInfo &entry = _aliases.find(parseFromEntry(i.value()).alias)->second;
+                auto fromAlias = aliasOfFromEntry(i.value(), _defaultCollectionName);
+                aliasInfo &entry = _aliases.find(fromAlias)->second;
                 switch (entry.type) {
                     case kDBAlias: {
                         // The first item is the database alias:
@@ -555,9 +568,9 @@ namespace litecore {
 
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
                              << sqlIdentifier(entry.tableName)
-                             << " AS " << sqlIdentifier(entry.alias) << " ON ";
+                             << " AS " << sqlIdentifier(entry.alias);
                         if (entry.on) {
-                            _sql << "(";
+                            _sql << " ON (";
                             parseNode(entry.on);
                             _sql << ")";
                         }
@@ -699,11 +712,11 @@ namespace litecore {
 
 
     // Returns true if the expression is the `meta()` property of the given alias.
-    static bool isMetaProperty(const Array *meta, slice alias) {
+    static bool isMetaProperty(const Array *meta, slice alias, bool uniqAlias) {
         if (!meta || meta->empty() || !meta->get(0)->asString().caseEquivalent("META()"))
             return false;
         if (meta->count() == 1)
-            return alias.empty();
+            return alias.empty() || uniqAlias;
         else
             return meta->get(1)->asString() == alias;
     }
@@ -712,7 +725,7 @@ namespace litecore {
     // Returns true if the expression is a reference to the "deleted" meta-property of an alias.
     // This can be appear either as a document property `_deleted`, or as a references to the
     // `deleted` property of the `meta()` function.
-    static bool isDeletedPropertyRef(const Array *operation, slice alias) {
+    static bool isDeletedPropertyRef(const Array *operation, slice alias, bool uniqAlias) {
         if (operation && !operation->empty()) {
             slice op = operation->get(0)->asString();
             if (op.hasPrefix('.')) {
@@ -721,7 +734,7 @@ namespace litecore {
                     if (path[path.size() - 1].keyStr() != "_deleted")
                         return false;
                     if (path.size() == 1)
-                        return alias.empty();
+                        return alias.empty() || uniqAlias;
                     else
                         return path[0].keyStr() == alias;
                 }
@@ -729,24 +742,24 @@ namespace litecore {
                 // `["._", ["META()", <alias>], "deleted"]`
                 slice prop = operation->get(2)->asString();
                 return (prop == "deleted" || prop == ".deleted")
-                    && isMetaProperty(operation->get(1)->asArray(), alias);
+                    && isMetaProperty(operation->get(1)->asArray(), alias, uniqAlias);
             }
         }
         return false;
     }
 
-    static bool isDeletedPropertyRef(const Value *expr, slice alias) {
-        return expr && isDeletedPropertyRef(expr->asArray(), alias);
+    static bool isDeletedPropertyRef(const Value *expr, slice alias, bool uniqAlias) {
+        return expr && isDeletedPropertyRef(expr->asArray(), alias, uniqAlias);
     }
 
 
-    static bool findDeletedPropertyRefs(const Dict *expr, slice alias) {
+    static bool findDeletedPropertyRefs(const Dict *expr, slice alias, bool uniqAlias) {
         const Value *what = getCaseInsensitive(expr, "WHAT");
         for (DeepIterator iter(expr); iter; ++iter) {
             if (auto operation = iter.value()->asArray(); operation && operation != what) {
-                if (isDeletedPropertyRef(operation, alias))
+                if (isDeletedPropertyRef(operation, alias, uniqAlias))
                     return true;
-                if (isMetaProperty(operation, alias)) {
+                if (isMetaProperty(operation, alias, uniqAlias)) {
                     // Found a reference to `meta()`, but if it's being used to access a property
                     // other than `deleted`, ignore it:
                     slice prop;
@@ -767,8 +780,8 @@ namespace litecore {
 
     // Returns `kDeletedDocs` if the expression only matches deleted documents,
     // 'kLiveTable' if it doesn't access the 'deleted' meta-property at all,
-    static bool matchesOnlyDeletedDocs(const Value *expr, slice alias) {
-        if (isDeletedPropertyRef(expr, alias))
+    static bool matchesOnlyDeletedDocs(const Value *expr, slice alias, bool uniqAlias) {
+        if (isDeletedPropertyRef(expr, alias, uniqAlias))
             return true;
         if (auto operation = expr->asArray(); operation && operation->count() >= 2) {
             Array::iterator operands(operation);
@@ -777,13 +790,13 @@ namespace litecore {
             if (op == "=" || op == "==") {
                 // Match ["=", ["._deleted"], true] or ["=", true, ["._deleted"]]
                 if (operands.count() == 2) {
-                    return (operands[0]->asBool() == true && isDeletedPropertyRef(operands[1], alias))
-                        || (operands[1]->asBool() == true && isDeletedPropertyRef(operands[0], alias));
+                    return (operands[0]->asBool() == true && isDeletedPropertyRef(operands[1], alias, uniqAlias))
+                        || (operands[1]->asBool() == true && isDeletedPropertyRef(operands[0], alias, uniqAlias));
                 }
             } else if (op.caseEquivalent("AND")) {
                 // Match ["AND", ... ["._deleted"] ...]
                 for(; operands; ++operands)
-                    if (matchesOnlyDeletedDocs(operands.value(), alias))
+                    if (matchesOnlyDeletedDocs(operands.value(), alias, uniqAlias))
                         return true;
             }
         }
@@ -793,35 +806,41 @@ namespace litecore {
 
     void QueryParser::lookForDeleted(const Dict *select) {
         const Value *where = getCaseInsensitive(select, "WHERE");
-        for (auto &e : _aliases) {
-            aliasInfo &info = e.second;
-            if (info.type == kDBAlias || info.type == kJoinAlias) {
-                slice alias = info.alias;
-                if (info.type == kDBAlias && !_propertiesUseSourcePrefix)
-                    alias = ""_sl;
+        vector<AliasMap::iterator> aliasIters;
+        for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
+            if (iter->second.type == kDBAlias || iter->second.type == kJoinAlias) {
+                aliasIters.push_back(iter);
+            }
+        }
 
-                auto type = kLiveDocs;
-                if (findDeletedPropertyRefs(select, alias)) {
-                    if (where && matchesOnlyDeletedDocs(where, alias)) {
-                        type = kDeletedDocs;
-                        LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
-                    } else {
-                        type = kLiveAndDeletedDocs;
-                        LogDebug(QueryLog, "QueryParser: May match live and deleted docs in '%.*s'", SPLAT(alias));
-                    }
+        for (auto iter: aliasIters) {
+            aliasInfo& info = iter->second;
+            slice alias = info.alias;
+            if (info.type == kDBAlias && !_propertiesUseSourcePrefix)
+                alias = ""_sl;
+            auto type = kLiveDocs;
+            if (findDeletedPropertyRefs(select, alias, aliasIters.size()==1)) {
+                if (where && matchesOnlyDeletedDocs(where, alias, aliasIters.size()==1)) {
+                    type = kDeletedDocs;
+                    LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
                 } else {
-                    LogDebug(QueryLog, "QueryParser: Doesn't access meta(%.*s).deleted", SPLAT(alias));
+                    type = kLiveAndDeletedDocs;
+                    LogDebug(QueryLog, "QueryParser: May match live and deleted docs in '%.*s'", SPLAT(alias));
                 }
+            } else {
+                LogDebug(QueryLog, "QueryParser: Doesn't access meta(%.*s).deleted", SPLAT(alias));
+            }
 
-                if (type != info.delStatus) {
-                    info.delStatus = type;
-                    Assert(!info.collection.empty());
-                    info.tableName = _delegate.collectionTableName(info.collection, info.delStatus);
-                    if (info.type == kDBAlias) {
-                        _defaultCollectionName = info.collection;
-                        _defaultTableName = info.tableName;
-                    }
+            if (type != info.delStatus) {
+                info.delStatus = type;
+                Assert(!info.collection.empty());
+                info.tableName = _delegate.collectionTableName(info.collection, info.delStatus);
+                if (info.type == kDBAlias) {
+                    _defaultCollectionName = info.collection;
+                    _defaultTableName = info.tableName;
                 }
+                // We altered the table, so re-check its existence.
+                DebugAssert(_delegate.tableExists(info.tableName));
             }
         }
     }
@@ -947,8 +966,15 @@ namespace litecore {
                 // Come up with a column title if there is no 'AS':
                 if (result->type() == kString) {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
-                } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
-                    title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
+                } else if (result->type() == kArray) {
+                    if (expr[0]->asString().hasPrefix('.')) {
+                        title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
+                    } else if (expr[0]->asString().hasPrefix("_.") && expr.count() == 3 &&
+                               expr[1]->type() == kArray && expr[1]->asArray()->count() > 0 &&
+                               expr[1]->asArray()->begin()->asString().compare("meta()") == 0) {
+                        title = expr[2]->asString();
+                        title = title.substr(1);
+                    }
                 }
                 if (title.empty()) {
                     title = format("$%u", ++anonCount); // default for non-properties

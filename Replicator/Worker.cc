@@ -17,7 +17,7 @@
 #include "Increment.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include <sstream>
@@ -67,9 +67,8 @@ namespace litecore { namespace repl {
             s << "Push=" << kModeNames[push] << ", ";
         if (pull != kC4Disabled)
             s << "Pull=" << kModeNames[pull] << ", ";
-        s << "Options={";
+        s << "Options=";
         writeRedacted(properties, s);
-        s << "}";
         return s.str();
     }
 

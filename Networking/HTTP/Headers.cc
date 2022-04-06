@@ -12,6 +12,7 @@
 
 #include "Headers.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"
 #include "slice_stream.hh"
 #include <string.h>
 #include "betterassert.hh"
@@ -22,7 +23,7 @@ namespace litecore { namespace websocket {
     Headers::Headers(fleece::alloc_slice encoded)
     :_backingStore(encoded)
     {
-        readFrom(Value::fromData(encoded).asDict());
+        readFrom(ValueFromData(encoded).asDict());
     }
 
 

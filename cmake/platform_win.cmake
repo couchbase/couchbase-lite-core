@@ -150,6 +150,8 @@ function(setup_litecore_build_win)
         mbedtls PRIVATE
         _SOCKLEN_T_DECLARED
     )
+
+    install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
 endfunction()
 
 function(setup_support_build)

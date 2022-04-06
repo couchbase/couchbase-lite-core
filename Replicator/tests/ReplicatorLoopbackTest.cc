@@ -21,7 +21,7 @@
 #include "Base64.hh"
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include <chrono>
 
 using namespace litecore::actor;
@@ -1137,6 +1137,45 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[Push]") {
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    _ignoreLackOfDocErrors = true;
+    _checkDocsFinished = false;
+
+    slice doc1_id = "doc1"_sl;
+    slice doc2_id = "doc2"_sl;
+
+    createRev(doc1_id, kRevID, kFleeceBody);
+    createRev(doc2_id, kRevID, kFleeceBody);
+    c4::ref<C4Document> doc1 = c4db_getDoc(db, doc1_id, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc1);
+
+    REQUIRE(c4db_getDocumentCount(db) == 2);
+    REQUIRE(c4db_getDocumentCount(db2) == 0);
+
+    Log("-------- First Replication: push db->db2 --------");
+    _expectedDocumentCount = 2;
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+
+    REQUIRE(c4db_getDocumentCount(db2) == 2);
+
+    // delete doc1 from local
+    {
+        TransactionHelper t(db);
+        // Delete the doc:
+        c4::ref<C4Document> deletedDoc = c4doc_update(doc1, kC4SliceNull, kRevDeleted, ERROR_INFO());
+        REQUIRE(deletedDoc);
+        REQUIRE(deletedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+
+    _expectedDocumentCount = 1;
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+    c4::ref<C4Document> doc1InDb2 = c4db_getDoc(db2, doc1_id, true, kDocGetMetadata, ERROR_INFO());
+    CHECK( (doc1InDb2 && (doc1InDb2->flags | kDocDeleted)) );
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 
@@ -1631,7 +1670,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
             blob["content_type"_sl] = "image/jpeg";
         });
     }
-    SECTION("Not Modifying Digest") {
+    SECTION("Modifying Digest") {
         // Simulate modifying an attachment, i.e. changing its "digest" property.
         // This goes through a different code path than other metadata changes; see comment in
         // IncomingRev::_handleRev()...
@@ -1649,23 +1688,24 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
-
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
+        // No delta used as delta size (including modified revpos of each attachments) > revisionSize * 1.2
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 0);
         CHECK(string(json) ==
-              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":1,\"stub\":true},"
-              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
-              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
+              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":2,\"stub\":true},"
+              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
               "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
               "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
               "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
     } else {
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
         CHECK(string(json) ==
-              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":1,\"stub\":true},"
-              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
-              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
+              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":2,\"stub\":true},"
+              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
               "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
               "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
               "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");

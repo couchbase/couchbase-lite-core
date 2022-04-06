@@ -14,8 +14,9 @@
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"          // For fleece::InstanceCountedIn
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"          // For fleece::InstanceCountedIn
+#include <mutex>
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
@@ -140,8 +141,8 @@ namespace litecore {
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
 
         // to be called only by Query:
-        void registerQuery(Query *query)        {_queries.insert(query);}
-        void unregisterQuery(Query *query)      {_queries.erase(query);}
+        void registerQuery(Query *query);
+        void unregisterQuery(Query *query);
 
         //////// KEY-STORES:
 
@@ -263,6 +264,7 @@ namespace litecore {
                                    Shared *shared, Factory &factory);
         
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
+        void closeAllQueries();
         void beginTransactionScope(ExclusiveTransaction*);
         void transactionBegan(ExclusiveTransaction*);
         void transactionEnding(ExclusiveTransaction*, bool committing);
@@ -280,6 +282,7 @@ namespace litecore {
         std::unordered_map<std::string, unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
+        std::mutex              _queriesMutex;                  // Thread-safe access to _queries
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

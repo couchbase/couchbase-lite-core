@@ -30,7 +30,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "SecureRandomize.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "fleece/Fleece.hh"
 #include <mutex>
 #include <sqlite3.h>
@@ -228,7 +228,7 @@ namespace litecore {
                       "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
                       "PRAGMA user_version=%d; "
                       "END;",
-					  SchemaVersion::Current));
+					  (int)SchemaVersion::Current));
                 Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
                 _schemaVersion = SchemaVersion::Current;
                 // Create the default KeyStore's table:
@@ -309,7 +309,7 @@ namespace litecore {
                                        function_ref<void()> upgrade)
     {
         auto logUpgrade = [&](const char *msg) {
-            logInfo("SCHEMA UPGRADE (%d-%d) %-s", _schemaVersion, minVersion, msg);
+            logInfo("SCHEMA UPGRADE (%d-%d) %-s", (int)_schemaVersion, (int)minVersion, msg);
         };
 
         if (_schemaVersion < minVersion) {
@@ -328,7 +328,7 @@ namespace litecore {
                 _exec("BEGIN");
                 inTransaction = true;
                 upgrade();
-                _exec(format("PRAGMA user_version=%d; END", minVersion));
+                _exec(format("PRAGMA user_version=%d; END", (int)minVersion));
             } catch (const SQLite::Exception &x) {
                 // Recover if the db file itself is read-only (but not opened with writeable=false)
                 if (x.getErrorCode() == SQLITE_READONLY) {
@@ -675,8 +675,17 @@ namespace litecore {
 
 
     bool SQLiteDataFile::tableExists(const string &name) const {
+        const string* checkName = &name;
+        string deletedTableName;
+        if (((string_view)name).substr(0, 4) == "all_") {
+            // "all_xxx" is a TEMP VIEW that is not visible to getSchema. Let's
+            // check the deleted-table name.
+            deletedTableName = "kv_del_";
+            deletedTableName += name.substr(4);
+            checkName = &deletedTableName;
+        }
         string sql;
-        return getSchema(name, "table", name, sql);
+        return getSchema(*checkName, "table", *checkName, sql);
     }
 
 

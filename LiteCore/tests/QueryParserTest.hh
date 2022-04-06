@@ -53,7 +53,8 @@ protected:
         return onTable + ":unnest:" + property;
     }
     virtual bool tableExists(const string &tableName) const override {
-        return tableNames.count(tableName) > 0;
+        return ((string_view)tableName).substr(0,4) == "all_" ||
+            tableNames.count(tableName) > 0;
     }
 #ifdef COUCHBASE_ENTERPRISE
     virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
@@ -61,7 +62,7 @@ protected:
     }
 #endif
 
-    std::set<string> tableNames {"kv_default"};
+    std::set<string> tableNames {"kv_default", "kv_del_default"};
 
     std::set<string> usedTableNames;
 };

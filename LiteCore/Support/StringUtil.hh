@@ -30,7 +30,7 @@ namespace litecore {
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
 #ifndef _LIBCPP_VERSION
-    #define CONCAT(EXPR)   (static_cast<std::stringstream&>(std::stringstream() << EXPR)).str()
+    #define CONCAT(EXPR)   (static_cast<const std::stringstream&>(std::stringstream() << EXPR)).str()
 #else
     #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
 #endif

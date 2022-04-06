@@ -74,26 +74,26 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaf9ac41c0b0295589eab09b9e2b76ef7f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#gaf9ac41c0b0295589eab09b9e2b76ef7f">FLCreateJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> old, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> nuu)</td></tr>
-<tr class="memdesc:gaf9ac41c0b0295589eab09b9e2b76ef7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns JSON that encodes the changes to turn the value <code>old</code> into <code>nuu</code>.  <a href="group__delta.html#gaf9ac41c0b0295589eab09b9e2b76ef7f">More...</a><br /></td></tr>
-<tr class="separator:gaf9ac41c0b0295589eab09b9e2b76ef7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga399423832eaff940e7384b4806bb6728"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#ga399423832eaff940e7384b4806bb6728">FLEncodeJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> old, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> nuu, <a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> jsonEncoder)</td></tr>
-<tr class="memdesc:ga399423832eaff940e7384b4806bb6728"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes JSON that describes the changes to turn the value <code>old</code> into <code>nuu</code>.  <a href="group__delta.html#ga399423832eaff940e7384b4806bb6728">More...</a><br /></td></tr>
-<tr class="separator:ga399423832eaff940e7384b4806bb6728"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga080c06c45f2553464732452ce6c44db3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#ga080c06c45f2553464732452ce6c44db3">FLApplyJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> old, <a class="el" href="struct_f_l_slice.html">FLSlice</a> jsonDelta, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *error)</td></tr>
-<tr class="memdesc:ga080c06c45f2553464732452ce6c44db3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the JSON data created by <code>CreateJSONDelta</code> to the value <code>old</code>, which must be equal to the <code>old</code> value originally passed to <code>FLCreateJSONDelta</code>, and returns a Fleece document equal to the original <code>nuu</code> value.  <a href="group__delta.html#ga080c06c45f2553464732452ce6c44db3">More...</a><br /></td></tr>
-<tr class="separator:ga080c06c45f2553464732452ce6c44db3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab45e7002654e637b271f677f004610d1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#gab45e7002654e637b271f677f004610d1">FLEncodeApplyingJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> old, <a class="el" href="struct_f_l_slice.html">FLSlice</a> jsonDelta, <a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> encoder)</td></tr>
-<tr class="memdesc:gab45e7002654e637b271f677f004610d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the (parsed) JSON data created by <code>CreateJSONDelta</code> to the value <code>old</code>, which must be equal to the <code>old</code> value originally passed to <code>FLCreateJSONDelta</code>, and writes the corresponding <code>nuu</code> value to the encoder.  <a href="group__delta.html#gab45e7002654e637b271f677f004610d1">More...</a><br /></td></tr>
-<tr class="separator:gab45e7002654e637b271f677f004610d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga29e30c2f02c896ce85e8f10a36ed4ff6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#ga29e30c2f02c896ce85e8f10a36ed4ff6">FLCreateJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> old, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> nuu)</td></tr>
+<tr class="memdesc:ga29e30c2f02c896ce85e8f10a36ed4ff6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns JSON that encodes the changes to turn the value <code>old</code> into <code>nuu</code>.  <a href="group__delta.html#ga29e30c2f02c896ce85e8f10a36ed4ff6">More...</a><br /></td></tr>
+<tr class="separator:ga29e30c2f02c896ce85e8f10a36ed4ff6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaeb481d8f92f0a1692d1d72fe6e7afda5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#gaeb481d8f92f0a1692d1d72fe6e7afda5">FLEncodeJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> old, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> nuu, <a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> jsonEncoder)</td></tr>
+<tr class="memdesc:gaeb481d8f92f0a1692d1d72fe6e7afda5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes JSON that describes the changes to turn the value <code>old</code> into <code>nuu</code>.  <a href="group__delta.html#gaeb481d8f92f0a1692d1d72fe6e7afda5">More...</a><br /></td></tr>
+<tr class="separator:gaeb481d8f92f0a1692d1d72fe6e7afda5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6ec7a1ab7f15cc5d59c60c409a412cff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#ga6ec7a1ab7f15cc5d59c60c409a412cff">FLApplyJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> old, <a class="el" href="struct_f_l_slice.html">FLSlice</a> jsonDelta, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> outError)</td></tr>
+<tr class="memdesc:ga6ec7a1ab7f15cc5d59c60c409a412cff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the JSON data created by <code>CreateJSONDelta</code> to the value <code>old</code>, which must be equal to the <code>old</code> value originally passed to <code>FLCreateJSONDelta</code>, and returns a Fleece document equal to the original <code>nuu</code> value.  <a href="group__delta.html#ga6ec7a1ab7f15cc5d59c60c409a412cff">More...</a><br /></td></tr>
+<tr class="separator:ga6ec7a1ab7f15cc5d59c60c409a412cff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga00c4df985492d75c2470c6db9b57c19c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__delta.html#ga00c4df985492d75c2470c6db9b57c19c">FLEncodeApplyingJSONDelta</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> old, <a class="el" href="struct_f_l_slice.html">FLSlice</a> jsonDelta, <a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> encoder)</td></tr>
+<tr class="memdesc:ga00c4df985492d75c2470c6db9b57c19c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the (parsed) JSON data created by <code>CreateJSONDelta</code> to the value <code>old</code>, which must be equal to the <code>old</code> value originally passed to <code>FLCreateJSONDelta</code>, and writes the corresponding <code>nuu</code> value to the encoder.  <a href="group__delta.html#ga00c4df985492d75c2470c6db9b57c19c">More...</a><br /></td></tr>
+<tr class="separator:ga00c4df985492d75c2470c6db9b57c19c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>These functions implement a fairly-efficient "delta" encoding that encapsulates the changes needed to transform one Fleece value into another. </p>
 <p>The delta is expressed in JSON form.</p>
 <p>A delta can be stored or transmitted as an efficient way to produce the second value, when the first is already present. Deltas are frequently used in version-control systems and efficient network protocols. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga080c06c45f2553464732452ce6c44db3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga080c06c45f2553464732452ce6c44db3">&#9670;&nbsp;</a></span>FLApplyJSONDelta()</h2>
+<a id="ga6ec7a1ab7f15cc5d59c60c409a412cff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6ec7a1ab7f15cc5d59c60c409a412cff">&#9670;&nbsp;</a></span>FLApplyJSONDelta()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -101,7 +101,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> FLApplyJSONDelta </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>old</em>, </td>
         </tr>
         <tr>
@@ -113,8 +113,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *&#160;</td>
-          <td class="paramname"><em>error</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -129,7 +129,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">old</td><td>A value that's typically the old/original state of some data. This must be equal to the <code>old</code> value used when creating the <code>jsonDelta</code>. </td></tr>
     <tr><td class="paramname">jsonDelta</td><td>A JSON-encoded delta created by <code>FLCreateJSONDelta</code> or <code>FLEncodeJSONDelta</code>. </td></tr>
-    <tr><td class="paramname">error</td><td>On failure, error information will be stored where this points, if non-null. </td></tr>
+    <tr><td class="paramname">outError</td><td>On failure, error information will be stored where this points, if non-null. </td></tr>
   </table>
   </dd>
 </dl>
@@ -137,8 +137,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaf9ac41c0b0295589eab09b9e2b76ef7f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf9ac41c0b0295589eab09b9e2b76ef7f">&#9670;&nbsp;</a></span>FLCreateJSONDelta()</h2>
+<a id="ga29e30c2f02c896ce85e8f10a36ed4ff6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga29e30c2f02c896ce85e8f10a36ed4ff6">&#9670;&nbsp;</a></span>FLCreateJSONDelta()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -146,13 +146,13 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> FLCreateJSONDelta </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>old</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>nuu</em>&#160;</td>
         </tr>
         <tr>
@@ -175,8 +175,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gab45e7002654e637b271f677f004610d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab45e7002654e637b271f677f004610d1">&#9670;&nbsp;</a></span>FLEncodeApplyingJSONDelta()</h2>
+<a id="ga00c4df985492d75c2470c6db9b57c19c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga00c4df985492d75c2470c6db9b57c19c">&#9670;&nbsp;</a></span>FLEncodeApplyingJSONDelta()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -184,7 +184,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">bool FLEncodeApplyingJSONDelta </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>old</em>, </td>
         </tr>
         <tr>
@@ -220,8 +220,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga399423832eaff940e7384b4806bb6728"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga399423832eaff940e7384b4806bb6728">&#9670;&nbsp;</a></span>FLEncodeJSONDelta()</h2>
+<a id="gaeb481d8f92f0a1692d1d72fe6e7afda5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaeb481d8f92f0a1692d1d72fe6e7afda5">&#9670;&nbsp;</a></span>FLEncodeJSONDelta()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -229,13 +229,13 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">bool FLEncodeJSONDelta </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>old</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
           <td class="paramname"><em>nuu</em>, </td>
         </tr>
         <tr>

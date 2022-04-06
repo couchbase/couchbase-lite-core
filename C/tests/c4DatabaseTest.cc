@@ -599,6 +599,37 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     c4db_release(db2);
 }
 
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Delete before Expired", "[Database][C][Expiration][zhao]") {
+    C4Slice docID = C4STR("expire_me");
+    createRev(docID, kRevID, kFleeceBody);
+
+    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetMetadata, WITH_ERROR());
+    CHECK(doc);
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists));
+
+    C4Timestamp expire = c4_now() + 1*secs;
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
+
+    {
+        TransactionHelper t(db);
+        // Delete the doc:
+        c4::ref<C4Document> deletedDoc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO());
+        REQUIRE(deletedDoc);
+        REQUIRE(deletedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+
+    c4::ref<C4Document> deletedDoc = c4db_getDoc(db, docID, true, kDocGetMetadata, WITH_ERROR());
+    CHECK(deletedDoc);
+    CHECK(deletedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+
+    CHECK(WaitUntil(2000ms, [db=this->db, docID]() {
+        c4::ref<C4Document> deletedDoc = c4db_getDoc(db, docID, true, kDocGetMetadata, nullptr);
+        return deletedDoc == nullptr;
+    }));
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[Database][C][Expiration]")
 {
     // Test for random crashers/race conditions closing a database with a BackgroundDB+Housekeeper.

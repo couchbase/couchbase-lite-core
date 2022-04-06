@@ -165,7 +165,7 @@ namespace litecore { namespace repl {
                     return false;
                 logVerbose("    {'%.*s' #%.*s <- %.*s} seq %" PRIu64,
                            SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
-                           doc->selectedRev().sequence);
+                           (uint64_t)doc->selectedRev().sequence);
                 rev->sequence = doc->selectedRev().sequence;
                 if (doc->selectedRev().flags & kRevIsConflict) {
                     // Note that rev was inserted but caused a conflict:

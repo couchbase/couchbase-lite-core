@@ -16,12 +16,13 @@ if [[ $# > 1 ]]; then
 fi
 
 pushd $WORKING_DIR
+COMMAND="${PREFIX}objcopy --only-keep-debug libLiteCore.so tmp"
+eval ${COMMAND}
 COMMAND="find . -name \"*.a\" | xargs ${PREFIX}strip --strip-unneeded"
 eval ${COMMAND}
-rm libLiteCore.so
+rm libLiteCore.so*
+mv tmp libLiteCore.so.sym
 make -j8 LiteCore
-COMMAND="${PREFIX}objcopy --only-keep-debug libLiteCore.so libLiteCore.so.sym"
-eval ${COMMAND}
 COMMAND="${PREFIX}strip --strip-unneeded libLiteCore.so"
 eval ${COMMAND}
 COMMAND="${PREFIX}objcopy --add-gnu-debuglink=libLiteCore.so.sym libLiteCore.so"

@@ -233,6 +233,9 @@ namespace litecore {
             }
         }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+
         bool selectRevision(slice revID, bool withBody) override {
             if (revID.buf) {
                 if (!loadRevisions())
@@ -247,6 +250,8 @@ namespace litecore {
             }
             return true;
         }
+
+#pragma GCC diagnostic pop
 
         bool selectCurrentRevision() noexcept override { // doesn't throw
             if (_revTree.revsAvailable()) {
@@ -631,7 +636,7 @@ namespace litecore {
                     alloc_slice revID = newRev->revID.expanded();
                     keyStore().dataFile()._logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                         ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
-                        SPLAT(rq.docID), SPLAT(revID), _revTree.sequence());
+                        SPLAT(rq.docID), SPLAT(revID), (uint64_t)_revTree.sequence());
                 }
             } else {
                 _revTree.updateMeta();

@@ -16,7 +16,9 @@
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "fleece/slice.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
+//#include <iomanip>
+//#include <string_view>
 
 namespace litecore::qp {
 

@@ -58,15 +58,19 @@ def check_couchbasedeps_commit(dir: str):
     
     return MatchType.NONE
 
-def check_other_commit(dir: str, parent_branch: str):
+def check_other_commit(dir: str, parent_branch: str) -> str:
     git_result = subprocess.run("git branch -r --contains HEAD".split(), capture_output=True, cwd=dir)
     branches = git_result.stdout.decode("utf-8").splitlines()
     for branch in branches:
         branch = branch.strip()
         if branch.endswith(parent_branch):
-            return True
+            return parent_branch
+
+        # Special case reflecting the GitHub shift of master -> main
+        if branch.endswith("main") and parent_branch == "master":
+            return "main"
     
-    return False
+    return None
 
 def get_current_branch(dir: str):
     git_result = subprocess.run("git branch --show-current".split(), capture_output=True, cwd=dir)
@@ -106,13 +110,14 @@ def check_submodules(dir: str, branch: str):
                 print(colored('\tOn branch', 'cyan'), get_nearby_couchbase_branch(dir + submodule))
 
     for submodule in submodules["other"]:
-        if not check_other_commit(dir + submodule, branch):
+        child_branch = check_other_commit(dir + submodule, branch)
+        if not child_branch:
             print(submodule.ljust(40, "."), colored("[FAIL]", "red"))
             print(colored('\tcurrent branch is', 'cyan'), get_current_branch(dir + submodule), 'expected', branch)
             fail_count += 1
         else:
             print(submodule.ljust(40, "."), colored("[OK]", "green"))
-            print(colored('\tOn branch', 'cyan'), branch)
+            print(colored('\tOn branch', 'cyan'), child_branch)
         
     return fail_count
 
@@ -124,7 +129,8 @@ def main(dir: str, branch: str):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Validate submodules for PR')
     parser.add_argument('branch', type=str, help="The branch to check for in non-couchbasedep repos")
+    parser.add_argument('path', type=str, help="The path to the parent repo to check")
 
     args = parser.parse_args()
-    input_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep + ".." + os.sep
+    input_dir = os.path.realpath(args.path) + os.sep
     sys.exit(main(input_dir, args.branch))

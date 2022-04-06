@@ -58,7 +58,7 @@ namespace litecore { namespace repl {
     void Pusher::_start() {
         auto sinceSequence = _checkpointer.localMinSequence();
         logInfo("Starting %spush from local seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), sinceSequence+1);
+            (_continuous ? "continuous " : ""), (uint64_t)sinceSequence+1);
         _started = true;
         startSending(sinceSequence);
     }
@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
         _changesFeed.setContinuous(_continuous);
         _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), since);
+            (_continuous ? "continuous " : ""), (uint64_t)since);
 
         auto filter = req->property("filter"_sl);
         if (filter) {
@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
         _lastSequenceRead = max(_lastSequenceRead, changes.lastSequence);
 
         if (changes.revs.empty()) {
-            logInfo("Found 0 changes up to #%" PRIu64, changes.lastSequence);
+            logInfo("Found 0 changes up to #%" PRIu64, (uint64_t)changes.lastSequence);
         } else {
             uint64_t bodySize = 0;
             for (auto &change : changes.revs)
@@ -161,14 +161,14 @@ namespace litecore { namespace repl {
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
-                    changes.revs.size(), changes.lastSequence,
+                    changes.revs.size(), (uint64_t)changes.lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
-                    changes.revs.front()->sequence, changes.revs.back()->sequence);
+                    (uint64_t)changes.revs.front()->sequence, (uint64_t)changes.revs.back()->sequence);
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
                 for (auto &change : changes.revs)
                     logDebug("    - %.4" PRIu64 ": '%.*s' #%.*s (remote #%.*s)",
-                             change->sequence, SPLAT(change->docID), SPLAT(change->revID),
+                             static_cast<uint64_t>(change->sequence), SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
             }
 #endif
@@ -181,7 +181,7 @@ namespace litecore { namespace repl {
         if (!changes.askAgain) {
             // ChangesFeed says there are not currently any more changes, i.e. we've caught up.
             if (!_caughtUp) {
-                logInfo("Caught up, at lastSequence #%" PRIu64, changes.lastSequence);
+                logInfo("Caught up, at lastSequence #%" PRIu64, (uint64_t)changes.lastSequence);
                 _caughtUp = true;
                 if (_continuous)
                     _continuousCaughtUp = false;
@@ -225,6 +225,10 @@ namespace litecore { namespace repl {
     // Sends a "changes" or "proposeChanges" message.
     void Pusher::sendChanges(RevToSendList &changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
+        if(_proposeChanges) {
+            req[kConflictIncludesRevProperty] = "true"_sl;
+        }
+
         req.urgent = tuning::kChangeMessagesAreUrgent;
         req.compressed = !changes.empty();
 
@@ -292,7 +296,7 @@ namespace litecore { namespace repl {
         // Got reply to the "changes" or "proposeChanges":
         if (!changes.empty()) {
             logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                changes.size(), changes.front()->sequence);
+                changes.size(), (uint64_t)changes.front()->sequence);
         }
         decrement(_changeListsInFlight);
         _changesFeed.setFindForeignAncestors(getForeignAncestors());
@@ -346,7 +350,7 @@ namespace litecore { namespace repl {
                                           : handleChangeResponse(change, *iResponse);
             if (queued) {
                 logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
-                           SPLAT(change->docID), SPLAT(change->revID), change->sequence,
+                           SPLAT(change->docID), SPLAT(change->revID), (uint64_t)change->sequence,
                            _revQueue.size());
             }
             if (iResponse)
@@ -381,7 +385,15 @@ namespace litecore { namespace repl {
     {
         bool completed = true, synced = false;
         // Entry in "proposeChanges" response is a status code, with 0 for OK:
-        int status = (int)response.asInt();
+        int status = 0;
+        slice serverRevID = nullslice;
+        if(response.isInteger()) {
+            status = (int)response.asInt();
+        } else if(auto dict = response.asDict(); dict) {
+            status = (int)dict["status"].asInt();
+            serverRevID = dict["rev"].asString();
+        }
+
         if (status == 0) {
             change->noConflicts = true;
             _revQueue.push_back(change);
@@ -392,22 +404,23 @@ namespace litecore { namespace repl {
         } else if (status == 409) {
             // 409 means a push conflict
             if (_proposeChanges) {
-                logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with server revision (%.*s)",
                         SPLAT(change->docID), SPLAT(change->revID),
-                        SPLAT(change->remoteAncestorRevID));
+                        SPLAT(change->remoteAncestorRevID), SPLAT(serverRevID));
             } else {
                 logInfo("Rev '%.*s' #%.*s conflicts with newer server revision",
                         SPLAT(change->docID), SPLAT(change->revID));
             }
-            if (_options->pull <= kC4Passive) {
-                C4Error error = C4Error::make(WebSocketDomain, 409,
-                                             "conflicts with newer server revision"_sl);
-                finishedDocumentWithError(change, error, false);
-            } else if (shouldRetryConflictWithNewerAncestor(change)) {
+            
+            if (shouldRetryConflictWithNewerAncestor(change, serverRevID)) {
                 // I have a newer revision to send in its place:
                 RevToSendList changes = {change};
                 sendChanges(changes);
                 return true;
+            } else if (_options->pull <= kC4Passive) {
+                C4Error error = C4Error::make(WebSocketDomain, 409,
+                                             "conflicts with newer server revision"_sl);
+                finishedDocumentWithError(change, error, false);
             } else {
                 completed = false;
             }
@@ -436,15 +449,34 @@ namespace litecore { namespace repl {
 
     // Called after a proposed revision gets a 409 Conflict response from the server.
     // Check the document's current remote rev, and retry if it's different now.
-    bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend *rev) {
-        // None of this is relevant if there's no puller getting stuff from the server
-        DebugAssert(_options->pull > kC4Passive);
-
+    bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend *rev, slice receivedRevID) {
         if (!_proposeChanges)
             return false;
         try {
             Retained<C4Document> doc = _db->getDoc(rev->docID, kDocGetAll);
             if (doc && C4Document::equalRevIDs(doc->revID(), rev->revID)) {
+                if(receivedRevID && receivedRevID != rev->remoteAncestorRevID) {
+                    // Remote ancestor received in proposeChanges response, so try with 
+                    // this one instead
+
+                    // If the first portion of this test passes, then the rev exists in the tree.
+                    // If the second portion passes, then receivedRevID is an ancestor of the 
+                    // current rev ID and it is usable for a retry.
+                    if(doc->selectRevision(receivedRevID, false) && 
+                        doc->selectCommonAncestorRevision(rev->revID, receivedRevID)) {
+                        logInfo("Remote reported different rev of '%.*s' (mine: %.*s theirs: %.*s); retrying push",
+                            SPLAT(rev->docID), SPLAT(rev->remoteAncestorRevID), SPLAT(receivedRevID));
+                        rev->remoteAncestorRevID = receivedRevID;
+                        return true;
+                    }
+                }
+
+                if(_options->pull <= kC4Passive) {
+                    // None of this other stuff is relevant if there's 
+                    // no puller getting stuff from the server
+                    return false;
+                }
+
                 alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
                 if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {
                     // Remote ancestor has changed, so retry if it's not a conflict:
@@ -511,7 +543,7 @@ namespace litecore { namespace repl {
                 SPLAT(change->docID), SPLAT(change->revID),
                 SPLAT(change->remoteAncestorRevID),
                 (_proposeChanges ? "proposeChanges" : "changes"),
-                change->sequence);
+                (uint64_t)change->sequence);
         _pushingDocs.insert({change->docID, change});
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);

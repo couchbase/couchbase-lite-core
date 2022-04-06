@@ -12,7 +12,7 @@
 
 #pragma once
 #include "Base.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 
 struct mbedtls_asn1_named_data;
 struct mbedtls_ctr_drbg_context;

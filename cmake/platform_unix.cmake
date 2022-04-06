@@ -38,7 +38,6 @@ function(setup_litecore_build_unix)
             # Unexplained linker errors occur.
             set_property(TARGET LiteCoreStatic PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-            set_property(TARGET BLIPStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET LiteCoreWebSocket PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET LiteCoreREST_Static PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
@@ -84,7 +83,7 @@ function(setup_litecore_build_unix)
     $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
-    target_compile_options(BLIPStatic PRIVATE 
+    target_compile_options(BLIPObjects PRIVATE 
 	${LITECORE_WARNINGS}
     $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>

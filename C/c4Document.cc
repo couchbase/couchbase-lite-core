@@ -29,6 +29,7 @@
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
+#include "fleece/FLExpert.h"
 #include "FleeceImpl.hh"
 #include "DeepIterator.hh"
 
@@ -43,7 +44,8 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 {
     // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
     if (_docID.size < 1 || _docID.size > kMaxDocIDLength)
-        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID_));
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
+
 #if DEBUG
     // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
     auto asStruct = (C4Document_C*)this;

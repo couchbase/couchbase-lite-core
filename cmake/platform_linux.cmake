@@ -80,6 +80,14 @@ function(setup_litecore_build_linux)
         LiteCore/Unix
     )
 
+    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPObjects)
+        target_compile_options(
+            ${platform} PRIVATE
+            "-Wformat=2"
+        )
+    endforeach()
+    
+
     # Specify list of symbols to export
     if(BUILD_ENTERPRISE)
         set_target_properties(

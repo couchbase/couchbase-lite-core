@@ -294,8 +294,10 @@ namespace litecore { namespace net {
                 if (fd == _interruptReadFD) {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
-                    ::read(_interruptReadFD, &message, sizeof(message));
-                    if (message < 0) {
+                    auto nread = ::read(_interruptReadFD, &message, sizeof(message));
+                    if(_usuallyFalse(nread == -1)) {
+                        result = false;
+                    } else if (message < 0) {
                         // Receiving a negative message aborts the loop
                         LogTo(WSLog, "Poller: thread is stopping");
                         result = false;

@@ -16,7 +16,7 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <functional>
 #include <memory>
 #include <vector>

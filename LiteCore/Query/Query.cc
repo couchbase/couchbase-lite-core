@@ -31,9 +31,10 @@ namespace litecore {
     }
 
 
-    Query::~Query() {
-        if (_dataFile)
+    void Query::disposing() {
+        if (!_disposed && _dataFile)
             _dataFile->unregisterQuery(this);
+        _disposed = true;
     }
 
 

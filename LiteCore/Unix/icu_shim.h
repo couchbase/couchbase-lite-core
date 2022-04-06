@@ -15,6 +15,8 @@ UCaseMap* lc_ucasemap_open(const char* locale, uint32_t options, UErrorCode* pEr
 int32_t lc_ucasemap_utf8ToUpper(const UCaseMap* csm, char* dest, int32_t destCapacity, const char* src, int32_t srcLength, UErrorCode* pErrorCode);
 int32_t lc_ucasemap_utf8ToLower(const UCaseMap* csm, char* dest, int32_t destCapacity, const char* src, int32_t srcLength, UErrorCode* pErrorCode);
 void lc_ucasemap_close(UCaseMap* csm);
+int32_t lc_ucol_countAvailable(void);
+const char* lc_ucol_getAvailable(int32_t localeIndex);
 
 #ifdef __cplusplus
 }

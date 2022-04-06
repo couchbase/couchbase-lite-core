@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh"  // for AllocedDict
 #include <algorithm>
 #include <atomic>
 #include <mutex>
@@ -304,7 +305,8 @@ namespace litecore {
             }
 
             setStatusFlag(kC4Suspended, false);
-            logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
+            logInfo("Starting Replicator %s with config: {%s}\n",
+                    _replicator->loggingName().c_str(), std::string(*_options).c_str());
             _selfRetain = this; // keep myself alive till Replicator stops
             updateStatusFromReplicator(_replicator->status());
             _responseHeaders = nullptr;

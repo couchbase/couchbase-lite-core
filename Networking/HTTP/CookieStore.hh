@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include <iosfwd>
 #include <memory>

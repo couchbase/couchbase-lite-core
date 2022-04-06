@@ -110,7 +110,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select meta(id).id from _default as id") == "{'FROM':[{'AS':'id','COLLECTION':'_default'}],"
           "'WHAT':[['_.',['meta()','id'],'.id']]}");
     CHECK(translate("select meta().sequence") == "{'WHAT':[['_.',['meta()'],'.sequence']]}");
-//    CHECK(translate("select meta().deleted") == "{'WHAT':[['_.',['meta()'],'.deleted']]}");
+    CHECK(translate("select meta().revisionID") == "{'WHAT':[['_.',['meta()'],'.revisionID']]}");
+    CHECK(translate("select meta().deleted") == "{'WHAT':[['_.',['meta()'],'.deleted']]}");
     CHECK(translate("select meta(_default).id from _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['_.',['meta()','_default'],'.id']]}");
     {
         ExpectingExceptions x;

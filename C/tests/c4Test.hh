@@ -16,7 +16,8 @@
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
+#include "fleece/Expert.hh"
 #include <vector>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
@@ -279,7 +280,7 @@ public:
     bool docBodyEquals(C4Document *doc NONNULL, slice fleece);
 
     static std::string fleece2json(slice fleece) {
-        auto value = Value::fromData(fleece);
+        auto value = ValueFromData(fleece);
         REQUIRE(value);
         return value.toJSON(true, true).asString();
     }
