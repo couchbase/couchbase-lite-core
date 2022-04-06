@@ -57,6 +57,7 @@ namespace litecore { namespace blip {
                 if (data.size == 0)
                     break;
                 _uncompressedBytesSent += (uint32_t)data.size;
+                Log("MessageOut: Writing to codec (mode %d) for message #%" PRIu64, (int)mode, _number);
                 codec.write(data, frame, mode);
                 _uncompressedBytesSent -= (uint32_t)data.size;
             } while (frame.capacity() >= 1024);

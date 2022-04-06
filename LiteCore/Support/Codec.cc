@@ -37,7 +37,7 @@ namespace litecore { namespace blip {
     static constexpr int kZlibDeflateMemLevel = 9;
 
 
-    LogDomain Zip("Zip", LogLevel::Warning);
+    LogDomain Zip("Zip", LogLevel::Info);
 
 
     Codec::Codec()
@@ -47,6 +47,7 @@ namespace litecore { namespace blip {
 
 
     void Codec::addToChecksum(slice data) {
+        logInfo("Adding %" PRIu64 " bytes to checksum", data.size);
         _checksum = (uint32_t)crc32(_checksum, (const Bytef*)data.buf, (int)data.size);
     }
 
@@ -131,12 +132,14 @@ namespace litecore { namespace blip {
 
 
     void Deflater::write(slice_istream &input, slice_ostream &output, Mode mode) {
-        if (mode == Mode::Raw)
+        if (mode == Mode::Raw) {
+            logInfo("_writeCalled with raw mode, shorcutting to _writeRaw");
             return _writeRaw(input, output);
+        }
 
         slice origInput = input;
         size_t origOutputSize = output.capacity();
-        logInfo("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
+        logInfo("Compressing %zu bytes into %zu-byte buf using mode %d", input.size, origOutputSize, (int)mode);
 
         switch (mode) {
             case Mode::NoFlush:     _write("deflate", input, output, mode); break;
@@ -166,19 +169,24 @@ namespace litecore { namespace blip {
         while (input.size > 0) {
             if (output.capacity() >= deflateBound(&_z, (unsigned)input.size)) {
                 // Entire input is guaranteed to fit, so write it & flush:
+                logInfo("Entire output fits into buffer, flush now...");
                 curMode = Mode::SyncFlush;
                 _write("deflate", input, output, Mode::SyncFlush);
             } else {
                 // Limit input size to what we know can be compressed into output.
                 // Don't flush, because we may try to write again if there's still room.
+                logInfo("Output is too big for buffer, writing %" PRIu64 " bytes...", output.capacity() - kHeadroomForFlush);
                 _write("deflate", input, output, curMode, output.capacity() - kHeadroomForFlush);
             }
-            if (output.capacity() <= kStopAtOutputSize)
+            if (output.capacity() <= kStopAtOutputSize) {
+                logInfo("Output has reached threshold (%" PRIu64 " <= %" PRIu64 "), exiting loop...", output.capacity(), kStopAtOutputSize);
                 break;
+            }
         }
 
         if (curMode != Mode::SyncFlush) {
             // Flush if we haven't yet (consuming no input):
+            logInfo("Loop did not flush output, flushing now...");
             _write("deflate", input, output, Mode::SyncFlush, 0);
         }
     }
