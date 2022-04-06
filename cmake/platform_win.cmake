@@ -16,11 +16,9 @@ function(set_litecore_source)
         ${WIN_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
-        MSVC/asprintf.c
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
-        MSVC/vasprintf-msvc.c
         LiteCore/Support/StringUtil_winapi.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
@@ -53,41 +51,25 @@ endfunction()
 
 function(setup_litecore_build_win)
     target_compile_definitions(
-        LiteCoreStatic PRIVATE
+        LiteCoreObjects PRIVATE
         -DUNICODE               # Use wide string variants for Win32 calls
         -D_UNICODE              # Ditto
         -D_USE_MATH_DEFINES     # Define math constants like PI
-        -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
         -DWIN32                 # Identify as WIN32
         -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
     )
 
     target_compile_definitions(
-        LiteCoreStatic PUBLIC
+        LiteCoreObjects PUBLIC
+        -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc 
         -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
-    target_compile_definitions(
-        LiteCoreWebSocket PRIVATE
-        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+    target_include_directories(
+        LiteCoreObjects PRIVATE  
+        MSVC
+        vendor/fleece/MSVC
     )
-
-    target_include_directories(LiteCoreStatic PRIVATE MSVC)
-    target_include_directories(LiteCoreStatic PRIVATE vendor/fleece/MSVC)
-    target_include_directories(LiteCoreWebSocket PRIVATE MSVC)
-
-    # Set the exported symbols for LiteCore
-    if(BUILD_ENTERPRISE)
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "/def:${PROJECT_SOURCE_DIR}/C/c4_ee.def"
-        )
-    else()
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "/def:${PROJECT_SOURCE_DIR}/C/c4.def"
-        )
-    endif()
 
     target_include_directories(
         LiteCore PRIVATE
@@ -97,9 +79,11 @@ function(setup_litecore_build_win)
 
     # Link with subproject libz and Windows sockets lib
     target_link_libraries(
-        LiteCoreStatic INTERFACE
+        LiteCoreObjects INTERFACE
         zlibstatic
         Ws2_32
+        ncrypt
+        crypt32
     )
 
     # Compile string literals as UTF-8,
@@ -134,6 +118,13 @@ function(setup_litecore_build_win)
         _SOCKLEN_T_DECLARED
     )
 
+    target_compile_definitions(
+        LiteCoreWebSocket PRIVATE
+        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+    )
+
+    target_include_directories(LiteCoreWebSocket PRIVATE MSVC)
+
     install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
 endfunction()
 
@@ -143,5 +134,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    target_include_directories(LiteCoreREST_Static PRIVATE ../MSVC)
+    target_include_directories(LiteCoreREST_Objects PUBLIC ../MSVC)
 endfunction()

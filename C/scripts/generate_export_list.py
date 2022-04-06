@@ -129,9 +129,9 @@ def write_export_files(output_dir: str):
 
         exports[current_key].append(line.lstrip(" ").rstrip("\r\n"))
 
-    write_def_file(exports)
+    #write_def_file(exports)
     write_exp_file(exports)
-    write_gnu_file(exports)
+    #write_gnu_file(exports)
 
 
 if __name__ == "__main__":

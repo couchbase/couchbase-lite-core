@@ -13,5 +13,5 @@
 #include "Logging.hh"
 
 extern "C" {
-    litecore::LogDomain kC4Cpp_DefaultLog("", litecore::LogLevel::Info);
+    CBL_CORE_API litecore::LogDomain kC4Cpp_DefaultLog("", litecore::LogLevel::Info);
 }

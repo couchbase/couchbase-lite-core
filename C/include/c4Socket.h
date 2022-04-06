@@ -29,14 +29,14 @@ C4API_BEGIN_DECLS
 
     /** One-time registration of socket callbacks. Must be called before using any socket-based
         API including the replicator. Do not call multiple times. */
-    void c4socket_registerFactory(C4SocketFactory factory) C4API;
+    CBL_CORE_API void c4socket_registerFactory(C4SocketFactory factory) C4API;
 
     /** Associates an opaque "native handle" with this object. You can use this to store whatever
         you need to represent the socket's implementation, like a file descriptor. */
-    void c4Socket_setNativeHandle(C4Socket*, void* C4NULLABLE) C4API;
+    CBL_CORE_API void c4Socket_setNativeHandle(C4Socket*, void* C4NULLABLE) C4API;
 
     /** Returns the opaque "native handle" associated with this object. */
-    void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
+    CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before c4socket_opened or
@@ -47,14 +47,14 @@ C4API_BEGIN_DECLS
         @param responseHeadersFleece  The HTTP response headers, encoded as a Fleece dictionary
             whose keys are the header names (with normalized case) and values are header values
             as strings. */
-    void c4socket_gotHTTPResponse(C4Socket *socket,
+    CBL_CORE_API void c4socket_gotHTTPResponse(C4Socket *socket,
                                   int httpStatus,
                                   C4Slice responseHeadersFleece) C4API;
 
     /** Notifies LiteCore that a socket has opened, i.e. a C4SocketFactory.open request has completed
         successfully.
         @param socket  The socket. */
-    void c4socket_opened(C4Socket *socket) C4API;
+    CBL_CORE_API void c4socket_opened(C4Socket *socket) C4API;
 
     /** Notifies LiteCore that a socket has finished closing, or disconnected, or failed to open.
         - If this is a normal close in response to a C4SocketFactory.close request, the error
@@ -64,7 +64,7 @@ C4API_BEGIN_DECLS
           set the error domain to WebSocketDomain and the code to the WebSocket status code.
         @param socket  The socket.
         @param errorIfAny  the status of the close; see description above. */
-    void c4socket_closed(C4Socket *socket, C4Error errorIfAny) C4API;
+    CBL_CORE_API void c4socket_closed(C4Socket *socket, C4Error errorIfAny) C4API;
 
     /** Notifies LiteCore that the peer has requested to close the socket using the WebSocket protocol.
         (Should only be called by sockets whose factory's `framing` equals to `kC4NoFraming`.)
@@ -73,13 +73,13 @@ C4API_BEGIN_DECLS
         @param socket  The socket.
         @param  status  The WebSocket status sent by the peer, typically 1000.
         @param  message  An optional human-readable message sent by the peer. */
-    void c4socket_closeRequested(C4Socket *socket, int status, C4String message) C4API;
+    CBL_CORE_API void c4socket_closeRequested(C4Socket *socket, int status, C4String message) C4API;
 
     /** Notifies LiteCore that a C4SocketFactory.write request has been completed, i.e. the bytes
         have been written to the socket.
         @param socket  The socket.
         @param byteCount  The number of bytes that were written. */
-    void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API;
+    CBL_CORE_API void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API;
 
     /** Notifies LiteCore that data was received from the socket. If the factory's
         `framing` equals to `kC4NoFraming`, the data must be a single complete message; otherwise it's
@@ -90,7 +90,7 @@ C4API_BEGIN_DECLS
         grows too large.
         @param socket  The socket.
         @param data  The data received, either a message or raw bytes. */
-    void c4socket_received(C4Socket *socket, C4Slice data) C4API;
+    CBL_CORE_API void c4socket_received(C4Socket *socket, C4Slice data) C4API;
 
 
     /** Constructs a C4Socket from a "native handle", whose interpretation is up to the
@@ -104,7 +104,7 @@ C4API_BEGIN_DECLS
             such as a file descriptor or a native object pointer.
         @param address  The address of the remote peer making the connection.
         @return  A new C4Socket initialized with the `nativeHandle`. */
-    C4Socket* c4socket_fromNative(C4SocketFactory factory,
+    CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory,
                                   void *nativeHandle,
                                   const C4Address *address) C4API;
 
