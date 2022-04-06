@@ -12,7 +12,6 @@
 
 #pragma once
 #include "AsyncActorCommon.hh"
-#include "Error.hh"
 #include "RefCounted.hh"
 #include "Result.hh"
 #include "InstanceCounted.hh"
