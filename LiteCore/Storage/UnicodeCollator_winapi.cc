@@ -166,6 +166,22 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
+
+    BOOL __stdcall SupportedLocalesCallback(LPWSTR name, DWORD flags, LPARAM arg) {
+        auto* locales = (vector<string> *)arg;
+        size_t len = wcslen(name);
+        TempArray(buf, char, len + 1);
+        buf[len] = 0;
+        WideCharToMultiByte(CP_UTF8, 0, name, wcslen(name), buf, (int)len, NULL, NULL);
+        locales->push_back(buf);
+        return TRUE;
+    }
+
+    vector<string> SupportedLocales() {
+        vector<string> locales;
+        EnumSystemLocalesEx(SupportedLocalesCallback, LOCALE_ALL, (LPARAM)&locales, NULL);
+        return locales;
+    }
 }
 
 #endif

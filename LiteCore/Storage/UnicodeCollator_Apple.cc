@@ -167,6 +167,21 @@ namespace litecore {
         return context;
     }
 
+    vector<string> SupportedLocales() {
+        vector<string> locales;
+        CFArrayRef rawLocales = CFLocaleCopyAvailableLocaleIdentifiers();
+        auto count = CFArrayGetCount(rawLocales);
+        char buf[32];
+        for(CFIndex i = 0; i < count; i++) {
+            auto locale = (CFStringRef)CFArrayGetValueAtIndex(rawLocales, i);
+            CFStringGetCString(locale, buf, 32, kCFStringEncodingASCII);
+            locales.push_back(buf);
+        }
+        
+        CFRelease(rawLocales);
+        return locales;
+    }
+
 }
 
 #endif // __APPLE__
