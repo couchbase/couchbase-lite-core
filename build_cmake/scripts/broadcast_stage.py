@@ -10,8 +10,9 @@ BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 def broadcast():
     core_repo = Repo(BASE_DIR)
-    commit_message = core_repo.head.reference.commit.message
-    if len(core_repo.head.reference.commit.parents) != 2:
+    commit = core_repo.commit(core_repo.head)
+    commit_message = commit.message
+    if len(commit.parents) != 2:
         print("!!! Commit to staging branch is not a merge commit, aborting...")
         exit(1)
 
@@ -51,7 +52,7 @@ def broadcast():
         print("!!! Malformed manifest, aborting...")
         exit(4)
     
-    ce_hash_found = str(core_repo.head.reference.commit.parents[1])
+    ce_hash_found = str(core_repo.commit(core_repo.head).parents[1])
     if ce_hash != ce_hash_found:
         print(f"Bad build number {build}. Expected CE hash {ce_hash} but found {ce_hash_found}, aborting...")
         exit(5)
