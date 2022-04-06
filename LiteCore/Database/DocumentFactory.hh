@@ -15,6 +15,7 @@
 #include "c4DocumentTypes.h"
 #include "Record.hh"
 #include <vector>
+#include "RevID.hh"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -40,6 +41,8 @@ namespace litecore {
                                                        unsigned maxAncestors,
                                                        bool mustHaveBodies,
                                                        C4RemoteID remoteDBID) =0;
+        
+        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted);
 
     private:
         C4Collection* const _coll;    // Unretained, to avoid ref-cycle

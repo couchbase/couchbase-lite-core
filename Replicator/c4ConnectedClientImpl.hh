@@ -18,8 +18,7 @@
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
 #include "RevID.hh"
-#include "Record.hh"
-#include "SecureDigest.hh"
+#include "DocumentFactory.hh"
 
 namespace litecore::client {
 
@@ -83,14 +82,10 @@ namespace litecore::client {
                               C4Slice parentRevisionID,
                               C4RevisionFlags flags,
                               C4Slice fleeceData) noexcept override {
-            
-            FLValue v = FLValue_FromData(fleeceData, kFLTrusted);
-            FLDict dict = FLValue_AsDict(v);
-            
-            alloc_slice generatedRev = generateRevID(dict,
-                                                     parentRevisionID ? revidBuffer(parentRevisionID) : revid(),
-                                                     convertDocumentFlags(flags));
-            
+            bool deletion = (flags & kRevDeleted) != 0;
+            revidBuffer generatedRev = DocumentFactory::generateDocRevID(fleeceData,
+                                                                         parentRevisionID,
+                                                                         deletion);
             return _client->putDoc(docID,
                                    collectionID,
                                    revid(generatedRev).expanded(),
