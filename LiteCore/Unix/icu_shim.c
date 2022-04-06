@@ -407,7 +407,6 @@ int32_t lc_ucol_countAvailable(void) {
   pthread_once(&once_control, &init_icudata_version);
   int32_t (*ptr)(void);
   if (syms[11] == NULL) {
-    *pErrorCode = U_UNSUPPORTED_ERROR;
     return (int32_t)0;
   }
   ptr = (int32_t(*)(void))syms[11];
@@ -423,8 +422,7 @@ const char* lc_ucol_getAvailable(int32_t localeIndex) {
   pthread_once(&once_control, &init_icudata_version);
   const char* (*ptr)(int32_t);
   if (syms[12] == NULL) {
-    *pErrorCode = U_UNSUPPORTED_ERROR;
-    return nullptr;
+    return NULL;
   }
   ptr = (const char*(*)(int32_t))syms[12];
   return ptr(localeIndex);
