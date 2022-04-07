@@ -154,7 +154,7 @@ namespace litecore { namespace REST {
             if (defaultMessage)
                 _statusMessage = defaultMessage;
         }
-        string statusLine = format("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
+        string statusLine = format("HTTP/1.0 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
 
