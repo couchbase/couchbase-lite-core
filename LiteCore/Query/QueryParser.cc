@@ -515,8 +515,13 @@ namespace litecore {
         if (ret.empty()) {
             ret = string {optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
                                          "COLLECTION in FROM item")};
+            if (ret.empty()) {
+                ret = defaultAlias;
+            } else if (auto pos = ret.find('.'); pos != string::npos) {
+                ret = ret.substr(pos + 1);
+            }
         }
-        return ret.empty() ? defaultAlias : ret;
+        return ret;
     }
 
 

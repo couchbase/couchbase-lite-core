@@ -359,3 +359,19 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
           == "{'WHAT':[['to_array()',['.x']],['to_atom()',['.x']],['to_boolean()',['.x']],['to_number()',['.x']],"
              "['to_object()',['.x']],['to_string()',['.x']]]}");
 }
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
+    tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.scope.coll");
+    CHECK(translate("SELECT x FROM coll ORDER BY y")
+          == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
+    CHECK(translate("SELECT x FROM scope.coll ORDER BY y")
+          == "{'FROM':[{'COLLECTION':'scope.coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
+    CHECK(translate("SELECT coll.x, scoped.y FROM coll CROSS JOIN scope.coll scoped")
+          == "{'FROM':[{'COLLECTION':'coll'},{'AS':'scoped','COLLECTION':'scope.coll','JOIN':'CROSS'}],"
+             "'WHAT':[['.coll.x'],['.scoped.y']]}");
+    CHECK(translate("SELECT a.x, b.y FROM coll a JOIN scope.coll b ON a.name = b.name")
+          == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
+             "{'AS':'b','COLLECTION':'scope.coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']]}],"
+             "'WHAT':[['.a.x'],['.b.y']]}");
+}
