@@ -11,34 +11,42 @@
 //
 
 #pragma once
-#include "c4Compat.h"
+#include "c4Base.h"
+#include "function_ref.hh"
 #include "fleece/slice.hh"
+#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace fleece::impl {
-    class Dict;
-    class SharedKeys;
-}
+/** Utilities for dealing with 'legacy' properties like _id, _rev, _deleted, _attachments. */
+namespace litecore::legacy_attachments {
 
-namespace litecore {
+    /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
+    bool isOldMetaProperty(fleece::slice key);
 
-    /** Utilities for dealing with 'legacy' properties like _id, _rev, _deleted, _attachments. */
-    namespace legacy_attachments {
+    /** Returns true if the document contains 1.x metadata properties (at top level). */
+    bool hasOldMetaProperties(FLDict root);
 
-        /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
-        bool isOldMetaProperty(fleece::slice key);
+    /** Encodes to Fleece, without any 1.x metadata properties.
+        The _attachments property is treated specially, in that any entries in it that don't
+        appear elsewhere in the dictionary as blobs are preserved. */
+    fleece::alloc_slice encodeStrippingOldMetaProperties(FLDict root,
+                                                         FLSharedKeys C4NULLABLE);
 
-        /** Returns true if the document contains 1.x metadata properties (at top level). */
-        bool hasOldMetaProperties(const fleece::impl::Dict* root);
+    using FindBlobCallback = fleece::function_ref<void(FLDeepIterator,
+                                                       FLDict blob,
+                                                       const C4BlobKey &key)>;
 
-        /** Encodes to Fleece, without any 1.x metadata properties.
-            The _attachments property is treated specially, in that any entries in it that don't
-            appear elsewhere in the dictionary as blobs are preserved. */
-        fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
-                                                             fleece::impl::SharedKeys* C4NULLABLE);
-    }
+    /** Finds all blob references in the dict, at any depth. */
+    void findBlobReferences(FLDict root,
+                            bool unique,
+                            const FindBlobCallback &callback,
+                            bool attachmentsOnly =false);
 
+    /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
+    void encodeRevWithLegacyAttachments(FLEncoder enc,
+                                        FLDict root,
+                                        unsigned revpos);
 }
 
 C4_ASSUME_NONNULL_END

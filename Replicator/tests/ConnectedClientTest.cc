@@ -35,6 +35,10 @@ class ConnectedClientLoopbackTest : public C4Test,
 {
 public:
 
+    virtual C4ConnectedClientParameters params() {
+        return {};
+    }
+
     void start() {
         std::unique_lock<std::mutex> lock(_mutex);
         Assert(!_serverRunning && !_clientRunning);
@@ -49,11 +53,11 @@ public:
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
                                                              Role::Server, {}),
                                        *this, serverOpts);
-        AllocedDict clientOpts;
+        
         _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"),
                                                                     Role::Client, {}),
                                               *this,
-                                              clientOpts);
+                                              params());
 
         Headers headers;
         headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
@@ -234,6 +238,14 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getBlob", "[ConnectedClient]") {
     }
     start();
 
+    auto asyncResult1 = _client->getDoc("att1", nullslice, nullslice);
+    auto rev = waitForResponse(asyncResult1);
+    CHECK(rev.docID == "att1");
+    auto doc = Doc(rev.body);
+    auto digest = C4Blob::keyFromDigestProperty(doc.asDict()["attached"].asArray()[0].asDict());
+    REQUIRE(digest);
+    CHECK(*digest == blobKeys[0]);
+
     auto asyncBlob1 = _client->getBlob(blobKeys[0], true);
     auto asyncBlob2 = _client->getBlob(blobKeys[1], false);
     auto asyncBadBlob = _client->getBlob(C4BlobKey{}, false);
@@ -341,3 +353,81 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedCl
         CHECK(change.sequence == expectedSeq++);
     }
 }
+
+
+#pragma mark - ENCRYPTION:
+
+#if 0 //TEMP
+#ifdef COUCHBASE_ENTERPRISE
+
+class ConnectedClientEncryptedLoopbackTest : public ConnectedClientLoopbackTest {
+
+    C4ConnectedClientParameters params() override{
+        auto p = ConnectedClientLoopbackTest::params();
+        p.propertyEncryptor = &encryptor;
+        p.propertyDecryptor = &decryptor;
+        p.callbackContext = &_encryptorContext;
+    }
+
+    static alloc_slice unbreakableEncryption(slice cleartext, int8_t delta) {
+        alloc_slice ciphertext(cleartext);
+        for (size_t i = 0; i < ciphertext.size; ++i)
+            (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
+        return ciphertext;
+    }
+
+    struct TestEncryptorContext {
+        slice docID;
+        slice keyPath;
+        bool called;
+    } _encryptorContext;
+
+    static C4SliceResult encryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4StringResult* outAlgorithm,
+                                   C4StringResult* outKeyID,
+                                   C4Error* outError)
+    {
+        auto context = (TestEncryptorContext*)rawCtx;
+        context->called = true;
+        CHECK(documentID == context->docID);
+        CHECK(keyPath == context->keyPath);
+        return C4SliceResult(unbreakableEncryption(input, 1));
+    }
+
+    static C4SliceResult decryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4String algorithm,
+                                   C4String keyID,
+                                   C4Error* outError)
+    {
+        auto context = (TestEncryptorContext*)rawCtx;
+        context->called = true;
+        CHECK(documentID == context->docID);
+        CHECK(keyPath == context->keyPath);
+        return C4SliceResult(unbreakableEncryption(input, -1));
+    }
+
+};
+
+
+TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "getRev encrypted", "[ConnectedClient]") {
+    createFleeceRev(db, "seekrit"_sl, "1-1111"_sl,
+        R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
+    start();
+
+    Log("++++ Calling ConnectedClient::getDoc()...");
+    auto asyncResult1 = _client->getDoc("seekrit", nullslice, nullslice);
+    auto rev = waitForResponse(asyncResult1);
+    Doc doc(rev.body);
+    CHECK(doc.asDict()["SSN"].toJSONString() == R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})");
+}
+
+#endif
+#endif //TEMP

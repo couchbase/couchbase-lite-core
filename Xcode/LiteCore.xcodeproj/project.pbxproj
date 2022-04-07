@@ -330,6 +330,7 @@
 		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
+		27CA3D6D27FE510C006918A7 /* LegacyAttachments2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CA3D6C27FE510C006918A7 /* LegacyAttachments2.cc */; };
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
@@ -1363,6 +1364,8 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
+		27CA3D6827FE3D12006918A7 /* c4ConnectedClientTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ConnectedClientTypes.h; sourceTree = "<group>"; };
+		27CA3D6C27FE510C006918A7 /* LegacyAttachments2.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LegacyAttachments2.cc; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
 		27CCC7DE1E526CCC00CE1989 /* Puller.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Puller.cc; sourceTree = "<group>"; };
@@ -2417,6 +2420,7 @@
 				273D25F52564666A008643D2 /* VectorDocument.cc */,
 				273D25F42564666A008643D2 /* VectorDocument.hh */,
 				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
+				27CA3D6C27FE510C006918A7 /* LegacyAttachments2.cc */,
 				2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */,
 				27DD1511193CD005009A367D /* RevID.cc */,
 				27DD1512193CD005009A367D /* RevID.hh */,
@@ -2453,13 +2457,13 @@
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
-				2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 				27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */,
+				2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -3116,6 +3120,7 @@
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
 				274D166C2612906B0018D39C /* c4Collection.h */,
+				1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
@@ -3131,6 +3136,7 @@
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
 				27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */,
 				274D181C26165BDA0018D39C /* c4CertificateTypes.h */,
+				27CA3D6827FE3D12006918A7 /* c4ConnectedClientTypes.h */,
 				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
 				274D17A22614E7220018D39C /* c4DocumentStruct.h */,
@@ -3140,7 +3146,6 @@
 				2743E33525F8554F006F696D /* c4QueryTypes.h */,
 				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
 				274D18852617B3660018D39C /* c4SocketTypes.h */,
-				1AE26CC327D9C42B003C3043 /* c4ConnectedClient.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
 			path = include;
@@ -4320,6 +4325,7 @@
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,
+				27CA3D6D27FE510C006918A7 /* LegacyAttachments2.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,

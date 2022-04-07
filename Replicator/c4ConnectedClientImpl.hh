@@ -37,7 +37,7 @@ namespace litecore::client {
                                                     Role::Client,
                                                     socketOptions(),
                                                     _socketFactory);
-            _client = new ConnectedClient(webSocket, *this, fleece::AllocedDict(params.options));
+            _client = new ConnectedClient(webSocket, *this, params);
             _client->start();
         }
     

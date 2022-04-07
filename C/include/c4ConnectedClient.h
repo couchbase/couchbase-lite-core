@@ -11,39 +11,10 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4ConnectedClientTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
-
-/** Result of a successful `c4client_getDoc` call. */
-typedef struct C4DocResponse {
-    C4HeapSlice docID;
-    C4HeapSlice revID;
-    C4HeapSlice body;
-    bool deleted;
-} C4DocResponse;
-
-/** Parameters describing a connected client, used when creating a C4ConnectedClient. */
-typedef struct C4ConnectedClientParameters {
-    C4Slice                             url;               ///<URL with database to connect
-    C4Slice                             options;           ///< Fleece-encoded dictionary of optional parameters.
-    const C4SocketFactory* C4NULLABLE   socketFactory;     ///< Custom C4SocketFactory
-    void* C4NULLABLE                    callbackContext;   ///< Value to be passed to the callbacks.
-} C4ConnectedClientParameters;
-
-/** Callback for getting the document result.
- 
- @param client   The client that initiated the callback.
- @param doc  Resuting document response, NULL on failure.
- @param err Error will be written here if the get-document fails.
- @param context  user-defined parameter given when registering the callback. */
-typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
-                                                        const C4DocResponse* C4NULLABLE doc,
-                                                        C4Error* C4NULLABLE err,
-                                                        void * C4NULLABLE context);
-
-typedef C4ConnectedClientGetDocumentCallback C4ConnectedClientGetDocumentCallback;
 
 /** Creates a new connected client and starts it automatically.
     \note No need to call the c4client_start().

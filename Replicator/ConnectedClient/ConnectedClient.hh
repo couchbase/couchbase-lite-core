@@ -8,6 +8,7 @@
 #include "Worker.hh"
 #include "Async.hh"
 #include "BLIPConnection.hh"
+#include "c4ConnectedClientTypes.h"
 #include "c4Observer.hh"
 #include "c4ReplicatorTypes.h"
 #include <functional>
@@ -40,7 +41,7 @@ namespace litecore::client {
 
         ConnectedClient(websocket::WebSocket* NONNULL,
                         Delegate&,
-                        fleece::AllocedDict options);
+                        const C4ConnectedClientParameters&);
 
         /** ConnectedClient Delegate API. Almost identical to `Replicator::Delegate` */
         class Delegate {
@@ -54,6 +55,14 @@ namespace litecore::client {
                                              ActivityLevel) =0;
             virtual void clientConnectionClosed(ConnectedClient* NONNULL,
                                                 const CloseStatus&)  { }
+
+            /** You must override this if you upload documents containing blobs.
+                The default implementation always returns a Not Found error.
+                @param hexDigest  The value of the blob's `digest` property, a hex SHA-1 digest.
+                @param error  If you can't return the contents, store an error here.
+                @return  The blob's contents, or `nullslice` if an error occurred. */
+            virtual alloc_slice getBlobContents(slice hexDigest, C4Error *error);
+
             virtual ~Delegate() =default;
         };
 
@@ -123,21 +132,26 @@ namespace litecore::client {
         void onRequestReceived(blip::MessageIn* request) override;
 
         void handleChanges(Retained<blip::MessageIn>);
+        void handleGetAttachment(Retained<blip::MessageIn>);
 
     private:
         void setStatus(ActivityLevel);
         C4Error responseError(blip::MessageIn *response);
         void _disconnect(websocket::CloseCode closeCode, slice message);
         bool validateDocAndRevID(slice docID, slice revID);
+        alloc_slice processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
+        void processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder &enc);
 
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
+        C4ConnectedClientParameters _params;
         ActivityLevel               _status;
         Retained<ConnectedClient>   _selfRetain;
         CollectionObserver          _observer;
+        mutable std::mutex          _mutex;
         bool                        _observing = false;
         bool                        _registeredChangesHandler = false;
         bool                        _remoteUsesVersionVectors = false;
-        mutable std::mutex          _mutex;
+        bool                        _remoteNeedsLegacyAttachments = true;
     };
 
 }

@@ -18,6 +18,7 @@
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
+#include "LegacyAttachments.hh"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
 #include "fleece/Mutable.hh"
@@ -233,10 +234,10 @@ namespace litecore { namespace repl {
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc.
         // This also re-encodes the document if it was modified by the decryptor.
-        if ((C4Document::hasOldMetaProperties(root) && !_db->disableBlobSupport())
+        if ((legacy_attachments::hasOldMetaProperties(root) && !_db->disableBlobSupport())
                 || decryptedRoot) {
             auto sk = fleeceDoc.sharedKeys();
-            alloc_slice body = C4Document::encodeStrippingOldMetaProperties(root, sk);
+            alloc_slice body = legacy_attachments::encodeStrippingOldMetaProperties(root, sk);
             if (!body) {
                 failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
