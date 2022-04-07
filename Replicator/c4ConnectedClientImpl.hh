@@ -17,8 +17,6 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
-#include "RevID.hh"
-#include "DocumentFactory.hh"
 
 namespace litecore::client {
 
@@ -79,16 +77,13 @@ namespace litecore::client {
         
         Async<void> updateDoc(C4Slice docID,
                               C4Slice collectionID,
+                              C4Slice revID,
                               C4Slice parentRevisionID,
                               C4RevisionFlags flags,
                               C4Slice fleeceData) noexcept override {
-            bool deletion = (flags & kRevDeleted) != 0;
-            revidBuffer generatedRev = DocumentFactory::generateDocRevID(fleeceData,
-                                                                         parentRevisionID,
-                                                                         deletion);
             return _client->putDoc(docID,
                                    collectionID,
-                                   revid(generatedRev).expanded(),
+                                   revID,
                                    parentRevisionID,
                                    flags,
                                    fleeceData);

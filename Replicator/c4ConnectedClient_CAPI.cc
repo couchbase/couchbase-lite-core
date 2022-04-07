@@ -15,8 +15,11 @@
 #include "c4Socket+Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Async.hh"
+#include "RevID.hh"
+#include "DocumentFactory.hh"
 
 using namespace litecore::repl;
+using namespace litecore;
 
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Error *outError) noexcept {
     try {
@@ -68,9 +71,19 @@ void c4client_updateDoc(C4ConnectedClient* client,
                         void * C4NULLABLE context,
                         C4Error* outError) noexcept {
     try {
-        auto res = client->updateDoc(docID, collectionID, revID, revisionFlags, fleeceData);
+        bool deletion = (revisionFlags & kRevDeleted) != 0;
+        revidBuffer generatedRev = DocumentFactory::generateDocRevID(fleeceData,
+                                                                     revID,
+                                                                     deletion);
+        alloc_slice newRevID = revid(generatedRev).expanded();
+        auto res = client->updateDoc(docID,
+                                     collectionID,
+                                     newRevID,
+                                     revID,
+                                     revisionFlags,
+                                     fleeceData);
         res.then([=](C4Error err) {
-            return callback(client, &err, context);
+            return callback(client, newRevID, &err, context);
         });
     } catchError(outError);
     return;

@@ -83,6 +83,7 @@ void c4client_getDoc(C4ConnectedClient*,
  @param err Error will be written here if the get-document fails.
  @param context  user-defined parameter given when registering the callback. */
 typedef void (*C4ConnectedClientUpdateDocumentCallback)(C4ConnectedClient* client,
+                                                        C4HeapSlice revID,
                                                         C4Error* C4NULLABLE err,
                                                         void * C4NULLABLE context);
 

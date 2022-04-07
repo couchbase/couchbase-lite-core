@@ -30,14 +30,16 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// Pushes a new document revision to the server.
     /// @param docID  The document ID.
     /// @param collectionID  The name of the document's collection, or `nullslice` for default.
-    /// @param revID  The ID of the parent revision on the server,
-    ///                     or `nullslice` if this is a new document.
+    /// @param revID The new revision ID
+    /// @param parentRevID The ID of the parent revision on the server,
+    ///                      or `nullslice` if this is a new document.
     /// @param revisionFlags  Flags of this revision.
     /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
     /// @return  An async value that, when resolved, contains the status as a C4Error.
     virtual litecore::actor::Async<void> updateDoc(C4Slice docID,
                                                    C4Slice collectionID,
                                                    C4Slice revID,
+                                                   C4Slice parentRevID,
                                                    C4RevisionFlags revisionFlags,
                                                    C4Slice fleeceData) noexcept=0;
 
