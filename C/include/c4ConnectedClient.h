@@ -16,29 +16,36 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
+/** \defgroup ConnectedClient Connected Client (Remote Database)
+    @{
+    The Connected Client API allows you to get and put documents, and listen for changes,
+    directly on a remote database server (Sync Gateway or a Couchbase Lite sync listener),
+    without any local database. */
+
 /** Creates a new connected client and starts it automatically.
-    \note No need to call the c4client_start().
+    \note No need to call \ref c4client_start.
  
-    @param params  Connected Client parameters (see above.)
+    @param params  Connected Client parameters.
     @param error  Error will be written here if the function fails.
-    @result A new C4ConnectedClient, or NULL on failure. */
+    @result A new \ref C4ConnectedClient, or NULL on failure. */
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
                                 C4Error* error) C4API;
 
 /** Gets the current revision of a document from the server.
     
- You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
- revision you already have.
+    You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
+    revision you already have.
  
- @param docID  The document ID.
- @param collectionID  The name of the document's collection, or `nullslice` for default.
- @param unlessRevID  If non-null, and equal to the current server-side revision ID,
-                    the server will return error {WebSocketDomain, 304}.
- @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
- @param callback Callback for getting document.
- @param context Client value passed to getDocument callback
- @param error  On failure, the error info will be stored here. */
-void c4client_getDoc(C4ConnectedClient*,
+    @param docID  The document ID.
+    @param collectionID  The name of the document's collection, or `nullslice` for default.
+    @param unlessRevID  If non-null, and equal to the current server-side revision ID,
+                    the server will return error {WebSocketDomain, 304} instead of the document.
+    @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
+    @param callback Callback for getting document.
+    @param context Client value passed to the callback
+    @param error  On failure to issue the call, the error info will be stored here.
+    @return  True if the request is sent, false if it failed (check `error`.) */
+bool c4client_getDoc(C4ConnectedClient*,
                      C4Slice docID,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
@@ -59,6 +66,8 @@ void c4client_stop(C4ConnectedClient*) C4API;
     Does not stop the connected client -- if the client still has other internal references,
     it will keep going. If you need the client to stop, call \ref c4client_stop first. */
 void c4client_free(C4ConnectedClient*) C4API;
+
+/** @} */
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END

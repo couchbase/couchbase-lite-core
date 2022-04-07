@@ -25,7 +25,7 @@ C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Err
     return nullptr;
 }
 
-void c4client_getDoc(C4ConnectedClient* client,
+bool c4client_getDoc(C4ConnectedClient* client,
                      C4Slice docID,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
@@ -40,8 +40,9 @@ void c4client_getDoc(C4ConnectedClient* client,
         }).onError([=](C4Error err) {
             return callback(client, nullptr, &err, context);
         });
+        return true;
     } catchError(outError);
-    return;
+    return false;
 }
 
 void c4client_start(C4ConnectedClient* client) noexcept {
@@ -53,8 +54,6 @@ void c4client_stop(C4ConnectedClient* client) noexcept {
 }
 
 void c4client_free(C4ConnectedClient* client) noexcept {
-    if (!client)
-        return;
     release(client);
 }
 

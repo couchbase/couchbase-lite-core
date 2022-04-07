@@ -16,16 +16,19 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
-/** Result of a successful `c4client_getDoc` call. */
+/** \defgroup ConnectedClient Connected Client (Remote Database)
+    @{ */
+
+/** Result of a successful \ref c4client_getDoc call. */
 typedef struct C4DocResponse {
-    C4HeapSlice docID;
-    C4HeapSlice revID;
-    C4HeapSlice body;
-    bool deleted;
+    C4HeapSlice docID;      ///< The document ID
+    C4HeapSlice revID;      ///< The revision ID
+    C4HeapSlice body;       ///< The document body (Fleece or JSON, as requested)
+    bool deleted;           ///< True if the document is deleted
 } C4DocResponse;
 
 
-/** Parameters describing a connected client, used when creating a C4ConnectedClient. */
+/** Parameters describing a connected client, used when creating a \ref C4ConnectedClient. */
 typedef struct C4ConnectedClientParameters {
     C4Slice                                           url;               ///<URL with database to connect
     C4Slice                                           optionsDictFleece; ///< Fleece-encoded dictionary of optional parameters.
@@ -45,6 +48,8 @@ typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
                                                      const C4DocResponse* C4NULLABLE doc,
                                                      C4Error* C4NULLABLE err,
                                                      void * C4NULLABLE context);
+
+/** @} */
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
