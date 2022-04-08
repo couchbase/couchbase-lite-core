@@ -746,7 +746,9 @@ namespace litecore {
         return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
-    revidBuffer DocumentFactory::generateDocRevID(slice body, slice parentRevID, bool deleted) {
+    /*static*/ revidBuffer DocumentFactory::generateDocRevID(slice body,
+                                                             slice parentRevID,
+                                                             bool deleted) {
         // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
         uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
         uint8_t delByte = deleted;
@@ -761,6 +763,5 @@ namespace litecore {
         }
         return revidBuffer(generation, slice(digest));
     }
-
 
 } // end namespace litecore
