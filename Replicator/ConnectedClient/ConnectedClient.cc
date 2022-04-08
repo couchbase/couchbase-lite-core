@@ -17,14 +17,20 @@
 //
 
 #include "ConnectedClient.hh"
-#include "c4BlobStoreTypes.h"
+#include "c4BlobStore.hh"
 #include "c4Document.hh"
 #include "c4SocketTypes.h"
 #include "Headers.hh"
+#include "LegacyAttachments.hh"
 #include "MessageBuilder.hh"
 #include "NumConversion.hh"
+#include "PropertyEncryption.hh"
 #include "WebSocketInterface.hh"
 #include "c4Internal.hh"
+#include "fleece/Mutable.hh"
+
+
+#define _options DONT_USE_OPTIONS   // inherited from Worker, but replicator-specific, not used here
 
 namespace litecore::client {
     using namespace std;
@@ -33,12 +39,21 @@ namespace litecore::client {
     using namespace blip;
 
 
+    alloc_slice ConnectedClient::Delegate::getBlobContents(slice hexDigest, C4Error *error) {
+        Warn("ConnectedClient's delegate needs to override getBlobContents!");
+        *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
+        return nullslice;
+    }
+
+
+
     ConnectedClient::ConnectedClient(websocket::WebSocket* webSocket,
                                      Delegate& delegate,
-                                     fleece::AllocedDict options)
-    :Worker(new Connection(webSocket, options, *this),
+                                     const C4ConnectedClientParameters &params)
+    :Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), *this),
             nullptr, nullptr, nullptr, "Client")
     ,_delegate(&delegate)
+    ,_params(params)
     ,_status(kC4Stopped)
     {
         _importance = 2;
@@ -62,6 +77,7 @@ namespace litecore::client {
             Assert(_status == kC4Stopped);
             setStatus(kC4Connecting);
             connection().start();
+            registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
             _selfRetain = this;     // retain myself while the connection is open
         });
     }
@@ -198,9 +214,9 @@ namespace litecore::client {
 
 
     Async<DocResponse> ConnectedClient::getDoc(slice docID_,
-                                                      slice collectionID_,
-                                                      slice unlessRevID_,
-                                                      bool asFleece)
+                                               slice collectionID_,
+                                               slice unlessRevID_,
+                                               bool asFleece)
     {
         // Not yet running on Actor thread...
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID_));
@@ -216,21 +232,66 @@ namespace litecore::client {
                 if (C4Error err = responseError(response))
                     return err;
 
-                DocResponse docResponse {
+                return DocResponse {
                     docID,
                     alloc_slice(response->property("rev")),
-                    response->body(),
+                    processIncomingDoc(docID, response->body(), asFleece),
                     response->boolProperty("deleted")
                 };
-
-                if (asFleece && docResponse.body) {
-                    FLError flErr;
-                    docResponse.body = FLData_ConvertJSON(docResponse.body, &flErr);
-                    if (!docResponse.body)
-                        C4Error::raise(FleeceDomain, flErr, "Unparseable JSON response from server");
-                }
-                return docResponse;
             });
+    }
+
+
+    // (This method's code is adapted from IncomingRev::parseAndInsert)
+    alloc_slice ConnectedClient::processIncomingDoc(slice docID,
+                                                    alloc_slice jsonData,
+                                                    bool asFleece)
+    {
+        if (!jsonData)
+            return jsonData;
+
+        bool modified = false;
+        bool tryDecrypt = _params.propertyDecryptor && repl::MayContainPropertiesToDecrypt(jsonData);
+
+        // Convert JSON to Fleece:
+        FLError flErr;
+        Doc fleeceDoc = Doc::fromJSON(jsonData, &flErr);
+        if (!fleeceDoc)
+            C4Error::raise(FleeceDomain, flErr, "Unparseable JSON response from server");
+        alloc_slice fleeceData = fleeceDoc.allocedData();
+        Dict root = fleeceDoc.asDict();
+
+        // Decrypt properties:
+        MutableDict decryptedRoot;
+        if (tryDecrypt) {
+            C4Error error;
+            decryptedRoot = repl::DecryptDocumentProperties(docID,
+                                                            root,
+                                                            _params.propertyDecryptor,
+                                                            _params.callbackContext,
+                                                            &error);
+            if (decryptedRoot) {
+                root = decryptedRoot;
+                modified = true;
+            } else if (error) {
+                error.raise();
+            }
+        }
+
+        // Strip out any "_"-prefixed properties like _id, just in case, and also any
+        // attachments in _attachments that are redundant with blobs elsewhere in the doc.
+        // This also re-encodes, updating fleeceData, if `root` was modified by the decryptor.
+        if (modified || legacy_attachments::hasOldMetaProperties(root)) {
+            fleeceData = legacy_attachments::encodeStrippingOldMetaProperties(root, nullptr);
+            if (!fleeceData)
+                C4Error::raise(LiteCoreDomain, kC4ErrorRemoteError,
+                               "Invalid legacy attachments received from server");
+            //modified = true;
+            if (!asFleece)
+                jsonData = Doc(fleeceData, kFLTrusted).root().toJSON();
+        }
+
+        return asFleece ? fleeceData : jsonData;
     }
 
 
@@ -256,11 +317,11 @@ namespace litecore::client {
 
 
     Async<void> ConnectedClient::putDoc(slice docID_,
-                                           slice collectionID_,
-                                           slice revID_,
-                                           slice parentRevID_,
-                                           C4RevisionFlags revisionFlags,
-                                           slice fleeceData_)
+                                        slice collectionID_,
+                                        slice revID_,
+                                        slice parentRevID_,
+                                        C4RevisionFlags revisionFlags,
+                                        slice fleeceData_)
     {
         // Not yet running on Actor thread...
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID_), FMTSLICE(revID_));
@@ -273,9 +334,7 @@ namespace litecore::client {
             req["deleted"] = "1";
 
         if (fleeceData_.size > 0) {
-            // TODO: Encryption!!
-            // TODO: Convert blobs to legacy attachments
-            req.jsonBody().writeValue(FLValue_FromData(fleeceData_, kFLTrusted));
+            processOutgoingDoc(docID_, revID_, fleeceData_, req.jsonBody());
         } else {
             req.write("{}");
         }
@@ -285,6 +344,69 @@ namespace litecore::client {
                 logInfo("...putDoc got response");
                 return Async<void>(responseError(response));
             });
+    }
+
+
+    static inline bool MayContainBlobs(fleece::slice documentData) noexcept {
+        return documentData.find(C4Document::kObjectTypeProperty)
+            && documentData.find(C4Blob::kObjectType_Blob);
+    }
+
+
+    void ConnectedClient::processOutgoingDoc(slice docID, slice revID,
+                                             slice fleeceData,
+                                             JSONEncoder &enc)
+    {
+        Dict root = Value(FLValue_FromData(fleeceData, kFLUntrusted)).asDict();
+        if (!root)
+            C4Error::raise(LiteCoreDomain, kC4ErrorCorruptRevisionData,
+                           "Invalid Fleece data passed to ConnectedClient::putDoc");
+
+        // Encrypt any encryptable properties
+        MutableDict encryptedRoot;
+        if (repl::MayContainPropertiesToEncrypt(fleeceData)) {
+            logVerbose("Encrypting properties in doc '%.*s'", FMTSLICE(docID));
+            C4Error c4err;
+            encryptedRoot = repl::EncryptDocumentProperties(docID, root,
+                                                            _params.propertyEncryptor,
+                                                            _params.callbackContext,
+                                                            &c4err);
+            if (encryptedRoot)
+                root = encryptedRoot;
+            else if (c4err)
+                c4err.raise();
+        }
+
+        if (_remoteNeedsLegacyAttachments && MayContainBlobs(fleeceData)) {
+            // Create shadow copies of blobs, in `_attachments`:
+            int revpos = C4Document::getRevIDGeneration(revID);
+            legacy_attachments::encodeRevWithLegacyAttachments(enc, root, revpos);
+        } else {
+            enc.writeValue(root);
+        }
+    }
+
+
+    void ConnectedClient::handleGetAttachment(Retained<MessageIn> req) {
+        // Pass the buck to the delegate:
+        alloc_slice contents;
+        C4Error error = {};
+        try {
+            contents = _delegate->getBlobContents(req->property("digest"_sl), &error);
+        } catch (...) {
+            error = C4Error::fromCurrentException();
+        }
+        if (!contents) {
+            if (!error)
+                error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
+            req->respondWithError(c4ToBLIPError(error));
+            return;
+        }
+
+        MessageBuilder reply(req);
+        reply.compressed = req->boolProperty("compress"_sl);
+        reply.write(contents);
+        req->respond(reply);
     }
 
 

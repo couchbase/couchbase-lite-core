@@ -360,19 +360,3 @@ C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) 
 C4Document* C4Document::containingValue(FLValue value) noexcept {
     return C4Collection::documentContainingValue(value);
 }
-
-
-bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
-    return legacy_attachments::isOldMetaProperty(propertyName);
-}
-
-
-bool C4Document::hasOldMetaProperties(FLDict dict) noexcept {
-    return legacy_attachments::hasOldMetaProperties((const fleece::impl::Dict*)dict);
-}
-
-
-alloc_slice C4Document::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
-    return legacy_attachments::encodeStrippingOldMetaProperties((const fleece::impl::Dict*)properties,
-                                                                (fleece::impl::SharedKeys*)sk);
-}

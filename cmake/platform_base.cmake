@@ -40,6 +40,7 @@ function(set_litecore_source_base)
         LiteCore/Database/DatabaseImpl+Upgrade.cc
         LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LegacyAttachments.cc
+        LiteCore/Database/LegacyAttachments2.cc
         LiteCore/Database/LiveQuerier.cc
         LiteCore/Database/PrebuiltCopier.cc
         LiteCore/Database/SequenceTracker.cc
