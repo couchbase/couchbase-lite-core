@@ -118,13 +118,14 @@ public:
 
     // ConnectedClient delegate:
 
-    alloc_slice getBlobContents(slice digestString, C4Error *error) override {
-        if (auto i = _blobs.find(string(digestString)); i != _blobs.end()) {
+    alloc_slice getBlobContents(const C4BlobKey &blobKey, C4Error *error) override {
+        string digestString = blobKey.digestString();
+        if (auto i = _blobs.find(digestString); i != _blobs.end()) {
             alloc_slice blob = i->second;
             _blobs.erase(i);    // remove blob after it's requested
             return blob;
         } else {
-            WarnError("getBlobContents called on unknown blob %.*s", FMTSLICE(digestString));
+            WarnError("getBlobContents called on unknown blob %s", digestString.c_str());
             *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
             return nullslice;
         }

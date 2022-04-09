@@ -43,7 +43,7 @@ namespace litecore::client {
                         Delegate&,
                         const C4ConnectedClientParameters&);
 
-        /** ConnectedClient Delegate API. Almost identical to `Replicator::Delegate` */
+        /** ConnectedClient delegate API. (Similar to `Replicator::Delegate`) */
         class Delegate {
         public:
             virtual void clientGotHTTPResponse(ConnectedClient* NONNULL,
@@ -56,12 +56,20 @@ namespace litecore::client {
             virtual void clientConnectionClosed(ConnectedClient* NONNULL,
                                                 const CloseStatus&)  { }
 
-            /** You must override this if you upload documents containing blobs.
-                The default implementation always returns a Not Found error.
-                @param digestString  The value of the blob's `digest` property.
+            /** Returns the contents of a blob given its key (SHA-1 digest) as found in a blob in
+                a document being uploaded to the server.
+
+                This method is called after the \ref putDoc method is called, but before its async
+                value resolves. It's not guaranteed to be called for every blob in the document,
+                only those that are not yet known to the server.
+
+                You must override this method if you upload documents containing blobs.
+                The default implementation always returns a Not Found error,
+                which will cause the upload to fail.
+                @param blobKey  The blob's binary digest.
                 @param error  If you can't return the contents, store an error here.
                 @return  The blob's contents, or `nullslice` if an error occurred. */
-            virtual alloc_slice getBlobContents(slice digestString, C4Error *error);
+            virtual alloc_slice getBlobContents(const C4BlobKey &blobKey, C4Error *error);
 
             virtual ~Delegate() =default;
         };
@@ -89,14 +97,18 @@ namespace litecore::client {
                                          slice unlessRevID,
                                          bool asFleece = true);
 
-        /// Gets the contents of a blob given its digest.
+        /// Downloads the contents of a blob given its digest.
         /// @param blobKey  The binary digest of the blob.
-        /// @param compress  True if the blob should be downloaded in compressed form.
+        /// @param compress  If true, a request that the server compress the blob's data during
+        ///                  transmission. (This does not affect the data you receive.)
         /// @return  An async value that, when resolved, contains either the blob body or a C4Error.
         actor::Async<alloc_slice> getBlob(C4BlobKey blobKey,
                                           bool compress);
 
         /// Pushes a new document revision to the server.
+        /// @note  If the document body contains any blob references, your delegate must implement
+        ///        the \ref getBlobContents method.
+        ///
         /// @param docID  The document ID.
         /// @param collectionID  The name of the document's collection, or `nullslice` for default.
         /// @param revID  The revision ID you're sending.
@@ -111,6 +123,8 @@ namespace litecore::client {
                                   slice parentRevID,
                                   C4RevisionFlags revisionFlags,
                                   slice fleeceData);
+
+        //---- Observer
 
         /// Registers a listener function that will be called when any document is changed.
         /// @note  To cancel, pass a null callback.
