@@ -58,10 +58,10 @@ namespace litecore::client {
 
             /** You must override this if you upload documents containing blobs.
                 The default implementation always returns a Not Found error.
-                @param hexDigest  The value of the blob's `digest` property, a hex SHA-1 digest.
+                @param digestString  The value of the blob's `digest` property.
                 @param error  If you can't return the contents, store an error here.
                 @return  The blob's contents, or `nullslice` if an error occurred. */
-            virtual alloc_slice getBlobContents(slice hexDigest, C4Error *error);
+            virtual alloc_slice getBlobContents(slice digestString, C4Error *error);
 
             virtual ~Delegate() =default;
         };

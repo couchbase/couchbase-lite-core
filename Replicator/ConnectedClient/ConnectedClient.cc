@@ -39,7 +39,7 @@ namespace litecore::client {
     using namespace blip;
 
 
-    alloc_slice ConnectedClient::Delegate::getBlobContents(slice hexDigest, C4Error *error) {
+    alloc_slice ConnectedClient::Delegate::getBlobContents(slice digestString, C4Error *error) {
         Warn("ConnectedClient's delegate needs to override getBlobContents!");
         *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         return nullslice;

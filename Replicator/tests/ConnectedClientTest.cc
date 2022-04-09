@@ -20,7 +20,9 @@
 #include "ConnectedClient.hh"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include <unordered_map>
 
 
 using namespace std;
@@ -35,6 +37,16 @@ class ConnectedClientLoopbackTest : public C4Test,
 {
 public:
 
+    ConnectedClientLoopbackTest() {
+        _serverOptions = make_retained<repl::Options>(kC4Passive,kC4Passive);
+        _serverOptions->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
+        _serverOptions->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
+    }
+
+    ~ConnectedClientLoopbackTest() {
+        stop();
+    }
+
     virtual C4ConnectedClientParameters params() {
         return {};
     }
@@ -43,16 +55,12 @@ public:
         std::unique_lock<std::mutex> lock(_mutex);
         Assert(!_serverRunning && !_clientRunning);
 
-        auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
-        serverOpts->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
-        serverOpts->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
-
         c4::ref<C4Database> serverDB = c4db_openAgain(db, ERROR_INFO());
         REQUIRE(serverDB);
         _server = new repl::Replicator(serverDB,
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
                                                              Role::Server, {}),
-                                       *this, serverOpts);
+                                       *this, _serverOptions);
         
         _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"),
                                                                     Role::Client, {}),
@@ -108,8 +116,18 @@ public:
     }
 
 
-    ~ConnectedClientLoopbackTest() {
-        stop();
+    // ConnectedClient delegate:
+
+    alloc_slice getBlobContents(slice digestString, C4Error *error) override {
+        if (auto i = _blobs.find(string(digestString)); i != _blobs.end()) {
+            alloc_slice blob = i->second;
+            _blobs.erase(i);    // remove blob after it's requested
+            return blob;
+        } else {
+            WarnError("getBlobContents called on unknown blob %.*s", FMTSLICE(digestString));
+            *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
+            return nullslice;
+        }
     }
 
 
@@ -141,6 +159,8 @@ public:
     }
 
 
+    // Replicator delegate:
+
     void replicatorGotHTTPResponse(repl::Replicator* NONNULL,
                                    int status,
                                    const websocket::Headers &headers) override { }
@@ -163,10 +183,12 @@ public:
 
 
     Retained<repl::Replicator> _server;
+    Retained<repl::Options> _serverOptions;
     Retained<client::ConnectedClient> _client;
     bool _clientRunning = false, _serverRunning = false;
     mutex _mutex;
     condition_variable _cond;
+    unordered_map<string,alloc_slice> _blobs;
 };
 
 
@@ -260,7 +282,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getBlob", "[ConnectedClient]") {
 }
 
 
-TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putRev", "[ConnectedClient]") {
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
@@ -352,6 +374,48 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedCl
         CHECK(change.flags == 0);
         CHECK(change.sequence == expectedSeq++);
     }
+}
+
+
+#pragma mark - BLOBS / ATTACHMENTS:
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Blobs Legacy Mode", "[ConnectedClient][blob]") {
+    // Ensure the 'server' (LiteCore replicator) will not strip the `_attachments` property:
+    _serverOptions->setProperty("disable_blob_support"_sl, true);
+    start();
+
+    // Register the blobs with the ConnectedClient delegate, by digest:
+    _blobs["sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck="] = alloc_slice("Hey, this is an attachment!");
+    _blobs["sha1-rATs731fnP+PJv2Pm/WXWZsCw48="] = alloc_slice("So is this");
+    _blobs["sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk="] = alloc_slice("");
+
+    // Construct the document body, and PUT it:
+    string json = "{'attached':[{'@type':'blob','content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}";
+    replace(json, '\'', '"');
+    auto rq = _client->putDoc("att1", nullslice,
+                               "1-1111",
+                               nullslice,
+                               C4RevisionFlags{},
+                              Doc::fromJSON(json).data());
+    rq.blockUntilReady();
+
+    // All blobs should have been requested by the server and removed from the map:
+    CHECK(_blobs.empty());
+
+    // Now read the doc from the server's database:
+    json = getDocJSON(db, "att1"_sl);
+    replace(json, '"', '\'');
+    CHECK(json ==
+          "{'_attachments':{'blob_/attached/0':{'content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
+                           "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                           "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0,'revpos':1,'stub':true}},"
+           "'attached':[{'@type':'blob','content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}");
+
 }
 
 
