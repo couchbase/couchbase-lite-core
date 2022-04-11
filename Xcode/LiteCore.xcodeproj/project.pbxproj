@@ -1175,6 +1175,7 @@
 		2764ED3623870F15007F020F /* c4Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Database.hh; sourceTree = "<group>"; };
 		2764ED3723873B9E007F020F /* c4.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4.txt; path = scripts/c4.txt; sourceTree = "<group>"; };
 		2764ED3823873B9E007F020F /* c4_exp.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4_exp.txt; path = scripts/c4_exp.txt; sourceTree = "<group>"; };
+		276592A02804B6700037DD04 /* ConnectedClientTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClientTest.hh; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -2464,6 +2465,7 @@
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 				27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */,
 				2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */,
+				276592A02804B6700037DD04 /* ConnectedClientTest.hh */,
 			);
 			path = tests;
 			sourceTree = "<group>";
