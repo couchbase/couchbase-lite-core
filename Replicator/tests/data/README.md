@@ -13,7 +13,7 @@ If you want to run a second Sync Gateway instance with SSL, to test SSL connecti
 4. Open another shell at this directory
 5. `sync_gateway ssl_config.json`
 
-This uses a self-signed certificate. You can find a copy of the certificate at `sg_cert.pem`; the private key is `privkey.pem`.
+This uses a self-signed certificate. You can find a copy of the certificate at `sg_cert.pem`; the private key is `sg_key.pem`.
 
 There is a third configuration file `client_ssl_config.json` for enabling TLS client certificate support in Sync Gateway, which is (as of November 2019) an in-progress unsupported feature.
 

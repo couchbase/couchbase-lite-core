@@ -1312,14 +1312,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]"
     CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUntrusted);
 }
 
-TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success2", "[.SyncServer]") {
-    if (!Address::isSecure(_address)) {
-        return;
-    }
-    flushScratchDatabase();
-    replicate(kC4OneShot, kC4Disabled, true);
-}
-
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]") {
     if (!Address::isSecure(_address)) {
