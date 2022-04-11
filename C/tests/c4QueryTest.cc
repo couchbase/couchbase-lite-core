@@ -1158,6 +1158,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
     populate({"widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
+    populate({"mars"_sl,   "petit"_sl}, "mars.json");
 
     compileSelect(json5("{WHAT: ['.widgets.title'], FROM: [{COLLECTION:'widgets'}]}"));
     CHECK(run().size() == 100);
@@ -1169,6 +1170,12 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'small.nested'}],"
                         "WHERE: ['=', ['.nested.shapes[0].color'], 'red']}"));
     CHECK(run().size() == 2);
+    compileSelect(json5("{WHAT:['.mars.panels'],"
+                        " FROM:[{COLLECTION:'mars', SCOPE:'petit'},"
+                        "       {COLLECTION:'small.nested',JOIN:'INNER',"
+                        "        ON:['=', ['.mars.greenhouses'],['array_length()',['.nested.shapes']]]}]}"));
+    auto r = run();
+    CHECK((r.size() == 1 && r[0] == "5.0"));
 }
 
 

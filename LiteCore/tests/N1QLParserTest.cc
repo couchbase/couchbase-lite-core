@@ -363,6 +363,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.scope.coll2");
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
     CHECK(translate("SELECT x FROM scope.coll ORDER BY y")
@@ -374,4 +375,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
           == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
              "{'AS':'b','COLLECTION':'scope.coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']]}],"
              "'WHAT':[['.a.x'],['.b.y']]}");
+    CHECK(translate("SELECT coll.x FROM coll JOIN scope.coll2 ON coll.name = coll2.name")
+          == "{'FROM':[{'COLLECTION':'coll'},{'COLLECTION':'scope.coll2','JOIN':'INNER',"
+                "'ON':['=',['.coll.name'],['.coll2.name']]}],'WHAT':[['.coll.x']]}");
 }
