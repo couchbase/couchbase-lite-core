@@ -13,6 +13,8 @@
 #include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Test.hh"
+#include "Delimiter.hh"
+#include <sstream>
 
 using namespace std;
 
@@ -25,6 +27,27 @@ class C4CollectionTest : public C4Test {
 public:
 
     C4CollectionTest(int testOption) :C4Test(testOption) { }
+
+    string getCollectionNames(slice inScope) {
+        stringstream result;
+        delimiter delim(", ");
+        db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
+            CHECK(spec.scope == inScope);
+            result << delim << string_view(slice(spec.name));
+        });
+        return result.str();
+    }
+
+
+    string getScopeNames() {
+        stringstream result;
+        delimiter delim(", ");
+        db->forEachScope([&](slice name) {
+            result << delim << string_view(name);
+        });
+        return result.str();
+    }
+
 
     void addNumberedDocs(C4Collection *coll, unsigned n, unsigned start = 1) {
         for (unsigned i = 0; i < n; i++) {
@@ -47,16 +70,25 @@ public:
 };
 
 
+static constexpr slice Guitars = "guitars"_sl;
+
+
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
-    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
-    CHECK(db->hasCollection("_default"));
+    CHECK(getScopeNames() == "_default");
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+    CHECK(db->hasCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
 
     C4Collection* dflt = db->getDefaultCollection();
     REQUIRE(dflt);
     CHECK(dflt == db->getDefaultCollection());              // Must be idempotent!
-    CHECK(dflt == db->getCollection("_default"));
+    CHECK(dflt == db->getCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
+    CHECK(dflt == db->createCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
 
-    CHECK(dflt->getName() == "_default");
+    CHECK(dflt->getName() == kC4DefaultCollectionName);
+    CHECK(dflt->getScope() == kC4DefaultCollectionName);
+    CHECK(dflt->getSpec().name == kC4DefaultCollectionName);
+    CHECK(dflt->getSpec().scope == kC4DefaultCollectionName);
+
     CHECK(dflt->getDatabase() == db);
     CHECK(dflt->getDocumentCount() == 0);
     CHECK(dflt->getLastSequence() == 0_seq);
@@ -64,31 +96,32 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     // since they call the c4Database C functions which are wrappers that indirect through
     // db->getDefaultCollection().
 
-    vector<C4Collection*> eachCollection;
-    db->forEachCollection([&](C4Collection *coll) { eachCollection.push_back(coll); });
-    CHECK(eachCollection.size() == 1);
-    CHECK(eachCollection[0] == dflt);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+
+    // It is, surprisingly, legal to delete the default collection:
+    db->deleteCollection(kC4DefaultCollectionName);
+    CHECK(db->getDefaultCollection() == nullptr);
+    CHECK(db->getCollection(kC4DefaultCollectionName) == nullptr);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "");
+    // But you can't recreate it:
+    C4ExpectException(LiteCoreDomain, kC4ErrorInvalidParameter, [&]{
+        db->createCollection(kC4DefaultCollectionName);
+    });
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Collection][C]") {
-    CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars") == nullptr);
+    CHECK(!db->hasCollection(Guitars));
+    CHECK(db->getCollection(Guitars) == nullptr);
 
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection("guitars");
-    CHECK(guitars == db->getCollection("guitars"));
+    C4Collection* guitars = db->createCollection(Guitars);
+    CHECK(guitars == db->getCollection(Guitars));
 
-    CHECK(db->getCollectionNames() == (vector<string>{"_default", "guitars"}));
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default, guitars");
 
     C4Collection* dflt = db->getDefaultCollection();
     CHECK(dflt != guitars);
-
-    vector<C4Collection*> eachCollection;
-    db->forEachCollection([&](C4Collection *coll) { eachCollection.push_back(coll); });
-    CHECK(eachCollection.size() == 2);
-    CHECK(eachCollection[0] == dflt);
-    CHECK(eachCollection[1] == guitars);
 
     // Put some stuff in the default collection
     createNumberedDocs(100);
@@ -96,21 +129,22 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(dflt->getLastSequence() == 100_seq);
 
     // Verify "guitars" is empty:
-    CHECK(guitars->getName() == "guitars");
+    CHECK(guitars->getSpec().name == Guitars);
+    CHECK(guitars->getSpec().scope == kC4DefaultScopeID);
     CHECK(guitars->getDatabase() == db);
     CHECK(guitars->getDocumentCount() == 0);
     CHECK(guitars->getLastSequence() == 0_seq);
 
-    db->deleteCollection("guitars");
-    CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars") == nullptr);
-    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
+    db->deleteCollection(Guitars);
+    CHECK(!db->hasCollection(Guitars));
+    CHECK(db->getCollection(Guitars) == nullptr);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][Collection][C]") {
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection("guitars");
+    C4Collection* guitars = db->createCollection(Guitars);
     C4Collection* dflt = db->getDefaultCollection();
 
     // Add 100 documents to it:
@@ -141,4 +175,21 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
     CHECK(guitars->getLastSequence() == 100_seq);
     CHECK(dflt->getDocumentCount() == 0);
     CHECK(dflt->getLastSequence() == 0_seq);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") {
+    static constexpr slice SupaDopeScope = "SupaDope";
+
+    CHECK(getScopeNames() == "_default");
+    CHECK(db->getCollection({"fresh"_sl, SupaDopeScope}) == nullptr);
+    C4Collection* fresh = db->createCollection({"fresh"_sl, SupaDopeScope});
+    REQUIRE(fresh);
+
+    // Verify "fresh" is empty:
+    CHECK(fresh->getSpec().name == "fresh"_sl);
+    CHECK(fresh->getSpec().scope == SupaDopeScope);
+    CHECK(fresh->getDatabase() == db);
+    CHECK(fresh->getDocumentCount() == 0);
+    CHECK(fresh->getLastSequence() == 0_seq);
 }

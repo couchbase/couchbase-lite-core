@@ -27,6 +27,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
+
     vector<string> SQLiteDataFile::allKeyStoreNames() const {
         checkOpen();
         vector<string> names;
@@ -44,13 +45,13 @@ namespace litecore {
 
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
-        exec("DROP TABLE IF EXISTS kv_" + name);
+        exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
         // TODO: Do I need to drop indexes, triggers?
     }
 
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
-        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_coll_"));
+        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
         return getKeyStore(tableName.from(3));
     }
 
@@ -62,6 +63,8 @@ namespace litecore {
 
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
+    ,_tableName("kv_" + name)
+    ,_quotedTableName("\"" + _tableName + "\"")
     {
         if (db.keyStoreExists(name))
             _existence = kCommitted;
@@ -99,23 +102,12 @@ namespace litecore {
     }
 
 
-    string SQLiteKeyStore::collectionName() const {
-        if (_name == "default")
-            return "_default";
-        else if (hasPrefix(_name, "coll_"))
-            return _name.substr(5);
-        else {
-            DebugAssert(false, "KeyStore is not a collection!");
-            return "";
-        }
-    }
-
-
+    // Replaces `kv_@`, *with a preceding `"`*, with the unquoted table name.
+    // Replaces other `kv_@` with the quoted table name.
     string SQLiteKeyStore::subst(const char *sqlTemplate) const {
         string sql(sqlTemplate);
-        size_t pos;
-        while(string::npos != (pos = sql.find('@')))
-            sql.replace(pos, 1, name());
+        replace(sql, "\"kv_@", "\"" + tableName());
+        replace(sql,   "kv_@", quotedTableName());
         return sql;
     }
 
@@ -409,7 +401,8 @@ namespace litecore {
 
         // ???? Should the version be reset since it's in a new collection?
         auto &stmt = compileCached(
-            "INSERT INTO kv_" + dst.name() + " (key, version, body, extra, flags, sequence)"
+            "INSERT INTO " + dstStore->quotedTableName() +
+            " (key, version, body, extra, flags, sequence)"
             "  SELECT ?, version, body, extra, flags, ? FROM kv_@ WHERE key=?");
         stmt.bindNoCopy(1, (const char*)newKey.buf, (int)newKey.size);
         stmt.bind      (2, (long long)seq);
@@ -447,16 +440,6 @@ namespace litecore {
     }
 
 
-#if ENABLE_DELETE_KEY_STORES
-    void SQLiteKeyStore::erase() {
-        ExclusiveTransaction t(db());
-        db().exec(string("DELETE FROM kv_"+name()));
-        setLastSequence(0_seq);
-        t.commit();
-    }
-#endif
-    
-
     void SQLiteKeyStore::createTrigger(string_view triggerName,
                                        string_view triggerSuffix,
                                        string_view operation,
@@ -466,7 +449,7 @@ namespace litecore {
         if (hasPrefix(when, "WHERE"))
             when.replace(0, 5, "WHEN");
         string sql = CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix  << "\" "
-                            << operation << " ON kv_" << name() << ' ' << when << ' '
+                            << operation << " ON " << quotedTableName() << " " << when << ' '
                             << " BEGIN " << statements << "; END");
         LogTo(QueryLog, "    ...for index: %s", sql.c_str());
         db().exec(sql);
@@ -484,8 +467,8 @@ namespace litecore {
 
         // Construct SQL query with a big "IN (...)" clause for all the docIDs:
         stringstream sql;
-        sql << "SELECT key, fl_callback(key, version, body, extra, sequence, flags, ?) FROM kv_" << name()
-            << " WHERE key IN ('";
+        sql << "SELECT key, fl_callback(key, version, body, extra, sequence, flags, ?) FROM "
+            << quotedTableName() << " WHERE key IN ('";
         unsigned n = 0;
         for (slice docID : docIDs) {
             docIndices.insert({docID, n});
@@ -545,7 +528,7 @@ namespace litecore {
         db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
         db().execWithLock(subst(
                     "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
-                    "CREATE INDEX kv_@_expiration ON kv_@ (expiration) WHERE expiration not null"));
+                    "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
         _hasExpirationColumn = true;
         _uncommittedExpirationColumn = true;
     }

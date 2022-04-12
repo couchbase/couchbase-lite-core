@@ -153,7 +153,13 @@ function Run-UnitTest() {
 
     Pop-Location
     Push-Location $directory\LiteCore\tests\MinSizeRel
-    & .\CppTests -r quiet
+    # Disable test "REST root level" for Win32, CBL-3007
+    if($architecture -eq "Win32") {
+         & .\CppTests -r quiet exclude:"REST root level" exclude:"[.*]"
+    }
+    else {
+         & .\CppTests -r quiet
+    }
     $env:LiteCoreTestsQuiet=0
     if($LASTEXITCODE -ne 0) {
         throw "CppTests failed"

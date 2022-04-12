@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['predictive_20_28machine_2dlearning_29_20query_2182',['Predictive (Machine-Learning) Query',['../group___predictive_query.html',1,'']]]
+  ['querying_20the_20database_2151',['Querying the Database',['../group___querying_d_b.html',1,'']]]
 ];

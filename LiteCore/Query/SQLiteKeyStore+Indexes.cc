@@ -107,8 +107,8 @@ namespace litecore {
     void SQLiteKeyStore::createSequenceIndex() {
         if (!_createdSeqIndex) {
             Assert(_capabilities.sequences);
-            db().execWithLock(CONCAT("CREATE UNIQUE INDEX IF NOT EXISTS kv_" << name() << "_seqs"
-                                     " ON kv_" << name() << " (sequence)"));
+            db().execWithLock(subst(
+                            "CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
             _createdSeqIndex = true;
         }
     }
@@ -117,9 +117,8 @@ namespace litecore {
     // Creates indexes on flags
     void SQLiteKeyStore::_createFlagsIndex(const char *indexName, DocumentFlags flag, bool &created) {
         if (!created) {
-            db().execWithLock(CONCAT(
-                                 "CREATE INDEX IF NOT EXISTS kv_" << name() << "_" << indexName <<
-                                 " ON kv_" << name() << " (flags)"
+            db().execWithLock(CONCAT("CREATE INDEX IF NOT EXISTS \"" << tableName() << "_" << indexName <<
+                                 "\" ON " << quotedTableName() << " (flags)"
                                  " WHERE (flags & " << int(flag) << ") != 0"));
             created = true;
         }

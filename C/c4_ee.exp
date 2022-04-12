@@ -347,9 +347,10 @@ _c4db_getCollection
 _c4db_createCollection
 _c4db_deleteCollection
 _c4db_collectionNames
+_c4db_scopeNames
 _c4dbobs_createOnCollection
 _c4docobs_createWithCollection
-_c4coll_getName
+_c4coll_getSpec
 _c4coll_getDatabase
 _c4coll_getDocumentCount
 _c4coll_getLastSequence

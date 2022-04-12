@@ -85,34 +85,49 @@ public:
     virtual C4UUID getPublicUUID() const =0;
     virtual C4UUID getPrivateUUID() const =0;
 
+    // Scopes:
+
+    using ScopeCallback = fleece::function_ref<void(slice)>;
+
+    /// Calls the callback function for each scope ID, in the same order as getScopeIDs().
+    virtual void forEachScope(const ScopeCallback&) const =0;
+
     // Collections:
 
-    /// Returns the default collection that exists in every database.
-    /// In a pre-existing database, this collection contains all docs that were added to
-    /// "the database" before collections existed.
-    /// Its name is "_default".
-    C4Collection* getDefaultCollection() const              {return _defaultCollection;}
+    /// Easier version of `C4CollectionSpec`.
+    /// You can pass a `CollectionSpec` parameter as simply a collection name slice, implying the
+    /// default scope; or as `{collectionname, scopename}`.
+    struct CollectionSpec : public C4CollectionSpec {
+        CollectionSpec(const C4CollectionSpec &spec) :C4CollectionSpec(spec) { }
+        CollectionSpec(FLString name, FLString scope):C4CollectionSpec{name, scope} { }
+        CollectionSpec(FLString name)                :C4CollectionSpec{name, kC4DefaultScopeID} { }
+        CollectionSpec(slice name, slice scope)      :C4CollectionSpec{name, scope} { }
+        CollectionSpec(slice name)                   :C4CollectionSpec{name, kC4DefaultScopeID} { }
+    };
 
-    /// Returns true if the collection exists.
-    virtual bool hasCollection(slice name) const =0;
+    /// Returns the default collection, whose name is "_default" (`kC4DefaultCollectionName`).
+    C4Collection* C4NULLABLE getDefaultCollection() const              {return _defaultCollection;}
 
-    /// Returns the existing collection with the given name, or nullptr if it doesn't exist.
-    virtual C4Collection* getCollection(slice name) const =0;
+    /// Returns true if a collection exists with the given name & scope.
+    virtual bool hasCollection(CollectionSpec) const =0;
 
-    /// Creates and returns an empty collection with the given name,
-    /// or returns an existing collection by that name.
-    virtual C4Collection* createCollection(slice name) =0;
+    /// Returns the existing collection with the given name & scope, or nullptr if it doesn't exist.
+    virtual C4Collection* getCollection(CollectionSpec) const =0;
 
-    /// Deletes the collection with the given name.
-    virtual void deleteCollection(slice name) =0;
+    /// Creates and returns an empty collection with the given name in the given scope,
+    /// or if one already exists, returns that.
+    virtual C4Collection* createCollection(CollectionSpec) =0;
 
-    /// Returns the names of all existing collections, in the order in which they were created.
-    virtual std::vector<std::string> getCollectionNames() const =0;
+    /// Deletes the collection with the given name & scope.
+    virtual void deleteCollection(CollectionSpec) =0;
 
-    using CollectionCallback = fleece::function_ref<void(C4Collection*)>;
+    using CollectionSpecCallback = fleece::function_ref<void(CollectionSpec)>;
 
-    /// Calls the callback function for each collection, in the same order as collectionNames().
-    virtual void forEachCollection(const CollectionCallback&) const =0;
+    /// Calls the callback function for each collection in the scope, in the order created.
+    void forEachCollection(slice scopeName, const CollectionSpecCallback&) const;
+
+    /// Calls the callback function for each collection _in each scope_.
+    virtual void forEachCollection(const CollectionSpecCallback&) const =0;
 
 #ifndef C4_STRICT_COLLECTION_API
     // Shims to ease the pain of converting to collections. These delegate to the default collection.
@@ -244,5 +259,20 @@ protected:
     C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
     mutable C4Collection* C4NULLABLE _defaultCollection = nullptr;
 };
+
+
+
+// This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
+static inline bool operator== (const C4Database::CollectionSpec &a,
+                               const C4Database::CollectionSpec &b)
+{
+    return a.name == b.name && a.scope == b.scope;
+}
+template<> struct std::hash<C4Database::CollectionSpec> {
+    std::size_t operator() (C4Database::CollectionSpec const& spec) const {
+        return fleece::slice(spec.name).hash() ^ fleece::slice(spec.scope).hash();
+    }
+};
+
 
 C4_ASSUME_NONNULL_END

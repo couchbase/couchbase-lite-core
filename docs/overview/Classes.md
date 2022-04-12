@@ -102,7 +102,11 @@ There are also some `KeyStore`s used for auxiliary data. Each database has one n
 
 An abstract key/value store belonging to a `DataFile` that maps key strings to `Record`s, which are blobs with some metadata like a revision ID, sequence number, and flags. It also maintains indexes.
 
-The concrete `SQLiteKeyStore` owns a single table in the database, whose name is prefixed with “`kv_`”. So a database's default KeyStore is a table named "`kv_default`", a collection named "widgets" would have a table named "`kv_coll_widgets`", etc.
+Most importantly, KeyStores store the documents of Collections; each C4Collection maps to one KeyStore. There are a few other KeyStores that are used for non-document storage, such as replicator checkpoints and the database's UUIDs.
+
+The KeyStore of the default collection is named "`default`". 
+
+The concrete subclass `SQLiteKeyStore` owns a single table in the database, whose name is prefixed with “`kv_`”. A database's default KeyStore is a table named "`kv_default`", a collection named "widgets" would have a table named "`kv_.widgets`", etc.
 
 ### Record
 
@@ -115,8 +119,8 @@ An item stored in a `KeyStore`. Record is a fairly "dumb" value type containing:
 | extra       | blob   | Secondary value; stores conflicting revisions and the revision history |
 | version     | blob   | Identifies the revision; may store a revision-ID or version vector |
 | sequence    | int    | Chronological sequence number in the KeyStore; updated automatically when the Record is saved |
-| subsequence | int | Incremented when Record changes in minor ways. |
-| expiration  | int  | If not `NULL`, a timestamp of when this Record is to be purged (removed) |
+| subsequence | int    | Incremented when Record changes in minor ways. |
+| expiration  | int    | If not `NULL`, a timestamp of when this Record is to be purged (removed) |
 | flags       | int    | (see below) |
 
 The storage subsystem itself (`Record`, `KeyStore`, `DataFile`) doesn't care what's in the `body`, `extra`, `version` or `flags`; those are interpreted by higher levels.
