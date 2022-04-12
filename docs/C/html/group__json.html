@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: JSON Interoperability</title>
+<title>LiteCore: Converting Fleece To JSON</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -62,10 +62,215 @@ $(function() {
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">JSON Interoperability</div>  </div>
+<div class="title">Converting Fleece To JSON</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>These are convenience functions that directly return JSON-encoded output.  
+<a href="#details">More...</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:gad17040457ec514faa5a0bf9ed1a6f1f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#gad17040457ec514faa5a0bf9ed1a6f1f6">FLValue_ToJSON</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:gad17040457ec514faa5a0bf9ed1a6f1f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes a Fleece value as JSON (or a JSON fragment.) Any Data values will become base64-encoded JSON strings.  <a href="group__json.html#gad17040457ec514faa5a0bf9ed1a6f1f6">More...</a><br /></td></tr>
+<tr class="separator:gad17040457ec514faa5a0bf9ed1a6f1f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga408e2762d8ad7d1e5b1ce8792b1c3606"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#ga408e2762d8ad7d1e5b1ce8792b1c3606">FLValue_ToJSON5</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:ga408e2762d8ad7d1e5b1ce8792b1c3606"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes a Fleece value as JSON5, a more lenient variant of JSON that allows dictionary keys to be unquoted if they're alphanumeric.  <a href="group__json.html#ga408e2762d8ad7d1e5b1ce8792b1c3606">More...</a><br /></td></tr>
+<tr class="separator:ga408e2762d8ad7d1e5b1ce8792b1c3606"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1a072194b1fec66adaf253be9094ad66"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#ga1a072194b1fec66adaf253be9094ad66">FLValue_ToJSONX</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> v, bool json5, bool canonicalForm)</td></tr>
+<tr class="memdesc:ga1a072194b1fec66adaf253be9094ad66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Most general Fleece to JSON converter.  <a href="group__json.html#ga1a072194b1fec66adaf253be9094ad66">More...</a><br /></td></tr>
+<tr class="separator:ga1a072194b1fec66adaf253be9094ad66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa65881b333ba74cd31648fa57187ab10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#gaa65881b333ba74cd31648fa57187ab10">FLJSON5_ToJSON</a> (<a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> json5, <a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> outErrorMessage, size_t *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> outErrorPos, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> outError)</td></tr>
+<tr class="memdesc:gaa65881b333ba74cd31648fa57187ab10"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts valid JSON5 <a href="https://json5.org">https://json5.org</a> to JSON.  <a href="group__json.html#gaa65881b333ba74cd31648fa57187ab10">More...</a><br /></td></tr>
+<tr class="separator:gaa65881b333ba74cd31648fa57187ab10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Debugging Functions</h2></td></tr>
+<tr class="memitem:ga3bda94650f7024f81424018e1037786d"><td class="memItemLeft" align="right" valign="top">const char *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#ga3bda94650f7024f81424018e1037786d">FLDump</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
+<tr class="memdesc:ga3bda94650f7024f81424018e1037786d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debugging function that returns a C string of JSON.  <a href="group__json.html#ga3bda94650f7024f81424018e1037786d">More...</a><br /></td></tr>
+<tr class="separator:ga3bda94650f7024f81424018e1037786d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga528e758806f2a6a02b07c219da9d0d58"><td class="memItemLeft" align="right" valign="top">const char *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__json.html#ga528e758806f2a6a02b07c219da9d0d58">FLDumpData</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a> data)</td></tr>
+<tr class="memdesc:ga528e758806f2a6a02b07c219da9d0d58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debugging function that returns a C string of JSON.  <a href="group__json.html#ga528e758806f2a6a02b07c219da9d0d58">More...</a><br /></td></tr>
+<tr class="separator:ga528e758806f2a6a02b07c219da9d0d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>These are convenience functions that directly return JSON-encoded output. </p>
+<p>For more control over the encoding, use an FLEncoder. </p>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga3bda94650f7024f81424018e1037786d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3bda94650f7024f81424018e1037786d">&#9670;&nbsp;</a></span>FLDump()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLDump </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Debugging function that returns a C string of JSON. </p>
+<p>Does not free the string's memory! </p>
+
+</div>
+</div>
+<a id="ga528e758806f2a6a02b07c219da9d0d58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga528e758806f2a6a02b07c219da9d0d58">&#9670;&nbsp;</a></span>FLDumpData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLDumpData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
+          <td class="paramname"><em>data</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Debugging function that returns a C string of JSON. </p>
+<p>Does not free the string's memory! </p>
+
+</div>
+</div>
+<a id="gaa65881b333ba74cd31648fa57187ab10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa65881b333ba74cd31648fa57187ab10">&#9670;&nbsp;</a></span>FLJSON5_ToJSON()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLJSON5_ToJSON </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>json5</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
+          <td class="paramname"><em>outErrorMessage</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
+          <td class="paramname"><em>outErrorPos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Converts valid JSON5 <a href="https://json5.org">https://json5.org</a> to JSON. </p>
+<p>Among other things, it converts single quotes to double, adds missing quotes around dictionary keys, removes trailing commas, and removes comments. </p><dl class="section note"><dt>Note</dt><dd>If given invalid JSON5, it will <em>usually</em> return an error, but may just ouput comparably invalid JSON, in which case the caller's subsequent JSON parsing will detect the error. The types of errors it overlooks tend to be subtleties of string or number encoding. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">json5</td><td>The JSON5 to parse </td></tr>
+    <tr><td class="paramname">outErrorMessage</td><td>On failure, the error message will be stored here (if not NULL.) As this is a <a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>, you will be responsible for freeing it. </td></tr>
+    <tr><td class="paramname">outErrorPos</td><td>On a parse error, the byte offset in the input where the error occurred will be stored here (if it's not NULL.) </td></tr>
+    <tr><td class="paramname">outError</td><td>On failure, the error code will be stored here (if it's not NULL.) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The converted JSON. </dd></dl>
+
+</div>
+</div>
+<a id="gad17040457ec514faa5a0bf9ed1a6f1f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad17040457ec514faa5a0bf9ed1a6f1f6">&#9670;&nbsp;</a></span>FLValue_ToJSON()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLValue_ToJSON </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Encodes a Fleece value as JSON (or a JSON fragment.) Any Data values will become base64-encoded JSON strings. </p>
+
+</div>
+</div>
+<a id="ga408e2762d8ad7d1e5b1ce8792b1c3606"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga408e2762d8ad7d1e5b1ce8792b1c3606">&#9670;&nbsp;</a></span>FLValue_ToJSON5()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLValue_ToJSON5 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Encodes a Fleece value as JSON5, a more lenient variant of JSON that allows dictionary keys to be unquoted if they're alphanumeric. </p>
+<p>This tends to be more readable. </p>
+
+</div>
+</div>
+<a id="ga1a072194b1fec66adaf253be9094ad66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1a072194b1fec66adaf253be9094ad66">&#9670;&nbsp;</a></span>FLValue_ToJSONX()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLValue_ToJSONX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>json5</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>canonicalForm</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Most general Fleece to JSON converter. </p>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -113,9 +113,6 @@ namespace litecore {
         void beginReadOnlyTransaction() override;
         void endReadOnlyTransaction() override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
-#if ENABLE_DELETE_KEY_STORES
-        void deleteKeyStore(const std::string &name) override;
-#endif
 
         sequence_t lastSequence(const std::string& keyStoreName) const;
         void setLastSequence(SQLiteKeyStore&, sequence_t);

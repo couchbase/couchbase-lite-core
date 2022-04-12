@@ -293,7 +293,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 // QueryParser does not support "IN SELECT" yet
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
-    tableNames.insert("kv_coll_product");
+    tableNames.insert("kv_.product");
 
     CHECK(translate("SELECT productId, color, categories WHERE categories[0] LIKE 'Bed%' AND test_id='where_func' ORDER BY productId LIMIT 3") == "{'LIMIT':3,'ORDER_BY':[['.productId']],'WHAT':[['.productId'],['.color'],['.categories']],'WHERE':['AND',['LIKE',['.categories[0]'],'Bed%'],['=',['.test_id'],'where_func']]}");
     CHECK(translate("SELECT FLOOR(unitPrice+0.5) as sc FROM product where test_id = \"numberfunc\" ORDER BY sc limit 5") ==
@@ -307,9 +307,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
-    tableNames.insert("kv_coll_db");
-    tableNames.insert("kv_coll_other");
-    tableNames.insert("kv_coll_x");
+    tableNames.insert("kv_.db");
+    tableNames.insert("kv_.other");
+    tableNames.insert("kv_.x");
 
     CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[0]}");
     CHECK(translate("SELECT * FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[['.']]}");
@@ -358,4 +358,20 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
     CHECK(translate("SELECT to_array(x),  to_atom(x),  to_boolean(x),  to_number(x),  to_object(x),  to_string(x)")
           == "{'WHAT':[['to_array()',['.x']],['to_atom()',['.x']],['to_boolean()',['.x']],['to_number()',['.x']],"
              "['to_object()',['.x']],['to_string()',['.x']]]}");
+}
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
+    tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.scope.coll");
+    CHECK(translate("SELECT x FROM coll ORDER BY y")
+          == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
+    CHECK(translate("SELECT x FROM scope.coll ORDER BY y")
+          == "{'FROM':[{'COLLECTION':'scope.coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
+    CHECK(translate("SELECT coll.x, scoped.y FROM coll CROSS JOIN scope.coll scoped")
+          == "{'FROM':[{'COLLECTION':'coll'},{'AS':'scoped','COLLECTION':'scope.coll','JOIN':'CROSS'}],"
+             "'WHAT':[['.coll.x'],['.scoped.y']]}");
+    CHECK(translate("SELECT a.x, b.y FROM coll a JOIN scope.coll b ON a.name = b.name")
+          == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
+             "{'AS':'b','COLLECTION':'scope.coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']]}],"
+             "'WHAT':[['.a.x'],['.b.y']]}");
 }

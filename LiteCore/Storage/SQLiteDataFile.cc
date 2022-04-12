@@ -260,7 +260,7 @@ namespace litecore {
                 for (string &name : allKeyStoreNames()) {
                     if(name.find("::") == string::npos) {
                         // CBL-1741: Only update data tables, not FTS index tables
-                        _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB;");
+                        _exec("ALTER TABLE \"kv_" + name + "\" ADD COLUMN extra BLOB;");
                     }
                 }
             })) {
@@ -289,8 +289,9 @@ namespace litecore {
                     if (keyStoreNameIsCollection(keyStoreName)) {
                         Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
                         (void) getKeyStore(keyStoreName); // creates the `_del` keystore
-                        _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
-                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
+                        _exec(format("INSERT INTO \"kv_%s%s\" "
+                                        "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
+                                     "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
                                      kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
                                      keyStoreName.c_str(),
                                      keyStoreName.c_str()));
@@ -546,8 +547,9 @@ namespace litecore {
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
             const char *cname = name.c_str();
-            _exec(format("CREATE TEMP VIEW IF NOT EXISTS all_%s (" COLUMNS ") AS "
-                         "SELECT " COLUMNS " from kv_%s UNION ALL SELECT " COLUMNS " from kv_del_%s",
+            _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
+                         "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
+                         "SELECT " COLUMNS " from \"kv_del_%s\"",
                          cname, cname, cname));
 #undef COLUMNS
 
@@ -567,12 +569,6 @@ namespace litecore {
         return sqlks;
     }
 
-
-#if ENABLE_DELETE_KEY_STORES
-    void SQLiteDataFile::deleteKeyStore(const string &name) {
-        execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
-    }
-#endif
 
     void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
@@ -602,7 +598,17 @@ namespace litecore {
 
     int SQLiteDataFile::_exec(const string &sql) {
         LogTo(SQL, "%s", sql.c_str());
-        return _sqlDb->exec(sql);
+        try {
+            return _sqlDb->exec(sql);
+        } catch (const SQLite::Exception &x) {
+            if (x.getErrorCode() == SQLITE_ERROR) {
+                // Should we also require that the message contains "syntax error"?
+                throw SQLite::Exception(string(x.what()) + " -- " + sql,
+                                        x.getErrorCode(), x.getExtendedErrorCode());
+            } else {
+                throw;
+            }
+        }
     }
 
     int SQLiteDataFile::exec(const string &sql) {
@@ -762,19 +768,22 @@ namespace litecore {
     bool SQLiteDataFile::keyStoreNameIsCollection(slice ksName) {
         if (ksName.hasPrefix(kDeletedKeyStorePrefix))
             ksName = ksName.from(kDeletedKeyStorePrefix.size());
-        return ksName == slice("default") || ksName.hasPrefix("coll_");
+        return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
 
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
+    // (The name might be of the form "scope.collection", which is fine because that's the same
+    // encoding as used in table names.)
     // We have two special rules:
     // 1. The name "_" refers to the default collection; this is simpler than "_default" and
     //    means we don't have to imply that CBL 3.0 supports collections.
     // 2. The name of the database also refers to the default collection, because people are
     //    used to using "FROM bucket_name" in Server queries.
     string SQLiteDataFile::collectionTableName(const string &collection, DeletionStatus type) const {
-        Assert(!collection.empty());
-        Assert(!hasPrefix(collection, "kv_") && !hasPrefix(collection, "coll_"));
+        // This is legal, but in unit tests it indicates I was passed a table name by mistake:
+        DebugAssert(!hasPrefix(collection, "kv_"));
+
         string name;
         if (type == QueryParser::kLiveAndDeletedDocs) {
             name = "all_";
@@ -783,15 +792,19 @@ namespace litecore {
             if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
-        if (collection == "_default" || collection == "_")
-            name += "default";
+        if (slice(collection) == KeyStore::kDefaultCollectionName || collection == "_")
+            name += kDefaultKeyStoreName;
         else {
-            string candidate = name + "coll_" + collection;
+            string candidate = name + string(KeyStore::kCollectionPrefix) + collection;
             if (collection == delegate()->databaseName() && !tableExists(candidate)) {
                 // The name of this database represents the default collection,
                 // _unless_ there is a collection with that name.
-                name += "default";
+                name += kDefaultKeyStoreName;
             } else {
+                // Validate the collection name, which might be of the form "scope.collection":
+                if (!KeyStore::isValidCollectionNameWithScope(collection))
+                    error::_throw(error::InvalidQuery,
+                                  "\"%s\" is not a valid collection name", collection.c_str());
                 name = candidate;
             }
         }

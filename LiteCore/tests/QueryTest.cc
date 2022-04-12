@@ -1871,7 +1871,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     if (GENERATE(false, true)) {
         logSection("secondary collection");
-        store = &db->getKeyStore("coll_secondary");
+        store = &db->getKeyStore(".secondary");
     }
 
     ExclusiveTransaction t(store->dataFile());
@@ -2181,8 +2181,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
         return c == '"' ? '\'' : c;
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+
+    string collectionAlias = collectionName;
+    if (auto dot = collectionAlias.find('.'); dot != string::npos)
+        collectionAlias = collectionAlias.substr(dot + 1);
     
-    query = store->compileQuery("SELECT meta(" + collectionName + ") from " + collectionName,
+    query = store->compileQuery("SELECT meta(" + collectionAlias + ") from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
@@ -2203,7 +2207,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = store->compileQuery("SELECT meta(" + collectionName + ").id from " + collectionName,
+    query = store->compileQuery("SELECT meta(" + collectionAlias + ").id from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
@@ -2326,7 +2330,7 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
             });
         }
 
-        KeyStore &secondary = db->getKeyStore("coll_secondary");
+        KeyStore &secondary = db->getKeyStore(".secondary");
         writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("theone");
             enc.writeInt(4);
@@ -2377,5 +2381,32 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
     } else {
         ExpectingExceptions _;
         CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
+    }
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
+    string tooLong(252, 'x');
+    string tooLong2 = "a." + tooLong, tooLong3 = tooLong + ".z";
+    const char* kBadCollectionNames[] = {
+        // "_",   <- nope, "_" happens to be legal (synonym for the default collection)
+        "%",
+        "%xx", "_xx", "x y",
+        ".", "xx.", ".xx", "_b.c", "b._c",
+        "in.val.id", "in..val",
+        "_default.foo", "foo._default", "_default._default",
+        tooLong.c_str(), tooLong2.c_str(), tooLong3.c_str()
+    };
+    for (auto badName : kBadCollectionNames) {
+        INFO("Collection name is " << badName);
+        ExpectingExceptions expect;
+        try {
+            store->compileQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'"s + badName + "'}]}"));
+            FAIL_CHECK("Didn't detect an invalid collection name");
+        } catch (const error &x) {
+            CHECK(x == error::InvalidQuery);
+            if (string(x.what()).find("is not a valid collection") == string::npos)
+                FAIL_CHECK("Wrong error: " << x.what());
+        }
     }
 }

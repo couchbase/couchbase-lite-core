@@ -45,6 +45,7 @@ namespace litecore {
         extern const C4Slice kPreviousPrivateUUIDKey;
     }
 
+
     /** The concrete subclass of C4Database that implements its functionality.
         It also has some internal methods used by other components of LiteCore. */
     class DatabaseImpl final : public C4Database,
@@ -77,6 +78,8 @@ namespace litecore {
 
         void validateRevisionBody(slice body);
 
+        void forAllCollections(const function_ref<void(C4Collection*)> &) const;
+        void forAllOpenCollections(const function_ref<void(C4Collection*)> &) const;
 
         // C4Database API:
 
@@ -88,13 +91,12 @@ namespace litecore {
         C4UUID getPrivateUUID() const override             {return getUUID(kPrivateUUIDKey);}
         void rekey(const C4EncryptionKey* C4NULLABLE newKey) override;
         void maintenance(C4MaintenanceType) override;
-        std::vector<std::string> getCollectionNames() const override;
-        void forEachCollection(const CollectionCallback&) const override;
-        void forEachOpenCollection(const CollectionCallback&) const;
-        bool hasCollection(slice name) const override;
-        C4Collection* getCollection(slice name) const override;
-        C4Collection* createCollection(slice name) override;
-        void deleteCollection(slice name) override;
+        void forEachScope(const ScopeCallback&) const override;
+        void forEachCollection(const CollectionSpecCallback&) const override;
+        bool hasCollection(CollectionSpec) const override;
+        C4Collection* getCollection(CollectionSpec) const override;
+        C4Collection* createCollection(CollectionSpec) override;
+        void deleteCollection(CollectionSpec) override;
         void beginTransaction() override;
         void endTransaction(bool commit) override;
         bool isInTransaction() const noexcept override;
@@ -158,14 +160,14 @@ namespace litecore {
         unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         void garbageCollectBlobs();
 
-        C4Collection* getOrCreateCollection(slice name, bool canCreate);
+        C4Collection* getOrCreateCollection(CollectionSpec, bool canCreate);
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<slice,std::unique_ptr<C4Collection>>;
+        using CollectionsMap = std::unordered_map<CollectionSpec, std::unique_ptr<C4Collection>>;
 
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         mutable std::recursive_mutex _collectionsMutex;
