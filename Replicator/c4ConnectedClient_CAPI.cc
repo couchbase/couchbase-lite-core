@@ -16,7 +16,7 @@
 #include "c4ExceptionUtils.hh"
 #include "Async.hh"
 #include "RevID.hh"
-#include "DocumentFactory.hh"
+#include "TreeDocument.hh"
 
 using namespace litecore::repl;
 using namespace litecore;
@@ -61,7 +61,7 @@ void c4client_free(C4ConnectedClient* client) noexcept {
     release(client);
 }
 
-void c4client_updateDoc(C4ConnectedClient* client,
+bool c4client_putDoc(C4ConnectedClient* client,
                         C4Slice docID,
                         C4Slice collectionID,
                         C4Slice revID,
@@ -72,22 +72,21 @@ void c4client_updateDoc(C4ConnectedClient* client,
                         C4Error* outError) noexcept {
     try {
         bool deletion = (revisionFlags & kRevDeleted) != 0;
-        revidBuffer generatedRev = DocumentFactory::generateDocRevID(fleeceData,
-                                                                     revID,
-                                                                     deletion);
+        revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData,
+                                                                         revID,
+                                                                         deletion);
         alloc_slice newRevID = revid(generatedRev).expanded();
-        auto res = client->updateDoc(docID,
-                                     collectionID,
-                                     newRevID,
-                                     revID,
-                                     revisionFlags,
-                                     fleeceData);
-        res.then([=](C4Error err) {
+        client->putDoc(docID,
+                       collectionID,
+                       generatedRev,
+                       revID,
+                       (Rev::Flags)revisionFlags,
+                       fleeceData).then([=](C4Error err) {
             return callback(client, newRevID, &err, context);
         });
+        return true;
     } catchError(outError);
-    return;
     
-    
+    return false;
 }
 

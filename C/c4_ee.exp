@@ -458,7 +458,7 @@ _c4client_getDoc
 _c4client_start
 _c4client_stop
 _c4client_free
-_c4client_updateDoc
+_c4client_putDoc
 
 
 _c4db_URINameFromPath

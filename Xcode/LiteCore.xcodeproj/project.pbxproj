@@ -2027,6 +2027,7 @@
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
 				27229268260D171D00A3A41F /* c4Collection.hh */,
+				1A5726AF27D7474900A9B412 /* c4ConnectedClient.hh */,
 				2764ED3623870F15007F020F /* c4Database.hh */,
 				2758DFE425F197B9007C7487 /* c4Document.hh */,
 				2758E09825F3026F007C7487 /* c4DocEnumerator.hh */,
@@ -2035,7 +2036,6 @@
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
 				274D18862617B4300018D39C /* c4Socket.hh */,
-				1A5726AF27D7474900A9B412 /* c4ConnectedClient.hh */,
 			);
 			path = Cpp_include;
 			sourceTree = "<group>";

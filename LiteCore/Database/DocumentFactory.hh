@@ -41,9 +41,6 @@ namespace litecore {
                                                        unsigned maxAncestors,
                                                        bool mustHaveBodies,
                                                        C4RemoteID remoteDBID) =0;
-        
-        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted);
-
     private:
         C4Collection* const _coll;    // Unretained, to avoid ref-cycle
     };

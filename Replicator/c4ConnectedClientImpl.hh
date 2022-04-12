@@ -63,10 +63,10 @@ namespace litecore::client {
         }
         
 #pragma mark -
-        Async<C4DocResponse> getDoc(C4Slice docID,
-                                            C4Slice collectionID,
-                                            C4Slice unlessRevID,
-                                            bool asFleece) noexcept override {
+        Async<C4DocResponse> getDoc(slice docID,
+                                    slice collectionID,
+                                    slice unlessRevID,
+                                    bool asFleece) noexcept override {
             return _client->getDoc(docID,
                                    collectionID,
                                    unlessRevID,
@@ -75,15 +75,15 @@ namespace litecore::client {
             });
         }
         
-        Async<void> updateDoc(C4Slice docID,
-                              C4Slice collectionID,
-                              C4Slice revID,
-                              C4Slice parentRevisionID,
-                              C4RevisionFlags flags,
-                              C4Slice fleeceData) noexcept override {
+        Async<void> putDoc(slice docID,
+                           slice collectionID,
+                           revid revID,
+                           slice parentRevisionID,
+                           Rev::Flags flags,
+                           slice fleeceData) noexcept override {
             return _client->putDoc(docID,
                                    collectionID,
-                                   revID,
+                                   revID.expanded(),
                                    parentRevisionID,
                                    flags,
                                    fleeceData);

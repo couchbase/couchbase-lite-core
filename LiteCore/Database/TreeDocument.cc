@@ -594,7 +594,9 @@ namespace litecore {
             if (!body)
                 return false;
 
-            revidBuffer encodedNewRevID = DocumentFactory::generateDocRevID(body, _selected.revID, deletion);
+            revidBuffer encodedNewRevID = TreeDocumentFactory::generateDocRevID(body,
+                                                                                _selected.revID,
+                                                                                deletion);
 
             C4ErrorCode errorCode = {};
             int httpStatus;
@@ -746,9 +748,9 @@ namespace litecore {
         return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
-    /*static*/ revidBuffer DocumentFactory::generateDocRevID(slice body,
-                                                             slice parentRevID,
-                                                             bool deleted) {
+    /*static*/ revidBuffer TreeDocumentFactory::generateDocRevID(slice body,
+                                                                 slice parentRevID,
+                                                                 bool deleted) {
         // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
         uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
         uint8_t delByte = deleted;

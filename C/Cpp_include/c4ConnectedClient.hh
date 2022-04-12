@@ -14,6 +14,7 @@
 #include "c4Base.hh"
 #include "Async.hh"
 #include "c4ConnectedClient.h"
+#include "RevTree.hh"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -25,7 +26,10 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
                     
     /// Gets the current revision of a document from the server.
-    virtual litecore::actor::Async<C4DocResponse> getDoc(C4Slice, C4Slice, C4Slice, bool) noexcept=0;
+    virtual litecore::actor::Async<C4DocResponse> getDoc(slice,
+                                                         slice,
+                                                         slice,
+                                                         bool) noexcept=0;
     
     /// Pushes a new document revision to the server.
     /// @param docID  The document ID.
@@ -36,12 +40,12 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @param revisionFlags  Flags of this revision.
     /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
     /// @return  An async value that, when resolved, contains the status as a C4Error.
-    virtual litecore::actor::Async<void> updateDoc(C4Slice docID,
-                                                   C4Slice collectionID,
-                                                   C4Slice revID,
-                                                   C4Slice parentRevID,
-                                                   C4RevisionFlags revisionFlags,
-                                                   C4Slice fleeceData) noexcept=0;
+    virtual litecore::actor::Async<void> putDoc(slice docID,
+                                                slice collectionID,
+                                                litecore::revid revID,
+                                                slice parentRevID,
+                                                litecore::Rev::Flags revisionFlags,
+                                                slice fleeceData) noexcept=0;
 
     /// Tells a connected client to start.
     virtual void start() noexcept=0;
