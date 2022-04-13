@@ -1386,5 +1386,3 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
         "-----END CERTIFICATE-----\r\n";
     replicate(kC4OneShot, kC4Disabled, true);
 }
-
-// if (Address::isSecure(_address)) {
