@@ -39,7 +39,7 @@ namespace litecore::client {
     using namespace blip;
 
 
-    alloc_slice ConnectedClient::Delegate::getBlobContents(slice hexDigest, C4Error *error) {
+    alloc_slice ConnectedClient::Delegate::getBlobContents(const C4BlobKey &, C4Error *error) {
         Warn("ConnectedClient's delegate needs to override getBlobContents!");
         *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         return nullslice;
@@ -392,7 +392,10 @@ namespace litecore::client {
         alloc_slice contents;
         C4Error error = {};
         try {
-            contents = _delegate->getBlobContents(req->property("digest"_sl), &error);
+            if (auto blobKey = C4BlobKey::withDigestString(req->property("digest"_sl)))
+                contents = _delegate->getBlobContents(*blobKey, &error);
+            else
+                error = C4Error::make(WebSocketDomain, 400, "Invalid 'digest' property in request");
         } catch (...) {
             error = C4Error::fromCurrentException();
         }

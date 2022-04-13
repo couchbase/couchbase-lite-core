@@ -597,7 +597,7 @@ SORT_MEMBERS_CTORS_1ST = NO
 # appear in their defined order.
 # The default value is: NO.
 
-SORT_GROUP_NAMES       = NO
+SORT_GROUP_NAMES       = YES
 
 # If the SORT_BY_SCOPE_NAME tag is set to YES, the class list will be sorted by
 # fully-qualified names, including namespaces. If set to NO, the class list will
@@ -2039,6 +2039,7 @@ INCLUDE_FILE_PATTERNS  =
 
 PREDEFINED             = DOXYGEN_PARSING=1 \
                          C4API= \
+                         C4API_BEGIN_DECLS= \
                          C4NULLABLE= \
                          C4NONNULL= \
                          C4_RETURNS_NONNULL= \

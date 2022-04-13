@@ -16,161 +16,10 @@
 // limitations under the License.
 //
 
-#include "c4Test.hh"
-#include "ConnectedClient.hh"
-#include "Replicator.hh"
-#include "LoopbackProvider.hh"
-#include "fleece/Fleece.hh"
+#include "ConnectedClientTest.hh"
 
 
-using namespace std;
-using namespace fleece;
-using namespace litecore;
-using namespace litecore::websocket;
-
-
-class ConnectedClientLoopbackTest : public C4Test,
-                                    public repl::Replicator::Delegate,
-                                    public client::ConnectedClient::Delegate
-{
-public:
-
-    virtual C4ConnectedClientParameters params() {
-        return {};
-    }
-
-    void start() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        Assert(!_serverRunning && !_clientRunning);
-
-        auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
-        serverOpts->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
-        serverOpts->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
-
-        c4::ref<C4Database> serverDB = c4db_openAgain(db, ERROR_INFO());
-        REQUIRE(serverDB);
-        _server = new repl::Replicator(serverDB,
-                                       new LoopbackWebSocket(alloc_slice("ws://srv/"),
-                                                             Role::Server, {}),
-                                       *this, serverOpts);
-        
-        _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"),
-                                                                    Role::Client, {}),
-                                              *this,
-                                              params());
-
-        Headers headers;
-        headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
-        LoopbackWebSocket::bind(_server->webSocket(), _client->webSocket(), headers);
-
-        _clientRunning = _serverRunning = true;
-        _server->start();
-        _client->start();
-    }
-
-
-    void stop() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_server) {
-            _server->stop();
-            _server = nullptr;
-        }
-        if (_client) {
-            _client->stop();
-            _client = nullptr;
-        }
-
-        Log("+++ Waiting for client & replicator to stop...");
-        _cond.wait(lock, [&]{return !_clientRunning && !_serverRunning;});
-    }
-
-
-    template <class T>
-    auto waitForResponse(actor::Async<T> &asyncResult) {
-        asyncResult.blockUntilReady();
-
-        Log("++++ Async response available!");
-        if (auto err = asyncResult.error())
-            FAIL("Response returned an error " << err);
-        return asyncResult.result().value();
-    }
-
-
-    template <class T>
-    C4Error waitForErrorResponse(actor::Async<T> &asyncResult) {
-        asyncResult.blockUntilReady();
-
-        Log("++++ Async response available!");
-        auto err = asyncResult.error();
-        if (!err)
-            FAIL("Response did not return an error");
-        return err;
-    }
-
-
-    ~ConnectedClientLoopbackTest() {
-        stop();
-    }
-
-
-    void clientGotHTTPResponse(client::ConnectedClient* NONNULL,
-                               int status,
-                               const websocket::Headers &headers) override
-    {
-        Log("+++ Client got HTTP response");
-    }
-    void clientGotTLSCertificate(client::ConnectedClient* NONNULL,
-                                 slice certData) override
-    {
-        Log("+++ Client got TLS certificate");
-    }
-    void clientStatusChanged(client::ConnectedClient* NONNULL,
-                             C4ReplicatorActivityLevel level) override {
-        Log("+++ Client status changed: %d", int(level));
-        if (level == kC4Stopped) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _clientRunning = false;
-            if (!_clientRunning && !_serverRunning)
-                _cond.notify_all();
-        }
-    }
-    void clientConnectionClosed(client::ConnectedClient* NONNULL,
-                                const CloseStatus &close) override {
-        Log("+++ Client connection closed: reason=%d, code=%d, message=%.*s",
-              int(close.reason), close.code, FMTSLICE(close.message));
-    }
-
-
-    void replicatorGotHTTPResponse(repl::Replicator* NONNULL,
-                                   int status,
-                                   const websocket::Headers &headers) override { }
-    void replicatorGotTLSCertificate(slice certData) override { }
-    void replicatorStatusChanged(repl::Replicator* NONNULL,
-                                 const repl::Replicator::Status &status) override {
-        if (status.level == kC4Stopped) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _serverRunning = false;
-            if (!_clientRunning && !_serverRunning)
-                _cond.notify_all();
-        }
-    }
-    void replicatorConnectionClosed(repl::Replicator* NONNULL,
-                                    const CloseStatus&) override { }
-    void replicatorDocumentsEnded(repl::Replicator* NONNULL,
-                                  const repl::Replicator::DocumentsEnded&) override { }
-    void replicatorBlobProgress(repl::Replicator* NONNULL,
-                                const repl::Replicator::BlobProgress&) override { }
-
-
-    Retained<repl::Replicator> _server;
-    Retained<client::ConnectedClient> _client;
-    bool _clientRunning = false, _serverRunning = false;
-    mutex _mutex;
-    condition_variable _cond;
-};
-
-
-#pragma mark - TESTS:
+#pragma mark - GET:
 
 
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
@@ -260,7 +109,10 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getBlob", "[ConnectedClient]") {
 }
 
 
-TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putRev", "[ConnectedClient]") {
+#pragma mark - PUT:
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
@@ -314,6 +166,9 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClien
 }
 
 
+#pragma mark - OBSERVE:
+
+
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedClient]") {
     {
         // Start with a single doc that should not be sent to the observer
@@ -352,6 +207,77 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedCl
         CHECK(change.flags == 0);
         CHECK(change.sequence == expectedSeq++);
     }
+}
+
+
+#pragma mark - LEGACY ATTACHMENTS:
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Blobs Legacy Mode", "[ConnectedClient][blob]") {
+    static constexpr slice kJSON5WithAttachments =
+            "{_attachments:{'blob_/attached/0':{content_type:'text/plain',digest:'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=',length:27,revpos:1,stub:true},"
+                           "'blob_/attached/1':{content_type:'text/plain',digest:'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=',length:10,revpos:1,stub:true},"
+                           "empty:{content_type:'text/plain',digest:'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=',length:0,revpos:1,stub:true}},"
+               "attached:[{'@type':'blob',content_type:'text/plain',digest:'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=',length:27},"
+                         "{'@type':'blob',content_type:'text/plain',digest:'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=',length:10}]}";
+    static constexpr slice kJSON5WithoutAttachments =
+            "{_attachments:{empty:{content_type:'text/plain',digest:'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=',length:0,revpos:1,stub:true}},"
+               "attached:[{'@type':'blob',content_type:'text/plain',digest:'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=',length:27},"
+                         "{'@type':'blob',content_type:'text/plain',digest:'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=',length:10}]}";
+
+    createFleeceRev(db, "att1"_sl, "1-1111"_sl, slice(json5(kJSON5WithAttachments)));
+
+    // Ensure the 'server' (LiteCore replicator) will not strip the `_attachments` property:
+    _serverOptions->setProperty("disable_blob_support"_sl, true);
+    start();
+
+    auto asyncResult = _client->getDoc("att1", nullslice, nullslice);
+    auto rev = waitForResponse(asyncResult);
+    CHECK(rev.docID == "att1");
+    Doc doc(rev.body);
+    Dict props = doc.asDict();
+    string json(props.toJSON5());
+    replace(json, '"', '\'');
+    CHECK(slice(json) == kJSON5WithoutAttachments);
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Blobs Legacy Mode", "[ConnectedClient][blob]") {
+    // Ensure the 'server' (LiteCore replicator) will not strip the `_attachments` property:
+    _serverOptions->setProperty("disable_blob_support"_sl, true);
+    start();
+
+    // Register the blobs with the ConnectedClient delegate, by digest:
+    _blobs["sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck="] = alloc_slice("Hey, this is an attachment!");
+    _blobs["sha1-rATs731fnP+PJv2Pm/WXWZsCw48="] = alloc_slice("So is this");
+    _blobs["sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk="] = alloc_slice("");
+
+    // Construct the document body, and PUT it:
+    string json = "{'attached':[{'@type':'blob','content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}";
+    replace(json, '\'', '"');
+    auto rq = _client->putDoc("att1", nullslice,
+                               "1-1111",
+                               nullslice,
+                               C4RevisionFlags{},
+                              Doc::fromJSON(json).data());
+    rq.blockUntilReady();
+
+    // All blobs should have been requested by the server and removed from the map:
+    CHECK(_blobs.empty());
+
+    // Now read the doc from the server's database:
+    json = getDocJSON(db, "att1"_sl);
+    replace(json, '"', '\'');
+    CHECK(json ==
+          "{'_attachments':{'blob_/attached/0':{'content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
+                           "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                           "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0,'revpos':1,'stub':true}},"
+           "'attached':[{'@type':'blob','content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}");
+
 }
 
 
@@ -401,12 +327,10 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc encrypted no callback", "[
 
 class ConnectedClientEncryptedLoopbackTest : public ConnectedClientLoopbackTest {
 public:
-    C4ConnectedClientParameters params() override{
-        auto p = ConnectedClientLoopbackTest::params();
-        p.propertyEncryptor = &encryptor;
-        p.propertyDecryptor = &decryptor;
-        p.callbackContext = &_encryptorContext;
-        return p;
+    ConnectedClientEncryptedLoopbackTest() {
+        _params.propertyEncryptor = &encryptor;
+        _params.propertyDecryptor = &decryptor;
+        _params.callbackContext   = &_encryptorContext;
     }
 
     static alloc_slice unbreakableEncryption(slice cleartext, int8_t delta) {
@@ -420,7 +344,9 @@ public:
         slice docID;
         slice keyPath;
         bool called = false;
-    } _encryptorContext;
+    };
+
+    TestEncryptorContext _encryptorContext;
 
     static C4SliceResult encryptor(void* rawCtx,
                                    C4String documentID,
@@ -498,4 +424,4 @@ TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "putDoc encrypted", "[Con
     CHECK(json == kEncryptedDocJSON);
 }
 
-#endif
+#endif // COUCHBASE_ENTERPRISE
