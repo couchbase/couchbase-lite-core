@@ -1,11 +1,11 @@
 {
-	"logging": {
-		"console": {
-			"log_keys": ["HTTP+", "Sync"]
-		}
-	},
+	"disable_persistent_config": true,
+  "logging": {
+    "console": { "log_level": "info", "log_keys": ["*"] }
+  },
 	
 	"adminInterface": ":4985",
+	"admin_interface_authentication": false,
 	
 	"databases": {
 		"itunes": {

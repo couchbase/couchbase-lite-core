@@ -1,18 +1,22 @@
 {
-	"log": ["HTTP++", "Sync"],
+	"disable_persistent_config": true,
+  "logging": {
+    "console": { "log_level": "info", "color_enabled": true, "log_keys": ["*"] }
+  },
     
-    "interface": ":4994",
-    "adminInterface": ":4995",
-    "SSLCert": "cert.pem",
-    "SSLKey":  "privkey.pem",
+  "interface": ":4994",
+	"adminInterface": ":4995",
+	"admin_interface_authentication": false,
+	"SSLCert": "sg_cert.pem",
+	"SSLKey":  "sg_key.pem",
     
-    "unsupported": {
-        "client_cert_auth": {
-            "state": "mandatory",
-            "ca_cert": "ca_cert.pem",
-            "prefixes": [ {"path": "san.email", "delimiters": "@"} ]
-        }
-    },
+  "unsupported": {
+		"client_cert_auth": {      
+			"state": "mandatory",      
+			"ca_cert": "ca_cert.pem",
+			"prefixes": [ {"path": "san.email", "delimiters": "@"} ]  
+		}  
+	},
 
 	"databases": {
 		"itunes": {
