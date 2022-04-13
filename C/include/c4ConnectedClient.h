@@ -45,7 +45,7 @@ C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
  @param callback Callback for getting document.
  @param context Client value passed to getDocument callback
  @param outError  On failure, the error info will be stored here. */
-void c4client_getDoc(C4ConnectedClient*,
+bool c4client_getDoc(C4ConnectedClient*,
                      C4Slice docID,
                      C4Slice collectionID,
                      C4Slice unlessRevID,
