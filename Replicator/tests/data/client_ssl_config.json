@@ -1,18 +1,25 @@
 {
-	"log": ["HTTP++", "Sync"],
+	"logging": {
+		"console": { "log_level": "info", "color_enabled": true, "log_keys": ["*"] }
+	},
+  
+	"disable_persistent_config": true,
+	"admin_interface_authentication": false,
+	"metrics_interface_authentication": false,
+	
+	"interface": ":4994",
+	"adminInterface": ":4995",
+	
+	"SSLCert": "sg_cert.pem",
+	"SSLKey":  "sg_key.pem",
     
-    "interface": ":4994",
-    "adminInterface": ":4995",
-    "SSLCert": "cert.pem",
-    "SSLKey":  "privkey.pem",
-    
-    "unsupported": {
-        "client_cert_auth": {
-            "state": "mandatory",
-            "ca_cert": "ca_cert.pem",
-            "prefixes": [ {"path": "san.email", "delimiters": "@"} ]
-        }
-    },
+	"unsupported": {
+		"client_cert_auth": {
+			"state": "mandatory",
+			"ca_cert": "ca_cert.pem",
+			"prefixes": [ {"path": "san.email", "delimiters": "@"} ]
+		}
+	},
 
 	"databases": {
 		"itunes": {
@@ -20,50 +27,50 @@
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "allow_conflicts": false
+			"allow_conflicts": false
 		},
 		"beer": {
 			"server": "walrus:walrus_data",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "allow_conflicts": false
+			"allow_conflicts": false
 		},
 		"images": {
 			"server": "walrus:walrus_data",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "allow_conflicts": false
+			"allow_conflicts": false
 		},
 		"scratch": {
 			"server": "walrus:",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "allow_conflicts": false
+			"allow_conflicts": false
 		},
 		"scratch_allows_conflicts": {
 			"server": "walrus:",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "allow_conflicts": true
+			"allow_conflicts": true
 		},
-        "scratch_revocation": {
-            "server": "walrus:",
-            "users": {
-                "pupshaw": {"password": "frank", "admin_channels": ["a", "b"] }
-            },
-            "allow_conflicts": false
-            "sync": `function (doc, oldDoc) { channel(doc.channels); }`
-        },
+		"scratch_revocation": {
+			"server": "walrus:",
+			"users": {
+				"pupshaw": {"password": "frank", "admin_channels": ["a", "b"] }
+			},
+			"allow_conflicts": false
+			"sync": `function (doc, oldDoc) { channel(doc.channels); }`
+		},
 		"seekrit": {
 			"server": "walrus:",
 			"users": {
 				"pupshaw": {"password": "frank", "email": "pupshaw@couchbase.org", "admin_channels": ["*"] }
 			},
-            "allow_conflicts": false
+			"allow_conflicts": false
 		}
 	}
 }
