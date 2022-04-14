@@ -15,11 +15,10 @@
 #include "c4Socket+Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Async.hh"
-#include "RevID.hh"
-#include "TreeDocument.hh"
 
 using namespace litecore::repl;
 using namespace litecore;
+using namespace fleece;
 
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Error *outError) noexcept {
     try {
@@ -34,8 +33,8 @@ bool c4client_getDoc(C4ConnectedClient* client,
                      C4Slice unlessRevID,
                      bool asFleece,
                      C4ConnectedClientGetDocumentCallback callback,
-                     void *context,
-                     C4Error* outError) noexcept {
+                     void* C4NULLABLE context,
+                     C4Error* C4NULLABLE outError) noexcept {
     try {
         auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
         res.then([=](C4DocResponse response) {
@@ -67,21 +66,14 @@ bool c4client_putDoc(C4ConnectedClient* client,
                         C4RevisionFlags revisionFlags,
                         C4Slice fleeceData,
                         C4ConnectedClientUpdateDocumentCallback callback,
-                        void * C4NULLABLE context,
-                        C4Error* outError) noexcept {
+                        void* C4NULLABLE context,
+                        C4Error* C4NULLABLE outError) noexcept {
     try {
-        bool deletion = (revisionFlags & kRevDeleted) != 0;
-        revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData,
-                                                                         revID,
-                                                                         deletion);
-        alloc_slice newRevID = revid(generatedRev).expanded();
-        client->putDoc(docID,
-                       collectionID,
-                       generatedRev,
-                       revID,
-                       (Rev::Flags)revisionFlags,
-                       fleeceData).then([=](C4Error err) {
-            return callback(client, newRevID, &err, context);
+        auto res = client->putDoc(docID, collectionID, revID, revisionFlags, fleeceData);
+        res.then([=](string result) {
+            callback(client, alloc_slice(result), nullptr, context);
+        }).onError([=](C4Error err) {
+            callback(client, FLHeapSlice(), &err, context);
         });
         return true;
     } catchError(outError);

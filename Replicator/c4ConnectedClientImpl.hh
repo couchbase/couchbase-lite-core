@@ -17,6 +17,8 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "RevTree.hh"
+#include "TreeDocument.hh"
 
 namespace litecore::client {
 
@@ -75,18 +77,29 @@ namespace litecore::client {
             });
         }
         
-        Async<void> putDoc(slice docID,
-                           slice collectionID,
-                           revid revID,
-                           slice parentRevisionID,
-                           Rev::Flags flags,
-                           slice fleeceData) noexcept override {
-            return _client->putDoc(docID,
-                                   collectionID,
-                                   revID.expanded(),
-                                   parentRevisionID,
-                                   flags,
-                                   fleeceData);
+        Async<std::string> putDoc(slice docID,
+                             slice collectionID,
+                             slice parentRevisionID,
+                             C4RevisionFlags flags,
+                             slice fleeceData) noexcept override {
+            bool deletion = (flags & kRevDeleted) != 0;
+            revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData,
+                                                                             parentRevisionID,
+                                                                             deletion);
+            auto provider = Async<std::string>::makeProvider();
+            _client->putDoc(docID,
+                            collectionID,
+                            revid(generatedRev).expanded(),
+                            parentRevisionID,
+                            flags,
+                            fleeceData).then([=](Result<void> i) {
+                if (i.ok()) {
+                    auto revID = revid(generatedRev).expanded();
+                    provider->setResult(revID.asString());
+                } else
+                    provider->setError(i.error());
+            });
+            return provider->asyncValue();
         }
         
         virtual void start() noexcept override {
