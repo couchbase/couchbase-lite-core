@@ -434,7 +434,7 @@ namespace litecore::client {
                     _registeredChangesHandler = true;
                 }
                 req.setProfile("subChanges");
-                req["since"]      = "NOW";
+                req["future"]     = true;
                 req["continuous"] = true;
             } else {
                 req.setProfile("unsubChanges");

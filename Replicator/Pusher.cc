@@ -84,8 +84,8 @@ namespace litecore { namespace repl {
         }
 
         C4SequenceNumber since = {};
-        if (req->property("since") == "NOW")
-            since = _db->useLocked()->getLastSequence();
+        if (req->boolProperty("future", false))
+            since = _db->useLocked()->getLastSequence();    // "future:true" means no past changes
         else
             since = C4SequenceNumber(max(req->intProperty("since"_sl), 0l));
         _continuous = req->boolProperty("continuous"_sl);

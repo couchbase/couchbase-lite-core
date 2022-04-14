@@ -1176,6 +1176,7 @@
 		2764ED3723873B9E007F020F /* c4.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4.txt; path = scripts/c4.txt; sourceTree = "<group>"; };
 		2764ED3823873B9E007F020F /* c4_exp.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4_exp.txt; path = scripts/c4_exp.txt; sourceTree = "<group>"; };
 		276592A02804B6700037DD04 /* ConnectedClientTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClientTest.hh; sourceTree = "<group>"; };
+		276592A42804DB810037DD04 /* ConnectedClientProtocol.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ConnectedClientProtocol.md; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -2144,6 +2145,7 @@
 				2745B7D126825F970012A17A /* Class Diagram.diagrams */,
 				2745B7D726825F970012A17A /* Class Diagram.pdf */,
 				2745B7D626825F970012A17A /* Class Diagram.png */,
+				276592A42804DB810037DD04 /* ConnectedClientProtocol.md */,
 				2745B7D026825F970012A17A /* Replicator Diagram.svg */,
 				2745B7CD26825F970012A17A /* Replicator Diagram.t2d */,
 			);

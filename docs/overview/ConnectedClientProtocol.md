@@ -34,7 +34,6 @@ Request:
 Response:
 
 * `rev`: The current revision ID
-* `deleted`: (optional) Set to  `true` if the document is deleted and this revision is a “tombstone”
 * Body: The current revision body as JSON
 
 ### 3.2. `getAttachment`
@@ -55,12 +54,18 @@ Response: *same as existing `rev` message* (never sent no-reply)
 
 ### 3.4. `subChanges`
 
-As in the replicator protocol, with one addition: the request’s `since` property may have a value of “`NOW`”. The receiving peer MUST interpret this as equal to the database/bucket’s latest sequence number. This causes only future changes to be sent.
+As in the replicator protocol, with one addition:
 
-> **Note**: This value is always used along with the `continuous` property, since otherwise no changes would be returned.
+Request:
+
+* `future`: (Optional) If `true`, the receiving peer MUST not send any existing sequences, only future changes. In other words, this has the same effect as a `since` property whose value is the current sequence ID. (The message SHOULD NOT also contain a `since` property, and the recipient MUST ignore it if present.)
+
+> **Note**: `future` will always combined with `continuous`, since otherwise no changes would be sent at all!
 
 ### 3.5. `unsubChanges`
 
 This terminates the effect of `subChanges`: the receiving peer MUST stop sending `changes` messages as soon as possible.
+
+The sender MAY send another `subChanges` message later, to start a new feed.
 
 _(No request properties or body defined.)_

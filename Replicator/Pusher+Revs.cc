@@ -45,43 +45,31 @@ namespace litecore::repl {
     }
 
 
-    // Creates a revision message from a RevToSend. Returns a BLIP error code.
+    // Creates a revision message from a RevToSend. Used by `sendRevision` and `handleGetRev`.
     bool Pusher::buildRevisionMessage(RevToSend *request,
+                                      C4Document *doc,
                                       MessageBuilder &msg,
-                                      slice ifNotRevID,
                                       C4Error *outError)
     {
-        // Get the document & revision:
+        // Select the revision and get its properties:
         C4Error c4err = {};
         Dict root;
-        Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
         if (doc) {
-            if (request->revID.empty()) {
-                // When called from `handleGetRev`, all the request has is the docID.
-                // First check for a conditional get:
-                if (doc->revID() == ifNotRevID) {
-                    c4error_return(WebSocketDomain, 304, "Not Changed"_sl, outError);
-                    return false;
-                }
-                // Populate the request with the revision metadata:
+            if (doc->selectRevision(request->revID, true))
                 root = doc->getProperties();
-                request->setRevID(doc->revID());
-                request->sequence = doc->sequence();
+            if (root) {
                 request->flags = doc->selectedRev().flags;
-            } else if (doc->selectRevision(request->revID, true)) {
-                root = doc->getProperties();
-            }
-            if (root)
-                request->flags = doc->selectedRev().flags;
-            else
+            } else {
                 revToSendIsObsolete(*request, &c4err);
+                doc = nullptr;
+            }
         } else {
             c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
 
         // Encrypt any encryptable properties
         MutableDict encryptedRoot;
-        if (root && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
+        if (doc && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
             logVerbose("Encrypting properties in doc '%.*s'", SPLAT(request->docID));
             encryptedRoot = EncryptDocumentProperties(request->docID, root,
                                                       _options->propertyEncryptor,
@@ -90,7 +78,7 @@ namespace litecore::repl {
             if (encryptedRoot)
                 root = encryptedRoot;
             else if (c4err) {
-                root = nullptr;
+                doc = nullptr;
                 finishedDocumentWithError(request, c4err, false);
             }
         }
@@ -102,7 +90,8 @@ namespace litecore::repl {
         msg["id"_sl] = request->docID;
         msg["rev"_sl] = fullRevID;
         msg["sequence"_sl] = uint64_t(request->sequence);
-        if (root) {
+
+        if (doc) {
             if (!msg.isResponse())
                 msg.setProfile("rev");
             if (request->noConflicts)
@@ -162,7 +151,8 @@ namespace litecore::repl {
 
         MessageBuilder msg;
         C4Error c4err;
-        if (buildRevisionMessage(request, msg, {}, &c4err)) {
+        Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
+        if (buildRevisionMessage(request, doc, msg, &c4err)) {
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, [this, request](MessageProgress progress) {
@@ -394,12 +384,27 @@ namespace litecore::repl {
     void Pusher::handleGetRev(Retained<MessageIn> req) {
         alloc_slice docID(req->property("id"));
         slice ifNotRev = req->property("ifNotRev");
-        C4DocumentInfo info = {};
-        info.docID = docID;
-        auto rev = make_retained<RevToSend>(info);
         MessageBuilder response(req);
+        Retained<RevToSend> rev;
         C4Error c4err;
-        if (buildRevisionMessage(rev, response, ifNotRev, &c4err)) {
+        bool ok = false;
+
+        Retained<C4Document> doc = _db->getDoc(docID, kDocGetCurrentRev);
+        if (!doc || (doc->flags() & kDocDeleted)) {
+            c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, "Deleted"_sl);
+        } else if (doc->revID() == ifNotRev) {
+            c4err = C4Error::make(WebSocketDomain, 304, "Not Changed"_sl);
+        } else {
+            C4DocumentInfo info = {};
+            info.docID = docID;
+            info.revID = doc->revID();
+            info.sequence = doc->sequence();
+            info.flags = doc->flags();
+            rev = make_retained<RevToSend>(info);
+            ok = buildRevisionMessage(rev, doc, response, &c4err);
+        }
+
+        if (ok) {
             logVerbose("Responding to getRev('%.*s') with rev #%.*s",
                        SPLAT(docID), SPLAT(rev->revID));
             req->respond(response);
