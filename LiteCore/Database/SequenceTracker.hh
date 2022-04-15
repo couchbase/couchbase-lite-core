@@ -99,10 +99,6 @@ namespace litecore {
 
         bool inTransaction() const              {return _transaction.get() != nullptr;}
 
-        bool hasDBChangeNotifiers() const {
-            return _numPlaceholders - (int)inTransaction() > 0;
-        }
-
         /** Returns the oldest Entry. */
         const_iterator begin() const;
 
