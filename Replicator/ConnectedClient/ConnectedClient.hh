@@ -11,6 +11,7 @@
 #include "c4ConnectedClientTypes.h"
 #include "c4Observer.hh"
 #include "c4ReplicatorTypes.h"
+#include "fleece/Fleece.hh"
 #include <functional>
 #include <variant>
 #include <vector>
@@ -27,6 +28,11 @@ namespace litecore::client {
     /** A callback invoked when one or more documents change on the server. */
     using CollectionObserver = std::function<void(std::vector<C4CollectionObserver::Change> const&)>;
 
+
+    /** A callback invoked for every row of a query result.
+        @param result  An array of column values, or NULL if the query is complete or failed.
+        @param error  Points to the error, else NULL. */
+    using QueryReceiver = std::function<void(fleece::Array result, C4Error* error)>;
 
     /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
         No C4Database necessary!
@@ -134,6 +140,17 @@ namespace litecore::client {
         actor::Async<void> observeCollection(slice collectionID,
                                              CollectionObserver callback);
 
+        //---- Query
+
+        /// Runs a query on the server and gets the results.
+        /// @param name  The name by which the query has been registered on the server.
+        /// @param parameters  A Dict mapping query parameter names to values.
+        /// @param receiver  A callback that will be invoked for each row of the result,
+        ///                  and/or if there's an error.
+        void query(slice name,
+                   fleece::Dict parameters,
+                   QueryReceiver receiver);
+
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
         
@@ -155,7 +172,8 @@ namespace litecore::client {
         bool validateDocAndRevID(slice docID, slice revID);
         alloc_slice processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
         void processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder &enc);
-
+        bool sendQueryRows(blip::MessageIn*, const QueryReceiver&);
+        bool sendMultiLineQueryRows(blip::MessageIn*, const QueryReceiver&);
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
         C4ConnectedClientParameters _params;
         ActivityLevel               _status;

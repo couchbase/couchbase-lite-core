@@ -454,6 +454,7 @@
 		27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */; };
 		27F2BEA0221DF1A0006C13EE /* DBAccess.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F2BE9F221DF1A0006C13EE /* DBAccess.cc */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
+		27F7177A2808E20E000CEA5B /* QueryServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F717792808E20E000CEA5B /* QueryServer.cc */; };
 		27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
 		27F7A1431D61F8B700447BC6 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F7A1441D61F8B700447BC6 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
@@ -1550,6 +1551,8 @@
 		27F4F48323070C7F0075D7CB /* tls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_context.h; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
+		27F717782808E20E000CEA5B /* QueryServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryServer.hh; sourceTree = "<group>"; };
+		27F717792808E20E000CEA5B /* QueryServer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = QueryServer.cc; sourceTree = "<group>"; };
 		27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseImpl.hh; sourceTree = "<group>"; };
 		27FA09D31D70EDBF005888AA /* Catch_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Catch_Tests.mm; sourceTree = "<group>"; };
 		27FA568324AD0E9300B2F1F8 /* Pusher+Attachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Attachments.cc"; sourceTree = "<group>"; };
@@ -2327,8 +2330,10 @@
 		2752C6B127BC417E001C1B76 /* ConnectedClient */ = {
 			isa = PBXGroup;
 			children = (
-				2752C6B527BC41DC001C1B76 /* ConnectedClient.hh */,
 				2752C6B627BC41DC001C1B76 /* ConnectedClient.cc */,
+				2752C6B527BC41DC001C1B76 /* ConnectedClient.hh */,
+				27F717792808E20E000CEA5B /* QueryServer.cc */,
+				27F717782808E20E000CEA5B /* QueryServer.hh */,
 			);
 			path = ConnectedClient;
 			sourceTree = "<group>";
@@ -4346,6 +4351,7 @@
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */,
+				27F7177A2808E20E000CEA5B /* QueryServer.cc in Sources */,
 				2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,

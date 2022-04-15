@@ -69,3 +69,18 @@ This terminates the effect of `subChanges`: the receiving peer MUST stop sending
 The sender MAY send another `subChanges` message later, to start a new feed.
 
 _(No request properties or body defined.)_
+
+### 3.6 `query`
+
+Runs a query on the peer, identified by a name. Queries can take zero or more named parameters, each of which is a JSON value.
+
+The result of a query is a list of rows, each of which is an array of column values. Each row has the same number of columns. Each column has a name.
+
+Request:
+
+* `name`: The name of the query
+* Body: A JSON object mapping parameter names to values
+
+Response:
+
+* Body: A JSON array. The first element MUST be an array of column names, each of which MUST be a string. The remaining elements are the rows of the query result. Each row MUST be an array of JSON values (columns.) Each row of the body, including the colum names, MUST have the same number of items.
