@@ -119,15 +119,8 @@ else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
 endif(MSVC)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
-endif()
-
 check_threading()
 setup_globals()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LITECORE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
@@ -347,8 +340,6 @@ if(USE_COUCHBASE_SQLITE)
     )
 endif()
 
-setup_litecore_build()
-
 install (
     TARGETS LiteCore
     RUNTIME DESTINATION bin
@@ -367,3 +358,5 @@ install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)
+
+setup_litecore_build()

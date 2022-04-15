@@ -6,8 +6,6 @@ function(set_litecore_source_base)
     endif()
 
     set(LITECORE_SHARED_LINKER_FLAGS "" CACHE INTERNAL "")
-    set(LITECORE_C_FLAGS "" CACHE INTERNAL "")
-    SET(LITECORE_CXX_FLAGS "" CACHE INTERNAL "")
 
     # Error.cc will be added here *and* in Support because the Support version is a stub
     # That goes through the C API of LiteCore.  If the stub were compiled into LiteCore
@@ -123,4 +121,18 @@ function(set_litecore_source_base)
         LiteCore/Support/ChannelManifest.cc
         PARENT_SCOPE
     )
+endfunction()
+
+function(setup_litecore_build_base)
+    if(CMAKE_COMPILER_IS_GNUCC)
+        # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+		get_all_targets(all_targets)
+		list(FILTER all_targets EXCLUDE REGEX "lib|apidoc")
+        foreach(target ${all_targets})
+            target_compile_options(
+                ${target} PRIVATE
+                "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
+            )
+        endforeach()
+     endif()
 endfunction()
