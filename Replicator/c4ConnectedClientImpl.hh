@@ -68,7 +68,7 @@ namespace litecore::client {
         Async<C4DocResponse> getDoc(slice docID,
                                     slice collectionID,
                                     slice unlessRevID,
-                                    bool asFleece) noexcept override {
+                                    bool asFleece) override {
             return _client->getDoc(docID,
                                    collectionID,
                                    unlessRevID,
@@ -81,7 +81,7 @@ namespace litecore::client {
                              slice collectionID,
                              slice parentRevisionID,
                              C4RevisionFlags flags,
-                             slice fleeceData) noexcept override {
+                             slice fleeceData) override {
             bool deletion = (flags & kRevDeleted) != 0;
             revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData,
                                                                              parentRevisionID,
@@ -102,12 +102,12 @@ namespace litecore::client {
             return provider->asyncValue();
         }
         
-        virtual void start() noexcept override {
+        virtual void start() override {
             LOCK(_mutex);
             _client->start();
         }
         
-        virtual void stop() noexcept override {
+        virtual void stop() override {
             LOCK(_mutex);
             _client->stop();
         }

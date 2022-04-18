@@ -41,7 +41,7 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     virtual litecore::actor::Async<C4DocResponse> getDoc(slice docID,
                                                          slice collectionID,
                                                          slice unlessRevID,
-                                                         bool asFleece) noexcept=0;
+                                                         bool asFleece)=0;
     
     /// Pushes a new document revision to the server.
     /// @param docID  The document ID.
@@ -55,13 +55,13 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                                                        slice collectionID,
                                                        slice parentRevID,
                                                        C4RevisionFlags revisionFlags,
-                                                       slice fleeceData) noexcept=0;
+                                                       slice fleeceData)=0;
 
     /// Tells a connected client to start.
-    virtual void start() noexcept=0;
+    virtual void start()=0;
 
     /// Tells a replicator to stop.
-    virtual void stop() noexcept=0;
+    virtual void stop()=0;
 };
 
 C4_ASSUME_NONNULL_END
