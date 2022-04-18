@@ -51,6 +51,8 @@ include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
+set(LITECORE_TARGETS "")
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -359,4 +361,6 @@ install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)
 
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets})
 setup_litecore_build()
