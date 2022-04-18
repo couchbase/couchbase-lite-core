@@ -1,7 +1,7 @@
 //
 // c4ConnectedClient.hh
 //
-// Copyright 2021-Present Couchbase, Inc.
+// Copyright 2022-Present Couchbase, Inc.
 //
 // Use of this software is governed by the Business Source License included
 // in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
@@ -22,16 +22,46 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                             C4Base
 {
     /// Creates a new ConnectedClient
+    /// \note It will automatically starts the client, no need to call `start()`.
+    ///
+    /// @param params  Connected Client parameters.
+    /// @result A new \ref C4ConnectedClient, or NULL on failure.
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
                     
     /// Gets the current revision of a document from the server.
-    virtual litecore::actor::Async<C4DocResponse> getDoc(C4Slice, C4Slice, C4Slice, bool) noexcept=0;
+    /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
+    /// revision you already have.
+    /// @param docID  The document ID.
+    /// @param collectionID  The name of the document's collection, or `nullslice` for default.
+    /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
+    ///                   the server will return error {WebSocketDomain, 304}.
+    /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
+    /// @result An async value that, when resolved, contains either a `C4DocResponse` struct
+    ///          or a C4Error.
+    virtual litecore::actor::Async<C4DocResponse> getDoc(slice docID,
+                                                         slice collectionID,
+                                                         slice unlessRevID,
+                                                         bool asFleece)=0;
+    
+    /// Pushes a new document revision to the server.
+    /// @param docID  The document ID.
+    /// @param collectionID  The name of the document's collection, or `nullslice` for default.
+    /// @param parentRevID The ID of the parent revision on the server,
+    ///                      or `nullslice` if this is a new document.
+    /// @param revisionFlags  Flags of this revision.
+    /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
+    /// @return An async value that, when resolved, contains new revisionID or the status as a C4Error
+    virtual litecore::actor::Async<std::string> putDoc(slice docID,
+                                                       slice collectionID,
+                                                       slice parentRevID,
+                                                       C4RevisionFlags revisionFlags,
+                                                       slice fleeceData)=0;
 
     /// Tells a connected client to start.
-    virtual void start() noexcept=0;
+    virtual void start()=0;
 
     /// Tells a replicator to stop.
-    virtual void stop() noexcept=0;
+    virtual void stop()=0;
 };
 
 C4_ASSUME_NONNULL_END

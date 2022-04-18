@@ -17,11 +17,14 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "RevTree.hh"
+#include "TreeDocument.hh"
 
 namespace litecore::client {
 
     using namespace litecore::websocket;
     using namespace litecore::actor;
+    using namespace std;
     
     struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
         
@@ -62,10 +65,10 @@ namespace litecore::client {
         }
         
 #pragma mark -
-        Async<C4DocResponse> getDoc(C4Slice docID,
-                                            C4Slice collectionID,
-                                            C4Slice unlessRevID,
-                                            bool asFleece) noexcept override {
+        Async<C4DocResponse> getDoc(slice docID,
+                                    slice collectionID,
+                                    slice unlessRevID,
+                                    bool asFleece) override {
             return _client->getDoc(docID,
                                    collectionID,
                                    unlessRevID,
@@ -74,12 +77,37 @@ namespace litecore::client {
             });
         }
         
-        virtual void start() noexcept override {
+        Async<std::string> putDoc(slice docID,
+                             slice collectionID,
+                             slice parentRevisionID,
+                             C4RevisionFlags flags,
+                             slice fleeceData) override {
+            bool deletion = (flags & kRevDeleted) != 0;
+            revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData,
+                                                                             parentRevisionID,
+                                                                             deletion);
+            auto provider = Async<std::string>::makeProvider();
+            _client->putDoc(docID,
+                            collectionID,
+                            revid(generatedRev).expanded(),
+                            parentRevisionID,
+                            flags,
+                            fleeceData).then([=](Result<void> i) {
+                if (i.ok()) {
+                    auto revID = revid(generatedRev).expanded();
+                    provider->setResult(revID.asString());
+                } else
+                    provider->setError(i.error());
+            });
+            return provider->asyncValue();
+        }
+        
+        virtual void start() override {
             LOCK(_mutex);
             _client->start();
         }
         
-        virtual void stop() noexcept override {
+        virtual void stop() override {
             LOCK(_mutex);
             _client->stop();
         }

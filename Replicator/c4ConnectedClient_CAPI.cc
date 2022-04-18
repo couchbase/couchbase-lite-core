@@ -17,6 +17,8 @@
 #include "Async.hh"
 
 using namespace litecore::repl;
+using namespace litecore;
+using namespace fleece;
 
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Error *outError) noexcept {
     try {
@@ -31,8 +33,8 @@ bool c4client_getDoc(C4ConnectedClient* client,
                      C4Slice unlessRevID,
                      bool asFleece,
                      C4ConnectedClientGetDocumentCallback callback,
-                     void *context,
-                     C4Error* outError) noexcept {
+                     void* C4NULLABLE context,
+                     C4Error* C4NULLABLE outError) noexcept {
     try {
         auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
         res.then([=](C4DocResponse response) {
@@ -55,5 +57,27 @@ void c4client_stop(C4ConnectedClient* client) noexcept {
 
 void c4client_free(C4ConnectedClient* client) noexcept {
     release(client);
+}
+
+bool c4client_putDoc(C4ConnectedClient* client,
+                        C4Slice docID,
+                        C4Slice collectionID,
+                        C4Slice revID,
+                        C4RevisionFlags revisionFlags,
+                        C4Slice fleeceData,
+                        C4ConnectedClientUpdateDocumentCallback callback,
+                        void* C4NULLABLE context,
+                        C4Error* C4NULLABLE outError) noexcept {
+    try {
+        auto res = client->putDoc(docID, collectionID, revID, revisionFlags, fleeceData);
+        res.then([=](string result) {
+            callback(client, alloc_slice(result), nullptr, context);
+        }).onError([=](C4Error err) {
+            callback(client, FLHeapSlice(), &err, context);
+        });
+        return true;
+    } catchError(outError);
+    
+    return false;
 }
 

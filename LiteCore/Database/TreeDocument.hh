@@ -31,6 +31,8 @@ namespace litecore {
                                                C4RemoteID remoteDBID) override;
 
         static C4Document* documentContaining(FLValue value);
+        
+        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted);
     };
 
 }

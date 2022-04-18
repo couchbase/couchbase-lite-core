@@ -29,22 +29,19 @@ C4API_BEGIN_DECLS
     @param error  Error will be written here if the function fails.
     @result A new \ref C4ConnectedClient, or NULL on failure. */
 C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params,
-                                C4Error* error) C4API;
+                                C4Error* C4NULLABLE error) C4API;
 
 /** Gets the current revision of a document from the server.
-    
     You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
     revision you already have.
- 
     @param docID  The document ID.
     @param collectionID  The name of the document's collection, or `nullslice` for default.
     @param unlessRevID  If non-null, and equal to the current server-side revision ID,
-                    the server will return error {WebSocketDomain, 304} instead of the document.
+                    the server will return error {WebSocketDomain, 304}.
     @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
     @param callback Callback for getting document.
-    @param context Client value passed to the callback
-    @param error  On failure to issue the call, the error info will be stored here.
-    @return  True if the request is sent, false if it failed (check `error`.) */
+    @param context Client value passed to getDocument callback
+    @param outError  On failure, the error info will be stored here. */
 bool c4client_getDoc(C4ConnectedClient*,
                      C4Slice docID,
                      C4Slice collectionID,
@@ -52,7 +49,27 @@ bool c4client_getDoc(C4ConnectedClient*,
                      bool asFleece,
                      C4ConnectedClientGetDocumentCallback callback,
                      void * C4NULLABLE context,
-                     C4Error* error) C4API;
+                     C4Error* C4NULLABLE outError) C4API;
+
+/** Pushes a new document revision to the server.
+    @param docID  The document ID.
+    @param collectionID  The name of the document's collection, or `nullslice` for default.
+    @param revID  The ID of the parent revision on the server,
+                      or `nullslice` if this is a new document.
+    @param revisionFlags  Flags of this revision.
+    @param fleeceData  The document body encoded as Fleece (without shared keys!)
+    @param callback Callback once the document is updated.
+    @param context Client value passed to updateDocument callback
+    @param outError  On failure, the error info will be stored here. */
+bool c4client_putDoc(C4ConnectedClient* client,
+                     C4Slice docID,
+                     C4Slice collectionID,
+                     C4Slice revID,
+                     C4RevisionFlags revisionFlags,
+                     C4Slice fleeceData,
+                     C4ConnectedClientUpdateDocumentCallback callback,
+                     void * C4NULLABLE context,
+                     C4Error* C4NULLABLE outError) C4API;
 
 /** Tells a connected client to start.
     \note This function is thread-safe.*/

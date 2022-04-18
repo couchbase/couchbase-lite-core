@@ -594,7 +594,9 @@ namespace litecore {
             if (!body)
                 return false;
 
-            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion);
+            revidBuffer encodedNewRevID = TreeDocumentFactory::generateDocRevID(body,
+                                                                                _selected.revID,
+                                                                                deletion);
 
             C4ErrorCode errorCode = {};
             int httpStatus;
@@ -644,24 +646,6 @@ namespace litecore {
             updateFlags();
             return true;
         }
-
-
-        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted) {
-            // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
-            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            uint8_t delByte = deleted;
-            SHA1 digest = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
-                                         << delByte << body)
-                           .finish();
-            // Derive new rev's generation #:
-            unsigned generation = 1;
-            if (parentRevID.buf) {
-                revidBuffer parentID(parentRevID);
-                generation = parentID.generation() + 1;
-            }
-            return revidBuffer(generation, slice(digest));
-        }
-
 
     private:
         RevTreeRecord _revTree;
@@ -764,5 +748,22 @@ namespace litecore {
         return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
+    /*static*/ revidBuffer TreeDocumentFactory::generateDocRevID(slice body,
+                                                                 slice parentRevID,
+                                                                 bool deleted) {
+        // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
+        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
+        uint8_t delByte = deleted;
+        SHA1 digest = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
+                                     << delByte << body)
+                       .finish();
+        // Derive new rev's generation #:
+        unsigned generation = 1;
+        if (parentRevID.buf) {
+            revidBuffer parentID(parentRevID);
+            generation = parentID.generation() + 1;
+        }
+        return revidBuffer(generation, slice(digest));
+    }
 
 } // end namespace litecore

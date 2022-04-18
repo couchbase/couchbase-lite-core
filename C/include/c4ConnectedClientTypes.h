@@ -49,6 +49,14 @@ typedef void (*C4ConnectedClientGetDocumentCallback)(C4ConnectedClient* client,
                                                      C4Error* C4NULLABLE err,
                                                      void * C4NULLABLE context);
 
+/** Callback for updating the document result.
+ @param client   The client that initiated the callback.
+ @param err Error will be written here if the get-document fails.
+ @param context  user-defined parameter given when registering the callback. */
+typedef void (*C4ConnectedClientUpdateDocumentCallback)(C4ConnectedClient* client,
+                                                        C4HeapSlice revID,
+                                                        C4Error* C4NULLABLE err,
+                                                        void * C4NULLABLE context);
 /** @} */
 
 C4API_END_DECLS
