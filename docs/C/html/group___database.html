@@ -79,6 +79,9 @@ Data Structures</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full identifier of a collection in a database, including its scope.  <a href="struct_c4_collection_spec.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Configuration</h2></td></tr>
 <tr class="memitem:ga3dbc483ea55d3e717ebb4f8cbcc7ec9f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3dbc483ea55d3e717ebb4f8cbcc7ec9f">C4DatabaseFlags</a> : uint32_t { <br />
@@ -203,8 +206,43 @@ Data Structures</h2></td></tr>
 <tr class="memitem:ga94d51d79bff6970adbb87d367a66a487"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga94d51d79bff6970adbb87d367a66a487">c4db_isInTransaction</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
 <tr class="memdesc:ga94d51d79bff6970adbb87d367a66a487"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a transaction active?  <a href="group___database.html#ga94d51d79bff6970adbb87d367a66a487">More...</a><br /></td></tr>
 <tr class="separator:ga94d51d79bff6970adbb87d367a66a487"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader">Scopes and Collections</h2></td></tr>
+<tr class="memitem:ga541608df0c6e4a5b20f2c66271748c31"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga541608df0c6e4a5b20f2c66271748c31">kC4DefaultScopeID</a>&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(&quot;_default&quot;)</td></tr>
+<tr class="separator:ga541608df0c6e4a5b20f2c66271748c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga22a41aa6defafbcd8af519ea05ea97ee"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga22a41aa6defafbcd8af519ea05ea97ee">kC4DefaultCollectionName</a>&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(&quot;_default&quot;)</td></tr>
+<tr class="separator:ga22a41aa6defafbcd8af519ea05ea97ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ga22a41aa6defafbcd8af519ea05ea97ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga22a41aa6defafbcd8af519ea05ea97ee">&#9670;&nbsp;</a></span>kC4DefaultCollectionName</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4DefaultCollectionName&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(&quot;_default&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga541608df0c6e4a5b20f2c66271748c31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga541608df0c6e4a5b20f2c66271748c31">&#9670;&nbsp;</a></span>kC4DefaultScopeID</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4DefaultScopeID&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(&quot;_default&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="ga3dbc483ea55d3e717ebb4f8cbcc7ec9f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga3dbc483ea55d3e717ebb4f8cbcc7ec9f">&#9670;&nbsp;</a></span>C4DatabaseFlags</h2>

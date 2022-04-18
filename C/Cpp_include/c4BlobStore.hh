@@ -14,7 +14,7 @@
 #include "c4Base.hh"
 #include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/Fleece.h"
 #include <memory>
 #include <optional>

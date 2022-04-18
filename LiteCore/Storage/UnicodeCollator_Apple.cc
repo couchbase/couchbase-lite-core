@@ -14,7 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
@@ -165,6 +165,21 @@ namespace litecore {
         if (rc != SQLITE_OK)
             throw SQLite::Exception(dbHandle, rc);
         return context;
+    }
+
+    vector<string> SupportedLocales() {
+        vector<string> locales;
+        CFArrayRef rawLocales = CFLocaleCopyAvailableLocaleIdentifiers();
+        auto count = CFArrayGetCount(rawLocales);
+        char buf[32];
+        for(CFIndex i = 0; i < count; i++) {
+            auto locale = (CFStringRef)CFArrayGetValueAtIndex(rawLocales, i);
+            CFStringGetCString(locale, buf, 32, kCFStringEncodingASCII);
+            locales.push_back(buf);
+        }
+        
+        CFRelease(rawLocales);
+        return locales;
     }
 
 }

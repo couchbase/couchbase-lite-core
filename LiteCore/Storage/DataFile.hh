@@ -14,8 +14,8 @@
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"          // For fleece::InstanceCountedIn
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"          // For fleece::InstanceCountedIn
 #include <mutex>
 #include <vector>
 #include <unordered_map>
@@ -163,12 +163,8 @@ namespace litecore {
 
         void closeKeyStore(const std::string &name);
 
-        virtual void deleteKeyStore(const std::string &name) =0;
-
-#if ENABLE_DELETE_KEY_STORES
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string &name) =0;
-#endif
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level =LogLevel::Info) const         {return Logging::willLog(level);}

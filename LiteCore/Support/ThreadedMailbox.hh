@@ -13,7 +13,7 @@
 #pragma once
 #include "Channel.hh"
 #include "ChannelManifest.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "Stopwatch.hh"
 #include <atomic>
 #include <chrono>

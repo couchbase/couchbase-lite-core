@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Collections</title>
+<title>LiteCore: Collections and Scopes</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -63,7 +63,7 @@ $(function() {
 
 <div class="header">
   <div class="headertitle">
-<div class="title">Collections</div>  </div>
+<div class="title">Collections and Scopes</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -72,30 +72,33 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Lifecycle</h2></td></tr>
 <tr class="memitem:gaa3e2a2022a496cccddd8efee9019f24c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaa3e2a2022a496cccddd8efee9019f24c">c4db_getDefaultCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
-<tr class="memdesc:gaa3e2a2022a496cccddd8efee9019f24c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the default collection that exists in every database.  <a href="group___collection.html#gaa3e2a2022a496cccddd8efee9019f24c">More...</a><br /></td></tr>
+<tr class="memdesc:gaa3e2a2022a496cccddd8efee9019f24c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the default collection, whose name is "`_default`" (<code>kC4DefaultCollectionName</code>).  <a href="group___collection.html#gaa3e2a2022a496cccddd8efee9019f24c">More...</a><br /></td></tr>
 <tr class="separator:gaa3e2a2022a496cccddd8efee9019f24c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacb99c83f7f33dfa2f4fbaf153411384a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gacb99c83f7f33dfa2f4fbaf153411384a">c4db_hasCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name)</td></tr>
-<tr class="memdesc:gacb99c83f7f33dfa2f4fbaf153411384a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the collection exists.  <a href="group___collection.html#gacb99c83f7f33dfa2f4fbaf153411384a">More...</a><br /></td></tr>
-<tr class="separator:gacb99c83f7f33dfa2f4fbaf153411384a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0725de618c6886a8d41c316ebb8103ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga0725de618c6886a8d41c316ebb8103ce">c4db_getCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name)</td></tr>
-<tr class="memdesc:ga0725de618c6886a8d41c316ebb8103ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the existing collection with the given name, or NULL if it doesn't exist.  <a href="group___collection.html#ga0725de618c6886a8d41c316ebb8103ce">More...</a><br /></td></tr>
-<tr class="separator:ga0725de618c6886a8d41c316ebb8103ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga48f033aea4269a43b6ee134128dc0d40"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga48f033aea4269a43b6ee134128dc0d40">c4db_createCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga48f033aea4269a43b6ee134128dc0d40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates and returns an empty collection with the given name, or returns an existing collection by that name.  <a href="group___collection.html#ga48f033aea4269a43b6ee134128dc0d40">More...</a><br /></td></tr>
-<tr class="separator:ga48f033aea4269a43b6ee134128dc0d40"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6c51b8ec2ed86c28605e49adcfd0e9b1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga6c51b8ec2ed86c28605e49adcfd0e9b1">c4db_deleteCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga6c51b8ec2ed86c28605e49adcfd0e9b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the collection with the given name.  <a href="group___collection.html#ga6c51b8ec2ed86c28605e49adcfd0e9b1">More...</a><br /></td></tr>
-<tr class="separator:ga6c51b8ec2ed86c28605e49adcfd0e9b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafbe1b1977164ffbd10dbfec3f074486f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gafbe1b1977164ffbd10dbfec3f074486f">c4db_collectionNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
-<tr class="memdesc:gafbe1b1977164ffbd10dbfec3f074486f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing collections, in the order in which they were created.  <a href="group___collection.html#gafbe1b1977164ffbd10dbfec3f074486f">More...</a><br /></td></tr>
-<tr class="separator:gafbe1b1977164ffbd10dbfec3f074486f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga85c5718bc345a312afd9452e465ab109"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga85c5718bc345a312afd9452e465ab109">c4db_hasCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec)</td></tr>
+<tr class="memdesc:ga85c5718bc345a312afd9452e465ab109"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the collection exists.  <a href="group___collection.html#ga85c5718bc345a312afd9452e465ab109">More...</a><br /></td></tr>
+<tr class="separator:ga85c5718bc345a312afd9452e465ab109"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga634de4c16635c7ec42bff8cb60e860b5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga634de4c16635c7ec42bff8cb60e860b5">c4db_getCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec)</td></tr>
+<tr class="memdesc:ga634de4c16635c7ec42bff8cb60e860b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the existing collection with the given name &amp; scope, or NULL if it doesn't exist.  <a href="group___collection.html#ga634de4c16635c7ec42bff8cb60e860b5">More...</a><br /></td></tr>
+<tr class="separator:ga634de4c16635c7ec42bff8cb60e860b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2e2f352330048a0a5c92d84592d23e09"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga2e2f352330048a0a5c92d84592d23e09">c4db_createCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga2e2f352330048a0a5c92d84592d23e09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates and returns an empty collection with the given name &amp; scope.  <a href="group___collection.html#ga2e2f352330048a0a5c92d84592d23e09">More...</a><br /></td></tr>
+<tr class="separator:ga2e2f352330048a0a5c92d84592d23e09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga57b05cc9c501a52ff3c89210f0d8cb8a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga57b05cc9c501a52ff3c89210f0d8cb8a">c4db_deleteCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga57b05cc9c501a52ff3c89210f0d8cb8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the collection with the given name &amp; scope.  <a href="group___collection.html#ga57b05cc9c501a52ff3c89210f0d8cb8a">More...</a><br /></td></tr>
+<tr class="separator:ga57b05cc9c501a52ff3c89210f0d8cb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad119f91741043c0a8b88d94d580aafef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gad119f91741043c0a8b88d94d580aafef">c4db_collectionNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inScope)</td></tr>
+<tr class="memdesc:gad119f91741043c0a8b88d94d580aafef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing collections in the given scope, in the order in which they were created.  <a href="group___collection.html#gad119f91741043c0a8b88d94d580aafef">More...</a><br /></td></tr>
+<tr class="separator:gad119f91741043c0a8b88d94d580aafef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9045aba29955e996cfeb5b11b7c6e4c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga9045aba29955e996cfeb5b11b7c6e4c6">c4db_scopeNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
+<tr class="memdesc:ga9045aba29955e996cfeb5b11b7c6e4c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing scopes, in the order in which they were created.  <a href="group___collection.html#ga9045aba29955e996cfeb5b11b7c6e4c6">More...</a><br /></td></tr>
+<tr class="separator:ga9045aba29955e996cfeb5b11b7c6e4c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Accessors</h2></td></tr>
-<tr class="memitem:ga25314b65e10491d6f11bbcafefb2a217"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga25314b65e10491d6f11bbcafefb2a217">c4coll_getName</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
-<tr class="memdesc:ga25314b65e10491d6f11bbcafefb2a217"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the collection.  <a href="group___collection.html#ga25314b65e10491d6f11bbcafefb2a217">More...</a><br /></td></tr>
-<tr class="separator:ga25314b65e10491d6f11bbcafefb2a217"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2981330cfbd67f14c2212478715ad5d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga2981330cfbd67f14c2212478715ad5d0">c4coll_getSpec</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
+<tr class="memdesc:ga2981330cfbd67f14c2212478715ad5d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name and scope of the collection.  <a href="group___collection.html#ga2981330cfbd67f14c2212478715ad5d0">More...</a><br /></td></tr>
+<tr class="separator:ga2981330cfbd67f14c2212478715ad5d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga56f6933b80f90c2a280d4a04ae1f6b9b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga56f6933b80f90c2a280d4a04ae1f6b9b">c4coll_getDatabase</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
-<tr class="memdesc:ga56f6933b80f90c2a280d4a04ae1f6b9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the database containing this collection.  <a href="group___collection.html#ga56f6933b80f90c2a280d4a04ae1f6b9b">More...</a><br /></td></tr>
+<tr class="memdesc:ga56f6933b80f90c2a280d4a04ae1f6b9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the database containing the collection.  <a href="group___collection.html#ga56f6933b80f90c2a280d4a04ae1f6b9b">More...</a><br /></td></tr>
 <tr class="separator:ga56f6933b80f90c2a280d4a04ae1f6b9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5553da08b79f8785256f078b8004ecef"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga5553da08b79f8785256f078b8004ecef">c4coll_getDocumentCount</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
 <tr class="memdesc:ga5553da08b79f8785256f078b8004ecef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of (undeleted) documents in the collection.  <a href="group___collection.html#ga5553da08b79f8785256f078b8004ecef">More...</a><br /></td></tr>
@@ -118,7 +121,7 @@ $(function() {
 <tr class="memdesc:gae7ff4d349420d35a2e41ea68d6c33bb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function to create a new document.  <a href="group___collection.html#gae7ff4d349420d35a2e41ea68d6c33bb6">More...</a><br /></td></tr>
 <tr class="separator:gae7ff4d349420d35a2e41ea68d6c33bb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga636ba0c110ab9c3c9e6d57d40b5556ed">c4coll_moveDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *toCollection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> newDocID, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves a document to another collection, possibly with a different ID.  <a href="group___collection.html#ga636ba0c110ab9c3c9e6d57d40b5556ed">More...</a><br /></td></tr>
+<tr class="memdesc:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves a document to another collection, possibly with a different docID.  <a href="group___collection.html#ga636ba0c110ab9c3c9e6d57d40b5556ed">More...</a><br /></td></tr>
 <tr class="separator:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Purging and Expiration</h2></td></tr>
@@ -159,8 +162,10 @@ $(function() {
 <li>a scope for document enumerators</li>
 <li>independent sequence numbers</li>
 </ul>
-<p>Every database starts with a <b>default Collection</b>, whose name is <code>_default</code>. If the database was created by an earlier version of LiteCore, all existing documents will be in the default Collection.</p>
-<p>Pre-existing functions that refer to documents / sequences / indexes without referring to Collections &ndash; such as <a class="el" href="group___documents.html#gaf4b870a40dd2a871771837e086d54ed3">c4doc_get</a> and <a class="el" href="group___database.html#gab8f435e79ec606be7838044322b2ce39">c4db_getLastSequence</a> &ndash; still exist, but implicitly operate on the default Collection. In other words, they behave exactly the way they used to, but Collection-aware code should avoid them and use the new Collection API instead. These functions will eventually be deprecated, then removed.</p>
+<p>Likewise, a <b>Scope</b> is a grouping of Collections, like a "parent folder".</p>
+<p>Every database starts with a <b>default Collection</b>, whose name is <code>_default</code>, which exists in a <b>default Scope</b>, also named <code>_default</code>. If the database was created by an earlier version of LiteCore, all existing documents will be in the default Collection.</p>
+<p>Pre-existing functions that refer to documents / sequences / indexes without referring to Collections &ndash; such as <a class="el" href="group___documents.html#gaf4b870a40dd2a871771837e086d54ed3">c4doc_get</a> and <a class="el" href="group___database.html#gab8f435e79ec606be7838044322b2ce39">c4db_getLastSequence</a> &ndash; still exist, but implicitly operate on the default Collection. In other words, they behave exactly the way they used to, but Collection-aware code should avoid them and use the new Collection API instead.</p>
+<p>These functions will eventually be deprecated, then removed. As an aid in updating your code, you can define the C preprocessor symbol <code>C4_STRICT_COLLECTION_API</code> to suppress the definitions of those functions, which will turn all calls to them into errors.</p>
 <blockquote class="doxtable">
 <p><b>NOTE:</b> A few Collection functions are documented in other sections of the API docs: </p>
 </blockquote>
@@ -170,12 +175,15 @@ $(function() {
 <li><a class="el" href="group___doc_enumerator.html#gae021e84b1f9df3a110838f7257b77fd2">c4coll_enumerateAllDocs</a></li>
 </ul>
 </li>
-<li>Observer-related functions (in <code><a class="el" href="c4_observer_8h.html">c4Observer.h</a></code>):<ul>
+<li><p class="startli">Observer-related functions (in <code><a class="el" href="c4_observer_8h.html">c4Observer.h</a></code>):</p><ul>
 <li><a class="el" href="group___observer.html#ga0e0ed067df021283f5ebc174320526d1">c4dbobs_createOnCollection</a></li>
-<li><a class="el" href="group___observer.html#gac7806edcd8245c1fdd6b9d0171dc7e3f">c4docobs_createWithCollection</a> </li>
+<li><a class="el" href="group___observer.html#gac7806edcd8245c1fdd6b9d0171dc7e3f">c4docobs_createWithCollection</a></li>
 </ul>
+<p class="startli">A <code>C4Collection</code> reference is valid until its <code>C4Database</code> is closed, or until you delete the collection. It does not need to be released or freed.</p>
 </li>
 </ul>
+<p>In the API, collections are named by a <code><a class="el" href="struct_c4_collection_spec.html" title="Full identifier of a collection in a database, including its scope.">C4CollectionSpec</a></code> struct, which simply contains two <code>FLString</code>s, first a collection name and second a scope name. Note that the collection name comes first (unlike in a N1QL query), so that the scope name can be left out if you're referring to the default scope. You can give a collection spec literally as e.g. <code>{C4STR("mycoll")}</code>, or with a scope, <code>{C4STR("mycoll"), C4STR("myscope")}</code>.</p>
+<p>There are no API calls to create or delete Scopes. A Scope is created implicitly when you create the first Collection inside it, and deleted implicitly when you delete its last Collection. </p>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="gae7ff4d349420d35a2e41ea68d6c33bb6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gae7ff4d349420d35a2e41ea68d6c33bb6">&#9670;&nbsp;</a></span>c4coll_createDoc()</h2>
@@ -222,7 +230,8 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Convenience function to create a new document. </p>
-<p>This just a wrapper around <a class="el" href="group___collection.html#ga9e1f96304fca7c29580b69b6ae718c11">c4coll_putDoc</a>. If the document already exists, it will fail with the error <code>kC4ErrorConflict</code>. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This just a wrapper around <a class="el" href="group___collection.html#ga9e1f96304fca7c29580b69b6ae718c11">c4coll_putDoc</a>. If the document already exists, it will fail with the error <code>kC4ErrorConflict</code>. </p><dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> when finished with the document. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">collection</td><td>The collection to create the document in </td></tr>
     <tr><td class="paramname">docID</td><td>Document ID to create; if null, a UUID will be generated </td></tr>
@@ -371,7 +380,7 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Returns the database containing this collection. </p>
+<p>Returns the database containing the collection. </p>
 
 </div>
 </div>
@@ -420,7 +429,8 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Gets a document from the collection given its ID. </p>
-<p>The current revision is selected (if the document exists.) You must call <a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> when finished with the document. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The current revision is selected (if the document exists.) </p><dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> when finished with the document. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">collection</td><td>The collection to read from. </td></tr>
     <tr><td class="paramname">docID</td><td>The document's ID. </td></tr>
@@ -467,8 +477,8 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Gets a document from the collection given its sequence number. </p>
-<p>You must call <code><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release()</a></code> when finished with the document. <br  />
- </p>
+<dl class="section note"><dt>Note</dt><dd>You must call <code><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release()</a></code> when finished with the document. <br  />
+ </dd></dl>
 
 </div>
 </div>
@@ -595,14 +605,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga25314b65e10491d6f11bbcafefb2a217"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga25314b65e10491d6f11bbcafefb2a217">&#9670;&nbsp;</a></span>c4coll_getName()</h2>
+<a id="ga2981330cfbd67f14c2212478715ad5d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2981330cfbd67f14c2212478715ad5d0">&#9670;&nbsp;</a></span>c4coll_getSpec()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> c4coll_getName </td>
+          <td class="memname"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> c4coll_getSpec </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -611,7 +621,7 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Returns the name of the collection. </p>
+<p>Returns the name and scope of the collection. </p>
 
 </div>
 </div>
@@ -659,7 +669,7 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Moves a document to another collection, possibly with a different ID. </p>
+<p>Moves a document to another collection, possibly with a different docID. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">collection</td><td>The document's original collection. </td></tr>
@@ -802,8 +812,9 @@ $(function() {
 <p>A high-level Put operation, to insert a new or downloaded revision. </p>
 <ul>
 <li>If <code>request-&gt;existingRevision</code> is true, then request-&gt;history must contain the revision's history, with the revision's ID as the first item.</li>
-<li>Otherwise, a new revision will be created and assigned a revID. The parent revision ID, if any, should be given as the single item of request-&gt;history. Either way, on success the document is returned with the inserted revision selected. Note that actually saving the document back to the database is optional &ndash; it only happens if request-&gt;save is true. You can set this to false if you want to review the changes before saving, e.g. to run them through a validation function. </li>
+<li>Otherwise, a new revision will be created and assigned a revID. The parent revision ID, if any, should be given as the single item of request-&gt;history. Either way, on success the document is returned with the inserted revision selected.</li>
 </ul>
+<p>Note that actually saving the document back to the database is optional &ndash; it only happens if request-&gt;save is true. You can set this to false if you want to review the changes before saving, e.g. to run them through a validation function. </p><dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> when finished with the returned document. </dd></dl>
 
 </div>
 </div>
@@ -859,29 +870,39 @@ $(function() {
 
 </div>
 </div>
-<a id="gafbe1b1977164ffbd10dbfec3f074486f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafbe1b1977164ffbd10dbfec3f074486f">&#9670;&nbsp;</a></span>c4db_collectionNames()</h2>
+<a id="gad119f91741043c0a8b88d94d580aafef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad119f91741043c0a8b88d94d580aafef">&#9670;&nbsp;</a></span>c4db_collectionNames()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4db_collectionNames </td>
+          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_collectionNames </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
+          <td class="paramname"><em>db</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>inScope</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the names of all existing collections, in the order in which they were created. </p>
-<p>The result is a string containing the names separated by comma (',') characters. </p>
+<p>Returns the names of all existing collections in the given scope, in the order in which they were created. </p>
+<dl class="section note"><dt>Note</dt><dd>You are responsible for releasing the returned Fleece array. </dd></dl>
 
 </div>
 </div>
-<a id="ga48f033aea4269a43b6ee134128dc0d40"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga48f033aea4269a43b6ee134128dc0d40">&#9670;&nbsp;</a></span>c4db_createCollection()</h2>
+<a id="ga2e2f352330048a0a5c92d84592d23e09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2e2f352330048a0a5c92d84592d23e09">&#9670;&nbsp;</a></span>c4db_createCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -895,8 +916,8 @@ $(function() {
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -912,12 +933,13 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Creates and returns an empty collection with the given name, or returns an existing collection by that name. </p>
+<p>Creates and returns an empty collection with the given name &amp; scope. </p>
+<p>If the collection already exists, it just returns it. If the scope doesn't exist, it is implicitly created. </p>
 
 </div>
 </div>
-<a id="ga6c51b8ec2ed86c28605e49adcfd0e9b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6c51b8ec2ed86c28605e49adcfd0e9b1">&#9670;&nbsp;</a></span>c4db_deleteCollection()</h2>
+<a id="ga57b05cc9c501a52ff3c89210f0d8cb8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga57b05cc9c501a52ff3c89210f0d8cb8a">&#9670;&nbsp;</a></span>c4db_deleteCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -931,8 +953,8 @@ $(function() {
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -948,12 +970,13 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Deletes the collection with the given name. </p>
+<p>Deletes the collection with the given name &amp; scope. </p>
+<p>Deleting the last collection from a scope implicitly deletes the scope. </p><dl class="section note"><dt>Note</dt><dd>It is legal to delete the default collection, but it cannot be re-created. </dd></dl>
 
 </div>
 </div>
-<a id="ga0725de618c6886a8d41c316ebb8103ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0725de618c6886a8d41c316ebb8103ce">&#9670;&nbsp;</a></span>c4db_getCollection()</h2>
+<a id="ga634de4c16635c7ec42bff8cb60e860b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga634de4c16635c7ec42bff8cb60e860b5">&#9670;&nbsp;</a></span>c4db_getCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -967,8 +990,8 @@ $(function() {
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -978,7 +1001,7 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Returns the existing collection with the given name, or NULL if it doesn't exist. </p>
+<p>Returns the existing collection with the given name &amp; scope, or NULL if it doesn't exist. </p>
 
 </div>
 </div>
@@ -998,13 +1021,13 @@ $(function() {
       </table>
 </div><div class="memdoc">
 
-<p>Returns the default collection that exists in every database. </p>
-<p>In a pre-existing database, this collection contains all docs that were added to "the database" before collections existed. Its name is "_default". </p>
+<p>Returns the default collection, whose name is "`_default`" (<code>kC4DefaultCollectionName</code>). </p>
+<p>This is the one collection that exists in every newly created database. When a pre-existing database is upgraded to support collections, all its documents are put in the default collection. </p><dl class="section note"><dt>Note</dt><dd>This function never returns NULL, unless the default collection has been deleted. </dd></dl>
 
 </div>
 </div>
-<a id="gacb99c83f7f33dfa2f4fbaf153411384a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gacb99c83f7f33dfa2f4fbaf153411384a">&#9670;&nbsp;</a></span>c4db_hasCollection()</h2>
+<a id="ga85c5718bc345a312afd9452e465ab109"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga85c5718bc345a312afd9452e465ab109">&#9670;&nbsp;</a></span>c4db_hasCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1018,8 +1041,8 @@ $(function() {
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>name</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1030,6 +1053,27 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Returns true if the collection exists. </p>
+
+</div>
+</div>
+<a id="ga9045aba29955e996cfeb5b11b7c6e4c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9045aba29955e996cfeb5b11b7c6e4c6">&#9670;&nbsp;</a></span>c4db_scopeNames()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_scopeNames </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
+          <td class="paramname"><em>db</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the names of all existing scopes, in the order in which they were created. </p>
+<dl class="section note"><dt>Note</dt><dd>You are responsible for releasing the returned Fleece array. </dd></dl>
 
 </div>
 </div>

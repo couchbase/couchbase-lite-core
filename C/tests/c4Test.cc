@@ -13,6 +13,7 @@
 #include "c4Test.hh"
 #include "TestsCommon.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "fleece/slice.hh"
@@ -20,6 +21,7 @@
 #include "StringUtil.hh"
 #include "Backtrace.hh"
 #include "Benchmark.hh"
+#include "Error.hh"
 #include <csignal>
 #include <iostream>
 #include <fstream>
@@ -107,6 +109,23 @@ void CheckError(C4Error error,
         alloc_slice msg = c4error_getMessage(error);
         CHECK(msg == expectedMessage);
     }
+}
+
+
+void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()> lambda) {
+    try {
+        ExpectingExceptions x;
+        C4Log("NOTE: Expecting an exception to be thrown...");
+        lambda();
+    } catch (const std::exception &x) {
+        auto e = litecore::error::convertException(x).standardized();
+        C4Error err = {C4ErrorDomain(e.domain), e.code};
+        char buffer[256];
+        C4Log("... caught exception %s", c4error_getDescriptionC(err, buffer, sizeof(buffer)));
+        CHECK(err == (C4Error{domain, code}));
+        return;
+    }
+    FAIL("Should have thrown an exception");
 }
 
 
@@ -598,13 +617,13 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database, size_t maxLines) {
+unsigned C4Test::importJSONLines(string path, C4Collection *collection,
+                                 double timeout, bool verbose, size_t maxLines)
+{
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
-    if(database == nullptr) {
-        database = db;
-    }
-    
+
+    auto database = c4coll_getDatabase(collection);
     unsigned numDocs = 0;
     bool completed;
     {
@@ -622,7 +641,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             rq.docID = c4str(docID);
             rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
-            C4Document *doc = c4doc_put(database, &rq, nullptr, ERROR_INFO());
+            C4Document *doc = c4coll_putDoc(collection, &rq, nullptr, ERROR_INFO());
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
@@ -638,8 +657,17 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     if (completed)
-        CHECK(c4db_getDocumentCount(database) == numDocs);
+        CHECK(c4coll_getDocumentCount(collection) == numDocs);
     return numDocs;
+}
+
+
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose,
+                                 C4Database* database, size_t maxLines)
+{
+    if(database == nullptr)
+        database = db;
+    return importJSONLines(path, c4db_getDefaultCollection(database), timeout, verbose, maxLines);
 }
 
 

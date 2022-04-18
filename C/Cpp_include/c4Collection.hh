@@ -16,11 +16,10 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
-#include "access_lock.hh"
-#include "function_ref.hh"
+// #include "access_lock.hh"
+#include "fleece/function_ref.hh"
 #include <functional>
 #include <memory>
-#include <unordered_set>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -34,8 +33,10 @@ C4_ASSUME_NONNULL_BEGIN
 
 struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
     // Accessors:
-    
+
     slice getName() const                                   {return _name;}
+    slice getScope() const                                  {return _scope;}
+    C4CollectionSpec getSpec() const                        {return {_name, _scope};}
 
     C4Database* getDatabase();
     const C4Database* getDatabase() const;
@@ -127,9 +128,10 @@ struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
     virtual void findBlobReferences(const fleece::function_ref<bool(FLDict)>&) =0;
 
 protected:
-    C4Collection(C4Database*, slice name);
+    C4Collection(C4Database*, C4CollectionSpec);
 
     C4Database* C4NULLABLE  _database;
+    alloc_slice             _scope;
     alloc_slice             _name;
     C4ExtraInfo             _extraInfo = {};
 };

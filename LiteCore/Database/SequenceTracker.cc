@@ -247,6 +247,7 @@ namespace litecore {
             entry->sequence = sequence;
             entry->bodySize = shortBodySize;
             entry->flags = flags;
+            entry->external = false;
         } else {
             // or create a new entry at the end:
             _changes.emplace_back(docID, revID, sequence, shortBodySize, flags);

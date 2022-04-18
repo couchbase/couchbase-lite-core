@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: FLSlice Struct Reference</title>
+<title>LiteCore: C4CollectionSpec Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -65,48 +65,47 @@ $(function() {
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">FLSlice Struct Reference<div class="ingroups"><a class="el" href="group___f_l_slice.html">Slices</a></div></div>  </div>
+<div class="title">C4CollectionSpec Struct Reference<div class="ingroups"><a class="el" href="group___database.html">Databases</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p>A simple reference to a block of memory.  
- <a href="struct_f_l_slice.html#details">More...</a></p>
+<p>Full identifier of a collection in a database, including its scope.  
+ <a href="struct_c4_collection_spec.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="_f_l_slice_8h_source.html">/Users/jzhao/work/Git/couchbase-lite-core/vendor/fleece/API/fleece/FLSlice.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="c4_database_types_8h_source.html">c4DatabaseTypes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:af59519c9798a23f16f61bbc62c9977e9"><td class="memItemLeft" align="right" valign="top">const void *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_f_l_slice.html#af59519c9798a23f16f61bbc62c9977e9">buf</a></td></tr>
-<tr class="separator:af59519c9798a23f16f61bbc62c9977e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fb4c8187bdd5a8d645809d5d0a72c90"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_f_l_slice.html#a8fb4c8187bdd5a8d645809d5d0a72c90">size</a></td></tr>
-<tr class="separator:a8fb4c8187bdd5a8d645809d5d0a72c90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6044be9d0a0b74fec2b21644b6c6f0c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_collection_spec.html#a6044be9d0a0b74fec2b21644b6c6f0c7">name</a></td></tr>
+<tr class="separator:a6044be9d0a0b74fec2b21644b6c6f0c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d29b12034b0a315f2bfd640c50e6781"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_collection_spec.html#a8d29b12034b0a315f2bfd640c50e6781">scope</a></td></tr>
+<tr class="separator:a8d29b12034b0a315f2bfd640c50e6781"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A simple reference to a block of memory. </p>
-<p>Does not imply ownership. (This is equivalent to the C++ class <code>slice</code>.) </p>
+<div class="textblock"><p>Full identifier of a collection in a database, including its scope. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="af59519c9798a23f16f61bbc62c9977e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af59519c9798a23f16f61bbc62c9977e9">&#9670;&nbsp;</a></span>buf</h2>
+<a id="a6044be9d0a0b74fec2b21644b6c6f0c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6044be9d0a0b74fec2b21644b6c6f0c7">&#9670;&nbsp;</a></span>name</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">const void* <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLSlice::buf</td>
+          <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> C4CollectionSpec::name</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a8fb4c8187bdd5a8d645809d5d0a72c90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8fb4c8187bdd5a8d645809d5d0a72c90">&#9670;&nbsp;</a></span>size</h2>
+<a id="a8d29b12034b0a315f2bfd640c50e6781"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d29b12034b0a315f2bfd640c50e6781">&#9670;&nbsp;</a></span>scope</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">size_t FLSlice::size</td>
+          <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> C4CollectionSpec::scope</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -114,7 +113,7 @@ Data Fields</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="_f_l_slice_8h_source.html">FLSlice.h</a></li>
+<li><a class="el" href="c4_database_types_8h_source.html">c4DatabaseTypes.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

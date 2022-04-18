@@ -137,7 +137,7 @@ create_pkgs () {
             pushd ${WORKSPACE}/build_${FLAVOR}/install
             # Create separate symbols pkg
             if [[ ${OS} == 'macosx' ]]; then
-                ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} lib/libLiteCore*.dylib
+                ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} lib/libLiteCore*.dylib include
                 ${PKG_CMD} ${WORKSPACE}/${SYMBOLS_PKG_NAME}  lib/libLiteCore.dylib.dSYM
             else # linux
                 ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} *

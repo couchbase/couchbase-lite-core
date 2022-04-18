@@ -125,6 +125,9 @@ $(function() {
 <li>kC4DB_VersionVectors
 : <a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa3d6fe45c4aec2dceceed79f0c2730420">c4DatabaseTypes.h</a>
 </li>
+<li>kC4DefaultCollectionName
+: <a class="el" href="group___database.html#ga22a41aa6defafbcd8af519ea05ea97ee">c4DatabaseTypes.h</a>
+</li>
 <li>kC4DefaultEnumeratorOptions
 : <a class="el" href="group___doc_enumerator.html#ga3e384303ed75401aee4ec67b69143eac">c4DocEnumeratorTypes.h</a>
 </li>
@@ -133,6 +136,9 @@ $(function() {
 </li>
 <li>kC4DefaultQueryOptions
 : <a class="el" href="group___querying_d_b.html#gafb878475a7c9c7560878b79e8a786ab5">c4QueryTypes.h</a>
+</li>
+<li>kC4DefaultScopeID
+: <a class="el" href="group___database.html#ga541608df0c6e4a5b20f2c66271748c31">c4DatabaseTypes.h</a>
 </li>
 <li>kC4Descending
 : <a class="el" href="group___doc_enumerator.html#gga5a2edf1aa3e4aa494966dbb1efab3e28ad97fed09425b9aabe01208e995d7f8b8">c4DocEnumeratorTypes.h</a>
@@ -151,6 +157,12 @@ $(function() {
 </li>
 <li>kC4EncryptionNone
 : <a class="el" href="group___database.html#gga7fc3558f0da3832690e8a085263164b9acaeddafbafd730542991749e43ee966e">c4DatabaseTypes.h</a>
+</li>
+<li>kC4EnvironmentSupportedLocales
+: <a class="el" href="group___miscellaneous.html#gab05ddf62508e35b3f010776e59249e42">c4Base.h</a>
+</li>
+<li>kC4EnvironmentTimezoneKey
+: <a class="el" href="group___miscellaneous.html#gacf8a168d566c5b441d01101b995fe6ba">c4Base.h</a>
 </li>
 <li>kC4ErrorAssertionFailed
 : <a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faff592ca492d70aa527bbe7c29b4c68f9">c4Error.h</a>
@@ -639,106 +651,106 @@ $(function() {
 : <a class="el" href="group___documents.html#gga6e38f237f2913c80f264b66465c1e346ae318aac927315f08dc8976358b593892">c4DocumentTypes.h</a>
 </li>
 <li>kFLArray
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca01c74f9f95901f642a5afe449e618f1a">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca01c74f9f95901f642a5afe449e618f1a">Fleece.h</a>
 </li>
 <li>kFLBoolean
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca735ddca5153a1316cb3beea14ee4a081">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca735ddca5153a1316cb3beea14ee4a081">Fleece.h</a>
 </li>
 <li>kFLCopyImmutables
-: <a class="el" href="group___mutable.html#gga1999c11ef3de128bc4448e84ff124150a4ac4e7b78499cd0fbab93af7d1269a68">FLMutable.h</a>
+: <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a4ac4e7b78499cd0fbab93af7d1269a68">Fleece.h</a>
 </li>
 <li>kFLData
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2caf1aa5311e3d46369391ddc43fbbb7894">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2caf1aa5311e3d46369391ddc43fbbb7894">Fleece.h</a>
 </li>
 <li>kFLDeepCopy
-: <a class="el" href="group___mutable.html#gga1999c11ef3de128bc4448e84ff124150a28c92428cf6729f0460672e0f6ff8fea">FLMutable.h</a>
+: <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a28c92428cf6729f0460672e0f6ff8fea">Fleece.h</a>
 </li>
 <li>kFLDeepCopyImmutables
-: <a class="el" href="group___mutable.html#gga1999c11ef3de128bc4448e84ff124150a5c653513f911bba81deb09ac21583632">FLMutable.h</a>
+: <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a5c653513f911bba81deb09ac21583632">Fleece.h</a>
 </li>
 <li>kFLDefaultCopy
-: <a class="el" href="group___mutable.html#gga1999c11ef3de128bc4448e84ff124150a586de20e5e5d9d9ed05858f0c72b1527">FLMutable.h</a>
+: <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a586de20e5e5d9d9ed05858f0c72b1527">Fleece.h</a>
 </li>
 <li>kFLDict
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2cad06f7505402821d1d49b022081aea2a4">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2cad06f7505402821d1d49b022081aea2a4">Fleece.h</a>
 </li>
 <li>kFLEmptyArray
-: <a class="el" href="group___f_l_array.html#gaa8f81e9b5d0801302532a09a1aa51465">FLCollections.h</a>
+: <a class="el" href="group___f_l_array.html#gaa8f81e9b5d0801302532a09a1aa51465">Fleece.h</a>
 </li>
 <li>kFLEmptyDict
-: <a class="el" href="group___f_l_dict.html#ga6f5ad9f2d7e517236534eec5262574a2">FLCollections.h</a>
+: <a class="el" href="group___f_l_dict.html#ga6f5ad9f2d7e517236534eec5262574a2">Fleece.h</a>
 </li>
 <li>kFLEncodeError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea51b093633946c98c8b5bdb95e67d01d9">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea51b093633946c98c8b5bdb95e67d01d9">Fleece.h</a>
 </li>
 <li>kFLEncodeFleece
-: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488a7444e68ba78a98d298a2960b596da879">FLEncoder.h</a>
+: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488a7444e68ba78a98d298a2960b596da879">Fleece.h</a>
 </li>
 <li>kFLEncodeJSON
-: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488ab5ad3188bf3fb79031b28cddc177736e">FLEncoder.h</a>
+: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488ab5ad3188bf3fb79031b28cddc177736e">Fleece.h</a>
 </li>
 <li>kFLEncodeJSON5
-: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488a9285c9e91464ad02e55b6759e28eff2c">FLEncoder.h</a>
+: <a class="el" href="group___f_l_encoder.html#ggaa70cf9f00c736474273a7e4f17a25488a9285c9e91464ad02e55b6759e28eff2c">Fleece.h</a>
 </li>
 <li>kFLInternalError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea0b50dba65acbb3d0ac4015a0f98a82f7">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea0b50dba65acbb3d0ac4015a0f98a82f7">Fleece.h</a>
 </li>
 <li>kFLInvalidData
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea06375f024ac9741e61ba8bfcc2250de9">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea06375f024ac9741e61ba8bfcc2250de9">Fleece.h</a>
 </li>
 <li>kFLJSONError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea860ccb981e79a02f2b15c2cf09f8ffa1">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea860ccb981e79a02f2b15c2cf09f8ffa1">Fleece.h</a>
 </li>
 <li>kFLMemoryError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea57aad8f3516eb8734e837f8434a7f95e">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea57aad8f3516eb8734e837f8434a7f95e">Fleece.h</a>
 </li>
 <li>kFLNoError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8eceacd5cf5ed390c1e70214f64f82f0269ef">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8eceacd5cf5ed390c1e70214f64f82f0269ef">Fleece.h</a>
 </li>
 <li>kFLNotFound
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea05a9d26a39164477be71b2b84fa0b1d5">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea05a9d26a39164477be71b2b84fa0b1d5">Fleece.h</a>
 </li>
 <li>kFLNull
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2cab0720bb289b8b6844eeea08b3a372ac1">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2cab0720bb289b8b6844eeea08b3a372ac1">Fleece.h</a>
 </li>
 <li>kFLNullValue
-: <a class="el" href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#ga49e1400fb063717c297119931e15c501">Fleece.h</a>
 </li>
 <li>kFLNumber
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca2e2ade5f3aa65ce1bea2fc271e827708">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca2e2ade5f3aa65ce1bea2fc271e827708">Fleece.h</a>
 </li>
 <li>kFLOutOfRange
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea1c77ac1d31ba6212554b117f9a53bc85">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea1c77ac1d31ba6212554b117f9a53bc85">Fleece.h</a>
 </li>
 <li>kFLPOSIXError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea98e59aa446c88b3974f64e717c3d5db3">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea98e59aa446c88b3974f64e717c3d5db3">Fleece.h</a>
 </li>
 <li>kFLSharedKeysStateError
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea107a7e264c93fef9edfbf6264e86fb1b">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea107a7e264c93fef9edfbf6264e86fb1b">Fleece.h</a>
 </li>
 <li>kFLSliceNull
 : <a class="el" href="group___f_l_slice.html#ga5445a97beaea63c3eadb1427c3a717d8">FLSlice.h</a>
 </li>
 <li>kFLString
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca79a5a3b4bc00e543147e9cf223ce54ed">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2ca79a5a3b4bc00e543147e9cf223ce54ed">Fleece.h</a>
 </li>
 <li>kFLTrusted
-: <a class="el" href="group__types.html#ggaa17999d04c6b0a89a07c5db13d154673abb8e3b0a7c0da25e1945097577543cb6">FLBase.h</a>
+: <a class="el" href="group__reading.html#ggaa17999d04c6b0a89a07c5db13d154673abb8e3b0a7c0da25e1945097577543cb6">Fleece.h</a>
 </li>
 <li>kFLUndefined
-: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2caca767e3bb3dfde57b95c368b59b16c8c">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#gga014bcb88cbd4bdea3eea9db300bc5b2caca767e3bb3dfde57b95c368b59b16c8c">Fleece.h</a>
 </li>
 <li>kFLUndefinedValue
-: <a class="el" href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">FLValue.h</a>
+: <a class="el" href="group___f_l_value.html#ga8e4f6ccbc67fe5df8620b9dc1c780a22">Fleece.h</a>
 </li>
 <li>kFLUnknownValue
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea7da9e13bb4727e0ae62c8899e817795c">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea7da9e13bb4727e0ae62c8899e817795c">Fleece.h</a>
 </li>
 <li>kFLUnsupported
-: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea702d4a807e94540da50224a226cd208f">FLBase.h</a>
+: <a class="el" href="group__types.html#gga6a3de980e42db083a0ec3081c4ae8ecea702d4a807e94540da50224a226cd208f">Fleece.h</a>
 </li>
 <li>kFLUntrusted
-: <a class="el" href="group__types.html#ggaa17999d04c6b0a89a07c5db13d154673acb51a25d359d56e7fb20bdfcc23843b8">FLBase.h</a>
+: <a class="el" href="group__reading.html#ggaa17999d04c6b0a89a07c5db13d154673acb51a25d359d56e7fb20bdfcc23843b8">Fleece.h</a>
 </li>
 <li>kRevClosed
 : <a class="el" href="group___documents.html#ggafc0b28ce70a5c3a9b8d968859e04b2c0a3b9ff88f5fd4564a7c46a4767329fb4b">c4DocumentTypes.h</a>

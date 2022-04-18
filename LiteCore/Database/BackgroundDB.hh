@@ -14,7 +14,7 @@
 #include "Actor.hh"
 #include "DataFile.hh"
 #include "access_lock.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <mutex>
 #include <vector>
 

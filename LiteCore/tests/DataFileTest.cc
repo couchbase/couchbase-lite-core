@@ -616,22 +616,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
 }
 
 
-#if ENABLE_DELETE_KEY_STORES
-N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
-    alloc_slice key("key");
-//    {
-//        Transaction t(db);
-//        t(s).set(key, "value"_sl);
-//        t.commit();
-//    }
-    store->erase();
-    REQUIRE(store->lastSequence() == 0);
-    Record rec = store->get(key);
-    REQUIRE_FALSE(rec.exists());
-}
-#endif
-
-
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
     alloc_slice key("key");
     db->close();

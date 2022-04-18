@@ -12,7 +12,7 @@
 
 #pragma once
 #include "DataFile.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <string>

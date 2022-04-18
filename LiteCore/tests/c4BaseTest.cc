@@ -13,7 +13,7 @@
 #include "c4Test.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
-#include "InstanceCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "catch.hpp"
 #include "NumConversion.hh"
 #include "Actor.hh"

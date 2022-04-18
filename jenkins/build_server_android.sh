@@ -13,8 +13,9 @@
 
 set -e
 
-CMAKE_VER="3.10.2.4988404"
-NDK_VER="21.2.6472646"
+NDK_VER="23.1.7779620"
+CMAKE_VER="3.23.0"
+NINJA_VER="1.10.2"
 PKG_TYPE="zip"
 PKG_CMD="zip -r"
 
@@ -70,10 +71,26 @@ BUILD_DEBUG_TARGET="build_${ANDROID_ARCH}_debug"
 PROP_FILE="${SOURCE_PATH}/publish_${ANDROID_ARCH}.prop"
 mkdir -p ${SOURCE_PATH}/${BUILD_REL_TARGET} ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}
 
-echo " ======== Installing Toolchain with CMake ${CMAKE_VER} and NDK ${NDK_VER} (this will accept the licenses!)"
+echo " ======== Installing Toolchain with NDK ${NDK_VER} (this will accept the licenses!)"
 yes | ${SDK_MGR} --licenses > /dev/null 2>&1
-${SDK_MGR} --install "cmake;${CMAKE_VER}"
 ${SDK_MGR} --install "ndk;${NDK_VER}"
+
+echo " ======== Installing cbdeps ========"
+mkdir -p .tools
+if [ ! -f .tools/cbdep ]; then 
+    curl -o .tools/cbdep http://downloads.build.couchbase.com/cbdep/cbdep.$(uname -s | tr "[:upper:]" "[:lower:]")-$(uname -m)
+    chmod +x .tools/cbdep
+fi 
+
+CMAKE="$(pwd)/.tools/cmake-${CMAKE_VER}/bin/cmake"
+NINJA="$(pwd)/.tools/ninja-${NINJA_VER}/bin/ninja"
+if [ ! -f ${CMAKE} ]; then
+    .tools/cbdep install -d .tools cmake ${CMAKE_VER}
+fi
+
+if [ ! -f ${NINJA} ]; then
+    .tools/cbdep install -d .tools ninja ${NINJA_VER}
+fi
 
 ARCH_VERSION="19"
 if [[ "${ANDROID_ARCH}" == "x86_64" ]] || [[ "${ANDROID_ARCH}" == "arm64-v8a" ]]; then
@@ -88,33 +105,33 @@ mkdir -p ${ARTIFACTS_BUILD_DIR}
 
 echo "====  Building Android $ARCH_VERSION Release binary  ==="
 cd "${SOURCE_PATH}/${BUILD_REL_TARGET}"
-${CMAKE_PATH}/cmake \
+${CMAKE} \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
-    -DANDROID_NATIVE_API_LEVEL=${ARCH_VERSION} \
+    -DCMAKE_MAKE_PROGRAM="${NINJA}" \
+    -DANDROID_PLATFORM=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
     -DEDITION=${EDITION} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     ..
 
-${CMAKE_PATH}/ninja install
+${NINJA} install
 
 echo "====  Building Android $ARCH_VERSION Debug binary  ==="
 cd ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}
-${CMAKE_PATH}/cmake \
+${CMAKE} \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
-    -DANDROID_NATIVE_API_LEVEL=${ARCH_VERSION} \
+    -DCMAKE_MAKE_PROGRAM="${NINJA}" \
+    -DANDROID_PLATFORM=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
     -DEDITION=${EDITION} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=Debug \
     ..
 
-${CMAKE_PATH}/ninja install
+${NINJA} install
 
 # Create zip package
 for FLAVOR in release debug;

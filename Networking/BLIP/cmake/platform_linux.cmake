@@ -18,12 +18,12 @@ endfunction()
 
 function(setup_build)
     target_include_directories(
-        BLIPStatic PRIVATE
+        BLIPObjects PRIVATE
         ${LITECORE_LOCATION}/LiteCore/Unix
     )
 
     target_link_libraries(
-        BLIPStatic INTERFACE
+        BLIPObjects INTERFACE
        ${ZLIB_LIB}
     )
 endfunction()

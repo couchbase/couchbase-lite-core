@@ -23,7 +23,7 @@
 #include "VersionVector.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "InstanceCounted.hh"
+#include "fleece/InstanceCounted.hh"
 
 using namespace litecore;
 

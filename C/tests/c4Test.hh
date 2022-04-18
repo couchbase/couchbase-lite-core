@@ -16,7 +16,7 @@
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/Expert.hh"
 #include <vector>
 
@@ -158,6 +158,12 @@ class TransactionHelper {
 };
 
 
+// Calls the function, catches any exception it throws, and CHECKs that it's a C4Error
+// (or litecore::error) with the expected domain and code.
+// FAILs if no exception is thrown.
+void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()>);
+
+
 #pragma mark - C4TEST BASE CLASS:
 
 #ifndef SkipVersionVectorTest
@@ -265,6 +271,8 @@ public:
                             double timeout =0.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
+    unsigned importJSONLines(std::string path, C4Collection*, 
+                             double timeout =0.0, bool verbose =false, size_t maxLines =0);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr, size_t maxLines =0);
 

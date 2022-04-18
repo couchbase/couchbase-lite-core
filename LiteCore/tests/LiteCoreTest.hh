@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include "TestsCommon.hh"
 #include "c4Base.hh"
 #include "Error.hh"

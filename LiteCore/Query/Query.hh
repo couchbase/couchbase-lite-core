@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "DataFile.hh"
 #include "Error.hh"
 #include "Logging.hh"

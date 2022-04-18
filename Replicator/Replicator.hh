@@ -16,7 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
 #include "fleece/Fleece.hh"
-#include "InstanceCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "Stopwatch.hh"
 #include <array>
 #include <optional>

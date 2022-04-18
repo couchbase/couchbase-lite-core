@@ -10,8 +10,9 @@ BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 def broadcast():
     core_repo = Repo(BASE_DIR)
-    commit_message = core_repo.head.reference.commit.message
-    if len(core_repo.head.reference.commit.parents) != 2:
+    commit = core_repo.commit(core_repo.head)
+    commit_message = commit.message
+    if len(commit.parents) != 2:
         print("!!! Commit to staging branch is not a merge commit, aborting...")
         exit(1)
 
@@ -51,7 +52,7 @@ def broadcast():
         print("!!! Malformed manifest, aborting...")
         exit(4)
     
-    ce_hash_found = str(core_repo.head.reference.commit.parents[1])
+    ce_hash_found = str(core_repo.commit(core_repo.head).parents[1])
     if ce_hash != ce_hash_found:
         print(f"Bad build number {build}. Expected CE hash {ce_hash} but found {ce_hash_found}, aborting...")
         exit(5)
@@ -73,7 +74,7 @@ Details:
         print("SLACK_WEBHOOK_URL not set, skipping slack ping...")
         return
 
-    with requests.post(os.environ["SLACK_WEBHOOK_URL"], json={"text": f"@here {message_to_send}"}) as r:
+    with requests.post(os.environ["SLACK_WEBHOOK_URL"], json={"text": f"<!here> {message_to_send}"}) as r:
         r.raise_for_status()
 
 if __name__ == "__main__":

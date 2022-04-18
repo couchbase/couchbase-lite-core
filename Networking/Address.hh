@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 #include <fleece/slice.hh>
 
 struct C4Database;

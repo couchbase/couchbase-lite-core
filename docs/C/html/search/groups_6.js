@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['logging_2178',['Logging',['../group___logging.html',1,'']]]
+  ['miscellaneous_20functions_2148',['Miscellaneous Functions',['../group___miscellaneous.html',1,'']]]
 ];

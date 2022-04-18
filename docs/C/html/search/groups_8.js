@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['network_20listener_3a_20rest_20api_20and_20sync_20server_2181',['Network Listener: REST API and Sync Server',['../group___listener.html',1,'']]]
+  ['predictive_20_28machine_2dlearning_29_20query_2150',['Predictive (Machine-Learning) Query',['../group___predictive_query.html',1,'']]]
 ];

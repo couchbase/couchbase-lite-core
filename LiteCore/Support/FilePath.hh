@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include "PlatformCompat.hh"
-#include "function_ref.hh"
+#include "fleece/PlatformCompat.hh"
+#include "fleece/function_ref.hh"
 #include <string>
 #include <tuple> // for std::tie
 #include <ctime>

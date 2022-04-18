@@ -421,7 +421,7 @@ namespace litecore { namespace repl {
                 C4Database::Transaction transaction(idb);
                 for (ReplicatedRev *rev : *revs) {
                     logDebug("Marking rev '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
+                             SPLAT(rev->docID), SPLAT(rev->revID), static_cast<uint64_t>(rev->sequence), remoteDBID());
                     try {
                         idb->getDefaultCollection()
                           ->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());

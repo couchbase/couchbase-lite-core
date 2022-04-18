@@ -13,6 +13,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Array.hh"
@@ -37,8 +38,9 @@ namespace litecore {
         string unnestTableName = qp.unnestedTableName(expression);
 
         // Create the index table, unless an identical one already exists:
-        string sql = CONCAT("CREATE TABLE \"" << unnestTableName << "\" "
-                            "(docid INTEGER NOT NULL REFERENCES " << kvTableName << "(rowid), "
+        string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName) << " "
+                            "(docid INTEGER NOT NULL REFERENCES " << sqlIdentifier(kvTableName) <<
+                                "(rowid), "
                             " i INTEGER NOT NULL,"
                             " body BLOB NOT NULL, "
                             " CONSTRAINT pk PRIMARY KEY (docid, i)) "
@@ -52,15 +54,16 @@ namespace litecore {
             string eachExpr = qp.eachExpressionSQL(expression);
 
             // Populate the index-table with data from existing documents:
-            db().exec(CONCAT("INSERT INTO \"" << unnestTableName << "\" (docid, i, body) "
+            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName) << " (docid, i, body) "
                              "SELECT new.rowid, _each.rowid, _each.value " <<
-                             "FROM " << kvTableName << " as new, " << eachExpr << " AS _each "
+                             "FROM " << sqlIdentifier(kvTableName) <<
+                             " as new, " << eachExpr << " AS _each "
                              "WHERE (new.flags & 1) = 0"));
 
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
-            string insertTriggerExpr = CONCAT("INSERT INTO \"" << unnestTableName <<
-                                              "\" (docid, i, body) "
+            string insertTriggerExpr = CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName) <<
+                                              " (docid, i, body) "
                                               "SELECT new.rowid, _each.rowid, _each.value " <<
                                               "FROM " << eachExpr << " AS _each ");
             createTrigger(unnestTableName, "ins",
@@ -69,7 +72,7 @@ namespace litecore {
                           insertTriggerExpr);
 
             // ...on delete:
-            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << unnestTableName << "\" "
+            string deleteTriggerExpr = CONCAT("DELETE FROM " << sqlIdentifier(unnestTableName) << " "
                                               "WHERE docid = old.rowid");
             createTrigger(unnestTableName, "del",
                           "BEFORE DELETE",

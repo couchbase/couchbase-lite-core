@@ -40,7 +40,7 @@ function(setup_litecore_build)
         -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
-    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPStatic)
+    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"

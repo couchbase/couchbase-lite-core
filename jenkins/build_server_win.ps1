@@ -37,8 +37,6 @@ param(
     [Parameter(HelpMessage="The number of parallel subjobs to allow during the build (default 8)")][int]$Parallel=8
 )
 
-$RelPkgDir = "MinSizeRel"
-$DebugPkgDir = "Debug"
 $VSVersion = "15 2017"
 $WindowsMinimum = "10.0.16299.0"
 
@@ -52,7 +50,8 @@ function Make-Package() {
 
     Write-Host "Creating pkg - pkgdir:$directory, pkgname:$filename, arch:$architecture, flavor:$config"
     Push-Location $directory
-    & 7za a -tzip -mx9 $env:WORKSPACE\$filename LiteCore.dll LiteCore.lib LiteCore.pdb
+    & 7za a -tzip -mx9 $env:WORKSPACE\$filename *
+
     if($LASTEXITCODE -ne 0) {
         throw "Zip failed"
     }
@@ -80,12 +79,20 @@ function Build-Store() {
         $MsArchStore = " $architecture"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" -G "Visual Studio $VSVersion$MsArchStore" -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION="10.0" -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="$WindowsMinimum" -DEDITION="$Edition" ..
+    & "C:\Program Files\CMake\bin\cmake.exe" `
+        -G "Visual Studio $VSVersion$MsArchStore" `
+        -DCMAKE_SYSTEM_NAME=WindowsStore `
+        -DCMAKE_SYSTEM_VERSION="10.0" `
+        -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="$WindowsMinimum" `
+        -DEDITION="$Edition" `
+        -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
+        ..
+
     if($LASTEXITCODE -ne 0) {
         throw "CMake failed"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config --target LiteCore
+    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config --target install
     if($LASTEXITCODE -ne 0) {
         throw "Build failed"
     }
@@ -108,12 +115,17 @@ function Build() {
         $MsArch = " $architecture"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" -G "Visual Studio $VSVersion$MsArch" -DEDITION="$Edition" ..
+    & "C:\Program Files\CMake\bin\cmake.exe" `
+        -G "Visual Studio $VSVersion$MsArch" `
+        -DEDITION="$Edition" `
+        -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
+        ..
+
     if($LASTEXITCODE -ne 0) {
         throw "CMake failed"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config
+    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config --target install
     if($LASTEXITCODE -ne 0) {
         throw "Build failed ($LASTEXITCODE)"
     }
@@ -141,7 +153,13 @@ function Run-UnitTest() {
 
     Pop-Location
     Push-Location $directory\LiteCore\tests\MinSizeRel
-    & .\CppTests -r quiet
+    # Disable test "REST root level" for Win32, CBL-3007
+    if($architecture -eq "Win32") {
+         & .\CppTests -r quiet exclude:"REST root level" exclude:"[.*]"
+    }
+    else {
+         & .\CppTests -r quiet
+    }
     $env:LiteCoreTestsQuiet=0
     if($LASTEXITCODE -ne 0) {
         throw "CppTests failed"
@@ -170,12 +188,12 @@ foreach ($arch in $Architectures) {
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "Debug"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "Debug"
-        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$arch" "DEBUG"
+        Make-Package "${env:WORKSPACE}\build_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$arch" "DEBUG"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower-debug.zip"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-debug.zip"
     }
 
-    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "STORE_$arch" "DEBUG"
+    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "STORE_$arch" "DEBUG"
     Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower-store-debug.zip"
     Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-store-debug.zip"
 
@@ -187,12 +205,12 @@ foreach ($arch in $Architectures) {
             Run-UnitTest "${env:WORKSPACE}\build_${Target}\couchbase-lite-core" $arch
         }
 
-        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$arch" "RELEASE"
+        Make-Package "${env:WORKSPACE}\build_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$arch" "RELEASE"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower.zip"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower.zip"
     }
 
-    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-${arch_lower}-winstore.zip" "STORE_$arch" "RELEASE"
+    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-${arch_lower}-winstore.zip" "STORE_$arch" "RELEASE"
     Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower-store.zip"
     Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-store.zip"
 }
