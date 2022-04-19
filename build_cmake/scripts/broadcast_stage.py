@@ -3,8 +3,7 @@
 from git import Repo
 import os
 import requests
-import hashlib
-import xml.etree.ElementTree as ET
+from broadcast_stage_base import parse_build_hashes
 
 BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -29,41 +28,21 @@ def broadcast():
         print("!!! No build found in commit message, aborting...")
         exit(2)
 
-    version_info = build.split("-")
-    if len(version_info) != 2:
-        print(f"!!! Invalid version in commit message: {build}, aborting...")
-        exit(3)
-    
-    ce_hash = None
-    ee_hash = None
-    url = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/{version_info[0]}/{version_info[1]}/couchbase-lite-core-{version_info[0]}-{version_info[1]}-manifest.xml"
-    with requests.get(url) as r:
-        with open("manifest.xml", "wb") as fout:
-            fout.write(r.content)
-        manifest_tree = ET.parse("manifest.xml")
-        os.unlink("manifest.xml")
-        for project in manifest_tree.findall("./project"):
-            if project.get("name").lower() == "couchbase-lite-core":
-                ce_hash = project.get("revision")
-            elif project.get("name").lower() == "couchbase-lite-core-ee":
-                ee_hash = project.get("revision")
-        
-    if ce_hash is None or ee_hash is None:
-        print("!!! Malformed manifest, aborting...")
-        exit(4)
-    
-    ce_hash_found = str(core_repo.commit(core_repo.head).parents[1])
-    if ce_hash != ce_hash_found:
-        print(f"Bad build number {build}. Expected CE hash {ce_hash} but found {ce_hash_found}, aborting...")
-        exit(5)
+    version_parse = parse_build_hashes(build)
+    if not version_parse.success:
+        print(version_parse.errMsg)
+        exit(2 + version_parse.errCode)
 
-    amalgamated_sha = hashlib.sha1(f"{ce_hash}{ee_hash}".encode("ascii"))
+    ce_hash_found = str(core_repo.commit(core_repo.head).parents[1])
+    if version_parse.ceHash != ce_hash_found:
+        print(f"Bad build number {build}. Expected CE hash {version_parse.ceHash} but found {ce_hash_found}, aborting...")
+        exit(5)
     
     message_to_send = f"""LiteCore {build} staged!
 
-CE hash: {ce_hash}
-EE hash: {ee_hash}
-Amalgamated hash: {amalgamated_sha.hexdigest()}
+CE hash: {version_parse.ceHash}
+EE hash: {version_parse.eeHash}
+Amalgamated hash: {version_parse.amalgamatedHash}
 
 Details:
 {commit_message}"""
