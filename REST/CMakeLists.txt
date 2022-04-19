@@ -79,5 +79,4 @@ target_link_libraries(
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
-set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets})
 setup_rest_build()
