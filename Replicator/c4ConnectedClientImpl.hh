@@ -35,11 +35,11 @@ namespace litecore::client {
                 _customSocketFactory = *params.socketFactory;
                 _socketFactory = &_customSocketFactory;
             }
-            
-            auto webSocket = new repl::C4SocketImpl(effectiveURL(params.url),
-                                                    Role::Client,
-                                                    socketOptions(),
-                                                    _socketFactory);
+
+            auto webSocket = repl::CreateWebSocket(effectiveURL(params.url),
+                                                   socketOptions(),
+                                                   nullptr,
+                                                   _socketFactory);
             _client = new ConnectedClient(webSocket, *this, params);
             _client->start();
         }

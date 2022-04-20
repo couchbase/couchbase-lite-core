@@ -22,7 +22,7 @@ namespace litecore { namespace repl {
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(websocket::URL,
                                                            fleece::alloc_slice options,
-                                                           C4Database* NONNULL,
+                                                           C4Database*,
                                                            const C4SocketFactory*,
                                                            void *nativeHandle =nullptr);
 
