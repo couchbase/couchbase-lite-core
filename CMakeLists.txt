@@ -218,7 +218,6 @@ target_include_directories(
     vendor/fleece/API
     vendor/sockpp/include
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
 )
 
 ### LITECORE LIBRARY:
@@ -262,7 +261,6 @@ target_include_directories(
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
     vendor/sockpp/include
 )
 
