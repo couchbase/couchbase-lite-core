@@ -20,6 +20,8 @@ function(setup_globals_unix)
 endfunction()
 
 function(setup_litecore_build_unix)
+    setup_litecore_build_base()
+
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)

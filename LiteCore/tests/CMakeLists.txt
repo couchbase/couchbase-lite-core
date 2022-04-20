@@ -92,6 +92,9 @@ add_executable(
     ${TOP}LiteCore/Support/TestsCommon.cc
     main.cpp
 )
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_build()
 
 target_compile_definitions(
