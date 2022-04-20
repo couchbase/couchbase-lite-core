@@ -18,6 +18,7 @@
 
 #include "c4Test.hh"
 #include "c4Observer.h"
+#include "c4.hh"
 
 
 class C4ObserverTest : public C4Test {
@@ -151,6 +152,35 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
 
     c4db_close(otherdb, NULL);
     c4db_release(otherdb);
+}
+
+
+TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer With Reopen", "[Observer][C]") {
+    // Reproduces CBL-3013 "Continuous replicator does not push docs which are being observed"
+    createRev("doc"_sl, kRevID, kFleeceBody);
+
+    // Important step to reproduce the bug:
+    reopenDB();
+
+    // Add a doc observer:
+    C4Log("---- Adding docObserver to reopened db ---");
+    docObserver = c4docobs_create(db, "doc"_sl, docObserverCallback, this);
+    REQUIRE(docObserver);
+
+    // Open another database on the same file:
+    C4Log("---- Opening another database instance ---");
+    c4::ref<C4Database> otherdb = c4db_openAgain(db, nullptr);
+    REQUIRE(otherdb);
+    
+    // Start a database observer on otherdb:
+    dbObserver = c4dbobs_create(otherdb, dbObserverCallback, this);
+
+    // Update the doc:
+    C4Log("---- Updating doc ---");
+    createRev("doc"_sl, kRev2ID, kFleeceBody);
+
+    CHECK(docCallbackCalls == 1);
+    CHECK(dbCallbackCalls == 1);        // <-- this was failing, actual value was 0
 }
 
 
