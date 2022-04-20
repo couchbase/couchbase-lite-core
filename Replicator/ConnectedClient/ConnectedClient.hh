@@ -36,8 +36,9 @@ namespace litecore::client {
     {
     public:
         class Delegate;
-        using CloseStatus = blip::Connection::CloseStatus;
+        using CloseStatus   = blip::Connection::CloseStatus;
         using ActivityLevel = C4ReplicatorActivityLevel;
+        using Status        = C4ReplicatorStatus;
 
         ConnectedClient(websocket::WebSocket* NONNULL,
                         Delegate&,
@@ -79,6 +80,8 @@ namespace litecore::client {
         void stop();
         
         void terminate();
+
+        actor::Async<Status> status();
 
         //---- CRUD!
 
@@ -139,6 +142,7 @@ namespace litecore::client {
         
     protected:
         std::string loggingClassName() const override       {return "Client";}
+        ActivityLevel computeActivityLevel() const override;
         void onHTTPResponse(int status, const websocket::Headers &headers) override;
         void onTLSCertificate(slice certData) override;
         void onConnect() override;
@@ -158,7 +162,7 @@ namespace litecore::client {
 
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
         C4ConnectedClientParameters _params;
-        ActivityLevel               _status;
+        ActivityLevel               _activityLevel;
         Retained<ConnectedClient>   _selfRetain;
         CollectionObserver          _observer;
         mutable std::mutex          _mutex;

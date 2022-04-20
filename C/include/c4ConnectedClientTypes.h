@@ -39,6 +39,8 @@ typedef struct C4ConnectedClientParameters {
 } C4ConnectedClientParameters;
 
 
+typedef C4ReplicatorStatus C4ConnectedClientStatus;
+
 /** Callback for getting the document result.
     @param client  The client that initiated the callback.
     @param doc  Resulting document response, NULL on failure.

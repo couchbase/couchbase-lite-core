@@ -54,15 +54,15 @@ namespace litecore::client {
             nullptr, nullptr, nullptr, "Client")
     ,_delegate(&delegate)
     ,_params(params)
-    ,_status(kC4Stopped)
+    ,_activityLevel(kC4Stopped)
     {
         _importance = 2;
     }
 
 
     void ConnectedClient::setStatus(ActivityLevel status) {
-        if (status != _status) {
-            _status = status;
+        if (status != _activityLevel) {
+            _activityLevel = status;
             
             LOCK(_mutex);
             if (_delegate)
@@ -71,11 +71,16 @@ namespace litecore::client {
     }
 
 
+    Async<ConnectedClient::Status> ConnectedClient::status() {
+        return asCurrentActor([this]() {return C4ReplicatorStatus(Worker::status());});
+    }
+
+
     void ConnectedClient::start() {
+        Assert(_activityLevel == kC4Stopped);
+        setStatus(kC4Connecting);
         asCurrentActor([=] {
             logInfo("Connecting...");
-            Assert(_status == kC4Stopped);
-            setStatus(kC4Connecting);
             connection().start();
             registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
             _selfRetain = this;     // retain myself while the connection is open
@@ -103,6 +108,11 @@ namespace litecore::client {
     }
 
 
+    ConnectedClient::ActivityLevel ConnectedClient::computeActivityLevel() const {
+        return _activityLevel;
+    }
+
+    
 #pragma mark - BLIP DELEGATE:
 
 
@@ -134,7 +144,7 @@ namespace litecore::client {
     void ConnectedClient::onConnect() {
         asCurrentActor([=] {
         logInfo("Connected!");
-        if (_status != kC4Stopping)       // skip this if stop() already called
+        if (_activityLevel != kC4Stopping)       // skip this if stop() already called
             setStatus(kC4Idle);
         });
     }
@@ -145,7 +155,7 @@ namespace litecore::client {
             logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)",
                     status.reasonName(), status.code, FMTSLICE(status.message), state);
 
-            bool closedByPeer = (_status != kC4Stopping);
+            bool closedByPeer = (_activityLevel != kC4Stopping);
             setStatus(kC4Stopped);
 
             _connectionClosed();
@@ -198,12 +208,18 @@ namespace litecore::client {
         C4Error error;
         if (!response) {
             // Disconnected!
-            error = status().error;
+            error = Worker::status().error;
             if (!error)
                 error = C4Error::make(LiteCoreDomain, kC4ErrorIOError, "network connection lost");
             // TODO: Use a better default error than the one above
         } else if (response->isError()) {
             error = blipToC4Error(response->getError());
+            if (error.domain == WebSocketDomain) {
+                switch (error.code) {
+                    case 404: error.domain = LiteCoreDomain; error.code = kC4ErrorNotFound; break;
+                    case 409: error.domain = LiteCoreDomain; error.code = kC4ErrorConflict; break;
+                }
+            }
         } else {
             error = {};
         }

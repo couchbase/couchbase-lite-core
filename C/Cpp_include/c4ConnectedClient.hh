@@ -27,7 +27,8 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @param params  Connected Client parameters.
     /// @result A new \ref C4ConnectedClient, or NULL on failure.
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
-                    
+
+    virtual litecore::actor::Async<C4ConnectedClientStatus> getStatus() const =0;
 
     /** Result of a successful `getDoc()` call. */
     struct DocResponse {

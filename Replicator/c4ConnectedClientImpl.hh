@@ -43,6 +43,10 @@ namespace litecore::client {
             _client = new ConnectedClient(webSocket, *this, params);
             _client->start();
         }
+
+        Async<C4ConnectedClientStatus> getStatus() const override {
+            return _client->status();
+        }
     
     protected:
 #pragma mark - ConnectedClient Delegate
