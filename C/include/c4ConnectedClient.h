@@ -79,11 +79,6 @@ void c4client_start(C4ConnectedClient*) C4API;
     \note This function is thread-safe.  */
 void c4client_stop(C4ConnectedClient*) C4API;
 
-/** Frees a connected client reference.
-    Does not stop the connected client -- if the client still has other internal references,
-    it will keep going. If you need the client to stop, call \ref c4client_stop first. */
-void c4client_free(C4ConnectedClient*) C4API;
-
 /** @} */
 
 C4API_END_DECLS

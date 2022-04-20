@@ -13,7 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "Async.hh"
-#include "c4ConnectedClient.h"
+#include "c4ConnectedClientTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -28,6 +28,13 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @result A new \ref C4ConnectedClient, or NULL on failure.
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
                     
+
+    /** Result of a successful `getDoc()` call. */
+    struct DocResponse {
+        alloc_slice docID, revID, body;
+        bool deleted;
+    };
+
     /// Gets the current revision of a document from the server.
     /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
     /// revision you already have.
@@ -36,12 +43,12 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
     ///                   the server will return error {WebSocketDomain, 304}.
     /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
-    /// @result An async value that, when resolved, contains either a `C4DocResponse` struct
+    /// @result An async value that, when resolved, contains either a `DocResponse` struct
     ///          or a C4Error.
-    virtual litecore::actor::Async<C4DocResponse> getDoc(slice docID,
-                                                         slice collectionID,
-                                                         slice unlessRevID,
-                                                         bool asFleece)=0;
+    virtual litecore::actor::Async<DocResponse> getDoc(slice docID,
+                                                       slice collectionID,
+                                                       slice unlessRevID,
+                                                       bool asFleece)=0;
     
     /// Pushes a new document revision to the server.
     /// @param docID  The document ID.

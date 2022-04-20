@@ -37,8 +37,9 @@ bool c4client_getDoc(C4ConnectedClient* client,
                      C4Error* C4NULLABLE outError) noexcept {
     try {
         auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
-        res.then([=](C4DocResponse response) {
-            return callback(client, &response, nullptr, context);
+        res.then([=](const C4ConnectedClient::DocResponse &r) {
+            C4DocResponse cResponse = {r.docID, r.revID, r.body, r.deleted};
+            return callback(client, &cResponse, nullptr, context);
         }).onError([=](C4Error err) {
             return callback(client, nullptr, &err, context);
         });
@@ -53,10 +54,6 @@ void c4client_start(C4ConnectedClient* client) noexcept {
 
 void c4client_stop(C4ConnectedClient* client) noexcept {
     client->stop();
-}
-
-void c4client_free(C4ConnectedClient* client) noexcept {
-    release(client);
 }
 
 bool c4client_putDoc(C4ConnectedClient* client,

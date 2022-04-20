@@ -65,14 +65,14 @@ namespace litecore::client {
         }
         
 #pragma mark -
-        Async<C4DocResponse> getDoc(slice docID,
+        Async<DocResponse> getDoc(slice docID,
                                     slice collectionID,
                                     slice unlessRevID,
                                     bool asFleece) override {
             return _client->getDoc(docID,
                                    collectionID,
                                    unlessRevID,
-                                   asFleece).then([](DocResponse a) -> C4DocResponse {
+                                   asFleece).then([](auto a) -> DocResponse {
                 return { a.docID, a.revID, a.body, a.deleted };
             });
         }
