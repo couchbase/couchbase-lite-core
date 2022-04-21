@@ -30,7 +30,7 @@ C4API_BEGIN_DECLS
 #define LITECORE_VERSION 30000
 
 // This number has no absolute meaning but is bumped whenever the LiteCore public API changes.
-#define LITECORE_API_VERSION 350
+#define LITECORE_API_VERSION 351
 
 
 /** \defgroup Base  Data Types and Base Functions
@@ -248,6 +248,19 @@ C4StringResult c4_getBuildInfo(void) C4API;
 
 /** A short version string. */
 C4StringResult c4_getVersion(void) C4API;
+
+#define kC4EnvironmentTimezoneKey "tz"
+#define kC4EnvironmentSupportedLocales "supported_locales"
+
+/** Returns information about LiteCore's view of the environment in the following format:
+ *
+ * Fleece Encoded Dictionary
+ * {
+ *     kC4EnvironmentTimezoneKey: numeric offset from UTC in seconds
+ *     kC4EnvironmentSupportedLocales: string array of locale identifiers
+ * }
+ */
+C4SliceResult c4_getEnvironmentInfo(void) C4API;
 
 /** Returns the current time, in _milliseconds_ since 1/1/1970. */
 C4Timestamp c4_now(void) C4API;

@@ -17,7 +17,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "Endian.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "c4Private.h"
 #include "PlatformIO.hh"
 #include "Stopwatch.hh"
@@ -138,9 +138,8 @@ namespace litecore {
         //    other classes with interest in the data file do not continue to
         //    operate on it
         _closeSignaled = true;
-        for (auto &query : _queries)
-            query->close();
-        _queries.clear();
+
+        closeAllQueries();
 
         for (auto& i : _keyStores) {
             i.second->close();
@@ -346,6 +345,28 @@ namespace litecore {
             _documentKeys = keys;
         }
         return keys;
+    }
+
+#pragma mark - QUERIES:
+
+
+    void DataFile::registerQuery(Query *query) {
+        unique_lock<mutex> lock(_queriesMutex);
+        _queries.insert(query);
+    }
+
+
+    void DataFile::unregisterQuery(Query *query) {
+        unique_lock<mutex> lock(_queriesMutex);
+        _queries.erase(query);
+    }
+
+
+    void DataFile::closeAllQueries() {
+        unique_lock<mutex> lock(_queriesMutex);
+        for (auto &query : _queries)
+            query->close();
+        _queries.clear();
     }
 
 

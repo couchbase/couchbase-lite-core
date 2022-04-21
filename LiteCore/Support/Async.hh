@@ -12,9 +12,9 @@
 
 #pragma once
 #include "AsyncActorCommon.hh"
-#include "RefCounted.hh"
 #include "Result.hh"
-#include "InstanceCounted.hh"
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include <atomic>
 #include <functional>
 #include <mutex>

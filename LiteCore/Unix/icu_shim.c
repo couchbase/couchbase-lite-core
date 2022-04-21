@@ -64,7 +64,7 @@ static char icudata_version[ICUDATA_VERSION_MAX_LENGTH + 1];
 
 static void* handle_i18n = NULL;
 static void* handle_common = NULL;
-static void* syms[11];
+static void* syms[13];
 
 
 
@@ -255,6 +255,14 @@ static void init_icudata_version(void) {
   strcpy(buffer, "ucol_strcollIter");
   strcat(buffer, icudata_version);
   syms[10] = dlsym(handle_i18n, buffer);
+
+  strcpy(buffer, "ucol_countAvailable");
+  strcat(buffer, icudata_version);
+  syms[11] = dlsym(handle_i18n, buffer);
+
+  strcpy(buffer, "ucol_getAvailable");
+  strcat(buffer, icudata_version);
+  syms[12] = dlsym(handle_i18n, buffer);
 }
 #else
 #define LOCAL_INLINE inline
@@ -390,6 +398,36 @@ int32_t lc_ucasemap_utf8ToUpper(const UCaseMap* csm, char* dest, int32_t destCap
   return ptr(csm, dest, destCapacity, src, srcLength, pErrorCode);
   #else
   return ucasemap_utf8ToUpper(csm, dest, destCapacity, src, srcLength, pErrorCode);
+  #endif
+}
+
+LOCAL_INLINE
+int32_t lc_ucol_countAvailable(void) {
+  #ifdef CBL_USE_ICU_SHIM
+  pthread_once(&once_control, &init_icudata_version);
+  int32_t (*ptr)(void);
+  if (syms[11] == NULL) {
+    return (int32_t)0;
+  }
+  ptr = (int32_t(*)(void))syms[11];
+  return ptr();
+  #else
+  return ucol_countAvailable();
+  #endif
+}
+
+LOCAL_INLINE
+const char* lc_ucol_getAvailable(int32_t localeIndex) {
+  #ifdef CBL_USE_ICU_SHIM
+  pthread_once(&once_control, &init_icudata_version);
+  const char* (*ptr)(int32_t);
+  if (syms[12] == NULL) {
+    return NULL;
+  }
+  ptr = (const char*(*)(int32_t))syms[12];
+  return ptr(localeIndex);
+  #else
+  return ucol_getAvailable(localeIndex);
   #endif
 }
 

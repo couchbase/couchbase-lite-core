@@ -19,20 +19,20 @@ endfunction()
 function(setup_build)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../vendor/zlib" "vendor/zlib")
     target_compile_definitions(
-        BLIPStatic PRIVATE
+        BLIPObjects PRIVATE
         -DINCL_EXTRA_HTON_FUNCTIONS # Make sure htonll is defined for WebSocketProtocol.hh
         -DNOMINMAX                  # Windows, come on...stop it!
     )
 
     target_include_directories(
-        BLIPStatic PRIVATE
+        BLIPObjects PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/../../vendor/zlib"
         "${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib"
         "${CMAKE_CURRENT_LIST_DIR}/../../MSVC"
     )
 
     target_link_libraries(
-        BLIPStatic INTERFACE
+        BLIPObjects INTERFACE
        ${ZLIB_LIB}
     )
 endfunction()

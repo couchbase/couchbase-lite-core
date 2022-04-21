@@ -103,20 +103,7 @@ static int copyfile(const char* from, const char* to)
 {
     CA2WEX<256> wideFrom(from, CP_UTF8);
     CA2WEX<256> wideTo(to, CP_UTF8);
-    int err = 0;
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-    HMODULE kernelLib = LoadLibraryA("kernel32.dll");
-    CopyFileFunc cpFile2 = (CopyFileFunc)GetProcAddress(kernelLib, "CopyFile2");
-    if (cpFile2 != nullptr) {
-        err = cpFile2(wideFrom, wideTo, nullptr);
-    }
-    else {
-        // Windows 7 doesn't have CopyFile2
-        err = !CopyFileW(wideFrom, wideTo, false);
-    }
-#else
-    err = CopyFile2(wideFrom, wideTo, nullptr);
-#endif
+    int err = CopyFile2(wideFrom, wideTo, nullptr);
 
     if(err != S_OK) {
         return -1;
@@ -587,16 +574,8 @@ namespace litecore {
         const char *fromPathStr = from.c_str(), *toPathStr = to.c_str();
         int result = 0;
 #if __APPLE__
-        // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
-        // Unfortunately there seems to be a bug in the iOS 9 simulator where, if this flag is
-        // used, the resulting files have zero length. (See #473)
-        if (__builtin_available(iOS 10, macOS 10.12, tvos 10, *)) {
-            copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
-            result = copyfile(fromPathStr, toPathStr, nullptr, flags);
-        } else {
-            copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE;
-            result = copyfile(fromPathStr, toPathStr, nullptr, flags);
-        }
+        copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
+        result = copyfile(fromPathStr, toPathStr, nullptr, flags);
 #else
         if (isDir()) {
             FilePath toPath(to);

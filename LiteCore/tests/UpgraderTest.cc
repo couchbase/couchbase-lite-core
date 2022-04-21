@@ -18,7 +18,7 @@
 #include "c4BlobStore.hh"
 #include "Logging.hh"
 #include "TempArray.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
 
 using namespace std;
 using namespace fleece;

@@ -15,6 +15,7 @@
 #include "SQLite_Internal.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
 #include "Doc.hh"
@@ -125,7 +126,7 @@ namespace litecore {
               spec.typeName(), spec.name.c_str());
         unregisterIndex(spec.name);
         if (spec.type != IndexSpec::kFullText)
-            exec(CONCAT("DROP INDEX IF EXISTS \"" << spec.name << "\""));
+            exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
         if (!spec.indexTableName.empty())
             garbageCollectIndexTable(spec.indexTableName);
     }
@@ -141,7 +142,7 @@ namespace litecore {
         }
 
         LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
-        exec(CONCAT("DROP TABLE \"" << tableName << "\""));
+        exec(CONCAT("DROP TABLE " << sqlIdentifier(tableName) << ""));
 
         stringstream sql;
         static const char* kTriggerSuffixes[] = {"ins", "del", "upd", "preupdate", "postupdate",

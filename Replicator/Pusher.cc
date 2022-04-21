@@ -175,7 +175,7 @@ namespace litecore { namespace repl {
             if (willLog(LogLevel::Debug)) {
                 for (auto &change : changes.revs)
                     logDebug("    - %.4" PRIu64 ": '%.*s' #%.*s (remote #%.*s)",
-                             change->sequence, SPLAT(change->docID), SPLAT(change->revID),
+                             static_cast<uint64_t>(change->sequence), SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
             }
 #endif

@@ -75,3 +75,35 @@ namespace litecore { namespace repl {
     };
 
 } }
+
+// c4SocketTrace: temporary instrumentation to catch a bug found in CBL/Java test case
+
+#include <thread>
+#include <vector>
+struct C4Socket;
+namespace c4SocketTrace {
+    using namespace std;
+    using namespace std::chrono;
+
+    struct Event {
+        const C4Socket*   socket;
+        int64_t     timestamp;
+        thread::id  tid;
+        string      func;
+        string      remark;
+
+        Event(const C4Socket* sock, const string& f);
+        Event(const C4Socket* sock, const string& f, const string& rem);
+        operator string();
+    };
+
+    class EventQueue : public vector<Event> {
+    public:
+        void addEvent(const C4Socket* sock, const string& f);
+        void addEvent(const C4Socket* sock, const string& f, const string& rem);
+    private:
+        mutex mut;
+    };
+
+    EventQueue& traces();
+}

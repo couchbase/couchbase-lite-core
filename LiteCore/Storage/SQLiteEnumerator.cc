@@ -80,7 +80,7 @@ namespace litecore {
         sql << (options.contentOption >= kCurrentRevOnly ? ", body"  : ", length(body)");
         sql << (options.contentOption >= kEntireBody     ? ", extra" : ", length(extra)");
         sql << (mayHaveExpiration() ? ", expiration" : ", 0");
-        sql << " FROM kv_" << name();
+        sql << " FROM " << quotedTableName();
         
         bool writeAnd = false;
         if (bySequence) {

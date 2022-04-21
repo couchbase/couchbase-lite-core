@@ -12,7 +12,7 @@
 
 #pragma once
 #include "PublicKey.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <initializer_list>
 #include <memory>
 #include <optional>

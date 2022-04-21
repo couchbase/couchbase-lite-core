@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "fleece/slice.hh"
 #include "c4DocumentTypes.h"
 #include "c4ReplicatorTypes.h"

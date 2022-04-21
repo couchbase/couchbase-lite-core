@@ -18,7 +18,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "FleeceImpl.hh"
 #include "ParseDate.hh"
 #include "NumConversion.hh"

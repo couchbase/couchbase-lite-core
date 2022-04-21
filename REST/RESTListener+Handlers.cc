@@ -21,6 +21,7 @@
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include "LegacyAttachments.hh"
+#include "fleece/Expert.hh"
 #include <functional>
 
 using namespace std;
@@ -174,7 +175,7 @@ namespace litecore { namespace REST {
 
             if (includeDocs) {
                 json.writeKey("doc"_sl);
-                json.writeRaw(e.getDocument()->bodyAsJSON());
+                expert(json).writeRaw(e.getDocument()->bodyAsJSON());
             }
             json.endDict();
         }

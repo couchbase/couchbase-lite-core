@@ -18,8 +18,9 @@
 #include "Logging.hh"
 #include "Timer.hh"
 #include "access_lock.hh"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/Expert.hh" // for SharedKeys
 #include <atomic>
 #include <memory>
 #include <mutex>

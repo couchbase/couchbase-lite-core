@@ -29,6 +29,7 @@
 #include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include <cinttypes>
+#include <cstdint>
 
 using namespace std;
 using namespace fleece;
@@ -162,8 +163,10 @@ namespace litecore { namespace repl {
                 break;
 
             if (!ext && !_echoLocalChanges) {
-                logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64 " (ignoring)",
-                         nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+                logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64
+                         " (ignoring)",
+                         nChanges, static_cast<uint64_t>(c4changes[0].sequence),
+                         static_cast<uint64_t>(c4changes[nChanges-1].sequence));
                 _maxSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself
             }

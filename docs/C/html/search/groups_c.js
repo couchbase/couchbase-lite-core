@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['value_20slots_2134',['Value Slots',['../group___slots.html',1,'']]]
+  ['slices_0',['Slices',['../group___f_l_slice.html',1,'']]]
 ];

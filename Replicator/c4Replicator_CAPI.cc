@@ -206,7 +206,9 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
                               const C4Address *address) noexcept
 {
     return tryCatch<C4Socket*>(nullptr, [&]{
-        return C4Socket::fromNative(factory, nativeHandle, *address);
+        auto ret = C4Socket::fromNative(factory, nativeHandle, *address);
+        c4SocketTrace::traces().addEvent(ret, "c4socket_fromNative");
+        return ret;
     });
 }
 
@@ -221,11 +223,13 @@ void* C4NULLABLE c4Socket_getNativeHandle(C4Socket *socket) noexcept {
 inline repl::C4SocketImpl* internal(C4Socket *s)  {return (repl::C4SocketImpl*)s;}
 
 C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
+    c4SocketTrace::traces().addEvent(socket, "c4socket_retain");
     retain(internal(socket));
     return socket;
 }
 
 void c4socket_release(C4Socket* C4NULLABLE socket) C4API {
+    c4SocketTrace::traces().addEvent(socket, "c4socket_release");
     release(internal(socket));
 }
 
@@ -234,14 +238,17 @@ void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHead
 }
 
 void c4socket_opened(C4Socket *socket) noexcept {
+    c4SocketTrace::traces().addEvent(socket, "socket_opened");
     socket->opened();
 }
 
 void c4socket_closeRequested(C4Socket *socket, int status, C4String message) noexcept {
+    c4SocketTrace::traces().addEvent(socket, "socket_closeRequested");
     socket->closeRequested(status, message);
 }
 
 void c4socket_closed(C4Socket *socket, C4Error error) noexcept {
+    c4SocketTrace::traces().addEvent(socket, "socket_closed", error.code == 0 ? "normal" : "error");
     socket->closed(error);
 }
 

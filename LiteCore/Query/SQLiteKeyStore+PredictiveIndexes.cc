@@ -15,6 +15,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SQLUtil.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "MutableArray.hh"
@@ -62,12 +63,13 @@ namespace litecore {
     {
         // Derive the table name from the expression (path) it unnests:
         auto kvTableName = tableName();
+        auto q_kvTableName = quotedTableName();
         QueryParser qp(db(), "", kvTableName);
         auto predTableName = qp.predictiveTableName(expression);
 
         // Create the index table, unless an identical one already exists:
-        string sql = CONCAT("CREATE TABLE \"" << predTableName << "\" "
-                            "(docid INTEGER PRIMARY KEY REFERENCES " << kvTableName << "(rowid), "
+        string sql = CONCAT("CREATE TABLE " << sqlIdentifier(predTableName) << " "
+                            "(docid INTEGER PRIMARY KEY REFERENCES " << q_kvTableName << "(rowid), "
                             " body BLOB NOT NULL ON CONFLICT IGNORE) "
                             "WITHOUT ROWID");
         if (!db().schemaExistsWithSQL(predTableName, "table", predTableName, sql)) {
@@ -77,16 +79,16 @@ namespace litecore {
 
             // Populate the index-table with data from existing documents:
             string predictExpr = qp.expressionSQL(expression);
-            db().exec(CONCAT("INSERT INTO \"" << predTableName << "\" (docid, body) "
+            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(predTableName) << " (docid, body) "
                              "SELECT rowid, " << predictExpr <<
-                             "FROM " << kvTableName << " WHERE (flags & 1) = 0"));
+                             "FROM " << q_kvTableName << " WHERE (flags & 1) = 0"));
 
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
             qp.setBodyColumnName("new.body");
             predictExpr = qp.expressionSQL(expression);
-            string insertTriggerExpr = CONCAT("INSERT INTO \"" << predTableName <<
-                                              "\" (docid, body) "
+            string insertTriggerExpr = CONCAT("INSERT INTO " << sqlIdentifier(predTableName) <<
+                                              " (docid, body) "
                                               "VALUES (new.rowid, " << predictExpr << ")");
             createTrigger(predTableName, "ins",
                           "AFTER INSERT",
@@ -94,7 +96,7 @@ namespace litecore {
                           insertTriggerExpr);
 
             // ...on delete:
-            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << predTableName << "\" "
+            string deleteTriggerExpr = CONCAT("DELETE FROM " << sqlIdentifier(predTableName) << " "
                                               "WHERE docid = old.rowid");
             createTrigger(predTableName, "del",
                           "BEFORE DELETE",

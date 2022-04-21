@@ -4,7 +4,7 @@ BLIP CMake Project
 This project builds a static library containing the logic for crafting and processing BLIP messages.
 These types of messages are used in Couchbase Lite replication starting with Couchbase Lite 2.0.
 
-This project produces one target, BLIPStatic.
+This project produces one target, BLIPObjects.
 
 (It has dependencies on other parts of the LiteCore source tree, so it doesn't build standalone.)
 
@@ -47,10 +47,14 @@ else()
 endif()
 
 set_source_files(RESULT ALL_SRC_FILES)
-add_library(BLIPStatic STATIC ${ALL_SRC_FILES})
+add_library(BLIPObjects OBJECT ${ALL_SRC_FILES})
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_build()
+
 target_include_directories(
-    BLIPStatic PRIVATE
+    BLIPObjects PRIVATE
     ${BLIP_LOCATION}
     ${WEBSOCKETS_LOCATION}
     ${SUPPORT_LOCATION}

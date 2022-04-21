@@ -15,7 +15,8 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "PlatformCompat.hh"
+#include "fleece/PlatformCompat.hh"
+#include "fleece/Expert.hh"
 #include <iterator>
 #include <regex>
 #include <string>
@@ -189,7 +190,7 @@ namespace litecore { namespace net {
     CookieStore::CookieStore(slice data) {
         if (data.size == 0)
             return;
-        Array cookies = Value::fromData(data).asArray();
+        Array cookies = ValueFromData(data).asArray();
         if (!cookies) {
             Warn("Couldn't parse persisted cookie store!");
             return;
@@ -249,8 +250,11 @@ namespace litecore { namespace net {
                                 const string &path)
     {
         auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path);
-        if (!newCookie->valid())
+        if (!newCookie->valid()) {
+            Warn("Rejecting invalid cookie in setCookie!");
             return false;
+        }
+
         lock_guard<mutex> lock(_mutex);
         _addCookie(move(newCookie));
         return true;
@@ -269,10 +273,15 @@ namespace litecore { namespace net {
         for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
             const Cookie *oldCookie = i->get();
             if (newCookie->matches(*oldCookie)) {
-                if (newCookie->created < oldCookie->created)
+                if (newCookie->created < oldCookie->created) {
+                    LogVerbose(kC4Cpp_DefaultLog, "CookieStore::_addCookie: ignoring obsolete cookie...");
                     return;   // obsolete
-                if (newCookie->sameValueAs(*oldCookie))
+                }
+                if (newCookie->sameValueAs(*oldCookie)) {
+                    LogVerbose(kC4Cpp_DefaultLog, "CookieStore::_addCookie: ignoring identical cookie...");
                     return;   // No-op
+                }
+
                 // Remove the replaced cookie:
                 if (oldCookie->persistent())
                     _changed = true;

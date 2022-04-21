@@ -224,6 +224,8 @@ namespace litecore {
                                            uint64_t bodySize,
                                            RevisionFlags flags)
     {
+        logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx",
+                 SPLAT(docID), SPLAT(revID), sequence, bodySize, flags);
         auto shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool listChanged = true;
         Entry *entry;
@@ -231,22 +233,19 @@ namespace litecore {
         if (i != _byDocID.end()) {
             // Move existing entry to the end of the list:
             entry = &*i->second;
-            if (entry->isIdle() && !hasDBChangeNotifiers()) {
-                listChanged = false;
-            } else {
-                if (entry->isIdle()) {
-                    _changes.splice(_changes.end(), _idle, i->second);
-                    entry->idle = false;
-                } else if (next(i->second) != _changes.end())
-                    _changes.splice(_changes.end(), _changes, i->second);
-                else
-                    listChanged = false;  // it was already at the end
-            }
+            if (entry->isIdle()) {
+                _changes.splice(_changes.end(), _idle, i->second);
+                entry->idle = false;
+            } else if (next(i->second) != _changes.end())
+                _changes.splice(_changes.end(), _changes, i->second);
+            else
+                listChanged = false;  // it was already at the end
             // Update its revID & sequence:
             entry->revID = revID;
             entry->sequence = sequence;
             entry->bodySize = shortBodySize;
             entry->flags = flags;
+            entry->external = false;
         } else {
             // or create a new entry at the end:
             _changes.emplace_back(docID, revID, sequence, shortBodySize, flags);

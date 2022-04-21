@@ -25,6 +25,7 @@
 #include "KeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "RevTree.hh"
+#include "access_lock.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -36,8 +37,8 @@ namespace litecore {
 
     class CollectionImpl final : public C4Collection, public Logging {
     public:
-        CollectionImpl(C4Database *db, slice name, KeyStore &store)
-        :C4Collection(db, name)
+        CollectionImpl(C4Database *db, C4CollectionSpec spec, KeyStore &store)
+        :C4Collection(db, spec)
         ,Logging(DBLog)
         ,_keyStore(&store)
         {
@@ -67,6 +68,16 @@ namespace litecore {
             _documentFactory = nullptr;
             _keyStore = nullptr;
             _database = nullptr;
+        }
+
+
+        std::string fullName() const {
+            std::string name;
+            auto spec = getSpec();
+            if (spec.scope != kC4DefaultScopeID)
+                (name += std::string_view(slice(spec.scope))) += "/";
+            name += std::string_view(slice(spec.name));
+            return name;
         }
 
 

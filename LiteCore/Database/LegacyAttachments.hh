@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4Base.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.h"
 

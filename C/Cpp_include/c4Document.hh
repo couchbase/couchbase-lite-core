@@ -14,7 +14,7 @@
 #include "c4Base.hh"
 #include "c4DocumentTypes.h"
 #include "c4DocumentStruct.h"
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/Fleece.h"
 
 #if ! LITECORE_CPP_API

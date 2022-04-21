@@ -19,6 +19,7 @@
 #include "VersionVector.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "fleece/Expert.hh"
 #include <inttypes.h>
 #include <vector>
 
@@ -180,7 +181,7 @@ namespace litecore {
                 nuRev = nuDoc.currentRevision();
             } else {
                 if (rev->body())
-                    nuRev.properties = fleece::Value::fromData(rev->body(), kFLTrusted).asDict();
+                    nuRev.properties = fleece::ValueFromData(rev->body(), kFLTrusted).asDict();
                 nuRev.flags = {};
                 if (rev->flags & Rev::kDeleted)        nuRev.flags |= DocumentFlags::kDeleted;
                 if (rev->flags & Rev::kHasAttachments) nuRev.flags |= DocumentFlags::kHasAttachments;

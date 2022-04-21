@@ -12,8 +12,7 @@ It uses some predefined data as follows:
 The test runner depends on multiple other libraries from multiple git repositories:
 
 - LiteCore static library (../..)
-- BLIP static library (../../Networking/BLIP)
-- CivetWeb static library (../../vendor/civetweb)
+- BLIP object library (../../Networking/BLIP)
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
@@ -95,6 +94,9 @@ add_executable(
     ${TOP}LiteCore/Support/TestsCommon.cc
     main.cpp
 )
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_build()
 
 target_compile_definitions(
@@ -148,6 +150,5 @@ target_link_libraries(
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
-    BLIPStatic          # Explicitly needed in here because GCC is a dinosaur...
     ${END_GROUP_FLAG}
 )

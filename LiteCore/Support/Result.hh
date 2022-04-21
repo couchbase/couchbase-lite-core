@@ -13,7 +13,7 @@
 #pragma once
 #include "c4Error.h"
 #include "Defer.hh"             // for CONCATENATE()
-#include "function_ref.hh"
+#include "fleece/function_ref.hh"
 #include <type_traits>
 #include <variant>
 #include <betterassert.hh>

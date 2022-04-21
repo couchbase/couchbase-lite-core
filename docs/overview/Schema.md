@@ -16,15 +16,17 @@ A DataFile is implemented as a SQLite database file, named `db.sqlite3`, stored 
 
 ## 2. KeyStores
 
-Currently LiteCore creates and uses three KeyStores:
+Currently as of 3.0, LiteCore creates and uses three KeyStores:
 
 * `default` — Documents
 * `info` — Various metadata values, like the database's UUIDs
 * `checkpoints` — Replicator checkpoints
 
-KeyStores are SQLite tables, whose names are prefixed with "`kv_`". So, `kv_default` is the table containing documents.
+(Platform code _could_ create additional KeyStores by calling `c4raw_put()` -- The `storeName` parameter is a KeyStore name, and the KeyStore will be created if it doesn't exist. I'm not aware of any platforms using this, though.)
 
-(In a 3.x database with multiple collections, each other collection has a KeyStore whose name is prefixed with `coll_`. So the `widgets` collection has a KeyStore named `coll_widgets`, which has a SQLite table named `kv_coll_widgets`.)
+KeyStores are backed by SQLite tables whose names are prefixed with "`kv_`". So documents live in the table `kv_default`, etc.
+
+In a 3.x database with multiple collections, each other collection has a KeyStore whose name is prefixed with `.`. So the `widgets` collection has a KeyStore named `.widgets`, which has a SQLite table named `kv_.widgets`. In a non-default scope, the scope name goes before the collection name separated by another `.`. So the `chairs` collection in the `inventory` scope has a KeyStore named `.inventory.chairs` and a SQLite table named `kv_.inventory.chairs`.
 
 A KeyStore's table has the following SQL schema:
 
@@ -81,6 +83,9 @@ In 3.0 a "subsequence" was added, in order to solve some limitations of MVCC. Wh
 
 The first time any record in a KeyStore is given an expiration time (TTL), a new column `expiration` is added to its KeyStore's table to record it. This column contains a number (seconds since Unix epoch) in records that expire, and is null otherwise. An index `kv_default_expiration` is also created to allow efficient search of expired records.
 
+### Deleted Documents
+
+>**TODO:** Document the extra KeyStores used for deleted documents in 3.1+
 
 ## 3. Indexes
 

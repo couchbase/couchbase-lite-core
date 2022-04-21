@@ -38,6 +38,42 @@ string C4Listener::URLNameFromPath(slice pathSlice) {
     return Listener::databaseNameFromPath(FilePath(pathSlice, ""));
 }
 
+namespace {
+    std::stringstream& operator<<(std::stringstream& ss, const C4ListenerConfig& config) {
+        ss << "{" << "apis: " << (config.apis == kC4RESTAPI ? "REST" : "Sync") << ", "
+        << "networkInterface: " << (!config.networkInterface ? "NULL" : config.networkInterface.size == 0
+                                    ? "\"\"" : std::string(config.networkInterface)) << ", "
+        << "port: " << config.port << ", "
+        << "tlsConfig: " << "{";
+        if (config.tlsConfig != nullptr) {
+            ss << "privateKeyRepresentation: " <<
+                (config.tlsConfig->privateKeyRepresentation == kC4PrivateKeyFromCert
+                 ? "PrivateKeyFromCert" : "PrivateKeyFromKey") << ", "
+            << "key: " << (config.tlsConfig->key == nullptr ? "NULL" : "***") << ", "
+            << "certificate: " << (config.tlsConfig->certificate == nullptr ? "NULL" : "***") << ", "
+            << "requireClientCerts: " << config.tlsConfig->requireClientCerts << ", "
+            << "rootClientCerts: " << (config.tlsConfig->rootClientCerts == nullptr ? "NULL" : "***") << ", "
+            << "certAuthCallback: " << (config.tlsConfig->certAuthCallback == nullptr ? "NULL" : "***") << ", "
+            << "tlsCallbackContext: " << (config.tlsConfig->tlsCallbackContext == nullptr ? "NULL" : "***");
+        }
+        ss << "}, "
+        << "httpAuthCallback: " << (config.httpAuthCallback == nullptr ? "NULL" : "***") << ", "
+        << "callbackContext: " << (config.callbackContext == nullptr ? "NULL" : "***") << ", "
+        << "directory: " << (!config.directory ? "NULL" : config.directory.size == 0
+                             ? "\"\"" : std::string(config.directory)) << ", ";
+        if (config.apis == kC4RESTAPI) {
+            ss << "allowCreateDBs: " << config.allowCreateDBs << ", "
+            << "allowDeleteDBs: " << config.allowDeleteDBs;
+        } else {
+            ss << "allowPush: " << config.allowPush << ", "
+            << "allowPull: " << config.allowPull << ", "
+            << "enableDeltaSync: " << config.enableDeltaSync;
+        }
+        ss << "}";
+        return ss;
+    }
+}
+
 
 C4Listener::C4Listener(C4ListenerConfig config)
 :_httpAuthCallback(config.httpAuthCallback)
@@ -54,8 +90,13 @@ C4Listener::C4Listener(C4ListenerConfig config)
     }
 
     _impl = dynamic_cast<RESTListener*>(NewListener(&config).get());
-    if (!_impl)
+    if (!_impl) {
         C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Unsupported listener API");
+    } else {
+        std::stringstream ss;
+        ss << config;
+        c4log(ListenerLog, kC4LogInfo, "Listener config: %s", ss.str().c_str());
+    }
 }
 
 

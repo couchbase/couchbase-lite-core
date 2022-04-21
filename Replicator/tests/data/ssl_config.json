@@ -1,10 +1,15 @@
 {
-	"log": ["HTTP+", "Sync"],
-    
-    "interface": ":4994",
-    "adminInterface": ":4995",
-    "SSLCert": "cert.pem",
-    "SSLKey":  "privkey.pem",
+	"disable_persistent_config": true,
+  "logging": {
+    "console": { "log_level": "info", "log_keys": ["*"] }
+  },
+
+	"interface": ":4994",
+	"adminInterface": ":4995",
+	"metricsInterface": ":4996",
+	"admin_interface_authentication": false,
+	"SSLCert": "sg_cert.pem",
+	"SSLKey":  "sg_key.pem",
 
 	"databases": {
 		"itunes": {

@@ -190,7 +190,7 @@ namespace litecore::repl {
                 break;
             case MessageProgress::kAwaitingReply:
                 logDebug("Transmitted 'rev' %.*s #%.*s (seq #%" PRIu64 ")",
-                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                         SPLAT(rev->docID), SPLAT(rev->revID), static_cast<uint64_t>(rev->sequence));
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);
                 maybeSendMoreRevs();
@@ -277,9 +277,11 @@ namespace litecore::repl {
         // Find an ancestor revision known to the server:
         C4RevisionFlags ancestorFlags = 0;
         Dict ancestor;
+        slice ancestorRevID;
         if (request->remoteAncestorRevID && doc->selectRevision(request->remoteAncestorRevID, true)) {
             ancestor = doc->getProperties();
             ancestorFlags = doc->selectedRev().flags;
+            ancestorRevID = doc->selectedRev().revID;
         }
 
         if(ancestorFlags & kRevDeleted)
@@ -290,6 +292,7 @@ namespace litecore::repl {
                 if (doc->selectRevision(revID, true)) {
                     ancestor = doc->getProperties();
                     ancestorFlags = doc->selectedRev().flags;
+                    ancestorRevID = doc->selectedRev().revID;
                     break;
                 }
             }
@@ -308,6 +311,8 @@ namespace litecore::repl {
 
             if (ancestorFlags & kRevHasAttachments) {
                 enc.reset();
+                // Use revpos from the ancester's revID
+                revPos = C4Document::getRevIDGeneration(ancestorRevID);
                 _db->encodeRevWithLegacyAttachments(enc, ancestor, revPos);
                 legacyOld = enc.finishDoc();
                 ancestor = legacyOld.root().asDict();

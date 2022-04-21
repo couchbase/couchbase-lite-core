@@ -20,6 +20,8 @@ function(setup_globals_unix)
 endfunction()
 
 function(setup_litecore_build_unix)
+    setup_litecore_build_base()
+
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
@@ -38,7 +40,6 @@ function(setup_litecore_build_unix)
             # Unexplained linker errors occur.
             set_property(TARGET LiteCoreStatic PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-            set_property(TARGET BLIPStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET LiteCoreWebSocket PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET LiteCoreREST_Static PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
@@ -84,7 +85,7 @@ function(setup_litecore_build_unix)
     $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
-    target_compile_options(BLIPStatic PRIVATE 
+    target_compile_options(BLIPObjects PRIVATE 
 	${LITECORE_WARNINGS}
     $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>

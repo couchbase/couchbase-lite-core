@@ -274,6 +274,10 @@ namespace litecore {
         return result;
     }
 
+    vector<string> SupportedLocales() {
+        return {};
+    }
+
 #endif
 
 }

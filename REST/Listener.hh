@@ -11,8 +11,8 @@
 //
 
 #pragma once
-#include "RefCounted.hh"
-#include "InstanceCounted.hh"
+#include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include "c4Listener.hh"
 #include "FilePath.hh"
 #include <map>

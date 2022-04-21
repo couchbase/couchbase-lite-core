@@ -20,6 +20,7 @@
 #include "Defer.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
+#include "fleece/Expert.hh"
 #include <ostream>
 #include <sstream>
 
@@ -713,7 +714,7 @@ namespace litecore {
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
         if (rec.extra.size > 0) {
             fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
-            Array remotes = Value::fromData(rec.extra, kFLTrusted).asArray();
+            Array remotes = ValueFromData(rec.extra, kFLTrusted).asArray();
             int n = 0;
             for (Array::iterator i(remotes); i; ++i, ++n) {
                 if (n > 0) {

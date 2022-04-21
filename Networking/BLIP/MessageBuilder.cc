@@ -17,6 +17,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
+#include "fleece/Expert.hh"
 #include <ostream>
 
 using namespace std;
@@ -111,8 +112,8 @@ namespace litecore { namespace blip {
                 throw std::runtime_error("properties excessively large");
             char buf[kMaxVarintLen64];
             slice encodedSize(buf, PutUVarInt(buf, propertiesSize));
-            _out.writeRaw(encodedSize);
-            _out.writeRaw(slice(properties));
+            expert(_out).writeRaw(encodedSize);
+            expert(_out).writeRaw(slice(properties));
             _wroteProperties = true;
         }
     }
@@ -121,7 +122,7 @@ namespace litecore { namespace blip {
     MessageBuilder& MessageBuilder::write(slice data) {
         if(!_wroteProperties)
             finishProperties();
-        _out.writeRaw(data);
+        expert(_out).writeRaw(data);
         return *this;
     }
 

@@ -347,9 +347,10 @@ CBL {
 		c4db_createCollection;
 		c4db_deleteCollection;
 		c4db_collectionNames;
+		c4db_scopeNames;
 		c4dbobs_createOnCollection;
 		c4docobs_createWithCollection;
-		c4coll_getName;
+		c4coll_getSpec;
 		c4coll_getDatabase;
 		c4coll_getDocumentCount;
 		c4coll_getLastSequence;
@@ -457,7 +458,6 @@ CBL {
 		c4client_getDoc;
 		c4client_start;
 		c4client_stop;
-		c4client_free;
 		c4client_putDoc;
 
 

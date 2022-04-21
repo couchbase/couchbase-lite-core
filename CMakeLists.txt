@@ -5,7 +5,7 @@ This is the CMake project for building the Couchbase LiteCore project.  This is 
 It makes use of a lot of source and sublibraries and some cannot be used on their own.  Here are a description of the
 targets that result from this project:
 
-BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
+BLIPObjects - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
@@ -44,11 +44,14 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
+set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
 project (LiteCore)
 include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
+
+set(LITECORE_TARGETS "")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -64,6 +67,7 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
+set(LITECORE_PREBUILT_LIB "" CACHE STRING "If set, C4Tests will use the prebuilt LiteCore instead of building it from source")
 
 option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
 
@@ -117,15 +121,8 @@ else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
 endif(MSVC)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
-endif()
-
 check_threading()
 setup_globals()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LITECORE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
@@ -246,11 +243,6 @@ target_compile_definitions(
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
-target_compile_definitions(
-    LiteCoreStatic PUBLIC
-    -DLITECORE_EXPORTS
-)
-
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
          PRIVATE
@@ -334,10 +326,14 @@ target_link_libraries(
     LiteCoreStatic INTERFACE
     FleeceStatic
     SQLite3_UnicodeSN
-    BLIPStatic
     mbedcrypto
     mbedtls
     mbedx509
+)
+
+target_link_libraries(
+    LiteCoreStatic PRIVATE
+    BLIPObjects
 )
 
 if(USE_COUCHBASE_SQLITE)
@@ -347,16 +343,25 @@ if(USE_COUCHBASE_SQLITE)
     )
 endif()
 
-setup_litecore_build()
-
 install (
     TARGETS LiteCore
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
     OPTIONAL
 )
+
+file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
+file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
+
+install(FILES ${LITECORE_HEADERS} DESTINATION include)
+install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets})
+setup_litecore_build()

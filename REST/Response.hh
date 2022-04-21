@@ -13,7 +13,7 @@
 #pragma once
 #include "Headers.hh"
 #include "HTTPTypes.hh"
-#include "RefCounted.hh"
+#include "fleece/RefCounted.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4Base.h"

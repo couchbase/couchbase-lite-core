@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['collections_2106',['Collections',['../group___collection.html',1,'']]],
-  ['converting_20fleece_20to_20json_2107',['Converting Fleece To JSON',['../group__json.html',1,'']]]
+  ['collections_20and_20scopes_0',['Collections and Scopes',['../group___collection.html',1,'']]],
+  ['connected_20client_20_28remote_20database_29_1',['Connected Client (Remote Database)',['../group___connected_client.html',1,'']]]
 ];
