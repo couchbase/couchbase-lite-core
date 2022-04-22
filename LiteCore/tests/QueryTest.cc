@@ -1938,6 +1938,16 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc2"_sl);
     }
 
+    SECTION("WHERE explict db alias precludes result alias") {
+        // Here the alias is the same as the property used to define it...
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'dict']], \
+            FROM: [{AS: 'db', COLLECTION: '_'}], \
+            WHERE: ['=', ['.db.dict'], 1]}"));
+        // expect empty result
+    }
+
     SECTION("WHERE alias with special name") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \

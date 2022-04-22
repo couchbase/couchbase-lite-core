@@ -1548,7 +1548,9 @@ namespace litecore {
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
+        size_t property_size_in = property.size();
         auto &&iType = verifyDbAlias(property);
+        bool property_starts_with_explicit_alias = (property.size() + 1 == property_size_in);
         const string &alias = iType->first;
         aliasType type = iType->second.type;
         string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
@@ -1559,34 +1561,39 @@ namespace litecore {
             return;
         }
 
-        // Check out the case the property starts with the result alias.
-        auto resultAliasIter = _aliases.end();
-        if (!property.empty()) {
-            resultAliasIter = _aliases.find(property[0].keyStr().asString());
-            if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
-                resultAliasIter = _aliases.end();
+        // CBL-3040. We should not apply the following rule of result alias if the
+        // property starts with a database collection alias explicitly. In this case,
+        // the following name is the proerty name in the collection.
+        if (!property_starts_with_explicit_alias) {
+            // Check out the case the property starts with the result alias.
+            auto resultAliasIter = _aliases.end();
+            if (!property.empty()) {
+                resultAliasIter = _aliases.find(property[0].keyStr().asString());
+                if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
+                    resultAliasIter = _aliases.end();
+                }
             }
-        }
-        if (resultAliasIter != _aliases.end()) {
-            const string& resultAlias = resultAliasIter->first;
-            // If the property in question is identified as an alias, emit that instead of
-            // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
-            // vs alias -> doc["path"]["to"]["value"])
-            if(property.size() == 1) {
-                // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(resultAlias);
+            if (resultAliasIter != _aliases.end()) {
+                const string& resultAlias = resultAliasIter->first;
+                // If the property in question is identified as an alias, emit that instead of
+                // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
+                // vs alias -> doc["path"]["to"]["value"])
+                if(property.size() == 1) {
+                    // Simple case, the alias is being used as-is
+                    _sql << sqlIdentifier(resultAlias);
+                    return;
+                }
+
+                // More complicated case.  A subpath of an alias that points to
+                // a collection type (e.g. alias = {"foo": "bar"}, and want to
+                // ORDER BY alias.foo
+                property.drop(1);
+                _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
+                     << ", " << sqlString(string(property)) << ")";
                 return;
             }
+        }
 
-            // More complicated case.  A subpath of an alias that points to
-            // a collection type (e.g. alias = {"foo": "bar"}, and want to
-            // ORDER BY alias.foo
-            property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
-                 << ", " << sqlString(string(property)) << ")";
-            return;
-        } 
-        
         if (property.size() == 1) {
             // Check if this is a document metadata property:
             slice meta = property[0].keyStr();
