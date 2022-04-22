@@ -12,10 +12,12 @@
 
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
+#include <cstdint>
 #include <ctime>
 #include <cfloat>
 #include <cinttypes>
 #include <chrono>
+#include <limits>
 #include <numeric>
 #include "date/date.h"
 #include "ParseDate.hh"
@@ -333,6 +335,44 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     int i = 1;
     while (e->next()) {
         CHECK(e->columns()[0]->asString().asString() == stringWithFormat("rec-%03d", i++));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query uint64", "[Query]") {
+    {
+        ExclusiveTransaction t(store->dataFile());
+        const int64_t ivals[] = { std::numeric_limits<int64_t>::min(),
+                                  std::numeric_limits<int64_t>::max() };
+        const uint64_t uvals[] = { 0, std::numeric_limits<uint64_t>::max(), };
+        for(int i = 0; i < 4; i++) {
+            string docID = stringWithFormat("rec-%03d", i + 1);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("value");
+                if (i < 2)
+                    enc.writeInt(ivals[i]);
+                else
+                    enc.writeUInt(uvals[i - 2]);
+            });
+        }
+        t.commit();
+    }
+
+    // Check the data type of the returned values:
+    Retained<Query> query = store->compileQuery(json5( "{WHAT: ['.value']}"));
+    Retained<QueryEnumerator> e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 4);
+    int row = 0;
+    while (e->next()) {
+        auto type = e->columns()[0]->type();
+        CHECK(type == kNumber);
+        auto isInt = e->columns()[0]->isInteger();
+        CHECK(isInt);
+        auto isUnsigned = e->columns()[0]->isUnsigned();
+        if (row < 3)
+            CHECK(!isUnsigned);
+        else
+            CHECK(isUnsigned);
+        ++row;
     }
 }
 
