@@ -343,6 +343,20 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
                            {'as':'licence','on':['=',['.','session','licenceID'],['.','licence','id']]}],\
                  'WHERE':['AND',['AND',['=',['.','session','type'],'session'],['=',['.','user','type'],'user']],['=',['.','licence','type'],'licence']]}")
           == "SELECT fl_result(fl_value(session.body, 'appId')), fl_result(fl_value(user.body, 'username')), fl_result(fl_value(session.body, 'emoId')) FROM kv_default AS session INNER JOIN kv_default AS user ON (fl_value(session.body, 'emoId') = fl_value(user.body, 'emoId')) AND (user.flags & 1 = 0) INNER JOIN kv_default AS licence ON (fl_value(session.body, 'licenceID') = fl_value(licence.body, 'id')) AND (licence.flags & 1 = 0) WHERE ((fl_value(session.body, 'type') = 'session' AND fl_value(user.body, 'type') = 'user') AND fl_value(licence.body, 'type') = 'licence') AND (session.flags & 1 = 0)");
+
+    // Result alias and property name are used in different scopes.
+    CHECK(parse("{'FROM':[{'AS':'coll','COLLECTION':'_'}],'WHAT':[['AS',['.x'],'label'],['.coll.label']]}")
+          == "SELECT fl_result(fl_value(coll.body, 'x')) AS label, fl_result(fl_value(coll.body, 'label')) "
+             "FROM kv_default AS coll WHERE (coll.flags & 1 = 0)");
+    // CBL-3040:
+    CHECK(parse(R"r({"WHERE":["AND",["=",[".machines.Type"],"machine"],["OR",["=",[".machines.Disabled"],false],[".machines.Disabled"]]],)r"
+                 R"r("WHAT":[[".machines.Id"],["AS",[".machines.Label"],"Label2"],[".machines.ModelId"],["AS",[".models.Label2"],"ModelLabel"]],)r"
+                 R"r("FROM":[{"AS":"machines"},{"AS":"models","ON":["=",[".models.Id"],[".machines.ModelId"]],"JOIN":"LEFT OUTER"}]})r")
+          == "SELECT fl_result(fl_value(machines.body, 'Id')), fl_result(fl_value(machines.body, 'Label')) AS Label2, "
+             "fl_result(fl_value(machines.body, 'ModelId')), fl_result(fl_value(models.body, 'Label2')) AS ModelLabel FROM kv_default AS machines "
+             "LEFT OUTER JOIN kv_default AS models ON (fl_value(models.body, 'Id') = fl_value(machines.body, 'ModelId')) AND (models.flags & 1 = 0) "
+             "WHERE (fl_value(machines.body, 'Type') = 'machine' AND (fl_value(machines.body, 'Disabled') = fl_bool(0) "
+             "OR fl_value(machines.body, 'Disabled'))) AND (machines.flags & 1 = 0)");
 }
 
 
