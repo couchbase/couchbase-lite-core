@@ -116,7 +116,7 @@ namespace litecore { namespace websocket {
         {
             _driver->enqueueAfter(latency,
                                   &Driver::_closed,
-                                  {reason, status, fleece::alloc_slice(message)});
+                                  CloseStatus(reason, status, fleece::alloc_slice(message)));
         }
 
 
