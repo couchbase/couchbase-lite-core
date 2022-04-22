@@ -1559,34 +1559,38 @@ namespace litecore {
             return;
         }
 
-        // Check out the case the property starts with the result alias.
-        auto resultAliasIter = _aliases.end();
-        if (!property.empty()) {
-            resultAliasIter = _aliases.find(property[0].keyStr().asString());
-            if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
-                resultAliasIter = _aliases.end();
+        // I believe we cannot use the result alias as a property identifier, but due to the time limit
+        // to release 3.0.2, we only outlaw the use in the context of resultOp for 3.0.2. #CBL-3040
+        if (std::find(_context.begin(), _context.end(), &kResultListOperation) == _context.end()) {
+            // Check out the case the property starts with the result alias.
+            auto resultAliasIter = _aliases.end();
+            if (!property.empty()) {
+                resultAliasIter = _aliases.find(property[0].keyStr().asString());
+                if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
+                    resultAliasIter = _aliases.end();
+                }
             }
-        }
-        if (resultAliasIter != _aliases.end()) {
-            const string& resultAlias = resultAliasIter->first;
-            // If the property in question is identified as an alias, emit that instead of
-            // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
-            // vs alias -> doc["path"]["to"]["value"])
-            if(property.size() == 1) {
-                // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(resultAlias);
+            if (resultAliasIter != _aliases.end()) {
+                const string& resultAlias = resultAliasIter->first;
+                // If the property in question is identified as an alias, emit that instead of
+                // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
+                // vs alias -> doc["path"]["to"]["value"])
+                if(property.size() == 1) {
+                    // Simple case, the alias is being used as-is
+                    _sql << sqlIdentifier(resultAlias);
+                    return;
+                }
+
+                // More complicated case.  A subpath of an alias that points to
+                // a collection type (e.g. alias = {"foo": "bar"}, and want to
+                // ORDER BY alias.foo
+                property.drop(1);
+                _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
+                     << ", " << sqlString(string(property)) << ")";
                 return;
             }
+        }
 
-            // More complicated case.  A subpath of an alias that points to
-            // a collection type (e.g. alias = {"foo": "bar"}, and want to
-            // ORDER BY alias.foo
-            property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
-                 << ", " << sqlString(string(property)) << ")";
-            return;
-        } 
-        
         if (property.size() == 1) {
             // Check if this is a document metadata property:
             slice meta = property[0].keyStr();
