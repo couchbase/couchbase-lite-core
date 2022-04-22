@@ -1549,6 +1549,11 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         size_t propertySizeIn = property.size();
+        // We send "property" to verifyDbAlias(). This function ensure that, after return,
+        // property is a path to the property in thd doc. If the original property starts
+        // with database aliase, such as db.name.firstname, the function will strip
+        // the leading database alias, db, and hence, property as a path will have its size
+        // reduced by 1.
         auto &&iType = verifyDbAlias(property);
         bool propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
         const string &alias = iType->first;
