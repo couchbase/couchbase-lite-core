@@ -1548,9 +1548,9 @@ namespace litecore {
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
-        size_t property_size_in = property.size();
+        size_t propertySizeIn = property.size();
         auto &&iType = verifyDbAlias(property);
-        bool property_starts_with_explicit_alias = (property.size() + 1 == property_size_in);
+        bool propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
         const string &alias = iType->first;
         aliasType type = iType->second.type;
         string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
@@ -1564,7 +1564,7 @@ namespace litecore {
         // CBL-3040. We should not apply the following rule of result alias if the
         // property starts with a database collection alias explicitly. In this case,
         // the following name is the proerty name in the collection.
-        if (!property_starts_with_explicit_alias) {
+        if (!propertyStartsWithExplicitAlias) {
             // Check out the case the property starts with the result alias.
             auto resultAliasIter = _aliases.end();
             if (!property.empty()) {
