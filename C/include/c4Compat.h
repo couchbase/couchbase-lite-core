@@ -110,7 +110,7 @@
         #define CBL_CORE_API __declspec(dllimport)
     #endif
 #else
-    #define CBL_CORE_API
+    #define CBL_CORE_API __attribute__((visibility("default")))
 #endif
 
 

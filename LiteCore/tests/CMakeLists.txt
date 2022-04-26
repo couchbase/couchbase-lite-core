@@ -87,7 +87,6 @@ add_executable(
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
-    ${TOP}REST/Response.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
     main.cpp
@@ -143,10 +142,10 @@ target_include_directories(
 )
 
 target_link_libraries(
-    CppTests PRIVATE
-    ${START_GROUP_FLAG}
-    LiteCoreStatic
+    CppTests PRIVATE 
+    LiteCoreObjects
+    FleeceObjects
+    BLIPObjects
     LiteCoreREST_Static
     LiteCoreWebSocket
-    ${END_GROUP_FLAG}
 )

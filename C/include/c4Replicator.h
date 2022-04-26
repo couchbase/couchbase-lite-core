@@ -21,11 +21,11 @@ C4API_BEGIN_DECLS
 
 
     /** Checks whether a database name is valid, for purposes of appearing in a replication URL */
-    bool c4repl_isValidDatabaseName(C4String dbName) C4API;
+    CBL_CORE_API bool c4repl_isValidDatabaseName(C4String dbName) C4API;
 
     /** Checks whether the destination of a replication is valid.
         (c4repl_new makes the same checks; this function is exposed so CBL can fail sooner.) */
-    bool c4repl_isValidRemote(C4Address remoteAddress,
+    CBL_CORE_API bool c4repl_isValidRemote(C4Address remoteAddress,
                               C4String remoteDatabaseName,
                               C4Error* C4NULLABLE outError) C4API;
 
@@ -38,12 +38,12 @@ C4API_BEGIN_DECLS
         @param dbName  If non-NULL, then on success this slice will point to the last path
                         component of `url`; `address->path` will not include this component.
         @return  True on success, false on failure. */
-    bool c4address_fromURL(C4String url,
+    CBL_CORE_API bool c4address_fromURL(C4String url,
                            C4Address *address,
                            C4String * C4NULLABLE dbName) C4API;
 
     /** Converts a C4Address to a URL. */
-    C4StringResult c4address_toURL(C4Address address) C4API;
+    CBL_CORE_API C4StringResult c4address_toURL(C4Address address) C4API;
 
 
     /** Creates a new networked replicator.
@@ -53,7 +53,7 @@ C4API_BEGIN_DECLS
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_new(C4Database* db,
+    CBL_CORE_API C4Replicator* c4repl_new(C4Database* db,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
                              C4ReplicatorParameters params,
@@ -66,7 +66,7 @@ C4API_BEGIN_DECLS
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_newLocal(C4Database* db,
+    CBL_CORE_API C4Replicator* c4repl_newLocal(C4Database* db,
                                   C4Database* otherLocalDB,
                                   C4ReplicatorParameters params,
                                              C4Error* C4NULLABLE outError) C4API;
@@ -80,7 +80,7 @@ C4API_BEGIN_DECLS
         @param params  Replication parameters. Will usually use kC4Passive modes.
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_newWithSocket(C4Database* db,
+    CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db,
                                        C4Socket *openSocket,
                                        C4ReplicatorParameters params,
                                        C4Error* C4NULLABLE outError) C4API;
@@ -89,25 +89,25 @@ C4API_BEGIN_DECLS
         Does not stop the replicator -- if the replicator still has other internal references,
         it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
         \note This function is thread-safe. */
-    void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;
+    CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;
 
     /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
         @param repl  The C4Replicator instance.
         @param reset If true, the replicator will reset its checkpoint and start replication from the beginning
      */
-    void c4repl_start(C4Replicator* repl, bool reset) C4API;
+    CBL_CORE_API void c4repl_start(C4Replicator* repl, bool reset) C4API;
 
     /** Tells a replicator to stop. Ignored if in the Stopped state.
         This function is thread-safe.  */
-    void c4repl_stop(C4Replicator* repl) C4API;
+    CBL_CORE_API void c4repl_stop(C4Replicator* repl) C4API;
 
     /** Tells a replicator that's in the offline state to reconnect immediately.
         \note This function is thread-safe.
         @param repl  The replicator.
         @param outError  On failure, error information is stored here.
         @return  True if the replicator will reconnect, false if it won't. */
-    bool c4repl_retry(C4Replicator* repl, C4Error* C4NULLABLE outError) C4API;
+    CBL_CORE_API bool c4repl_retry(C4Replicator* repl, C4Error* C4NULLABLE outError) C4API;
 
     /** Informs the replicator whether it's considered possible to reach the remote host with
         the current network configuration. The default value is true. This only affects the
@@ -115,7 +115,7 @@ C4API_BEGIN_DECLS
         * Setting it to false will cancel any pending retry and prevent future automatic retries.
         * Setting it back to true will initiate an immediate retry.
         \note This function is thread-safe. */
-    void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API;
+    CBL_CORE_API void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API;
 
     /** Puts the replicator in or out of "suspended" state.
         * Setting suspended=true causes the replicator to disconnect and enter Offline state;
@@ -123,20 +123,20 @@ C4API_BEGIN_DECLS
         * Setting suspended=false causes the replicator to attempt to reconnect, _if_ it was
           connected when suspended, and is still in Offline state.
         \note This function is thread-safe. */
-    void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API;
+    CBL_CORE_API void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API;
 
     /** Sets the replicator's options dictionary.
         The changes will take effect next time the replicator connects.
         \note This function is thread-safe.  */
-    void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API;
+    CBL_CORE_API void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API;
 
     /** Returns the current state of a replicator.
         This function is thread-safe.  */
-    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API;
+    CBL_CORE_API C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API;
 
     /** Returns the HTTP response headers as a Fleece-encoded dictionary.
         \note This function is thread-safe.  */
-    C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
+    CBL_CORE_API C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
 
     /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time
@@ -148,7 +148,7 @@ C4API_BEGIN_DECLS
      *  revisions.  If none are pending, nullslice is returned (note that an error
      * condition will return nullslice with the outErr code set to non-zero)
      */
-    C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
+    CBL_CORE_API C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
 
     /** Checks if the document with the given ID has revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time
@@ -160,11 +160,11 @@ C4API_BEGIN_DECLS
      *  @return true if the document has one or more revisions pending, false otherwise (note that an error
      *  condition will return false with the outErr code set to non-zero)
      */
-    bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4Error* C4NULLABLE outErr) C4API;
+    CBL_CORE_API bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4Error* C4NULLABLE outErr) C4API;
 
 
     /** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */
-    C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl,
+    CBL_CORE_API C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl,
                                          C4Error* C4NULLABLE outErr) C4API;
 
     /** Sets the progress level of the replicator, indicating what information should be provided via
@@ -175,7 +175,7 @@ C4API_BEGIN_DECLS
      *  @param outErr Records error information, if any.
      *  @return true if the progress level was set, false if there was an error.
      */
-    bool c4repl_setProgressLevel(C4Replicator* repl,
+    CBL_CORE_API bool c4repl_setProgressLevel(C4Replicator* repl,
                                  C4ReplicatorProgressLevel level,
                                  C4Error* C4NULLABLE outErr) C4API;
 
@@ -188,7 +188,7 @@ C4API_BEGIN_DECLS
         (Persistent cookies are saved as metadata in the database file until they expire.
         Session cookies are kept in memory, until the last C4Database handle to the given database
         is closed.) */
-    bool c4db_setCookie(C4Database *db,
+    CBL_CORE_API bool c4db_setCookie(C4Database *db,
                         C4String setCookieHeader,
                         C4String fromHost,
                         C4String fromPath,
@@ -196,12 +196,12 @@ C4API_BEGIN_DECLS
 
     /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
         that can be used as the value of a "Cookie:" header. */
-    C4StringResult c4db_getCookies(C4Database *db,
+    CBL_CORE_API C4StringResult c4db_getCookies(C4Database *db,
                                    C4Address request,
                                    C4Error* C4NULLABLE error) C4API;
 
     /** Removes all cookies from the database's cookie store. */
-    void c4db_clearCookies(C4Database *db) C4API;
+    CBL_CORE_API void c4db_clearCookies(C4Database *db) C4API;
 
     /** @} */
 
