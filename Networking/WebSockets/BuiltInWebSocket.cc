@@ -245,7 +245,7 @@ namespace litecore { namespace websocket {
 
         // Tell the delegate what happened:
         if (!certData.empty())
-            delegate().onWebSocketGotTLSCertificate(slice(certData));
+            delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketGotTLSCertificate), slice(certData));
         if (logic.status() != HTTPStatus::undefined)
             gotHTTPResponse(int(logic.status()), logic.responseHeaders());
         if (lastDisposition == HTTPLogic::kSuccess) {

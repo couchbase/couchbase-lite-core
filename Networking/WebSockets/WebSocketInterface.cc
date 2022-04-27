@@ -40,15 +40,9 @@ namespace litecore { namespace websocket {
     WebSocket::~WebSocket() =default;
 
 
-    Delegate& WebSocket::delegate() const {
-        DebugAssert(_delegate); return *_delegate;
-    }
-
-
-    void WebSocket::connect(Delegate *delegate) {
-        DebugAssert(!_delegate);
-        DebugAssert(delegate);
-        _delegate = delegate;
+    void WebSocket::connect(Retained<WeakHolder<Delegate>> weakDelegate) {
+        DebugAssert(!_delegateWeakHolder);
+        _delegateWeakHolder = weakDelegate;
         connect();
     }
 

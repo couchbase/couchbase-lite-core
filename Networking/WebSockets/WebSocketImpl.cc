@@ -124,7 +124,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
         logInfo("Got HTTP response (status %d)", status);
-        delegate().onWebSocketGotHTTPResponse(status, headersFleece);
+        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketGotHTTPResponse), status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
@@ -138,7 +138,7 @@ namespace litecore { namespace websocket {
         _didConnect = true;
         _responseTimer->stop();
         _timeConnected.start();
-        delegate().onWebSocketConnect();
+        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketConnect));
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
@@ -215,7 +215,7 @@ namespace litecore { namespace websocket {
             logInfo("sent close echo; disconnecting socket now");
             callCloseSocket();
         } else if (notify) {
-            delegate().onWebSocketWriteable();
+            delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketWriteable));
         }
     }
 
@@ -338,7 +338,7 @@ namespace litecore { namespace websocket {
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
-        delegate().onWebSocketMessage(message);
+        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketMessage), message);
     }
 
 
@@ -642,20 +642,7 @@ namespace litecore { namespace websocket {
                          status.reasonName(), status.code);
             }
         }
-#if 0
-        delegate().onWebSocketClose(status);
-#else
-        Delegate* dele = &delegate();
-        if (dele == nullptr) {
-            if (willLog(LogLevel::Error)) {
-                logError("delegate is NULL in WebSocketImpl::onClose, dumping traces: ");
-                for (auto &event : c4SocketTrace::traces()) {
-                    logError("%s", string(event).c_str());
-                }
-            }
-        }
-        dele->onWebSocketClose(status);
-#endif
+        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketClose), status);
     }
 
 } }
