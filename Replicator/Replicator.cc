@@ -651,14 +651,26 @@ namespace litecore { namespace repl {
 
 
     bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
-        return _db->use<bool>([&](C4Database *db) {
+        // CBL-2448
+        auto db = _db;
+        if(!db) {
+            return false;
+        }
+
+        return db->use<bool>([&](C4Database *db) {
             return _checkpointer.pendingDocumentIDs(db, callback, outErr);
         });
     }
 
 
-    bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
-        return _db->use<bool>([&](C4Database *db) {
+    optional<bool> Replicator::isDocumentPending(slice docID, C4Error* outErr) {
+        // CBL-2448
+        auto db = _db;
+        if(!db) {
+            return nullopt;
+        }
+
+        return db->use<bool>([&](C4Database *db) {
             return _checkpointer.isDocumentPending(db, docID, outErr);
         });
     }
