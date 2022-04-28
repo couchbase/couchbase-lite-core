@@ -72,6 +72,7 @@ namespace litecore { namespace repl {
         bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL, slice receivedRevID);
         void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
         bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
+        void handleAllDocs(Retained<blip::MessageIn>);
 
         // Pusher+Attachments.cc:
         void handleGetAttachment(Retained<blip::MessageIn>);

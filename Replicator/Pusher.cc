@@ -19,6 +19,7 @@
 #include "StringUtil.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
+#include "c4DocEnumerator.hh"
 #include "c4ExceptionUtils.hh"
 #include <algorithm>
 
@@ -52,8 +53,10 @@ namespace litecore { namespace repl {
         registerHandler("getAttachment",   &Pusher::handleGetAttachment);
         registerHandler("proveAttachment", &Pusher::handleProveAttachment);
 
-        if (_options->properties[kC4ReplicatorOptionAllowConnectedClient])
+        if (_options->properties[kC4ReplicatorOptionAllowConnectedClient]) {
+            registerHandler("allDocs",     &Pusher::handleAllDocs);
             registerHandler("getRev",      &Pusher::handleGetRev);
+        }
     }
 
 
@@ -633,6 +636,32 @@ namespace litecore { namespace repl {
             changes.lastSequence = _lastSequenceRead;
             gotChanges(move(changes));
         }
+    }
+
+
+    // Connected Client `allDocs` request handler:
+    void Pusher::handleAllDocs(Retained<blip::MessageIn> req) {
+        optional<string> pattern;
+        if (slice pat = req->property("idPattern"))
+            pattern = string(pat);
+        logInfo("Handling allDocs");
+
+        MessageBuilder response(req);
+        response.compressed = true;
+        auto &enc = response.jsonBody();
+        enc.beginArray();
+
+        _db->useLocked([&](C4Database *db) {
+            C4DocEnumerator docEnum(db, {kC4Unsorted | kC4IncludeNonConflicted});
+            while (docEnum.next()) {
+                C4DocumentInfo info = docEnum.documentInfo();
+                if (!pattern || matchGlobPattern(string(info.docID), *pattern))
+                    enc.writeString(info.docID);
+            }
+        });
+
+        enc.endArray();
+        req->respond(response);
     }
 
 } }

@@ -282,6 +282,41 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Blobs Legacy Mode", "[Conn
 }
 
 
+#pragma mark - ALL-DOCS:
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "allDocs from connected client", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    start();
+
+    mutex mut;
+    condition_variable cond;
+    unique_lock<mutex> lock(mut);
+
+    vector<string> results;
+
+    _client->getAllDocIDs(nullslice, nullslice, [&](const vector<slice> &docIDs, const C4Error *error) {
+        unique_lock<mutex> lock(mut);
+        if (!docIDs.empty()) {
+            Log("*** Got %zu docIDs", docIDs.size());
+            CHECK(!error);
+            for (slice id : docIDs)
+                results.emplace_back(id);
+        } else {
+            Log("*** Got final row");
+            if (error)
+                results.push_back("Error: " + error->description());
+            cond.notify_one();
+        }
+    });
+
+    Log("Waiting for docIDs...");
+    cond.wait(lock);
+    Log("docIDs ready");
+    CHECK(results.size() == 100);
+}
+
+
 #pragma mark - ENCRYPTION:
 
 
