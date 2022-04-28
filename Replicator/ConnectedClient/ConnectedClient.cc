@@ -538,4 +538,66 @@ namespace litecore::client {
         return valid;
     }
 
+
+    void ConnectedClient::query(slice name, fleece::Dict parameters, QueryReceiver receiver) {
+        MessageBuilder req("query");
+        req["name"] = name;
+        req.jsonBody().writeValue(parameters);
+        sendAsyncRequest(req)
+            .then([=](Retained<blip::MessageIn> response) {
+                logInfo("...query got response");
+                C4Error err = responseError(response);
+                if (!err) {
+                    if (!sendQueryRows(response, receiver))
+                        err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
+                                            "Invalid query response");
+                }
+                // Final call to receiver:
+                receiver(nullptr, err ? &err : nullptr);
+
+            }).onError([=](C4Error err) {
+                logInfo("...query got error");
+                receiver(nullptr, &err);
+            });
+        //OPT: If we stream the response we can call the receiver function on results as they arrive.
+    }
+
+
+    bool ConnectedClient::sendQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
+        Array rows = response->JSONBody().asArray();
+        if (!rows)
+            return false;
+        for (Array::iterator i(rows); i; ++i) {
+            Array row = i->asArray();
+            if (!row)
+                return false;
+            receiver(row, nullptr);
+        }
+        return true;
+    }
+
+
+    bool ConnectedClient::sendMultiLineQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
+        slice body = response->body();
+        while (!body.empty()) {
+            // Get next line of JSON, up to a newline:
+            slice rowData;
+            if (const void *nl = body.findByte('\n')) {
+                rowData = body.upTo(nl);
+                body.setStart(offsetby(nl, 1));
+            } else {
+                rowData = body;
+                body = nullslice;
+            }
+            Doc rowDoc = Doc::fromJSON(rowData);
+            if (Array row = rowDoc.asArray()) {
+                // Pass row to receiver:
+                receiver(row, nullptr);
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

@@ -15,6 +15,7 @@
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "QueryServer.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
 #include "Delimiter.hh"
@@ -103,6 +104,10 @@ namespace litecore { namespace repl {
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
+
+        if (!_options->namedQueries().empty()) {
+            _queryServer = new QueryServer(this);
+        }
     }
 
 
@@ -188,6 +193,7 @@ namespace litecore { namespace repl {
             connection().terminate();
             _pusher = nullptr;
             _puller = nullptr;
+            _queryServer = nullptr;
         }
 
         // CBL-1061: This used to be inside the connected(), but static analysis shows
@@ -349,6 +355,7 @@ namespace litecore { namespace repl {
             DebugAssert(!connected());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
+            _queryServer = nullptr;
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
