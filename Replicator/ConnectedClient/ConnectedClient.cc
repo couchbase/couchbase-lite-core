@@ -434,7 +434,7 @@ namespace litecore::client {
                                        AllDocsReceiver receiver)
     {
         MessageBuilder req("allDocs");
-        if (globPattern)
+        if (!globPattern.empty())
             req["idPattern"] = globPattern;
         sendAsyncRequest(req)
             .then([=](Retained<blip::MessageIn> response) {

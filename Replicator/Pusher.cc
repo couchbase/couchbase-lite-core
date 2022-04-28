@@ -641,10 +641,8 @@ namespace litecore { namespace repl {
 
     // Connected Client `allDocs` request handler:
     void Pusher::handleAllDocs(Retained<blip::MessageIn> req) {
-        optional<string> pattern;
-        if (slice pat = req->property("idPattern"))
-            pattern = string(pat);
-        logInfo("Handling allDocs");
+        string pattern( req->property("idPattern") );
+        logInfo("Handling allDocs; pattern=`%s`", pattern.c_str());
 
         MessageBuilder response(req);
         response.compressed = true;
@@ -655,7 +653,7 @@ namespace litecore { namespace repl {
             C4DocEnumerator docEnum(db, {kC4Unsorted | kC4IncludeNonConflicted});
             while (docEnum.next()) {
                 C4DocumentInfo info = docEnum.documentInfo();
-                if (!pattern || matchGlobPattern(string(info.docID), *pattern))
+                if (pattern.empty() || matchGlobPattern(string(info.docID), pattern))
                     enc.writeString(info.docID);
             }
         });
