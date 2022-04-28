@@ -105,6 +105,13 @@ namespace litecore::client {
             });
             return provider->asyncValue();
         }
+
+        void getAllDocIDs(slice collectionID,
+                          slice globPattern,
+                          AllDocsReceiver callback) override
+        {
+            _client->getAllDocIDs(collectionID, globPattern, callback);
+        }
         
         virtual void start() override {
             LOCK(_mutex);

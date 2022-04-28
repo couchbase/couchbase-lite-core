@@ -65,6 +65,12 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                                                        C4RevisionFlags revisionFlags,
                                                        slice fleeceData)=0;
 
+    using AllDocsReceiver = std::function<void(const std::vector<slice>& ids, const C4Error *err)>;
+
+    virtual void getAllDocIDs(slice collectionID,
+                              slice globPattern,
+                              AllDocsReceiver callback) =0;
+
     /// Tells a connected client to start.
     virtual void start()=0;
 

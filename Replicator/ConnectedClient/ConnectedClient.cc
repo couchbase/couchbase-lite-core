@@ -429,6 +429,52 @@ namespace litecore::client {
     }
 
 
+    void ConnectedClient::getAllDocIDs(slice collectionID,
+                                       slice globPattern,
+                                       AllDocsReceiver receiver)
+    {
+        MessageBuilder req("allDocs");
+        if (globPattern)
+            req["idPattern"] = globPattern;
+        sendAsyncRequest(req)
+            .then([=](Retained<blip::MessageIn> response) {
+                logInfo("...allDocs got response");
+                C4Error err = responseError(response);
+                if (!err) {
+                    if (!receiveAllDocs(response, receiver))
+                        err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
+                                            "Invalid allDocs response");
+                }
+                // Final call to receiver:
+                receiver({}, err ? &err : nullptr);
+
+            }).onError([=](C4Error err) {
+                logInfo("...allDocs got error");
+                receiver({}, &err);
+            });
+        //OPT: If we stream the response we can call the receiver function on results as they arrive.
+    }
+
+
+    bool ConnectedClient::receiveAllDocs(blip::MessageIn *response, const AllDocsReceiver &receiver) {
+        Array body = response->JSONBody().asArray();
+        if (!body)
+            return false;
+        if (body.empty())
+            return true;
+        vector<slice> docIDs;
+        docIDs.reserve(body.count());
+        for (Array::iterator i(body); i; ++i) {
+            slice docID = i->asString();
+            if (!docID)
+                return false;
+            docIDs.push_back(docID);
+        }
+        receiver(docIDs, nullptr);
+        return true;
+    }
+
+
     Async<void> ConnectedClient::observeCollection(slice collectionID_,
                                                       CollectionObserver callback_)
     {
@@ -548,7 +594,7 @@ namespace litecore::client {
                 logInfo("...query got response");
                 C4Error err = responseError(response);
                 if (!err) {
-                    if (!sendQueryRows(response, receiver))
+                    if (!receiveQueryRows(response, receiver))
                         err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
                                             "Invalid query response");
                 }
@@ -563,7 +609,7 @@ namespace litecore::client {
     }
 
 
-    bool ConnectedClient::sendQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
+    bool ConnectedClient::receiveQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
         Array rows = response->JSONBody().asArray();
         if (!rows)
             return false;
@@ -577,7 +623,8 @@ namespace litecore::client {
     }
 
 
-    bool ConnectedClient::sendMultiLineQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
+    // not currently used; keeping it in case we decide to change the response format to lines-of-JSON
+    bool ConnectedClient::receiveMultiLineQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
         slice body = response->body();
         while (!body.empty()) {
             // Get next line of JSON, up to a newline:

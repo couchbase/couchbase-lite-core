@@ -25,6 +25,12 @@ namespace litecore::client {
     };
 
 
+    /** A callback invoked when one or more document IDs are received from a getAllDocIDs call.
+        @param ids  A vector of document IDs. An empty vector indicates the result is complete.
+        @param err  Points to the error, if any, else NULL. */
+    using AllDocsReceiver = std::function<void(const std::vector<slice>& ids, const C4Error *err)>;
+
+
     /** A callback invoked when one or more documents change on the server. */
     using CollectionObserver = std::function<void(std::vector<C4CollectionObserver::Change> const&)>;
 
@@ -32,7 +38,7 @@ namespace litecore::client {
     /** A callback invoked for every row of a query result.
         @param result  An array of column values, or NULL if the query is complete or failed.
         @param error  Points to the error, else NULL. */
-    using QueryReceiver = std::function<void(fleece::Array result, C4Error* error)>;
+    using QueryReceiver = std::function<void(fleece::Array result, const C4Error* error)>;
 
     /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
         No C4Database necessary!
@@ -133,6 +139,21 @@ namespace litecore::client {
                                   C4RevisionFlags revisionFlags,
                                   slice fleeceData);
 
+        //---- All Documents
+
+        /// Requests a list of all document IDs, optionally only those matching a pattern.
+        /// The async return value resolves once a response is received from the server.
+        /// The docIDs themselves are passed to a callback.
+        /// The callback will be called zero or more times with a non-empty vector of docIDs,
+        /// then once with an empty vector and an optional error.
+        /// @param collectionID  The ID of the collection to observe.
+        /// @param globPattern  Either `nullslice` or a glob-style pattern string (with `*` or
+        ///                     `?` wildcards) for docIDs to match.
+        /// @param callback  The callback to receive the docIDs.
+        void getAllDocIDs(slice collectionID,
+                          slice globPattern,
+                          AllDocsReceiver callback);
+
         //---- Observer
 
         /// Registers a listener function that will be called when any document is changed.
@@ -176,8 +197,10 @@ namespace litecore::client {
         bool validateDocAndRevID(slice docID, slice revID);
         alloc_slice processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
         void processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder &enc);
-        bool sendQueryRows(blip::MessageIn*, const QueryReceiver&);
-        bool sendMultiLineQueryRows(blip::MessageIn*, const QueryReceiver&);
+        bool receiveAllDocs(blip::MessageIn *, const AllDocsReceiver &);
+        bool receiveQueryRows(blip::MessageIn*, const QueryReceiver&);
+        bool receiveMultiLineQueryRows(blip::MessageIn*, const QueryReceiver&);
+
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
         C4ConnectedClientParameters _params;
         ActivityLevel               _activityLevel;
