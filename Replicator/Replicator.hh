@@ -100,8 +100,8 @@ namespace litecore { namespace repl {
         /** Invokes the callback for each document which has revisions pending push */
         bool pendingDocumentIDs(Checkpointer::PendingDocCallback, C4Error* outErr);
 
-        /** Checks if the document with the given ID has any pending revisions to push */
-        bool isDocumentPending(slice docId, C4Error* outErr);
+        /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
+        std::optional<bool> isDocumentPending(slice docId, C4Error* outErr);
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
