@@ -293,7 +293,10 @@ namespace litecore::net {
 
         PIP_ADAPTER_ADDRESSES current = info;
         while (current) {
-            if (current->OperStatus == IfOperStatusUp && current->IfType == IF_TYPE_ETHERNET_CSMACD || current->IfType == IF_TYPE_IEEE80211) {
+            if (current->OperStatus == IfOperStatusUp &&
+                (current->IfType == IF_TYPE_ETHERNET_CSMACD ||
+                 current->IfType == IF_TYPE_IEEE80211 ||
+                 current->IfType == IF_TYPE_SOFTWARE_LOOPBACK)) {
                 auto intf = &interfaces.emplace_back();
                 const ATL::CW2AEX<256> convertedPath(current->FriendlyName, CP_UTF8);
                 intf->name = convertedPath.m_psz;

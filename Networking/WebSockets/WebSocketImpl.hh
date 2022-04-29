@@ -41,6 +41,7 @@ namespace litecore { namespace websocket {
         struct Parameters {
             fleece::alloc_slice     webSocketProtocols; ///< Sec-WebSocket-Protocol value
             int                     heartbeatSecs;      ///< WebSocket heartbeat interval in seconds (default if 0)
+            fleece::alloc_slice     networkInterface;   ///< Network interface (default is nullslice, meaning all network interfaces)
             fleece::AllocedDict     options;            ///< Other options
         };
 

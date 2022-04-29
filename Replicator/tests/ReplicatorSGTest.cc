@@ -1504,3 +1504,68 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
         "-----END CERTIFICATE-----\r\n";
     replicate(kC4OneShot, kC4Disabled, true);
 }
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
+    if (slice(_address.hostname) != "localhost")
+        return;
+    
+    // Disable Retries:
+    {
+        Encoder enc;
+        enc.beginDict();
+        enc[kC4ReplicatorOptionMaxRetries] = 0;
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+    
+    int code = 0;
+    C4ErrorDomain domain = POSIXDomain;
+    _networkInterface = nullslice;
+    
+    SECTION("Reachable - Name") {
+        // Use loopback interface connecting to localhost:
+    #if defined(__APPLE__)
+        _networkInterface = "lo0"_sl;
+    #elif defined(__linux__)
+        _networkInterface = "lo"_sl;
+    #elif defined(_WIN32)
+        _networkInterface = "Loopback Pseudo-Interface 1"_sl;
+    #endif
+    }
+    
+    SECTION("Reachable - IP Address") {
+        // Use loopback interface connecting to localhost:
+        _networkInterface = "127.0.0.1"_sl;
+    }
+
+    SECTION("Unreachable") {
+        // Use ethernet interface connecting to localhost:
+    #if defined(__APPLE__)
+        _networkInterface = "en0"_sl;
+        code = EADDRNOTAVAIL;
+    #elif defined(__linux__)
+        _networkInterface = "eth0"_sl;
+        code = ETIMEDOUT;
+    #elif defined(_WIN32)
+        // Note: Required Wi-Fi interface on the test machine.
+        _networkInterface = "Wi-Fi"_sl;
+        code = EADDRNOTAVAIL;
+    #endif
+    }
+    
+    if (_networkInterface) {
+        bool success = (code == 0);
+        replicate(kC4OneShot, kC4Disabled, success);
+        if (!success) {
+            CHECK(_callbackStatus.error.domain == domain);
+            CHECK(_callbackStatus.error.code == code);
+        }
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Set Invalid Network Interface", "[.SyncServer]") {
+    _networkInterface = "x0"_sl;
+    replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(_callbackStatus.error.domain == POSIXDomain);
+    CHECK(_callbackStatus.error.code == ENXIO);
+}

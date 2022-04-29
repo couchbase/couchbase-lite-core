@@ -142,6 +142,11 @@ public:
             enc.writeBool(true);
         }
         
+        if(_networkInterface) {
+            enc.writeKey(C4STR(kC4SocketOptionNetworkInterface));
+            enc.writeString(_networkInterface);
+        }
+        
         // TODO: Set proxy settings from _proxy
         // Copy any preexisting options:
         for (Dict::iterator i(_options); i; ++i) {
@@ -477,6 +482,7 @@ public:
     C4ReplicatorValidationFunction _pullFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
+    alloc_slice _networkInterface;
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
 
