@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include <functional>
 #include <mutex>
 #include <type_traits>
 
@@ -32,9 +33,12 @@ namespace litecore {
         ,_mutex(mutex)
         { }
 
+        using SENTRY = std::function<void(const T&)>;
+
         template <class LAMBDA>
         void use(LAMBDA callback) {
             LOCK lock(_mutex);
+            if (_sentry) _sentry(_contents);
             callback(_contents);
         }
 
@@ -42,6 +46,7 @@ namespace litecore {
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) {
             LOCK lock(_mutex);
+            if (_sentry) _sentry(_contents);
             return callback(_contents);
         }
 
@@ -50,6 +55,7 @@ namespace litecore {
         template <class LAMBDA>
         void use(LAMBDA callback) const {
             LOCK lock(_mutex);
+            if (_sentry) _sentry(_contents);
             callback(_contents);
         }
 
@@ -57,10 +63,14 @@ namespace litecore {
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) const {
             LOCK lock(getMutex());
+            if (_sentry) _sentry(_contents);
             return callback(_contents);
         }
 
         MUTEX& getMutex() const {return const_cast<MUTEX&>(_mutex);}
+
+    protected:
+        SENTRY _sentry;
 
     private:
         using LOCK = std::lock_guard<std::remove_reference_t<MUTEX>>;

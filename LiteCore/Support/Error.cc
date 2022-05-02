@@ -525,7 +525,7 @@ namespace litecore {
             return true;
         switch (domain) {
             case LiteCore:
-                return code == NotFound || code == DatabaseTooOld;
+                return code == NotFound || code == DatabaseTooOld || code == NotOpen;
             case POSIX:
                 return code == ENOENT;
             case Network:

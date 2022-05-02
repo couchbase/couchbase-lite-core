@@ -221,6 +221,7 @@ namespace litecore { namespace repl {
         actor::Timer _timer;                                // Implements Batcher delay
         bool _inTransaction {false};                        // True while in a transaction
         std::unique_ptr<access_lock<C4Database*>> _insertionDB; // DB handle to use for insertions
+        std::atomic_flag _closed = ATOMIC_FLAG_INIT;
     };
 
 } }
