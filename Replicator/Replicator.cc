@@ -105,7 +105,7 @@ namespace litecore { namespace repl {
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
 
-        if (!_options->namedQueries().empty()) {
+        if (!_options->namedQueries().empty() || _options->allQueries()) {
             _queryServer = new QueryServer(this);
         }
     }

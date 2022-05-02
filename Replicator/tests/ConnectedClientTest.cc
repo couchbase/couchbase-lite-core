@@ -466,11 +466,13 @@ TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "putDoc encrypted", "[Con
 #pragma mark - QUERIES:
 
 
-TEST_CASE_METHOD(ConnectedClientLoopbackTest, "query from connected client", "[ConnectedClient]") {
+static constexpr slice kQueryStr = "SELECT name.first, name.last FROM _ WHERE gender='male' and contact.address.state=$STATE";
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "named query from connected client", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     MutableDict queries = fleece::MutableDict::newDict();
-    queries["guysIn"] = "SELECT name.first, name.last FROM _ WHERE gender='male' and contact.address.state=$STATE";
+    queries["guysIn"] = kQueryStr;
     _serverOptions->setProperty(kC4ReplicatorOptionNamedQueries, queries);
 
     start();
@@ -483,6 +485,44 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "query from connected client", "[C
     MutableDict params = fleece::MutableDict::newDict();
     params["STATE"] = "CA";
     _client->query("guysIn", params, [&](fleece::Array row, const C4Error *error) {
+        if (row) {
+            CHECK(!error);
+            Log("*** Got query row: %s", row.toJSONString().c_str());
+            results.push_back(row.toJSONString());
+        } else {
+            Log("*** Got final row");
+            if (error)
+                results.push_back("Error: " + error->description());
+            unique_lock<mutex> lock(mut);
+            cond.notify_one();
+        }
+    });
+
+    Log("Waiting for query...");
+    unique_lock<mutex> lock(mut);
+    cond.wait(lock);
+    Log("Query complete");
+    vector<string> expectedResults {R"(["first","last"])",
+        R"(["Cleveland","Bejcek"])", R"(["Rico","Hoopengardner"])"};
+    CHECK(results == expectedResults);
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "n1ql query from connected client", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    _serverOptions->setProperty(kC4ReplicatorOptionAllQueries, true);
+
+    start();
+
+    mutex mut;
+    condition_variable cond;
+
+    vector<string> results;
+
+    MutableDict params = fleece::MutableDict::newDict();
+    params["STATE"] = "CA";
+    _client->query(kQueryStr, params, [&](fleece::Array row, const C4Error *error) {
         if (row) {
             CHECK(!error);
             Log("*** Got query row: %s", row.toJSONString().c_str());
