@@ -587,8 +587,16 @@ namespace litecore::client {
 
     void ConnectedClient::query(slice name, fleece::Dict parameters, QueryReceiver receiver) {
         MessageBuilder req("query");
-        req["name"] = name;
-        req.jsonBody().writeValue(parameters);
+        if (name.hasPrefix("SELECT ") || name.hasPrefix("select ") || name.hasPrefix("{"))
+            req["src"] = name;
+        else
+            req["name"] = name;
+        if (parameters) {
+            req.jsonBody().writeValue(parameters);
+        } else {
+            req.jsonBody().beginDict();
+            req.jsonBody().endDict();
+        }
         sendAsyncRequest(req)
             .then([=](Retained<blip::MessageIn> response) {
                 logInfo("...query got response");

@@ -14,6 +14,7 @@
 #include "c4Base.hh"
 #include "Async.hh"
 #include "c4ConnectedClientTypes.h"
+#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -65,11 +66,42 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                                                        C4RevisionFlags revisionFlags,
                                                        slice fleeceData)=0;
 
-    using AllDocsReceiver = std::function<void(const std::vector<slice>& ids, const C4Error *err)>;
+    /// Callback for \ref getAllDocIDs.
+    /// @param ids  A vector of docIDs; empty on the final call.
+    /// @param error  NULL or a pointer to an error.
+    using AllDocsReceiver = std::function<void(const std::vector<slice>& ids,
+                                               const C4Error* C4NULLABLE error)>;
 
+    /// Requests a list of all document IDs, or optionally only those matching a pattern.
+    /// The docIDs themselves are passed to a callback.
+    /// The callback will be called zero or more times with a non-empty vector of docIDs,
+    /// then once with an empty vector and an optional error.
+    /// @param collectionID  The ID of the collection to observe.
+    /// @param globPattern  Either `nullslice` or a glob-style pattern string (with `*` or
+    ///                     `?` wildcards) for docIDs to match.
+    /// @param callback  The callback to receive the docIDs.
     virtual void getAllDocIDs(slice collectionID,
                               slice globPattern,
                               AllDocsReceiver callback) =0;
+
+    /// Callback for \ref query.
+    /// @param row  On the first call, an array of colum names.
+    ///             On subsequent calls, a result row as an array of column values.
+    ///             On the final call, `nullptr`.
+    /// @param error  NULL or, on the final call, a pointer to an error.
+    using QueryReceiver = std::function<void(FLArray C4NULLABLE row,
+                                             const C4Error* C4NULLABLE error)>;
+
+    /// Runs a query on the server and gets the results.
+    /// The callback will be called one or more times; see its documentation for details.
+    /// @param name  The name by which the query has been registered on the server;
+    ///              or a full query string beginning with "SELECT " or "{".
+    /// @param parameters  A Dict mapping query parameter names to values.
+    /// @param receiver  A callback that will be invoked for each row of the result,
+    ///                  and/or if there's an error.
+    virtual void query(slice name,
+                       FLDict C4NULLABLE parameters,
+                       QueryReceiver receiver) =0;
 
     /// Tells a connected client to start.
     virtual void start()=0;

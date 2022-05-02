@@ -14,8 +14,9 @@ namespace litecore::repl {
     public:
         QueryServer(Replicator *replicator NONNULL);
 
-        C4Query* getQuery(const std::string &name);
-        
+        C4Query* getNamedQuery(const std::string &name);
+        Retained<C4Query> compileQuery(slice queryStr);
+
     private:
         void handleQuery(Retained<blip::MessageIn> request);
 

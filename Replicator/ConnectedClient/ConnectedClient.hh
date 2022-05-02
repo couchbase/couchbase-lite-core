@@ -141,8 +141,7 @@ namespace litecore::client {
 
         //---- All Documents
 
-        /// Requests a list of all document IDs, optionally only those matching a pattern.
-        /// The async return value resolves once a response is received from the server.
+        /// Requests a list of all document IDs, or optionally only those matching a pattern.
         /// The docIDs themselves are passed to a callback.
         /// The callback will be called zero or more times with a non-empty vector of docIDs,
         /// then once with an empty vector and an optional error.
@@ -167,7 +166,8 @@ namespace litecore::client {
         //---- Query
 
         /// Runs a query on the server and gets the results.
-        /// @param name  The name by which the query has been registered on the server.
+        /// @param name  The name by which the query has been registered on the server;
+        ///              or a full query string beginning with "SELECT " or "{".
         /// @param parameters  A Dict mapping query parameter names to values.
         /// @param receiver  A callback that will be invoked for each row of the result,
         ///                  and/or if there's an error.

@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "DBAccess.hh"
 #include "MessageBuilder.hh"
+#include "StringUtil.hh"
 #include "c4Query.hh"
 
 namespace litecore::repl {
@@ -31,39 +32,73 @@ namespace litecore::repl {
     }
 
 
-    C4Query* QueryServer::getQuery(const string &name) {
+    static bool isJSONQuery(slice queryStr) {
+        return queryStr.hasPrefix("{");
+    }
+
+
+    Retained<C4Query> QueryServer::compileQuery(slice queryStr) {
+        C4QueryLanguage language = (isJSONQuery(queryStr) ? kC4JSONQuery : kC4N1QLQuery);
+        return _db->useLocked()->newQuery(language, queryStr);
+    }
+
+
+    C4Query* QueryServer::getNamedQuery(const string &name) {
         if (auto i = _queries.find(name); i != _queries.end())
             return i->second;
         slice queryStr = _options->namedQueries()[name].asString();
-        logInfo("Compiling query '%s' from %.*s", name.c_str(), FMTSLICE(queryStr));
         if (!queryStr)
             return nullptr;
-        C4QueryLanguage language = (queryStr.hasPrefix("{") ? kC4JSONQuery : kC4N1QLQuery);
-        Retained<C4Query> query = _db->useLocked()->newQuery(language, queryStr);
-        _queries.insert({name, query});
+        logInfo("Compiling query '%s' from %.*s", name.c_str(), FMTSLICE(queryStr));
+        Retained<C4Query> query = compileQuery(queryStr);
+        if (query)
+            _queries.insert({name, query});
         return query;
     }
 
 
     void QueryServer::handleQuery(Retained<blip::MessageIn> request) {
         try {
-            string name(request->property("name"));
-            C4Query *query = getQuery(name);
-            if (!query) {
-                request->respondWithError(404, "No such query");
+            Retained<C4Query> query;
+            slice name = request->property("name");
+            slice src = request->property("src");
+            if (!name == !src) {
+                request->respondWithError(blip::Error("HTTP", 400,
+                                          "Exactly one of 'name' or 'src' must be given"));
                 return;
+            }
+            if (name) {
+                // Named query:
+                query = getNamedQuery(string(name));
+                if (!query) {
+                    request->respondWithError(blip::Error("HTTP", 404, "No such query"));
+                    return;
+                }
+                logInfo("Running named query '%.*s'", FMTSLICE(name));
+            } else {
+                if (!_options->allQueries()) {
+                    request->respondWithError(blip::Error("HTTP", 403,
+                                                          "Arbitrary queries are not allowed"));
+                    return;
+                }
+                logInfo("Compiling requested query: %.*s", FMTSLICE(src));
+                query = compileQuery(src);
+                if (!query) {
+                    request->respondWithError(blip::Error("HTTP", 400, "Syntax error in query"));
+                    return;
+                }
             }
 
             if (!request->JSONBody().asDict()) {
-                request->respondWithError(400, "Missing query parameters");
+                request->respondWithError(blip::Error("HTTP", 400, "Invalid query parameter dict"));
                 return;
             }
 
+            // Now run the query:
             blip::MessageBuilder reply(request);
             JSONEncoder &enc = reply.jsonBody();
             enc.beginArray();
             _db->useLocked([&](C4Database*) {
-                logInfo("Running named query '%s'", name.c_str());
                 Stopwatch st;
                 // Run the query:
                 query->setParameters(request->body());
