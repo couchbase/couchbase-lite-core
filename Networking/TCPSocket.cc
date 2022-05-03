@@ -219,7 +219,6 @@ namespace litecore { namespace net {
             if (inAddr) {
                 // The given _interface is an IP Address. Find the interface that has the
                 // same IP Address:
-                intf.dump();
                 for (auto &address : intf.addresses) {
                     if (address == *inAddr) {
                         if (family == AF_INET) {
