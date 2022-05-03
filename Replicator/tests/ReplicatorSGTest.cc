@@ -1518,7 +1518,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
         _options = AllocedDict(enc.finish());
     }
     
+#if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
     int code = 0;
+#else
+    int code = ENOTSUP;
+#endif
+    
     C4ErrorDomain domain = POSIXDomain;
     _networkInterface = nullslice;
     
@@ -1530,6 +1535,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
         _networkInterface = "lo"_sl;
     #elif defined(_WIN32)
         _networkInterface = "Loopback Pseudo-Interface 1"_sl;
+    #else
+        _networkInterface = "lo0"_sl;
     #endif
     }
     
@@ -1550,16 +1557,16 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
         // Note: Required Wi-Fi interface on the test machine.
         _networkInterface = "Wi-Fi"_sl;
         code = EADDRNOTAVAIL;
+    #else
+        _networkInterface = "eth0"_sl;
     #endif
     }
     
-    if (_networkInterface) {
-        bool success = (code == 0);
-        replicate(kC4OneShot, kC4Disabled, success);
-        if (!success) {
-            CHECK(_callbackStatus.error.domain == domain);
-            CHECK(_callbackStatus.error.code == code);
-        }
+    bool success = (code == 0);
+    replicate(kC4OneShot, kC4Disabled, success);
+    if (!success) {
+        CHECK(_callbackStatus.error.domain == domain);
+        CHECK(_callbackStatus.error.code == code);
     }
 }
 
