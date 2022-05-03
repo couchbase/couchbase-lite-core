@@ -657,9 +657,18 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        return db->use<bool>([&](C4Database *db) {
-            return _checkpointer.pendingDocumentIDs(db, callback, outErr);
-        });
+        try {
+            db->use([&](C4Database *db) {
+                _checkpointer.pendingDocumentIDs(db, callback, outErr);
+            });
+            return true;
+        } catch (const error& err) {
+            if (error::Domain::LiteCore == err.domain && error::LiteCoreError::NotOpen == err.code) {
+                return false;
+            } else {
+                throw;
+            }
+        }
     }
 
 
