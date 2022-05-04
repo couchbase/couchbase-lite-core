@@ -214,7 +214,7 @@ namespace litecore { namespace blip {
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body
-        alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
+        fleece::Doc _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
         const MessageSize _outgoingSize {0};
         bool _complete {false};
         bool _responded {false};

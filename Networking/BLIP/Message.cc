@@ -327,11 +327,11 @@ namespace litecore { namespace blip {
                 return nullptr;
             }
 
-            _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
+            _bodyAsFleece = Doc::fromJSON({_body.buf, _body.size});
             if (!_bodyAsFleece && _body != "null"_sl)
                 Warn("MessageIn::JSONBody: Body does not contain valid JSON: %.*s", SPLAT(_body));
         }
-        return fleece::ValueFromData(_bodyAsFleece);
+        return _bodyAsFleece.root();
     }
 
 
