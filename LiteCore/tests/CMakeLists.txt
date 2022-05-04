@@ -82,6 +82,7 @@ add_executable(
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
     ${TOP}vendor/fleece/Experimental/KeyTree.cc
+    ${TOP}Replicator/tests/ConnectedClientTest.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
