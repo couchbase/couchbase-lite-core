@@ -86,7 +86,8 @@ static int copyfile(const char* from, const char* to)
     ssize_t bytes = 0;
     int noProgressRetry = 2;
     while (bytes < expected) {
-        bytes = sendfile(write_fd, read_fd, &offset, expected - bytes);
+        expected -= bytes;
+        bytes = sendfile(write_fd, read_fd, &offset, expected);
         if (bytes < 0) {
             int e = errno;
             close(read_fd);
