@@ -54,6 +54,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore;
 
 #ifdef __linux__
 static int copyfile(const char* from, const char* to)
@@ -80,13 +81,29 @@ static int copyfile(const char* from, const char* to)
         errno = e;
         return write_fd;
     }
-    
-    if(sendfile(write_fd, read_fd, &offset, stat_buf.st_size) < 0) {
-        int e = errno;
-        close(read_fd);
-        close(write_fd);
-        errno = e;
-        return -1;
+
+    size_t expected = stat_buf.st_size;
+    ssize_t bytes = 0;
+    int noProgressRetry = 2;
+    while (bytes < expected) {
+        bytes = sendfile(write_fd, read_fd, &offset, expected - bytes);
+        if (bytes < 0) {
+            int e = errno;
+            close(read_fd);
+            close(write_fd);
+            errno = e;
+            return -1;
+        } else if (bytes == 0) {
+            // zero bytes are read. Do we want to try again? Well, give it another chance.
+            Warn("sys/sendfile makes no progress copying %s to %s", from, to);
+            if (noProgressRetry-- == 0) {
+                close(read_fd);
+                close(write_fd);
+                return -1;
+            }
+        } else {
+            noProgressRetry = 2;
+        }
     }
     
     if(close(read_fd) < 0) {
