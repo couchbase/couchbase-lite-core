@@ -167,7 +167,7 @@ namespace litecore {
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<CollectionSpec, std::unique_ptr<C4Collection>>;
+        using CollectionsMap = std::unordered_map<CollectionSpec, Retained<C4Collection>>;
 
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         mutable std::recursive_mutex _collectionsMutex;

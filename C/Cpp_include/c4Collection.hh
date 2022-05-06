@@ -16,8 +16,8 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
-// #include "access_lock.hh"
 #include "fleece/function_ref.hh"
+#include "fleece/RefCounted.hh"
 #include <functional>
 #include <memory>
 
@@ -31,9 +31,10 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
-struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
+struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCountedIn<C4Collection> {
     // Accessors:
 
+    bool isValid() const                                    {return _database != nullptr;}
     slice getName() const                                   {return _name;}
     slice getScope() const                                  {return _scope;}
     C4CollectionSpec getSpec() const                        {return {_name, _scope};}
@@ -129,7 +130,8 @@ struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
 
 protected:
     C4Collection(C4Database*, C4CollectionSpec);
-
+    [[noreturn]] void failClosed() const;
+    
     C4Database* C4NULLABLE  _database;
     alloc_slice             _scope;
     alloc_slice             _name;
