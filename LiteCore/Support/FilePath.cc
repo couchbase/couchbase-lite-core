@@ -78,7 +78,6 @@ static int copyfile(const char* from, const char* to)
 
     size_t expected = stat_buf.st_size;
     ssize_t bytes = 0;
-    int noProgressRetry = 2;
     while (bytes < expected) {
         expected -= bytes;
         bytes = sendfile(write_fd, read_fd, &offset, expected);
@@ -89,18 +88,20 @@ static int copyfile(const char* from, const char* to)
             errno = e;
             return -1;
         } else if (bytes == 0) {
-            // zero bytes are read. Do we want to try again? Well, give it another chance.
-            Warn("sys/sendfile makes no progress copying %s to %s", from, to);
-            if (noProgressRetry-- == 0) {
-                close(read_fd);
+            // zero bytes are read. Do we want to try again? Well, let's consider it as an error
+            Warn("sys/sendfile makes no progress copying %s to %s and we bail out as failure.", from, to);
+            if (close(read_fd) < 0) {
+                // take the first errno due to close.
+                int e = errno;
                 close(write_fd);
-                return -1;
+                errno = e;
+            } else {
+                close(write_fd);
             }
-        } else {
-            noProgressRetry = 2;
+            return -1;
         }
     }
-    
+
     if(close(read_fd) < 0) {
         int e = errno;
         close(write_fd);
