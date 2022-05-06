@@ -204,6 +204,7 @@ namespace litecore { namespace websocket {
             if (lastDisposition != HTTPLogic::kContinue) {
                 socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
+                socket->setNetworkInterface(parameters().networkInterface);
             }
             
             lastDisposition = logic.sendNextRequest(*socket);
