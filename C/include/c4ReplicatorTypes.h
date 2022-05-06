@@ -233,7 +233,7 @@ C4API_BEGIN_DECLS
     // WebSocket options:
     #define kC4ReplicatorHeartbeatInterval      "heartbeat"         ///< Interval in secs to send a keepalive ping
     #define kC4SocketOptionWSProtocols          "WS-Protocols"      ///< Sec-WebSocket-Protocol header value
-    #define kC4SocketOptionNetworkInterface     "networkInterface"  ///< Specific network interface (name or IP Address) used for connecting to the remote server.
+    #define kC4SocketOptionNetworkInterface     "networkInterface"  ///< Specific network interface (name or IP address) used for connecting to the remote server.
 
     // BLIP options:
     #define kC4ReplicatorCompressionLevel       "BLIPCompressionLevel" ///< Data compression level, 0..9
