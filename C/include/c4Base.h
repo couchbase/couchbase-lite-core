@@ -117,15 +117,15 @@ typedef struct C4Cert C4Cert;
 /** Opaque handle to a namespace of documents in an opened database. */
 typedef struct C4Collection C4Collection;
 
-/** Opaque handle to an opened database. */
-typedef struct C4Database C4Database;
-
 /** A collection-observer reference. */
 typedef struct C4CollectionObserver C4CollectionObserver;
 
 #ifndef C4_STRICT_COLLECTION_API
 typedef C4CollectionObserver C4DatabaseObserver;
 #endif
+
+/** Opaque handle to an opened database. */
+typedef struct C4Database C4Database;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;
@@ -180,10 +180,12 @@ CBL_CORE_API void c4base_release(void * C4NULLABLE obj) C4API;
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
 static inline C4Cert* C4NULLABLE
     c4cert_retain(C4Cert* C4NULLABLE r) C4API       {return (C4Cert*)c4base_retain(r);}
-static inline C4KeyPair* C4NULLABLE
-    c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
+static inline C4Collection* C4NULLABLE
+    c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
 static inline C4Database* C4NULLABLE
     c4db_retain(C4Database* C4NULLABLE r) C4API     {return (C4Database*)c4base_retain(r);}
+static inline C4KeyPair* C4NULLABLE
+    c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
 static inline C4Query* C4NULLABLE
     c4query_retain(C4Query* C4NULLABLE r) C4API     {return (C4Query*)c4base_retain(r);}
 
@@ -195,8 +197,9 @@ CBL_CORE_API C4Socket* C4NULLABLE
     c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
 static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
-static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
+static inline void c4coll_release   (C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
 static inline void c4db_release     (C4Database* C4NULLABLE r) C4API   {c4base_release(r);}
+static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
 static inline void c4query_release  (C4Query* C4NULLABLE r) C4API      {c4base_release(r);}
 
 CBL_CORE_API void  c4doc_release    (C4Document* C4NULLABLE) C4API;

@@ -31,7 +31,7 @@ C4API_BEGIN_DECLS
 /** \defgroup Collection Collections and Scopes
     @{
     A `C4Collection` represents a **Collection**, a named grouping of documents in a database.
-    You can think of them as "folders" or "directories" for documents, or as like tables.
+    You can think of them as "folders" or "directories" for documents, or as SQL tables.
 
     Each Collection provides:
     - a namespace for documents (a "docID" is only unique within its Collection)
@@ -46,6 +46,17 @@ C4API_BEGIN_DECLS
     a **default Scope**, also named `_default`. If the database was created by an earlier version
     of LiteCore, all existing documents will be in the default Collection.
 
+    ## Collection Naming
+    In this API, collections are named by a \ref C4CollectionSpec struct, which simply contains two
+    `FLString`s, first a collection name and second a scope name. Note that the collection name
+    comes first (unlike in a N1QL query), so that the scope name can be left out if you're
+    referring to the default scope. You can give a collection spec literally as e.g.
+    `{C4STR("mycoll")}`, or with a scope, `{C4STR("mycoll"), C4STR("myscope")}`.
+
+    There are no API calls to create or delete Scopes. A Scope is created implicitly when you create
+    the first Collection inside it, and deleted implicitly when you delete its last Collection.
+
+    ## Legacy `C4Database` Functions
     Pre-existing functions that refer to documents / sequences / indexes without referring to
     Collections -- such as \ref c4doc_get and \ref c4db_getLastSequence -- still exist, but implicitly
     operate on the default Collection. In other words, they behave exactly the way they used to,
@@ -55,27 +66,27 @@ C4API_BEGIN_DECLS
     you can define the C preprocessor symbol `C4_STRICT_COLLECTION_API` to suppress the definitions
     of those functions, which will turn all calls to them into errors.
 
-    > **NOTE:** A few Collection functions are documented in other sections of the API docs:
+    ## `C4Collection` Lifespan
+     `C4Collection` is ref-counted, but most of the time you don't need to retain or release it.
+    The `C4Database` owns its collections, so a `C4Collection` reference remains valid until either
+    the database is closed, or that collection is deleted. At that point it becomes a dangling
+    pointer :( If you keep a collection reference long-term, you should retain it so that the
+    reference remains valid until you release it.
+
+    A retained C4Collection _object_ still becomes invalid after it's deleted or its database
+    closes. After that, most operations on it will fail (safely), returning \ref kC4ErrorNotOpen
+    or some null/zero result. You can tell whether a C4Collection is valid by calling
+    \ref c4coll_isValid, or by checking whether \ref c4coll_getDatabase returns non-NULL.
+
+    ## Other Documentation
+    A few Collection functions are documented in other sections of the API docs:
 
     - Enumeration-related functions (in `c4DocEnumerator.h`):
       - \ref c4coll_enumerateChanges
       - \ref c4coll_enumerateAllDocs
     - Observer-related functions (in `c4Observer.h`):
       - \ref c4dbobs_createOnCollection
-      - \ref c4docobs_createWithCollection
-
-     A `C4Collection` reference is valid until its `C4Database` is closed, or until you delete the
-     collection. It does not need to be released or freed.
-
-    In the API, collections are named by a `C4CollectionSpec` struct, which simply contains two
-    `FLString`s, first a collection name and second a scope name. Note that the collection name
-    comes first (unlike in a N1QL query), so that the scope name can be left out if you're
-    referring to the default scope. You can give a collection spec literally as e.g.
-    `{C4STR("mycoll")}`, or with a scope, `{C4STR("mycoll"), C4STR("myscope")}`.
-
-    There are no API calls to create or delete Scopes. A Scope is created implicitly when you create
-    the first Collection inside it, and deleted implicitly when you delete its last Collection.
- */
+      - \ref c4docobs_createWithCollection */
 
 
 /** \name Lifecycle
@@ -127,10 +138,13 @@ CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database *db) C4API;
     @{ */
 
 
+/** Returns false if this collection has been deleted, or its database closed. */
+CBL_CORE_API bool c4coll_isValid(C4Collection* C4NULLABLE) C4API;
+
 /** Returns the name and scope of the collection. */
 CBL_CORE_API C4CollectionSpec c4coll_getSpec(C4Collection*) C4API;
 
-/** Returns the database containing the collection. */
+/** Returns the database containing the collection, or NULL if the collection is invalid. */
 CBL_CORE_API C4Database* c4coll_getDatabase(C4Collection*) C4API;
 
 /** Returns the number of (undeleted) documents in the collection. */
