@@ -63,7 +63,7 @@ namespace litecore {
 
         void close() {
             logInfo("Closed");
-            _housekeeper = nullptr;
+            stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore = nullptr;
@@ -458,7 +458,7 @@ namespace litecore {
 
 
         void startHousekeeping() {
-            if (!_housekeeper) {
+            if (!_housekeeper && isValid()) {
                 if ((getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->start();
