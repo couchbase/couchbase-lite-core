@@ -32,7 +32,7 @@ components:
     src-path: vendor/SQLiteCpp
   sqlite:
     bd-id: 302ca56c-2cf6-4cfd-9173-94c1ee2a44f7
-    versions: [ 3.31.2 ]
+    versions: [ 3.32.1 ]
     src-path: vendor/SQLiteCpp/sqlite3
     parent-repo: vendor/SQLiteCpp
   zlib:
