@@ -74,6 +74,7 @@ def main(manifest_path: Path, branch: str) -> int:
         return 1
 
     manifest = yaml.load(manifest_path.read_bytes(), Loader=yaml.CLoader)
+    subprocess.check_call(["git", "fetch", "origin", f"{branch}:{branch}"])
     subprocess.check_call(["git", "restore", "-s", branch, "-W", manifest_path.relative_to(os.getcwd())])
     manifest_old = yaml.load(manifest_path.read_bytes(), Loader=yaml.CLoader)
     subprocess.check_call(["git", "restore", manifest_path.relative_to(os.getcwd())])
