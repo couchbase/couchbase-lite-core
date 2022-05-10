@@ -20,6 +20,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
+        fetch-depth: 0
 
     - name: Check Blackduck Manifest
       working-directory: ${{github.workspace}}/build_cmake/scripts
