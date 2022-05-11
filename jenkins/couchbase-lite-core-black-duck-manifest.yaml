@@ -1,3 +1,5 @@
+meta:
+  src-root-dir: ..
 components:
   libb64:
     bd-id: 574849b1-902f-4367-a686-ca11c8815ba4
