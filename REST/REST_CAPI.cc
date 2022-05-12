@@ -20,12 +20,12 @@ using namespace fleece;
 using namespace litecore;
 
 
-C4ListenerAPIs c4listener_availableAPIs(void) noexcept {
+CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) noexcept {
     return C4Listener::availableAPIs();
 }
 
 
-C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) noexcept {
+CBL_CORE_API C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) noexcept {
     try {
         return new C4Listener(*config);
     } catchError(outError)
@@ -33,12 +33,12 @@ C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) 
 }
 
 
-void c4listener_free(C4Listener *listener) noexcept {
+CBL_CORE_API void c4listener_free(C4Listener *listener) noexcept {
     delete listener;
 }
 
 
-C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
+CBL_CORE_API C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
     try {
         if (string name = C4Listener::URLNameFromPath(pathSlice); name.empty())
         return {};
@@ -49,7 +49,7 @@ C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
 }
 
 
-bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
+CBL_CORE_API bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
                         C4Error *outError) noexcept
 {
     try {
@@ -59,7 +59,7 @@ bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
 }
 
 
-bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
+CBL_CORE_API bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
                           C4Error *outError) noexcept
 {
     try {
@@ -71,7 +71,7 @@ bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
 }
 
 
-uint16_t c4listener_getPort(const C4Listener *listener) noexcept {
+CBL_CORE_API uint16_t c4listener_getPort(const C4Listener *listener) noexcept {
     try {
         return listener->port();
     } catchAndWarn()
@@ -79,7 +79,7 @@ uint16_t c4listener_getPort(const C4Listener *listener) noexcept {
 }
 
 
-FLMutableArray c4listener_getURLs(const C4Listener *listener, C4Database *db,
+CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener *listener, C4Database *db,
                                   C4ListenerAPIs api, C4Error* err) noexcept {
     try {
         auto urls = fleece::MutableArray::newArray();
@@ -91,7 +91,7 @@ FLMutableArray c4listener_getURLs(const C4Listener *listener, C4Database *db,
 }
 
 
-void c4listener_getConnectionStatus(const C4Listener *listener,
+CBL_CORE_API void c4listener_getConnectionStatus(const C4Listener *listener,
                                     unsigned *connectionCount,
                                     unsigned *activeConnectionCount) noexcept
 {

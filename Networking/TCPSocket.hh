@@ -17,6 +17,7 @@
 #include "fleece/Fleece.hh"
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace litecore::crypto {
@@ -27,6 +28,7 @@ namespace litecore::websocket {
 }
 namespace sockpp {
     class stream_socket;
+    class Interface;
 }
 
 namespace litecore::net {
@@ -145,6 +147,7 @@ namespace litecore::net {
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
         bool wrapTLS(slice hostname);
         void checkStreamError();
+        bool checkReadWriteStreamError();
         bool checkSocketFailure();
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
@@ -181,6 +184,14 @@ namespace litecore::net {
         /// Wrap the existing socket in TLS, performing a handshake.
         /// This is used after connecting to a CONNECT-type proxy, not in a normal connection.
         bool wrapTLS(slice hostname)        {return TCPSocket::wrapTLS(hostname);}
+        
+        /// Set a specific a network interface name (e.g. en0) for connecting to the host
+        void setNetworkInterface(slice interface)   { _interface = interface; }
+    private:
+        /// Get the specified network interface based on the server's address family as a scokpp's Interface.
+        std::optional<sockpp::Interface> networkInterface(uint8_t family) const;
+        
+        fleece::alloc_slice _interface;                 // Specific network interface
     };
 
     

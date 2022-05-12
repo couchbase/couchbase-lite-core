@@ -265,12 +265,16 @@ FLMutableArray c4db_scopeNames(C4Database *db) noexcept {
 }
 
 
+bool c4coll_isValid(C4Collection* coll) noexcept {
+    return coll && coll->isValid();
+}
+
 C4CollectionSpec c4coll_getSpec(C4Collection *coll) noexcept {
     return coll->getSpec();
 }
 
 C4Database* c4coll_getDatabase(C4Collection *coll) noexcept {
-    return coll->getDatabase();
+    return coll->isValid() ? coll->getDatabase() : nullptr;
 }
 
 uint64_t c4coll_getDocumentCount(C4Collection *coll) noexcept {

@@ -35,11 +35,6 @@ function(setup_build)
         mbedx509
     )
 
-    target_include_directories(
-        LiteCoreWebSocket PRIVATE
-        ${TOP}MSVC
-    )
-
     add_custom_command(
         TARGET C4Tests POST_BUILD
         COMMAND ${CMAKE_COMMAND}

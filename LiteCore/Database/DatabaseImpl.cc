@@ -414,7 +414,7 @@ namespace litecore {
         {
             LOCK(_collectionsMutex);
             for (auto &entry : _collections)
-                collections.emplace_back(entry.second.get());
+                collections.emplace_back(entry.second);
         }
         for (auto &coll : collections)
             asInternal(coll)->stopHousekeeping();
@@ -605,7 +605,7 @@ namespace litecore {
         // Is there already a C4Collection object for it in _collections?
         LOCK(_collectionsMutex);
         if (auto i = _collections.find(spec); i != _collections.end())
-            return i->second.get();                                         // -> Existing object
+            return i->second;                                         // -> Existing object
 
         // Validate the name (throws if invalid):
         string keyStoreName = collectionNameToKeyStoreName(spec);
@@ -620,7 +620,7 @@ namespace litecore {
 
         // Instantiate it, creating the KeyStore on-disk if necessary:
         KeyStore &store = _dataFile->getKeyStore(keyStoreName);
-        auto collection = make_unique<CollectionImpl>(this, spec, store);
+        auto collection = make_retained<CollectionImpl>(this, spec, store);
         // Update its state & add it to _collections:
         auto collectionPtr = collection.get();
         _collections.insert({CollectionSpec(collection->getSpec()),
@@ -665,7 +665,7 @@ namespace litecore {
     void DatabaseImpl::forAllOpenCollections(const function_ref<void(C4Collection*)> &callback) const {
         LOCK(_collectionsMutex);
         for (auto &entry : _collections)
-            callback(entry.second.get());
+            callback(entry.second);
     }
 
 

@@ -63,7 +63,7 @@ namespace litecore {
 
         void close() {
             logInfo("Closed");
-            _housekeeper = nullptr;
+            stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore = nullptr;
@@ -87,12 +87,17 @@ namespace litecore {
         }
 
 
-        uint64_t getDocumentCount() const override  {return keyStore().recordCount();}
-        C4SequenceNumber getLastSequence() const override  {return keyStore().lastSequence();}
-        KeyStore& keyStore() const         {precondition(_keyStore); return *_keyStore;}
+        KeyStore& keyStore() const {
+            if (_usuallyFalse(!_keyStore))
+                failClosed();
+            return *_keyStore;
+        }
 
-        DatabaseImpl* dbImpl()                      {return asInternal(getDatabase());}
-        const DatabaseImpl* dbImpl() const          {return asInternal(getDatabase());}
+        uint64_t getDocumentCount() const override          {return keyStore().recordCount();}
+        C4SequenceNumber getLastSequence() const override   {return keyStore().lastSequence();}
+
+        DatabaseImpl* dbImpl()                              {return asInternal(getDatabase());}
+        const DatabaseImpl* dbImpl() const                  {return asInternal(getDatabase());}
 
 
         access_lock<SequenceTracker>& sequenceTracker() {
@@ -160,8 +165,15 @@ namespace litecore {
 #pragma mark - DOCUMENTS:
 
 
+        DocumentFactory* documentFactory() const {
+            if (_usuallyFalse(!_documentFactory))
+                failClosed();
+            return _documentFactory.get();
+        }
+
+
         virtual Retained<C4Document> newDocumentInstance(const litecore::Record &record) {
-            return _documentFactory->newDocumentInstance(record);
+            return documentFactory()->newDocumentInstance(record);
         }
 
 
@@ -169,7 +181,7 @@ namespace litecore {
                                          bool mustExist,
                                          C4DocContentLevel content) const override
         {
-            auto doc = _documentFactory->newDocumentInstance(docID, ContentOption(content));
+            auto doc = documentFactory()->newDocumentInstance(docID, ContentOption(content));
             if (mustExist && !doc->exists())
                 doc = nullptr;
             return doc;
@@ -178,7 +190,7 @@ namespace litecore {
 
         Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const override {
             if (Record rec = keyStore().get(sequence, kEntireBody); rec.exists())
-                return _documentFactory->newDocumentInstance(move(rec));
+                return documentFactory()->newDocumentInstance(move(rec));
             else
                 return nullptr;
         }
@@ -190,7 +202,7 @@ namespace litecore {
                                                   bool mustHaveBodies,
                                                   C4RemoteID remoteDBID) const override
         {
-            return _documentFactory->findAncestors(docIDs, revIDs, maxAncestors,
+            return documentFactory()->findAncestors(docIDs, revIDs, maxAncestors,
                                                    mustHaveBodies, remoteDBID);
         }
 
@@ -335,7 +347,7 @@ namespace litecore {
             if (rq.deltaCB)
                 return false;
             else if (rq.existingRevision)
-                return _documentFactory->isFirstGenRevID(rq.history[rq.historyCount-1]);
+                return documentFactory()->isFirstGenRevID(rq.history[rq.historyCount-1]);
             else
                 return rq.historyCount == 0;
         }
@@ -347,7 +359,7 @@ namespace litecore {
             Record record(rq.docID);
             if (!rq.docID.buf)
                 record.setKey(C4Document::createDocID());
-            Retained<C4Document> doc = _documentFactory->newDocumentInstance(record);
+            Retained<C4Document> doc = documentFactory()->newDocumentInstance(record);
             int commonAncestorIndex;
             if (rq.existingRevision)
                 commonAncestorIndex = doc->putExistingRevision(rq, nullptr);
@@ -446,7 +458,7 @@ namespace litecore {
 
 
         void startHousekeeping() {
-            if (!_housekeeper) {
+            if (!_housekeeper && isValid()) {
                 if ((getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->start();
@@ -540,10 +552,10 @@ namespace litecore {
 
 
     private:
-        KeyStore* _keyStore;
-        unique_ptr<DocumentFactory> _documentFactory;
+        KeyStore*                                _keyStore;        // The actual DB table
+        unique_ptr<DocumentFactory>              _documentFactory; // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
-        Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
+        Retained<Housekeeper>                    _housekeeper;     // for expiration/cleanup tasks
     };
 
 

@@ -59,46 +59,32 @@ function(setup_litecore_build_linux)
 
     if(LITECORE_DYNAMIC_ICU)
         target_compile_definitions(
-            LiteCoreStatic PRIVATE
+            LiteCoreObjects PRIVATE
             -DCBL_USE_ICU_SHIM
             -DLITECORE_USES_ICU=1
         )
     elseif(NOT LITECORE_DISABLE_ICU)
         target_compile_definitions(
-            LiteCoreStatic PRIVATE
+            LiteCoreObjects PRIVATE
             -DLITECORE_USES_ICU=1
         )
 
         target_link_libraries(
-            LiteCoreStatic INTERFACE
+            LiteCoreObjects INTERFACE
             ${ICU_LIBS}
         )
     endif()
 
     target_include_directories(
-        LiteCoreStatic PRIVATE
+        LiteCoreObjects PRIVATE
         LiteCore/Unix
     )
 
-    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPObjects)
+    foreach(platform LiteCoreObjects BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat=2"
         )
     endforeach()
-    
-
-    # Specify list of symbols to export
-    if(BUILD_ENTERPRISE)
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4_ee.gnu"
-        )
-    else()
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4.gnu"
-        )
-    endif()
 endfunction()
 

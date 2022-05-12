@@ -1519,7 +1519,6 @@
 		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF81121917EEC600A327B9 /* libLiteCore-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCore-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteDataFile+Indexes.cc"; sourceTree = "<group>"; };
-		27F2BE97221DC9DF006C13EE /* access_lock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = access_lock.hh; sourceTree = "<group>"; };
 		27F2BE9D221DE44B006C13EE /* ReplicatorOptions.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorOptions.hh; sourceTree = "<group>"; };
 		27F2BE9E221DEF4E006C13EE /* DBAccess.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DBAccess.hh; sourceTree = "<group>"; };
 		27F2BE9F221DF1A0006C13EE /* DBAccess.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBAccess.cc; sourceTree = "<group>"; };
@@ -2240,7 +2239,6 @@
 			isa = PBXGroup;
 			children = (
 				2744B36124185D24005A194D /* Actors */,
-				27F2BE97221DC9DF006C13EE /* access_lock.hh */,
 				276CE67D2267991400B681AC /* Any.hh */,
 				275A74461ED37992008CB57B /* Base.hh */,
 				2744B33C241854F2005A194D /* Batcher.hh */,

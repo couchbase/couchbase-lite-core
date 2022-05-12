@@ -39,9 +39,10 @@ set(
 
 ### STATIC LIBRARY:
 
-add_library(LiteCoreREST_Static STATIC ${ALL_SRC_FILES})
+add_library(LiteCoreREST_Objects OBJECT ${ALL_SRC_FILES})
+add_library(LiteCoreREST_Static STATIC $<TARGET_OBJECTS:LiteCoreREST_Objects>)
 target_include_directories(
-    LiteCoreREST_Static PRIVATE
+    LiteCoreREST_Objects PRIVATE
     .
     ../C/include
     ../C/Cpp_include
@@ -61,20 +62,22 @@ target_include_directories(
 )
 if(BUILD_ENTERPRISE)
     target_include_directories(
-        LiteCoreREST_Static PRIVATE
+        LiteCoreREST_Objects PRIVATE
         ../../vendor/couchbase-lite-core-EE/Listener
     )
 endif()
 
 target_compile_definitions(
-    LiteCoreREST_Static PRIVATE
+    LiteCoreREST_Objects PRIVATE
     LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
 target_link_libraries(
-    LiteCoreREST_Static PUBLIC
-    LiteCoreStatic
+    LiteCoreREST_Objects PUBLIC
+    LiteCoreObjects
 )
 
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_rest_build()

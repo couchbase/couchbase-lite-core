@@ -182,7 +182,9 @@ namespace litecore { namespace net {
             }
 
             socket = make_unique<connector>();
-            socket->connect(*sockAddr, secsToMicrosecs(timeout()));
+            
+            auto interface = networkInterface(sockAddr->family());
+            socket->connect(*sockAddr, secsToMicrosecs(timeout()), interface);
         } catch (const sockpp::sys_error &sx) {
             auto e = error::convertException(sx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
@@ -194,6 +196,57 @@ namespace litecore { namespace net {
         }
 
         return setSocket(move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
+    }
+
+    optional<sockpp::Interface> ClientSocket::networkInterface(uint8_t family) const {
+        if (!_interface) {
+            return std::nullopt;
+        }
+        
+        // For non-ip address, assume IPv4:
+        if (family == AF_UNSPEC) {
+            family = AF_INET;
+        }
+        
+        optional<IPAddress> inAddr = IPAddress::parse(string(_interface));
+        if (inAddr && inAddr->family() != family) {
+            throw litecore::error(error::POSIX, EINVAL,
+                                  "The specified network interface's address family does not match "
+                                  "with the server's address family");
+        }
+        
+        for (auto &intf : Interface::all()) {
+            if (inAddr) {
+                // The given _interface is an IP Address. Find the interface that has the
+                // same IP Address:
+                for (auto &address : intf.addresses) {
+                    if (address == *inAddr) {
+                        if (family == AF_INET) {
+                            return sockpp::Interface(intf.name, address.addr4());
+                        } else {
+                            return sockpp::Interface(intf.name, address.addr6());
+                        }
+                    }
+                }
+            } else {
+                // The given _interface is an interface name. Find the interface that has
+                // the same name with matched IP address's family:
+                if (slice(intf.name) == _interface) {
+                    for (auto &address : intf.addresses) {
+                        if (address.family() == family) {
+                            if (family == AF_INET) {
+                                return sockpp::Interface(intf.name, address.addr4());
+                            } else {
+                                return sockpp::Interface(intf.name, address.addr6());
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
+        throw litecore::error(error::POSIX, ENXIO, "The specified network interface is not valid.");
     }
 
 
@@ -224,9 +277,8 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         } else if (written == 0) {
             _eofOnWrite = true;
         }
@@ -239,9 +291,8 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         }
         return written;
     }
@@ -256,8 +307,10 @@ namespace litecore { namespace net {
                       "iovec and slice are incompatible");
         ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
         if (written < 0) {
-            checkStreamError();
-            return written;
+            if (!checkReadWriteStreamError())
+                written = 0;
+            else
+                return written;
         }
 
         ssize_t remaining = written;
@@ -283,9 +336,8 @@ namespace litecore { namespace net {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         } else if (n == 0) {
             _eofOnRead = true;
         }
@@ -677,5 +729,16 @@ namespace litecore { namespace net {
                 -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
+    }
+
+    bool TCPSocket::checkReadWriteStreamError() {
+        if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK) {
+            LogVerbose(WSLog,
+                "%s got EWOULDBLOCK error in non-blocking mode (ignored as not an error).",
+                (_isClient ? "ClientSocket" : "ResponderSocket"));
+            return false;
+        }
+        checkStreamError();
+        return true;
     }
 } }
