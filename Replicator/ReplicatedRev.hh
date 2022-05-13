@@ -41,6 +41,7 @@ namespace litecore { namespace repl {
 
         // Note: The following fields must be compatible with the public C4DocumentEnded struct:
         const alloc_slice   collectionName = {};    // TODO: Collection aware
+        const alloc_slice   scopeName = {};
         const alloc_slice   docID;
         const alloc_slice   revID;
         C4RevisionFlags     flags {0};
