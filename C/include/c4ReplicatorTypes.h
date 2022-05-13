@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
 #include "fleece/Fleece.h"
 
@@ -107,7 +108,7 @@ C4API_BEGIN_DECLS
 
     /** Information about a document that's been pushed or pulled. */
     typedef struct {
-        C4HeapString collectionName;
+        C4CollectionSpec collectionSpec;
         C4HeapString docID;
         C4HeapString revID;
         C4RevisionFlags flags;
@@ -136,7 +137,7 @@ C4API_BEGIN_DECLS
     /** Callback a client can register, to hear about the status of blobs. */
     typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*,
                                                      bool pushing,
-                                                     C4String collectionName,
+                                                     C4CollectionSpec collectionSpec,
                                                      C4String docID,
                                                      C4String docProperty,
                                                      C4BlobKey blobKey,
@@ -149,7 +150,7 @@ C4API_BEGIN_DECLS
         revision from being pushed, by returning false.
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
         'hasAttachments' will be set.) */
-    typedef bool (*C4ReplicatorValidationFunction)(C4String collectionName,
+    typedef bool (*C4ReplicatorValidationFunction)(C4CollectionSpec collectionSpec,
                                                    C4String docID,
                                                    C4String revID,
                                                    C4RevisionFlags,
@@ -184,10 +185,27 @@ C4API_BEGIN_DECLS
 #endif // COUCHBASE_ENTERPRISE
 
 
-    /** Parameters describing a replication, used when creating a C4Replicator. */
-    typedef struct C4ReplicatorParameters {
+    typedef struct C4ReplicationCollection {
+        C4CollectionSpec collection;
+
         C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
+
+        // Following options should be encoded into the optionsDictFleed per-collection
+        // #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
+        // #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
+        //
+        C4Slice                             optionsDictFleece;
+
+    } C4ReplicationCollection;
+
+    /** Parameters describing a replication, used when creating a C4Replicator. */
+    typedef struct C4ReplicatorParameters {
+        // Begin to be deprecated
+        C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
+        C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
+        // End to be deprecated
+
         C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
         C4ReplicatorValidationFunction C4NULLABLE      pushFilter;        ///< Callback that can reject outgoing revisions
         C4ReplicatorValidationFunction C4NULLABLE      validationFunc;    ///< Callback that can reject incoming revisions
@@ -198,6 +216,10 @@ C4API_BEGIN_DECLS
         C4ReplicatorPropertyDecryptionCallback C4NULLABLE propertyDecryptor;
         void* C4NULLABLE                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory* C4NULLABLE              socketFactory;     ///< Custom C4SocketFactory, if not NULL
+        // If collections == nullptr, we will use the deprecated fields to build
+        // the internal config for one collection being the default collection.
+        C4ReplicationCollection             *collections;
+        unsigned                            collectionCount;
     } C4ReplicatorParameters;
 
 
@@ -205,6 +227,9 @@ C4API_BEGIN_DECLS
 
 
     // Replicator option dictionary keys:
+
+    // begins of collection specific properties.
+    // That is, they are supposed to be assigned to c4ReplicatorParameters.collections[i].optionsDictFleece
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
     #define kC4ReplicatorOptionFilter           "filter"   ///< Pull filter name (string)
@@ -212,6 +237,8 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionSkipDeleted      "skipDeleted" ///< Don't push/pull tombstones (bool)
     #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
     #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
+    // end of collection specific properties.
+
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionDisablePropertyDecryption "noDecryption" ///< Disables property decryption (bool)
