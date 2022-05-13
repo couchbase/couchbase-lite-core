@@ -108,8 +108,7 @@ C4API_BEGIN_DECLS
 
     /** Information about a document that's been pushed or pulled. */
     typedef struct {
-        C4HeapString collectionName;
-        C4HeapString scopeName;
+        C4CollectionSpec collectionSpec;
         C4HeapString docID;
         C4HeapString revID;
         C4RevisionFlags flags;
@@ -159,8 +158,6 @@ C4API_BEGIN_DECLS
                                                    void* C4NULLABLE context);
 
 #ifdef COUCHBASE_ENTERPRISE
-    // jzhao - the following two may need collectionSpec, or what documentID should belong to.
-    // Currently I don't see how documentID is used.
     /** Callback that encrypts properties, in documents pushed by the replicator. */
     typedef C4SliceResult (*C4ReplicatorPropertyEncryptionCallback)(
                    void* C4NULLABLE context,    ///< Replicator’s context
@@ -195,13 +192,8 @@ C4API_BEGIN_DECLS
         C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
 
         // Following options should be encoded into the optionsDictFleed per-collection
-        //#define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
-        //#define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
-        //#define kC4ReplicatorOptionFilter           "filter"   ///< Pull filter name (string)
-        //#define kC4ReplicatorOptionFilterParams     "filterParams"  ///< Pull filter params (Dict[string])
-        //#define kC4ReplicatorOptionSkipDeleted      "skipDeleted" ///< Don't push/pull tombstones (bool)
-        //#define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
-        //#define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
+        // #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
+        // #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
         //
         C4Slice                             optionsDictFleece;
 
