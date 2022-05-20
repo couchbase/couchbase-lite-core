@@ -97,34 +97,23 @@ namespace litecore::repl {
             // Now run the query:
             blip::MessageBuilder reply(request);
             JSONEncoder &enc = reply.jsonBody();
-            enc.beginArray();
             _db->useLocked([&](C4Database*) {
                 Stopwatch st;
                 // Run the query:
                 query->setParameters(request->body());
                 auto e = query->run();
-
-                // Send the column names as the first row:
-                unsigned nCols = query->columnCount();
-                enc.beginArray();
-                for (unsigned i = 0; i < nCols; i++) {
-                    enc.writeString(query->columnTitle(i));
-                }
-                enc.endArray();
-                //enc.writeRaw("\n");
-
-                // Now send the real rows:
                 while (e.next()) {
-                    enc.beginArray();
+                    enc.beginDict();
+                    unsigned col = 0;
                     for (Array::iterator i(e.columns()); i; ++i) {
+                        enc.writeKey(query->columnTitle(col++));
                         enc.writeValue(*i);
                     }
-                    enc.endArray();
-                    //enc.writeRaw("\n");
+                    enc.endDict();
+                    enc.nextDocument(); // Writes a newline
                 }
                 logInfo("...query took %.1f ms", st.elapsedMS());
             });
-            enc.endArray();
             request->respond(reply);
 
         } catch (...) {

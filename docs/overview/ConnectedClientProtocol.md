@@ -76,7 +76,9 @@ Runs a query on the peer, identified by a name. Queries take zero or more named 
 
 Optionally, a server MAY allow a client to run arbitrary queries. (Sync Gateway will not support this for security and performance reasons, but Couchbase Lite applications can choose to.)
 
-The result of a query is a list of rows, each of which is an array of column values. Each row has the same number of columns. Each column has a name.
+The result of a query is a list of zero or more rows. Each row is a JSON object. Rows are separated by single newline (ASCII 0A) characters. There MAY be a trailing newline at the end.
+
+ Note that the entire result is not parseable as JSON (unless there's only one row.) But it's easy to split up by newlines. This format is easier to parse incrementally if results are being streamed.
 
 **Request**:
 
@@ -86,10 +88,7 @@ The result of a query is a list of rows, each of which is an array of column val
 
 **Response**:
 
-* Body: A JSON array:
-  * The array MAY be empty if there were no query results. 
-  * Otherwise its first item MUST be an array of column names, each of which MUST be a string. 
-  * The remaining items are the rows of the query result. Each row MUST be an array with the same number of elements as the first item.
+* Body: Zero or more JSON objects (`{...}`) separated by newlines.
 
 **Errors**:
 

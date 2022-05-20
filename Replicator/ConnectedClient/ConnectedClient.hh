@@ -36,9 +36,12 @@ namespace litecore::client {
 
 
     /** A callback invoked for every row of a query result.
-        @param result  An array of column values, or NULL if the query is complete or failed.
+        @param rowJSON  The row as a JSON-encoded object, or `nullslice` on the final call.
+        @param rowDict  The row as a Fleece `Dict` object, if you requested it, or `nullptr`.
         @param error  Points to the error, else NULL. */
-    using QueryReceiver = std::function<void(fleece::Array result, const C4Error* error)>;
+    using QueryReceiver = std::function<void(slice rowJSON,
+                                             fleece::Dict rowDict,
+                                             const C4Error* error)>;
 
     /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
         No C4Database necessary!
@@ -169,10 +172,12 @@ namespace litecore::client {
         /// @param name  The name by which the query has been registered on the server;
         ///              or a full query string beginning with "SELECT " or "{".
         /// @param parameters  A Dict mapping query parameter names to values.
+        /// @param asFleece If true, rows will be parsed as Fleece dicts for the callback.
         /// @param receiver  A callback that will be invoked for each row of the result,
         ///                  and/or if there's an error.
         void query(slice name,
                    fleece::Dict parameters,
+                   bool asFleece,
                    QueryReceiver receiver);
 
         // exposed for unit tests:
@@ -198,8 +203,7 @@ namespace litecore::client {
         alloc_slice processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
         void processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder &enc);
         bool receiveAllDocs(blip::MessageIn *, const AllDocsReceiver &);
-        bool receiveQueryRows(blip::MessageIn*, const QueryReceiver&);
-        bool receiveMultiLineQueryRows(blip::MessageIn*, const QueryReceiver&);
+        bool receiveQueryRows(blip::MessageIn*, const QueryReceiver&, bool asFleece);
 
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
         C4ConnectedClientParameters _params;

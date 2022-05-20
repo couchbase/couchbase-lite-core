@@ -85,11 +85,12 @@ struct C4ConnectedClient  : public fleece::RefCounted,
                               AllDocsReceiver callback) =0;
 
     /// Callback for \ref query.
-    /// @param row  On the first call, an array of colum names.
-    ///             On subsequent calls, a result row as an array of column values.
-    ///             On the final call, `nullptr`.
+    /// @param rowJSON  A row of the result, encoded as a JSON object.
+    ///             On the final call, will be `nullslice`.
+    /// @param rowDict  The row parsed as a Fleece Dict, if you requested it.
     /// @param error  NULL or, on the final call, a pointer to an error.
-    using QueryReceiver = std::function<void(FLArray C4NULLABLE row,
+    using QueryReceiver = std::function<void(FLSlice rowJSON,
+                                             FLDict rowDict,
                                              const C4Error* C4NULLABLE error)>;
 
     /// Runs a query on the server and gets the results.
@@ -97,10 +98,12 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @param name  The name by which the query has been registered on the server;
     ///              or a full query string beginning with "SELECT " or "{".
     /// @param parameters  A Dict mapping query parameter names to values.
+    /// @param rowsAsFleece  True if you want the rows to be Fleece-encoded, false for JSON.
     /// @param receiver  A callback that will be invoked for each row of the result,
     ///                  and/or if there's an error.
     virtual void query(slice name,
                        FLDict C4NULLABLE parameters,
+                       bool rowsAsFleece,
                        QueryReceiver receiver) =0;
 
     /// Tells a connected client to start.

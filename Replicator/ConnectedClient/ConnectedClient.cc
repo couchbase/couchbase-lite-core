@@ -25,9 +25,11 @@
 #include "MessageBuilder.hh"
 #include "NumConversion.hh"
 #include "PropertyEncryption.hh"
+#include "slice_stream.hh"
 #include "WebSocketInterface.hh"
 #include "c4Internal.hh"
 #include "fleece/Mutable.hh"
+#include <unordered_map>
 
 
 #define _options DONT_USE_OPTIONS   // inherited from Worker, but replicator-specific, not used here
@@ -585,7 +587,11 @@ namespace litecore::client {
     }
 
 
-    void ConnectedClient::query(slice name, fleece::Dict parameters, QueryReceiver receiver) {
+    void ConnectedClient::query(slice name,
+                                fleece::Dict parameters,
+                                bool asFleece,
+                                QueryReceiver receiver)
+    {
         MessageBuilder req("query");
         if (name.hasPrefix("SELECT ") || name.hasPrefix("select ") || name.hasPrefix("{"))
             req["src"] = name;
@@ -602,54 +608,49 @@ namespace litecore::client {
                 logInfo("...query got response");
                 C4Error err = responseError(response);
                 if (!err) {
-                    if (!receiveQueryRows(response, receiver))
+                    if (!receiveQueryRows(response, receiver, asFleece))
                         err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
-                                            "Invalid query response");
+                                            "Couldn't parse server's response");
                 }
                 // Final call to receiver:
-                receiver(nullptr, err ? &err : nullptr);
+                receiver(nullslice, nullptr, err ? &err : nullptr);
 
             }).onError([=](C4Error err) {
                 logInfo("...query got error");
-                receiver(nullptr, &err);
+                receiver(nullslice, nullptr, &err);
             });
         //OPT: If we stream the response we can call the receiver function on results as they arrive.
     }
 
 
-    bool ConnectedClient::receiveQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
-        Array rows = response->JSONBody().asArray();
-        if (!rows)
-            return false;
-        for (Array::iterator i(rows); i; ++i) {
-            Array row = i->asArray();
-            if (!row)
-                return false;
-            receiver(row, nullptr);
-        }
-        return true;
-    }
+#if DEBUG
+    static constexpr bool kCheckJSON = true;
+#else
+    static constexpr bool kCheckJSON = false;
+#endif
 
 
     // not currently used; keeping it in case we decide to change the response format to lines-of-JSON
-    bool ConnectedClient::receiveMultiLineQueryRows(blip::MessageIn *response, const QueryReceiver &receiver) {
-        slice body = response->body();
-        while (!body.empty()) {
+    bool ConnectedClient::receiveQueryRows(blip::MessageIn *response,
+                                           const QueryReceiver &receiver,
+                                           bool asFleece)
+    {
+        slice_istream body(response->body());
+        while (!body.eof()) {
             // Get next line of JSON, up to a newline:
-            slice rowData;
-            if (const void *nl = body.findByte('\n')) {
-                rowData = body.upTo(nl);
-                body.setStart(offsetby(nl, 1));
-            } else {
-                rowData = body;
-                body = nullslice;
-            }
-            Doc rowDoc = Doc::fromJSON(rowData);
-            if (Array row = rowDoc.asArray()) {
-                // Pass row to receiver:
-                receiver(row, nullptr);
-            } else {
-                return false;
+            slice rowData = body.readToDelimiterOrEnd("\n");
+            if (!rowData.empty()) {
+                Dict rowDict;
+                Doc doc;
+                if (asFleece || kCheckJSON) {
+                    doc = Doc::fromJSON(rowData);
+                    rowDict = doc.asDict();
+                    if (!rowDict)
+                        return false;
+                    if (!asFleece)
+                        rowDict = nullptr;
+                }
+                receiver(rowData, rowDict, nullptr);
             }
         }
         return true;

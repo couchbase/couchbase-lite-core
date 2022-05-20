@@ -110,8 +110,8 @@ namespace litecore::client {
             _client->getAllDocIDs(collectionID, pattern, callback);
         }
         
-        void query(slice name, FLDict C4NULLABLE parameters, QueryReceiver receiver) override {
-            _client->query(name, parameters, receiver);
+        void query(slice name, FLDict C4NULLABLE params, bool asFleece, QueryReceiver rcvr) override {
+            _client->query(name, params, asFleece, rcvr);
         }
 
         virtual void start() override {

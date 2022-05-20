@@ -480,19 +480,20 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "named query from connected client
     mutex mut;
     condition_variable cond;
 
-    vector<string> results;
+    vector<string> jsonResults, fleeceResults;
 
     MutableDict params = fleece::MutableDict::newDict();
     params["STATE"] = "CA";
-    _client->query("guysIn", params, [&](fleece::Array row, const C4Error *error) {
+    _client->query("guysIn", params, true, [&](slice json, fleece::Dict row, const C4Error *error) {
         if (row) {
             CHECK(!error);
             Log("*** Got query row: %s", row.toJSONString().c_str());
-            results.push_back(row.toJSONString());
+            jsonResults.push_back(string(json));
+            fleeceResults.push_back(row.toJSONString());
         } else {
             Log("*** Got final row");
             if (error)
-                results.push_back("Error: " + error->description());
+                fleeceResults.push_back("Error: " + error->description());
             unique_lock<mutex> lock(mut);
             cond.notify_one();
         }
@@ -502,9 +503,11 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "named query from connected client
     unique_lock<mutex> lock(mut);
     cond.wait(lock);
     Log("Query complete");
-    vector<string> expectedResults {R"(["first","last"])",
-        R"(["Cleveland","Bejcek"])", R"(["Rico","Hoopengardner"])"};
-    CHECK(results == expectedResults);
+    vector<string> expectedResults {
+        R"({"first":"Cleveland","last":"Bejcek"})",
+        R"({"first":"Rico","last":"Hoopengardner"})"};
+    CHECK(fleeceResults == expectedResults);
+    CHECK(jsonResults == expectedResults);
 }
 
 
@@ -518,19 +521,20 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "n1ql query from connected client"
     mutex mut;
     condition_variable cond;
 
-    vector<string> results;
+    vector<string> jsonResults, fleeceResults;
 
     MutableDict params = fleece::MutableDict::newDict();
     params["STATE"] = "CA";
-    _client->query(kQueryStr, params, [&](fleece::Array row, const C4Error *error) {
+    _client->query(kQueryStr, params, true, [&](slice json, fleece::Dict row, const C4Error *error) {
         if (row) {
             CHECK(!error);
             Log("*** Got query row: %s", row.toJSONString().c_str());
-            results.push_back(row.toJSONString());
+            jsonResults.push_back(string(json));
+            fleeceResults.push_back(row.toJSONString());
         } else {
             Log("*** Got final row");
             if (error)
-                results.push_back("Error: " + error->description());
+                fleeceResults.push_back("Error: " + error->description());
             unique_lock<mutex> lock(mut);
             cond.notify_one();
         }
@@ -540,7 +544,9 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "n1ql query from connected client"
     unique_lock<mutex> lock(mut);
     cond.wait(lock);
     Log("Query complete");
-    vector<string> expectedResults {R"(["first","last"])",
-        R"(["Cleveland","Bejcek"])", R"(["Rico","Hoopengardner"])"};
-    CHECK(results == expectedResults);
+    vector<string> expectedResults {
+        R"({"first":"Cleveland","last":"Bejcek"})",
+        R"({"first":"Rico","last":"Hoopengardner"})"};
+    CHECK(fleeceResults == expectedResults);
+    CHECK(jsonResults == expectedResults);
 }
