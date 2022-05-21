@@ -592,6 +592,28 @@ namespace litecore {
     }
 
 
+    bool DatabaseImpl::hasScope(C4String name) const {
+        if(name == kC4DefaultScopeID) {
+            // Default scope always exists
+            return true; 
+        }
+
+        LOCK(_collectionsMutex);
+        for(const auto& coll : _collections) {
+            if(name == coll.first.scope) {
+                // Found a collection with a matching scope
+                auto keyStoreName = collectionNameToKeyStoreName(coll.first);
+                if(_dataFile->keyStoreExists(keyStoreName)) {
+                    // If it actually exists in the DB, then the scope exists
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+
     C4Collection* DatabaseImpl::getCollection(CollectionSpec spec) const {
         return const_cast<DatabaseImpl*>(this)->getOrCreateCollection(spec, false);
     }

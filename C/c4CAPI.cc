@@ -236,6 +236,10 @@ bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {
     return db->hasCollection(spec);
 }
 
+bool c4db_hasScope(C4Database *db, C4String name) noexcept {
+    return db->hasScope(name);
+}
+
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4CollectionSpec spec) noexcept {
     return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(spec); });
 }
