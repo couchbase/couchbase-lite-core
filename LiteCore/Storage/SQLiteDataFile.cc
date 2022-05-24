@@ -792,7 +792,7 @@ namespace litecore {
             if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
-        if (slice(collection) == KeyStore::kDefaultCollectionName || collection == "_")
+        if (collection == "_" || slice(collection) == KeyStore::kDefaultCollectionName || slice(collection) == KeyStore::kDefaultFullCollectionName)
             name += kDefaultKeyStoreName;
         else {
             string candidate = name + string(KeyStore::kCollectionPrefix) + collection;
