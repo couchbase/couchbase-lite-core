@@ -104,7 +104,7 @@ namespace litecore { namespace REST {
         return false;
     }
 
-    bool Listener::registerCollection(const string& name, C4CollectionSpec collection) {
+    bool Listener::registerCollection(const string& name, CollectionSpec collection) {
         lock_guard<mutex> lock(_mutex);
         auto i = _databases.find(name);
         if (i == _databases.end())
@@ -112,7 +112,7 @@ namespace litecore { namespace REST {
 
         auto j = _allowedCollections.find(name);
         if(j == _allowedCollections.end()) {
-            vector<C4CollectionSpec> collections({collection});
+            vector<CollectionSpec> collections({collection});
             _allowedCollections.emplace(name, collections);
         } else {
             j->second.push_back(collection);
@@ -122,14 +122,14 @@ namespace litecore { namespace REST {
     }
 
 
-    bool Listener::unregisterCollection(const string& name, C4CollectionSpec collection) {
+    bool Listener::unregisterCollection(const string& name, CollectionSpec collection) {
         lock_guard<mutex> lock(_mutex);
         auto i = _allowedCollections.find(name);
         if(i == _allowedCollections.end())
             return false;
 
         for(auto j = i->second.begin(); j != i->second.end(); j++) {
-            if(j->name == collection.name && j->scope == collection.scope) {
+            if(*j == collection) {
                 i->second.erase(j);
                 return true;
             }
