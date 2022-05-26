@@ -14,6 +14,7 @@
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
 #include "c4Listener.hh"
+#include "c4DatabaseTypes.h"
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
@@ -54,6 +55,13 @@ namespace litecore { namespace REST {
 
         bool unregisterDatabase(C4Database *db);
 
+         /** Adds a collection to be used by Sync Listener on a given database shared via name.  
+             Only collections that are registered will be replicated.  
+             If none are registered, the default collection will be replicated */
+        bool registerCollection(const std::string& name, C4CollectionSpec collection);
+
+        bool unregisterCollection(const std::string& name, C4CollectionSpec collection);
+
         /** Returns the database registered under the given name. */
         fleece::Retained<C4Database> databaseNamed(const std::string &name) const;
 
@@ -73,6 +81,7 @@ namespace litecore { namespace REST {
         mutable std::mutex _mutex;
         Config _config;
         std::map<std::string, fleece::Retained<C4Database>> _databases;
+        std::map<std::string, std::vector<C4CollectionSpec>> _allowedCollections;
     };
 
 } }
