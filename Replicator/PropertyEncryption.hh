@@ -49,7 +49,8 @@ namespace litecore::repl {
     /// @param callbackContext  The client's callback context value, also from the parameters.
     /// @param outError  On return, the error if any, else a zero C4Error. (May not be NULL!)
     /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
-    fleece::MutableDict EncryptDocumentProperties(fleece::slice docID,
+    fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection,
+                                                  fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyEncryptionCallback callback,
                                                   void *callbackContext,
@@ -62,7 +63,8 @@ namespace litecore::repl {
     /// @param callbackContext  The client's callback context value, also from the parameters.
     /// @param outError  On return, the error if any, else a zero C4Error. (May not be NULL!)
     /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
-    fleece::MutableDict DecryptDocumentProperties(fleece::slice docID,
+    fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection,
+                                                  fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyDecryptionCallback callback,
                                                   void *callbackContext,
