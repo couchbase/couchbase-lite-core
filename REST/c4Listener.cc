@@ -13,6 +13,8 @@
 #include "c4Listener.hh"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Database.hh"
+#include "c4Collection.hh"
 #include "Listener.hh"
 #include "RESTListener.hh"
 #include "fleece/Mutable.hh"
@@ -119,6 +121,17 @@ bool C4Listener::shareDB(slice name, C4Database *db) {
 
 bool C4Listener::unshareDB(C4Database *db) {
     return _impl->unregisterDatabase(db);
+}
+
+bool C4Listener::shareCollection(slice name, C4Collection* coll) {
+    optional<string> nameStr;
+    if (name.buf)
+        nameStr = name;
+    return _impl->registerCollection((string)name, coll->getSpec());
+}
+
+bool C4Listener::unshareCollection(slice name, C4Collection *coll) {
+    return _impl->unregisterCollection((string)name, coll->getSpec());
 }
 
 
