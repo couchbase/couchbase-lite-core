@@ -654,6 +654,11 @@ namespace litecore {
 
 
     void DatabaseImpl::deleteCollection(CollectionSpec spec) {
+        // Use the spec _before_ deleting the collection, in case the collection owned the slices,
+        // as happens if you call `deleteCollection(coll->spec())`:
+        string keyStoreName = collectionNameToKeyStoreName(spec);
+        bool isDefault = isDefaultCollection(spec);
+
         Transaction t(this);
 
         LOCK(_collectionsMutex);
@@ -661,8 +666,8 @@ namespace litecore {
             asInternal(i->second.get())->close();
             _collections.erase(i);
         }
-        _dataFile->deleteKeyStore(collectionNameToKeyStoreName(spec));
-        if (isDefaultCollection(spec))
+        _dataFile->deleteKeyStore(keyStoreName);
+        if (isDefault)
             _defaultCollection = nullptr;
 
         t.commit();
