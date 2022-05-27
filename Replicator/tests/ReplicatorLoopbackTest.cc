@@ -1946,6 +1946,7 @@ struct TestEncryptorContext {
 };
 
 static C4SliceResult testEncryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,
@@ -1962,6 +1963,7 @@ static C4SliceResult testEncryptor(void* rawCtx,
 }
 
 static C4SliceResult testDecryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,

@@ -14,6 +14,7 @@
 #include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
+#include "c4Collection.hh"
 #include "c4Private.h"
 #include "Server.hh"
 #include "TLSContext.hh"
@@ -73,19 +74,19 @@ namespace litecore { namespace REST {
             addHandler(Method::POST,    "/_replicate",       &RESTListener::handleReplicate);
 
             // Database:
-            addDBHandler(Method::GET,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleGetDatabase);
+            addCollectionHandler(Method::GET,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleGetDatabase);
             addHandler  (Method::PUT,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleCreateDatabase);
             addDBHandler(Method::DELETE,"/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleDeleteDatabase);
-            addDBHandler(Method::POST,  "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::POST,  "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Method::GET,   "/[^_][^/]*/_all_docs",  &RESTListener::handleGetAllDocs);
-            addDBHandler(Method::POST,  "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
+            addCollectionHandler(Method::GET,   "/[^_][^/]*/_all_docs",  &RESTListener::handleGetAllDocs);
+            addCollectionHandler(Method::POST,  "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
 
             // Document:
-            addDBHandler(Method::GET,   "/[^_][^/]*/[^_].*",      &RESTListener::handleGetDoc);
-            addDBHandler(Method::PUT,   "/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
-            addDBHandler(Method::DELETE,"/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET,   "/[^_][^/]*/[^_].*",      &RESTListener::handleGetDoc);
+            addCollectionHandler(Method::PUT,   "/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::DELETE,"/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
         }
         if (config.apis & kC4SyncAPI) {
             addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
@@ -283,7 +284,7 @@ namespace litecore { namespace REST {
         _server->addHandler(method, uri, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Method method, const char *uri, DBHandlerMethod handler) {
+    void RESTListener::addDBHandler(Method method, const char* uri, DBHandlerMethod handler) {
         _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
             Retained<C4Database> db = databaseFor(rq);
             if (db) {
@@ -295,6 +296,23 @@ namespace litecore { namespace REST {
                     throw;
                 }
                 db->unlockClientMutex();
+            }
+        });
+    }
+
+    void RESTListener::addCollectionHandler(Method method, const char *uri, CollectionHandlerMethod handler) {
+         _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
+            Retained<C4Collection> coll = collectionFor(rq);
+
+            if (coll) {
+                coll->getDatabase()->lockClientMutex();
+                try {
+                    (this->*handler)(rq, coll);
+                } catch (...) {
+                    coll->getDatabase()->unlockClientMutex();
+                    throw;
+                }
+                coll->getDatabase()->unlockClientMutex();
             }
         });
     }
@@ -312,6 +330,44 @@ namespace litecore { namespace REST {
         return db;
     }
 
-    
+    inline vector<string> splitDbName(const string& input) {
+        vector<string> retVal;
+        stringstream data(input);
+        string line;
+        while(getline(data, line, '.')) {
+            retVal.push_back(line);
+        }
+
+        return retVal;
+    }
+
+    Retained<C4Collection> RESTListener::collectionFor(RequestResponse &rq) {
+        string dbName = rq.path(0);
+        if (dbName.empty()) {
+            rq.respondWithStatus(HTTPStatus::BadRequest);
+            return nullptr;
+        }
+
+        auto dbParts = splitDbName(dbName);
+        if(dbParts.size() != 1 && dbParts.size() != 3) {
+            rq.respondWithStatus(HTTPStatus::BadRequest);
+            return nullptr;
+        }
+
+        auto db = databaseNamed(dbParts[0]);
+        if (!db) {
+            rq.respondWithStatus(HTTPStatus::NotFound);
+            return nullptr;
+        }
+         
+        Retained<C4Collection> coll;
+        if(dbParts.size() == 1) {
+            coll = db->getDefaultCollection();
+        } else {
+            coll = db->getCollection({dbParts[1], dbParts[2]});
+        }
+
+        return coll;
+    }
 
 } }

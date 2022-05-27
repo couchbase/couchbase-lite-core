@@ -12,6 +12,8 @@
 
 #include "c4Listener.h"
 #include "c4Listener.hh"
+#include "c4Database.hh"
+#include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
 #include "fleece/Mutable.hh"
 
@@ -66,6 +68,27 @@ CBL_CORE_API bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
         if (listener->unshareDB(db))
             return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared"_sl, outError);
+    } catchError(outError);
+    return false;
+}
+
+CBL_CORE_API bool c4listener_shareCollection(C4Listener *listener, C4String name, C4Collection *collection,
+                        C4Error *outError) noexcept
+{
+    try {
+        return listener->shareCollection(name, collection);
+    } catchError(outError);
+    return false;
+}
+
+
+CBL_CORE_API bool c4listener_unshareCollection(C4Listener *listener, C4String name, C4Collection* collection,
+                          C4Error *outError) noexcept
+{
+    try {
+        if (listener->unshareCollection(name, collection))
+            return true;
+        c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Collection not shared"_sl, outError);
     } catchError(outError);
     return false;
 }
