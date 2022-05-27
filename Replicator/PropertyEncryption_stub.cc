@@ -33,7 +33,8 @@
 namespace litecore::repl {
     using namespace fleece;
 
-    fleece::MutableDict EncryptDocumentProperties(fleece::slice docID,
+    fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection,
+                                                  fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyEncryptionCallback callback,
                                                   void *callbackContext,
@@ -61,7 +62,8 @@ namespace litecore::repl {
     }
 
 
-    fleece::MutableDict DecryptDocumentProperties(fleece::slice docID,
+    fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection,
+                                                  fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyDecryptionCallback callback,
                                                   void *callbackContext,
