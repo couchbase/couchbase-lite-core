@@ -161,6 +161,7 @@ C4API_BEGIN_DECLS
     /** Callback that encrypts properties, in documents pushed by the replicator. */
     typedef C4SliceResult (*C4ReplicatorPropertyEncryptionCallback)(
                    void* C4NULLABLE context,    ///< Replicator’s context
+                   C4CollectionSpec collection, ///< The collection the document belongs to
                    C4String documentID,         ///< Document’s ID
                    FLDict properties,           ///< Document’s properties
                    C4String keyPath,            ///< Key path of the property to be encrypted
@@ -172,6 +173,7 @@ C4API_BEGIN_DECLS
     /** Callback that decrypts properties, in documents pulled by the replicator. */
     typedef C4SliceResult (*C4ReplicatorPropertyDecryptionCallback)(
                    void* C4NULLABLE context,    ///< Replicator’s context
+                   C4CollectionSpec collection, ///< The collection the document belongs to
                    C4String documentID,         ///< Document’s ID
                    FLDict properties,           ///< Document’s properties
                    C4String keyPath,            ///< Key path of the property to be decrypted
@@ -197,6 +199,9 @@ C4API_BEGIN_DECLS
         //
         C4Slice                             optionsDictFleece;
 
+        C4ReplicatorValidationFunction C4NULLABLE      pushFilter;        ///< Callback that can reject outgoing revisions
+        C4ReplicatorValidationFunction C4NULLABLE      pullFilter;        ///< Callback that can reject outgoing revisions
+        void* C4NULLABLE                               callbackContext;   ///< Value to be passed to the callbacks.
     } C4ReplicationCollection;
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
@@ -207,8 +212,10 @@ C4API_BEGIN_DECLS
         // End to be deprecated
 
         C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
+        // Begin to be deprecated
         C4ReplicatorValidationFunction C4NULLABLE      pushFilter;        ///< Callback that can reject outgoing revisions
         C4ReplicatorValidationFunction C4NULLABLE      validationFunc;    ///< Callback that can reject incoming revisions
+        // End to be deprecated
         C4ReplicatorStatusChangedCallback C4NULLABLE   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentsEndedCallback C4NULLABLE onDocumentsEnded;  ///< Callback notifying status of individual documents
         C4ReplicatorBlobProgressCallback C4NULLABLE    onBlobProgress;    ///< Callback notifying blob progress

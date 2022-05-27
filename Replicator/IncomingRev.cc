@@ -218,7 +218,8 @@ namespace litecore { namespace repl {
         MutableDict decryptedRoot;
         if (_mayContainEncryptedProperties) {
             C4Error error;
-            decryptedRoot = DecryptDocumentProperties(_rev->docID,
+            decryptedRoot = DecryptDocumentProperties(_rev->collectionSpec,
+                                                      _rev->docID,
                                                       root,
                                                       _options->propertyDecryptor,
                                                       _options->callbackContext,
