@@ -115,12 +115,12 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(db->getCollection(Guitars) == nullptr);
 
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection(Guitars);
+    Retained<C4Collection> guitars = db->createCollection(Guitars);
     CHECK(guitars == db->getCollection(Guitars));
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default, guitars");
 
-    C4Collection* dflt = db->getDefaultCollection();
+    Retained<C4Collection> dflt = db->getDefaultCollection();
     CHECK(dflt != guitars);
 
     // Put some stuff in the default collection
@@ -135,10 +135,31 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(guitars->getDocumentCount() == 0);
     CHECK(guitars->getLastSequence() == 0_seq);
 
+    // Delete "guitars":
+    CHECK(guitars->isValid());
     db->deleteCollection(Guitars);
+    CHECK(!guitars->isValid());
+    CHECK(guitars->getSpec().name == Guitars);
+    CHECK(guitars->getSpec().scope == kC4DefaultScopeID);
+    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
+        guitars->getDatabase();
+    });
+    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
+        guitars->getDocumentCount();
+    });
+
     CHECK(!db->hasCollection(Guitars));
     CHECK(db->getCollection(Guitars) == nullptr);
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+
+    // Close the database, then try to use the C4Collections:
+    CHECK(dflt->isValid());
+    closeDB();
+    CHECK(!dflt->isValid());
+    CHECK(!guitars->isValid());
+    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
+        dflt->getDatabase();
+    });
 }
 
 

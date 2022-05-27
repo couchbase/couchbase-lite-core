@@ -827,7 +827,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -924,7 +924,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     };
     
     // Setup pull filter to filter the _removed rev:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1005,7 +1005,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1080,7 +1080,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1169,7 +1169,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     };
     
     // Setup pull filter to filter the _removed rev:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1246,7 +1246,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1397,4 +1397,182 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Cr
     CHECK(doc2 != nullptr);
     CHECK(c4db_getDocumentCount(db) == 1);
     CHECK(doc2->revID == doc->revID);
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]") {
+    if (!Address::isSecure(_address)) {
+        return;
+    }
+    flushScratchDatabase();
+    
+    // Using an unmatched pinned cert:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
+        "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
+        "VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDQ\r\n" \
+        "vl0M5D7ZglW76p428x7iQoSkhNyRBEjZgSqvQW3jAIsIElWu7mVIIAm1tpZ5i5+Q\r\n" \
+        "CHnFLha1TDACb0MUa1knnGj/8EsdOADvBfdBq7AotypiqBayRUNdZmLoQEhDDsen\r\n" \
+        "pEHMDmBrDsWrgNG82OMFHmjK+x0RioYTOlvBbqMAX8Nqp6Yu/9N2vW7YBZ5ovsr7\r\n" \
+        "vdFJkSgUYXID9zw/MN4asBQPqMT6jMwlxR1bPqjsNgXrMOaFHT/2xXdfCvq2TBXu\r\n" \
+        "H7evR6F7ayNcMReeMPuLOSWxA6Fefp8L4yDMW23jizNIGN122BgJXTyLXFtvg7CQ\r\n" \
+        "tMnE7k07LLYg3LcIeamrAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABdQVNSIWcDS\r\n" \
+        "sDPXk9ZMY3stY9wj7VZF7IO1V57n+JYV1tJsyU7HZPgSle5oGTSkB2Dj1oBuPqnd\r\n" \
+        "8XTS/b956hdrqmzxNii8sGcHvWWaZhHrh7Wqa5EceJrnyVM/Q4uoSbOJhLntLE+a\r\n" \
+        "FeFLQkPpJxdtjEUHSAB9K9zCO92UC/+mBUelHgztsTl+PvnRRGC+YdLy521ST8BI\r\n" \
+        "luKJ3JANncQ4pCTrobH/EuC46ola0fxF8G5LuP+kEpLAh2y2nuB+FWoUatN5FQxa\r\n" \
+        "+4F330aYRvDKDf8r+ve3DtchkUpV9Xa1kcDFyTcYGKBrINtjRmCIblA1fezw59ZT\r\n" \
+        "S5TnM2/TjtQ=\r\n"                                                     \
+        "-----END CERTIFICATE-----\r\n";
+    
+    replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(_callbackStatus.error.domain == NetworkDomain);
+    CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUntrusted);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]") {
+    if (!Address::isSecure(_address)) {
+        return;
+    }
+    flushScratchDatabase();
+    
+    // Leaf:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIICoDCCAYgCCQDOqeOThcl0DTANBgkqhkiG9w0BAQsFADAQMQ4wDAYDVQQDDAVJ\r\n" \
+        "bnRlcjAeFw0yMjA0MDgwNDE2MjNaFw0zMjA0MDUwNDE2MjNaMBQxEjAQBgNVBAMM\r\n" \
+        "CWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMt7VQ0j\r\n" \
+        "74/GJVnTfC0YQZHeCFoZbZyJ/4KPOpe1UoqRQ1xNtllPMHf4ukIeNd3tS4CHQDqK\r\n" \
+        "83a7uGXEOzY3JFaVRnTpMcHRMnpmZQLWZs+WMCP5fzI4EcaJjFmqQSUjfZiocdh/\r\n" \
+        "n5vKc64bhKyUStE2CSObMnJ/L5mPY1JUAgxQrXtK4lw1T/ppV2m4hiutr+gkhXjc\r\n" \
+        "Sam4DheuMg7hSUZSwh7VI253ev1Hp4JdSmndQHvle99S+N5jJ11NZnEuQxcImmOI\r\n" \
+        "MBVfRFpREFPOH+JrqsnYSic2GQvv31nAJsXzYX2t/VT0a3TUes3B9OZfAVA7nMFA\r\n" \
+        "r3E9mjVGYVtn7skCAwEAATANBgkqhkiG9w0BAQsFAAOCAQEADbjYO9VxOGZT5LAv\r\n" \
+        "ON+U+2FPG5Tons1ubWslThROqml7CCfNKPVhZCwe0BUQLWc35NYvqVjoSAenCHu6\r\n" \
+        "EUANfqtuNxQAoeDCaP1epGYZ8fakJXvuyTjek3RV2PeiuFUIZQP/HWGfI640kh4V\r\n" \
+        "xvUBa3joelnt+KjDB/yJemmf0dIXJ0dLtFBTN+YVp4aSFTtzcbqh50H6BSAgSiWR\r\n" \
+        "ocTu5YpDXHZ6ufaMTRa2HUcSmFeWi75sS6ySgECTbeld1/mFZcSf1zXHU9WFg39D\r\n" \
+        "knQNR2i1cJMbMZ3GCRyB6y3SxFb7/9BS70DV3p4n5BjYMlhNnHJx4u1JUTLWgybV\r\n" \
+        "qrV+HA==\r\n"                                                         \
+        "-----END CERTIFICATE-----\r\n";
+    replicate(kC4OneShot, kC4Disabled, true);
+    
+    // Intermediate:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIIDFTCCAf2gAwIBAgIJANZ8gSANI5jNMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
+        "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAQMQ4wDAYD\r\n" \
+        "VQQDDAVJbnRlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOm1MUNQ\r\n" \
+        "xZKOCXw93eB/pmyCk5kEV3+H8RQC5Nq7orHvnHL6D/YVfVsobZyHkMSP3FVzl0bo\r\n" \
+        "s1s+8kCjJ7O+M3TpzuSL8y4uLSEPmZF5qY2N7QobabrKVYueFxFmOD7+ypILx2QC\r\n" \
+        "+hWd3J3XiLiiXqOO2jtjtwwy2+pD21DjmcPHGC4GKyv8/jp7hH4MFF6ux1wRQej1\r\n" \
+        "on5jJQNFERUFdfX3wAmZgjww8bfyCEkHxnyIfJjEhyOtMLGGNUu8Hms7az+uYT6I\r\n" \
+        "S4Q6VeBJ5WTKyhk7aJB1Rl6zZbROvTIq+ZaxAJNwsIzd/HiaoTwFUe3EFilIeGFK\r\n" \
+        "w3vnPwiq99tDBHsCAwEAAaNzMHEwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQU\r\n" \
+        "WXW5x/ufCrRKhv3F5wBqY0JVUEswPwYDVR0jBDgwNoAUefIiQi9GC9aBspej7UJT\r\n" \
+        "zQzs/mKhE6QRMA8xDTALBgNVBAMMBFJvb3SCCQD1tOzs5zPQ/zANBgkqhkiG9w0B\r\n" \
+        "AQsFAAOCAQEAEJhO1fA0d8Hu/5IHTlsGfmtcXOyXDcQQVz/3FKWrTPgDOYeMMNbG\r\n" \
+        "WqvuG4YxmXt/+2OC1IYK/slrIK5XXldfRu90UM4wVXeD3ATLS3AG0Z/+yPRGbUbF\r\n" \
+        "y5+11nXySGyKdV1ik0KgLGeYf0cuJ/vu+/7mkj4mGDfmTQv+8/HYKNaOqgKuVRlf\r\n" \
+        "LHBh/RlbHMBn2nwL79vbrIeDaQ0zq9srt9F3CEy+SvlxX63Txmrym3fqTQjPUi5s\r\n" \
+        "rEsy+eNr4N+aDWqGRcUkbP/C/ktGGNBHYG1NaPJq7CV1tdLe+usIcRWRR9vOBWbr\r\n" \
+        "EkBGJMvCdhlWRv2FnrQ+VUQ+mhYHBS2Kng==\r\n"                             \
+        "-----END CERTIFICATE-----\r\n";
+    replicate(kC4OneShot, kC4Disabled, true);
+    
+    // Root:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIIDFDCCAfygAwIBAgIJAPW07OznM9D/MA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
+        "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAPMQ0wCwYD\r\n" \
+        "VQQDDARSb290MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvJV+Ptou\r\n" \
+        "R1BS/0XXN+JImdNesaBJ2tcHrFHq2yK9V4qu2iUX8LgOcBpPg8yR0zJlzjwF+SLE\r\n" \
+        "R8jBhD79YF8kF+r7cqBhsvy+e/ri0AaBiGsdP7NFPFEUCOukhnMIvLt10BvsRoCd\r\n" \
+        "+eFrDZO0ZJer3ylp2GeB01rTgngWfrenhZdyGR8ISn+ijtN+J2IhAxsoLGDWiAL/\r\n" \
+        "XWX55agSuAGi6zlomkReTMuyfkidLfrejUQCnrcDQQ7xqjdCB1QYBt6o1U1oHN3F\r\n" \
+        "D6ICXirXJyVDJ2Ry6q+FrGJbJDUPlNwlPqAyukFFbeOINPKWiFQUw8nSo3i3DFMG\r\n" \
+        "UZ3HhkQ/xfboZQIDAQABo3MwcTAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5\r\n" \
+        "8iJCL0YL1oGyl6PtQlPNDOz+YjA/BgNVHSMEODA2gBR58iJCL0YL1oGyl6PtQlPN\r\n" \
+        "DOz+YqETpBEwDzENMAsGA1UEAwwEUm9vdIIJAPW07OznM9D/MA0GCSqGSIb3DQEB\r\n" \
+        "CwUAA4IBAQANxGwoeEBaibMQAqSWPnDBISiwk9uKy3buateXOtLlBSpM9ohE4iPG\r\n" \
+        "GDFZ+9LoKJGy4vWmv6XD4zBeoqZ9hOgnvdEu0P+JITffjXCsfb0JPsOOjwbcJ+5+\r\n" \
+        "TnfoXCyPRTEi/6OG1sKO2ibav5vMTUuUDdVYbPA2hfEAdn/n0GrN4fQ1USMKk+Ld\r\n" \
+        "KWgWGZto+l0fKIXdHHpxr01V9Q/+6kzbpZOSxw41m/o1TwJxYSuRXZfK67YpBYGO\r\n" \
+        "N4X2c7Qsvjd52vcZdRra+bkS0BJXwEDZZdmrZOlRAYIhE7lZ5ojqcZ+/UJztyPZq\r\n" \
+        "Dbr9kMLDVeMuJfGyebdZ0zeMhVSv0PlD\r\n"                                 \
+        "-----END CERTIFICATE-----\r\n";
+    replicate(kC4OneShot, kC4Disabled, true);
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
+    if (slice(_address.hostname) != "localhost")
+        return;
+    
+    // Disable Retries:
+    {
+        Encoder enc;
+        enc.beginDict();
+        enc[kC4ReplicatorOptionMaxRetries] = 0;
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+    
+#if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
+    int code = 0;
+#else
+    int code = ENOTSUP;
+#endif
+    
+    C4ErrorDomain domain = POSIXDomain;
+    _networkInterface = nullslice;
+    
+    SECTION("Reachable - Name") {
+        // Use loopback interface connecting to localhost:
+    #if defined(__APPLE__)
+        _networkInterface = "lo0"_sl;
+    #elif defined(__linux__)
+        _networkInterface = "lo"_sl;
+    #elif defined(_WIN32)
+        _networkInterface = "Loopback Pseudo-Interface 1"_sl;
+    #else
+        _networkInterface = "lo0"_sl;
+    #endif
+    }
+    
+    SECTION("Reachable - IP Address") {
+        // Use loopback interface connecting to localhost:
+        _networkInterface = "127.0.0.1"_sl;
+    }
+
+    SECTION("Unreachable") {
+        // Use ethernet interface connecting to localhost:
+    #if defined(__APPLE__)
+        _networkInterface = "en0"_sl;
+        code = EADDRNOTAVAIL;
+    #elif defined(__linux__)
+        _networkInterface = "eth0"_sl;
+        code = ETIMEDOUT;
+    #elif defined(_WIN32)
+        // Note: Required Wi-Fi interface on the test machine.
+        _networkInterface = "Wi-Fi"_sl;
+        code = EADDRNOTAVAIL;
+    #else
+        _networkInterface = "eth0"_sl;
+    #endif
+    }
+    
+    bool success = (code == 0);
+    replicate(kC4OneShot, kC4Disabled, success);
+    if (!success) {
+        CHECK(_callbackStatus.error.domain == domain);
+        CHECK(_callbackStatus.error.code == code);
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Set Invalid Network Interface", "[.SyncServer]") {
+    _networkInterface = "x0"_sl;
+    replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(_callbackStatus.error.domain == POSIXDomain);
+    CHECK(_callbackStatus.error.code == ENXIO);
 }

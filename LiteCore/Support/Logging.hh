@@ -13,6 +13,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "fleece/PlatformCompat.hh"
+#include "c4Compat.h"
 #include <atomic>
 #include <map>
 #include <string>
@@ -153,7 +154,7 @@ private:
     static LogLevel sFileMinLevel;
 };
 
-extern "C" LogDomain kC4Cpp_DefaultLog;
+extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
 extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 
 

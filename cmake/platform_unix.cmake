@@ -20,6 +20,8 @@ function(setup_globals_unix)
 endfunction()
 
 function(setup_litecore_build_unix)
+    setup_litecore_build_base()
+
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
@@ -36,10 +38,8 @@ function(setup_litecore_build_unix)
         if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             # GNU and Linux clang LTO can't seem to handle any of this...at least not with the versions I tried.  
             # Unexplained linker errors occur.
-            set_property(TARGET LiteCoreStatic PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+            set_property(TARGET LiteCoreObjects PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-            set_property(TARGET LiteCoreWebSocket PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-            set_property(TARGET LiteCoreREST_Static PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
         set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -69,7 +69,7 @@ function(setup_litecore_build_unix)
 
     set(LITECORE_CXX_WARNINGS
         -Wnon-virtual-dtor
-        -Werror=overloaded-virtual
+        #-Werror=overloaded-virtual
     )
 
     set(LITECORE_C_WARNINGS
@@ -78,7 +78,7 @@ function(setup_litecore_build_unix)
         -Werror=strict-prototypes
     )
 
-    target_compile_options(LiteCoreStatic PRIVATE 
+    target_compile_options(LiteCoreObjects PRIVATE 
     ${LITECORE_WARNINGS} 
     $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>

@@ -65,9 +65,10 @@ add_executable(
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}LiteCore/Support/Error.cc
     ${TOP}vendor/fleece/ObjC/slice+CoreFoundation.cc
-    ${TOP}vendor/fleece/vendor/libb64/cencode.c
-    ${TOP}vendor/fleece/vendor/libb64/cdecode.c
 )
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_build()
 
 target_compile_definitions(

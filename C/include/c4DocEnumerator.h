@@ -25,9 +25,6 @@ C4API_BEGIN_DECLS
         enumeration has not reached its end, but will not be freed for a while. */
     void c4enum_close(C4DocEnumerator* C4NULLABLE e) C4API;
 
-    /** Frees a C4DocEnumerator handle. */
-    void c4enum_free(C4DocEnumerator* C4NULLABLE e) C4API;
-
 #ifndef C4_STRICT_COLLECTION_API
     /** Creates an enumerator ordered by sequence.
         Caller is responsible for freeing the enumerator when finished with it.
@@ -36,7 +33,7 @@ C4API_BEGIN_DECLS
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
+    CBL_CORE_API C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                            C4SequenceNumber since,
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
@@ -49,7 +46,7 @@ C4API_BEGIN_DECLS
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
+    CBL_CORE_API C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
 #endif
@@ -61,7 +58,7 @@ C4API_BEGIN_DECLS
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
+    CBL_CORE_API C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
                                              C4SequenceNumber since,
                                              const C4EnumeratorOptions* C4NULLABLE options,
                                              C4Error* C4NULLABLE outError) C4API;
@@ -74,21 +71,21 @@ C4API_BEGIN_DECLS
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection *collection,
+    CBL_CORE_API C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection *collection,
                                              const C4EnumeratorOptions* C4NULLABLE options,
                                              C4Error* C4NULLABLE outError) C4API;
 
     /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
         and don't forget to free the enumerator. */
-    bool c4enum_next(C4DocEnumerator *e, C4Error* C4NULLABLE outError) C4API;
+    CBL_CORE_API bool c4enum_next(C4DocEnumerator *e, C4Error* C4NULLABLE outError) C4API;
 
     /** Returns the current document, if any, from an enumerator.
         @param e  The enumerator.
         @param outError  Error will be stored here on failure.
         @return  The document, or NULL if there is none or if an error occurred reading its body.
                  Caller is responsible for calling c4document_free when done with it. */
-    C4Document* c4enum_getDocument(C4DocEnumerator *e,
+    CBL_CORE_API C4Document* c4enum_getDocument(C4DocEnumerator *e,
                                    C4Error* C4NULLABLE outError) C4API;
 
     /** Stores the metadata of the enumerator's current document into the supplied
@@ -97,7 +94,7 @@ C4API_BEGIN_DECLS
         @param outInfo  A pointer to a C4DocumentInfo struct that will be filled in if a document
                         is found.
         @return  True if the info was stored, false if there is no current document. */
-    bool c4enum_getDocumentInfo(C4DocEnumerator *e,
+    CBL_CORE_API bool c4enum_getDocumentInfo(C4DocEnumerator *e,
                                 C4DocumentInfo *outInfo) C4API;
 
     /** @} */

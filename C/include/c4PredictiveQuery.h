@@ -88,10 +88,10 @@ C4API_BEGIN_DECLS
     /** Registers a predictive model, under a name. The model can now be invoked within a query
         by calling `prediction(_name_, _input_)`. The model remains registered until it's explicitly
         unregistered, or another model is registered with the same name. */
-    void c4pred_registerModel(const char* name, C4PredictiveModel) C4API;
+    CBL_CORE_API void c4pred_registerModel(const char* name, C4PredictiveModel) C4API;
 
     /** Unregisters whatever model was last registered with this name. */
-    bool c4pred_unregisterModel(const char* name) C4API;
+    CBL_CORE_API bool c4pred_unregisterModel(const char* name) C4API;
 
 
     /** @} */

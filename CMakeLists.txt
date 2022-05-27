@@ -8,18 +8,20 @@ targets that result from this project:
 BLIPObjects - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
 CppTests - A test runner that runs test based on the static library
-FleeceStatic - The Fleece serialization library for saving data to a binary format
-LiteCoreStatic - The static LiteCore library
-LiteCore - The shared LiteCore library
-LiteCoreWebSocket - WebSocket implementation with C4Socket API to plug into LiteCore
+FleeceObjects - The Fleece serialization library for saving data to a binary format
+FleeceBase - A subset of the above for linking into non LiteCore targets
+LiteCoreObjects - The precompiled object files containing the logic of LiteCore
+LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
+LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
+LiteCoreWebSocket - An implementation of websockets in C++ (Used for EE library, and can be used downstream by other projects)
 mbedcrypto - The cryptography suite from mbedTLS (https://tls.mbed.org/)
 SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
 
 This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
-- macOS 10.13
+- macOS 10.14
 - CentOS 7 (gcc 7.x+)
 - Android API 22+
 
@@ -51,11 +53,15 @@ include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
+set(LITECORE_TARGETS "")
+
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
@@ -119,15 +125,8 @@ else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
 endif(MSVC)
 
-if(CMAKE_COMPILER_IS_GNUCC)
-    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
-endif()
-
 check_threading()
 setup_globals()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LITECORE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
@@ -155,7 +154,6 @@ endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
-add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 
 ### sqlite3 LIBRARY:
 
@@ -188,61 +186,12 @@ target_compile_definitions(
     -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
 )
 
-### WebSocket LIBRARY:
-
-set(
-    LC_WEBSOCKET_SRC
-    Networking/HTTP/HTTPTypes.cc
-    Networking/HTTP/HTTPLogic.cc
-    Networking/NetworkInterfaces.cc
-    Networking/Poller.cc
-    Networking/TCPSocket.cc
-    Networking/TLSContext.cc
-    Networking/WebSockets/BuiltInWebSocket.cc
-    REST/netUtils.cc
-    vendor/sockpp/src/acceptor.cpp
-    vendor/sockpp/src/connector.cpp
-    vendor/sockpp/src/datagram_socket.cpp
-    vendor/sockpp/src/exception.cpp
-    vendor/sockpp/src/inet_address.cpp
-    vendor/sockpp/src/inet6_address.cpp
-    vendor/sockpp/src/mbedtls_context.cpp
-    vendor/sockpp/src/socket.cpp
-    vendor/sockpp/src/stream_socket.cpp
-)
-
-add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
-target_include_directories(
-    LiteCoreWebSocket PRIVATE
-    C
-    C/include
-    C/Cpp_include
-    Crypto
-    LiteCore/Support
-    Networking
-    Networking/BLIP/
-    Networking/HTTP
-    Networking/WebSockets
-    Replicator
-    REST
-    vendor/fleece/Fleece/Support
-    vendor/fleece/API
-    vendor/sockpp/include
-    vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
-)
-
-target_link_libraries(
-    LiteCoreWebSocket PUBLIC
-    LiteCoreStatic
-)
-
 ### LITECORE LIBRARY:
 
 set_litecore_source(RESULT ALL_SRC_FILES)
-add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
 target_compile_definitions(
-    LiteCoreStatic PRIVATE
+    LiteCoreObjects PRIVATE
     LITECORE_IMPL
     LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
@@ -256,7 +205,7 @@ if(BUILD_ENTERPRISE)
 endif()
 
 target_include_directories(
-    LiteCoreStatic PRIVATE
+    LiteCoreObjects PRIVATE
     vendor/fleece/API
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
@@ -287,36 +236,32 @@ target_include_directories(
 )
 
 if(WIN32)
-    add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
     target_include_directories(
         LiteCore PRIVATE
         vendor/SQLiteCpp/sqlite3
     )
 else()
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/empty.cpp")
-        file(WRITE empty.cpp)
-    endif()
-    add_library(LiteCore SHARED empty.cpp)
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
 endif()
 
+add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
+target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
+
 # Library flags defined in platform_linux
+set(
+    LITECORE_LIBRARIES_PRIVATE
+    LiteCoreObjects
+    BLIPObjects
+    FleeceObjects
+)
+
 if(BUILD_ENTERPRISE)
     set(
         LITECORE_LIBRARIES_PRIVATE
-        ${WHOLE_LIBRARY_FLAG}
-        LiteCoreStatic
-        LiteCoreREST_Static
-        FleeceStatic
-        ${NO_WHOLE_LIBRARY_FLAG}
+        ${LITECORE_LIBRARIES_PRIVATE}
+        LiteCoreREST_Objects
         LiteCoreWebSocket
-    )
-else()
-    set(
-        LITECORE_LIBRARIES_PRIVATE
-        ${WHOLE_LIBRARY_FLAG}
-        LiteCoreStatic
-        FleeceStatic
-        ${NO_WHOLE_LIBRARY_FLAG}
     )
 endif()
 
@@ -327,27 +272,19 @@ target_include_directories(
 )
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(
-    LiteCoreStatic INTERFACE
-    FleeceStatic
+    LiteCoreObjects INTERFACE
     SQLite3_UnicodeSN
     mbedcrypto
     mbedtls
     mbedx509
 )
 
-target_link_libraries(
-    LiteCoreStatic PRIVATE
-    BLIPObjects
-)
-
 if(USE_COUCHBASE_SQLITE)
     target_link_libraries(
-        LiteCoreStatic PUBLIC
+        LiteCoreObjects PUBLIC
         CouchbaseSqlite3
     )
 endif()
-
-setup_litecore_build()
 
 install (
     TARGETS LiteCore
@@ -363,7 +300,61 @@ file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PR
 install(FILES ${LITECORE_HEADERS} DESTINATION include)
 install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
+### Support Libraries (Add functionality, but add nothing to official API)
+
+add_subdirectory(REST EXCLUDE_FROM_ALL)
+
+set(
+    LC_WEBSOCKET_SRC
+    Networking/HTTP/HTTPTypes.cc
+    Networking/HTTP/HTTPLogic.cc
+    Networking/NetworkInterfaces.cc
+    Networking/Poller.cc
+    Networking/TCPSocket.cc
+    Networking/TLSContext.cc
+    Networking/WebSockets/BuiltInWebSocket.cc
+    vendor/sockpp/src/acceptor.cpp
+    vendor/sockpp/src/connector.cpp
+    vendor/sockpp/src/datagram_socket.cpp
+    vendor/sockpp/src/exception.cpp
+    vendor/sockpp/src/inet_address.cpp
+    vendor/sockpp/src/inet6_address.cpp
+    vendor/sockpp/src/mbedtls_context.cpp
+    vendor/sockpp/src/socket.cpp
+    vendor/sockpp/src/stream_socket.cpp
+)
+
+add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
+target_include_directories(
+    LiteCoreWebSocket PRIVATE
+    C
+    C/include
+    C/Cpp_include
+    Crypto
+    LiteCore/Support
+    Networking
+    Networking/BLIP/
+    Networking/HTTP
+    Networking/WebSockets
+    Replicator
+    REST
+    vendor/fleece/Fleece/Support
+    vendor/fleece/API
+    vendor/sockpp/include
+    vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
+)
+
+target_link_libraries(
+    LiteCoreWebSocket PUBLIC
+    LiteCoreObjects
+)
+
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
 add_subdirectory(C/tests)
+
+get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
+set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets})
+setup_litecore_build()
