@@ -309,7 +309,8 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encryption returns error", "[Sync][Encrypt
 TEST_CASE_METHOD(PropEncryptionTest, "Don't Encrypt Property In CE", "[Sync][Encryption]") {
     C4Error error;
     Doc doc = Doc::fromJSON(kDecryptedOneProperty);
-    auto result = litecore::repl::EncryptDocumentProperties(kDocID, doc,
+    auto result = litecore::repl::EncryptDocumentProperties(kC4DefaultCollectionSpec,
+                                                            kDocID, doc,
                                                             &encryptionCallback, this,
                                                             &error);
     REQUIRE(!result);
@@ -399,7 +400,8 @@ TEST_CASE_METHOD(PropDecryptionTest, "Decryption returns error", "[Sync][Encrypt
 TEST_CASE_METHOD(PropDecryptionTest, "Don't Decrypt Property In CE", "[Sync][Encryption]") {
     Doc doc = Doc::fromJSON(kEncryptedOneProperty);
     C4Error error;
-    auto result = litecore::repl::DecryptDocumentProperties(kDocID, doc,
+    auto result = litecore::repl::DecryptDocumentProperties(kC4DefaultCollectionSpec,
+                                                            kDocID, doc,
                                                             &decryptionCallback, this,
                                                             &error);
     REQUIRE(!result);
