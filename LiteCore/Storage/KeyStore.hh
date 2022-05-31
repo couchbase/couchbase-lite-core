@@ -66,6 +66,7 @@ namespace litecore {
         /// Name of the default collection and scope:
         static constexpr slice kDefaultCollectionName = "_default";
         static constexpr slice kDefaultScopeName = "_default";
+        static constexpr slice kDefaultFullCollectionName = "_default._default";
 
         /// KeyStore name prefix denoting a (non-default) collection
         static constexpr slice kCollectionPrefix = ".";

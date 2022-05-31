@@ -827,7 +827,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -924,7 +924,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     };
     
     // Setup pull filter to filter the _removed rev:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1005,7 +1005,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1080,7 +1080,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1169,7 +1169,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     };
     
     // Setup pull filter to filter the _removed rev:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;
@@ -1246,7 +1246,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     };
     
     // Setup pull filter:
-    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         if ((flags & kRevPurged) == kRevPurged) {
             ((ReplicatorAPITest*)context)->_counter++;

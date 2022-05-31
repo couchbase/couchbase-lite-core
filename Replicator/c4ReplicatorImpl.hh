@@ -433,7 +433,7 @@ namespace litecore {
             if (onBlob)
                 onBlob(this,
                        (p.dir == Dir::kPushing),
-                       nullslice,     // TODO: Collection support
+                       {nullslice, nullslice},     // TODO: Collection support
                        p.docID,
                        p.docProperty,
                        p.key,

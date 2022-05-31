@@ -289,7 +289,7 @@ namespace litecore { namespace repl {
             }
             if (_options->pushFilter) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options->pushFilter(nullslice,     // TODO: Collection support
+                if (!_options->pushFilter({nullslice, nullslice},     // TODO: Collection support
                                          doc->docID(),
                                          doc->selectedRev().revID,
                                          doc->selectedRev().flags,

@@ -97,6 +97,12 @@ typedef struct C4CollectionSpec {
     C4String scope;
 } C4CollectionSpec;
 
+#ifdef __cplusplus
+    #define kC4DefaultCollectionSpec (C4CollectionSpec {kC4DefaultScopeID, kC4DefaultCollectionName})
+#else
+    #define kC4DefaultCollectionSpec ((C4CollectionSpec){kC4DefaultScopeID, kC4DefaultCollectionName})
+#endif
+
 
 /** @} */
 /** \name Database Maintenance

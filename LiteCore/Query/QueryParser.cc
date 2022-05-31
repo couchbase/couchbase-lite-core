@@ -464,7 +464,6 @@ namespace litecore {
                 from.alias = _defaultCollectionName;
             }
         }
-        require(from.alias.find('.') == string::npos, "AS in FROM item cannot contain a '.'");
         return from;
     }
 

@@ -12,6 +12,8 @@
 
 #include "c4Collection.hh"
 #include "c4Database.hh"
+#include "c4Collection.h"
+#include "c4Query.h"
 #include "c4Test.hh"
 #include "Delimiter.hh"
 #include <sstream>
@@ -107,6 +109,9 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     C4ExpectException(LiteCoreDomain, kC4ErrorInvalidParameter, [&]{
         db->createCollection(kC4DefaultCollectionName);
     });
+
+    // However, the default scope still exists
+    CHECK(c4db_hasScope(db, kC4DefaultScopeID));
 }
 
 

@@ -277,9 +277,8 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         } else if (written == 0) {
             _eofOnWrite = true;
         }
@@ -292,9 +291,8 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         }
         return written;
     }
@@ -309,8 +307,10 @@ namespace litecore { namespace net {
                       "iovec and slice are incompatible");
         ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
         if (written < 0) {
-            checkStreamError();
-            return written;
+            if (!checkReadWriteStreamError())
+                written = 0;
+            else
+                return written;
         }
 
         ssize_t remaining = written;
@@ -336,9 +336,8 @@ namespace litecore { namespace net {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
-            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+            if (!checkReadWriteStreamError())
                 return 0;
-            checkStreamError();
         } else if (n == 0) {
             _eofOnRead = true;
         }
@@ -730,5 +729,16 @@ namespace litecore { namespace net {
                 -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
+    }
+
+    bool TCPSocket::checkReadWriteStreamError() {
+        if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK) {
+            LogVerbose(WSLog,
+                "%s got EWOULDBLOCK error in non-blocking mode (ignored as not an error).",
+                (_isClient ? "ClientSocket" : "ResponderSocket"));
+            return false;
+        }
+        checkStreamError();
+        return true;
     }
 } }

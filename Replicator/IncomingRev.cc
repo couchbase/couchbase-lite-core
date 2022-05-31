@@ -218,7 +218,8 @@ namespace litecore { namespace repl {
         MutableDict decryptedRoot;
         if (_mayContainEncryptedProperties) {
             C4Error error;
-            decryptedRoot = DecryptDocumentProperties(_rev->docID,
+            decryptedRoot = DecryptDocumentProperties(_rev->collectionSpec,
+                                                      _rev->docID,
                                                       root,
                                                       _options->propertyDecryptor,
                                                       _options->callbackContext,
@@ -278,7 +279,7 @@ namespace litecore { namespace repl {
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
         if (_options->pullValidator) {
-            if (!_options->pullValidator(nullslice,     // TODO: Collection support
+            if (!_options->pullValidator({nullslice, nullslice},     // TODO: Collection support
                                         _rev->docID, _rev->revID, _rev->flags, body,
                                         _options->callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);

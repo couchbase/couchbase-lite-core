@@ -147,6 +147,7 @@ namespace litecore::net {
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
         bool wrapTLS(slice hostname);
         void checkStreamError();
+        bool checkReadWriteStreamError();
         bool checkSocketFailure();
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);

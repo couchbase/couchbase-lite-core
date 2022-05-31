@@ -45,7 +45,7 @@ public:
     MutableDict encryptProperties(Dict doc, C4Error *outError =nullptr) {
         _numCallbacks = 0;
         C4Error error;
-        auto result = litecore::repl::EncryptDocumentProperties(kDocID, doc,
+        auto result = litecore::repl::EncryptDocumentProperties(kC4DefaultCollectionSpec, kDocID, doc,
                                                                 _callback, this,
                                                                 &error);
         if (outError)
@@ -96,6 +96,7 @@ public:
     }
 
     static C4SliceResult encryptionCallback(void* C4NULLABLE context,
+                                            C4CollectionSpec collection,
                                             C4String documentID,
                                             FLDict properties,
                                             C4String keyPath,
@@ -130,7 +131,7 @@ public:
     MutableDict decryptProperties(Dict doc, C4Error *outError =nullptr) {
         _numCallbacks = 0;
         C4Error error;
-        auto result = litecore::repl::DecryptDocumentProperties(kDocID, doc,
+        auto result = litecore::repl::DecryptDocumentProperties(kC4DefaultCollectionSpec, kDocID, doc,
                                                                 _callback, this,
                                                                 &error);
         if (outError)
@@ -179,6 +180,7 @@ public:
     }
 
     static C4SliceResult decryptionCallback(void* C4NULLABLE context,
+                                            C4CollectionSpec collection,
                                             C4String documentID,
                                             FLDict properties,
                                             C4String keyPath,
@@ -307,7 +309,8 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encryption returns error", "[Sync][Encrypt
 TEST_CASE_METHOD(PropEncryptionTest, "Don't Encrypt Property In CE", "[Sync][Encryption]") {
     C4Error error;
     Doc doc = Doc::fromJSON(kDecryptedOneProperty);
-    auto result = litecore::repl::EncryptDocumentProperties(kDocID, doc,
+    auto result = litecore::repl::EncryptDocumentProperties(kC4DefaultCollectionSpec,
+                                                            kDocID, doc,
                                                             &encryptionCallback, this,
                                                             &error);
     REQUIRE(!result);
@@ -397,7 +400,8 @@ TEST_CASE_METHOD(PropDecryptionTest, "Decryption returns error", "[Sync][Encrypt
 TEST_CASE_METHOD(PropDecryptionTest, "Don't Decrypt Property In CE", "[Sync][Encryption]") {
     Doc doc = Doc::fromJSON(kEncryptedOneProperty);
     C4Error error;
-    auto result = litecore::repl::DecryptDocumentProperties(kDocID, doc,
+    auto result = litecore::repl::DecryptDocumentProperties(kC4DefaultCollectionSpec,
+                                                            kDocID, doc,
                                                             &decryptionCallback, this,
                                                             &error);
     REQUIRE(!result);

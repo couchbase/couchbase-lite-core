@@ -439,6 +439,8 @@ namespace litecore { namespace websocket {
             if (_usuallyFalse(n <= 0)) {
                 if (n < 0)
                     closeWithError(_socket->error());
+                else                
+                    awaitWriteable();
                 return;
             }
             
