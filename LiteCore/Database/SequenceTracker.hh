@@ -20,7 +20,6 @@
 
 namespace litecore {
     class CollectionChangeNotifier;
-    class DatabaseImpl;
     class DocChangeNotifier;
 
     

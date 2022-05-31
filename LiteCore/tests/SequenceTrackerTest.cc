@@ -207,7 +207,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     CHECK(countB==1);
 
     {
-        DocChangeNotifier cnB2(tracker,"B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {++countB2;});
+        DocChangeNotifier cnB2(tracker, "B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {++countB2;});
         tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, 6666, Flag6);
         CHECK(countA==1);
         CHECK(countB==2);

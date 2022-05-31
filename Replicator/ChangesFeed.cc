@@ -151,18 +151,18 @@ namespace litecore { namespace repl {
                    limit, (uint64_t)_maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseObserver::Change c4changes[kMaxChanges];
-        bool ext;
-        uint32_t nChanges;
+        C4CollectionObservation nextObservation;
         auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
 
         while (limit > 0) {
-            nChanges = _changeObserver->getChanges(c4changes, min(limit,kMaxChanges), &ext);
+            nextObservation = _changeObserver->getChanges(c4changes, min(limit,kMaxChanges));
+            uint32_t nChanges = nextObservation.numChanges;
             if (nChanges == 0)
                 break;
 
-            if (!ext && !_echoLocalChanges) {
+            if (!nextObservation.external && !_echoLocalChanges) {
                 logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64
                          " (ignoring)",
                          nChanges, static_cast<uint64_t>(c4changes[0].sequence),
