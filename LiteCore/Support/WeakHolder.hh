@@ -16,6 +16,9 @@
 
 namespace litecore {
 
+/** WeakHolder<T>: holds a pointer to T weakly. Unlike general weak reference, one cannot get a strong holder from it.
+    Instead, we can call the methods of class T via invoke, which returns true if the call goes through as the underlying
+    pointer is good. */
 template <typename T>
 class WeakHolder : public RefCounted {
 public:
@@ -34,13 +37,18 @@ public:
         }
     }
 
-    template<typename Callable, typename ... Args>
-    bool invoke(Callable fun, Args&& ... args) {
+    /** Call the member function with the underlying pointer.
+        @param memFuncPtr pointer to the member function.
+        @param args arguments passed to the member function.
+        @return true if the underlying pointer is good, and false otherwise.
+        @warning what is returned from the member fundtion, if not void, will be thrown away. */
+    template<typename MemFuncPtr, typename ... Args>
+    bool invoke(MemFuncPtr memFuncPtr, Args&& ... args) {
         std::shared_lock<std::shared_mutex> shl(_mutex);
         if (_pointer == nullptr) {
             return false;
         }
-        fun(_pointer, std::forward<Args>(args)...);
+        (_pointer->*memFuncPtr)(std::forward<Args>(args)...);
         return true;
     }
 

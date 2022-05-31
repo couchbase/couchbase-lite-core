@@ -218,8 +218,8 @@ namespace litecore { namespace websocket {
             void connectCompleted() {
                 logInfo("CONNECTED");
                 _state = State::connected;
-                _webSocket->delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketGotHTTPResponse), 200, _responseHeaders);
-                _webSocket->delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketConnect));
+                _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketGotHTTPResponse, 200, _responseHeaders);
+                _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketConnect);
             }
 
             virtual void _send(fleece::alloc_slice msg, bool binary) {
@@ -248,7 +248,7 @@ namespace litecore { namespace websocket {
                 if (!connected())
                     return;
                 logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
-                _webSocket->delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketMessage), message);
+                _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
             }
 
             virtual void _ack(size_t msgSize) {
@@ -257,7 +257,7 @@ namespace litecore { namespace websocket {
                 auto newValue = (_bufferedBytes -= msgSize);
                 if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
                     logDebug("WRITEABLE");
-                    _webSocket->delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketWriteable));
+                    _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketWriteable);
                 }
             }
 
@@ -280,7 +280,7 @@ namespace litecore { namespace websocket {
                         status.reasonName(), status.code,
                         fleece::narrow_cast<int>(status.message.size), 
 			(char *)status.message.buf);
-                    _webSocket->delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketClose), status);
+                    _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketClose, status);
                 } else {
                     logInfo("CLOSED");
                 }

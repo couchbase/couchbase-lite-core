@@ -124,7 +124,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
         logInfo("Got HTTP response (status %d)", status);
-        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketGotHTTPResponse), status, headersFleece);
+        delegateWeak()->invoke(&Delegate::onWebSocketGotHTTPResponse, status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
@@ -138,7 +138,7 @@ namespace litecore { namespace websocket {
         _didConnect = true;
         _responseTimer->stop();
         _timeConnected.start();
-        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketConnect));
+        delegateWeak()->invoke(&Delegate::onWebSocketConnect);
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
@@ -215,7 +215,7 @@ namespace litecore { namespace websocket {
             logInfo("sent close echo; disconnecting socket now");
             callCloseSocket();
         } else if (notify) {
-            delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketWriteable));
+            delegateWeak()->invoke(&Delegate::onWebSocketWriteable);
         }
     }
 
@@ -338,7 +338,7 @@ namespace litecore { namespace websocket {
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
-        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketMessage), message);
+        delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
     }
 
 
@@ -642,7 +642,7 @@ namespace litecore { namespace websocket {
                          status.reasonName(), status.code);
             }
         }
-        delegateWeak()->invoke(std::mem_fn(&Delegate::onWebSocketClose), status);
+        delegateWeak()->invoke(&Delegate::onWebSocketClose, status);
     }
 
 } }
