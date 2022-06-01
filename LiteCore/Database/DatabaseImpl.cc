@@ -662,19 +662,24 @@ namespace litecore {
         // as happens if you call `deleteCollection(coll->spec())`:
         string keyStoreName = collectionNameToKeyStoreName(spec);
         bool isDefault = isDefaultCollection(spec);
+        {
+            Transaction t(this);
 
-        Transaction t(this);
+            LOCK(_collectionsMutex);
+            if (auto i = _collections.find(spec); i != _collections.end()) {
+                asInternal(i->second.get())->close();
+                _collections.erase(i);
+            }
+            _dataFile->deleteKeyStore(keyStoreName);
+            if (isDefaultCollection(spec))
+                _defaultCollection = nullptr;
 
-        LOCK(_collectionsMutex);
-        if (auto i = _collections.find(spec); i != _collections.end()) {
-            asInternal(i->second.get())->close();
-            _collections.erase(i);
+            t.commit(); 
         }
-        _dataFile->deleteKeyStore(keyStoreName);
-        if (isDefault)
-            _defaultCollection = nullptr;
 
-        t.commit();
+        _dataFile->forOtherDataFiles([spec](DataFile* df) {
+            df->delegate()->collectionRemoved(spec.scope, spec.name);
+        });
     }
 
 
@@ -782,6 +787,17 @@ namespace litecore {
             if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
                 asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
+    }
+
+
+    void DatabaseImpl::collectionRemoved(slice scope, slice name) {
+        LOCK(_collectionsMutex);
+        auto c = _collections.find({name, scope});
+        if(c != _collections.end()) {
+            CollectionImpl* coll = (CollectionImpl *)c->second.get();
+            coll->close();
+            _collections.erase(c);
+        }
     }
 
 
