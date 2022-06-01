@@ -64,7 +64,7 @@ namespace litecore { namespace repl {
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
                                  
-        static std::string ProtocolName();
+        static std::string protocolName();
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {

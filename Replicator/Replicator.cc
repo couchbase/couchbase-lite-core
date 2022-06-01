@@ -52,7 +52,7 @@ namespace litecore { namespace repl {
     };
 
                              
-    std::string Replicator::ProtocolName() {
+    std::string Replicator::protocolName() {
         stringstream result;
         delimiter delim(",");
         for (auto &name : kCompatProtocols)
