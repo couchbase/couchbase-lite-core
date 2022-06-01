@@ -286,7 +286,8 @@ namespace litecore::client {
         MutableDict decryptedRoot;
         if (tryDecrypt) {
             C4Error error;
-            decryptedRoot = repl::DecryptDocumentProperties(docID,
+            decryptedRoot = repl::DecryptDocumentProperties({},     //TODO: Pass collection spec
+                                                            docID,
                                                             root,
                                                             _params.propertyDecryptor,
                                                             _params.callbackContext,
@@ -388,7 +389,8 @@ namespace litecore::client {
         if (repl::MayContainPropertiesToEncrypt(fleeceData)) {
             logVerbose("Encrypting properties in doc '%.*s'", FMTSLICE(docID));
             C4Error c4err;
-            encryptedRoot = repl::EncryptDocumentProperties(docID, root,
+            encryptedRoot = repl::EncryptDocumentProperties({}, // TODO: Pass collection spec
+                                                            docID, root,
                                                             _params.propertyEncryptor,
                                                             _params.callbackContext,
                                                             &c4err);

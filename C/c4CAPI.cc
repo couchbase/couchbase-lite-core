@@ -237,6 +237,10 @@ bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {
     return db->hasCollection(spec);
 }
 
+bool c4db_hasScope(C4Database *db, C4String name) noexcept {
+    return db->hasScope(name);
+}
+
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4CollectionSpec spec) noexcept {
     return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(spec); });
 }
@@ -266,12 +270,16 @@ FLMutableArray c4db_scopeNames(C4Database *db) noexcept {
 }
 
 
+bool c4coll_isValid(C4Collection* coll) noexcept {
+    return coll && coll->isValid();
+}
+
 C4CollectionSpec c4coll_getSpec(C4Collection *coll) noexcept {
     return coll->getSpec();
 }
 
 C4Database* c4coll_getDatabase(C4Collection *coll) noexcept {
-    return coll->getDatabase();
+    return coll->isValid() ? coll->getDatabase() : nullptr;
 }
 
 uint64_t c4coll_getDocumentCount(C4Collection *coll) noexcept {

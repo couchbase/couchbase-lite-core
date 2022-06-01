@@ -30,14 +30,22 @@ C4Collection::C4Collection(C4Database *db, C4CollectionSpec spec)
 { }
 
 
+void C4Collection::failClosed() const {
+   C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen,
+                  "Invalid collection: either deleted, or db closed");
+}
+
+
 C4Database* C4Collection::getDatabase() {
-    precondition(_database != nullptr);
+    if (_usuallyFalse(!_database))
+        failClosed();
     return _database;
 }
 
 
 const C4Database* C4Collection::getDatabase() const {
-    precondition(_database != nullptr);
+    if (_usuallyFalse(!_database))
+        failClosed();
     return _database;
 }
 
@@ -51,5 +59,7 @@ C4Document* C4Collection::documentContainingValue(FLValue value) noexcept {
 
 
 Retained<C4Query> C4Collection::newQuery(C4QueryLanguage language, slice expr,int *errPos) const {
+    if (_usuallyFalse(!_database))
+        failClosed();
     return C4Query::newQuery(const_cast<C4Collection*>(this), language, expr, errPos);
 }

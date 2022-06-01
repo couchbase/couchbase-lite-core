@@ -105,6 +105,7 @@ namespace litecore::repl {
         params.options = AllocedDict(c4SocketOptions);
         params.webSocketProtocols = params.options[kC4SocketOptionWSProtocols].asString();
         params.heartbeatSecs = (int)params.options[kC4ReplicatorHeartbeatInterval].asInt();
+        params.networkInterface = params.options[kC4SocketOptionNetworkInterface].asString();
         return params;
     }
 

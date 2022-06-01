@@ -111,6 +111,11 @@ public:
     /// Returns true if a collection exists with the given name & scope.
     virtual bool hasCollection(CollectionSpec) const =0;
 
+    /// Returns true if a scope exists with the given name
+    /// (in other words, if there are any collections in the scope)
+    /// _default will always return true
+    virtual bool hasScope(C4String) const =0;
+
     /// Returns the existing collection with the given name & scope, or nullptr if it doesn't exist.
     virtual C4Collection* getCollection(CollectionSpec) const =0;
 

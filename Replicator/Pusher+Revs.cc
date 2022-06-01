@@ -71,7 +71,8 @@ namespace litecore::repl {
         MutableDict encryptedRoot;
         if (doc && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
             logVerbose("Encrypting properties in doc '%.*s'", SPLAT(request->docID));
-            encryptedRoot = EncryptDocumentProperties(request->docID, root,
+            encryptedRoot = EncryptDocumentProperties(request->collectionSpec, 
+                                                      request->docID, root,
                                                       _options->propertyEncryptor,
                                                       _options->callbackContext,
                                                       &c4err);

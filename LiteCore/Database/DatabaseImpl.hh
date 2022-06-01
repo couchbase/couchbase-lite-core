@@ -94,6 +94,7 @@ namespace litecore {
         void forEachScope(const ScopeCallback&) const override;
         void forEachCollection(const CollectionSpecCallback&) const override;
         bool hasCollection(CollectionSpec) const override;
+        bool hasScope(C4String) const override;
         C4Collection* getCollection(CollectionSpec) const override;
         C4Collection* createCollection(CollectionSpec) override;
         void deleteCollection(CollectionSpec) override;
@@ -167,7 +168,7 @@ namespace litecore {
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<CollectionSpec, std::unique_ptr<C4Collection>>;
+        using CollectionsMap = std::unordered_map<CollectionSpec, Retained<C4Collection>>;
 
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         mutable std::recursive_mutex _collectionsMutex;

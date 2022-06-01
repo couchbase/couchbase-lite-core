@@ -344,7 +344,7 @@ namespace litecore { namespace repl {
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         return isDocumentIDAllowed(doc->docID())
-            && (!_options->pushFilter || _options->pushFilter(nullslice,   // TODO: Collection support
+        && (!_options->pushFilter || _options->pushFilter({nullslice, nullslice},   // TODO: Collection support
                                                             doc->docID(),
                                                             doc->selectedRev().revID,
                                                             doc->selectedRev().flags,

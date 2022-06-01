@@ -73,18 +73,11 @@ function(setup_litecore_build)
     setup_litecore_build_linux()
 
     target_link_libraries(
-        LiteCoreStatic INTERFACE
-        Threads::Threads
-    )
-
-    target_link_libraries(
-        LiteCore INTERFACE
+        LiteCoreObjects INTERFACE
         Threads::Threads
     )
 endfunction()
 
 function(setup_rest_build)
     setup_rest_build_unix()
-
-    target_link_libraries(LiteCoreREST_Static INTERFACE mbedtls)
 endfunction()

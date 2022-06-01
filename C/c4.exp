@@ -304,6 +304,7 @@ _c4key_setPasswordSHA1
 
 _c4db_getDefaultCollection
 _c4db_hasCollection
+_c4db_hasScope
 _c4db_getCollection
 _c4db_createCollection
 _c4db_deleteCollection
@@ -317,6 +318,7 @@ _c4coll_getDocumentCount
 _c4coll_getLastSequence
 _c4coll_getDoc
 _c4coll_getDocBySequence
+_c4coll_isValid
 _c4coll_putDoc
 _c4coll_createDoc
 _c4coll_moveDoc

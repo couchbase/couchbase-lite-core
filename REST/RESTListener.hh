@@ -88,14 +88,19 @@ namespace litecore { namespace REST {
 
         /** Returns the database for this request, or null on error. */
         Retained<C4Database> databaseFor(RequestResponse&);
+        
+        /** Returns the collection for this request, or null on error */
+        Retained<C4Collection> collectionFor(RequestResponse&);
         unsigned registerTask(Task*);
         void unregisterTask(Task*);
 
         using HandlerMethod = void(RESTListener::*)(RequestResponse&);
         using DBHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Database*);
+        using CollectionHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Collection*);
 
         void addHandler(net::Method, const char *uri, HandlerMethod);
         void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char *uri, CollectionHandlerMethod);
         
         std::vector<net::Address> _addresses(C4Database *dbOrNull =nullptr,
                                             C4ListenerAPIs api = kC4RESTAPI) const;
@@ -111,21 +116,21 @@ namespace litecore { namespace REST {
         void handleReplicate(RequestResponse&);
         void handleActiveTasks(RequestResponse&);
 
-        void handleGetDatabase(RequestResponse&, C4Database*);
+        void handleGetDatabase(RequestResponse&, C4Collection*);
         void handleCreateDatabase(RequestResponse&);
         void handleDeleteDatabase(RequestResponse&, C4Database*);
 
-        void handleGetAllDocs(RequestResponse&, C4Database*);
-        void handleGetDoc(RequestResponse&, C4Database*);
-        void handleModifyDoc(RequestResponse&, C4Database*);
-        void handleBulkDocs(RequestResponse&, C4Database*);
+        void handleGetAllDocs(RequestResponse&, C4Collection*);
+        void handleGetDoc(RequestResponse&, C4Collection*);
+        void handleModifyDoc(RequestResponse&, C4Collection*);
+        void handleBulkDocs(RequestResponse&, C4Collection*);
 
         bool modifyDoc(fleece::Dict body,
                        std::string docID,
                        std::string revIDQuery,
                        bool deleting,
                        bool newEdits,
-                       C4Database *db,
+                       C4Collection *coll,
                        fleece::JSONEncoder& json,
                        C4Error *outError) noexcept;
 

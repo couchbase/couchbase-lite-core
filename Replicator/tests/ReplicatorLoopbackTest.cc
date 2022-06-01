@@ -904,7 +904,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     auto pullOptions = Replicator::Options::passive();
     atomic<int> validationCount {0};
     pullOptions.callbackContext = &validationCount;
-    pullOptions.pullValidator = [](FLString collectionName,
+    pullOptions.pullValidator = [](C4CollectionSpec collectionSpec,
                                    FLString docID, FLString revID,
                                    C4RevisionFlags flags, FLDict body, void *context)->bool {
         assert_always(flags == 0);      // can't use CHECK on a bg thread
@@ -1553,7 +1553,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     SECTION("With filter") {
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
         serverOpts.callbackContext = &validationCount;
-        serverOpts.pullValidator = [](FLString collectionName, FLString docID, FLString revID,
+        serverOpts.pullValidator = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
                                       C4RevisionFlags flags, FLDict body, void *context)->bool {
             assert_always(flags == 0);      // can't use CHECK on a bg thread
             ++(*(atomic<int>*)context);
@@ -1946,6 +1946,7 @@ struct TestEncryptorContext {
 };
 
 static C4SliceResult testEncryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,
@@ -1962,6 +1963,7 @@ static C4SliceResult testEncryptor(void* rawCtx,
 }
 
 static C4SliceResult testDecryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,

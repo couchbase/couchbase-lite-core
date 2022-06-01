@@ -50,7 +50,7 @@ function(setup_litecore_build)
 
 
     target_compile_definitions(
-        LiteCoreStatic PRIVATE
+        LiteCoreObjects PRIVATE
         -DLITECORE_USES_ICU=1
     )
 
@@ -60,17 +60,12 @@ function(setup_litecore_build)
     )
 
     target_include_directories(
-        LiteCoreStatic PRIVATE
-        LiteCore/Android
-    )
-
-    target_include_directories(
-        LiteCoreWebSocket PRIVATE
+        LiteCoreObjects PRIVATE
         LiteCore/Android
     )
 
     target_link_libraries(
-        LiteCoreStatic INTERFACE
+        LiteCoreObjects INTERFACE
         zlibstatic
     )
 
@@ -78,6 +73,12 @@ function(setup_litecore_build)
         LiteCore PUBLIC
         log
         atomic
+    )
+
+    target_include_directories(
+        LiteCoreWebSocket
+        PUBLIC
+        LiteCore/Android
     )
 endfunction()
 

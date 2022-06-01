@@ -385,6 +385,7 @@ public:
     TestEncryptorContext _encryptorContext;
 
     static C4SliceResult encryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,
@@ -401,6 +402,7 @@ public:
     }
 
     static C4SliceResult decryptor(void* rawCtx,
+                                   C4CollectionSpec collection,
                                    C4String documentID,
                                    FLDict properties,
                                    C4String keyPath,

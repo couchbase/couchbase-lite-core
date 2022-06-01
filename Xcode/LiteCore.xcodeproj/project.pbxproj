@@ -1543,7 +1543,6 @@
 		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF81121917EEC600A327B9 /* libLiteCore-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCore-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteDataFile+Indexes.cc"; sourceTree = "<group>"; };
-		27F2BE97221DC9DF006C13EE /* access_lock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = access_lock.hh; sourceTree = "<group>"; };
 		27F2BE9D221DE44B006C13EE /* ReplicatorOptions.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorOptions.hh; sourceTree = "<group>"; };
 		27F2BE9E221DEF4E006C13EE /* DBAccess.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DBAccess.hh; sourceTree = "<group>"; };
 		27F2BE9F221DF1A0006C13EE /* DBAccess.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBAccess.cc; sourceTree = "<group>"; };
@@ -1667,6 +1666,7 @@
 		729272F22238DB8500E7208E /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
+		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2272,7 +2272,6 @@
 			isa = PBXGroup;
 			children = (
 				2744B36124185D24005A194D /* Actors */,
-				27F2BE97221DC9DF006C13EE /* access_lock.hh */,
 				276CE67D2267991400B681AC /* Any.hh */,
 				275A74461ED37992008CB57B /* Base.hh */,
 				2744B33C241854F2005A194D /* Batcher.hh */,
@@ -2305,6 +2304,7 @@
 				2746C8E52639E88700A3B2CC /* ThreadUtil.cc */,
 				2744B343241854F2005A194D /* Timer.cc */,
 				2744B345241854F2005A194D /* Timer.hh */,
+				D624FC81282AF78900B423A8 /* WeakHolder.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -3875,7 +3875,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "if [[ \"$CONFIGURATION\" == Release* ]]\n  if which doxygen >/dev/null\n  then\n    cd $SRCROOT/../C\n    doxygen\n  fi\nfi\n";
+			shellScript = "if [[ \"$CONFIGURATION\" == Release* ]]\n  then\n  if which doxygen >/dev/null\n  then\n    cd $SRCROOT/../C\n    doxygen\n  fi\nfi\n";
 		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -197,11 +197,11 @@ static const C4Error kC4NoError = { };
 
 
 /** Returns an error message describing a C4Error. Remember to free the result. */
-FLStringResult c4error_getMessage(C4Error error) C4API;
+CBL_CORE_API FLStringResult c4error_getMessage(C4Error error) C4API;
 
 /** Returns a description of an error, including the domain and code as well as the message.
     Remember to free the result. */
-FLSliceResult c4error_getDescription(C4Error error) C4API;
+CBL_CORE_API FLSliceResult c4error_getDescription(C4Error error) C4API;
 
 /** Returns a description of an error, including the domain and code as well as the message.
     The description is copied to the buffer as a C string.
@@ -210,47 +210,47 @@ FLSliceResult c4error_getDescription(C4Error error) C4API;
     @param outBuffer  Where to write the C string to
     @param bufferSize  The size of the buffer
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
-char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
+CBL_CORE_API char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
 
 /** If set to `true`, then when a C4Error is created the current thread's stack backtrace will
     be captured along with it, and can later be examined by calling \ref c4error_getBacktrace.
     Even if false, some errors (like assertion failures) will still have backtraces. */
-void c4error_setCaptureBacktraces(bool) C4API;
+CBL_CORE_API void c4error_setCaptureBacktraces(bool) C4API;
 
-bool c4error_getCaptureBacktraces(void) C4API;
+CBL_CORE_API bool c4error_getCaptureBacktraces(void) C4API;
 
 /** Returns the stack backtrace, if any, associated with a C4Error.
     This is formatted in human-readable form similar to a debugger or crash log. */
-FLStringResult c4error_getBacktrace(C4Error error) C4API;
+CBL_CORE_API FLStringResult c4error_getBacktrace(C4Error error) C4API;
 
 
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
-C4Error c4error_make(C4ErrorDomain domain, int code, FLString message) C4API;
+CBL_CORE_API C4Error c4error_make(C4ErrorDomain domain, int code, FLString message) C4API;
 
 /** Creates a C4Error struct with the given domain and code, formats the message as with
     `printf`, and associates the message with the error. */
-C4Error c4error_printf(C4ErrorDomain domain,
+CBL_CORE_API C4Error c4error_printf(C4ErrorDomain domain,
                        int code,
                        const char *format, ...) C4API __printflike(3,4);
 
 /** Same as \ref c4error_printf, but with a premade `va_list`. */
-C4Error c4error_vprintf(C4ErrorDomain domain, int code,
+CBL_CORE_API C4Error c4error_vprintf(C4ErrorDomain domain, int code,
                         const char *format, va_list args) C4API __printflike(3,0);
 
 /** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the
     LiteCore error reporting convention of taking a `C4Error *outError` parameter. */
-void c4error_return(C4ErrorDomain domain, int code,
+CBL_CORE_API void c4error_return(C4ErrorDomain domain, int code,
                     FLString message,
                     C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns true if this is a network error that may be transient,
     i.e. the client should retry after a delay. */
-bool c4error_mayBeTransient(C4Error err) C4API;
+CBL_CORE_API bool c4error_mayBeTransient(C4Error err) C4API;
 
 /** Returns true if this error might go away when the network environment changes,
     i.e. the client should retry after notification of a network status change. */
-bool c4error_mayBeNetworkDependent(C4Error err) C4API;
+CBL_CORE_API bool c4error_mayBeNetworkDependent(C4Error err) C4API;
 
 
 /** @} */

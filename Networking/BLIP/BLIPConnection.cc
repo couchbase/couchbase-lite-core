@@ -117,6 +117,7 @@ namespace litecore { namespace blip {
         uint64_t                _totalBytesWritten {0}, _totalBytesRead {0};
         Stopwatch               _timeOpen;
         atomic_flag             _connectedWebSocket = ATOMIC_FLAG_INIT;
+        Retained<WeakHolder<Delegate>> _weakThis {new WeakHolder<Delegate>(this)};
 
     public:
 
@@ -175,6 +176,7 @@ namespace litecore { namespace blip {
                   _timeOpen.elapsed(),
                   _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
             logStats();
+            _weakThis->rescind(this);
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
@@ -213,7 +215,7 @@ namespace litecore { namespace blip {
         void _start() {
             Assert(!_connectedWebSocket.test_and_set());
             retain(this); // keep myself from being freed while I'm the webSocket's delegate
-            _webSocket->connect(this);
+            _webSocket->connect(_weakThis);
         }
 
         /** Implementation of public close() method. Closes the WebSocket. */

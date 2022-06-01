@@ -327,7 +327,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+    _pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
@@ -395,7 +395,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedPending = 99;
-        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
@@ -456,7 +456,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     SECTION("Filtered") {
         expectedIsPending = false;
         params.callbackContext = this;
-        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
             c4repl_getStatus(test->_repl);  // If _repl were locked during this callback, this would deadlock
@@ -638,6 +638,49 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     c4repl_stop(_repl);
     
     waitForStatus(kC4Stopped);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {
+    // c.f. the flow with test case "Stop after transient connect failure"
+    _mayGoOffline = true;
+    C4SocketFactory factory = {};
+    C4Socket* c4socket = nullptr;
+    factory.context = &c4socket;
+    factory.open = [](C4Socket* socket, const C4Address* addr,
+                      C4Slice options, void *context) {
+        C4Socket** pp = (C4Socket**)context;
+        if (*pp == nullptr) {
+            *pp = socket;
+            // elongate the lifetime of C4Socket.
+            c4socket_retain(socket);
+        }
+        c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
+    };
+
+    factory.close = [](C4Socket* socket) {
+        c4socket_closed(socket, {});
+    };
+
+    _socketFactory = &factory;
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+
+    waitForStatus(kC4Offline);
+
+    _numCallbacksWithLevel[kC4Connecting] = 0;
+    waitForStatus(kC4Connecting);
+    c4repl_stop(_repl);
+
+    waitForStatus(kC4Stopped);
+
+    // Because of the above c4socket_retain, the lifetime of c4socket is
+    // elongated, overliving the Replicator, Connection, and BLIPIO which serves
+    // as the delegate to the C4Socket/WebSocketImpl. The following call will crash
+    // if we don't use WeakHolder.
+    c4socket_gotHTTPResponse(c4socket, 0, nullslice);
+
+    c4socket_release(c4socket);
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {

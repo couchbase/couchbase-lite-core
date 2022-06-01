@@ -120,15 +120,15 @@ typedef struct C4Collection C4Collection;
 /** Opaque reference to a Connected Client. */
 typedef struct C4ConnectedClient C4ConnectedClient;
 
-/** Opaque handle to an opened database. */
-typedef struct C4Database C4Database;
-
 /** A collection-observer reference. */
 typedef struct C4CollectionObserver C4CollectionObserver;
 
 #ifndef C4_STRICT_COLLECTION_API
 typedef C4CollectionObserver C4DatabaseObserver;
 #endif
+
+/** Opaque handle to an opened database. */
+typedef struct C4Database C4Database;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;
@@ -177,59 +177,62 @@ typedef struct C4WriteStream C4WriteStream;
 
 
 // The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
-void* c4base_retain(void * C4NULLABLE obj) C4API;
-void c4base_release(void * C4NULLABLE obj) C4API;
+CBL_CORE_API void* c4base_retain(void * C4NULLABLE obj) C4API;
+CBL_CORE_API void c4base_release(void * C4NULLABLE obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
 static inline C4Cert* C4NULLABLE
     c4cert_retain(C4Cert* C4NULLABLE r) C4API       {return (C4Cert*)c4base_retain(r);}
+static inline C4Collection* C4NULLABLE
+    c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
 static inline C4ConnectedClient* C4NULLABLE
     c4client_retain(C4ConnectedClient* C4NULLABLE r) C4API {return (C4ConnectedClient*)c4base_retain(r);}
-static inline C4KeyPair* C4NULLABLE
-    c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
 static inline C4Database* C4NULLABLE
     c4db_retain(C4Database* C4NULLABLE r) C4API     {return (C4Database*)c4base_retain(r);}
+static inline C4KeyPair* C4NULLABLE
+    c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
 static inline C4Query* C4NULLABLE
     c4query_retain(C4Query* C4NULLABLE r) C4API     {return (C4Query*)c4base_retain(r);}
 
-C4Document* C4NULLABLE
+CBL_CORE_API C4Document* C4NULLABLE
     c4doc_retain(C4Document* C4NULLABLE) C4API;
-C4QueryEnumerator* C4NULLABLE
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE
     c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
-C4Socket* C4NULLABLE
+CBL_CORE_API C4Socket* C4NULLABLE
     c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
 static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
 static inline void c4client_release (C4ConnectedClient* C4NULLABLE r) C4API {c4base_release(r);}
-static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
+static inline void c4coll_release   (C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
 static inline void c4db_release     (C4Database* C4NULLABLE r) C4API   {c4base_release(r);}
+static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
 static inline void c4query_release  (C4Query* C4NULLABLE r) C4API      {c4base_release(r);}
 
-void               c4doc_release    (C4Document* C4NULLABLE) C4API;
-void               c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
-void               c4socket_release(C4Socket* C4NULLABLE) C4API;
+CBL_CORE_API void  c4doc_release    (C4Document* C4NULLABLE) C4API;
+CBL_CORE_API void  c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
+CBL_CORE_API void  c4socket_release(C4Socket* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
-void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;
-void c4docobs_free       (C4DocumentObserver* C4NULLABLE) C4API;
-void c4enum_free         (C4DocEnumerator* C4NULLABLE) C4API;
-void c4listener_free     (C4Listener* C4NULLABLE) C4API;
-void c4queryobs_free     (C4QueryObserver* C4NULLABLE) C4API;
-void c4raw_free          (C4RawDocument* C4NULLABLE) C4API;
-void c4repl_free         (C4Replicator* C4NULLABLE) C4API;
-void c4stream_close      (C4ReadStream* C4NULLABLE) C4API;
-void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
+CBL_CORE_API void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4docobs_free       (C4DocumentObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4enum_free         (C4DocEnumerator* C4NULLABLE) C4API;
+CBL_CORE_API void c4listener_free     (C4Listener* C4NULLABLE) C4API;
+CBL_CORE_API void c4queryobs_free     (C4QueryObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4raw_free          (C4RawDocument* C4NULLABLE) C4API;
+CBL_CORE_API void c4repl_free         (C4Replicator* C4NULLABLE) C4API;
+CBL_CORE_API void c4stream_close      (C4ReadStream* C4NULLABLE) C4API;
+CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
 /** Returns the number of objects that have been created but not yet freed.
     This can be used as a debugging/testing tool to detect leaks; for example, capture the value
     at the start of a test, then call again at the end and compare. */
-int c4_getObjectCount(void) C4API;
+CBL_CORE_API int c4_getObjectCount(void) C4API;
 
 /** Logs information about object in memory. Useful for debugging when \ref c4_getObjectCount
     indicates there are leaks. (Note: In release builds this doesn't have much to say, because
     the instrumentation it needs is suppressed for performance purposes.) */
-void c4_dumpInstances(void) C4API;
+CBL_CORE_API void c4_dumpInstances(void) C4API;
 
 
 /** @} */
@@ -244,10 +247,10 @@ void c4_dumpInstances(void) C4API;
 
 /** A string describing the version of LiteCore. Currently this just describes the Git branch and
     commit, in the form "Built from master branch, commit 0bc68f0d". */
-C4StringResult c4_getBuildInfo(void) C4API;
+CBL_CORE_API C4StringResult c4_getBuildInfo(void) C4API;
 
 /** A short version string. */
-C4StringResult c4_getVersion(void) C4API;
+CBL_CORE_API C4StringResult c4_getVersion(void) C4API;
 
 #define kC4EnvironmentTimezoneKey "tz"
 #define kC4EnvironmentSupportedLocales "supported_locales"
@@ -263,7 +266,7 @@ C4StringResult c4_getVersion(void) C4API;
 C4SliceResult c4_getEnvironmentInfo(void) C4API;
 
 /** Returns the current time, in _milliseconds_ since 1/1/1970. */
-C4Timestamp c4_now(void) C4API;
+CBL_CORE_API C4Timestamp c4_now(void) C4API;
 
 
 /** Wiring call for platforms without discoverable temporary directories.  Simply sets the SQLite
@@ -274,7 +277,7 @@ C4Timestamp c4_now(void) C4API;
                 records it.
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
-bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
+CBL_CORE_API bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
 
 
 /** Schedules a function to be called asynchronously on a background thread.
@@ -284,7 +287,7 @@ bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
     @param context  An arbitrary pointer that will be passed to the function. You can use this
         to provide state. Obviously, whatever this points to must remain valid until the
         future time when `task` is called. */
-void c4_runAsyncTask(void (*task)(void*), void* C4NULLABLE context) C4API;
+CBL_CORE_API void c4_runAsyncTask(void (*task)(void*), void* C4NULLABLE context) C4API;
 
 
 /** @} */

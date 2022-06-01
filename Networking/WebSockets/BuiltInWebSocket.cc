@@ -204,6 +204,7 @@ namespace litecore { namespace websocket {
             if (lastDisposition != HTTPLogic::kContinue) {
                 socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
+                socket->setNetworkInterface(parameters().networkInterface);
             }
             
             lastDisposition = logic.sendNextRequest(*socket);
@@ -244,7 +245,7 @@ namespace litecore { namespace websocket {
 
         // Tell the delegate what happened:
         if (!certData.empty())
-            delegate().onWebSocketGotTLSCertificate(slice(certData));
+            delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
         if (logic.status() != HTTPStatus::undefined)
             gotHTTPResponse(int(logic.status()), logic.responseHeaders());
         if (lastDisposition == HTTPLogic::kSuccess) {
@@ -441,6 +442,8 @@ namespace litecore { namespace websocket {
             if (_usuallyFalse(n <= 0)) {
                 if (n < 0)
                     closeWithError(_socket->error());
+                else                
+                    awaitWriteable();
                 return;
             }
             

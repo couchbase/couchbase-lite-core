@@ -72,7 +72,7 @@ C4API_BEGIN_DECLS
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_createIndex(C4Database *database,
+    CBL_CORE_API bool c4db_createIndex(C4Database *database,
                           C4String name,
                           C4String indexSpecJSON,
                           C4IndexType indexType,
@@ -88,7 +88,7 @@ C4API_BEGIN_DECLS
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_createIndex2(C4Database *database,
+    CBL_CORE_API bool c4db_createIndex2(C4Database *database,
                         C4String name,
                         C4String indexSpec,
                         C4QueryLanguage queryLanguage,
@@ -102,7 +102,7 @@ C4API_BEGIN_DECLS
         @param name The name of the index to delete
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_deleteIndex(C4Database *database,
+    CBL_CORE_API bool c4db_deleteIndex(C4Database *database,
                           C4String name,
                           C4Error* C4NULLABLE outError) C4API;
 
@@ -113,7 +113,7 @@ C4API_BEGIN_DECLS
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
-    C4SliceResult c4db_getIndexesInfo(C4Database* database,
+    CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database,
                                       C4Error* C4NULLABLE outError) C4API;
 
     /** @} */

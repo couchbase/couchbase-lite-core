@@ -83,6 +83,12 @@ namespace litecore { namespace REST {
         if (i == _databases.end())
             return false;
         _databases.erase(i);
+
+        auto j = _allowedCollections.find(name);
+        if(j != _allowedCollections.end()) {
+            _allowedCollections.erase(j);
+        }
+
         return true;
     }
 
@@ -95,6 +101,40 @@ namespace litecore { namespace REST {
                 return true;
             }
         }
+        return false;
+    }
+
+    bool Listener::registerCollection(const string& name, CollectionSpec collection) {
+        lock_guard<mutex> lock(_mutex);
+        auto i = _databases.find(name);
+        if (i == _databases.end())
+            return false;
+
+        auto j = _allowedCollections.find(name);
+        if(j == _allowedCollections.end()) {
+            vector<CollectionSpec> collections({collection});
+            _allowedCollections.emplace(name, collections);
+        } else {
+            j->second.push_back(collection);
+        }
+        
+        return true;
+    }
+
+
+    bool Listener::unregisterCollection(const string& name, CollectionSpec collection) {
+        lock_guard<mutex> lock(_mutex);
+        auto i = _allowedCollections.find(name);
+        if(i == _allowedCollections.end())
+            return false;
+
+        for(auto j = i->second.begin(); j != i->second.end(); j++) {
+            if(*j == collection) {
+                i->second.erase(j);
+                return true;
+            }
+        }
+
         return false;
     }
 

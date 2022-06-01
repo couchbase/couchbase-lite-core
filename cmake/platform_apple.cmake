@@ -36,11 +36,11 @@ function(setup_litecore_build)
     setup_litecore_build_unix()
 
     target_compile_definitions(
-        LiteCoreStatic PUBLIC
+        LiteCoreObjects PUBLIC
         -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
-    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPObjects)
+    foreach(platform LiteCoreObjects BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"
@@ -50,27 +50,10 @@ function(setup_litecore_build)
     endforeach()
 
     target_link_libraries(
-        LiteCoreStatic INTERFACE
+        LiteCoreObjects INTERFACE
         "-framework Security"
-    )
-
-    target_link_libraries(
-        LiteCoreWebSocket INTERFACE
         "-framework SystemConfiguration"
     )
-
-    # Specify list of symbols to export
-    if(BUILD_ENTERPRISE)
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4_ee.exp"
-        )
-    else()
-        set_target_properties(
-            LiteCore PROPERTIES LINK_FLAGS
-            "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp"
-        )
-    endif()
 endfunction()
 
 function(setup_rest_build)
