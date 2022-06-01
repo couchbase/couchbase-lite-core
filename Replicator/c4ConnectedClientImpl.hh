@@ -17,6 +17,7 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "Replicator.hh"
 #include "RevTree.hh"
 #include "TreeDocument.hh"
 
@@ -26,7 +27,7 @@ namespace litecore::client {
     using namespace litecore::actor;
     using namespace std;
     
-    struct C4ConnectedClientImpl: public C4ConnectedClient, public ConnectedClient::Delegate {
+    struct C4ConnectedClientImpl final: public C4ConnectedClient, public ConnectedClient::Delegate {
         
     public:
         C4ConnectedClientImpl(const C4ConnectedClientParameters &params) {
@@ -37,7 +38,7 @@ namespace litecore::client {
             }
 
             auto webSocket = repl::CreateWebSocket(effectiveURL(params.url),
-                                                   socketOptions(),
+                                                   socketOptions(params),
                                                    nullptr,
                                                    _socketFactory);
             _client = new ConnectedClient(webSocket, *this, params);
@@ -132,8 +133,21 @@ namespace litecore::client {
             _client = nullptr;
         }
         
-        alloc_slice effectiveURL(slice);
-        alloc_slice socketOptions();
+        alloc_slice effectiveURL(slice url) {
+            string newPath(url);
+            if (!url.hasSuffix("/"))
+                newPath += "/";
+            newPath += "_blipsync";
+            return alloc_slice(newPath);
+        }
+
+        alloc_slice socketOptions(const C4ConnectedClientParameters &params) {
+            // Use a temporary repl::Options object,
+            // because it has the handy ability to add properties to an existing Fleece dict.
+            repl::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
+            opts.setProperty(kC4SocketOptionWSProtocols, repl::Replicator::protocolName().c_str());
+            return opts.properties.data();
+        }
         
         mutable std::mutex                  _mutex;
         Retained<ConnectedClient>           _client;
