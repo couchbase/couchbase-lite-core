@@ -30,24 +30,38 @@ public:
 
     C4CollectionTest(int testOption) :C4Test(testOption) { }
 
-    string getCollectionNames(slice inScope) {
+    string getNames(FLMutableArray source) {
         stringstream result;
         delimiter delim(", ");
-        db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
-            CHECK(spec.scope == inScope);
-            result << delim << string_view(slice(spec.name));
-        });
+        FLArrayIterator i;
+        FLArrayIterator_Begin(source, &i);
+        if(FLArrayIterator_GetCount(&i) == 0) {
+            return "";
+        }
+
+        do {
+            string next = (string)(FLValue_AsString(FLArrayIterator_GetValue(&i)));
+            result << delim << next;
+        } while(FLArrayIterator_Next(&i));
+
         return result.str();
+    }
+
+    string getCollectionNames(slice inScope) {
+        auto names = c4db_collectionNames(db, inScope, ERROR_INFO());
+        REQUIRE(names);
+        auto result = getNames(names);
+        FLMutableArray_Release(names);
+        return result;
     }
 
 
     string getScopeNames() {
-        stringstream result;
-        delimiter delim(", ");
-        db->forEachScope([&](slice name) {
-            result << delim << string_view(name);
-        });
-        return result.str();
+        auto names = c4db_scopeNames(db, ERROR_INFO());
+        REQUIRE(names);
+        auto result = getNames(names);
+        FLMutableArray_Release(names);
+        return result;
     }
 
 
@@ -63,10 +77,9 @@ public:
             rq.historyCount = 1;
             rq.body = kFleeceBody;
             rq.save = true;
-            auto doc = coll->putDocument(rq, nullptr, ERROR_INFO());
+            auto doc = c4coll_putDoc(coll, &rq, nullptr, ERROR_INFO());
             REQUIRE(doc);
-            CHECK(doc->collection() == coll);
-            CHECK(doc->database() == db);
+            c4doc_release(doc);
         }
     }
 };
@@ -79,22 +92,22 @@ static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
     CHECK(getScopeNames() == "_default");
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
-    CHECK(db->hasCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
+    CHECK(c4db_hasCollection(db, kC4DefaultCollectionSpec));
+    CHECK(c4db_hasScope(db, kC4DefaultScopeID));
 
-    C4Collection* dflt = db->getDefaultCollection();
+    C4Collection* dflt = c4db_getDefaultCollection(db);
     REQUIRE(dflt);
-    CHECK(dflt == db->getDefaultCollection());              // Must be idempotent!
-    CHECK(dflt == db->getCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
-    CHECK(dflt == db->createCollection({kC4DefaultCollectionName, kC4DefaultScopeID}));
+    CHECK(dflt == c4db_getDefaultCollection(db));              // Must be idempotent!
+    CHECK(dflt == c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+    CHECK(dflt == c4db_createCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+    
+    auto spec = c4coll_getSpec(dflt);
+    CHECK(spec.name == kC4DefaultCollectionName);
+    CHECK(spec.scope == kC4DefaultScopeID);
 
-    CHECK(dflt->getName() == kC4DefaultCollectionName);
-    CHECK(dflt->getScope() == kC4DefaultCollectionName);
-    CHECK(dflt->getSpec().name == kC4DefaultCollectionName);
-    CHECK(dflt->getSpec().scope == kC4DefaultCollectionName);
-
-    CHECK(dflt->getDatabase() == db);
-    CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0_seq);
+    CHECK(c4coll_getDatabase(dflt) == db);
+    CHECK(c4coll_getDocumentCount(dflt) == 0);
+    CHECK(c4coll_getLastSequence(dflt) == 0_seq);
     // The existing c4Database tests exercise the C4Collection API for the default collection,
     // since they call the c4Database C functions which are wrappers that indirect through
     // db->getDefaultCollection().
@@ -102,14 +115,18 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 
     // It is, surprisingly, legal to delete the default collection:
-    db->deleteCollection(kC4DefaultCollectionName);
-    CHECK(db->getDefaultCollection() == nullptr);
-    CHECK(db->getCollection(kC4DefaultCollectionName) == nullptr);
+    REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+    CHECK(c4db_getDefaultCollection(db) == nullptr);
+    CHECK(c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()) == nullptr);
     CHECK(getCollectionNames(kC4DefaultScopeID) == "");
+    
     // But you can't recreate it:
-    C4ExpectException(LiteCoreDomain, kC4ErrorInvalidParameter, [&]{
-        db->createCollection(kC4DefaultCollectionName);
-    });
+    c4log_warnOnErrors(false);
+    C4Error err;
+    CHECK(!c4db_createCollection(db, kC4DefaultCollectionSpec, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
+    c4log_warnOnErrors(true);
 
     // However, the default scope still exists
     CHECK(c4db_hasScope(db, kC4DefaultScopeID));
@@ -117,55 +134,56 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Collection][C]") {
-    CHECK(!db->hasCollection(Guitars));
-    CHECK(db->getCollection(Guitars) == nullptr);
+    CHECK(!c4db_hasCollection(db, Guitars));
+    CHECK(c4db_getCollection(db, Guitars, ERROR_INFO()) == nullptr);
 
     // Create "guitars" collection:
-    Retained<C4Collection> guitars = db->createCollection(Guitars);
-    CHECK(guitars == db->getCollection(Guitars));
+    Retained<C4Collection> guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
+    REQUIRE(guitars);
+    CHECK(guitars == c4db_getCollection(db, Guitars, ERROR_INFO()));
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default, guitars");
 
-    Retained<C4Collection> dflt = db->getDefaultCollection();
+    Retained<C4Collection> dflt = c4db_getDefaultCollection(db);
     CHECK(dflt != guitars);
 
     // Put some stuff in the default collection
     createNumberedDocs(100);
-    CHECK(dflt->getDocumentCount() == 100);
-    CHECK(dflt->getLastSequence() == 100_seq);
+    CHECK(c4coll_getDocumentCount(dflt) == 100);
+    CHECK(c4coll_getLastSequence(dflt) == 100_seq);
 
     // Verify "guitars" is empty:
-    CHECK(guitars->getSpec().name == Guitars);
-    CHECK(guitars->getSpec().scope == kC4DefaultScopeID);
-    CHECK(guitars->getDatabase() == db);
-    CHECK(guitars->getDocumentCount() == 0);
-    CHECK(guitars->getLastSequence() == 0_seq);
+    auto spec = c4coll_getSpec(guitars);
+    CHECK(spec.name == GuitarsName);
+    CHECK(spec.scope == kC4DefaultScopeID);
+    CHECK(c4coll_getDatabase(guitars) == db);
+    CHECK(c4coll_getDocumentCount(guitars) == 0);
+    CHECK(c4coll_getLastSequence(guitars) == 0_seq);
 
     // Delete "guitars":
-    CHECK(guitars->isValid());
-    db->deleteCollection(Guitars);
-    CHECK(!guitars->isValid());
-    CHECK(guitars->getSpec().name == Guitars);
-    CHECK(guitars->getSpec().scope == kC4DefaultScopeID);
-    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
-        guitars->getDatabase();
-    });
-    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
-        guitars->getDocumentCount();
-    });
+    CHECK(c4coll_isValid(guitars));
+    REQUIRE(c4db_deleteCollection(db, Guitars, ERROR_INFO()));
+    CHECK(!c4coll_isValid(guitars));
 
-    CHECK(!db->hasCollection(Guitars));
-    CHECK(db->getCollection(Guitars) == nullptr);
+    spec = c4coll_getSpec(guitars);
+    CHECK(spec.name == GuitarsName);
+    CHECK(spec.scope == kC4DefaultScopeID);
+
+    //TODO: Expose error?
+    CHECK(!c4coll_getDatabase(guitars));
+    CHECK(c4coll_getDocumentCount(guitars) == 0); 
+ 
+    CHECK(!c4db_hasCollection(db, Guitars));
+    CHECK(c4db_getCollection(db, Guitars, ERROR_INFO()) == nullptr);
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 
     // Close the database, then try to use the C4Collections:
-    CHECK(dflt->isValid());
+    CHECK(c4coll_isValid(dflt));
     closeDB();
-    CHECK(!dflt->isValid());
-    CHECK(!guitars->isValid());
-    C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
-        dflt->getDatabase();
-    });
+    CHECK(!c4coll_isValid(dflt));
+    CHECK(!c4coll_isValid(guitars));
+    
+    CHECK(!c4coll_getDatabase(dflt));
 }
 
 
@@ -204,8 +222,9 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Use after close", "[Database][Collecti
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][Collection][C]") {
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection(Guitars);
-    C4Collection* dflt = db->getDefaultCollection();
+    C4Collection* guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
+    REQUIRE(guitars);
+    C4Collection* dflt = c4db_getDefaultCollection(db);
 
     // Add 100 documents to it:
     {
@@ -213,10 +232,11 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
         addNumberedDocs(guitars, 100);
         t.commit();
     }
-    CHECK(guitars->getDocumentCount() == 100);
-    CHECK(guitars->getLastSequence() == 100_seq);
-    CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0_seq);
+
+    CHECK(c4coll_getDocumentCount(guitars) == 100);
+    CHECK(c4coll_getLastSequence(guitars) == 100_seq);
+    CHECK(c4coll_getDocumentCount(dflt) == 0);
+    CHECK(c4coll_getLastSequence(dflt) == 0_seq);
 
     // Add more docs to it and _default, but abort:
     {
@@ -224,32 +244,36 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
         addNumberedDocs(guitars, 100, 101);
         addNumberedDocs(dflt, 100);
 
-        CHECK(guitars->getDocumentCount() == 200);
-        CHECK(guitars->getLastSequence() == 200_seq);
-        CHECK(dflt->getDocumentCount() == 100);
-        CHECK(dflt->getLastSequence() == 100_seq);
+        CHECK(c4coll_getDocumentCount(guitars) == 200);
+        CHECK(c4coll_getLastSequence(guitars) == 200_seq);
+        CHECK(c4coll_getDocumentCount(dflt) == 100);
+        CHECK(c4coll_getLastSequence(dflt) == 100_seq);
 
         t.abort();
     }
-    CHECK(guitars->getDocumentCount() == 100);
-    CHECK(guitars->getLastSequence() == 100_seq);
-    CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0_seq);
+
+    CHECK(c4coll_getDocumentCount(guitars) == 100);
+    CHECK(c4coll_getLastSequence(guitars) == 100_seq);
+    CHECK(c4coll_getDocumentCount(dflt) == 0);
+    CHECK(c4coll_getLastSequence(dflt) == 0_seq);
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") {
-    static constexpr slice SupaDopeScope = "SupaDope";
+    static constexpr slice SupaDopeCollection = "fresh"_sl;
+    static constexpr slice SupaDopeScope = "SupaDope"_sl;
+    static constexpr C4CollectionSpec SupaDope = { SupaDopeCollection, SupaDopeScope };
 
     CHECK(getScopeNames() == "_default");
-    CHECK(db->getCollection({"fresh"_sl, SupaDopeScope}) == nullptr);
-    C4Collection* fresh = db->createCollection({"fresh"_sl, SupaDopeScope});
+    CHECK(c4db_getCollection(db, SupaDope, ERROR_INFO()) == nullptr);
+    C4Collection* fresh = c4db_createCollection(db, SupaDope, ERROR_INFO());
     REQUIRE(fresh);
 
     // Verify "fresh" is empty:
-    CHECK(fresh->getSpec().name == "fresh"_sl);
-    CHECK(fresh->getSpec().scope == SupaDopeScope);
-    CHECK(fresh->getDatabase() == db);
-    CHECK(fresh->getDocumentCount() == 0);
-    CHECK(fresh->getLastSequence() == 0_seq);
+    auto spec = c4coll_getSpec(fresh);
+    CHECK(spec.name == SupaDopeCollection);
+    CHECK(spec.scope == SupaDopeScope);
+    CHECK(c4coll_getDatabase(fresh) == db);
+    CHECK(c4coll_getDocumentCount(fresh) == 0);
+    CHECK(c4coll_getLastSequence(fresh) == 0_seq);
 }
