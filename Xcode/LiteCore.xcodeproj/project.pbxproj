@@ -3875,7 +3875,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "if which doxygen >/dev/null\nthen\n  cd $SRCROOT/../C\n  doxygen\nfi\n";
+			shellScript = "if [[ \"$CONFIGURATION\" == Release* ]]\n  if which doxygen >/dev/null\n  then\n    cd $SRCROOT/../C\n    doxygen\n  fi\nfi\n";
 		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;
