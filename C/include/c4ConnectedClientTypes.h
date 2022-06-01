@@ -28,18 +28,25 @@ typedef struct C4DocResponse {
 } C4DocResponse;
 
 
+typedef C4ReplicatorStatus C4ConnectedClientStatus;
+
+/** Callback a client can register, to get status information.
+    This will be called on arbitrary background threads, and should not block. */
+typedef void (*C4ConnectedClientStatusChangedCallback)(C4ConnectedClient*,
+                                                       C4ConnectedClientStatus,
+                                                       void * C4NULLABLE context);
+
+
 /** Parameters describing a connected client, used when creating a \ref C4ConnectedClient. */
 typedef struct C4ConnectedClientParameters {
     C4Slice                                           url;               ///<URL with database to connect
     C4Slice                                           optionsDictFleece; ///< Fleece-encoded dictionary of optional parameters.
+    C4ConnectedClientStatusChangedCallback C4NULLABLE onStatusChanged;   ///< Called when status changes
     C4ReplicatorPropertyEncryptionCallback C4NULLABLE propertyEncryptor; ///< Encryption callback
     C4ReplicatorPropertyDecryptionCallback C4NULLABLE propertyDecryptor; ///< Decryption callback
     void* C4NULLABLE                                  callbackContext;   ///< Value passed to callbacks.
     const C4SocketFactory* C4NULLABLE                 socketFactory;     ///< Custom C4SocketFactory
 } C4ConnectedClientParameters;
-
-
-typedef C4ReplicatorStatus C4ConnectedClientStatus;
 
 /** Callback for getting the document result.
     @param client  The client that initiated the callback.

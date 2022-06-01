@@ -29,9 +29,18 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     /// @result A new \ref C4ConnectedClient, or NULL on failure.
     static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters &params);
 
+    /// The current connection status.
     virtual litecore::actor::Async<C4ConnectedClientStatus> getStatus() const =0;
 
-    /** Result of a successful `getDoc()` call. */
+    /// The HTTP response headers.
+    virtual alloc_slice getResponseHeaders() const noexcept =0;
+
+#ifdef COUCHBASE_ENTERPRISE
+    /// The server's TLS certificate.
+    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const =0;
+#endif
+
+    /// Result of a successful `getDoc()` call.
     struct DocResponse {
         alloc_slice docID, revID, body;
         bool deleted;

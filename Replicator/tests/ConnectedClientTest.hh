@@ -124,21 +124,25 @@ public:
     {
         Log("+++ Client got HTTP response");
     }
+
     void clientGotTLSCertificate(client::ConnectedClient* NONNULL,
                                  slice certData) override
     {
         Log("+++ Client got TLS certificate");
     }
+
     void clientStatusChanged(client::ConnectedClient* NONNULL,
-                             C4ReplicatorActivityLevel level) override {
-        Log("+++ Client status changed: %d", int(level));
-        if (level == kC4Stopped) {
+                             client::ConnectedClient::Status const& status) override
+    {
+        Log("+++ Client status changed: %d", int(status.level));
+        if (status.level == kC4Stopped) {
             std::unique_lock<std::mutex> lock(_mutex);
             _clientRunning = false;
             if (!_clientRunning && !_serverRunning)
                 _cond.notify_all();
         }
     }
+
     void clientConnectionClosed(client::ConnectedClient* NONNULL,
                                 const CloseStatus &close) override {
         Log("+++ Client connection closed: reason=%d, code=%d, message=%.*s",

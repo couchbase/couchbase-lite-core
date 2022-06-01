@@ -68,7 +68,7 @@ namespace litecore::client {
             virtual void clientGotTLSCertificate(ConnectedClient* NONNULL,
                                                  slice certData) =0;
             virtual void clientStatusChanged(ConnectedClient* NONNULL,
-                                             ActivityLevel) =0;
+                                             const Status&) =0;
             virtual void clientConnectionClosed(ConnectedClient* NONNULL,
                                                 const CloseStatus&)  { }
 

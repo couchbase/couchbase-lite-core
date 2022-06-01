@@ -17,9 +17,14 @@
 #include "c4ConnectedClient.hh"
 #include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "Headers.hh"
 #include "Replicator.hh"
 #include "RevTree.hh"
 #include "TreeDocument.hh"
+
+#ifdef COUCHBASE_ENTERPRISE
+#include "c4Certificate.hh"
+#endif
 
 namespace litecore::client {
 
@@ -30,17 +35,19 @@ namespace litecore::client {
     struct C4ConnectedClientImpl final: public C4ConnectedClient, public ConnectedClient::Delegate {
         
     public:
-        C4ConnectedClientImpl(const C4ConnectedClientParameters &params) {
+        C4ConnectedClientImpl(const C4ConnectedClientParameters &params)
+        :_onStatusChanged(params.onStatusChanged)
+        ,_callbackContext(params.callbackContext)
+        {
             if (params.socketFactory) {
                 // Keep a copy of the C4SocketFactory struct in case original is invalidated:
-                _customSocketFactory = *params.socketFactory;
-                _socketFactory = &_customSocketFactory;
+                _socketFactory = *params.socketFactory;
             }
 
             auto webSocket = repl::CreateWebSocket(effectiveURL(params.url),
                                                    socketOptions(params),
                                                    nullptr,
-                                                   _socketFactory);
+                                                   (_socketFactory ? &*_socketFactory : nullptr));
             _client = new ConnectedClient(webSocket, *this, params);
             _client->start();
         }
@@ -48,25 +55,52 @@ namespace litecore::client {
         Async<C4ConnectedClientStatus> getStatus() const override {
             return _client->status();
         }
-    
-    protected:
+
+        alloc_slice getResponseHeaders() const noexcept override {
+            return _responseHeaders;
+        }
+
+#ifdef COUCHBASE_ENTERPRISE
+        C4Cert* getPeerTLSCertificate() const override {
+            LOCK(_mutex);
+            if (!_peerTLSCertificate && _peerTLSCertificateData) {
+                _peerTLSCertificate = C4Cert::fromData(_peerTLSCertificateData);
+                _peerTLSCertificateData = nullptr;
+            }
+            return _peerTLSCertificate;
+        }
+#endif
+
+
 #pragma mark - ConnectedClient Delegate
         
-        virtual void clientGotHTTPResponse(ConnectedClient* C4NONNULL client,
+    protected:
+        virtual void clientGotHTTPResponse(ConnectedClient* client,
                                            int status,
-                                           const websocket::Headers &headers) override {
-            // TODO: implement
+                                           const websocket::Headers &headers) override
+        {
+            _responseHeaders = headers.encode();
         }
-        virtual void clientGotTLSCertificate(ConnectedClient* C4NONNULL client,
-                                             slice certData) override {
-            // TODO: implement
+
+        virtual void clientGotTLSCertificate(ConnectedClient* client,
+                                             slice certData) override
+        {
+#ifdef COUCHBASE_ENTERPRISE
+            LOCK(_mutex);
+            _peerTLSCertificateData = certData;
+            _peerTLSCertificate = nullptr;
+#endif
         }
-        virtual void clientStatusChanged(ConnectedClient* C4NONNULL client,
-                                         ConnectedClient::ActivityLevel level) override {
-            // TODO: implement
+
+        virtual void clientStatusChanged(ConnectedClient* client,
+                                         const ConnectedClient::Status &status) override
+        {
+            if (_onStatusChanged)
+                _onStatusChanged(this, status, _callbackContext);
         }
-        virtual void clientConnectionClosed(ConnectedClient* C4NONNULL client, const CloseStatus& status) override {
-            // TODO: implement
+
+        virtual void clientConnectionClosed(ConnectedClient*, const CloseStatus& status) override {
+            // (do we need to do anything here?)
         }
         
 #pragma mark -
@@ -111,7 +145,7 @@ namespace litecore::client {
             _client->getAllDocIDs(collectionID, pattern, callback);
         }
         
-        void query(slice name, FLDict C4NULLABLE params, bool asFleece, QueryReceiver rcvr) override {
+        void query(slice name, FLDict params, bool asFleece, QueryReceiver rcvr) override {
             _client->query(name, params, asFleece, rcvr);
         }
 
@@ -149,9 +183,15 @@ namespace litecore::client {
             return opts.properties.data();
         }
         
-        mutable std::mutex                  _mutex;
-        Retained<ConnectedClient>           _client;
-        const C4SocketFactory* C4NULLABLE   _socketFactory {nullptr};
-        C4SocketFactory                     _customSocketFactory {};  // Storage for *_socketFactory if non-null
+        mutable std::mutex                      _mutex;
+        Retained<ConnectedClient>               _client;
+        optional<C4SocketFactory>               _socketFactory;
+        C4ConnectedClientStatusChangedCallback  _onStatusChanged;
+        void*                                   _callbackContext;
+        alloc_slice                             _responseHeaders;
+#ifdef COUCHBASE_ENTERPRISE
+        mutable alloc_slice                     _peerTLSCertificateData;
+        mutable Retained<C4Cert>                _peerTLSCertificate;
+#endif
     };
 }

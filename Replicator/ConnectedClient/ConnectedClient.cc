@@ -62,13 +62,16 @@ namespace litecore::client {
     }
 
 
-    void ConnectedClient::setStatus(ActivityLevel status) {
-        if (status != _activityLevel) {
-            _activityLevel = status;
+    void ConnectedClient::setStatus(ActivityLevel level) {
+        if (level != _activityLevel) {
+            _activityLevel = level;
             
             LOCK(_mutex);
-            if (_delegate)
+            if (_delegate) {
+                Status status = Worker::status();
+                status.level = _activityLevel;
                 _delegate->clientStatusChanged(this, status);
+            }
         }
     }
 
@@ -158,7 +161,6 @@ namespace litecore::client {
                     status.reasonName(), status.code, FMTSLICE(status.message), state);
 
             bool closedByPeer = (_activityLevel != kC4Stopping);
-            setStatus(kC4Stopped);
 
             _connectionClosed();
 
@@ -183,6 +185,7 @@ namespace litecore::client {
                 }
                 gotError(C4Error::make(domain, code, status.message));
             }
+            setStatus(kC4Stopped);
             {
                 LOCK(_mutex);
                 if (_delegate)
