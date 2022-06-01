@@ -283,6 +283,8 @@ _c4listener_unshareDB
 _c4listener_getPort
 _c4listener_getURLs
 _c4listener_getConnectionStatus
+_c4listener_shareCollection
+_c4listener_unshareCollection
 
 _c4cert_copyChainData
 _c4cert_copyData
@@ -343,10 +345,12 @@ _c4key_setPasswordSHA1
 
 _c4db_getDefaultCollection
 _c4db_hasCollection
+_c4db_hasScope
 _c4db_getCollection
 _c4db_createCollection
 _c4db_deleteCollection
 _c4db_collectionNames
+_c4db_scopeNames
 _c4dbobs_createOnCollection
 _c4docobs_createWithCollection
 _c4coll_getSpec
