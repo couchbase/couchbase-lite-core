@@ -1650,6 +1650,7 @@
 		93FA3F6B1EE21BAE00D15CF5 /* LCSServer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LCSServer.mm; sourceTree = "<group>"; };
 		93FA3F6C1EE21BAE00D15CF5 /* LCSServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCSServerConfig.h; sourceTree = "<group>"; };
 		93FA3F6D1EE21BAE00D15CF5 /* LCSServerConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LCSServerConfig.m; sourceTree = "<group>"; };
+		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2285,6 +2286,7 @@
 				2746C8E52639E88700A3B2CC /* ThreadUtil.cc */,
 				2744B343241854F2005A194D /* Timer.cc */,
 				2744B345241854F2005A194D /* Timer.hh */,
+				D624FC81282AF78900B423A8 /* WeakHolder.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";

@@ -640,6 +640,49 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     waitForStatus(kC4Stopped);
 }
 
+TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {
+    // c.f. the flow with test case "Stop after transient connect failure"
+    _mayGoOffline = true;
+    C4SocketFactory factory = {};
+    C4Socket* c4socket = nullptr;
+    factory.context = &c4socket;
+    factory.open = [](C4Socket* socket, const C4Address* addr,
+                      C4Slice options, void *context) {
+        C4Socket** pp = (C4Socket**)context;
+        if (*pp == nullptr) {
+            *pp = socket;
+            // elongate the lifetime of C4Socket.
+            c4socket_retain(socket);
+        }
+        c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
+    };
+
+    factory.close = [](C4Socket* socket) {
+        c4socket_closed(socket, {});
+    };
+
+    _socketFactory = &factory;
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+
+    waitForStatus(kC4Offline);
+
+    _numCallbacksWithLevel[kC4Connecting] = 0;
+    waitForStatus(kC4Connecting);
+    c4repl_stop(_repl);
+
+    waitForStatus(kC4Stopped);
+
+    // Because of the above c4socket_retain, the lifetime of c4socket is
+    // elongated, overliving the Replicator, Connection, and BLIPIO which serves
+    // as the delegate to the C4Socket/WebSocketImpl. The following call will crash
+    // if we don't use WeakHolder.
+    c4socket_gotHTTPResponse(c4socket, 0, nullslice);
+
+    c4socket_release(c4socket);
+}
+
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     createDB2();
 
