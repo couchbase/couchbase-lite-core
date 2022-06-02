@@ -46,6 +46,8 @@ namespace litecore {
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
         exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_del_" + name + "\"");
+        DataFile::deleteKeyStore(name);
         // TODO: Do I need to drop indexes, triggers?
     }
 
@@ -99,6 +101,10 @@ namespace litecore {
     void SQLiteKeyStore::reopen() {
         if (_existence == kNonexistent)
             createTable();
+    }
+
+    void SQLiteKeyStore::reset() {
+        _existence = kNonexistent;
     }
 
 

@@ -191,12 +191,25 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
     C4Database* db2 = c4db_openAgain(db, ERROR_INFO());
     REQUIRE(db2);
 
+
     Retained<C4Collection> guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
     REQUIRE(guitars);
+
+    {
+        C4Database::Transaction t(db);
+        addNumberedDocs(guitars, 100);
+        t.commit();
+    }
 
     Retained<C4Collection> guitars2 = c4db_getCollection(db2, Guitars, ERROR_INFO());
     REQUIRE(guitars2);
 
+    CHECK(c4coll_getDocumentCount(guitars) == 100);
+    CHECK(c4coll_getDocumentCount(guitars2) == 100);
+    CHECK(c4coll_getLastSequence(guitars) == 100_seq);
+    CHECK(c4coll_getLastSequence(guitars2) == 100_seq);
+
+    // First delete the collection on the second DB instances
     REQUIRE(c4db_deleteCollection(db2, Guitars, ERROR_INFO()));
     CHECK(!c4coll_isValid(guitars2));
     CHECK(!c4coll_isValid(guitars));
@@ -205,6 +218,35 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
     CHECK(!c4db_getCollection(db2, Guitars, ERROR_INFO()));
     CHECK(!c4db_getCollection(db, Guitars, ERROR_INFO()));
 
+    // Then recreate it on the first DB instance
+    guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
+    REQUIRE(guitars);
+    guitars2 = c4db_getCollection(db2, Guitars, ERROR_INFO());
+    REQUIRE(guitars2);
+
+    CHECK(c4coll_isValid(guitars2));
+    CHECK(c4coll_isValid(guitars));
+    CHECK(c4coll_getDocumentCount(guitars) == 0);
+    CHECK(c4coll_getDocumentCount(guitars2) == 0);
+
+    // NOTE: Sequence numbers do NOT reset in this case
+    CHECK(c4coll_getLastSequence(guitars) == 100_seq);
+    CHECK(c4coll_getLastSequence(guitars2) == 100_seq);
+    CHECK(c4db_hasCollection(db2, Guitars));
+    CHECK(c4db_hasCollection(db, Guitars));
+    CHECK(c4db_getCollection(db2, Guitars, ERROR_INFO()));
+    CHECK(c4db_getCollection(db, Guitars, ERROR_INFO()));
+
+    {
+        C4Database::Transaction t(db);
+        addNumberedDocs(guitars, 100);
+        t.commit();
+    }
+
+    CHECK(c4coll_getDocumentCount(guitars) == 100);
+    CHECK(c4coll_getDocumentCount(guitars2) == 100);
+    CHECK(c4coll_getLastSequence(guitars) == 200_seq);
+    CHECK(c4coll_getLastSequence(guitars2) == 200_seq);
 
     c4db_close(db2, nullptr);
     c4db_release(db2);

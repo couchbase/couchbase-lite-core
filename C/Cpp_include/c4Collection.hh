@@ -34,7 +34,12 @@ C4_ASSUME_NONNULL_BEGIN
 struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCountedIn<C4Collection> {
     // Accessors:
 
-    bool isValid() const                                    {return _database != nullptr;}
+    bool isValid() const                                    {return _isValid && _database != nullptr;}
+
+    // Use this to invalidate an otherwise valid collection (e.g. if it has been
+    // deleted via another handle) but keep the object alive to avoid freeing
+    // memory too soon
+    void invalidate()                                       {_isValid = false;}
     slice getName() const                                   {return _name;}
     slice getScope() const                                  {return _scope;}
     C4CollectionSpec getSpec() const                        {return {_name, _scope};}
@@ -137,6 +142,7 @@ protected:
     alloc_slice             _scope;
     alloc_slice             _name;
     C4ExtraInfo             _extraInfo = {};
+    bool                    _isValid {true};           // This handle is invalid because it was deleted via another handle
 };
 
 

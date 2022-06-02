@@ -628,11 +628,28 @@ namespace litecore {
 
         // Is there already a C4Collection object for it in _collections?
         LOCK(_collectionsMutex);
-        if (auto i = _collections.find(spec); i != _collections.end())
-            return i->second;                                         // -> Existing object
-
         // Validate the name (throws if invalid):
         string keyStoreName = collectionNameToKeyStoreName(spec);
+        if (auto i = _collections.find(spec); i != _collections.end()) { 
+            if(!i->second->isValid()) {
+                if(!canCreate) {
+                    if(!_dataFile->keyStoreExists(keyStoreName)) {
+                        // This is an invalid collection, and it has not been recreated elsewhere.
+                        // Furthermore, canCreate is false so don't return a collection object
+                        return nullptr;
+                    } 
+                }
+
+                // If we reach here, either canCreate is true and we are about to recreate
+                // a previously deleted collection, or canCreate is false and the deleted collection
+                // was created by another instance already.  Either way, it is time to remove the
+                // old invalid entry now that it is safe to do so.
+                asInternal(i->second)->close();
+                _collections.erase(i);
+            } else {
+                return i->second; // -> Existing object
+            }                                     
+        }
 
         // Validate its existence, if canCreate is false:
         if ((!canCreate || isDefaultCollection(spec)) && !_dataFile->keyStoreExists(keyStoreName)) {
@@ -649,6 +666,7 @@ namespace litecore {
         auto collectionPtr = collection.get();
         _collections.insert({CollectionSpec(collection->getSpec()),
                              move(collection)});
+
         if (isInTransaction())
             collectionPtr->transactionBegan();
         return collectionPtr;                                               //-> New object
@@ -791,12 +809,16 @@ namespace litecore {
 
 
     void DatabaseImpl::collectionRemoved(slice scope, slice name) {
+        // Same as other external callbacks, this may be on an arbitrary thread
+        // so don't do anything to affect to collection memory, just make sure
+        // any new requests for this collection don't continue to use this object
         LOCK(_collectionsMutex);
         auto c = _collections.find({name, scope});
         if(c != _collections.end()) {
-            CollectionImpl* coll = (CollectionImpl *)c->second.get();
-            coll->close();
-            _collections.erase(c);
+            auto* coll = asInternal(c->second.get());
+            coll->invalidate();
+            string tableName = collectionNameToKeyStoreName({name, scope});
+            _dataFile->resetKeyStore(tableName);
         }
     }
 
