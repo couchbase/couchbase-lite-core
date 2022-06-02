@@ -587,8 +587,12 @@ namespace litecore {
     bool DatabaseImpl::hasCollection(CollectionSpec spec) const {
         string keyStoreName = collectionNameToKeyStoreName(spec);
         LOCK(_collectionsMutex);
-        return _collections.find(spec) != _collections.end()
-                    || _dataFile->keyStoreExists(keyStoreName);
+        auto found = _collections.find(spec);
+        if(found != _collections.end() && found->second->isValid()) {
+            return true;
+        }
+
+        return _dataFile->keyStoreExists(keyStoreName);
     }
 
 

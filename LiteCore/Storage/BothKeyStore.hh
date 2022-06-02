@@ -137,6 +137,7 @@ namespace litecore {
     protected:
         virtual void reopen() override              {_liveStore->reopen(); _deadStore->reopen();}
         virtual void close() override               {_liveStore->close(); _deadStore->close();}
+        virtual void reset() override               {_liveStore->reset(); _deadStore->reset();}
         virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                           sequence_t since,
                                                           RecordEnumerator::Options) override;

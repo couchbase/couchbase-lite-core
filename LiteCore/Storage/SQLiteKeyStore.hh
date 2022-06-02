@@ -103,6 +103,7 @@ namespace litecore {
 
         void close() override;
         void reopen() override;
+        void reset() override;
 
         /// Updates a record's flags, version, body, extra from a statement whose column order
         /// matches the RecordColumn enum.

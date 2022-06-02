@@ -217,6 +217,10 @@ namespace litecore {
         virtual void reopen()                           { }
         virtual void close()                            { }
 
+        // Put into a state such that the next open will recreate any
+        // underlying structure (e.g. tables)
+        virtual void reset()                            { }
+
         virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                           sequence_t since,
                                                           RecordEnumerator::Options) =0;

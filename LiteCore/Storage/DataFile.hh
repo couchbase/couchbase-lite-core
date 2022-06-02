@@ -166,7 +166,12 @@ namespace litecore {
         void closeKeyStore(const std::string &name);
 
         /** Permanently deletes a KeyStore. */
-        virtual void deleteKeyStore(const std::string &name) =0;
+        virtual void deleteKeyStore(const std::string &name);
+        
+        /** Similar to deleteKeyStore, but only aside from the actual on disk deletion.
+            Useful for telling other datafiles pointing to the same underlying data
+            that the keystore has been removed by other means */
+        void resetKeyStore(const std::string& name);
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level =LogLevel::Info) const         {return Logging::willLog(level);}
