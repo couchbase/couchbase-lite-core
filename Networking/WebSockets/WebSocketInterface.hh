@@ -16,6 +16,7 @@
 #include "InstanceCounted.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
+#include "WeakHolder.hh"
 #include <atomic>
 #include <string>
 #include <utility>
@@ -128,15 +129,14 @@ namespace litecore { namespace websocket {
     public:
         const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
-        Delegate& delegate() const;
-        bool hasDelegate() const                    {return _delegate != nullptr;}
+        Retained<WeakHolder<Delegate>> delegateWeak() { return _delegateWeakHolder; }
 
         virtual std::string name() const {
             return std::string(role() == Role::Server ? "<-" : "->") + (std::string)url();
         }
 
         /** Assigns the Delegate and opens the WebSocket. */
-        void connect(Delegate *delegate);
+        void connect(Retained<WeakHolder<Delegate>>);
 
         /** Sends a message. Callable from any thread.
             Returns false if the amount of buffered data is growing too large; the caller should
@@ -145,7 +145,7 @@ namespace litecore { namespace websocket {
 
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
-        
+
     protected:
         WebSocket(const URL &url, Role role);
         virtual ~WebSocket();
@@ -153,13 +153,11 @@ namespace litecore { namespace websocket {
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
         virtual void connect() =0;
 
-        /** Clears the delegate; any future calls to delegate() will fail. Call after closing. */
-        void clearDelegate()                        {_delegate = nullptr;}
-        
+
     private:
         const URL _url;
         const Role _role;
-        Delegate *_delegate {nullptr};
+        Retained<WeakHolder<Delegate>> _delegateWeakHolder;
     };
 
 

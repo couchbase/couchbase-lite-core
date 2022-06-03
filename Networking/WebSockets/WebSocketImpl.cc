@@ -93,7 +93,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
         logInfo("Got HTTP response (status %d)", status);
-        delegate().onWebSocketGotHTTPResponse(status, headersFleece);
+        delegateWeak()->invoke(&Delegate::onWebSocketGotHTTPResponse, status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
@@ -108,7 +108,7 @@ namespace litecore { namespace websocket {
         _didConnect = true;
         _responseTimer->stop();
         _timeConnected.start();
-        delegate().onWebSocketConnect();
+        delegateWeak()->invoke(&Delegate::onWebSocketConnect);
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
@@ -181,7 +181,7 @@ namespace litecore { namespace websocket {
             logInfo("sent close echo; disconnecting socket now");
             closeSocket();
         } else if (notify) {
-            delegate().onWebSocketWriteable();
+            delegateWeak()->invoke(&Delegate::onWebSocketWriteable);
         }
     }
 
@@ -302,7 +302,7 @@ namespace litecore { namespace websocket {
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
-        delegate().onWebSocketMessage(message);
+        delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
     }
 
 
@@ -382,7 +382,8 @@ namespace litecore { namespace websocket {
             // CBL-1088: If this is not called here, it never will be since the above _closed = true
             // prevents it from happening later.  This means that the Replicator using this connection
             // will never be informed of the connection close and will never reach the stopped state
-            delegate().onWebSocketClose({kWebSocketClose, status, message});
+            websocket::CloseStatus ss {kWebSocketClose, status, message};
+            delegateWeak()->invoke(&Delegate::onWebSocketClose, ss);
             return;
         }
         
@@ -523,8 +524,7 @@ namespace litecore { namespace websocket {
 
             _closed = true;
         }
-
-        delegate().onWebSocketClose(status);
+        delegateWeak()->invoke(&Delegate::onWebSocketClose, status);
     }
 
 } }
