@@ -10,6 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
+#include "BothKeyStore.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
@@ -45,8 +46,14 @@ namespace litecore {
 
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
-        exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
-        // TODO: Do I need to drop indexes, triggers?
+        if (auto i = keyStores().find(name); i != keyStores().end()) {
+            // Never remove a KeyStore from _keyStores: there may be objects pointing to it
+            KeyStore& ks = *i->second;
+            DataFile::deleteKeyStore(ks);
+        } else {
+            exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
+            // TODO: Do I need to drop indexes, triggers?
+        }
     }
 
 
@@ -101,6 +108,12 @@ namespace litecore {
             createTable();
     }
 
+    void SQLiteKeyStore::deleteKeyStore() {
+        close();
+        db().exec("DROP TABLE IF EXISTS \"kv_" + name() + "\"");
+        // TODO: Do I need to drop indexes, triggers?
+        KeyStore::deleteKeyStore();
+    }
 
     // Replaces `kv_@`, *with a preceding `"`*, with the unquoted table name.
     // Replaces other `kv_@` with the quoted table name.
@@ -216,8 +229,40 @@ namespace litecore {
             } else {
                 _existence = kNonexistent;
                 close();
-                return;
             }
+        }
+        
+        if (_deleteToCommit) {
+            if (commit) {
+                _existence = kNonexistent;
+                close();
+                // We are about to commit the deletion. Sync with other opened database instance.
+                dataFile().forOtherDataFiles([this](DataFile* df) {
+                    df->forOpenKeyStores([this](KeyStore& ks) {
+                        if (SQLiteKeyStore* sqliteKS = dynamic_cast<SQLiteKeyStore*>(&ks); sqliteKS != nullptr) {
+                            if (sqliteKS->name() == this->name()) {
+                                sqliteKS->_existence = kNonexistent;
+                                sqliteKS->close();
+                            }
+                        } else if (BothKeyStore* bothKS = dynamic_cast<BothKeyStore*>(&ks); bothKS != nullptr) {
+                            // Little awkward. We assume that the only compound KeyStore is BothKeyStore
+                            if (SQLiteKeyStore* sqliteKS2 = dynamic_cast<SQLiteKeyStore*>(bothKS->liveStore()); sqliteKS2 != nullptr) {
+                                if (sqliteKS2->name() == this->name()) {
+                                    sqliteKS2->_existence = kNonexistent;
+                                    sqliteKS2->close();
+                                }
+                            }
+                            if (SQLiteKeyStore* sqliteKS2 = dynamic_cast<SQLiteKeyStore*>(bothKS->deadStore()); sqliteKS2 != nullptr) {
+                                if (sqliteKS2->name() == this->name()) {
+                                    sqliteKS2->_existence = kNonexistent;
+                                    sqliteKS2->close();
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+            _deleteToCommit = false;
         }
     }
 

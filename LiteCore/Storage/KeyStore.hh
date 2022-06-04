@@ -216,6 +216,7 @@ namespace litecore {
 
         virtual void reopen()                           { }
         virtual void close()                            { }
+        virtual void deleteKeyStore();
 
         virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                           sequence_t since,
@@ -224,6 +225,7 @@ namespace litecore {
         DataFile &          _db;            // The DataFile I'm contained in
         const std::string   _name;          // My name
         const Capabilities  _capabilities;  // Do I support sequences or soft deletes?
+        bool                _deleteToCommit {false};
 
     private:
         KeyStore(const KeyStore&) = delete;     // not copyable

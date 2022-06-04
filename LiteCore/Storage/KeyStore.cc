@@ -102,4 +102,10 @@ namespace litecore {
                 (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
+    void KeyStore::deleteKeyStore() {
+        if (dataFile().inTransaction()) {
+            _deleteToCommit = true;
+        }
+    }
+
 }

@@ -670,6 +670,10 @@ namespace litecore {
         if (isDefault)
             _defaultCollection = nullptr;
 
+        _dataFile->forOtherDataFiles([spec](DataFile* other) {
+            other->delegate()->collectionRemoved(spec.scope, spec.name);
+        });
+
         t.commit();
     }
 
@@ -764,6 +768,18 @@ namespace litecore {
             if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
                 asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
+    }
+
+
+    void DatabaseImpl::collectionRemoved(slice scope, slice name) {
+        LOCK(_collectionsMutex);
+        CollectionSpec spec {name, scope};
+        if (auto c = _collections.find(spec); c != _collections.end()) {
+            asInternal(c->second.get())->close();
+            _collections.erase(c);
+        }
+        if (isDefaultCollection(spec))
+            _defaultCollection = nullptr;
     }
 
 

@@ -156,15 +156,50 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(!db->hasCollection(Guitars));
     CHECK(db->getCollection(Guitars) == nullptr);
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+    
+    // Create collection with the same name of the collection that was deleted.
+    Retained<C4Collection> guitarsAgain = db->createCollection(Guitars);
+    CHECK(guitarsAgain == db->getCollection(Guitars));
 
     // Close the database, then try to use the C4Collections:
     CHECK(dflt->isValid());
     closeDB();
     CHECK(!dflt->isValid());
     CHECK(!guitars->isValid());
+    CHECK(!guitarsAgain->isValid());
+
     C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
         dflt->getDatabase();
     });
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Removal", "[Database][Collection][C]") {
+    CHECK(!db->hasCollection(Guitars));
+    CHECK(db->getCollection(Guitars) == nullptr);
+
+    Retained<C4Database> db2 = db->openAgain();
+    REQUIRE(db2);
+    
+    // Create "guitars" collection from db
+    Retained<C4Collection> guitars = db->createCollection(Guitars);
+    REQUIRE(guitars == db->getCollection(Guitars));
+
+    // Create "guitars" collection from db2
+    Retained<C4Collection> guitars2 = db2->getCollection(Guitars);
+    REQUIRE((guitars2 && guitars2->isValid()));
+    
+    // Delete "guitars" from 2nd db instance and check isValid on both collection objects
+    db2->deleteCollection(Guitars);
+    CHECK(!guitars2->isValid());
+    CHECK(!guitars->isValid());
+    
+    // Recreate it on the first db instance:
+    guitars = db->createCollection(Guitars);
+    REQUIRE(guitars);
+    guitars2 = db2->getCollection(Guitars);
+    CHECK(guitars2);
+    CHECK(guitars->isValid());
 }
 
 

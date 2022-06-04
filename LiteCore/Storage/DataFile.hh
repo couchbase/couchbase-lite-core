@@ -63,6 +63,8 @@ namespace litecore {
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
+            // Notifies that another DataFile on the same physical file has deleted a collection
+            virtual void collectionRemoved(slice scope, slice name) { };
         };
 
         struct Options {
@@ -253,9 +255,13 @@ namespace litecore {
 
         virtual Factory& factory() const =0;
 
+        std::unordered_map<std::string, unique_ptr<KeyStore>>& keyStores() { return _keyStores; }
+        static void deleteKeyStore(KeyStore& keyStore) { keyStore.deleteKeyStore(); }
+
     private:
         class Shared;
         friend class KeyStore;
+        friend class SQLiteKeyStore;
         friend class ExclusiveTransaction;
         friend class ReadOnlyTransaction;
         friend class DocumentKeys;

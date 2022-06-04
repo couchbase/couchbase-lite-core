@@ -399,7 +399,8 @@ namespace litecore {
             ks.transactionWillEnd(committing);
         });
     }
-    
+
+
     void DataFile::endTransactionScope(ExclusiveTransaction* t) {
         _shared->unsetTransaction(t);
         _inTransaction = false;
