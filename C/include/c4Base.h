@@ -27,10 +27,10 @@ C4API_BEGIN_DECLS
 
 // Corresponds to Couchbase Lite product version number, with 2 digits for minor and patch versions.
 // i.e. `10000 * MajorVersion + 100 * MinorVersion + PatchVersion`
-#define LITECORE_VERSION 30000
+#define LITECORE_VERSION 30100
 
 // This number has no absolute meaning but is bumped whenever the LiteCore public API changes.
-#define LITECORE_API_VERSION 351
+#define LITECORE_API_VERSION 352
 
 
 /** \defgroup Base  Data Types and Base Functions
@@ -117,6 +117,9 @@ typedef struct C4Cert C4Cert;
 /** Opaque handle to a namespace of documents in an opened database. */
 typedef struct C4Collection C4Collection;
 
+/** Opaque reference to a Connected Client. */
+typedef struct C4ConnectedClient C4ConnectedClient;
+
 /** A collection-observer reference. */
 typedef struct C4CollectionObserver C4CollectionObserver;
 
@@ -182,6 +185,8 @@ static inline C4Cert* C4NULLABLE
     c4cert_retain(C4Cert* C4NULLABLE r) C4API       {return (C4Cert*)c4base_retain(r);}
 static inline C4Collection* C4NULLABLE
     c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
+static inline C4ConnectedClient* C4NULLABLE
+    c4client_retain(C4ConnectedClient* C4NULLABLE r) C4API {return (C4ConnectedClient*)c4base_retain(r);}
 static inline C4Database* C4NULLABLE
     c4db_retain(C4Database* C4NULLABLE r) C4API     {return (C4Database*)c4base_retain(r);}
 static inline C4KeyPair* C4NULLABLE
@@ -197,6 +202,7 @@ CBL_CORE_API C4Socket* C4NULLABLE
     c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
 static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
+static inline void c4client_release (C4ConnectedClient* C4NULLABLE r) C4API {c4base_release(r);}
 static inline void c4coll_release   (C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
 static inline void c4db_release     (C4Database* C4NULLABLE r) C4API   {c4base_release(r);}
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}

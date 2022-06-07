@@ -22,6 +22,7 @@
 #include "c4Private.h"
 #include "c4Document.hh"
 #include "c4ReplicatorTypes.h"
+#include "LegacyAttachments.hh"
 #include "BLIP.hh"
 
 using namespace std;
@@ -196,11 +197,11 @@ namespace litecore { namespace repl {
             // After applying the delta, remove legacy attachment properties and any other
             // "_"-prefixed top level properties:
             Dict root = doc.root().asDict();
-            if (C4Document::hasOldMetaProperties(root)) {
+            if (legacy_attachments::hasOldMetaProperties(root)) {
                 body = nullslice;
                 try {
                     FLSharedKeys sk = _db->insertionDB().useLocked()->getFleeceSharedKeys();
-                    body = C4Document::encodeStrippingOldMetaProperties(root, sk);
+                    body = legacy_attachments::encodeStrippingOldMetaProperties(root, sk);
                 } catchAndWarn();
                 if (!body)
                     *outError = C4Error::make(WebSocketDomain, 500, "invalid legacy attachments");

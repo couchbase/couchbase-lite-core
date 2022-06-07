@@ -31,7 +31,7 @@ namespace litecore { namespace blip {
     MessageBuilder::MessageBuilder(slice profile)
     {
         if (profile)
-            addProperty("Profile"_sl, profile);
+            setProfile(profile);
     }
 
 
@@ -51,6 +51,12 @@ namespace litecore { namespace blip {
     }
 
 
+    void MessageBuilder::setProfile(slice profile) {
+        Assert(!isResponse());
+        addProperty(kProfileProperty, profile);
+    }
+
+
     MessageBuilder& MessageBuilder::addProperties(initializer_list<property> properties) {
         for (const property &p : properties)
             addProperty(p.first, p.second);
@@ -61,8 +67,8 @@ namespace litecore { namespace blip {
     void MessageBuilder::makeError(Error err) {
         DebugAssert(err.domain && err.code);
         type = kErrorType;
-        addProperty("Error-Domain"_sl, err.domain);
-        addProperty("Error-Code"_sl, err.code);
+        addProperty(kErrorDomainProperty, err.domain);
+        addProperty(kErrorCodeProperty, err.code);
         write(err.message);
     }
 
@@ -134,5 +140,13 @@ namespace litecore { namespace blip {
         _properties.clear();
         _wroteProperties = false;
     }
+
+
+    BuiltMessage::BuiltMessage(MessageBuilder &builder)
+    :dataSource(std::move(builder.dataSource))
+    ,onProgress(move(builder.onProgress))
+    ,_flags(builder.flags())
+    ,_payload(builder.finish())
+    { }
 
 } }

@@ -323,7 +323,9 @@ namespace litecore { namespace websocket {
 
 
     alloc_slice BuiltInWebSocket::cookiesForRequest(const Address &addr) {
-        alloc_slice cookies(_database->getCookies(addr));
+        alloc_slice cookies;
+        if (_database)
+            cookies = _database->getCookies(addr);
 
         slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
         if (cookiesOption) {
@@ -341,7 +343,8 @@ namespace litecore { namespace websocket {
 
 
     void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
-        _database->setCookie(cookieHeader, addr.hostname, addr.path);
+        if (_database)
+            _database->setCookie(cookieHeader, addr.hostname, addr.path);
     }
 
 

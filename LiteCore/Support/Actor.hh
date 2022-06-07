@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "AsyncActorCommon.hh"
 #include "ThreadedMailbox.hh"
 #include "Logging.hh"
 #include <chrono>
@@ -28,15 +29,8 @@
 #include "Stopwatch.hh"
 #endif
 
-#ifdef ACTORS_SUPPORT_ASYNC
-#include "Async.hh"
-#endif
 
-
-namespace litecore { namespace actor {
-    class Actor;
-    class AsyncContext;
-
+namespace litecore::actor {
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
     template <class RetVal, class T, class... Args>
@@ -55,11 +49,13 @@ namespace litecore { namespace actor {
     #define ACTOR_BIND_METHOD0(RCVR, METHOD)        ^{ ((RCVR)->*METHOD)(); }
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   ^{ ((RCVR)->*METHOD)(ARGS...); }
     #define ACTOR_BIND_FN(FN, ARGS)                 ^{ FN(ARGS...); }
+    #define ACTOR_BIND_FN0(FN)                      ^{ FN(); }
 #else
     using Mailbox = ThreadedMailbox;
     #define ACTOR_BIND_METHOD0(RCVR, METHOD)        std::bind(METHOD, RCVR)
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   std::bind(METHOD, RCVR, ARGS...)
     #define ACTOR_BIND_FN(FN, ARGS)                 std::bind(FN, ARGS...)
+    #define ACTOR_BIND_FN0(FN)                      (FN)
 #endif
 
     #define FUNCTION_TO_QUEUE(METHOD) #METHOD, &METHOD
@@ -105,6 +101,14 @@ namespace litecore { namespace actor {
         ,_mailbox(this, name, parentMailbox)
         { }
 
+        /** Within an Actor method, `thisActor` evaluates to `this`.
+            (Outside of one, it calls the static function `thisActor` that returns nullptr.) */
+        Actor* thisActor() {return this;}
+        const Actor* thisActor() const {return this;}
+
+        /** Returns true if `this` is the currently running Actor. */
+        bool isCurrentActor() const                          {return currentActor() == this;}
+
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(const char* methodName, void (Rcvr::*fn)(Args...), Args... args) {
@@ -135,45 +139,83 @@ namespace litecore { namespace actor {
             return _asynchronize(methodName, fn);
         }
 
+        /** Schedules a call to `fn` on the actor's thread.
+            The return type depends on `fn`s return type:
+            - `void` -- `asCurrentActor` will return `void`.
+            - `X` -- `asCurrentActor` will return `Async<X>`, which will resolve after `fn` runs.
+            - `Async<X>` -- `asCurrentActor` will return `Async<X>`, which will resolve after `fn`
+                            runs _and_ its returned async value resolves. */
+        template <typename LAMBDA>
+        auto asCurrentActor(LAMBDA &&fn) {
+            using U = unwrap_async<std::invoke_result_t<LAMBDA>>; // return type w/o Async<>
+            return _asCurrentActor<U>(std::forward<LAMBDA>(fn));
+        }
+
+        /** The scheduler calls this after every call to the Actor. */
         virtual void afterEvent()                    { }
 
+        /** Called if an Actor method throws an exception. */
         virtual void caughtException(const std::exception &x);
 
         virtual std::string loggingIdentifier() const { return actorName(); }
 
+        /** Writes statistics to the log. */
         void logStats() {
             _mailbox.logStats();
         }
 
-
-#ifdef ACTORS_SUPPORT_ASYNC
-        /** Body of an async method: Creates an Provider from the lambda given,
-            then returns an Async that refers to that provider. */
-        template <class T, class LAMBDA>
-        Async<T> _asyncBody(const LAMBDA &bodyFn) {
-            return Async<T>(this, bodyFn);
-        }
-
-        void wakeAsyncContext(AsyncContext *context) {
-            _mailbox.enqueue(ACTOR_BIND_METHOD0(context, &AsyncContext::next));
-        }
-#endif
-
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
-        friend class AsyncContext;
+        friend class AsyncProviderBase;
 
         template <class ACTOR, class ITEM> friend class ActorBatcher;
         template <class ACTOR>             friend class ActorCountBatcher;
 
         void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
 
+        /** Calls a method on _some other object_ on my mailbox's queue. */
+        template <class Rcvr, class... Args>
+        void enqueueOther(const char* methodName, Rcvr* other, void (Rcvr::*fn)(Args...), Args... args) {
+            _mailbox.enqueue(methodName, ACTOR_BIND_METHOD(other, fn, args));
+        }
+
+        // Implementation of `asCurrentActor` where `fn` returns a non-async type `T`.
+        template <typename T>
+        auto _asCurrentActor(std::function<T()> fn) {
+            auto provider = Async<T>::makeProvider();
+            asCurrentActor([fn,provider] { provider->setResultFromFunction(fn); });
+            return provider->asyncValue();
+        }
+
+        // Implementation of `asCurrentActor` where `fn` itself returns an `Async`.
+        template <typename U>
+        Async<U> _asCurrentActor(std::function<Async<U>()> fn) {
+            auto provider = Async<U>::makeProvider();
+            asCurrentActor([fn,provider] {
+                fn().thenProvider([=](AsyncProvider<U> &fnProvider) {
+                    provider->setResult(std::move(fnProvider).result());
+                });
+            });
+            return provider;
+        }
+
         Mailbox _mailbox;
     };
 
 
-#undef ACTOR_BIND_METHOD
-#undef ACTOR_BIND_FN
+    // Specialization of `asCurrentActor` where `fn` returns void.
+    template <>
+    inline auto Actor::_asCurrentActor<void>(std::function<void()> fn) {
+        if (currentActor() == this)
+            fn();
+        else
+            _mailbox.enqueue("asCurrentActor", ACTOR_BIND_FN0(fn));
+    }
 
-} }
+#undef ACTOR_BIND_METHOD
+#undef ACTOR_BIND_METHOD0
+#undef ACTOR_BIND_FN
+#undef ACTOR_BIND_FN0
+
+}

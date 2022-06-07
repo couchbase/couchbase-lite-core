@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+// Note: Some of the functions in LegacyAttachments.hh are implemented in LegacyAttachments2.cc.
+
 namespace litecore { namespace legacy_attachments {
     using namespace std;
     using namespace fleece;
@@ -29,8 +31,8 @@ namespace litecore { namespace legacy_attachments {
 
 
     // Returns true if a Fleece Dict contains any top-level keys that begin with an underscore.
-    bool hasOldMetaProperties(const Dict* root) {
-        for (Dict::iterator i(root); i; ++i) {
+    bool hasOldMetaProperties(FLDict root) {
+        for (Dict::iterator i((const Dict*)root); i; ++i) {
             if (isOldMetaProperty(i.keyString()))
                 return true;
         }
@@ -38,7 +40,9 @@ namespace litecore { namespace legacy_attachments {
     }
 
 
-    alloc_slice encodeStrippingOldMetaProperties(const Dict *root, SharedKeys *sk) {
+    alloc_slice encodeStrippingOldMetaProperties(FLDict fl_root, FLSharedKeys fl_sk) {
+        auto root = (const Dict*)fl_root;
+        auto sk   = (SharedKeys*)fl_sk;
         if (!root)
             return {};
         

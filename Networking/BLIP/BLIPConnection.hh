@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "Async.hh"
 #include "WebSocketInterface.hh"
 #include "Message.hh"
 #include "Logging.hh"
@@ -20,6 +21,7 @@
 
 namespace litecore { namespace blip {
     class BLIPIO;
+    class BuiltMessage;
     class ConnectionDelegate;
     class MessageOut;
 
@@ -40,7 +42,7 @@ namespace litecore { namespace blip {
 
         using CloseStatus = websocket::CloseStatus;
 
-        /** WebSocket 'protocol' name for BLIP; use as value of kProtocolsOption option. */
+        /** WebSocket 'protocol' name for BLIP; use as value of kC4SocketOptionWSProtocols. */
         static constexpr const char *kWSProtocolName = "BLIP_3";
 
         /** Option to set the 'deflate' compression level. Value must be an integer in the range
@@ -65,7 +67,14 @@ namespace litecore { namespace blip {
         void terminate();
 
         /** Sends a built message as a new request. */
-        void sendRequest(MessageBuilder&);
+        void sendRequest(BuiltMessage&&);
+
+        using AsyncResponse = actor::Async<Retained<MessageIn>>;
+
+        /** Sends a built message as a new request and returns an async value that can be used
+            to get the response when it arrives.
+            @note  The response will immediately resolve to `nullptr` if the connection closes. */
+        AsyncResponse sendAsyncRequest(BuiltMessage&&);
 
         typedef std::function<void(MessageIn*)> RequestHandler;
 

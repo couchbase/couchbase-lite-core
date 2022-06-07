@@ -146,12 +146,6 @@ struct C4Document : public fleece::RefCounted,
     /// Returns the Document instance, if any, that contains the given Fleece value.
     static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
 
-    static bool isOldMetaProperty(slice propertyName) noexcept;
-    static bool hasOldMetaProperties(FLDict) noexcept;
-
-    static alloc_slice encodeStrippingOldMetaProperties(FLDict properties,
-                                                        FLSharedKeys);
-
     // Special property names & values:
 
     /** The Dict property that identifies it as a special type of object.

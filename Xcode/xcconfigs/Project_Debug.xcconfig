@@ -13,3 +13,12 @@ GCC_OPTIMIZATION_LEVEL       = 0
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DEBUG=1 _LIBCPP_DEBUG=0
 ENABLE_TESTABILITY           = YES
 MTL_ENABLE_DEBUG_INFO        = YES
+
+// This flag turns off the Address Sanitizer for the files or functions listed in the .txt file.
+// I added this to speed up logging, so it doesn't introduce as much of a slowdown which can
+// perturb test results and prevent some timing-sensitive race conditions from showing up.
+//
+// However, this compiler flag wasn't added until Xcode 13(?); at least, the version of Xcode
+// currently on Jenkins doesn't support it, so I'm commenting this out for now. --Jens
+// TODO: Re-enable this when Jenkins is upgraded.
+//OTHER_CFLAGS = $(inherited) -fsanitize-ignorelist=$(SRCROOT)/sanitizer-ignore-list.txt

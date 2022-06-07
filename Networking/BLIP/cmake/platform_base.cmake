@@ -15,8 +15,7 @@ function(set_source_files_base)
         ${WEBSOCKETS_LOCATION}/WebSocketImpl.cc
         ${WEBSOCKETS_LOCATION}/WebSocketInterface.cc
         ${SUPPORT_LOCATION}/Actor.cc
-        ${SUPPORT_LOCATION}/ActorProperty.cc
-#       ${SUPPORT_LOCATION}/Async.cc
+        ${SUPPORT_LOCATION}/Async.cc
         ${SUPPORT_LOCATION}/Channel.cc
         ${SUPPORT_LOCATION}/Codec.cc
         ${SUPPORT_LOCATION}/Timer.cc

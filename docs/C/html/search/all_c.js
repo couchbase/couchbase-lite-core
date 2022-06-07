@@ -1,8 +1,13 @@
 var searchData=
 [
-  ['name_1049',['name',['../struct_c4_collection_spec.html#a6044be9d0a0b74fec2b21644b6c6f0c7',1,'C4CollectionSpec']]],
-  ['network_20listener_3a_20rest_20api_20and_20sync_20server_1050',['Network Listener: REST API and Sync Server',['../group___listener.html',1,'']]],
-  ['networkdomain_1051',['NetworkDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a230c802d66f2578bb3142fbfa52946d4',1,'c4Error.h']]],
-  ['networkinterface_1052',['networkInterface',['../struct_c4_listener_config.html#a293d295220e352a827801c0a19aa629d',1,'C4ListenerConfig']]],
-  ['nonnull_1053',['NONNULL',['../_base_8h.html#ada64c64b4206846e8f545c2fbfb3f307',1,'Base.h']]]
+  ['max_5frotate_5fcount_0',['max_rotate_count',['../struct_c4_log_file_options.html#abf2712a60653edf16876d8e4dc16a280',1,'C4LogFileOptions']]],
+  ['max_5fsize_5fbytes_1',['max_size_bytes',['../struct_c4_log_file_options.html#ad021987386dc466c41469ce317245683',1,'C4LogFileOptions']]],
+  ['maxrevtreedepth_2',['maxRevTreeDepth',['../struct_c4_doc_put_request.html#a1cdcf9ead8eb970d76cc870f987fc160',1,'C4DocPutRequest']]],
+  ['mbedtlsdomain_3',['MbedTLSDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a142750bff6c62c0c8d022366cb47fc08',1,'c4Error.h']]],
+  ['meta_4',['meta',['../struct_c4_raw_document.html#abf608b56c11e3df3ea7e59ed9d120f34',1,'C4RawDocument']]],
+  ['metasize_5',['metaSize',['../struct_c4_document_info.html#a937031ca48204c0ff424a4391db65612',1,'C4DocumentInfo']]],
+  ['miscellaneous_20functions_6',['Miscellaneous Functions',['../group___miscellaneous.html',1,'']]],
+  ['missingcolumns_7',['missingColumns',['../struct_c4_query_enumerator.html#a056567f92b7c797e0a8f5baee936ec00',1,'C4QueryEnumerator']]],
+  ['must_5fuse_5fresult_8',['MUST_USE_RESULT',['../_compiler_support_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed',1,'CompilerSupport.h']]],
+  ['mutable_20values_9',['Mutable Values',['../group___mutable.html',1,'']]]
 ];

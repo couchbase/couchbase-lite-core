@@ -225,31 +225,30 @@ C4Error C4Error::fromException(const exception &x) noexcept {
 
 __cold
 C4Error C4Error::fromCurrentException() noexcept {
-    // This rigamarole recovers the current exception being thrown...
-    auto xp = std::current_exception();
-    if (xp) {
-        try {
-            std::rethrow_exception(xp);
-        } catch(const std::exception& x) {
-            // Now we have the exception, so we can record it in outError:
-            return C4Error::fromException(x);
-        } catch (...) { }
+    return fromException(error::convertCurrentException());
+}
+
+
+static string getMessage(const C4Error &c4err) {
+    auto info = ErrorTable::instance().copy(c4err);
+    return info ? info->message : "";
+}
+
+
+namespace litecore {
+    // Declared in Error.hh
+    error::error(const C4Error &c4err)
+    :error(error::Domain(c4err.domain), c4err.code, getMessage(c4err))
+    {
+        if (auto info = ErrorTable::instance().copy(c4err))
+            backtrace = info->backtrace;
     }
-    return ErrorTable::instance().makeError(
-                                            LiteCoreDomain, kC4ErrorUnexpectedError,
-                                            {"Unknown C++ exception", Backtrace::capture(1)});
 }
 
 
 [[noreturn]] __cold
 void C4Error::raise() const {
-    if (auto info = ErrorTable::instance().copy(*this); info) {
-        error e(error::Domain(domain), code, info->message);
-        e.backtrace = info->backtrace;
-        throw e;
-    } else {
-        error::_throw(error::Domain(domain), code);
-    }
+    throw litecore::error(*this);
 }
 
 

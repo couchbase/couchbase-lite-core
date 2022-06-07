@@ -1,0 +1,6 @@
+# Source files and/or functions to be ignored by the Clang sanitizers, to speed them up in debug
+# builds or because they raise false alarms.
+# See: <https://releases.llvm.org/13.0.0/tools/clang/docs/SanitizerSpecialCaseList.html>
+
+src:*/LogEncoder.cc
+src:*/Logging.cc

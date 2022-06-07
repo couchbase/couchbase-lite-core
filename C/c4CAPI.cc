@@ -21,6 +21,7 @@
 #include "c4Query.hh"
 #include "c4QueryImpl.hh"
 #include "c4Replicator.hh"
+#include "LegacyAttachments.hh"
 
 #include "c4.h"
 #include "c4Private.h"
@@ -1106,12 +1107,12 @@ FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
 
 
 bool c4doc_isOldMetaProperty(C4String prop) noexcept {
-    return C4Document::isOldMetaProperty(prop);
+    return legacy_attachments::isOldMetaProperty(prop);
 }
 
 
 bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
-    return C4Document::hasOldMetaProperties(doc);
+    return legacy_attachments::hasOldMetaProperties(doc);
 }
 
 
@@ -1156,7 +1157,7 @@ bool c4doc_blobIsCompressible(FLDict blobDict) {
 
 C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return C4SliceResult(C4Document::encodeStrippingOldMetaProperties(doc, sk));
+        return C4SliceResult(legacy_attachments::encodeStrippingOldMetaProperties(doc, sk));
     });
 }
 

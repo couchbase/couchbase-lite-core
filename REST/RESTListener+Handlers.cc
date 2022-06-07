@@ -20,6 +20,7 @@
 #include "Server.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include "LegacyAttachments.hh"
 #include "fleece/Expert.hh"
 #include <functional>
 
@@ -280,7 +281,8 @@ namespace litecore { namespace REST {
                 // Encode body as Fleece (and strip _id and _rev):
                 alloc_slice encodedBody;
                 if (body)
-                    encodedBody = doc->encodeStrippingOldMetaProperties(body, coll->getDatabase()->getFleeceSharedKeys());
+                    encodedBody = legacy_attachments::encodeStrippingOldMetaProperties(body,
+                                                       coll->getDatabase()->getFleeceSharedKeys());
 
                 // Save the revision:
                 C4Slice history[1] = {revID};

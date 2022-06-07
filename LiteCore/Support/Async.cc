@@ -12,71 +12,108 @@
 
 #include "Async.hh"
 #include "Actor.hh"
+#include "c4Error.h"
+#include "Logging.hh"
+#include "betterassert.hh"
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
+    using namespace std;
+
+#pragma mark - ASYNC OBSERVER:
 
 
-    bool AsyncState::_asyncCall(const AsyncBase &a, int lineNo) {
-        _calling = a._context;
-        _continueAt = lineNo;
-        return !a.ready();
+#pragma mark - ASYNC PROVIDER BASE:
+
+
+    AsyncProviderBase::AsyncProviderBase(bool ready)
+    :_ready(ready)
+    { }
+
+
+    AsyncProviderBase::~AsyncProviderBase() {
+        if (!_ready)
+            WarnError("AsyncProvider %p deleted without ever getting a value!", (void*)this);
     }
 
 
-#if DEBUG
-    std::atomic_int AsyncContext::gInstanceCount;
-#endif
-
-
-    AsyncContext::AsyncContext(Actor *actor)
-    :_actor(actor)
-    {
-#if DEBUG
-        ++gInstanceCount;
-#endif
+    void AsyncProviderBase::setObserver(Actor *actor, Observer observer) {
+        {
+            unique_lock<decltype(_mutex)> _lock(_mutex);
+            precondition(!_observer);
+            // Presumably I wasn't ready when the caller decided to call `setObserver` on me;
+            // but I might have become ready in between then and now, so check for that.
+            if (!_ready) {
+                _observer = move(observer);
+                _observerActor = actor ? actor : Actor::currentActor();
+                return;
+            }
+        }
+        // if I am ready, call the observer now:
+        notifyObserver(observer, actor);
     }
 
-    AsyncContext::~AsyncContext() {
-#if DEBUG
-        --gInstanceCount;
-#endif
-    }
 
-    void AsyncContext::setObserver(AsyncContext *p) {
-        assert(!_observer);
-        _observer = p;
-    }
-
-    void AsyncContext::start() {
-        _waitingSelf = this;
-        if (_actor && _actor != Actor::currentActor())
-            _actor->wakeAsyncContext(this);     // Start on my Actor's queue
-        else
-            next();
-    }
-
-    void AsyncContext::_wait() {
-        _waitingActor = Actor::currentActor();  // retain my actor while I'm waiting
-        _calling->setObserver(this);
-    }
-
-    void AsyncContext::wakeUp(AsyncContext *async) {
-        assert(async == _calling);
-        if (_waitingActor) {
-            fleece::Retained<Actor> waitingActor = std::move(_waitingActor);
-            waitingActor->wakeAsyncContext(this);       // queues the next() call on its Mailbox
-        } else {
-            next();
+    void AsyncProviderBase::notifyObserver(Observer &observer, Actor *actor) {
+        try {
+            if (actor && actor != Actor::currentActor()) {
+                // Schedule a call on my Actor:
+                actor->asCurrentActor([observer, provider=fleece::retained(this)] {
+                    observer(*provider);
+                });
+            } else {
+                // ... or call it synchronously:
+                observer(*this);
+            }
+        } catch (...) {
+            // we do not want an exception from the observer to propagate
+            C4Error::warnCurrentException("AsyncProviderBase::notifyObserver");
         }
     }
 
-    void AsyncContext::_gotResult() {
+
+    void AsyncProviderBase::_gotResult(std::unique_lock<std::mutex>& lock) {
+        // on entry, `_mutex` is locked by `lock`
+        precondition(!_ready);
         _ready = true;
-        auto observer = _observer;
+        auto observer = move(_observer);
         _observer = nullptr;
+        auto observerActor = move(_observerActor);
+        _observerActor = nullptr;
+
+        lock.unlock();
+
         if (observer)
-            observer->wakeUp(this);
-        _waitingSelf = nullptr;
+            notifyObserver(observer, observerActor);
     }
 
-} }
+
+#pragma mark - ASYNC BASE:
+    
+
+    bool AsyncBase::canCallNow() const {
+        return ready() && (_onActor == nullptr || _onActor == Actor::currentActor());
+    }
+
+
+    void AsyncBase::blockUntilReady() {
+        if (!ready()) {
+            precondition(Actor::currentActor() == nullptr); // would deadlock if called by an Actor
+            mutex _mutex;
+            condition_variable _cond;
+
+            _provider->setObserver(nullptr, [&](AsyncProviderBase &provider) {
+                unique_lock<mutex> lock(_mutex);
+                _cond.notify_one();
+            });
+
+            unique_lock<mutex> lock(_mutex);
+            _cond.wait(lock, [&]{return ready();});
+        }
+    }
+
+
+    void assertNoError(C4Error err) {
+        Assert(!err, "Unexpected error in Async value, %s", err.description().c_str());
+    }
+
+}

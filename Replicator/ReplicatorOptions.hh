@@ -111,6 +111,14 @@ namespace litecore { namespace repl {
             return uniqueID ? uniqueID : remoteURL;
         }
 
+        fleece::Dict namedQueries() const {
+            return dictProperty(kC4ReplicatorOptionNamedQueries);
+        }
+
+        bool allQueries() const {
+            return boolProperty(kC4ReplicatorOptionAllQueries);
+        }
+
         fleece::Array arrayProperty(const char *name) const {
             return properties[name].asArray();
         }

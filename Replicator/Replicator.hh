@@ -25,6 +25,7 @@ namespace litecore { namespace repl {
 
     class Pusher;
     class Puller;
+    class QueryServer;
     class ReplicatedRev;
 
     static const array<string, 2> kCompatProtocols = {{
@@ -63,7 +64,7 @@ namespace litecore { namespace repl {
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
                                  
-        static std::string ProtocolName();
+        static std::string protocolName();
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
@@ -176,6 +177,7 @@ namespace litecore { namespace repl {
         Delegate*         _delegate;                   // Delegate whom I report progress/errors to
         Retained<Pusher>  _pusher;                     // Object that manages outgoing revs
         Retained<Puller>  _puller;                     // Object that manages incoming revs
+        Retained<QueryServer> _queryServer;            // Object that runs query requests (listener)
         blip::Connection::State _connectionState;      // Current BLIP connection state
 
         Status            _pushStatus {};              // Current status of Pusher

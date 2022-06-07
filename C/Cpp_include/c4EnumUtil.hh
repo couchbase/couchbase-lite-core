@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4Compat.h"
 #include <type_traits>
 
 /// Declares `++` and `--` functions for an `enum class`.

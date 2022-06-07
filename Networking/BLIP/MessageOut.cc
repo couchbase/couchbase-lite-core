@@ -36,6 +36,19 @@ namespace litecore { namespace blip {
     { }
 
 
+    MessageOut::MessageOut(Connection *connection,
+                           BuiltMessage &&built,
+                           MessageNo number)
+    :MessageOut(connection,
+                built._flags,
+                move(built._payload),
+                move(built.dataSource),
+                number)
+    {
+        _onProgress = move(built.onProgress);
+    }
+
+
     void MessageOut::nextFrameToSend(Codec &codec, slice_ostream &dst, FrameFlags &outFlags) {
         outFlags = flags();
         if (isAck()) {

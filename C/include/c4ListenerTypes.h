@@ -12,6 +12,7 @@
 
 #pragma once
 #include "c4Base.h"
+#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -84,6 +85,10 @@ typedef struct C4ListenerConfig {
     bool allowPush;                         ///< Allow peers to push changes to local db
     bool allowPull;                         ///< Allow peers to pull changes from local db
     bool enableDeltaSync;                   ///< Enable document-deltas optimization
+
+    bool allowConnectedClient;              ///< Allow peers to use Connected Client API
+    FLDict namedQueries;                    ///< Maps query names to N1QL or JSON source
+    bool allowArbitraryQueries;             ///< If true, client can run arbitrary queries
 } C4ListenerConfig;
 
 

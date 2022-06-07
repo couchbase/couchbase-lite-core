@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['unitscompleted_1104',['unitsCompleted',['../struct_c4_progress.html#aa317c3380e493c7e2a381f229678ad14',1,'C4Progress']]],
-  ['unitstotal_1105',['unitsTotal',['../struct_c4_progress.html#a5ca59cf75057708dce6b57f1011d147a',1,'C4Progress']]],
-  ['unregistered_1106',['unregistered',['../struct_c4_predictive_model.html#a038601d346990c8bd81beaed25ba1998',1,'C4PredictiveModel']]],
-  ['use_5fplaintext_1107',['use_plaintext',['../struct_c4_log_file_options.html#a8f44548a4b11f4be2592b263ee1b45a6',1,'C4LogFileOptions']]]
+  ['term_0',['term',['../struct_c4_full_text_match.html#a7aa89e1ce160b85c24dde9ed405753ff',1,'C4FullTextMatch']]],
+  ['tlscallbackcontext_1',['tlsCallbackContext',['../struct_c4_t_l_s_config.html#a133efcd475c2b4b9d20fcb781f0d5945',1,'C4TLSConfig']]],
+  ['tlsconfig_2',['tlsConfig',['../struct_c4_listener_config.html#a204b8096d8519fad0d2bcb3346d3d37b',1,'C4ListenerConfig']]]
 ];

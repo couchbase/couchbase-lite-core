@@ -33,13 +33,8 @@ namespace litecore { namespace blip {
                    MessageNo number);
 
         MessageOut(Connection *connection,
-                   MessageBuilder &builder,
-                   MessageNo number)
-        :MessageOut(connection, (FrameFlags)0, builder.finish(), std::move(builder.dataSource), number)
-        {
-            _flags = builder.flags();   // finish() may update the flags, so set them after
-            _onProgress = std::move(builder.onProgress);
-        }
+                   BuiltMessage &&built,
+                   MessageNo number);
 
         void dontCompress()                     {_flags = (FrameFlags)(_flags & ~kCompressed);}
         void nextFrameToSend(Codec &codec, fleece::slice_ostream &dst, FrameFlags &outFlags);

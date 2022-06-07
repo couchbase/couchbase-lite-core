@@ -15,6 +15,7 @@
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "QueryServer.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
 #include "Delimiter.hh"
@@ -51,7 +52,7 @@ namespace litecore { namespace repl {
     };
 
                              
-    std::string Replicator::ProtocolName() {
+    std::string Replicator::protocolName() {
         stringstream result;
         delimiter delim(",");
         for (auto &name : kCompatProtocols)
@@ -103,6 +104,10 @@ namespace litecore { namespace repl {
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
+
+        if (!_options->namedQueries().empty() || _options->allQueries()) {
+            _queryServer = new QueryServer(this);
+        }
     }
 
 
@@ -188,6 +193,7 @@ namespace litecore { namespace repl {
             connection().terminate();
             _pusher = nullptr;
             _puller = nullptr;
+            _queryServer = nullptr;
         }
 
         // CBL-1061: This used to be inside the connected(), but static analysis shows
@@ -349,6 +355,7 @@ namespace litecore { namespace repl {
             DebugAssert(!connected());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
+            _queryServer = nullptr;
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
@@ -492,7 +499,7 @@ namespace litecore { namespace repl {
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         warn("Received unrecognized BLIP request #%" PRIu64 " with Profile '%.*s', %zu bytes",
-                msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
+                msg->number(), SPLAT(msg->profile()), msg->body().size);
         msg->notHandled();
     }
 
@@ -542,14 +549,21 @@ namespace litecore { namespace repl {
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = _remoteCheckpointDocID;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this, refresh](MessageProgress progress) {
+
+        _remoteCheckpointRequested = true;
+
+        // If there's no local checkpoint, we know we're starting from zero and don't need to
+        // wait for the remote one before getting started:
+        if (!refresh && !_hadLocalCheckpoint)
+            startReplicating();
+
+        sendAsyncRequest(msg).then([=](Retained<MessageIn> response) {
             // ...after the checkpoint is received:
-            if (progress.state != MessageProgress::kComplete)
-                return;
             Signpost::end(Signpost::blipSent);
-            MessageIn *response = progress.reply;
             Checkpoint remoteCheckpoint;
 
+            if (!response)
+                return;
             if (response->isError()) {
                 auto err = response->getError();
                 if (!(err.domain == "HTTP"_sl && err.code == 404))
@@ -576,14 +590,7 @@ namespace litecore { namespace repl {
 
             if (_checkpointJSONToSave)
                 saveCheckpointNow();    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
-        });
-
-        _remoteCheckpointRequested = true;
-
-        // If there's no local checkpoint, we know we're starting from zero and don't need to
-        // wait for the remote one before getting started:
-        if (!refresh && !_hadLocalCheckpoint)
-            startReplicating();
+        }, actor::assertNoError);
     }
 
 
@@ -598,14 +605,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::saveCheckpointNow() {
+        alloc_slice json = move(_checkpointJSONToSave);
+        
         // Switch to the permanent checkpoint ID:
         alloc_slice checkpointID = _checkpointer.checkpointID();
         if (checkpointID != _remoteCheckpointDocID) {
             _remoteCheckpointDocID = checkpointID;
             _remoteCheckpointRevID = nullslice;
         }
-
-        alloc_slice json = move(_checkpointJSONToSave);
 
         logVerbose("Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...",
                    SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID), SPLAT(json));
@@ -617,12 +624,12 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = _remoteCheckpointRevID;
         msg << json;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [=](MessageProgress progress) {
-            if (progress.state != MessageProgress::kComplete)
-                return;
+
+        sendAsyncRequest(msg).then([this,json](Retained<MessageIn> response) -> void {
             Signpost::end(Signpost::blipSent);
-            MessageIn *response = progress.reply;
-            if (response->isError()) {
+            if (!response)
+                return;
+            else if (response->isError()) {
                 Error responseErr = response->getError();
                 if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
                     // On conflict, read the remote checkpoint to get the real revID:
@@ -654,7 +661,7 @@ namespace litecore { namespace repl {
                 }
                 _checkpointer.saveCompleted();
             }
-        });
+        }, actor::assertNoError);
     }
 
 
@@ -710,7 +717,7 @@ namespace litecore { namespace repl {
         if (checkpointID)
             logInfo("Request to %s peer checkpoint '%.*s'", whatFor, SPLAT(checkpointID));
         else
-            request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
+            request->respondWithError(400, "missing checkpoint ID");
         return checkpointID;
     }
 

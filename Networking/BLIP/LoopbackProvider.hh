@@ -262,7 +262,7 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _close(int status, fleece::alloc_slice message) {
-                if (_state != State::unconnected) {
+                if (_state != State::unconnected && _state != State::closed) {
                     Assert(_state == State::connecting || _state == State::connected);
                     logInfo("CLOSE; status=%d", status);
                     std::string messageStr(message);

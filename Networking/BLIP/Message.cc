@@ -66,7 +66,7 @@ namespace litecore { namespace blip {
 
     void Message::dumpHeader(std::ostream& out) {
         out << kMessageTypeNames[type()];
-        out << " #" << _number << ' ';
+        out << " #" << messageno_t(_number) << ' ';
         if (_flags & kUrgent)  out << 'U';
         if (_flags & kNoReply)  out << 'N';
         if (_flags & kCompressed)  out << 'Z';
@@ -74,7 +74,7 @@ namespace litecore { namespace blip {
 
     void Message::writeDescription(slice payload, std::ostream& out) {
         if (type() == kRequestType) {
-            const char *profile = findProperty(payload, "Profile");
+            const char *profile = findProperty(payload, kProfilePropertyStr);
             if (profile)
                 out << "'" << profile << "' ";
         }
@@ -178,7 +178,7 @@ namespace litecore { namespace blip {
             if (!_in) {
                 // First frame!
                 // Update my flags and allocate the Writer:
-                DebugAssert(_number > 0);
+                DebugAssert(messageno_t(_number) > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
                 _in.reset(new fleece::JSONEncoder);
 
@@ -327,11 +327,11 @@ namespace litecore { namespace blip {
                 return nullptr;
             }
 
-            _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
+            _bodyAsFleece = Doc::fromJSON({_body.buf, _body.size});
             if (!_bodyAsFleece && _body != "null"_sl)
                 Warn("MessageIn::JSONBody: Body does not contain valid JSON: %.*s", SPLAT(_body));
         }
-        return fleece::ValueFromData(_bodyAsFleece);
+        return _bodyAsFleece.root();
     }
 
 
@@ -383,7 +383,7 @@ namespace litecore { namespace blip {
 
 
     void MessageIn::notHandled() {
-        respondWithError({"BLIP"_sl, 404, "no handler for message"_sl});
+        respondWithError({kBLIPErrorDomain, 404, "no handler for message"_sl});
     }
 
 
@@ -437,8 +437,8 @@ namespace litecore { namespace blip {
     Error MessageIn::getError() const {
         if (!isError())
             return Error();
-        return Error(property("Error-Domain"_sl),
-                     (int) intProperty("Error-Code"_sl),
+        return Error(property(kErrorDomainProperty),
+                     (int) intProperty(kErrorCodeProperty),
                      body());
     }
 

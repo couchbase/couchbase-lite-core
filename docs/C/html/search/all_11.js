@@ -1,17 +1,16 @@
 var searchData=
 [
-  ['save_1087',['save',['../struct_c4_doc_put_request.html#ad2fc7c1ff26b20c387bdb6c7ee8f24e8',1,'C4DocPutRequest']]],
-  ['scheme_1088',['scheme',['../struct_c4_address.html#ae4e57a571b29486d9629b1209a8a374d',1,'C4Address']]],
-  ['scope_1089',['scope',['../struct_c4_collection_spec.html#a8d29b12034b0a315f2bfd640c50e6781',1,'C4CollectionSpec']]],
-  ['selectedrev_1090',['selectedRev',['../struct_c4_document.html#a786f2fafe6221939119f97d91587e96d',1,'C4Document']]],
-  ['sequence_1091',['sequence',['../struct_c4_document_info.html#afabd4bff5f16dad26ec8ffa0889642b1',1,'C4DocumentInfo::sequence()'],['../struct_c4_document.html#ab6d7b7f75bf2b684b5bfd325f9a41037',1,'C4Document::sequence()'],['../struct_c4_revision.html#a62bb8ff181a95903dd74a99c53e476b6',1,'C4Revision::sequence()'],['../struct_c4_collection_change.html#a095ce84e4d3e22e0778bcc40f6d2b980',1,'C4CollectionChange::sequence()'],['../struct_c4_document_ended.html#a0c5a6f068cbca1186d88d26d9b662d2c',1,'C4DocumentEnded::sequence()']]],
-  ['shared_20keys_1092',['Shared Keys',['../group___f_l_shared_keys.html',1,'']]],
-  ['size_1093',['size',['../struct_f_l_slice.html#a8fb4c8187bdd5a8d645809d5d0a72c90',1,'FLSlice::size()'],['../struct_f_l_slice_result.html#a622d35e8c1031bb88d0fe89cfaca12e1',1,'FLSliceResult::size()']]],
-  ['slices_1094',['Slices',['../group___f_l_slice.html',1,'']]],
-  ['socketfactory_1095',['socketFactory',['../struct_c4_replicator_parameters.html#af962ba02b775d3bb0e2a52b6ce3345b3',1,'C4ReplicatorParameters']]],
-  ['sqlitedomain_1096',['SQLiteDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0ab14b819a5f23eedbfb517cd9ba1419d5',1,'c4Error.h']]],
-  ['start_1097',['start',['../struct_c4_full_text_match.html#ac2514656fd432684c916955e8385c731',1,'C4FullTextMatch']]],
-  ['stepover_1098',['STEPOVER',['../_base_8h.html#aba2fee9d572b22e3ab4c2683d02bae91',1,'Base.h']]],
-  ['stopwords_1099',['stopWords',['../struct_c4_index_options.html#abebf72c4814f14eba754882429d2d661',1,'C4IndexOptions']]],
-  ['storageengine_1100',['storageEngine',['../struct_c4_database_config.html#a312a3524d12a83cf51e44b28d54a9a32',1,'C4DatabaseConfig']]]
+  ['rankfulltext_5fdeprecated_0',['rankFullText_DEPRECATED',['../struct_c4_query_options.html#a7d0a806d31ac8cd06243fef1b05e7b08',1,'C4QueryOptions']]],
+  ['rarely_2dneeded_20or_20advanced_20functions_1',['Rarely-needed or advanced functions',['../group___obscure.html',1,'']]],
+  ['raw_20documents_2',['Raw Documents',['../group___raw_docs.html',1,'']]],
+  ['reading_20fleece_20data_3',['Reading Fleece Data',['../group__reading.html',1,'']]],
+  ['remotedbid_4',['remoteDBID',['../struct_c4_doc_put_request.html#af410fb7af767819092c166b1abf535dc',1,'C4DocPutRequest']]],
+  ['replication_20socket_20provider_20api_5',['Replication Socket Provider API',['../group___socket.html',1,'']]],
+  ['replicator_6',['Replicator',['../group___replicator.html',1,'']]],
+  ['requestclose_7',['requestClose',['../struct_c4_socket_factory.html#ab37f44e93f513ebafde1da3612ed5f39',1,'C4SocketFactory']]],
+  ['requireclientcerts_8',['requireClientCerts',['../struct_c4_t_l_s_config.html#aad8354541adea6073d792306b4591f07',1,'C4TLSConfig']]],
+  ['returns_5fnonnull_9',['RETURNS_NONNULL',['../_compiler_support_8h.html#a4c3f3effd56594693250b80e0a0675ef',1,'CompilerSupport.h']]],
+  ['revflags_10',['revFlags',['../struct_c4_doc_put_request.html#aa1673083f7a825c698dfa1267d952704',1,'C4DocPutRequest']]],
+  ['revid_11',['revID',['../struct_c4_doc_response.html#af8fb856a0b2941be678198245fd76a5e',1,'C4DocResponse::revID()'],['../struct_c4_document_info.html#a832117e4d9ad7f2bf29da0c16325f1af',1,'C4DocumentInfo::revID()'],['../struct_c4_document.html#afcf8e0de04396aced602e3997ed752cf',1,'C4Document::revID()'],['../struct_c4_revision.html#ae07fd2dcb6c4f2e161f22bba91280db4',1,'C4Revision::revID()'],['../struct_c4_collection_change.html#aec3caf4b2f01381ed0a02e40719ab205',1,'C4CollectionChange::revID()'],['../struct_c4_document_ended.html#a495dd085ba363d5d178b318a415121f4',1,'C4DocumentEnded::revID()']]],
+  ['rootclientcerts_12',['rootClientCerts',['../struct_c4_t_l_s_config.html#a34f77a103f6a786bca5e848f77ddebc0',1,'C4TLSConfig']]]
 ];

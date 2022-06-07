@@ -458,6 +458,12 @@ _FLDictIterator_End
 _FLValue_IsEqual
 _FLValue_ToJSON5
 
+_c4client_new
+_c4client_getDoc
+_c4client_start
+_c4client_stop
+_c4client_putDoc
+
 
 _c4db_URINameFromPath
 

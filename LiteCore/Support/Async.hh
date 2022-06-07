@@ -11,393 +11,410 @@
 //
 
 #pragma once
+#include "AsyncActorCommon.hh"
+#include "Result.hh"
 #include "fleece/RefCounted.hh"
+#include "fleece/InstanceCounted.hh"
 #include <atomic>
-#include <cassert>
 #include <functional>
+#include <mutex>
+#include <optional>
 #include <utility>
+#include <betterassert.hh>
 
-namespace litecore { namespace actor {
+struct C4Error;
+
+namespace litecore::actor {
+    using fleece::RefCounted;
+    using fleece::Retained;
     class Actor;
-
-    /*
-     Async<T> represents a result of type T that may not be available yet. This concept is
-     also referred to as a "future". You can create one by first creating an AsyncProvider<T>,
-     which is also known as a "promise", then calling its `asyncValue` method:
-
-        Async<int> getIntFromServer() {
-            Retained<AsyncProvider<int>> intProvider = Async<int>::provider();
-            sendServerRequestFor(intProvider);
-            return intProvider->asyncValue();
-        }
-
-     You can simplify this somewhat:
-
-        Async<int> getIntFromServer() {
-            auto intProvider = Async<int>::provider();      // `auto` is your friend
-            sendServerRequestFor(intProvider);
-            return intProvider;                             // implicit conversion to Async
-        }
-
-     The AsyncProvider reference has to be stored somewhere until the result is available.
-     Then you call its setResult() method:
-
-        int result = valueReceivedFromServer();
-        intProvider.setResult(result);
-
-     Async<T> has a `ready` method that tells whether the result is available, and a `result`
-     method that returns the result (or aborts if it's not available.) However, it does not
-     provide any way to block and wait for the result. That's intentional: we don't want
-     blocking! Instead, the way you work with async results is within an _asynchronous
-     function_.
-
-     ASYNCHRONOUS FUNCTIONS
-
-     An asynchronous function is a function that can resolve Async values in a way that appears
-     synchronous, but without actually blocking. It always returns an Async result (or void),
-     since if the Async value it's resolving isn't available, the function itself has to return
-     without (yet) providing a result. Here's what one looks like:
-
-         Async<T> anAsyncFunction() {
-            BEGIN_ASYNC_RETURNING(T)
-            ...
-            return t;
-            END_ASYNC()
-         }
-
-     If the function doesn't return a result, it looks like this:
-
-         void aVoidAsyncFunction() {
-            BEGIN_ASYNC()
-            ...
-            END_ASYNC()
-         }
-
-     In between BEGIN and END you can "unwrap" Async values, such as those returned by other
-     asynchronous functions, by calling asyncCall(). The first parameter is the variable to
-     assign the result to, and the second is the expression returning the async result:
-
-         asyncCall(int n, someOtherAsyncFunction());
-
-     `asyncCall` is a macro that hides some very weird control flow. What happens is that, if
-     the Async value isn't yet available, `asyncCall` causes the enclosing function to return.
-     (Obviously it returns an unavailable Async value.) It also registers as an observer of
-     the value, so when its result does become available, the enclosing function _resumes_
-     right where it left off, assigns the result to the variable, and continues.
-
-     ASYNC CALLS AND VARIABLE SCOPE
-
-     `asyncCall()` places some odd restrictions on your code. Most importantly, a variable declared
-     between the BEGIN/END cannot have a scope that extends across an `asyncCall`:
-
-        int foo = ....;
-        asyncCall(int n, someOtherAsyncFunction());     // ERROR: Cannot jump from switch...
-
-     This is because the macro expansion of `asyncCall()` includes a `switch` label, and it's not
-     possible to jump to that label (when resuming the async flow of control) skipping the variable
-     declaration.
-
-     If you want to use a variable across `asyncCall` scopes, you must declare it _before_ the
-     BEGIN_ASYNC -- its scope then includes the entire async function:
-
-        int foo;
-        BEGIN_ASYNC_RETURNING(T)
-        ...
-        foo = ....;
-        asyncCall(int n, someOtherAsyncFunction());     // OK!
-        foo += n;
-
-     Or if the variable isn't used after the next `asyncCall`, just use braces to limit its scope:
-
-        {
-            int foo = ....;
-        }
-        asyncCall(int n, someOtherAsyncFunction());     // OK!
-
-     THREADING
-
-     By default, an async method resumes immediately when the Async value it's waiting for becomes
-     available. That means when the provider's `setResult` method is called, or when the
-     async method returning that value finally returns a result. This is reasonable in single-
-     threaded code.
-
-     `asyncCall` is aware of Actors, however. So if an async Actor method waits, it will be resumed
-     on that Actor's execution context. This ensures that the Actor's code runs single-threaded, as
-     expected.
-
-     */
-
-#define BEGIN_ASYNC_RETURNING(T) \
-    return _asyncBody<T>([=](AsyncState &_async_state_) mutable -> T { \
-        switch (_async_state_.continueAt()) { \
-            default:
-
-#define BEGIN_ASYNC() \
-    _asyncBody<void>([=](AsyncState &_async_state_) mutable -> void { \
-        switch (_async_state_.continueAt()) { \
-            default:
-
-#define asyncCall(VAR, CALL) \
-                if (_async_state_._asyncCall(CALL, __LINE__)) return {}; \
-            case __LINE__: \
-            VAR = _async_state_.asyncResult<decltype(CALL)::ResultType>(); _async_state_.reset();
-
-#define END_ASYNC() \
-        } \
-    });
-
-
     class AsyncBase;
-    class AsyncContext;
+    class AsyncProviderBase;
     template <class T> class Async;
     template <class T> class AsyncProvider;
 
 
-    /** The state data passed to the lambda of an async function. */
-    class AsyncState {
-    public:
-        uint32_t continueAt() const                         {return _continueAt;}
+    // *** For full documentation, read Networking/BLIP/docs/Async.md ***
 
-        bool _asyncCall(const AsyncBase &a, int lineNo);
 
-        template <class T>
-        T&& asyncResult() {
-            return ((AsyncProvider<T>*)_calling.get())->extractResult();
-        }
+    namespace {
+        struct voidPlaceholder; // Just a hack to avoid `void&` parameters in Async<void>
+        template <typename T> struct _ThenType       { using type = T; using realType = T; };
+        template <>           struct _ThenType<void> { using type = voidPlaceholder; };
+    }
 
-        void reset()                                        {_calling = nullptr;}
-
-    protected:
-        fleece::Retained<AsyncContext> _calling;            // What I'm blocked awaiting
-        uint32_t _continueAt {0};                           // label/line# to continue lambda at
-    };
+#pragma mark - ASYNCPROVIDER:
 
 
     // Maintains the context/state of an async operation and its observer.
-    // Abstract base class of AsyncProvider<T>.
-    class AsyncContext : public fleece::RefCounted, protected AsyncState {
+    // Abstract base class of AsyncProvider<T>
+    class AsyncProviderBase : public RefCounted,
+                              public fleece::InstanceCountedIn<AsyncProviderBase>
+    {
     public:
         bool ready() const                                  {return _ready;}
-        void setObserver(AsyncContext *p);
-        void wakeUp(AsyncContext *async);
+
+        using Observer = std::function<void(AsyncProviderBase&)>;
+
+        void setObserver(Actor*, Observer);
 
     protected:
-        AsyncContext(Actor *actor);
-        ~AsyncContext();
-        void start();
-        void _wait();
-        void _gotResult();
+        friend class AsyncBase;
 
-        virtual void next() =0;
+        explicit AsyncProviderBase(bool ready = false);
+        explicit AsyncProviderBase(Actor *actorOwningFn, const char *functionName);
+        ~AsyncProviderBase();
+        void _gotResult(std::unique_lock<std::mutex>&);
+        void notifyObserver(Observer &observer, Actor *actor);
 
-        bool _ready {false};                                // True when result is ready
-        fleece::Retained<AsyncContext> _observer;           // Dependent context waiting on me
-        Actor *_actor;                                      // Owning actor, if any
-        fleece::Retained<Actor> _waitingActor;              // Actor that's waiting, if any
-        fleece::Retained<AsyncContext> _waitingSelf;        // Keeps `this` from being freed
-
-#if DEBUG
-    public:
-        static std::atomic_int gInstanceCount;
-#endif
-
-        template <class T> friend class Async;
-        friend class Actor;
+        std::mutex mutable            _mutex;
+    private:
+        Observer                      _observer;
+        Retained<Actor>               _observerActor;         // Actor the observer was running on
+        std::atomic<bool>             _ready {false};         // True when result is ready
     };
 
 
-    /** An asynchronously-provided result, seen from the producer side. */
+    /** An asynchronously-provided result, seen from the producer's side. */
     template <class T>
-    class AsyncProvider : public AsyncContext {
+    class AsyncProvider final : public AsyncProviderBase {
     public:
-        template <class LAMBDA>
-        explicit AsyncProvider(Actor *actor, const LAMBDA body)
-        :AsyncContext(actor)
-        ,_body(body)
-        { }
+        using ResultType = Result<T>;
+        using ThenType = typename _ThenType<T>::type;   // `ThenType` is `T` unless `T` is `void`
 
-        static fleece::Retained<AsyncProvider> create() {
-            return new AsyncProvider;
+        /// Creates a new empty AsyncProvider.
+        static Retained<AsyncProvider> create()            {return new AsyncProvider;}
+
+        /// Creates a new AsyncProvider that already has a result.
+        static Retained<AsyncProvider> createReady(ResultType r)  {
+            return new AsyncProvider(std::move(r));
         }
 
-        Async<T> asyncValue() {
-            return Async<T>(this);
+        /// Constructs a new empty AsyncProvider.
+        AsyncProvider() = default;
+
+        /// Creates the client-side view of the result.
+        Async<T> asyncValue()                               {return Async<T>(this);}
+
+        /// Resolves the value by storing a result (value or error) and waking any waiting clients.
+        template <typename RESULT,
+                  typename = std::enable_if_t<std::is_constructible_v<ResultType,RESULT>>>
+        void setResult(RESULT &&result) {
+            emplaceResult(std::forward<RESULT>(result));
         }
 
-        void setResult(const T &result) {
-            _result = result;
-            _gotResult();
+        /// Equivalent to `setResult` but constructs the result directly inside the provider
+        /// from the constructor parameters given.
+        template <class... Args,
+                  class = std::enable_if<std::is_constructible_v<ResultType, Args...>>>
+        void emplaceResult(Args&&... args) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            precondition(!_result);
+            _result.emplace(args...);
+            _gotResult(lock);
         }
 
-        const T& result() const {
-            assert(_ready);
-            return _result;
+        /// Returns the result, a `Result<T>` containing either a value or an error.
+        /// The result must be available, or an exception is thrown.
+        ResultType& result() & {
+            std::unique_lock<std::mutex> _lock(_mutex);
+            precondition(_result);
+            return *_result;
         }
 
-        T&& extractResult() {
-            assert(_ready);
-            return std::move(_result);
+        const ResultType& result() const &      {return const_cast<AsyncProvider*>(this)->result();}
+        ResultType result() &&                  {return moveResult();}
+
+        /// Extracts the result and returns it as a moveable direct value.
+        ResultType moveResult() {
+            std::unique_lock<std::mutex> _lock(_mutex);
+            precondition(_result);
+            return *std::move(_result);
+        }
+
+        /// Sets the result to a C4Error.
+        void setError(const C4Error &error)         {setResult(error);}
+        void setException(const std::exception &x)  {setResult(x);}
+
+        bool hasError() const                       {return result().isError();}
+
+        C4Error error() const {
+            if (auto x = result().errorPtr())
+                return *x;
+            else
+                return {};
         }
 
     private:
-        AsyncProvider()
-        :AsyncContext(nullptr)
+        friend class AsyncProviderBase;
+        friend class Async<T>;
+
+        explicit AsyncProvider(ResultType result)
+        :AsyncProviderBase(true)
+        ,_result(std::move(result))
         { }
 
-        void next() override {
-            _result = _body(*this);
-            if (_calling)
-                _wait();
-            else
-                _gotResult();
+        template <typename U>
+        Async<U> _now(std::function<Async<U>(ThenType&&)> &&callback) {
+            if (hasError())
+                return Async<U>(error());
+            try {
+                return callback(moveResult()._value());
+            } catch (const std::exception &x) {
+                return Async<U>(C4Error::fromException(x));
+            }
         }
 
-        std::function<T(AsyncState&)> _body;            // The async function body
-        T _result {};                                   // My result
+        std::optional<ResultType> _result;   // My result
     };
 
 
-    // Specialization of AsyncProvider for use in functions with no return value (void).
-    template <>
-    class AsyncProvider<void> : public AsyncContext {
-    public:
-        template <class LAMBDA>
-        explicit AsyncProvider(Actor *actor, const LAMBDA &body)
-        :AsyncContext(actor)
-        ,_body(body)
-        { }
-
-        static fleece::Retained<AsyncProvider> create() {
-            return new AsyncProvider;
-        }
-
-    private:
-        AsyncProvider()
-        :AsyncContext(nullptr)
-        { }
-
-        void next() override {
-            _body(*this);
-            if (_calling)
-                _wait();
-            else
-                _gotResult();
-        }
-
-        std::function<void(AsyncState&)> _body;         // The async function body
-    };
+#pragma mark - ASYNC:
 
 
     // base class of Async<T>
     class AsyncBase {
     public:
-        explicit AsyncBase(const fleece::Retained<AsyncContext> &context)
-        :_context(context)
-        { }
+        /// Sets which Actor the callback of a `then` call should run on.
+        AsyncBase& on(Actor *actor)                         {_onActor = actor; return *this;}
 
-        bool ready() const                                          {return _context->ready();}
+        /// Returns true once the result is available.
+        bool ready() const                                  {return _provider->ready();}
+
+        /// Blocks the current thread (i.e. doesn't return) until the result is available.
+        /// \warning  This is intended for use in unit tests. Please don't use it otherwise unless
+        ///           absolutely necessary; use `then()` or `AWAIT()` instead.
+        void blockUntilReady();
 
     protected:
-        fleece::Retained<AsyncContext> _context;        // The AsyncProvider that owns my value
+        explicit AsyncBase(Retained<AsyncProviderBase> &&provider) :_provider(std::move(provider)) { }
+        bool canCallNow() const;
 
-        friend class AsyncState;
+        Retained<AsyncProviderBase> _provider;          // The provider that owns my value
+        Actor*                      _onActor {nullptr}; // Actor that `then` should call on
     };
 
 
-    /** An asynchronously-provided result, seen from the client side. */
+    /** An asynchronously-provided result, seen from the consumer's side. */
     template <class T>
     class Async : public AsyncBase {
     public:
-        using ResultType = T;
+        using ResultType = Result<T>;
+        using ThenType = typename _ThenType<T>::type;
 
-        Async(AsyncProvider<T> *provider)
-        :AsyncBase(provider)
+        /// Returns a new AsyncProvider<T>.
+        static Retained<AsyncProvider<T>> makeProvider()    {return AsyncProvider<T>::create();}
+
+        /// Creates an Async value from its provider.
+        Async(AsyncProvider<T> *provider)                   :AsyncBase(provider) { }
+        Async(Retained<AsyncProvider<T>> &&provider)        :AsyncBase(std::move(provider)) { }
+
+        /// Creates an already-resolved Async with a result (success or error.)
+        Async(ResultType t)
+        :AsyncBase(AsyncProvider<T>::createReady(std::move(t)))
         { }
+        template <typename R,
+                  typename = std::enable_if_t<std::is_convertible_v<R,ResultType>>>
+        Async(R &&r)                        :Async(ResultType(std::forward<R>(r))) { }
 
-        Async(const fleece::Retained<AsyncProvider<T>> &provider)
-        :AsyncBase(provider)
-        { }
 
-        template <class LAMBDA>
-        Async(Actor *actor, const LAMBDA& bodyFn)
-        :Async( new AsyncProvider<T>(actor, bodyFn) )
+        /// Invokes the callback when the result is ready.
+        /// The callback should take a single parameter of type `T`, `T&` or `T&&`.
+        /// The callback's return type may be:
+        /// - `X` -- the `then` method will return `Async<X>`, which will resolve to the callback's
+        ///   return value after the callback returns.
+        /// - `Async<X>` -- the `then` method will return `Async<X>`. After the callback
+        ///   returns, _and_ its returned async value becomes ready, the returned
+        ///   async value will resolve to that value.
+        /// - `void` -- the `then` method will return `Async<void>`, because you've handled the
+        ///   result value (`T`) but not a potential error, so what's left is just the error.
+        ///   You can chain `onError()` to handle the error.
+        ///
+        /// If the async operation fails, i.e. the result is an error not a `T`, your callback will
+        /// not be called. Instead the error is passed on to the `Async` value that was returned by
+        /// `then()`.
+        ///
+        /// By default the callback will be invoked either on the thread that set the result,
+        /// or if the result is already available, synchronously on the current thread
+        /// (before `then` returns.)
+        ///
+        /// If an Actor method is calling `then`, it should first call `on(this)` to specify that
+        /// it wants the callback to run on its event queue; e.g. `a.on(this).then(...)`.
+        ///
+        /// Examples:
+        /// - `a.then([](T) -> void { ... });`
+        /// - `Async<X> x = a.then([](T) -> X { ... });`
+        /// - `Async<X> x = a.then([](T) -> Async<X> { ... });`
+        template <typename LAMBDA,
+                  typename RV = std::invoke_result_t<LAMBDA,ThenType>,
+                  typename = std::enable_if_t<!std::is_void_v<RV>>>
+        [[nodiscard]]
+        auto then(LAMBDA &&callback) && {
+            // U is the return type of the lambda with any `Async<...>` removed
+            using U = unwrap_async<RV>;
+            return _then<U>(std::function<RV(T&&)>(std::forward<LAMBDA>(callback)));
+        }
+
+
+        /// `then()` with a callback that returns nothing (`void`).
+        /// The callback is called only if the async operation is successful.
+        /// The `then` method itself returns an `Async<void>` which conveys the success/failure of
+        /// the operation -- you need to handle that value because you haven't handled the failure
+        /// case yet. Typically you'd chain an `onError(...)`.
+        ///
+        /// Also consider using the `then()` method that takes two parameters for success & failure.
+        [[nodiscard]]
+        Async<void> then(std::function<void(const ThenType&)> &&callback) {
+            auto result = Async<void>::makeProvider();
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
+                auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                if (provider.hasError())
+                    result->setResult(provider.error());
+                else {
+                    callback(provider.moveResult()._value());
+                    result->setResult(Result<void>());
+                }
+            });
+            return result->asyncValue();
+        }
+
+
+        /// Special `then()` for `Async<void>` only. The callback takes a `C4Error` and returns
+        /// nothing. It's called on sucess or failure; on success, the C4Error will have `code` 0.
+        void then(std::function<void(C4Error)> &&callback) {
+            static_assert(std::is_same_v<T, void>,
+                          "then(C4Error) is only allowed with Async<void>; use onError()");
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
+                auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                callback(provider.error());
+            });
+        }
+
+
+        /// Version of `then` that takes _two_ callbacks, one for the result and one for an error.
+        /// There is a function `assertNoAsyncError` that can be passed as the second parameter if
+        /// you are certain there will be no error.
+        template <typename LAMBDA>
+        void then(LAMBDA &&callback,
+                  std::function<void(C4Error)> errorCallback) &&
         {
-            _context->start();
-        }
-
-        /** Returns a new AsyncProvider<T>. */
-        static fleece::Retained<AsyncProvider<T>> provider() {
-            return AsyncProvider<T>::create();
-        }
-
-        const T& result() const             {return ((AsyncProvider<T>*)_context.get())->result();}
-
-        /** Invokes the callback when this Async's result becomes ready,
-            or immediately if it's ready now. */
-        template <class LAMBDA>
-        void wait(LAMBDA callback) {
-            if (ready())
-                callback(result());
-            else
-                (void) new AsyncWaiter(_context, callback);
+            std::function<void(T)> fn = std::forward<LAMBDA>(callback);
+            _then(std::move(fn), std::move(errorCallback));
         }
 
 
-        // Internal class used by wait(), above
-        class AsyncWaiter : public AsyncContext {
-        public:
-            template <class LAMBDA>
-            AsyncWaiter(AsyncContext *context, LAMBDA callback)
-            :AsyncContext(nullptr)
-            ,_callback(callback)
-            {
-                _waitingSelf = this;
-                _calling = context;
-                _wait();
+        /// Invokes the callback when the result is ready, but only if it's an error.
+        /// A successful result is ignored. Normally chained after a `then` call to handle the
+        /// remaining error condition.
+        void onError(std::function<void(C4Error)> callback) {
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
+                auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                if (provider.hasError())
+                    callback(provider.error());
+            });
+        }
+
+
+        /// Returns the result. (Throws an exception if the result is not yet available.)
+        /// If the result contains an error, throws that as an exception.
+        ResultType& result() &                               {return provider()->result();}
+        ResultType result() &&                               {return provider()->result();}
+
+        /// Move-returns the result. (Throws an exception if the result is not yet available.)
+        /// If the result contains an error, throws that as an exception.
+        ResultType moveResult()                             {return provider()->moveResult();}
+
+        /// Blocks the current thread until the result is available, then returns it.
+        /// If the result contains an error, throws that as an exception.
+        /// \warning  This is intended for use in unit tests. Please don't use it otherwise unless
+        ///           absolutely necessary; use `then()` or `AWAIT()` instead.
+        ResultType& blockingResult() {
+            blockUntilReady();
+            return result();
+        }
+
+        /// Returns the error.
+        C4Error error() const                             {return provider()->error();}
+
+    private:
+        friend class Actor;
+        template <class U> friend class Async;
+
+        Async() :AsyncBase(makeProvider()) { }
+
+        AsyncProvider<T>* provider()                {return (AsyncProvider<T>*)_provider.get();}
+        AsyncProvider<T> const* provider() const    {return (const AsyncProvider<T>*)_provider.get();}
+
+
+        void thenProvider(std::function<void(AsyncProvider<T>&)> callback) && {
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) {
+                callback(dynamic_cast<AsyncProvider<T>&>(provider));
+            });
+        }
+
+
+        // Implements `then` where the lambda returns a regular type `U`. Returns `Async<U>`.
+        template <typename U>
+        [[nodiscard]]
+        Async<U> _then(std::function<U(ThenType&&)> &&callback) {
+            auto uProvider = Async<U>::makeProvider();
+            if (canCallNow()) {
+                // Result is available now, so call the callback:
+                uProvider->setResult(moveResult().then(callback));
+            } else {
+                _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
+                    auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                    uProvider->setResult(provider.moveResult().then(callback));
+                });
             }
+            return uProvider->asyncValue();
+        }
 
-        protected:
-            void next() override {
-                _callback(asyncResult<T>());
-                _waitingSelf = nullptr;
+
+        // Implements `then` where the lambda returns `Async<U>`.
+        template <typename U>
+        [[nodiscard]]
+        Async<U> _then(std::function<Async<U>(ThenType&&)> &&callback) {
+            if (canCallNow()) {
+                // If I'm ready, just call the callback and pass on the Async<U> it returns:
+                return provider()->_now(std::move(callback));
+            } else {
+                // Otherwise wait for my result...
+                auto uProvider = Async<U>::makeProvider();
+                _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) mutable {
+                    // Invoke the callback, then wait to resolve the Async<U> it returns:
+                    auto &tProvider = dynamic_cast<AsyncProvider<T>&>(provider);
+                    auto asyncU = tProvider._now(std::move(callback));
+                    std::move(asyncU).thenProvider([uProvider](auto &provider) {
+                        // Then finally resolve the async I returned:
+                        uProvider->setResult(provider.result());
+                    });
+                });
+                return uProvider->asyncValue();
             }
+        }
 
-        private:
-            std::function<void(T)> _callback;
-        };
+
+        // innards of the `then()` with two callbacks
+        template <typename R,
+        typename = std::enable_if_t<std::is_convertible_v<T,R>>>
+        void _then(std::function<void(R)> &&callback,
+                   std::function<void(C4Error)> &&errorCallback)
+        {
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &providerBase) {
+                auto &provider = dynamic_cast<AsyncProvider<T>&>(providerBase);
+                if (provider.hasError())
+                    errorCallback(provider.error());
+                else
+                    callback(provider.moveResult()._value());
+            });
+        }
+
     };
 
 
-    // Specialization of Async<> for functions with no result
-    template <>
-    class Async<void> : public AsyncBase {
-    public:
-        Async(AsyncProvider<void> *provider)
-        :AsyncBase(provider)
-        { }
+    /// You can use this as the error-handling callback to `void Async<T>::then(onResult,onError)`.
+    /// It throws an assertion-failed exception if the C4Error's code is nonzero.
+    void assertNoError(C4Error);
 
-        Async(const fleece::Retained<AsyncProvider<void>> &provider)
-        :AsyncBase(provider)
-        { }
-
-        static fleece::Retained<AsyncProvider<void>> provider() {
-            return AsyncProvider<void>::create();
-        }
-
-        template <class LAMBDA>
-        Async(Actor *actor, const LAMBDA& bodyFn)
-        :Async( new AsyncProvider<void>(actor, bodyFn) )
-        {
-            _context->start();
-        }
-    };
-
-
-    /** Body of an async function: Creates an AsyncProvider from the lambda given,
-        then returns an Async that refers to that provider. */
-    template <class T, class LAMBDA>
-    Async<T> _asyncBody(const LAMBDA &bodyFn) {
-        return Async<T>(nullptr, bodyFn);
-    }
-
-} }
+}

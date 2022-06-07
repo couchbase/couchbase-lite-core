@@ -59,8 +59,8 @@ namespace litecore { namespace repl {
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
         void encodeRevID(Encoder &enc, slice revID);
-        void sendChanges(RevToSendList&);
-        void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
+        void sendChanges(RevToSendList&&);
+        void handleChangesResponse(const RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
         bool handlePushConflict(RevToSend *change);
@@ -72,6 +72,7 @@ namespace litecore { namespace repl {
         bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL, slice receivedRevID);
         void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
         bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
+        void handleAllDocs(Retained<blip::MessageIn>);
 
         // Pusher+Attachments.cc:
         void handleGetAttachment(Retained<blip::MessageIn>);
@@ -83,6 +84,7 @@ namespace litecore { namespace repl {
         // Pusher+Revs.cc:
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList, bool immediate);
+        bool buildRevisionMessage(RevToSend*, C4Document*, blip::MessageBuilder&, C4Error*);
         void sendRevision(Retained<RevToSend>);
         void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);
@@ -91,6 +93,7 @@ namespace litecore { namespace repl {
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err =nullptr);
+        void handleGetRev(Retained<blip::MessageIn> req);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 

@@ -19,18 +19,19 @@
 #include <sstream>
 
 namespace litecore { namespace blip {
+    class BuiltMessage;
+
 
     /** A callback to provide data for an outgoing message. When called, it should copy data
         to the location in the `buf` parameter, with a maximum length of `capacity`. It should
         return the number of bytes written, or 0 on EOF, or a negative number on error. */
-    //using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
     class IMessageDataSource {
     public:
         virtual int operator() (void *buf, size_t capacity) =0;
         virtual ~IMessageDataSource() = default;
     };
 
-    using MessageDataSource = std::unique_ptr<IMessageDataSource>;
+    using MessageDataSource = std::shared_ptr<IMessageDataSource>;
 
 
     /** A temporary object used to construct an outgoing message (request or response).
@@ -43,13 +44,17 @@ namespace litecore { namespace blip {
         typedef std::pair<slice, slice> property;
 
         /** Constructs a MessageBuilder for a request, optionally setting its Profile property. */
-        MessageBuilder(slice profile = fleece::nullslice);
+        explicit MessageBuilder(slice profile = fleece::nullslice);
 
         /** Constructs a MessageBuilder for a request, with a list of properties. */
-        MessageBuilder(std::initializer_list<property>);
+        explicit MessageBuilder(std::initializer_list<property>);
 
         /** Constructs a MessageBuilder for a response. */
-        MessageBuilder(MessageIn *inReplyTo);
+        explicit MessageBuilder(MessageIn *inReplyTo);
+
+        bool isResponse() const                     {return type != kRequestType;}
+
+        void setProfile(slice profile);
 
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
@@ -98,7 +103,7 @@ namespace litecore { namespace blip {
 
     protected:
         friend class MessageIn;
-        friend class MessageOut;
+        friend class BuiltMessage;
 
         FrameFlags flags() const;
         alloc_slice finish();
@@ -112,6 +117,24 @@ namespace litecore { namespace blip {
         fleece::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
         std::stringstream _properties;  // Accumulates encoded properties
         bool _wroteProperties {false};  // Have _properties been written to _out yet?
+    };
+
+
+    /** Intermediate value produced by a MessageBuilder, to be passed to the Connection.
+        (Unlike MessageBuilder this class is copyable, so instances can be captured by
+        `std::function`. That makes it useable by async code.) */
+    class BuiltMessage {
+    public:
+        BuiltMessage(MessageBuilder&);
+
+        MessageDataSource       dataSource;
+        MessageProgressCallback onProgress;
+
+    protected:
+        friend class MessageOut;
+
+        FrameFlags          _flags;
+        fleece::alloc_slice _payload;
     };
 
 } }

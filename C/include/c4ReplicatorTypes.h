@@ -252,6 +252,7 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
     #define kC4ReplicatorOptionMaxRetryInterval "maxRetryInterval" ///< Max delay betw retries (secs)
     #define kC4ReplicatorOptionAutoPurge        "autoPurge" ///< Enables auto purge; default is true (bool)
+    #define kC4ReplicatorOptionAllowConnectedClient "allowConnectedClient" ///< Allow peer to use connected-client (CRUD) API
 
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
@@ -271,6 +272,10 @@ C4API_BEGIN_DECLS
 
     // BLIP options:
     #define kC4ReplicatorCompressionLevel       "BLIPCompressionLevel" ///< Data compression level, 0..9
+
+    // Queries
+    #define kC4ReplicatorOptionNamedQueries     "queries"    ///< Queries to serve (Dict name->N1QL)
+    #define kC4ReplicatorOptionAllQueries       "allQueries" ///< Allow any N1QL query? (bool)
 
     // [1]: Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)

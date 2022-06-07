@@ -38,6 +38,12 @@ namespace litecore { namespace repl {
     }
 
 
+    void RevToSend::setRevID(slice id) {
+        Assert(revID.empty());
+        const_cast<alloc_slice&>(revID) = id;
+    }
+
+
     void RevToSend::addRemoteAncestor(slice revID) {
         if (!revID)
             return;

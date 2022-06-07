@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['onblobprogress_1054',['onBlobProgress',['../struct_c4_replicator_parameters.html#a5280b197a96ec8aea9aa40663c965410',1,'C4ReplicatorParameters']]],
-  ['ondocumentsended_1055',['onDocumentsEnded',['../struct_c4_replicator_parameters.html#abf87f34c0782f65c9eb3f7fab00070aa',1,'C4ReplicatorParameters']]],
-  ['onstatuschanged_1056',['onStatusChanged',['../struct_c4_replicator_parameters.html#a5e2114d96204de333c24cdb38bb72f1d',1,'C4ReplicatorParameters']]],
-  ['open_1057',['open',['../struct_c4_socket_factory.html#a400fcaa9fecba9a8b5346c8b2cc1cd2a',1,'C4SocketFactory']]],
-  ['optionsdictfleece_1058',['optionsDictFleece',['../struct_c4_replicator_parameters.html#ad72456941cec980af028def07c394063',1,'C4ReplicatorParameters']]]
+  ['name_0',['name',['../struct_c4_collection_spec.html#a6044be9d0a0b74fec2b21644b6c6f0c7',1,'C4CollectionSpec']]],
+  ['network_20listener_3a_20rest_20api_20and_20sync_20server_1',['Network Listener: REST API and Sync Server',['../group___listener.html',1,'']]],
+  ['networkdomain_2',['NetworkDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a230c802d66f2578bb3142fbfa52946d4',1,'c4Error.h']]],
+  ['networkinterface_3',['networkInterface',['../struct_c4_listener_config.html#a293d295220e352a827801c0a19aa629d',1,'C4ListenerConfig']]],
+  ['nonnull_4',['NONNULL',['../_compiler_support_8h.html#ada64c64b4206846e8f545c2fbfb3f307',1,'CompilerSupport.h']]]
 ];
