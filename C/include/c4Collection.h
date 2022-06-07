@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 
@@ -109,7 +110,8 @@ CBL_CORE_API bool c4db_hasScope(C4Database *db, C4String name) C4API;
 
 /** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. */
 CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
-                                            C4CollectionSpec spec) C4API;
+                                            C4CollectionSpec spec,
+                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Creates and returns an empty collection with the given name & scope.
     If the collection already exists, it just returns it.
@@ -129,11 +131,13 @@ CBL_CORE_API bool c4db_deleteCollection(C4Database *db,
     in the order in which they were created.
     @note  You are responsible for releasing the returned Fleece array. */
 CBL_CORE_API FLMutableArray c4db_collectionNames(C4Database *db,
-                                    C4String inScope) C4API;
+                                    C4String inScope,
+                                    C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing scopes, in the order in which they were created.
     @note  You are responsible for releasing the returned Fleece array. */
-CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database *db) C4API;
+CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database *db,
+                                            C4Error* C4NULLABLE outError) C4API;
 
 
 /** @} */
