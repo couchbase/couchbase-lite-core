@@ -64,7 +64,7 @@ namespace litecore { namespace repl {
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options options)
-    :Worker(new Connection(webSocket, options.properties, *this),
+    :Worker(new Connection(webSocket, options.properties, {}),
             nullptr,
             options,
             make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
@@ -75,6 +75,7 @@ namespace litecore { namespace repl {
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
+    ,_weakConnectionDelegateThis(new WeakHolder<blip::ConnectionDelegate>(this))
     {
         _loggingID = string(db->getPath()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
@@ -106,6 +107,11 @@ namespace litecore { namespace repl {
     }
 
 
+    Replicator::~Replicator() {
+        _weakConnectionDelegateThis->rescind(this);
+    }
+
+
     void Replicator::start(bool reset, bool synchronous) {
         if (synchronous)
             _start(reset);
@@ -119,7 +125,7 @@ namespace litecore { namespace repl {
             Assert(_connectionState == Connection::kClosed);
             Signpost::begin(Signpost::replication, uintptr_t(this));
             _connectionState = Connection::kConnecting;
-            connection().start();
+            connection().start(_weakConnectionDelegateThis);
             // Now wait for _onConnect or _onClose...
 
             _findExistingConflicts();

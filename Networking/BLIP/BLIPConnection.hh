@@ -49,15 +49,15 @@ namespace litecore { namespace blip {
         /** Creates a BLIP connection on a WebSocket. */
         Connection(websocket::WebSocket*,
                    const fleece::AllocedDict &options,
-                   ConnectionDelegate&);
+                   Retained<WeakHolder<ConnectionDelegate>>);
 
         const std::string& name() const                         {return _name;}
 
         websocket::Role role() const                            {return _role;}
 
-        ConnectionDelegate& delegate() const                    {return _delegate;}
+        Retained<WeakHolder<ConnectionDelegate>> delegateWeak() {return _weakDelegate;}
 
-        void start();
+        void start(Retained<WeakHolder<blip::ConnectionDelegate>>);
 
         /** Tears down a Connection's state including any reference cycles.
             The Connection must have either already stopped, or never started. */
@@ -97,7 +97,7 @@ namespace litecore { namespace blip {
     private:
         std::string _name;
         websocket::Role const _role;
-        ConnectionDelegate &_delegate;
+        Retained<WeakHolder<ConnectionDelegate>> _weakDelegate;
         Retained<BLIPIO> _io;
         int8_t _compressionLevel;
         std::atomic<State> _state {kClosed};

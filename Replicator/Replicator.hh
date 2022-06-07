@@ -15,6 +15,7 @@
 #include "Checkpointer.hh"
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
+#include "WeakHolder.hh"
 #include "fleece/Fleece.hh"
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
@@ -49,6 +50,7 @@ namespace litecore { namespace repl {
                    websocket::WebSocket* NONNULL,
                    Delegate&,
                    Options);
+        ~Replicator();
 
         struct BlobProgress {
             Dir         dir;
@@ -192,6 +194,7 @@ namespace litecore { namespace repl {
         alloc_slice       _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
         alloc_slice       _remoteCheckpointDocID;      // Checkpoint docID to use with peer
         alloc_slice       _remoteCheckpointRevID;      // Latest revID of remote checkpoint
+        Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
     };
 
 } }

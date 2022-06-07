@@ -607,9 +607,9 @@ namespace litecore { namespace blip {
                 }
                 // No handler; just pass it to the delegate:
                 if (beginning)
-                    _connection->delegate().onRequestBeginning(request);
+                    _connection->delegateWeak()->invoke(&ConnectionDelegate::onRequestBeginning, request);
                 else
-                    _connection->delegate().onRequestReceived(request);
+                    _connection->delegateWeak()->invoke(&ConnectionDelegate::onRequestReceived, request);
             } catch (...) {
                 logError("Caught exception thrown from BLIP request handler");
                 request->respondWithError({"BLIP"_sl, 501, "unexpected exception"_sl});
@@ -624,11 +624,11 @@ namespace litecore { namespace blip {
 
     Connection::Connection(WebSocket *webSocket,
                            const fleece::AllocedDict &options,
-                           ConnectionDelegate &delegate)
+                           Retained<WeakHolder<ConnectionDelegate>> weakDelegate)
     :Logging(BLIPLog)
     ,_name(webSocket->name())
     ,_role(webSocket->role())
-    ,_delegate(delegate)
+    ,_weakDelegate(weakDelegate)
     {
         if (_role == Role::Server)
             logInfo("Accepted connection");
@@ -651,7 +651,8 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::start() {
+    void Connection::start(Retained<WeakHolder<blip::ConnectionDelegate>> connectionDelegate) {
+        _weakDelegate = connectionDelegate;
         Assert(_state == kClosed);
         _state = kConnecting;
         _io->start();
@@ -687,19 +688,19 @@ namespace litecore { namespace blip {
 
 
     void Connection::gotHTTPResponse(int status, const websocket::Headers &headers) {
-        delegate().onHTTPResponse(status, headers);
+        delegateWeak()->invoke(&ConnectionDelegate::onHTTPResponse, status, headers);
     }
 
 
     void Connection::gotTLSCertificate(slice certData) {
-        delegate().onTLSCertificate(certData);
+        delegateWeak()->invoke(&ConnectionDelegate::onTLSCertificate, certData);
     }
 
 
     void Connection::connected() {
         logInfo("Connected!");
         _state = kConnected;
-        delegate().onConnect();
+        delegateWeak()->invoke(&ConnectionDelegate::onConnect);
     }
 
 
@@ -716,7 +717,7 @@ namespace litecore { namespace blip {
               SPLAT(status.message));
         _state = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;
-        delegate().onClose(status, _state);
+        delegateWeak()->invoke(&ConnectionDelegate::onClose, status, _state);
     }
 
 
