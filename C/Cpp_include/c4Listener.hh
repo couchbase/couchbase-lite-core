@@ -37,6 +37,10 @@ struct C4Listener final : public fleece::InstanceCounted, C4Base {
 
     bool unshareDB(C4Database *db);
 
+    bool shareCollection(slice name, C4Collection* coll);
+
+    bool unshareCollection(slice name, C4Collection* coll);
+
     uint16_t port() const;
 
     std::pair<unsigned, unsigned> connectionStatus() const;

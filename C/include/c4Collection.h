@@ -104,6 +104,9 @@ CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
 CBL_CORE_API bool c4db_hasCollection(C4Database *db,
                         C4CollectionSpec spec) C4API;
 
+/** Returns true if the named scope exists.  Note that _default will always return true. */
+CBL_CORE_API bool c4db_hasScope(C4Database *db, C4String name) C4API;
+
 /** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. */
 CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
                                             C4CollectionSpec spec) C4API;

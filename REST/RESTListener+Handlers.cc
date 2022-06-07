@@ -76,10 +76,10 @@ namespace litecore { namespace REST {
 #pragma mark - DATABASE HANDLERS:
 
     
-    void RESTListener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
-        auto docCount = db->getDocumentCount();  // TODO: Collection-aware
-        auto lastSequence = db->getLastSequence();
-        C4UUID uuid = db->getPublicUUID();
+    void RESTListener::handleGetDatabase(RequestResponse &rq, C4Collection *coll) {
+        auto docCount = coll->getDocumentCount();
+        auto lastSequence = coll->getLastSequence();
+        C4UUID uuid = coll->getDatabase()->getPublicUUID();
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
 
         auto &json = rq.jsonEncoder();
@@ -134,7 +134,7 @@ namespace litecore { namespace REST {
 #pragma mark - DOCUMENT HANDLERS:
 
 
-    void RESTListener::handleGetAllDocs(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleGetAllDocs(RequestResponse &rq, C4Collection *coll) {
         // Apply options:
         C4EnumeratorOptions options;
         options.flags = kC4IncludeNonConflicted;
@@ -148,7 +148,7 @@ namespace litecore { namespace REST {
         // TODO: Implement startkey, endkey, etc.
 
         // Create enumerator:
-        C4DocEnumerator e(db, options);
+        C4DocEnumerator e(coll, options);
 
         // Enumerate, building JSON:
         auto &json = rq.jsonEncoder();
@@ -183,10 +183,10 @@ namespace litecore { namespace REST {
     }
 
 
-    void RESTListener::handleGetDoc(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleGetDoc(RequestResponse &rq, C4Collection *coll) {
         string docID = rq.path(1);
         string revID = rq.query("rev");
-        Retained<C4Document> doc = db->getDocument(docID, true,
+        Retained<C4Document> doc = coll->getDocument(docID, true,
                                                   (revID.empty() ? kDocGetCurrentRev : kDocGetAll));
         if (doc) {
             if (revID.empty()) {
@@ -230,7 +230,7 @@ namespace litecore { namespace REST {
                                  string revIDQuery,
                                  bool deleting,
                                  bool newEdits,
-                                 C4Database *db,
+                                 C4Collection *coll,
                                  fleece::JSONEncoder& json,
                                  C4Error *outError) noexcept
     {
@@ -275,12 +275,12 @@ namespace litecore { namespace REST {
 
             Retained<C4Document> doc;
             {
-                C4Database::Transaction t(db);
+                C4Database::Transaction t(coll->getDatabase());
 
                 // Encode body as Fleece (and strip _id and _rev):
                 alloc_slice encodedBody;
                 if (body)
-                    encodedBody = doc->encodeStrippingOldMetaProperties(body, db->getFleeceSharedKeys());
+                    encodedBody = doc->encodeStrippingOldMetaProperties(body, coll->getDatabase()->getFleeceSharedKeys());
 
                 // Save the revision:
                 C4Slice history[1] = {revID};
@@ -295,7 +295,7 @@ namespace litecore { namespace REST {
                 put.historyCount = revID ? 1 : 0;
                 put.save = true;
 
-                doc = db->putDocument(put, nullptr, outError);
+                doc = coll->putDocument(put, nullptr, outError);
                 if (!doc)
                     return false;
                 t.commit();
@@ -317,7 +317,7 @@ namespace litecore { namespace REST {
 
 
     // This handles PUT and DELETE of a document, as well as POST to a database.
-    void RESTListener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleModifyDoc(RequestResponse &rq, C4Collection *coll) {
         string docID = rq.path(1);                       // will be empty for POST
 
         // Parse the body:
@@ -331,7 +331,7 @@ namespace litecore { namespace REST {
         auto &json = rq.jsonEncoder();
         json.beginDict();
         C4Error error;
-        if (!modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
+        if (!modifyDoc(body, docID, rq.query("rev"), deleting, true, coll, json, &error)) {
             rq.respondWithError(error);
             return;
         }
@@ -343,7 +343,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void RESTListener::handleBulkDocs(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleBulkDocs(RequestResponse &rq, C4Collection *coll) {
         Dict body = rq.bodyAsJSON().asDict();
         Array docs = body["docs"].asArray();
         if (!docs)
@@ -353,7 +353,7 @@ namespace litecore { namespace REST {
         Value v = body["new_edits"];
         bool newEdits = v ? v.asBool() : true;
 
-        C4Database::Transaction t(db);
+        C4Database::Transaction t(coll->getDatabase());
 
         auto &json = rq.jsonEncoder();
         json.beginArray();
@@ -361,7 +361,7 @@ namespace litecore { namespace REST {
             json.beginDict();
             Dict doc = i.value().asDict();
             C4Error error;
-            if (!modifyDoc(doc, "", "", false, newEdits, db, json, &error))
+            if (!modifyDoc(doc, "", "", false, newEdits, coll, json, &error))
                 rq.writeErrorJSON(error);
             json.endDict();
         }

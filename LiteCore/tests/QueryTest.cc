@@ -12,13 +12,16 @@
 
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
+#include <cstdint>
 #include <ctime>
 #include <cfloat>
 #include <cinttypes>
 #include <chrono>
+#include <limits>
 #include <numeric>
 #include "date/date.h"
 #include "ParseDate.hh"
+#include <functional>
 
 using namespace fleece::impl;
 using namespace std;
@@ -333,6 +336,44 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     int i = 1;
     while (e->next()) {
         CHECK(e->columns()[0]->asString().asString() == stringWithFormat("rec-%03d", i++));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query uint64", "[Query]") {
+    {
+        ExclusiveTransaction t(store->dataFile());
+        const int64_t ivals[] = { std::numeric_limits<int64_t>::min(),
+                                  std::numeric_limits<int64_t>::max() };
+        const uint64_t uvals[] = { 0, std::numeric_limits<uint64_t>::max(), };
+        for(int i = 0; i < 4; i++) {
+            string docID = stringWithFormat("rec-%03d", i + 1);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("value");
+                if (i < 2)
+                    enc.writeInt(ivals[i]);
+                else
+                    enc.writeUInt(uvals[i - 2]);
+            });
+        }
+        t.commit();
+    }
+
+    // Check the data type of the returned values:
+    Retained<Query> query = store->compileQuery(json5( "{WHAT: ['.value']}"));
+    Retained<QueryEnumerator> e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 4);
+    int row = 0;
+    while (e->next()) {
+        auto type = e->columns()[0]->type();
+        CHECK(type == kNumber);
+        auto isInt = e->columns()[0]->isInteger();
+        CHECK(isInt);
+        auto isUnsigned = e->columns()[0]->isUnsigned();
+        if (row < 3)
+            CHECK(!isUnsigned);
+        else
+            CHECK(isUnsigned);
+        ++row;
     }
 }
 
@@ -2361,11 +2402,34 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     addNumberedDocs(1, 10);
-    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_default'}]}")) == 10);
-    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_'}]}")) == 10);
-    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}")) == 10);
 
-    CHECK(rowsInQuery(json5("{'WHAT': ['.foo.'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}")) == 10);
+    auto checkType = [this](const string& jsonQuery) {
+        Retained<Query> query = store->compileQuery(jsonQuery);
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        while(e->next()) {
+            CHECK(e->columns()[0]->asString() == "number"_sl);
+        }
+    };
+
+    auto checkTypeN1QL = [this](const string& n1qlQuery) {
+        Retained<Query> query = store->compileQuery(n1qlQuery, QueryLanguage::kN1QL);
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        while(e->next()) {
+            CHECK(e->columns()[0]->asString() == "number"_sl);
+        }
+    };
+    
+    checkType(json5("{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}"));
+    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"));
+    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}"));
+    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"));
+    checkType(json5("{'WHAT': ['.foo.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}"));
+    
+    checkTypeN1QL("SELECT type FROM _");
+    checkTypeN1QL("SELECT type FROM _default");
+    checkTypeN1QL("SELECT type FROM _default._default");
+    checkTypeN1QL("SELECT foo.type FROM _ AS foo");
+    checkTypeN1QL("SELECT `foo.bar`.type FROM _ AS `foo.bar`");
 }
 
 
@@ -2394,7 +2458,7 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
         "%xx", "_xx", "x y",
         ".", "xx.", ".xx", "_b.c", "b._c",
         "in.val.id", "in..val",
-        "_default.foo", "foo._default", "_default._default",
+        "_default.foo", "foo._default",
         tooLong.c_str(), tooLong2.c_str(), tooLong3.c_str()
     };
     for (auto badName : kBadCollectionNames) {

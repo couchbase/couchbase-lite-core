@@ -230,15 +230,23 @@ namespace litecore {
                     }
                     break;
                 }
-                case SQLITE_INTEGER:
-                    if (sqlite3_value_subtype(arg) == kFleeceIntBoolean) {
+                case SQLITE_INTEGER: {
+                    auto subtype = sqlite3_value_subtype(arg);
+                    if (subtype == kFleeceIntBoolean) {
                         // A tagged boolean:
                         slice encoded = sqlite3_value_int(arg) ? Encoder::kPreEncodedTrue
                                                                : Encoder::kPreEncodedFalse;
                         sqlite3_result_blob(ctx, encoded.buf, int(encoded.size), SQLITE_STATIC);
                         return;
                     }
+                    else if (subtype == kFleeceIntUnsigned) {
+                            Encoder enc;
+                            enc.writeUInt(sqlite3_value_int64(arg));
+                            setResultBlobFromFleeceData(ctx, enc.finish());
+                            return;
+                    }
                     break;
+                }
                 case SQLITE_BLOB: {
                     switch (sqlite3_value_subtype(arg)) {
                         case 0:

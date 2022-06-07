@@ -94,6 +94,7 @@ namespace litecore {
         void forEachScope(const ScopeCallback&) const override;
         void forEachCollection(const CollectionSpecCallback&) const override;
         bool hasCollection(CollectionSpec) const override;
+        bool hasScope(C4String) const override;
         C4Collection* getCollection(CollectionSpec) const override;
         C4Collection* createCollection(CollectionSpec) override;
         void deleteCollection(CollectionSpec) override;

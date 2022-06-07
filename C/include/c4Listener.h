@@ -48,6 +48,24 @@ C4API_BEGIN_DECLS
                               C4Database *db,
                               C4Error* C4NULLABLE outError) C4API;
 
+    /** Specifies a collection to be used in a P2P listener context.  NOTE: A database
+        must have been previously shared under the same name, or this operation will fail.
+        @param listener  The listener that should share the collection.
+        @param name  The URI name to share it under, this must match the name of an already 
+                     shared DB.
+        @param collection  The collection to share.
+        @param outError On failure, the error info is stored here if non-NULL. */
+    CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener,
+                            C4String name,
+                            C4Collection* collection,
+                            C4Error* C4NULLABLE outError) C4API;
+
+    /** Makes a previously-shared collection unavailable. */
+    CBL_CORE_API bool c4listener_unshareCollection(C4Listener *listener,
+                              C4String name,
+                              C4Collection *collection,
+                              C4Error* C4NULLABLE outError) C4API;
+
     /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
         The URLs will differ only in their hostname -- there will be one for each IP address or known
         hostname of the computer, or of the network interface.
