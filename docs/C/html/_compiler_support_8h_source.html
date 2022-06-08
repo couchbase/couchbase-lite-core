@@ -297,10 +297,31 @@ $(function() {
 <div class="line"><a name="l00225"></a><span class="lineno"><a class="line" href="_compiler_support_8h.html#a3abb6aec218bdcdd370e177b29b50c36">  225</a></span>&#160;<span class="preprocessor">    #define WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) 0</span></div>
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160; </div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="preprocessor">#else </span><span class="comment">// _FLEECE_COMPILER_SUPPORT_H</span></div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<span class="preprocessor">#warn &quot;Compiler is not honoring #pragma once&quot;</span></div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;<span class="comment">// On Windows, FLEECE_PUBLIC marks symbols as being exported from the shared library.</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;<span class="comment">// However, this is not the whole list of things that are exported.  The API methods</span></div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;<span class="comment">// are exported using a definition list, but it is not possible to correctly include</span></div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;<span class="comment">// initialized global variables, so those need to be marked (both in the header and</span></div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;<span class="comment">// implementation) with FLEECE_PUBLIC.  See kFLNullValue below and in Fleece.cc</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;<span class="comment">// for an example.</span></div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;<span class="preprocessor">#if defined(_MSC_VER)</span></div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;<span class="preprocessor">#ifdef FLEECE_EXPORTS</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;<span class="preprocessor">#define FLEECE_PUBLIC __declspec(dllexport)</span></div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;<span class="preprocessor">#define FLEECE_PUBLIC __declspec(dllimport)</span></div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00241"></a><span class="lineno"><a class="line" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">  241</a></span>&#160;<span class="preprocessor">#define FLEECE_PUBLIC __attribute__((visibility(&quot;default&quot;</span>)))</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;<span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;<span class="preprocessor">    #define FLAPI noexcept</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;<span class="preprocessor">#else</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno"><a class="line" href="_compiler_support_8h.html#afde725198ae6fc34b4e286e4858b6eae">  247</a></span>&#160;<span class="preprocessor">    #define FLAPI</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;<span class="preprocessor">#else </span><span class="comment">// _FLEECE_COMPILER_SUPPORT_H</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="preprocessor">#warn &quot;Compiler is not honoring #pragma once&quot;</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
