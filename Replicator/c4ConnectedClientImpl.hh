@@ -145,6 +145,10 @@ namespace litecore::client {
             _client->getAllDocIDs(collectionID, pattern, callback);
         }
         
+        Async<void> observeCollection(slice collectionID, ObserverReceiver callback) override {
+            return _client->observeCollection(collectionID, callback);
+        }
+        
         void query(slice name, FLDict params, bool asFleece, QueryReceiver rcvr) override {
             _client->query(name, params, asFleece, rcvr);
         }

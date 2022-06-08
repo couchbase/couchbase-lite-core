@@ -14,6 +14,7 @@
 #include "c4Base.hh"
 #include "Async.hh"
 #include "c4ConnectedClientTypes.h"
+#include "c4Observer.hh"
 #include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
@@ -92,6 +93,18 @@ struct C4ConnectedClient  : public fleece::RefCounted,
     virtual void getAllDocIDs(slice collectionID,
                               slice globPattern,
                               AllDocsReceiver callback) =0;
+    
+    /// Callback for \ref observeCollection.
+    /// @param changes  A vector of changes;
+    using ObserverReceiver = std::function<void(const std::vector<C4CollectionObserver::Change>& changes)>;
+    
+    /// Registers a listener function that will be called when any document is changed.
+    /// @note  To cancel, pass a null callback.
+    /// @param collectionID  The ID of the collection to observe.
+    /// @param callback  The callback to receive changes. The function to call (on an arbitrary background thread!)
+    /// @return An async value that, when resolved, void or a C4Error
+    virtual litecore::actor::Async<void> observeCollection(slice collectionID,
+                                                           ObserverReceiver callback) =0;
 
     /// Callback for \ref query.
     /// @param rowJSON  A row of the result, encoded as a JSON object.

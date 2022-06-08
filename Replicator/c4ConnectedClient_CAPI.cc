@@ -78,3 +78,19 @@ bool c4client_putDoc(C4ConnectedClient* client,
     return false;
 }
 
+bool c4client_observeCollection(C4ConnectedClient* client,
+                                C4Slice collectionID,
+                                C4ConnectedClientObserverCallback callback,
+                                void * C4NULLABLE context,
+                                C4Error* C4NULLABLE outError) noexcept {
+    try {
+        client->observeCollection(collectionID, [=](const std::vector<C4CollectionObserver::Change> &c) {
+            return callback(client, nullptr, context);
+        }).then([&](C4Error error) {
+            // finished registering the callback!
+        });
+        return true;
+    } catchError(outError);
+           
+    return false;
+}

@@ -71,6 +71,14 @@ bool c4client_putDoc(C4ConnectedClient* client,
                      void * C4NULLABLE context,
                      C4Error* C4NULLABLE outError) C4API;
 
+/** Registers a listener function that will be called when any document is changed.
+ */
+bool c4client_observeCollection(C4ConnectedClient* client,
+                                C4Slice collectionID,
+                                C4ConnectedClientObserverCallback,
+                                void * C4NULLABLE context,
+                                C4Error* C4NULLABLE outError) C4API;
+
 /** Tells a connected client to start.
     \note This function is thread-safe.*/
 void c4client_start(C4ConnectedClient*) C4API;
