@@ -693,7 +693,7 @@ namespace litecore {
                 _collections.erase(i);
             }
             _dataFile->deleteKeyStore(keyStoreName);
-            if (isDefaultCollection(spec))
+            if (isDefault)
                 _defaultCollection = nullptr;
 
             t.commit(); 
