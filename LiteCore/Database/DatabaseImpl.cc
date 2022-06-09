@@ -636,18 +636,8 @@ namespace litecore {
         string keyStoreName = collectionNameToKeyStoreName(spec);
         if (auto i = _collections.find(spec); i != _collections.end()) { 
             if(!i->second->isValid()) {
-                if(!canCreate) {
-                    if(!_dataFile->keyStoreExists(keyStoreName)) {
-                        // This is an invalid collection, and it has not been recreated elsewhere.
-                        // Furthermore, canCreate is false so don't return a collection object
-                        return nullptr;
-                    } 
-                }
-
-                // If we reach here, either canCreate is true and we are about to recreate
-                // a previously deleted collection, or canCreate is false and the deleted collection
-                // was created by another instance already.  Either way, it is time to remove the
-                // old invalid entry now that it is safe to do so.
+                // It is time to remove the old invalid entry now that 
+                // it is reasonably safe to do so.
                 asInternal(i->second)->close();
                 _collections.erase(i);
             } else {
