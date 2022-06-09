@@ -123,7 +123,7 @@ namespace litecore {
         virtual string databaseName() const override                    {return _name;}
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
-        virtual void collectionRemoved(slice scope, slice name) override;
+        virtual void collectionRemoved(const std::string& keyStoreName) override;
         
         C4DatabaseTag getDatabaseTag() const {
             return (C4DatabaseTag)_dataFile->databaseTag();

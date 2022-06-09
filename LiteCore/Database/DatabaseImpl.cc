@@ -689,18 +689,21 @@ namespace litecore {
 
             LOCK(_collectionsMutex);
             if (auto i = _collections.find(spec); i != _collections.end()) {
-                asInternal(i->second.get())->close();
-                _collections.erase(i);
+                // Don't close and remove it now, which makes the eventual crash from
+                // using this as a dangling pointer delayed a little longer.
+                asInternal(i->second.get())->invalidate();
             }
             _dataFile->deleteKeyStore(keyStoreName);
             if (isDefault)
-                _defaultCollection = nullptr;
+                // Don't null this because outstanding queries might still be using it
+                // in an unretained manner.
+                _defaultCollection->invalidate();
 
             t.commit(); 
         }
 
-        _dataFile->forOtherDataFiles([spec](DataFile* df) {
-            df->delegate()->collectionRemoved(spec.scope, spec.name);
+        _dataFile->forOtherDataFiles([&keyStoreName](DataFile* df) {
+            df->delegate()->collectionRemoved(keyStoreName);
         });
     }
 
@@ -812,17 +815,21 @@ namespace litecore {
     }
 
 
-    void DatabaseImpl::collectionRemoved(slice scope, slice name) {
+    void DatabaseImpl::collectionRemoved(const string& keyStoreName) {
         // Same as other external callbacks, this may be on an arbitrary thread
         // so don't do anything to affect to collection memory, just make sure
         // any new requests for this collection don't continue to use this object
         LOCK(_collectionsMutex);
-        auto c = _collections.find({name, scope});
+        auto spec = keyStoreNameToCollectionSpec(keyStoreName);
+        auto c = _collections.find(spec);
         if(c != _collections.end()) {
             auto* coll = asInternal(c->second.get());
             coll->invalidate();
-            string tableName = collectionNameToKeyStoreName({name, scope});
-            _dataFile->resetKeyStore(tableName);
+            _dataFile->resetKeyStore(keyStoreName);
+        }
+
+        if(isDefaultCollection(spec)) {
+            _defaultCollection->invalidate();
         }
     }
 

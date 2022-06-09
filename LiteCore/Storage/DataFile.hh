@@ -64,7 +64,7 @@ namespace litecore {
             // Notifies that another DataFile on the same physical file has committed a transaction
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
             // Notifies that another DataFile on the same physical file has deleted a collection
-            virtual void collectionRemoved(slice scope, slice name) { };
+            virtual void collectionRemoved(const std::string& keyStoreName) { };
         };
 
         struct Options {

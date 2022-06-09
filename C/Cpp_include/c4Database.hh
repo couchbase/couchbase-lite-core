@@ -261,6 +261,8 @@ protected:
     C4Collection* getDefaultCollectionSafe() const;     // Same as getDefaultCollection except throws an error when null
     virtual void checkOpen() const = 0;
 
+    C4Collection* getDefaultCollectionSafe() const;
+
     std::string const           _name;                  // Database filename (w/o extension)
     std::string const           _parentDirectory;
     C4DatabaseConfig2           _config;                // Configuration
