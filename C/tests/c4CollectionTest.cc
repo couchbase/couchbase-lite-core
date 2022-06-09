@@ -218,6 +218,13 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
     CHECK(!c4db_getCollection(db2, Guitars, ERROR_INFO()));
     CHECK(!c4db_getCollection(db, Guitars, ERROR_INFO()));
 
+    const C4Error notOpenError = { LiteCoreDomain, kC4ErrorNotOpen };
+    C4Error err;
+    CHECK(!c4coll_getDoc(guitars, "foo"_sl, false, C4DocContentLevel::kDocGetCurrentRev, &err));
+    CHECK(err == notOpenError);
+    CHECK(!c4coll_getDoc(guitars2, "foo"_sl, false, C4DocContentLevel::kDocGetCurrentRev, &err));
+    CHECK(err == notOpenError);
+
     // Then recreate it on the first DB instance
     guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
     REQUIRE(guitars);

@@ -684,27 +684,25 @@ namespace litecore {
         // as happens if you call `deleteCollection(coll->spec())`:
         string keyStoreName = collectionNameToKeyStoreName(spec);
         bool isDefault = isDefaultCollection(spec);
-        {
-            Transaction t(this);
-
-            LOCK(_collectionsMutex);
-            if (auto i = _collections.find(spec); i != _collections.end()) {
-                // Don't close and remove it now, which makes the eventual crash from
-                // using this as a dangling pointer delayed a little longer.
-                asInternal(i->second.get())->invalidate();
-            }
-            _dataFile->deleteKeyStore(keyStoreName);
-            if (isDefault)
-                // Don't null this because outstanding queries might still be using it
-                // in an unretained manner.
-                _defaultCollection->invalidate();
-
-            t.commit(); 
-        }
+        Transaction t(this);
 
         _dataFile->forOtherDataFiles([&keyStoreName](DataFile* df) {
             df->delegate()->collectionRemoved(keyStoreName);
         });
+
+        LOCK(_collectionsMutex);
+        if (auto i = _collections.find(spec); i != _collections.end()) {
+            // Don't close and remove it now, which makes the eventual crash from
+            // using this as a dangling pointer delayed a little longer.
+            asInternal(i->second.get())->invalidate();
+        }
+        _dataFile->deleteKeyStore(keyStoreName);
+        if (isDefault)
+            // Don't null this because outstanding queries might still be using it
+            // in an unretained manner.
+            _defaultCollection->invalidate();
+
+        t.commit();         
     }
 
 
