@@ -275,7 +275,8 @@ namespace litecore {
                      "PRAGMA mmap_size=%d; "             // Memory-mapped reads
                      "PRAGMA synchronous=normal; "       // Speeds up commits
                      "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
-                     "PRAGMA case_sensitive_like=true",  // Case sensitive LIKE, for N1QL compat
+                     "PRAGMA case_sensitive_like=true; "   // Case sensitive LIKE, for N1QL compat
+                     "PRAGMA fullfsync=ON",              // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
                      -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
 
 #if DEBUG
