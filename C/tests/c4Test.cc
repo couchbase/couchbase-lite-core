@@ -259,6 +259,12 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
     return newDB;
 }
 
+C4Collection* C4Test::requireCollection(C4Database* db, C4CollectionSpec spec) {
+    C4Collection* coll = c4db_getCollection(db, spec, ERROR_INFO());
+    REQUIRE(coll);
+    return coll;
+}
+
 
 void C4Test::closeDB() {
     REQUIRE(c4db_close(db, WITH_ERROR()));
@@ -327,7 +333,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFla
 }
 
 void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
-    createRev(c4db_getDefaultCollection(db), docID, revID, body, flags);
+    createRev(c4db_getDefaultCollection(db, nullptr), docID, revID, body, flags);
 }
 
 void C4Test::createRev(C4Collection *collection, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
@@ -351,7 +357,7 @@ void C4Test::createConflictingRev(C4Database *db,
                                   C4Slice body,
                                   C4RevisionFlags flags)
 {
-    createConflictingRev(c4db_getDefaultCollection(db), docID, parentRevID, newRevID, body, flags);
+    createConflictingRev(requireCollection(db), docID, parentRevID, newRevID, body, flags);
 }
 
 void C4Test::createConflictingRev(C4Collection *collection,
@@ -682,7 +688,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose,
 {
     if(database == nullptr)
         database = db;
-    return importJSONLines(path, c4db_getDefaultCollection(database), timeout, verbose, maxLines);
+    return importJSONLines(path, c4db_getDefaultCollection(database, nullptr), timeout, verbose, maxLines);
 }
 
 

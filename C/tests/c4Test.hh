@@ -224,6 +224,7 @@ public:
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
+    static C4Collection* requireCollection(C4Database* db, C4CollectionSpec spec = kC4DefaultCollectionSpec);
 
     void closeDB();
     void reopenDB();

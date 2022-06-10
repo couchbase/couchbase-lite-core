@@ -624,6 +624,8 @@ namespace litecore {
 
     // This implements both the public getCollection() and createCollection()
     C4Collection* DatabaseImpl::getOrCreateCollection(CollectionSpec spec, bool canCreate) {
+        checkOpen();
+
         // Is there already a C4Collection object for it in _collections?
         LOCK(_collectionsMutex);
         if (auto i = _collections.find(spec); i != _collections.end())
@@ -654,6 +656,8 @@ namespace litecore {
 
 
     void DatabaseImpl::deleteCollection(CollectionSpec spec) {
+        checkOpen();
+
         // Use the spec _before_ deleting the collection, in case the collection owned the slices,
         // as happens if you call `deleteCollection(coll->spec())`:
         string keyStoreName = collectionNameToKeyStoreName(spec);
@@ -675,6 +679,7 @@ namespace litecore {
 
 
     void DatabaseImpl::forEachCollection(const CollectionSpecCallback &callback) const {
+        // allKeyStoreNames does checkOpen
         for (const string &name : _dataFile->allKeyStoreNames()) {
             if (CollectionSpec spec = keyStoreNameToCollectionSpec(name); spec.name)
                 callback(spec);
@@ -690,6 +695,8 @@ namespace litecore {
 
 
     void DatabaseImpl::forAllOpenCollections(const function_ref<void(C4Collection*)> &callback) const {
+        checkOpen();
+
         LOCK(_collectionsMutex);
         for (auto &entry : _collections)
             callback(entry.second);
@@ -709,6 +716,10 @@ namespace litecore {
 
 
     void DatabaseImpl::beginTransaction() {
+        // Extra check open here to avoid the hairiness of having to undo
+        // ++transactionLevel later
+        checkOpen();
+
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
             forAllOpenCollections([&](C4Collection *coll) {
@@ -729,6 +740,8 @@ namespace litecore {
 
 
     void DatabaseImpl::endTransaction(bool commit) {
+        checkOpen();
+
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
         if (--_transactionLevel == 0) {
@@ -749,6 +762,7 @@ namespace litecore {
 
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
+        // checkOpen performed inside forAllOpenCollections
         forAllOpenCollections([&](C4Collection *coll) {
             asInternal(coll)->transactionEnding(_transaction, committed);
         });
@@ -760,6 +774,10 @@ namespace litecore {
     void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &srcTracker) {
         // CAREFUL: This may be called on an arbitrary thread
         LOCK(_collectionsMutex);
+         if(_usuallyFalse(!_dataFile || !_dataFile->isOpen())) {
+            return; // Don't throw exception that will trickle up into another object
+        }
+
         forAllOpenCollections([&](C4Collection *coll) {
             if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
                 asInternal(coll)->externalTransactionCommitted(srcTracker);

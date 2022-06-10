@@ -83,6 +83,7 @@ namespace litecore {
 
         // C4Database API:
 
+        void checkOpen() const override { _dataFile->checkOpen(); }
         void close() override;
         void closeAndDeleteFile() override;
         alloc_slice getPath() const override               {return filePath();}

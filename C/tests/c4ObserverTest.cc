@@ -120,7 +120,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
 
     SECTION("Default Collection") {
         dbObserver = c4dbobs_create(db, dbObserverCallback, this);
-        auto* expectedCollection = c4db_getDefaultCollection(db);
+        auto* expectedCollection = requireCollection(db);
         CHECK(dbCallbackCalls == 0);
 
         createRev("A"_sl, kDocARev1, kFleeceBody);
@@ -191,7 +191,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
         CHECK(docCallbackCalls == 1);
         CHECK(lastDocCallbackDocID == "A");
         CHECK(lastDocCallbackSequence == 2);
-        CHECK(lastCallbackCollection == c4db_getDefaultCollection(db));
+        CHECK(lastCallbackCollection == requireCollection(db));
     }
 
     SECTION("Custom Collection") {
@@ -216,7 +216,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
-    auto* expectedColl = c4db_getDefaultCollection(db);
+    auto* expectedColl = requireCollection(db);
     CHECK(dbCallbackCalls == 0);
 
     createRev("A"_sl, kDocARev1, kFleeceBody);
@@ -290,8 +290,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Purge", "[Observer][C]") {
     REQUIRE(c4db_endTransaction(db, true, nullptr));
 
     CHECK(dbCallbackCalls == 1);
-
-    checkChanges(c4db_getDefaultCollection(db), {"A"}, {""});
+    checkChanges(requireCollection(db), {"A"}, {""});
 }
 
 
@@ -314,7 +313,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     REQUIRE_BEFORE(5s, isDocExpired());
 
     CHECK(dbCallbackCalls == 1);
-    checkChanges(c4db_getDefaultCollection(db), {"A"}, {""}, true);
+    checkChanges(requireCollection(db), {"A"}, {""}, true);
 }
 
 
