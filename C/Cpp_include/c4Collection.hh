@@ -104,6 +104,7 @@ struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCounted
 
     using CollectionObserverCallback = std::function<void(C4CollectionObserver*)>;
     using DocumentObserverCallback = std::function<void(C4DocumentObserver*,
+                                                        C4Collection*,
                                                         slice docID,
                                                         C4SequenceNumber)>;
 

@@ -48,16 +48,18 @@ namespace litecore {
         }
 
 
-        uint32_t getChanges(Change outChanges[],
-                            uint32_t maxChanges,
-                            bool *outExternal) override
+        C4CollectionObservation getChanges(Change outChanges[],
+                                           uint32_t maxChanges) override
         {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
                           "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
-            return _collection->sequenceTracker().useLocked<uint32_t>([&](SequenceTracker &st) {
-                return (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
+            return _collection->sequenceTracker().useLocked<C4CollectionObservation>([&](SequenceTracker &st) {
+                bool outExternal;
+                auto retVal = (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
                                                           maxChanges,
-                                                          *outExternal);
+                                                          outExternal);
+
+                return C4CollectionObservation{retVal, outExternal, _collection};
             });
         }
 
@@ -103,7 +105,7 @@ namespace litecore {
                 _notifier.emplace(st,
                                   docID,
                                   [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
-                                        _callback(this, docID, sequence);
+                                        _callback(this, _collection, docID, sequence);
                                   });
             });
         }

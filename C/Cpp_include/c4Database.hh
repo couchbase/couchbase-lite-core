@@ -98,6 +98,7 @@ public:
     /// You can pass a `CollectionSpec` parameter as simply a collection name slice, implying the
     /// default scope; or as `{collectionname, scopename}`.
     struct CollectionSpec : public C4CollectionSpec {
+        CollectionSpec()                             :C4CollectionSpec{kC4DefaultCollectionName, kC4DefaultScopeID} { }
         CollectionSpec(const C4CollectionSpec &spec) :C4CollectionSpec(spec) { }
         CollectionSpec(FLString name, FLString scope):C4CollectionSpec{name, scope} { }
         CollectionSpec(FLString name)                :C4CollectionSpec{name, kC4DefaultScopeID} { }
