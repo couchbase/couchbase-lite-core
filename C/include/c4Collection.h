@@ -97,10 +97,9 @@ C4API_BEGIN_DECLS
 /** Returns the default collection, whose name is "`_default`" (`kC4DefaultCollectionName`).
     This is the one collection that exists in every newly created database.
     When a pre-existing database is upgraded to support collections, all its documents are put
-    in the default collection.
-    @note  This function never returns NULL, unless the default collection has been deleted.
-           Also be sure to read `C4Collection` Lifespan in c4Collection.h. */
-CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
+    in the default collection. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h.*/
+CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if the collection exists. */
 CBL_CORE_API bool c4db_hasCollection(C4Database *db,

@@ -228,8 +228,8 @@ void c4stream_closeWriter(C4WriteStream* stream) noexcept {
 #pragma mark - COLLECTION:
 
 
-C4Collection* c4db_getDefaultCollection(C4Database *db) noexcept {
-    return db->getDefaultCollection();
+C4Collection* c4db_getDefaultCollection(C4Database *db, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<C4Collection *>(outError, [&] { return db->getDefaultCollection(); });
 }
 
 bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {

@@ -72,7 +72,8 @@ public:
 };
 
 
-static constexpr slice Guitars = "guitars"_sl;
+static constexpr slice GuitarsName = "guitars"_sl;
+static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
@@ -165,6 +166,39 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     C4ExpectException(LiteCoreDomain, kC4ErrorNotOpen, [&]{
         dflt->getDatabase();
     });
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Use after close", "[Database][Collection][C]") {
+    REQUIRE(c4db_close(db, ERROR_INFO()));
+
+    const C4Error notOpen { LiteCoreDomain, kC4ErrorNotOpen };
+    C4Error err;
+    CHECK(!c4db_getDefaultCollection(db, &err));
+    CHECK(err == notOpen);
+
+    err.code = 0;
+    CHECK(!c4db_getCollection(db, Guitars, &err));
+    CHECK(err == notOpen);
+
+    err.code = 0;
+    CHECK(!c4db_collectionNames(db, kC4DefaultScopeID, &err));
+    CHECK(err == notOpen);
+
+    err.code = 0;
+    CHECK(!c4db_scopeNames(db, &err));
+    CHECK(err == notOpen);
+
+    err.code = 0;
+    CHECK(!c4db_createCollection(db, Guitars, &err));
+    CHECK(err == notOpen);
+
+    err.code = 0;
+    CHECK(!c4db_deleteCollection(db, Guitars, &err));
+    CHECK(err == notOpen);
+    
+    c4db_release(db);
+    db = nullptr;
 }
 
 
