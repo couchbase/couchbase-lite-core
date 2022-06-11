@@ -95,9 +95,8 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     CHECK(c4db_hasCollection(db, kC4DefaultCollectionSpec));
     CHECK(c4db_hasScope(db, kC4DefaultScopeID));
 
-    C4Collection* dflt = c4db_getDefaultCollection(db);
-    REQUIRE(dflt);
-    CHECK(dflt == c4db_getDefaultCollection(db));              // Must be idempotent!
+    C4Collection* dflt = requireCollection(db);
+    CHECK(dflt == c4db_getDefaultCollection(db, nullptr));              // Must be idempotent!
     CHECK(dflt == c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
     CHECK(dflt == c4db_createCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
     
@@ -116,13 +115,15 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
 
     // It is, surprisingly, legal to delete the default collection:
     REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
-    CHECK(c4db_getDefaultCollection(db) == nullptr);
+    C4Error err {};
+    CHECK(c4db_getDefaultCollection(db, &err) == nullptr);
+    CHECK(err.domain == 0);
+    CHECK(err.code == 0);
     CHECK(c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()) == nullptr);
     CHECK(getCollectionNames(kC4DefaultScopeID) == "");
     
     // But you can't recreate it:
     c4log_warnOnErrors(false);
-    C4Error err;
     CHECK(!c4db_createCollection(db, kC4DefaultCollectionSpec, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
@@ -144,7 +145,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default, guitars");
 
-    Retained<C4Collection> dflt = c4db_getDefaultCollection(db);
+    Retained<C4Collection> dflt = requireCollection(db);
     CHECK(dflt != guitars);
 
     // Put some stuff in the default collection
@@ -296,7 +297,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
     // Create "guitars" collection:
     C4Collection* guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
     REQUIRE(guitars);
-    C4Collection* dflt = c4db_getDefaultCollection(db);
+    C4Collection* dflt = requireCollection(db);
 
     // Add 100 documents to it:
     {

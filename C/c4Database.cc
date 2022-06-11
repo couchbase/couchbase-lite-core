@@ -178,14 +178,6 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
     SQLiteDataFile::shutdown();
 }
 
-C4Collection* C4Database::getDefaultCollectionSafe() const {
-    if(!_defaultCollection) {        
-        error::_throw(error::NotOpen);
-    }
-
-    return _defaultCollection;
-}
-
 
 C4Collection* C4Database::getDefaultCollection() const {
     // Make a distinction: If the DB is open and the default collection is deleted
@@ -225,9 +217,6 @@ Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int
 
 
 #pragma mark - INDEXES:
-
-
-
 
 
 void C4Database::createIndex(slice indexName,
