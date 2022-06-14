@@ -247,15 +247,6 @@ namespace litecore { namespace repl {
         size_t collectionCount() const {
             return collectionOpts.size();
         }
-
-//        void deprecate() {
-//            *const_cast<Mode*>(&push) = kC4Disabled;
-//            *const_cast<Mode*>(&pull) = kC4Disabled;
-//            pushFilter = nullptr;
-//            pullValidator = nullptr;
-//            callbackContext = nullptr;
-//        }
-
     };
 
     inline void Options::setCollectionOptions() {
