@@ -98,9 +98,9 @@ typedef struct C4CollectionSpec {
 } C4CollectionSpec;
 
 #ifdef __cplusplus
-    #define kC4DefaultCollectionSpec (C4CollectionSpec {kC4DefaultScopeID, kC4DefaultCollectionName})
+    #define kC4DefaultCollectionSpec (C4CollectionSpec {kC4DefaultCollectionName, kC4DefaultScopeID})
 #else
-    #define kC4DefaultCollectionSpec ((C4CollectionSpec){kC4DefaultScopeID, kC4DefaultCollectionName})
+    #define kC4DefaultCollectionSpec ((C4CollectionSpec){kC4DefaultCollectionName, kC4DefaultScopeID})
 #endif
 
 

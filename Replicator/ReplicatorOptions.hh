@@ -41,16 +41,24 @@ namespace litecore { namespace repl {
 
         //---- Constructors/factories:
 
+        inline void setCollectionOptions();
+        inline void setCollectionOptions(C4ReplicatorParameters params);
+        inline void setCollectionOptions(const Options& opt);
+
         Options(Mode push_, Mode pull_)
         :push(push_), pull(pull_)
-        { }
+        {
+            setCollectionOptions();
+        }
 
         template <class SLICE>
         Options(Mode push_, Mode pull_, SLICE propertiesFleece)
         :push(push_)
         ,pull(pull_)
         ,properties(propertiesFleece)
-        { }
+        {
+            setCollectionOptions();
+        }
 
         explicit Options(C4ReplicatorParameters params)
         :push(params.push)
@@ -61,7 +69,9 @@ namespace litecore { namespace repl {
         ,propertyEncryptor(params.propertyEncryptor)
         ,propertyDecryptor(params.propertyDecryptor)
         ,callbackContext(params.callbackContext)
-        { }
+        {
+            setCollectionOptions(params);
+        }
 
         Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
         :push(opt.push)
@@ -73,7 +83,9 @@ namespace litecore { namespace repl {
         ,callbackContext(opt.callbackContext)
         ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
         ,progressLevel(opt.progressLevel.load())
-        { }
+        {
+            setCollectionOptions(opt);
+        }
 
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
@@ -111,20 +123,17 @@ namespace litecore { namespace repl {
             return uniqueID ? uniqueID : remoteURL;
         }
 
-        fleece::Array arrayProperty(const char *name) const {
+        fleece::Array arrayProperty(const char * name) const {
             return properties[name].asArray();
         }
-        fleece::Dict dictProperty(const char *name) const {
+        fleece::Dict dictProperty(const char * name) const {
             return properties[name].asDict();
         }
 
         //---- Property setters (used only by tests)
 
-        /** Sets/clears the value of a property.
-            Warning: This rewrites the backing store of the properties, invalidating any
-            Fleece value pointers or slices previously accessed from it. */
         template <class T>
-        Options& setProperty(fleece::slice name, T value) {
+        static fleece::AllocedDict updateProperties(const fleece::AllocedDict& properties, fleece::slice name, T value) {
             fleece::Encoder enc;
             enc.beginDict();
             if (value) {
@@ -139,7 +148,15 @@ namespace litecore { namespace repl {
                 }
             }
             enc.endDict();
-            properties = fleece::AllocedDict(enc.finish());
+            return fleece::AllocedDict(enc.finish());
+        }
+
+        /** Sets/clears the value of a property.
+            Warning: This rewrites the backing store of the properties, invalidating any
+            Fleece value pointers or slices previously accessed from it. */
+        template <class T>
+        Options& setProperty(fleece::slice name, T value) {
+            properties = Options::updateProperties(properties, name, value);
             return *this;
         }
 
@@ -158,6 +175,123 @@ namespace litecore { namespace repl {
         bool boolProperty(slice property) const   {return properties[property].asBool();}
 
         explicit operator std::string() const;
+
+        // Collection Options:
+
+        // The BLIP message, getCollections, specifies that the body consist of an array of
+        // collection paths, e.g. '[“scope/foo”,”bar”,”zzz/buzz”]'. So, we convert the
+        // CollecttionSpec given in C4ReplicatorParamters to slash separated path.
+        static alloc_slice collectionSpecToPath(C4CollectionSpec spec, bool omitDefaultScope=true) {
+            bool addScope = true;
+            if (FLSlice_Compare(spec.scope, kC4DefaultScopeID) == 0 && omitDefaultScope) {
+                addScope = false;
+            }
+            size_t size = addScope ? spec.scope.size + 1 : 0;
+            size += spec.name.size;
+            alloc_slice ret(size);
+            void* buf = const_cast<void*>(ret.buf);
+            size_t nameOffset = 0;
+            if (addScope) {
+                slice(spec.scope).copyTo(buf);
+                ((uint8_t*)buf)[spec.scope.size] = '/';
+                nameOffset = spec.scope.size + 1;
+            }
+            slice(spec.name).copyTo((uint8_t*)buf + nameOffset);
+            return ret;
+        }
+
+        static C4CollectionSpec collectionPathToSpec(alloc_slice path) {
+            const uint8_t* slash = path.findByte((uint8_t)'/');
+            slice scope = kC4DefaultScopeID;
+            slice name;
+            if (slash != nullptr) {
+                scope = slice {path.buf, static_cast<size_t>(slash - static_cast<const uint8_t*>(path.buf))};
+                name = slice {slash + 1, path.size - scope.size - 1};
+            } else {
+                name = path;
+            }
+            return {name, scope};
+        }
+
+        inline static alloc_slice const kDefaultCollectionPath = collectionSpecToPath(kC4DefaultCollectionSpec, false);
+
+        struct CollectionOptions
+        {
+            alloc_slice                         collectionPath;
+
+            C4ReplicatorMode                    push;
+            C4ReplicatorMode                    pull;
+
+            fleece::AllocedDict                 properties;
+
+            C4ReplicatorValidationFunction      pushFilter;
+            C4ReplicatorValidationFunction      pullFilter;
+            void*                               callbackContext;
+
+            CollectionOptions(alloc_slice collectionPath_)
+            {
+                collectionPath = collectionPath_;
+            }
+
+            CollectionOptions(alloc_slice collectionPath_, C4Slice properties_)
+            : properties(properties_)
+            {
+                collectionPath = collectionPath_;
+            }
+
+            template <class T>
+            CollectionOptions& setProperty(fleece::slice name, T value) {
+                properties = Options::updateProperties(properties, name, value);
+                return *this;
+            }
+        };
+
+        std::vector<CollectionOptions> collectionOpts;
+
+        size_t collectionCount() const {
+            return collectionOpts.size();
+        }
     };
+
+    inline void Options::setCollectionOptions() {
+        auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
+        back.push = push;
+        back.pull = pull;
+    }
+
+    inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
+        if (params.collectionCount == 0) {
+            setCollectionOptions();
+            auto& back = collectionOpts.back();
+            back.pushFilter = params.pushFilter;
+            back.pullFilter = params.validationFunc;
+            back.callbackContext = params.callbackContext;
+            return;
+        }
+
+        // Assertion: params.collectionCount > 0
+        for (unsigned i = 0; i < params.collectionCount; ++i) {
+            C4ReplicationCollection& c4Coll = params.collections[i];
+            alloc_slice collPath = collectionSpecToPath(c4Coll.collection);
+            auto& back = collectionOpts.emplace_back(collPath, c4Coll.optionsDictFleece);
+            back.push = c4Coll.push;
+            back.pull = c4Coll.pull;
+            back.pushFilter = c4Coll.pushFilter;
+            back.pullFilter = c4Coll.pullFilter;
+            back.callbackContext = c4Coll.callbackContext;
+        }
+    }
+
+    inline void Options::setCollectionOptions(const Options& opt) {
+        Assert(opt.collectionOpts.size() > 0);
+        for (auto collOpts : opt.collectionOpts) {
+            auto& back = collectionOpts.emplace_back(collOpts.collectionPath, collOpts.properties.data());
+            back.push = collOpts.push;
+            back.pull = collOpts.pull;
+            back.pushFilter = collOpts.pushFilter;
+            back.pullFilter = collOpts.pullFilter;
+            back.callbackContext = collOpts.callbackContext;
+        }
+    }
 
 } }
