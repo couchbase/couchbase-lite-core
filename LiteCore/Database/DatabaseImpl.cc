@@ -705,6 +705,10 @@ namespace litecore {
 
     void DatabaseImpl::forEachScope(const ScopeCallback &callback) const {
         unordered_set<slice> seenScopes;
+        // Always include the default scope.
+        seenScopes.insert(kC4DefaultScopeID);
+        callback(kC4DefaultScopeID);
+
         forEachCollection([&](CollectionSpec spec) {
             if (seenScopes.insert(spec.scope).second)
                 callback(spec.scope);

@@ -111,8 +111,14 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
         db->createCollection(kC4DefaultCollectionName);
     });
 
-    // However, the default scope still exists
+    // However, the default scope still exists,
     CHECK(c4db_hasScope(db, kC4DefaultScopeID));
+    // and scopeNames should include the default scope as well.
+    FLMutableArray names = c4db_scopeNames(db, ERROR_INFO());
+    CHECK(FLArray_Count(names) == 1);
+    FLValue name = FLArray_Get(names, 0);
+    CHECK(FLSlice_Compare(FLValue_AsString(name), kC4DefaultScopeID) == 0);
+    FLMutableArray_Release(names);
 }
 
 
