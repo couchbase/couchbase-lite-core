@@ -178,6 +178,9 @@ namespace litecore { namespace repl {
 
         // Collection Options:
 
+        // The BLIP message, getCollections, specifies that the body consist of an array of
+        // collection paths, e.g. '[“scope/foo”,”bar”,”zzz/buzz”]'. So, we convert the
+        // CollecttionSpec given in C4ReplicatorParamters to slash separated path.
         static alloc_slice collectionSpecToPath(C4CollectionSpec spec, bool omitDefaultScope=true) {
             bool addScope = true;
             if (FLSlice_Compare(spec.scope, kC4DefaultScopeID) == 0 && omitDefaultScope) {
