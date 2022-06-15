@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['validationfunc_1108',['validationFunc',['../struct_c4_replicator_parameters.html#a21c3f94c0a7e8594309c22d6349cf347',1,'C4ReplicatorParameters']]],
-  ['value_20slots_1109',['Value Slots',['../group___slots.html',1,'']]],
-  ['versioning_1110',['versioning',['../struct_c4_database_config.html#abffdb440cdba975b77453c1e9fb6b34c',1,'C4DatabaseConfig']]]
+  ['unitscompleted_1140',['unitsCompleted',['../struct_c4_progress.html#aa317c3380e493c7e2a381f229678ad14',1,'C4Progress']]],
+  ['unitstotal_1141',['unitsTotal',['../struct_c4_progress.html#a5ca59cf75057708dce6b57f1011d147a',1,'C4Progress']]],
+  ['unregistered_1142',['unregistered',['../struct_c4_predictive_model.html#a038601d346990c8bd81beaed25ba1998',1,'C4PredictiveModel']]],
+  ['use_5fplaintext_1143',['use_plaintext',['../struct_c4_log_file_options.html#a8f44548a4b11f4be2592b263ee1b45a6',1,'C4LogFileOptions']]]
 ];

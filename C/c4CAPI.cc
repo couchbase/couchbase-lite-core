@@ -233,15 +233,15 @@ C4Collection* c4db_getDefaultCollection(C4Database *db) noexcept {
 }
 
 bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {
-    return db->hasCollection(spec);
+    return tryCatch<bool>(nullptr, [&] { return db->hasCollection(spec); });
 }
 
 bool c4db_hasScope(C4Database *db, C4String name) noexcept {
-    return db->hasScope(name);
+    return tryCatch<bool>(nullptr, [&] { return db->hasScope(name); });
 }
 
-C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4CollectionSpec spec) noexcept {
-    return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(spec); });
+C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<C4Collection*>(outError, [&]{ return db->getCollection(spec); });
 }
 
 C4Collection* c4db_createCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NULLABLE outError) noexcept {
@@ -252,20 +252,24 @@ bool c4db_deleteCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NUL
     return tryCatch(outError, [&]{ db->deleteCollection(spec); });
 }
 
-FLMutableArray c4db_collectionNames(C4Database *db, C4String inScope) noexcept {
-    auto names = FLMutableArray_New();
-    db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
-        FLMutableArray_AppendString(names, spec.name);
+FLMutableArray c4db_collectionNames(C4Database *db, C4String inScope, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<FLMutableArray>(outError, [&] {
+        auto names = FLMutableArray_New();
+        db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
+            FLMutableArray_AppendString(names, spec.name);
+        });
+        return names;
     });
-    return names;
 }
 
-FLMutableArray c4db_scopeNames(C4Database *db) noexcept {
-    auto names = FLMutableArray_New();
-    db->forEachScope([&](slice scope) {
-        FLMutableArray_AppendString(names, scope);
+FLMutableArray c4db_scopeNames(C4Database *db, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<FLMutableArray>(outError, [&] {
+        auto names = FLMutableArray_New();
+        db->forEachScope([&](slice scope) {
+            FLMutableArray_AppendString(names, scope);
+        });
+        return names; 
     });
-    return names;
 }
 
 
