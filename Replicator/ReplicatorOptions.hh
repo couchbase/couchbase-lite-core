@@ -15,7 +15,6 @@
 #include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
-#include <iterator>
 
 namespace litecore { namespace repl {
 
@@ -180,19 +179,22 @@ namespace litecore { namespace repl {
         // Collection Options:
 
         static alloc_slice collectionSpecToPath(C4CollectionSpec spec, bool omitDefaultScope=true) {
-            std::vector<uint8_t> path;
             bool addScope = true;
             if (FLSlice_Compare(spec.scope, kC4DefaultScopeID) == 0 && omitDefaultScope) {
                 addScope = false;
             }
+            size_t size = addScope ? spec.scope.size + 1 : 0;
+            size += spec.name.size;
+            alloc_slice ret(size);
+            void* buf = const_cast<void*>(ret.buf);
+            size_t nameOffset = 0;
             if (addScope) {
-                std::copy((uint8_t*)spec.scope.buf, (uint8_t*)spec.scope.buf + spec.scope.size,
-                          std::inserter(path, path.end()));
-                path.push_back('/');
+                slice(spec.scope).copyTo(buf);
+                ((uint8_t*)buf)[spec.scope.size] = '/';
+                nameOffset = spec.scope.size + 1;
             }
-            std::copy((uint8_t*)spec.name.buf, (uint8_t*)spec.name.buf + spec.name.size,
-                      std::inserter(path, path.end()));
-            return {&path[0], path.size()};
+            slice(spec.name).copyTo((uint8_t*)buf + nameOffset);
+            return ret;
         }
 
         static C4CollectionSpec collectionPathToSpec(alloc_slice path) {
@@ -200,8 +202,7 @@ namespace litecore { namespace repl {
             slice scope = kC4DefaultScopeID;
             slice name;
             if (slash != nullptr) {
-                slice temp = slice {path.buf, static_cast<size_t>(slash - static_cast<const uint8_t*>(path.buf))};
-                scope = temp; //slice {path.buf, static_cast<size_t>(slash - static_cast<const uint8_t*>(path.buf))};
+                scope = slice {path.buf, static_cast<size_t>(slash - static_cast<const uint8_t*>(path.buf))};
                 name = slice {slash + 1, path.size - scope.size - 1};
             } else {
                 name = path;
