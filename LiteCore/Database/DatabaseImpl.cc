@@ -813,7 +813,6 @@ namespace litecore {
         if(c != _collections.end()) {
             auto* coll = asInternal(c->second.get());
             coll->invalidate();
-            _dataFile->resetKeyStore(keyStoreName);
         }
 
         if(isDefaultCollection(spec)) {

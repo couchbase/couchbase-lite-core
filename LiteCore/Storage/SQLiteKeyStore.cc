@@ -47,7 +47,6 @@ namespace litecore {
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
         exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
         exec("DROP TABLE IF EXISTS \"kv_del_" + name + "\"");
-        DataFile::deleteKeyStore(name);
         // TODO: Do I need to drop indexes, triggers?
     }
 
@@ -68,10 +67,7 @@ namespace litecore {
     ,_tableName("kv_" + name)
     ,_quotedTableName("\"" + _tableName + "\"")
     {
-        if (db.keyStoreExists(name))
-            _existence = kCommitted;
-        else
-            createTable();
+        reopen();
     }
 
 
@@ -87,7 +83,7 @@ namespace litecore {
                                 "  version BLOB,"
                                 "  body BLOB,"
                                 "  extra BLOB)"));
-        _existence = db().inTransaction() ? kUncommitted : kCommitted;
+        _uncommitedTable = db().inTransaction();
     }
 
 
@@ -99,12 +95,8 @@ namespace litecore {
 
 
     void SQLiteKeyStore::reopen() {
-        if (_existence == kNonexistent)
+        if (!db().keyStoreExists(_name))
             createTable();
-    }
-
-    void SQLiteKeyStore::reset() {
-        _existence = kNonexistent;
     }
 
 
@@ -212,19 +204,16 @@ namespace litecore {
         _lastSequence = nullopt;
         _purgeCountValid = false;
 
-        if (!commit && _uncommittedExpirationColumn)
-            _hasExpirationColumn = false;
-        _uncommittedExpirationColumn = false;
-
-        if (_existence == kUncommitted) {
-            if (commit) {
-                _existence = kCommitted;
-            } else {
-                _existence = kNonexistent;
+        if (!commit) {
+            if(_uncommittedExpirationColumn)
+                _hasExpirationColumn = false;
+            if(_uncommitedTable) {
                 close();
-                return;
             }
         }
+
+        _uncommittedExpirationColumn = false;
+        _uncommitedTable = false;
     }
 
 

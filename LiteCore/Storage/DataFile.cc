@@ -324,19 +324,6 @@ namespace litecore {
         }
     }
 
-    void DataFile::resetKeyStore(const string &name) {
-        logDebug("reset KVS '%s'", name.c_str());
-        auto i = _keyStores.find(name);
-        if (i != _keyStores.end()) {
-            // Never remove a KeyStore from _keyStores: there may be objects pointing to it 
-            i->second->reset();
-        }
-    }
-
-    void DataFile::deleteKeyStore(const string& name) {
-        resetKeyStore(name);
-    }
-
     KeyStore& DataFile::defaultKeyStore(KeyStore::Capabilities options) const {
         checkOpen();
         if (!_defaultKeyStore)

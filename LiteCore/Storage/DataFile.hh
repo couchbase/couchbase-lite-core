@@ -53,7 +53,6 @@ namespace litecore {
         This is an abstract class, with concrete subclasses for different database engines. */
     class DataFile : public Logging, public fleece::InstanceCountedIn<DataFile> {
     public:
-        using slice = fleece::slice;
         class Delegate {
         public:
             virtual ~Delegate() =default;
@@ -166,12 +165,7 @@ namespace litecore {
         void closeKeyStore(const std::string &name);
 
         /** Permanently deletes a KeyStore. */
-        virtual void deleteKeyStore(const std::string &name);
-        
-        /** Similar to deleteKeyStore, but only aside from the actual on disk deletion.
-            Useful for telling other datafiles pointing to the same underlying data
-            that the keystore has been removed by other means */
-        void resetKeyStore(const std::string& name);
+        virtual void deleteKeyStore(const std::string &name) =0;
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level =LogLevel::Info) const         {return Logging::willLog(level);}
