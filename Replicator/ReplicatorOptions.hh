@@ -29,8 +29,6 @@ namespace litecore { namespace repl {
         using PropertyEncryptor = C4ReplicatorPropertyEncryptionCallback;
         using PropertyDecryptor = C4ReplicatorPropertyDecryptionCallback;
 
-        Mode const              push;
-        Mode const              pull;
         fleece::AllocedDict     properties;
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
@@ -38,32 +36,28 @@ namespace litecore { namespace repl {
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
         std::atomic<C4ReplicatorProgressLevel> progressLevel {kC4ReplProgressOverall};
+        bool                    collectionAware         {true};
 
         //---- Constructors/factories:
 
-        inline void setCollectionOptions();
+        inline void setCollectionOptions(Mode push, Mode pull);
         inline void setCollectionOptions(C4ReplicatorParameters params);
         inline void setCollectionOptions(const Options& opt);
 
         Options(Mode push_, Mode pull_)
-        :push(push_), pull(pull_)
         {
-            setCollectionOptions();
+            setCollectionOptions(push_, pull_);
         }
 
         template <class SLICE>
         Options(Mode push_, Mode pull_, SLICE propertiesFleece)
-        :push(push_)
-        ,pull(pull_)
-        ,properties(propertiesFleece)
+        :properties(propertiesFleece)
         {
-            setCollectionOptions();
+            setCollectionOptions(push_, pull_);
         }
 
         explicit Options(C4ReplicatorParameters params)
-        :push(params.push)
-        ,pull(params.pull)
-        ,properties(params.optionsDictFleece)
+        :properties(params.optionsDictFleece)
         ,pushFilter(params.pushFilter)
         ,pullValidator(params.validationFunc)
         ,propertyEncryptor(params.propertyEncryptor)
@@ -74,15 +68,14 @@ namespace litecore { namespace repl {
         }
 
         Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
-        :push(opt.push)
-        ,pull(opt.pull)
-        ,pushFilter(opt.pushFilter)
+        :pushFilter(opt.pushFilter)
         ,pullValidator(opt.pullValidator)
         ,propertyEncryptor(opt.propertyEncryptor)
         ,propertyDecryptor(opt.propertyDecryptor)
         ,callbackContext(opt.callbackContext)
         ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
         ,progressLevel(opt.progressLevel.load())
+        ,collectionAware(opt.collectionAware)
         {
             setCollectionOptions(opt);
         }
@@ -251,17 +244,33 @@ namespace litecore { namespace repl {
         size_t collectionCount() const {
             return collectionOpts.size();
         }
+
+        Mode pushOf(unsigned i =0) const {
+            return collectionOpts[i].push;
+        }
+
+        Mode pullOf(unsigned i =0) const {
+            return collectionOpts[i].pull;
+        }
+
+        void forEachCollection(function_ref<void(unsigned index, CollectionOptions&)> callback) {
+            for (unsigned i = 0; i < collectionOpts.size(); ++i) {
+                callback(i, collectionOpts[i]);
+            }
+        }
     };
 
-    inline void Options::setCollectionOptions() {
+    inline void Options::setCollectionOptions(Mode push, Mode pull) {
+        collectionOpts.reserve(1);
         auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
         back.push = push;
         back.pull = pull;
+        collectionAware = false;
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
         if (params.collectionCount == 0) {
-            setCollectionOptions();
+            setCollectionOptions(params.push, params.pull);
             auto& back = collectionOpts.back();
             back.pushFilter = params.pushFilter;
             back.pullFilter = params.validationFunc;
@@ -270,6 +279,7 @@ namespace litecore { namespace repl {
         }
 
         // Assertion: params.collectionCount > 0
+        collectionOpts.reserve(params.collectionCount);
         for (unsigned i = 0; i < params.collectionCount; ++i) {
             C4ReplicationCollection& c4Coll = params.collections[i];
             alloc_slice collPath = collectionSpecToPath(c4Coll.collection);
@@ -284,7 +294,8 @@ namespace litecore { namespace repl {
 
     inline void Options::setCollectionOptions(const Options& opt) {
         Assert(opt.collectionOpts.size() > 0);
-        for (auto collOpts : opt.collectionOpts) {
+        collectionOpts.reserve(opt.collectionOpts.size());
+        for (auto& collOpts : opt.collectionOpts) {
             auto& back = collectionOpts.emplace_back(collOpts.collectionPath, collOpts.properties.data());
             back.push = collOpts.push;
             back.pull = collOpts.pull;

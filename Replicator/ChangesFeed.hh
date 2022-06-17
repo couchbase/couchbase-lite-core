@@ -81,6 +81,9 @@ namespace litecore::repl {
         /** Returns true if the given rev matches the push filters. */
         virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
 
+        // True if replicator is passive
+        bool passive(unsigned collectionIndex =0) const;
+
     protected:
         std::string loggingClassName() const override;
         virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
@@ -103,7 +106,6 @@ namespace litecore::repl {
         std::unique_ptr<C4DatabaseObserver> _changeObserver;// Used in continuous push mode
         C4SequenceNumber _maxSequence {0};                  // Latest sequence I've read
         bool _continuous;                                   // Continuous mode
-        bool _passive;                                      // True if replicator is passive
         bool _echoLocalChanges {false};                     // True if including changes made by _db
         bool _skipDeleted {false};                          // True if skipping tombstones
         bool _isCheckpointValid {true};

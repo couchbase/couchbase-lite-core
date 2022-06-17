@@ -41,6 +41,11 @@ namespace litecore { namespace repl {
 
         void onError(C4Error err) override;
 
+        // Passive replicator always sends "changes"
+        bool passive(unsigned collectionIndex =0) const override {
+            return _options->pushOf(collectionIndex) <= kC4Passive;
+        }
+
     protected:
         friend class BlobDataSource;
         

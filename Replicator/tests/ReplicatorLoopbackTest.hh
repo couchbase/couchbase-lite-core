@@ -107,7 +107,7 @@ public:
 
         auto optsRef1 = make_retained<Replicator::Options>(opts1);
         auto optsRef2 = make_retained<Replicator::Options>(opts2);
-        if (optsRef2->push > kC4Passive || optsRef2->pull > kC4Passive) {
+        if (optsRef2->pushOf() > kC4Passive || optsRef2->pullOf() > kC4Passive) {
             // always make opts1 the active (client) side
             std::swap(dbServer, dbClient);
             std::swap(optsRef1, optsRef2);
