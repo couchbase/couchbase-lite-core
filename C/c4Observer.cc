@@ -98,7 +98,8 @@ namespace litecore {
         C4DocumentObserverImpl(C4Collection *collection,
                                slice docID,
                                Callback callback)
-        :_collection(asInternal(collection))
+        :_retainedDatabase(collection->getDatabase())
+        ,_collection(asInternal(collection))
         ,_callback(callback)
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
@@ -119,6 +120,7 @@ namespace litecore {
         }
         
     private:
+        Retained<C4Database> _retainedDatabase;
         CollectionImpl* _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;

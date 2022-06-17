@@ -317,3 +317,9 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After DB Close", "[Observer][C]") {
+    // CBL-3193: Freeing a document observer after database close caused a SIGSEGV
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    docObserver = c4docobs_create(db, C4STR("doc1"), docObserverCallback, this);
+    closeDB();
+}
