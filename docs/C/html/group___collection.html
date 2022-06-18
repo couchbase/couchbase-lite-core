@@ -71,9 +71,9 @@ $(function() {
 <a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Lifecycle</h2></td></tr>
-<tr class="memitem:gaac49575dc863c29c1c20d9276ff0ea85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaac49575dc863c29c1c20d9276ff0ea85">c4db_getDefaultCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
-<tr class="memdesc:gaac49575dc863c29c1c20d9276ff0ea85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the default collection, whose name is "`_default`" (<code>kC4DefaultCollectionName</code>).  <a href="group___collection.html#gaac49575dc863c29c1c20d9276ff0ea85">More...</a><br /></td></tr>
-<tr class="separator:gaac49575dc863c29c1c20d9276ff0ea85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaade215de268acf1fbaa0e340386cfab2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaade215de268acf1fbaa0e340386cfab2">c4db_getDefaultCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaade215de268acf1fbaa0e340386cfab2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the default collection, whose name is "`_default`" (<code>kC4DefaultCollectionName</code>).  <a href="group___collection.html#gaade215de268acf1fbaa0e340386cfab2">More...</a><br /></td></tr>
+<tr class="separator:gaade215de268acf1fbaa0e340386cfab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga443bc404135b96e305d926f13a0dec5a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga443bc404135b96e305d926f13a0dec5a">c4db_hasCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec)</td></tr>
 <tr class="memdesc:ga443bc404135b96e305d926f13a0dec5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the collection exists.  <a href="group___collection.html#ga443bc404135b96e305d926f13a0dec5a">More...</a><br /></td></tr>
 <tr class="separator:ga443bc404135b96e305d926f13a0dec5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -969,7 +969,7 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Creates and returns an empty collection with the given name &amp; scope. </p>
-<p>If the collection already exists, it just returns it. If the scope doesn't exist, it is implicitly created. </p>
+<p>If the collection already exists, it just returns it. If the scope doesn't exist, it is implicitly created. </p><dl class="section note"><dt>Note</dt><dd>Be sure to read <code>C4Collection</code> Lifespan in <a class="el" href="c4_collection_8h.html">c4Collection.h</a>. </dd></dl>
 
 </div>
 </div>
@@ -1043,11 +1043,12 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Returns the existing collection with the given name &amp; scope, or NULL if it doesn't exist. </p>
+<dl class="section note"><dt>Note</dt><dd>Be sure to read <code>C4Collection</code> Lifespan in <a class="el" href="c4_collection_8h.html">c4Collection.h</a>. </dd></dl>
 
 </div>
 </div>
-<a id="gaac49575dc863c29c1c20d9276ff0ea85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaac49575dc863c29c1c20d9276ff0ea85">&#9670;&nbsp;</a></span>c4db_getDefaultCollection()</h2>
+<a id="gaade215de268acf1fbaa0e340386cfab2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaade215de268acf1fbaa0e340386cfab2">&#9670;&nbsp;</a></span>c4db_getDefaultCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1056,14 +1057,24 @@ $(function() {
           <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a>* c4db_getDefaultCollection </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
+          <td class="paramname"><em>db</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Returns the default collection, whose name is "`_default`" (<code>kC4DefaultCollectionName</code>). </p>
-<p>This is the one collection that exists in every newly created database. When a pre-existing database is upgraded to support collections, all its documents are put in the default collection. </p><dl class="section note"><dt>Note</dt><dd>This function never returns NULL, unless the default collection has been deleted. </dd></dl>
+<p>This is the one collection that exists in every newly created database. When a pre-existing database is upgraded to support collections, all its documents are put in the default collection. </p><dl class="section note"><dt>Note</dt><dd>Be sure to read <code>C4Collection</code> Lifespan in <a class="el" href="c4_collection_8h.html">c4Collection.h</a>. </dd></dl>
 
 </div>
 </div>
