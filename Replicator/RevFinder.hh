@@ -53,6 +53,10 @@ namespace litecore { namespace repl {
         void reRequestingRev() {enqueue(FUNCTION_TO_QUEUE(RevFinder::_reRequestingRev));}
 
         void onError(C4Error err) override;
+        
+        bool passive(unsigned collectionIndex =0) const override {
+            return _options->pullOf(collectionIndex) <= kC4Passive;
+        }
 
     private:
         static const size_t kMaxPossibleAncestors = 10;

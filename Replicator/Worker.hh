@@ -64,7 +64,7 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        bool passive() const                                {return _passive;}
+        virtual bool passive(unsigned collectionIndex =0) const {return false;}
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
         void connectionClosed() {
@@ -128,8 +128,8 @@ namespace litecore { namespace repl {
         bool isOpenServer() const               {return _connection &&
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
-        bool isContinuous() const               {return _options->push == kC4Continuous
-                                                     || _options->pull == kC4Continuous;}
+        bool isContinuous() const               {return _options->pushOf() == kC4Continuous
+                                                     || _options->pullOf() == kC4Continuous;}
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
         virtual void _connectionClosed() {
@@ -207,7 +207,6 @@ namespace litecore { namespace repl {
         std::shared_ptr<DBAccess>   _db;                        // Database
         std::string                 _loggingID;                 // My name in the log
         uint8_t                     _importance {1};            // Higher values log more
-        bool                        _passive {false};           // Part of a server-side replicator?
     private:
         Retained<blip::Connection>  _connection;                // BLIP connection
         int                         _pendingResponseCount {0};  // # of responses I'm awaiting

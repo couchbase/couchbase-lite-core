@@ -25,6 +25,10 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert* NONNULL);
 
+        bool passive(unsigned collectionIndex =0) const override {
+            return _options->pullOf(collectionIndex) <= kC4Passive;
+        }
+
     private:
         void _insertRevisionsNow(int gen);
         bool insertRevisionNow(RevToInsert* NONNULL, C4Error*);

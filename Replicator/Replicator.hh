@@ -117,7 +117,7 @@ namespace litecore { namespace repl {
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options->pull >= kC4OneShot || _options->push >= kC4OneShot ? "Repl" : "repl";
+            return _options->pullOf() >= kC4OneShot || _options->pushOf() >= kC4OneShot ? "Repl" : "repl";
         }
 
         // BLIP ConnectionDelegate API:
@@ -136,6 +136,11 @@ namespace litecore { namespace repl {
         // Worker method overrides:
         virtual ActivityLevel computeActivityLevel() const override;
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
+
+        bool passive(unsigned collectionIndex =0) const override {
+            return _options->pullOf(collectionIndex) <= kC4Passive
+                && _options->pushOf(collectionIndex) <= kC4Passive;
+        }
 
     private:
         void _onHTTPResponse(int status, websocket::Headers headers);
