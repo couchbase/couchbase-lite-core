@@ -259,6 +259,12 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
     return newDB;
 }
 
+C4Collection* C4Test::requireCollection(C4Database* db, C4CollectionSpec spec) {
+    C4Collection* coll = c4db_getCollection(db, spec, ERROR_INFO());
+    REQUIRE(coll);
+    return coll;
+}
+
 
 void C4Test::closeDB() {
     REQUIRE(c4db_close(db, WITH_ERROR()));
@@ -327,19 +333,34 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFla
 }
 
 void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
+    createRev(c4db_getDefaultCollection(db, nullptr), docID, revID, body, flags);
+}
+
+void C4Test::createRev(C4Collection *collection, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
+    C4Database* db = c4coll_getDatabase(collection);
     TransactionHelper t(db);
-    auto curDoc = c4db_getDoc(db, docID, false, kDocGetAll, ERROR_INFO());
+    auto curDoc = c4coll_getDoc(collection, docID, false, kDocGetAll, ERROR_INFO());
     REQUIRE(curDoc != nullptr);
     alloc_slice parentID;
     if (isRevTrees(db))
         parentID = curDoc->revID;
     else
         parentID = c4doc_getRevisionHistory(curDoc, 0, nullptr, 0);
-    createConflictingRev(db, docID, parentID, revID, body, flags);
+    createConflictingRev(collection, docID, parentID, revID, body, flags);
     c4doc_release(curDoc);
 }
 
 void C4Test::createConflictingRev(C4Database *db,
+                                  C4Slice docID,
+                                  C4Slice parentRevID,
+                                  C4Slice newRevID,
+                                  C4Slice body,
+                                  C4RevisionFlags flags)
+{
+    createConflictingRev(requireCollection(db), docID, parentRevID, newRevID, body, flags);
+}
+
+void C4Test::createConflictingRev(C4Collection *collection,
                                   C4Slice docID,
                                   C4Slice parentRevID,
                                   C4Slice newRevID,
@@ -357,7 +378,7 @@ void C4Test::createConflictingRev(C4Database *db,
     rq.revFlags = flags;
     rq.save = true;
     C4Error error;
-    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    auto doc = c4coll_putDoc(collection, &rq, nullptr, &error);
 //    char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
@@ -667,7 +688,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose,
 {
     if(database == nullptr)
         database = db;
-    return importJSONLines(path, c4db_getDefaultCollection(database), timeout, verbose, maxLines);
+    return importJSONLines(path, c4db_getDefaultCollection(database, nullptr), timeout, verbose, maxLines);
 }
 
 

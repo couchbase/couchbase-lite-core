@@ -38,7 +38,6 @@ namespace litecore { namespace repl {
     :Worker(puller, "inc")
     ,_puller(puller)
     {
-        _passive = _options->pull <= kC4Passive;
         _importance = false;
         static atomic<uint32_t> sRevSignpostCount {0};
         _serialNumber = ++sRevSignpostCount;
@@ -111,7 +110,7 @@ namespace litecore { namespace repl {
             return;
         }
 
-        if (!_remoteSequence && nonPassive()) {
+        if (!_remoteSequence && !passive()) {
             failWithError(WebSocketDomain, 400, "received 'rev' message with missing 'sequence'"_sl);
             return;
         }

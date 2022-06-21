@@ -285,8 +285,14 @@ public:
         }
 
         C4ReplicatorParameters params = {};
-        params.push = push;
-        params.pull = pull;
+        // When params.collections is non-empty, params.push/pull are ignored.
+        params.push = (C4ReplicatorMode)(rand() % 4);
+        params.pull = (C4ReplicatorMode)(rand() % 4);
+        C4ReplicationCollection colls[] = {
+            { kC4DefaultCollectionSpec, push, pull }
+        };
+        params.collections = colls;
+        params.collectionCount = sizeof(colls) / sizeof(C4ReplicationCollection);
         _options = options();
         params.optionsDictFleece = _options.data();
         params.pushFilter = _pushFilter;

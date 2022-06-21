@@ -80,13 +80,11 @@ C4API_BEGIN_DECLS
                             written.
         @param maxChanges  The maximum number of changes to return, i.e. the size of the caller's
                             outChanges buffer.
-        @param outExternal  Will be set to true if the changes were made by a different C4Database.
-        @return  The number of changes written to `outChanges`. If this is less than `maxChanges`,
-                            the end has been reached and the observer is reset. */
-    CBL_CORE_API uint32_t c4dbobs_getChanges(C4CollectionObserver *observer,
-                                C4CollectionChange outChanges[C4NONNULL],
-                                uint32_t maxChanges,
-                                bool *outExternal) C4API;
+        @return  Common information about the changes contained in outChanges (number of changes, 
+                 external vs non-external, and the relevant collection) */
+    CBL_CORE_API C4CollectionObservation c4dbobs_getChanges(C4CollectionObserver *observer,
+                                         C4CollectionChange outChanges[C4NONNULL],
+                                         uint32_t maxChanges) C4API;
 
     /** Releases the memory used by the `C4CollectionChange` structs (to hold the docID and revID
         strings.) This must be called after \ref c4dbobs_getChanges().
@@ -108,6 +106,7 @@ C4API_BEGIN_DECLS
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
     typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
+                                               C4Collection* collection,
                                                C4String docID,
                                                C4SequenceNumber sequence,
                                                void * C4NULLABLE context);

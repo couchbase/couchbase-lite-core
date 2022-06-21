@@ -53,7 +53,6 @@ namespace litecore {
         This is an abstract class, with concrete subclasses for different database engines. */
     class DataFile : public Logging, public fleece::InstanceCountedIn<DataFile> {
     public:
-
         class Delegate {
         public:
             virtual ~Delegate() =default;
@@ -63,6 +62,8 @@ namespace litecore {
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
+            // Notifies that another DataFile on the same physical file has deleted a collection
+            virtual void collectionRemoved(const std::string& keyStoreName) { };
         };
 
         struct Options {

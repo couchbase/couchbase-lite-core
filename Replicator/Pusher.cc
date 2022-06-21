@@ -30,13 +30,11 @@ namespace litecore { namespace repl {
 
     Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
-    ,_continuous(_options->push == kC4Continuous)
+    ,_continuous(_options->pushOf() == kC4Continuous)
     ,_checkpointer(checkpointer)
     ,_changesFeed(*this, _options, *_db, &checkpointer)
     {
-        if (_options->push <= kC4Passive) {
-            // Passive replicator always sends "changes"
-            _passive = true;
+        if (_options->pushOf() <= kC4Passive) {
             _proposeChanges = false;
             _proposeChangesKnown = true;
         } else if (_db->usingVersionVectors()) {
@@ -144,7 +142,7 @@ namespace litecore { namespace repl {
                 logVerbose("Holding off on change '%.*s' %.*s till earlier rev %.*s is done",
                            SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(iDoc->second->revID));
                 iDoc->second->nextRev = rev;
-                if (!_passive)
+                if (!passive())
                     _checkpointer.addPendingSequence(rev->sequence);
                 iChange = changes.revs.erase(iChange);  // remove from `changes`
             }
@@ -417,7 +415,7 @@ namespace litecore { namespace repl {
                 RevToSendList changes = {change};
                 sendChanges(changes);
                 return true;
-            } else if (_options->pull <= kC4Passive) {
+            } else if (_options->pullOf() <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                              "conflicts with newer server revision"_sl);
                 finishedDocumentWithError(change, error, false);
@@ -471,7 +469,7 @@ namespace litecore { namespace repl {
                     }
                 }
 
-                if(_options->pull <= kC4Passive) {
+                if(_options->pullOf() <= kC4Passive) {
                     // None of this other stuff is relevant if there's 
                     // no puller getting stuff from the server
                     return false;

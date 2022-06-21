@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"
 #include "c4Observer.h"
+#include "c4Collection.h"
 
 
 class C4ObserverTest : public C4Test {
@@ -58,6 +59,7 @@ class C4ObserverTest : public C4Test {
     }
 
     void docObserverCalled(C4DocumentObserver* obs,
+                           C4Collection* collection,
                            C4Slice docID,
                            C4SequenceNumber seq)
     {
@@ -65,31 +67,35 @@ class C4ObserverTest : public C4Test {
         ++docCallbackCalls;
         lastDocCallbackDocID = docID;
         lastDocCallbackSequence = seq;
+        lastCallbackCollection = collection;
     }
 
-    void checkChanges(std::vector<slice> expectedDocIDs,
+    void checkChanges(C4Collection* expectedCollection,
+                      std::vector<slice> expectedDocIDs,
                       std::vector<slice> expectedRevIDs,
                       bool expectedExternal =false) {
+
         C4DatabaseChange changes[100];
-        bool external;
-        auto changeCount = c4dbobs_getChanges(dbObserver, changes, 100, &external);
-        REQUIRE(changeCount == expectedDocIDs.size());
-        for (unsigned i = 0; i < changeCount; ++i) {
+        auto observation = c4dbobs_getChanges(dbObserver, changes, 100);
+        REQUIRE(observation.numChanges == expectedDocIDs.size());
+        CHECK(observation.collection == expectedCollection);
+        for (unsigned i = 0; i < observation.numChanges; ++i) {
             CHECK(changes[i].docID == expectedDocIDs[i]);
             CHECK(changes[i].revID == expectedRevIDs[i]);
-            i++;
         }
-        CHECK(external == expectedExternal);
-        c4dbobs_releaseChanges(changes, changeCount);
+        CHECK(observation.external == expectedExternal);
+        c4dbobs_releaseChanges(changes, observation.numChanges);
     }
 
     C4DatabaseObserver* dbObserver {nullptr};
+    C4Collection* openCollection {nullptr};
     unsigned dbCallbackCalls {0};
 
     C4DocumentObserver* docObserver {nullptr};
     unsigned docCallbackCalls {0};
     alloc_slice lastDocCallbackDocID;
     C4SequenceNumber lastDocCallbackSequence = 0;
+    C4Collection* lastCallbackCollection;
 };
 
 
@@ -98,63 +104,126 @@ static void dbObserverCallback(C4DatabaseObserver* obs, void *context) {
 }
 
 static void docObserverCallback(C4DocumentObserver* obs,
+                                C4Collection* collection,
                                 C4Slice docID,
                                 C4SequenceNumber seq,
                                 void *context)
 {
-    ((C4ObserverTest*)context)->docObserverCalled(obs, docID, seq);
+    ((C4ObserverTest*)context)->docObserverCalled(obs, collection, docID, seq);
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
-    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
-    CHECK(dbCallbackCalls == 0);
+    auto spec = C4CollectionSpec {"customScope"_sl, "customCollection"_sl};
+    openCollection = c4db_createCollection(db, spec, ERROR_INFO());
+    REQUIRE(openCollection);
 
-    createRev("A"_sl, kDocARev1, kFleeceBody);
-    CHECK(dbCallbackCalls == 1);
-    createRev("B"_sl, kDocBRev1, kFleeceBody);
-    CHECK(dbCallbackCalls == 1);
+    SECTION("Default Collection") {
+        dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+        auto* expectedCollection = requireCollection(db);
+        CHECK(dbCallbackCalls == 0);
 
-    checkChanges({"A", "B"}, {kDocARev1, kDocBRev1});
+        createRev("A"_sl, kDocARev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 1);
+        createRev("B"_sl, kDocBRev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 1);
 
-    createRev("B"_sl, kDocBRev2, kFleeceBody);
-    CHECK(dbCallbackCalls == 2);
-    createRev("C"_sl, kDocCRev1, kFleeceBody);
-    CHECK(dbCallbackCalls == 2);
+        checkChanges(expectedCollection, {"A", "B"}, {kDocARev1, kDocBRev1});
 
-    checkChanges({"B", "C"}, {kDocBRev2History, kDocCRev1});
+        createRev("B"_sl, kDocBRev2, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
+        createRev("C"_sl, kDocCRev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
 
-    c4dbobs_free(dbObserver);
-    dbObserver = nullptr;
+        checkChanges(expectedCollection, {"B", "C"}, {kDocBRev2History, kDocCRev1});
 
-    createRev("A"_sl, kDocARev2, kFleeceBody);
-    CHECK(dbCallbackCalls == 2);
+        // Other collections don't trigger callback
+        createRev(openCollection, "A"_sl, kDocARev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
+
+        c4dbobs_free(dbObserver);
+        dbObserver = nullptr;
+
+        createRev("A"_sl, kDocARev2, kFleeceBody);
+        CHECK(dbCallbackCalls == 2); 
+    }
+
+    SECTION("Custom Collection") {
+        dbObserver = c4dbobs_createOnCollection(openCollection, dbObserverCallback, this);
+        CHECK(dbCallbackCalls == 0);
+
+        createRev(openCollection, "A"_sl, kDocARev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 1);
+        createRev(openCollection, "B"_sl, kDocBRev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 1);
+
+        checkChanges(openCollection, {"A", "B"}, {kDocARev1, kDocBRev1});
+
+        createRev(openCollection, "B"_sl, kDocBRev2, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
+        createRev(openCollection, "C"_sl, kDocCRev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
+
+        checkChanges(openCollection, {"B", "C"}, {kDocBRev2History, kDocCRev1});
+
+        // Other collections don't trigger callback
+        createRev("A"_sl, kDocARev1, kFleeceBody);
+        CHECK(dbCallbackCalls == 2);
+
+        c4dbobs_free(dbObserver);
+        dbObserver = nullptr;
+
+        createRev(openCollection, "A"_sl, kDocARev2, kFleeceBody);
+        CHECK(dbCallbackCalls == 2); 
+    }
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
-    createRev("A"_sl, kDocARev1, kFleeceBody);
+    SECTION("Default Collection") {
+        createRev("A"_sl, kDocARev1, kFleeceBody);
 
-    docObserver = c4docobs_create(db, "A"_sl, docObserverCallback, this);
-    CHECK(docCallbackCalls == 0);
+        docObserver = c4docobs_create(db, "A"_sl, docObserverCallback, this);
+        CHECK(docCallbackCalls == 0);
 
-    createRev("A"_sl, kDocARev2, kFleeceBody);
-    createRev("B"_sl, kDocBRev1, kFleeceBody);
-    CHECK(docCallbackCalls == 1);
-    CHECK(lastDocCallbackDocID == "A");
-    CHECK(lastDocCallbackSequence == 2);
+        createRev("A"_sl, kDocARev2, kFleeceBody);
+        createRev("B"_sl, kDocBRev1, kFleeceBody);
+        CHECK(docCallbackCalls == 1);
+        CHECK(lastDocCallbackDocID == "A");
+        CHECK(lastDocCallbackSequence == 2);
+        CHECK(lastCallbackCollection == requireCollection(db));
+    }
+
+    SECTION("Custom Collection") {
+        auto spec = C4CollectionSpec{"customScope"_sl, "customCollection"_sl};
+        openCollection = c4db_createCollection(db, spec, ERROR_INFO());
+        REQUIRE(openCollection);
+        
+        createRev(openCollection, "A"_sl, kDocARev1, kFleeceBody);
+
+        docObserver = c4docobs_createWithCollection(openCollection, "A"_sl, docObserverCallback, this);
+        CHECK(docCallbackCalls == 0);
+
+        createRev(openCollection, "A"_sl, kDocARev2, kFleeceBody);
+        createRev(openCollection, "B"_sl, kDocBRev1, kFleeceBody);
+        CHECK(docCallbackCalls == 1);
+        CHECK(lastDocCallbackDocID == "A");
+        CHECK(lastDocCallbackSequence == 2);
+        CHECK(lastCallbackCollection == openCollection);
+    }
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    auto* expectedColl = requireCollection(db);
     CHECK(dbCallbackCalls == 0);
 
     createRev("A"_sl, kDocARev1, kFleeceBody);
     CHECK(dbCallbackCalls == 1);
     createRev("B"_sl, kDocBRev1, kFleeceBody);
     CHECK(dbCallbackCalls == 1);
-    checkChanges({"A", "B"}, {kDocARev1, kDocBRev1});
+    checkChanges(expectedColl, {"A", "B"}, {kDocARev1, kDocBRev1});
 
     // Open another database on the same file:
     C4Database* otherdb = c4db_openAgain(db, nullptr);
@@ -168,7 +237,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
 
     CHECK(dbCallbackCalls == 2);
 
-    checkChanges({"c", "d", "e"}, {kDocCRev1, kDocDRev1, kDocERev1}, true);
+    checkChanges(expectedColl, {"c", "d", "e"}, {kDocCRev1, kDocDRev1, kDocERev1}, true);
 
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;
@@ -221,8 +290,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Purge", "[Observer][C]") {
     REQUIRE(c4db_endTransaction(db, true, nullptr));
 
     CHECK(dbCallbackCalls == 1);
-
-    checkChanges({"A"}, {""});
+    checkChanges(requireCollection(db), {"A"}, {""});
 }
 
 
@@ -245,7 +313,13 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     REQUIRE_BEFORE(5s, isDocExpired());
 
     CHECK(dbCallbackCalls == 1);
-    checkChanges({"A"}, {""}, true);
+    checkChanges(requireCollection(db), {"A"}, {""}, true);
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After DB Close", "[Observer][C]") {
+    // CBL-3193: Freeing a document observer after database close caused a SIGSEGV
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    docObserver = c4docobs_create(db, C4STR("doc1"), docObserverCallback, this);
+    closeDB();
+}

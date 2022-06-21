@@ -36,9 +36,7 @@ namespace litecore { namespace repl {
     :Worker(repl, "Insert")
     ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
-    {
-        _passive = _options->pull <= kC4Passive;
-    }
+    { }
 
 
     void Inserter::insertRevision(RevToInsert *rev) {

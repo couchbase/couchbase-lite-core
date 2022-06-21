@@ -35,8 +35,7 @@ namespace litecore::repl {
     :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
-        _passive = _options->pull <= kC4Passive;
-        _mustBeProposed = _passive && _options->noIncomingConflicts()
+        _mustBeProposed = passive() && _options->noIncomingConflicts()
                                    && !_db->usingVersionVectors();
         registerHandler("changes",          &RevFinder::handleChanges);
         registerHandler("proposeChanges",   &RevFinder::handleChanges);
@@ -284,7 +283,7 @@ namespace litecore::repl {
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
                     _db->setDocRemoteAncestor(docID, revID);
-                    if (!_passive && !_db->usingVersionVectors()) {
+                    if (!passive() && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
                             repl->docRemoteAncestorChanged(alloc_slice(docID),
