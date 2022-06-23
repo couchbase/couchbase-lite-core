@@ -148,6 +148,7 @@ C4Slice c4repl_getResponseHeaders(C4Replicator *repl) noexcept {
 
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) noexcept {
     try {
+        *outErr = {};
         return C4SliceResult( repl->pendingDocIDs() );
     } catchError(outErr);
     return {};
@@ -156,6 +157,7 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) noexc
 
 bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) noexcept {
     try {
+        *outErr = {};
         return repl->isDocumentPending(docID);
     } catchError(outErr);
     return false;
@@ -163,7 +165,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 
 C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) noexcept {
 #ifdef COUCHBASE_ENTERPRISE
-    outErr->code = 0;
+    *outErr = {};
     return repl->getPeerTLSCertificate();
 #else
     outErr->domain = LiteCoreDomain;
