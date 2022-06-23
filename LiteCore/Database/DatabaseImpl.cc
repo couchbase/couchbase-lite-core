@@ -252,7 +252,7 @@ namespace litecore {
         // Create a new BlobStore and copy/rekey the blobs into it:
         filePath().subdirectoryNamed("Attachments_temp").delRecursive();
         auto &blobStore = getBlobStore();
-        auto newStore = createBlobStore("Attachments_temp", *newKey);
+        auto newStore = createBlobStore("Attachments_temp", *newKey, true);
         try {
             blobStore.copyBlobsTo(*newStore);
 
@@ -351,11 +351,17 @@ namespace litecore {
 
 
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
-                                                          C4EncryptionKey encryptionKey) const
+                                                          C4EncryptionKey encryptionKey,
+                                                          bool force) const
     {
-	// Split path into a separate variable to workaround GCC 8 constructor resolution issue
-	alloc_slice path = filePath().subdirectoryNamed(dirname);
-        return make_unique<C4BlobStore>(path,_config.flags, encryptionKey);
+        // Split path into a separate variable to workaround GCC 8 constructor resolution issue
+        alloc_slice path = filePath().subdirectoryNamed(dirname);
+        auto flags = _config.flags;
+        if(force) {
+            flags |= kC4DB_Create;
+        }
+
+        return make_unique<C4BlobStore>(path, flags, encryptionKey);
     }
 
 

@@ -160,7 +160,8 @@ namespace litecore {
         void startBackgroundTasks();
         void stopBackgroundTasks();
 
-        unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
+        unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey,
+                                                bool force = false) const;
         void garbageCollectBlobs();
 
         C4Collection* getOrCreateCollection(CollectionSpec, bool canCreate);
