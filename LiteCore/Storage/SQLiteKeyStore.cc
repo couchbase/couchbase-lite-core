@@ -590,7 +590,7 @@ namespace litecore {
             }
         }
         if (!none) {
-            expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %" PRId64,
+            expired = db().exec(format("DELETE FROM \"kv_%s\" WHERE expiration <= %" PRId64,
                                        name().c_str(), (int64_t)t));
         }
         db()._logInfo("Purged %u expired documents", expired);
