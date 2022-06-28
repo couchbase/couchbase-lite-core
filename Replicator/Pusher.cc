@@ -28,11 +28,12 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
+    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer, optional<int> collectionIndex)
     :Worker(replicator, "Push")
     ,_continuous(_options->pushOf() == kC4Continuous)
     ,_checkpointer(checkpointer)
     ,_changesFeed(*this, _options, *_db, &checkpointer)
+    ,_collectionIndex(collectionIndex)
     {
         if (_options->pushOf() <= kC4Passive) {
             _proposeChanges = false;
@@ -225,6 +226,10 @@ namespace litecore { namespace repl {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
         if(_proposeChanges) {
             req[kConflictIncludesRevProperty] = "true"_sl;
+        }
+
+        if (_collectionIndex) {
+            req[kCollectionProperty] = *_collectionIndex;
         }
 
         req.urgent = tuning::kChangeMessagesAreUrgent;

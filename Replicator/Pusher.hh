@@ -26,7 +26,7 @@ namespace litecore { namespace repl {
     public:
         static constexpr const char* kConflictIncludesRevProperty = "conflictIncludesRev";
 
-        Pusher(Replicator *replicator NONNULL, Checkpointer&);
+        Pusher(Replicator *replicator NONNULL, Checkpointer&, std::optional<int> collectionIndex = std::nullopt);
 
         // Starts an active push
         void start()  {enqueue(FUNCTION_TO_QUEUE(Pusher::_start));}
@@ -119,6 +119,7 @@ namespace litecore { namespace repl {
         std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
         RevToSendList _revsToRetry;               // Revs that failed with a transient error
         string _myPeerID;
+        std::optional<unsigned> _collectionIndex; // The index of the collection this worker is using (omitted if default)
     };
     
     
