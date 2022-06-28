@@ -103,12 +103,12 @@ void C4Replicator::setOptions(slice optionsDictFleece) {
     asInternal(this)->setProperties(AllocedDict(optionsDictFleece));
 }
 
-alloc_slice C4Replicator::pendingDocIDs() const {
-    return asInternal(this)->pendingDocumentIDs();
+alloc_slice C4Replicator::pendingDocIDs(C4CollectionSpec spec) const {
+    return asInternal(this)->pendingDocumentIDs(spec);
 }
 
-bool C4Replicator::isDocumentPending(slice docID) const {
-    return asInternal(this)->isDocumentPending(docID);
+bool C4Replicator::isDocumentPending(slice docID, C4CollectionSpec spec) const {
+    return asInternal(this)->isDocumentPending(docID, spec);
 }
 
 #ifdef COUCHBASE_ENTERPRISE

@@ -421,7 +421,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     FLSliceResult_Release(options);
 
-    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, ERROR_INFO(err));
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, kC4DefaultCollectionSpec, ERROR_INFO(err));
     REQUIRE(encodedDocIDs != nullslice);
     FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
     CHECK(FLArray_Count(docIDs) == expectedPending);
@@ -429,7 +429,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
-    encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, kC4DefaultCollectionSpec, &err);
     CHECK(encodedDocIDs == nullslice);
 }
 #endif
@@ -482,13 +482,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
     CHECK(isPending == expectedIsPending);
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
 
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
 }

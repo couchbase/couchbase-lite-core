@@ -187,12 +187,12 @@ namespace litecore {
             _onBlobProgress   = nullptr;
         }
 
-        bool isDocumentPending(C4Slice docID) const {
-            return PendingDocuments(this).isDocumentPending(docID);
+        bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) const {
+            return PendingDocuments(this).isDocumentPending(docID, spec);
         }
 
-        alloc_slice pendingDocumentIDs() const {
-            return PendingDocuments(this).pendingDocumentIDs();
+        alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const {
+            return PendingDocuments(this).pendingDocumentIDs(spec);
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
@@ -500,10 +500,10 @@ namespace litecore {
                 database = repl->_database;
             }
 
-            alloc_slice pendingDocumentIDs() {
+            alloc_slice pendingDocumentIDs(C4CollectionSpec spec) {
                 Encoder enc;
                 enc.beginArray();
-
+                // TBD: account for spec
                 bool any = false;
                 auto callback = [&](const C4DocumentInfo &info) {
                     enc.writeString(info.docID);
@@ -520,7 +520,8 @@ namespace litecore {
                 return enc.finish();
             }
 
-            bool isDocumentPending(C4Slice docID) {
+            bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) {
+                // TBD: account for spec
                 if(replicator) {
                     auto result = replicator->isDocumentPending(docID);
                     if(result.has_value()) {
