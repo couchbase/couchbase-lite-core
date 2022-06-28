@@ -16,6 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Message.hh"
 #include "Error.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
 #include <functional>
@@ -64,7 +65,7 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        virtual bool passive(unsigned collectionIndex =0) const {return false;}
+        virtual bool passive() const {return false;}
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
         void connectionClosed() {
@@ -88,6 +89,8 @@ namespace litecore { namespace repl {
 
         /// The BLIP connection. Throws if there isn't one.
         blip::Connection& connection() const            {Assert(_connection); return *_connection;}
+        
+        CollectionIndex collectionIndex() const         {return _collectionIndex;}
 
     protected:
         /// Designated constructor.
@@ -100,10 +103,11 @@ namespace litecore { namespace repl {
                Worker *parent,
                const Options* options NONNULL,
                std::shared_ptr<DBAccess> db,
-               const char *namePrefix NONNULL);
+               const char *namePrefix NONNULL,
+               CollectionIndex);
 
         /// Simplified constructor. Gets the other parameters from the parent object.
-        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
+        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL, CollectionIndex);
 
         virtual ~Worker();
 
@@ -212,6 +216,7 @@ namespace litecore { namespace repl {
         int                         _pendingResponseCount {0};  // # of responses I'm awaiting
         Status                      _status {kC4Idle};          // My status
         bool                        _statusChanged {false};     // Status changed during this event
+        const CollectionIndex       _collectionIndex;
     };
 
 } }

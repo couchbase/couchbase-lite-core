@@ -28,8 +28,8 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
-    :Worker(replicator, "Push")
+    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer, CollectionIndex collIndex)
+    :Worker(replicator, "Push", collIndex)
     ,_continuous(_options->pushOf() == kC4Continuous)
     ,_checkpointer(checkpointer)
     ,_changesFeed(*this, _options, *_db, &checkpointer)

@@ -113,6 +113,7 @@ namespace litecore { namespace repl {
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        // TBD: pushFilter should be collection-aware.
         if (!_getForeignAncestors && !_options->pushFilter)
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
@@ -122,7 +123,8 @@ namespace litecore { namespace repl {
 
         try {
             _db.useLocked([&](C4Database* db) {
-                C4DocEnumerator e(db, _maxSequence, options);
+                Assert(db == _checkpointer->collection()->getDatabase());
+                C4DocEnumerator e(_checkpointer->collection(), _maxSequence, options);
                 changes.revs.reserve(limit);
                 while (e.next() && limit > 0) {
                     C4DocumentInfo info = e.documentInfo();
@@ -242,7 +244,7 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = make_retained<RevToSend>(info);
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec());
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }

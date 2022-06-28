@@ -21,12 +21,12 @@ namespace litecore { namespace repl {
     /** Inserts revisions into the database in batches. */
     class Inserter : public Worker {
     public:
-        Inserter(Replicator*);
+        Inserter(Replicator*, CollectionIndex);
 
         void insertRevision(RevToInsert* NONNULL);
-
-        bool passive(unsigned collectionIndex =0) const override {
-            return _options->pullOf(collectionIndex) <= kC4Passive;
+        
+        bool passive() const override {
+            return _options->pullOf(collectionIndex()) <= kC4Passive;
         }
 
     private:

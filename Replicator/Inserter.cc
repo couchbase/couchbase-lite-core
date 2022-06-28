@@ -32,8 +32,8 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    Inserter::Inserter(Replicator *repl)
-    :Worker(repl, "Insert")
+    Inserter::Inserter(Replicator *repl, CollectionIndex coll)
+    :Worker(repl, "Insert", coll)
     ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     { }

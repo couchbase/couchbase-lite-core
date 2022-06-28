@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
               Replicator, Pusher and Puller. */
     class Checkpointer {
     public:
-        Checkpointer(const Options* NONNULL, fleece::slice remoteURL);
+        Checkpointer(const Options* NONNULL, fleece::slice remoteURL, C4Collection*);
 
         ~Checkpointer();
 
@@ -160,6 +160,9 @@ namespace litecore { namespace repl {
                                        slice body,
                                        slice revID,
                                        alloc_slice &newRevID);
+        
+        /// The collection used internally during the operation of Replicator.
+        C4Collection* collection() const { return _collection; }
 
     private:
         void checkpointIsInvalid();
@@ -190,6 +193,7 @@ namespace litecore { namespace repl {
         std::unique_ptr<actor::Timer>   _timer;
         SaveCallback                    _saveCallback;
         duration                        _saveTime;
+        C4Collection* const             _collection;
     };
 
 } }

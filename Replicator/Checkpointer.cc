@@ -37,9 +37,10 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINT ACCESSORS:
 
 
-    Checkpointer::Checkpointer(const Options *opt, fleece::slice remoteURL)
+    Checkpointer::Checkpointer(const Options *opt, fleece::slice remoteURL, C4Collection* collection)
     :_options(opt)
     ,_remoteURL(remoteURL)
+    ,_collection(collection)
     { }
 
 
@@ -230,6 +231,13 @@ namespace litecore { namespace repl {
         fleece::Encoder enc;
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
+        // Existing documents of are considered in the default collection
+        // and they should keep the same docID or current checkpointers would be
+        // inaccessible.
+        if (!(_collection->getSpec() == kC4DefaultCollectionSpec)) {
+            enc.writeString(_collection->getSpec().name);
+            enc.writeString(_collection->getSpec().scope);
+        }
 
         alloc_slice rawURL(remoteDBIDString());
         auto encodedURL = transform_url(rawURL, urlStrategy);

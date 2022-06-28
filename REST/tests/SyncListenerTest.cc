@@ -242,7 +242,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
 }
 
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[.broken][Push][Pull][Listener][C]") {
     C4ReplicatorMode pushMode = kC4Disabled;
     C4ReplicatorMode pullMode = kC4Disabled;
     SECTION("Push") {

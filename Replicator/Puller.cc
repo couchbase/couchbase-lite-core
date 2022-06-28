@@ -37,13 +37,13 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Replicator *replicator)
-    :Delegate(replicator, "Pull")
+    Puller::Puller(Replicator *replicator, CollectionIndex coll)
+    :Delegate(replicator, "Pull", coll)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
-    ,_inserter(new Inserter(replicator))
-    ,_revFinder(new RevFinder(replicator, this))
+    ,_inserter(new Inserter(replicator, coll))
+    ,_revFinder(new RevFinder(replicator, this, coll))
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
@@ -325,9 +325,10 @@ namespace litecore { namespace repl {
         auto since = _missingSequences.since();
         if (since != _lastSequence) {
             _lastSequence = since;
-            logVerbose("Checkpoint now at '%s'", _lastSequence.toJSONString().c_str());
+            logVerbose("Checkpoint now at '%s' (collection: %u",
+                       _lastSequence.toJSONString().c_str(), collectionIndex());
             if (auto replicator = replicatorIfAny(); replicator)
-                replicator->checkpointer().setRemoteMinSequence(_lastSequence);
+                replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }
     }
 

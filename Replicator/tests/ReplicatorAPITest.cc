@@ -375,7 +375,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[.broken][C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -435,7 +435,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[.broken][C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 

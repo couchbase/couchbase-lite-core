@@ -40,10 +40,6 @@ namespace litecore { namespace repl {
 
         //---- Constructors/factories:
 
-        inline void setCollectionOptions(Mode push, Mode pull);
-        inline void setCollectionOptions(C4ReplicatorParameters params);
-        inline void setCollectionOptions(const Options& opt);
-
         Options(Mode push_, Mode pull_)
         {
             setCollectionOptions(push_, pull_);
@@ -253,11 +249,25 @@ namespace litecore { namespace repl {
             return collectionOpts[i].pull;
         }
 
-        void forEachCollection(function_ref<void(unsigned index, CollectionOptions&)> callback) {
+        void forEachCollection(function_ref<void(unsigned index,
+                                const CollectionOptions&)> callback) const {
             for (unsigned i = 0; i < collectionOpts.size(); ++i) {
                 callback(i, collectionOpts[i]);
             }
         }
+
+        // isAllPassive if push/pull of all collections are kC4Passive, i.e. passive replicator.
+        // hasPassiveCollection if exists a collection of which both push/pull are kC4Passive.
+        // In practice, we don't mix pure passive collection with non-passive one.
+        // That is: we may assert, hasPassiveCollection ? isAllPassive : true
+        mutable bool isAllPassive {true};
+        mutable bool hasPassiveCollection {false};
+
+    private:
+        inline void setCollectionOptions(Mode push, Mode pull);
+        inline void setCollectionOptions(C4ReplicatorParameters params);
+        inline void setCollectionOptions(const Options& opt);
+        inline void trimDisabledCollections();
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
@@ -266,6 +276,7 @@ namespace litecore { namespace repl {
         back.push = push;
         back.pull = pull;
         collectionAware = false;
+        trimDisabledCollections();
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
@@ -290,6 +301,7 @@ namespace litecore { namespace repl {
             back.pullFilter = c4Coll.pullFilter;
             back.callbackContext = c4Coll.callbackContext;
         }
+        trimDisabledCollections();
     }
 
     inline void Options::setCollectionOptions(const Options& opt) {
@@ -302,6 +314,28 @@ namespace litecore { namespace repl {
             back.pushFilter = collOpts.pushFilter;
             back.pullFilter = collOpts.pullFilter;
             back.callbackContext = collOpts.callbackContext;
+        }
+        trimDisabledCollections();
+    }
+
+    inline void Options::trimDisabledCollections() {
+        for (auto iter = collectionOpts.rbegin(); iter != collectionOpts.rend(); ++iter) {
+            if (iter->push == kC4Disabled && iter->pull == kC4Disabled) {
+                // Removing collection whose push and pull are both disabled.
+                collectionOpts.erase(iter.base() - 1);
+            }
+        }
+
+        // Assertion: collectionOpts contains no disabled collections
+        // (of which both push and pull are disabled)
+
+        for (auto c: collectionOpts) {
+            if (c.push == kC4Passive && c.pull == kC4Passive) {
+                hasPassiveCollection = true;
+            }
+            if (c.push != kC4Passive || c.pull != kC4Passive) {
+                isAllPassive = false;
+            }
         }
     }
 
