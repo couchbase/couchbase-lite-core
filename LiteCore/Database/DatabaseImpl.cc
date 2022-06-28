@@ -620,6 +620,15 @@ namespace litecore {
             }
         }
 
+        // CBL-3298: Final fallback to detect scopes added in another handle
+        auto allStores = _dataFile->allKeyStoreNames();
+        for (const auto& store : allStores) {
+            auto spec = keyStoreNameToCollectionSpec(slice(store));
+            if (spec.scope == name) {
+                return true;
+            }
+        }
+
         return false;
     }
 

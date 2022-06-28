@@ -348,6 +348,13 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") 
     C4Collection* fresh = c4db_createCollection(db, SupaDope, ERROR_INFO());
     REQUIRE(fresh);
 
+    // CBL-3298
+    C4Database* db2 = c4db_openAgain(db, ERROR_INFO());
+    REQUIRE(db2);
+    CHECK(c4db_hasScope(db2, SupaDopeScope));
+    c4db_close(db2, nullptr);
+    c4db_release(db2);
+
     // Verify "fresh" is empty:
     auto spec = c4coll_getSpec(fresh);
     CHECK(spec.name == SupaDopeCollection);
