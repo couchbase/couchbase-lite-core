@@ -143,12 +143,13 @@ C4API_BEGIN_DECLS
      *  the call returns.
      *
      *  @param repl  The C4Replicator instance.
+     *  @param spec  The collection spec
      *  @param outErr On failure, error information will be written here if non-NULL.
      *  @return A fleece encoded array of document IDs, each of which has one or more pending
      *  revisions.  If none are pending, nullslice is returned (note that an error
      * condition will return nullslice with the outErr code set to non-zero)
      */
-    CBL_CORE_API C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
+    CBL_CORE_API C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4CollectionSpec spec, C4Error* C4NULLABLE outErr) C4API;
 
     /** Checks if the document with the given ID has revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time
@@ -156,11 +157,12 @@ C4API_BEGIN_DECLS
      *
      *  @param repl  The C4Replicator instance.
      *  @param docID The ID of the document to check
+     *  @param spec The collection the docID belongs to.
      *  @param outErr On failure, error information will be written here if non-NULL.
      *  @return true if the document has one or more revisions pending, false otherwise (note that an error
      *  condition will return false with the outErr code set to non-zero)
      */
-    CBL_CORE_API bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4Error* C4NULLABLE outErr) C4API;
+    CBL_CORE_API bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4CollectionSpec spec, C4Error* C4NULLABLE outErr) C4API;
 
 
     /** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */

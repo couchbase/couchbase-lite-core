@@ -146,19 +146,20 @@ C4Slice c4repl_getResponseHeaders(C4Replicator *repl) noexcept {
 }
 
 
-C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) noexcept {
+C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4CollectionSpec spec, C4Error* outErr) noexcept {
     try {
         *outErr = {};
-        return C4SliceResult( repl->pendingDocIDs() );
+        return C4SliceResult( repl->pendingDocIDs(spec) );
     } catchError(outErr);
     return {};
 }
 
 
-bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) noexcept {
+bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID,
+                              C4CollectionSpec spec,C4Error* outErr) noexcept {
     try {
         *outErr = {};
-        return repl->isDocumentPending(docID);
+        return repl->isDocumentPending(docID, spec);
     } catchError(outErr);
     return false;
 }
