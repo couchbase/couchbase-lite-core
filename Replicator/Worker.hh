@@ -81,6 +81,8 @@ namespace litecore { namespace repl {
             return _options->progressLevel;
         }
 
+        CollectionIndex collectionIndex() const         {return _collectionIndex;}
+
 #if !DEBUG
     protected:
 #endif
@@ -89,8 +91,6 @@ namespace litecore { namespace repl {
 
         /// The BLIP connection. Throws if there isn't one.
         blip::Connection& connection() const            {Assert(_connection); return *_connection;}
-        
-        CollectionIndex collectionIndex() const         {return _collectionIndex;}
 
     protected:
         /// Designated constructor.

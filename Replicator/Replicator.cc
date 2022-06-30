@@ -711,6 +711,9 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            (void)collectionIn;
+            // TBD: if collectionIn is not in the response, the server does not comply with the collection
+            // protocol.
             DebugAssert(collectionIn == kNotCollectionIndex || collectionIn == coll);
 
             Checkpoint remoteCheckpoint;
@@ -792,6 +795,9 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            (void)collectionIn;
+            // TBD: if collectionIn is not in the response, the server does not comply with the collection
+            // protocol.
             DebugAssert(collectionIn == kNotCollectionIndex || collectionIn == coll);
 
             if (response->isError()) {
