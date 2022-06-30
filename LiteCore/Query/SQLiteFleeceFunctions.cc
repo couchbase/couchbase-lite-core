@@ -198,8 +198,20 @@ namespace litecore {
             }
             switch (scope.root->type()) {
                 case kArray:
-                    sqlite3_result_int(ctx, scope.root->asArray()->count());
+                {
+                    ArrayIterator a(scope.root->asArray());
+                    int64_t count = 0;
+                    while (a) {
+                        if (a.value()->type() != kNull) {
+                            count++;
+                        }
+
+                        ++a;
+                    }
+
+                    sqlite3_result_int64(ctx, count);
                     break;
+                }
                 case kDict:
                     sqlite3_result_int(ctx, scope.root->asDict()->count());
                     break;
