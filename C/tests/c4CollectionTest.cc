@@ -17,12 +17,20 @@
 #include "c4Test.hh"
 #include "Delimiter.hh"
 #include <sstream>
+#include <thread>
 
 using namespace std;
 
 
-// NOTE: This tests the public API, but it's not a C API (yet?), so this test has to be linked
-// into CppTests, not C4Tests.
+static bool docExists(C4Collection* coll, slice docID) {
+    C4Error err;
+    auto doc = c4::make_ref(c4coll_getDoc(coll, docID, true, 
+        kDocGetMetadata, &err));
+    if (doc)
+        return true;
+    CHECK(err == C4Error{ LiteCoreDomain, kC4ErrorNotFound });
+    return false;
+};
 
 
 class C4CollectionTest : public C4Test {
@@ -337,12 +345,11 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
     CHECK(c4coll_getLastSequence(dflt) == 0_seq);
 }
 
+static constexpr slice SupaDopeCollection = "fresh"_sl;
+static constexpr slice SupaDopeScope = "SupaDope"_sl;
+static constexpr C4CollectionSpec SupaDope = { SupaDopeCollection, SupaDopeScope };
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") {
-    static constexpr slice SupaDopeCollection = "fresh"_sl;
-    static constexpr slice SupaDopeScope = "SupaDope"_sl;
-    static constexpr C4CollectionSpec SupaDope = { SupaDopeCollection, SupaDopeScope };
-
     CHECK(getScopeNames() == "_default");
     CHECK(c4db_getCollection(db, SupaDope, ERROR_INFO()) == nullptr);
     C4Collection* fresh = c4db_createCollection(db, SupaDope, ERROR_INFO());
@@ -362,4 +369,74 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") 
     CHECK(c4coll_getDatabase(fresh) == db);
     CHECK(c4coll_getDocumentCount(fresh) == 0);
     CHECK(c4coll_getLastSequence(fresh) == 0_seq);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Expired", "[Collection][C][Expiration]") {
+    // With this test, we can explicitly ensure that expiration works on a named collection.
+    // However, aside from this facet, the other facets of expiration are tested
+    // via c4DatabaseTest expiration, which uses the default collection.
+    const C4Error notFound = { LiteCoreDomain, kC4ErrorNotFound };
+    C4Collection* fresh = c4db_createCollection(db, SupaDope, ERROR_INFO());
+    REQUIRE(fresh);
+
+    C4Error err;
+    CHECK(c4coll_nextDocExpiration(fresh) == C4Timestamp::None);
+    CHECK(c4coll_purgeExpiredDocs(fresh, WITH_ERROR()) == 0);
+
+    C4Slice docID = C4STR("expire_me");
+    createRev(fresh, docID, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 1000;
+    CHECK(!c4doc_setExpiration(db, docID, expire, &err));
+    CHECK(err == notFound);
+    REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
+
+
+    expire = c4_now() + 2000;
+    // Make sure setting it to the same is also true
+    CHECK(!c4doc_setExpiration(db, docID, expire, &err));
+    CHECK(err == notFound);
+    REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
+    REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
+
+    C4Slice docID2 = C4STR("expire_me_too");
+    createRev(fresh, docID2, kRevID, kFleeceBody);
+    CHECK(!c4doc_setExpiration(db, docID2, expire, &err));
+    CHECK(err == notFound);
+    REQUIRE(c4coll_setDocExpiration(fresh, docID2, expire, WITH_ERROR()));
+
+    C4Slice docID3 = C4STR("dont_expire_me");
+    createRev(fresh, docID3, kRevID, kFleeceBody);
+
+    C4Slice docID4 = C4STR("expire_me_later");
+    createRev(fresh, docID4, kRevID, kFleeceBody);
+    CHECK(!c4doc_setExpiration(db, docID4, expire + 100000, &err));
+    CHECK(err == notFound);
+    REQUIRE(c4coll_setDocExpiration(fresh, docID4, expire + 100000, WITH_ERROR()));
+
+    REQUIRE(!c4coll_setDocExpiration(fresh, "nonexistent"_sl, expire + 50000, &err));
+    CHECK(err == notFound);
+
+    CHECK(c4coll_getDocExpiration(fresh, docID, nullptr) == expire);
+    CHECK(c4coll_getDocExpiration(fresh, docID2, nullptr) == expire);
+    CHECK(c4coll_getDocExpiration(fresh, docID3, nullptr) == C4Timestamp::None);
+    CHECK(c4coll_getDocExpiration(fresh, docID4, nullptr) == expire + 100000);
+    CHECK(c4coll_getDocExpiration(fresh, "nonexistent"_sl, nullptr) == C4Timestamp::None);
+
+    CHECK(c4coll_nextDocExpiration(fresh) == expire);
+
+    // Wait for the expiration time to pass:
+    C4Log("---- Wait till expiration time...");
+    this_thread::sleep_for(2500ms);
+    REQUIRE(c4_now() >= expire);
+
+    CHECK(!docExists(fresh, docID));
+    CHECK(!docExists(fresh, docID2));
+    CHECK(docExists(fresh, docID3));
+    CHECK(docExists(fresh, docID4));
+
+    CHECK(c4coll_nextDocExpiration(fresh) == expire + 100000);
+
+    C4Log("---- Purge expired docs");
+    CHECK(c4coll_purgeExpiredDocs(fresh, WITH_ERROR()) == 0);
 }
