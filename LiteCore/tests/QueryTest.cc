@@ -245,6 +245,32 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array_count null value", "[Query][CBL-3087]") {
+    {
+        ExclusiveTransaction t(store->dataFile());
+        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("n");
+            enc.beginArray();
+            enc.writeNull();
+            enc.writeString("abc");
+            enc.writeString("def");
+            enc.writeNull();
+            enc.writeString("ghi");
+            enc.endArray();
+            });
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['ARRAY_COUNT()', ['.n']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    auto cols = e->columns();
+    REQUIRE(cols.count() == 1);
+    CHECK(cols[0]->type() == kNumber);
+    CHECK(cols[0]->asInt() == 3);
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
     addNumberedDocs();
     Retained<Query> query{ store->compileQuery(json5(

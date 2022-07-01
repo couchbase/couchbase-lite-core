@@ -226,7 +226,7 @@ C4API_BEGIN_DECLS
         // If collections == nullptr, we will use the deprecated fields to build
         // the internal config for one collection being the default collection.
         C4ReplicationCollection             *collections;
-        unsigned                            collectionCount;
+        size_t                               collectionCount;
     } C4ReplicatorParameters;
 
 

@@ -27,7 +27,7 @@ C4API_BEGIN_DECLS
     // and/or `c4Socket_setNativeHandle` instead.
     
 
-    /** One-time registration of socket callbacks. Must be called before using any socket-based
+    /** One-time registration of default socket callbacks. If used, must be called before using any socket-based
         API including the replicator. Do not call multiple times. */
     CBL_CORE_API void c4socket_registerFactory(C4SocketFactory factory) C4API;
 
