@@ -63,7 +63,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[.broken][Push][Listener][C]") {
     run();
 }
 
