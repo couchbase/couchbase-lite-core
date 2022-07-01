@@ -35,6 +35,10 @@ struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCounted
     // Accessors:
 
     bool isValid() const                                    {return _database != nullptr;}
+
+    // Use this to invalidate an otherwise valid collection so that the pointers
+    // it owns are kept alive to avoid invalid memory usage.
+    void invalidate()                                       {_database = nullptr;}
     slice getName() const                                   {return _name;}
     slice getScope() const                                  {return _scope;}
     C4CollectionSpec getSpec() const                        {return {_name, _scope};}
@@ -104,6 +108,7 @@ struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCounted
 
     using CollectionObserverCallback = std::function<void(C4CollectionObserver*)>;
     using DocumentObserverCallback = std::function<void(C4DocumentObserver*,
+                                                        C4Collection*,
                                                         slice docID,
                                                         C4SequenceNumber)>;
 

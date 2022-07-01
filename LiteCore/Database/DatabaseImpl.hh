@@ -83,6 +83,7 @@ namespace litecore {
 
         // C4Database API:
 
+        void checkOpen() const override { _dataFile->checkOpen(); }
         void close() override;
         void closeAndDeleteFile() override;
         alloc_slice getPath() const override               {return filePath();}
@@ -122,6 +123,7 @@ namespace litecore {
         virtual string databaseName() const override                    {return _name;}
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
+        virtual void collectionRemoved(const std::string& keyStoreName) override;
         
         C4DatabaseTag getDatabaseTag() const {
             return (C4DatabaseTag)_dataFile->databaseTag();

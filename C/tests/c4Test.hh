@@ -224,6 +224,7 @@ public:
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
+    static C4Collection* requireCollection(C4Database* db, C4CollectionSpec spec = kC4DefaultCollectionSpec);
 
     void closeDB();
     void reopenDB();
@@ -237,11 +238,19 @@ public:
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
+    static void createRev(C4Collection *collection, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static std::string createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
     static std::string createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID,
                                     C4Slice body, C4RevisionFlags flags =0);
     static std::string createNewRev(C4Database *db, C4Slice docID,
                                     C4Slice body, C4RevisionFlags flags =0);
+
+    static void createConflictingRev(C4Collection *collection,
+                                     C4Slice docID,
+                                     C4Slice parentRevID,
+                                     C4Slice newRevID,
+                                     C4Slice body =kFleeceBody,
+                                     C4RevisionFlags flags =0);
 
     static void createConflictingRev(C4Database *db,
                                      C4Slice docID,

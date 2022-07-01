@@ -228,8 +228,8 @@ void c4stream_closeWriter(C4WriteStream* stream) noexcept {
 #pragma mark - COLLECTION:
 
 
-C4Collection* c4db_getDefaultCollection(C4Database *db) noexcept {
-    return db->getDefaultCollection();
+C4Collection* c4db_getDefaultCollection(C4Database *db, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<C4Collection *>(outError, [&] { return db->getDefaultCollection(); });
 }
 
 bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {
@@ -1263,20 +1263,20 @@ C4DatabaseObserver* c4dbobs_createOnCollection(C4Collection* coll,
 }
 
 
-uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
-                            C4DatabaseChange outChanges[],
-                            uint32_t maxChanges,
-                            bool *outExternal) noexcept
+C4CollectionObservation c4dbobs_getChanges(C4DatabaseObserver *obs,
+                                           C4DatabaseChange outChanges[],
+                                           uint32_t maxChanges) noexcept
 {
     static_assert(sizeof(C4DatabaseChange) == sizeof(C4DatabaseObserver::Change),
                   "C4DatabaseChange doesn't match C4DatabaseObserver::Change");
-    return tryCatch<uint32_t>(nullptr, [&]{
+    return tryCatch<C4CollectionObservation>(nullptr, [&]{
         memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
         return obs->getChanges((C4DatabaseObserver::Change*)outChanges,
-                               maxChanges, outExternal);
+                               maxChanges);
         // This is slightly sketchy because C4DatabaseObserver::Change contains alloc_slices, whereas
         // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
         // temporarily leaked, since the alloc_slice destructors won't be called.
+        // The same situation applies to the collection spec entries.
         // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
         // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
         // destructed and the backing store's ref-count goes back to what it was originally.
@@ -1313,8 +1313,8 @@ C4DocumentObserver* c4docobs_createWithCollection(C4Collection *coll,
                                                   void* C4NULLABLE context) noexcept
 {
     return tryCatch<unique_ptr<C4DocumentObserver>>(nullptr, [&]{
-        auto fn = [=](C4DocumentObserver *obs, fleece::slice docID, C4SequenceNumber seq) {
-            callback(obs, docID, seq, context);
+        auto fn = [=](C4DocumentObserver *obs, C4Collection* collection, fleece::slice docID, C4SequenceNumber seq) {
+            callback(obs, collection, docID, seq, context);
         };
         return C4DocumentObserver::create(coll, docID, fn);
     }).release();

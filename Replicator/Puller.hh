@@ -41,6 +41,10 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev NONNULL);
 
+        bool passive(unsigned collectionIndex =0) const override {
+            return _options->pullOf(collectionIndex) <= kC4Passive;
+        }
+
     protected:
         virtual void caughtUp() override        {enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp));}
         virtual void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {

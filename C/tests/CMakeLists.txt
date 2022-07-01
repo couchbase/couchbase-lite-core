@@ -44,6 +44,7 @@ add_executable(
     C4Tests
     c4AllDocsPerformanceTest.cc
     c4BlobStoreTest.cc
+    c4CollectionTest.cc
     c4DatabaseInternalTest.cc
     c4DatabaseTest.cc
     c4DocumentTest.cc

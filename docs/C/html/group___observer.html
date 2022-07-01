@@ -72,7 +72,10 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_collection_change.html">C4CollectionChange</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a change to a document in a collection, as returned from <a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges</a>.  <a href="struct_c4_collection_change.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents a change to a document in a collection, as returned from <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges</a>.  <a href="struct_c4_collection_change.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_collection_observation.html">C4CollectionObservation</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A struct to hold the results of a call to <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges</a>.  <a href="struct_c4_collection_observation.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Collection Observer</h2></td></tr>
@@ -91,21 +94,21 @@ Data Structures</h2></td></tr>
 <tr class="memitem:gaaaca66ee5bb91251cc6da9a134c0410c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#gaaaca66ee5bb91251cc6da9a134c0410c">c4dbobs_createOnCollection</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___observer.html#ga5c70a4dd1c29ad86859bf29b471b2a9f">C4CollectionObserverCallback</a> callback, void *context)</td></tr>
 <tr class="memdesc:gaaaca66ee5bb91251cc6da9a134c0410c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new collection observer, with a callback that will be invoked after one or more documents in the collection have changed.  <a href="group___observer.html#gaaaca66ee5bb91251cc6da9a134c0410c">More...</a><br /></td></tr>
 <tr class="separator:gaaaca66ee5bb91251cc6da9a134c0410c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga97feb69a385085d6611ba454a1bf79c4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges</a> (<a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> *observer, <a class="el" href="struct_c4_collection_change.html">C4CollectionChange</a> outChanges[], uint32_t maxChanges, bool *outExternal)</td></tr>
-<tr class="memdesc:ga97feb69a385085d6611ba454a1bf79c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identifies which documents have changed in the collection since the last time this function was called, or since the observer was created.  <a href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">More...</a><br /></td></tr>
-<tr class="separator:ga97feb69a385085d6611ba454a1bf79c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga69dff733bc5255726205352dee6b10c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_collection_observation.html">C4CollectionObservation</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges</a> (<a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> *observer, <a class="el" href="struct_c4_collection_change.html">C4CollectionChange</a> outChanges[], uint32_t maxChanges)</td></tr>
+<tr class="memdesc:ga69dff733bc5255726205352dee6b10c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identifies which documents have changed in the collection since the last time this function was called, or since the observer was created.  <a href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">More...</a><br /></td></tr>
+<tr class="separator:ga69dff733bc5255726205352dee6b10c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gadf7d028f0bdf5c7409bfe4c8fde84b89"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#gadf7d028f0bdf5c7409bfe4c8fde84b89">c4dbobs_releaseChanges</a> (<a class="el" href="struct_c4_collection_change.html">C4CollectionChange</a> changes[], uint32_t numChanges)</td></tr>
-<tr class="memdesc:gadf7d028f0bdf5c7409bfe4c8fde84b89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Releases the memory used by the <code><a class="el" href="struct_c4_collection_change.html" title="Represents a change to a document in a collection, as returned from c4dbobs_getChanges.">C4CollectionChange</a></code> structs (to hold the docID and revID strings.) This must be called after <a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges()</a>.  <a href="group___observer.html#gadf7d028f0bdf5c7409bfe4c8fde84b89">More...</a><br /></td></tr>
+<tr class="memdesc:gadf7d028f0bdf5c7409bfe4c8fde84b89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Releases the memory used by the <code><a class="el" href="struct_c4_collection_change.html" title="Represents a change to a document in a collection, as returned from c4dbobs_getChanges.">C4CollectionChange</a></code> structs (to hold the docID and revID strings.) This must be called after <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges()</a>.  <a href="group___observer.html#gadf7d028f0bdf5c7409bfe4c8fde84b89">More...</a><br /></td></tr>
 <tr class="separator:gadf7d028f0bdf5c7409bfe4c8fde84b89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Document Observer</h2></td></tr>
-<tr class="memitem:ga7dc3d2b9d33b69b50801df8deb73b774"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">C4DocumentObserverCallback</a>) (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *observer, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> sequence, void *context)</td></tr>
-<tr class="memdesc:ga7dc3d2b9d33b69b50801df8deb73b774"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback invoked by a document observer.  <a href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">More...</a><br /></td></tr>
-<tr class="separator:ga7dc3d2b9d33b69b50801df8deb73b774"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4e21e3ff9f1bcf18d594b3ebee1a5e80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga4e21e3ff9f1bcf18d594b3ebee1a5e80">c4docobs_create</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">C4DocumentObserverCallback</a> callback, void *context)</td></tr>
+<tr class="memitem:ga89ca8018d3641e08bc06b986aea8fae8"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">C4DocumentObserverCallback</a>) (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *observer, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> sequence, void *context)</td></tr>
+<tr class="memdesc:ga89ca8018d3641e08bc06b986aea8fae8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback invoked by a document observer.  <a href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">More...</a><br /></td></tr>
+<tr class="separator:ga89ca8018d3641e08bc06b986aea8fae8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e21e3ff9f1bcf18d594b3ebee1a5e80"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#ga4e21e3ff9f1bcf18d594b3ebee1a5e80">c4docobs_create</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">C4DocumentObserverCallback</a> callback, void *context)</td></tr>
 <tr class="memdesc:ga4e21e3ff9f1bcf18d594b3ebee1a5e80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new document observer, on a document in the database's default collection.  <a href="group___observer.html#ga4e21e3ff9f1bcf18d594b3ebee1a5e80">More...</a><br /></td></tr>
 <tr class="separator:ga4e21e3ff9f1bcf18d594b3ebee1a5e80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac76d4848f89ff2a2e04afee775c7c7a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#gaac76d4848f89ff2a2e04afee775c7c7a">c4docobs_createWithCollection</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">C4DocumentObserverCallback</a> callback, void *context)</td></tr>
+<tr class="memitem:gaac76d4848f89ff2a2e04afee775c7c7a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___observer.html#gaac76d4848f89ff2a2e04afee775c7c7a">c4docobs_createWithCollection</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">C4DocumentObserverCallback</a> callback, void *context)</td></tr>
 <tr class="memdesc:gaac76d4848f89ff2a2e04afee775c7c7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new document observer, with a callback that will be invoked when the document changes.  <a href="group___observer.html#gaac76d4848f89ff2a2e04afee775c7c7a">More...</a><br /></td></tr>
 <tr class="separator:gaac76d4848f89ff2a2e04afee775c7c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -196,14 +199,14 @@ Data Structures</h2></td></tr>
 
 </div>
 </div>
-<a id="ga7dc3d2b9d33b69b50801df8deb73b774"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7dc3d2b9d33b69b50801df8deb73b774">&#9670;&nbsp;</a></span>C4DocumentObserverCallback</h2>
+<a id="ga89ca8018d3641e08bc06b986aea8fae8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga89ca8018d3641e08bc06b986aea8fae8">&#9670;&nbsp;</a></span>C4DocumentObserverCallback</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* C4DocumentObserverCallback) (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *observer, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> sequence, void *context)</td>
+          <td class="memname">typedef void(* C4DocumentObserverCallback) (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *observer, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> sequence, void *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -328,14 +331,14 @@ Data Structures</h2></td></tr>
 
 </div>
 </div>
-<a id="ga97feb69a385085d6611ba454a1bf79c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga97feb69a385085d6611ba454a1bf79c4">&#9670;&nbsp;</a></span>c4dbobs_getChanges()</h2>
+<a id="ga69dff733bc5255726205352dee6b10c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga69dff733bc5255726205352dee6b10c6">&#9670;&nbsp;</a></span>c4dbobs_getChanges()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> uint32_t c4dbobs_getChanges </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_collection_observation.html">C4CollectionObservation</a> c4dbobs_getChanges </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> *&#160;</td>
           <td class="paramname"><em>observer</em>, </td>
@@ -350,13 +353,7 @@ Data Structures</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>maxChanges</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool *&#160;</td>
-          <td class="paramname"><em>outExternal</em>&#160;</td>
+          <td class="paramname"><em>maxChanges</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -375,11 +372,10 @@ Data Structures</h2></td></tr>
     <tr><td class="paramname">observer</td><td>The observer. </td></tr>
     <tr><td class="paramname">outChanges</td><td>A caller-provided buffer of structs into which changes will be written. </td></tr>
     <tr><td class="paramname">maxChanges</td><td>The maximum number of changes to return, i.e. the size of the caller's outChanges buffer. </td></tr>
-    <tr><td class="paramname">outExternal</td><td>Will be set to true if the changes were made by a different C4Database. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The number of changes written to <code>outChanges</code>. If this is less than <code>maxChanges</code>, the end has been reached and the observer is reset. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Common information about the changes contained in outChanges (number of changes, external vs non-external, and the relevant collection) </dd></dl>
 
 </div>
 </div>
@@ -409,11 +405,11 @@ Data Structures</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Releases the memory used by the <code><a class="el" href="struct_c4_collection_change.html" title="Represents a change to a document in a collection, as returned from c4dbobs_getChanges.">C4CollectionChange</a></code> structs (to hold the docID and revID strings.) This must be called after <a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges()</a>. </p>
+<p>Releases the memory used by the <code><a class="el" href="struct_c4_collection_change.html" title="Represents a change to a document in a collection, as returned from c4dbobs_getChanges.">C4CollectionChange</a></code> structs (to hold the docID and revID strings.) This must be called after <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges()</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">changes</td><td>The same array of changes that was passed to <a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges</a>. </td></tr>
-    <tr><td class="paramname">numChanges</td><td>The number of changes returned by <a class="el" href="group___observer.html#ga97feb69a385085d6611ba454a1bf79c4">c4dbobs_getChanges</a>, i.e. the number of valid items in <code>changes</code>. </td></tr>
+    <tr><td class="paramname">changes</td><td>The same array of changes that was passed to <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges</a>. </td></tr>
+    <tr><td class="paramname">numChanges</td><td>The number of changes returned by <a class="el" href="group___observer.html#ga69dff733bc5255726205352dee6b10c6">c4dbobs_getChanges</a>, i.e. the number of valid items in <code>changes</code>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -441,7 +437,7 @@ Data Structures</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">C4DocumentObserverCallback</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">C4DocumentObserverCallback</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -483,7 +479,7 @@ Data Structures</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="group___observer.html#ga7dc3d2b9d33b69b50801df8deb73b774">C4DocumentObserverCallback</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8">C4DocumentObserverCallback</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>

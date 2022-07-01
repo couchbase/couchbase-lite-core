@@ -97,9 +97,9 @@ C4API_BEGIN_DECLS
 /** Returns the default collection, whose name is "`_default`" (`kC4DefaultCollectionName`).
     This is the one collection that exists in every newly created database.
     When a pre-existing database is upgraded to support collections, all its documents are put
-    in the default collection.
-    @note  This function never returns NULL, unless the default collection has been deleted. */
-CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
+    in the default collection. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h.*/
+CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if the collection exists. */
 CBL_CORE_API bool c4db_hasCollection(C4Database *db,
@@ -108,14 +108,16 @@ CBL_CORE_API bool c4db_hasCollection(C4Database *db,
 /** Returns true if the named scope exists.  Note that _default will always return true. */
 CBL_CORE_API bool c4db_hasScope(C4Database *db, C4String name) C4API;
 
-/** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. */
+/** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
 CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
                                             C4CollectionSpec spec,
                                             C4Error* C4NULLABLE outError) C4API;
 
 /** Creates and returns an empty collection with the given name & scope.
     If the collection already exists, it just returns it.
-    If the scope doesn't exist, it is implicitly created. */
+    If the scope doesn't exist, it is implicitly created. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
 CBL_CORE_API C4Collection* C4NULLABLE c4db_createCollection(C4Database *db,
                                                C4CollectionSpec spec,
                                                C4Error* C4NULLABLE outError) C4API;

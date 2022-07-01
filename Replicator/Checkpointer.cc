@@ -363,7 +363,7 @@ namespace litecore { namespace repl {
 
 
     void Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback) {
-        if(_options->push < kC4OneShot) {
+        if(_options->pushOf() < kC4OneShot) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }
@@ -416,7 +416,7 @@ namespace litecore { namespace repl {
 
 
     bool Checkpointer::isDocumentPending(C4Database* db, slice docId) {
-        if(_options->push < kC4OneShot) {
+        if(_options->pushOf() < kC4OneShot) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }

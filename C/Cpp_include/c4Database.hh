@@ -98,6 +98,7 @@ public:
     /// You can pass a `CollectionSpec` parameter as simply a collection name slice, implying the
     /// default scope; or as `{collectionname, scopename}`.
     struct CollectionSpec : public C4CollectionSpec {
+        CollectionSpec()                             :C4CollectionSpec{kC4DefaultCollectionName, kC4DefaultScopeID} { }
         CollectionSpec(const C4CollectionSpec &spec) :C4CollectionSpec(spec) { }
         CollectionSpec(FLString name, FLString scope):C4CollectionSpec{name, scope} { }
         CollectionSpec(FLString name)                :C4CollectionSpec{name, kC4DefaultScopeID} { }
@@ -106,7 +107,7 @@ public:
     };
 
     /// Returns the default collection, whose name is "_default" (`kC4DefaultCollectionName`).
-    C4Collection* C4NULLABLE getDefaultCollection() const              {return _defaultCollection;}
+    C4Collection* C4NULLABLE getDefaultCollection() const;
 
     /// Returns true if a collection exists with the given name & scope.
     virtual bool hasCollection(CollectionSpec) const =0;
@@ -257,6 +258,8 @@ public:
 protected:
     C4Database(std::string name, std::string dir, const C4DatabaseConfig&);
     static bool deleteDatabaseFileAtPath(const std::string &dbPath, C4StorageEngine);
+    C4Collection* getDefaultCollectionSafe() const;     // Same as getDefaultCollection except throws an error when null
+    virtual void checkOpen() const = 0;
 
     std::string const           _name;                  // Database filename (w/o extension)
     std::string const           _parentDirectory;

@@ -88,7 +88,7 @@ namespace litecore {
 
 
         KeyStore& keyStore() const {
-            if (_usuallyFalse(!_keyStore))
+            if (_usuallyFalse(!isValid()))
                 failClosed();
             return *_keyStore;
         }
@@ -166,7 +166,7 @@ namespace litecore {
 
 
         DocumentFactory* documentFactory() const {
-            if (_usuallyFalse(!_documentFactory))
+            if (_usuallyFalse(!isValid()))
                 failClosed();
             return _documentFactory.get();
         }

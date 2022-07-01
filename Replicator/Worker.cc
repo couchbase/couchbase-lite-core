@@ -63,10 +63,20 @@ namespace litecore { namespace repl {
     Options::operator string() const {
         static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
         stringstream s;
-        if (push != kC4Disabled)
-            s << "Push=" << kModeNames[push] << ", ";
-        if (pull != kC4Disabled)
-            s << "Pull=" << kModeNames[pull] << ", ";
+        s << "{";
+        bool firstline = true;
+        for (auto& c : collectionOpts) {
+            if (!firstline) {
+                s << ",\n";
+            } else {
+                firstline = false;
+            }
+            s << "\"" << c.collectionPath.asString() << "\": {"
+            << "\"Push\": " << kModeNames[c.push] << ", "
+            << "\"Pull\": " << kModeNames[c.pull] << "}";
+        }
+        s << "}\n";
+
         s << "Options=";
         writeRedacted(properties, s);
         return s.str();

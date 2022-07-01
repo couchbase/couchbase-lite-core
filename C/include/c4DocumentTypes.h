@@ -126,6 +126,13 @@ typedef struct {
 typedef C4CollectionChange C4DatabaseChange;
 #endif
 
+/** A struct to hold the results of a call to \ref c4dbobs_getChanges */
+typedef struct {
+    uint32_t numChanges;
+    bool external;
+    C4Collection* collection;
+} C4CollectionObservation;
+
 /** @} */
 /** @} */
 

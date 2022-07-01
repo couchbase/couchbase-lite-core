@@ -149,15 +149,14 @@ public:
             }
 
             C4DatabaseChange changes[10];
-            uint32_t nDocs;
-            bool external;
-            while (0 < (nDocs = c4dbobs_getChanges(observer, changes, 10, &external))) {
-                REQUIRE(external);
-                for (auto i = 0; i < nDocs; ++i) {
+            C4CollectionObservation observation;
+            while (0 < (observation = c4dbobs_getChanges(observer, changes, 10)).numChanges) {
+                REQUIRE(observation.external);
+                for (auto i = 0; i < observation.numChanges; ++i) {
                     REQUIRE(memcmp(changes[i].docID.buf, "doc-", 4) == 0);
                     lastSequence = changes[i].sequence;
                 }
-                c4dbobs_releaseChanges(changes, nDocs);
+                c4dbobs_releaseChanges(changes, observation.numChanges);
             }
 
             std::this_thread::sleep_for(100ms);

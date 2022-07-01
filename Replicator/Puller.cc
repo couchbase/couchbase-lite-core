@@ -47,7 +47,6 @@ namespace litecore { namespace repl {
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
-        _passive = _options->pull <= kC4Passive;
         registerHandler("rev",              &Puller::handleRev);
         registerHandler("norev",            &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
@@ -68,7 +67,7 @@ namespace litecore { namespace repl {
         MessageBuilder msg("subChanges"_sl);
         if (sinceStr)
             msg["since"_sl] = sinceStr;
-        if (_options->pull == kC4Continuous)
+        if (_options->pullOf() == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
@@ -358,7 +357,7 @@ namespace litecore { namespace repl {
                 || (!_caughtUp && !passive())
                 || _pendingRevMessages > 0) {
             level = kC4Busy;
-        } else if (_options->pull == kC4Continuous || isOpenServer()) {
+        } else if (_options->pullOf() == kC4Continuous || isOpenServer()) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {
