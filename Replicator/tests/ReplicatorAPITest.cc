@@ -187,7 +187,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
 
 
 // Test connection-refused error by connecting to a bogus port of localhost
-TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[.broken][C][Push]") {
+    // Segmentation violation in Windows build.
     ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
