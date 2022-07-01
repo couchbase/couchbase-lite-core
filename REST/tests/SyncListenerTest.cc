@@ -62,8 +62,8 @@ public:
 
 };
 
-
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[.broken][Push][Listener][C]") {
+#ifndef _MSC_VER
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C]") {
     run();
 }
 
@@ -331,6 +331,6 @@ TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]")
     stop();
     waitForStatus(kC4Stopped);
 }
-
+#endif
 
 #endif
