@@ -290,8 +290,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
-        // TBD: get collection index from request
-        if (_options->pushOf() != kC4Disabled) {
+        auto collectionIn = request->intProperty("collection"_sl, kNotCollectionIndex);
+        CollectionIndex c = 0;
+        if (collectionIn != kNotCollectionIndex) {
+            c = (CollectionIndex)collectionIn;
+        } else {
+            warn("\"collection\" property is not present in the request; 0 is used");
+        }
+        if (_options->pushOf(c) != kC4Disabled) {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
         } else {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));

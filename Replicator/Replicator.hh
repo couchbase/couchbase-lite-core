@@ -121,7 +121,7 @@ namespace litecore { namespace repl {
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options->pullOf() >= kC4OneShot || _options->pushOf() >= kC4OneShot ? "Repl" : "repl";
+            return _options->isAllPassive ? "repl" : "Repl";
         }
 
         // BLIP ConnectionDelegate API:

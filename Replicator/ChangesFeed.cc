@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
-    ,_continuous(_options->pushOf() == kC4Continuous)
+    ,_continuous(_options->pushOf(0) == kC4Continuous) // TBD: replacing 0 with actual collection index.
     ,_skipDeleted(_options->skipDeleted())
     {
         filterByDocIDs(_options->docIDs());
@@ -244,6 +244,7 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
+            // TBD: checking _checkpointer != nullptr
             auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec());
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
@@ -337,7 +338,8 @@ namespace litecore { namespace repl {
         if (foreignAncestor && !_usingVersionVectors
                     && C4Document::getRevIDGeneration(foreignAncestor)
                         >= C4Document::getRevIDGeneration(doc->revID())) {
-            if (_options->pullOf() <= kC4Passive) {
+            // TBD: replacing 0 with actual collection index
+            if (_options->pullOf(0) <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);
