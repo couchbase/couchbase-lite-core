@@ -74,7 +74,7 @@ namespace litecore { namespace repl {
 
         /// Child workers call this on their parent when their status changes.
         void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
         }
 
         C4ReplicatorProgressLevel progressNotificationLevel() const {
@@ -198,7 +198,8 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Worker *task, Status) { }
+        virtual void _childChangedStatus(Retained<Worker> task, Status) { 
+        }
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);

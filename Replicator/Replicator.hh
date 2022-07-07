@@ -139,7 +139,7 @@ namespace litecore { namespace repl {
 
         // Worker method overrides:
         virtual ActivityLevel computeActivityLevel() const override;
-        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
+        virtual void _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
     private:
         void _onHTTPResponse(int status, websocket::Headers headers);

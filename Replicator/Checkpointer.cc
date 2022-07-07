@@ -234,7 +234,7 @@ namespace litecore { namespace repl {
         // Existing documents of are considered in the default collection
         // and they should keep the same docID or current checkpointers would be
         // inaccessible.
-        if (!(_collection->getSpec() == kC4DefaultCollectionSpec)) {
+        if (_collection != nullptr && !(_collection->getSpec() == kC4DefaultCollectionSpec)) {
             enc.writeString(_collection->getSpec().name);
             enc.writeString(_collection->getSpec().scope);
         }

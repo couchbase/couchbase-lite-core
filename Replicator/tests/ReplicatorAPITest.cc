@@ -187,8 +187,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
 
 
 // Test connection-refused error by connecting to a bogus port of localhost
-TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[.broken][C][Push]") {
-    // Segmentation violation in Windows build.
+TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
@@ -376,7 +375,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[.broken][C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -436,7 +435,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[.broken][C][Push]"
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[.broken][C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
