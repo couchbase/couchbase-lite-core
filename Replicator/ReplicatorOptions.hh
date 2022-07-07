@@ -319,13 +319,10 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::trimDisabledCollections() {
-        auto iter = collectionOpts.begin();
-        while (iter != collectionOpts.end()) {
-            if (iter->push == kC4Disabled && iter->pull == kC4Disabled) {
-                // Removing collection whose push and pull are both disabled.
-                iter = collectionOpts.erase(iter);
-            } else {
-                iter++;
+        for (size_t i = collectionOpts.size(); i-- > 0; ) {
+            if (collectionOpts[i].push == kC4Disabled
+                && collectionOpts[i].pull == kC4Disabled) {
+                collectionOpts.erase(collectionOpts.begin() + i);
             }
         }
 

@@ -325,6 +325,7 @@ namespace litecore { namespace repl {
     }
 
     void Replicator::updatePushStatus(CollectionIndex i, const Status& status) {
+        // Status::level
         if (status.level >= _pushStatus.level) {
             _pushStatusV[i].level = status.level;
             _pushStatus.level = status.level;
@@ -340,19 +341,22 @@ namespace litecore { namespace repl {
             }
         }
 
+        // Status::progress
         auto delta = status.progress - _pushStatusV[i].progress;
         _pushStatusV[i].progress = status.progress;
         _pushStatus.progress += delta;
-        if (_pushStatusV[i].error.code == 0) {
-            _pushStatusV[i].error = status.error;
-        }
 
+        // Status::error
+        _pushStatusV[i].error = status.error;
         if (_pushStatus.error.code == 0) {
+            // overall error moves from 0 to non-0.
+            // TBD: how to not lose still more severe error?
             _pushStatus.error = status.error;
         }
     }
 
     void Replicator::updatePullStatus(CollectionIndex i, const Status& status) {
+        // Status::level
         if (status.level >= _pullStatus.level) {
             _pullStatusV[i].level = status.level;
             _pullStatus.level = status.level;
@@ -371,14 +375,17 @@ namespace litecore { namespace repl {
         if (status.level > _pullStatus.level) {
             _pullStatus.level = status.level;
         }
+
+        // Status::progress
         auto delta = status.progress - _pullStatusV[i].progress;
         _pullStatusV[i].progress = status.progress;
         _pullStatus.progress += delta;
-        if (_pullStatusV[i].error.code == 0) {
-            _pullStatusV[i].error = status.error;
-        }
 
+        // Status::error
+        _pullStatusV[i].error = status.error;
         if (_pullStatus.error.code == 0) {
+            // overall error moves from 0 to non-0.
+            // TBD: how to not lose still more severe error?
             _pullStatus.error = status.error;
         }
     }

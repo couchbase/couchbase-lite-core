@@ -496,8 +496,10 @@ namespace litecore {
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                // TBD: replacing nullptr with good C4Collection*
-                checkpointer.emplace(repl->_options, repl->URL(), nullptr);
+                // TBD: to adjust with the new API whereby the caller needs to provide the collection spec
+                C4Collection* collection = repl->_database->getCollection(kC4DefaultCollectionSpec);
+                Assert(collection != nullptr);
+                checkpointer.emplace(repl->_options, repl->URL(), collection);
                 database = repl->_database;
             }
 
