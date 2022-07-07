@@ -31,8 +31,8 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
-    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
-    :Worker(replicator, "RevFinder")
+    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate, CollectionIndex coll)
+    :Worker(replicator, "RevFinder", coll)
     ,_delegate(delegate)
     {
         _mustBeProposed = passive() && _options->noIncomingConflicts()
@@ -223,7 +223,8 @@ namespace litecore::repl {
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode));
+                revoked.emplace_back(new RevToInsert(docID, revID, mode,
+                    replicator()->collections()[collectionIndex()]->getSpec()));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
@@ -233,8 +234,8 @@ namespace litecore::repl {
             _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
-        vector<alloc_slice> ancestors = _db->useLocked()->getDefaultCollection()
-                                                        ->findDocAncestors(
+        auto collection = replicator()->collections()[collectionIndex()];
+        vector<alloc_slice> ancestors = _db->useCollection(collection)->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
                                                 !_options->disableDeltaSupport(),  // requireBodies
@@ -287,7 +288,8 @@ namespace litecore::repl {
                         auto repl = replicatorIfAny();
                         if(repl) {
                             repl->docRemoteAncestorChanged(alloc_slice(docID),
-                                                                   alloc_slice(revID));
+                                                           alloc_slice(revID),
+                                                           collectionIndex());
                         } else {
                             Warn("findRevs no longer has a replicator reference (replicator stopped?), "
                                  "ignoring docRemoteAncestorChange callback");

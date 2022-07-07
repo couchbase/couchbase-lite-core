@@ -101,23 +101,27 @@ namespace litecore { namespace repl {
         /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
         std::optional<bool> isDocumentPending(slice docID);
 
-        Checkpointer& checkpointer()            {return _checkpointer;}
+        Checkpointer& checkpointer(CollectionIndex coll =0)  {return *_checkpointer[coll];}
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
             enqueue(FUNCTION_TO_QUEUE(Replicator::_onBlobProgress), progress);
         }
         
-        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
+        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex);
 
         Retained<Replicator> replicatorIfAny() override         {return this;}
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
+        
+        const std::vector<Retained<C4Collection>>& collections() const {
+            return _collections;
+        }
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options->pullOf() >= kC4OneShot || _options->pushOf() >= kC4OneShot ? "Repl" : "repl";
+            return _options->isAllPassive ? "repl" : "Repl";
         }
 
         // BLIP ConnectionDelegate API:
@@ -135,12 +139,7 @@ namespace litecore { namespace repl {
 
         // Worker method overrides:
         virtual ActivityLevel computeActivityLevel() const override;
-        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
-
-        bool passive(unsigned collectionIndex =0) const override {
-            return _options->pullOf(collectionIndex) <= kC4Passive
-                && _options->pushOf(collectionIndex) <= kC4Passive;
-        }
+        virtual void _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
     private:
         void _onHTTPResponse(int status, websocket::Headers headers);
@@ -153,15 +152,15 @@ namespace litecore { namespace repl {
         void _stop();
         void _disconnect(websocket::CloseCode closeCode, slice message);
         void _findExistingConflicts();        
-        bool getLocalCheckpoint(bool reset);
-        void getRemoteCheckpoint(bool refresh);
-        void startReplicating();
+        bool getLocalCheckpoint(bool reset, CollectionIndex);
+        void getRemoteCheckpoint(bool refresh, CollectionIndex);
+        void startReplicating(CollectionIndex);
         void reportStatus();
 
         void updateCheckpoint();
-        void saveCheckpoint(alloc_slice json)       {enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), json);}
-        void _saveCheckpoint(alloc_slice json);
-        void saveCheckpointNow();
+        void saveCheckpoint(CollectionIndex coll, alloc_slice json)       {enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), coll, json);}
+        void _saveCheckpoint(CollectionIndex, alloc_slice json);
+        void saveCheckpointNow(CollectionIndex);
 
         void notifyEndedDocuments(int gen =actor::AnyGen);
         void _onBlobProgress(BlobProgress);
@@ -174,29 +173,36 @@ namespace litecore { namespace repl {
         void returnForbidden(Retained<blip::MessageIn>);
         slice getPeerCheckpointDocID(blip::MessageIn* request, const char *whatFor) const;
 
+        string statusVString() const;
+        void updatePushStatus(CollectionIndex i, const Status& status);
+        void updatePullStatus(CollectionIndex i, const Status& status);
+
         // Member variables:
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
         
         Delegate*         _delegate;                   // Delegate whom I report progress/errors to
-        Retained<Pusher>  _pusher;                     // Object that manages outgoing revs
-        Retained<Puller>  _puller;                     // Object that manages incoming revs
+        std::vector<Retained<Pusher>> _pushers;
+        std::vector<Retained<Puller>> _pullers;
         blip::Connection::State _connectionState;      // Current BLIP connection state
 
         Status            _pushStatus {};              // Current status of Pusher
         Status            _pullStatus {};              // Current status of Puller
+        std::vector<Status> _pushStatusV;
+        std::vector<Status> _pullStatusV;
         fleece::Stopwatch _sinceDelegateCall;          // Time I last sent progress to the delegate
         ActivityLevel     _lastDelegateCallLevel {};   // Activity level I last reported to delegate
         bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
         ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
 
-        Checkpointer      _checkpointer;               // Object that manages checkpoints
-        bool              _hadLocalCheckpoint {};      // True if local checkpoint pre-existed
-        bool              _remoteCheckpointRequested{};// True while "getCheckpoint" request pending
-        bool              _remoteCheckpointReceived {};// True if I got a "getCheckpoint" response
-        alloc_slice       _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
-        alloc_slice       _remoteCheckpointDocID;      // Checkpoint docID to use with peer
-        alloc_slice       _remoteCheckpointRevID;      // Latest revID of remote checkpoint
+        vector<unique_ptr<Checkpointer>> _checkpointer;   // Object that manages checkpoints
+        vector<bool>        _hadLocalCheckpoint;         // True if local checkpoint pre-existed
+        vector<bool>        _remoteCheckpointRequested;  // True while "getCheckpoint" request pending
+        vector<bool>        _remoteCheckpointReceived;   // True if I got a "getCheckpoint" response
+        vector<alloc_slice> _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
+        vector<alloc_slice> _remoteCheckpointDocID;      // Checkpoint docID to use with peer
+        vector<alloc_slice> _remoteCheckpointRevID;      // Latest revID of remote checkpoint
+        std::vector<Retained<C4Collection>> _collections;
     };
 
 } }

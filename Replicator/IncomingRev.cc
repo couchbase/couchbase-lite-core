@@ -15,6 +15,7 @@
 #include "DBAccess.hh"
 #include "PropertyEncryption.hh"
 #include "Increment.hh"
+#include "Replicator.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
@@ -35,7 +36,7 @@ namespace litecore { namespace repl {
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
 
     IncomingRev::IncomingRev(Puller *puller)
-    :Worker(puller, "inc")
+    :Worker(puller, "inc", puller->collectionIndex())
     ,_puller(puller)
     {
         _importance = false;
@@ -70,7 +71,8 @@ namespace litecore { namespace repl {
                                _revMessage->property("history"_sl),
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
-                                   || _options->noIncomingConflicts());
+                                   || _options->noIncomingConflicts(),
+                               replicator()->collections()[collectionIndex()]->getSpec());
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
         _remoteSequence = RemoteSequence(sequenceStr);

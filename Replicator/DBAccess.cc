@@ -94,6 +94,11 @@ namespace litecore { namespace repl {
     }
 
 
+    UseCollection DBAccess::useCollection(C4Collection* coll) {
+        return UseCollection(*this, coll);
+    }
+
+
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
         if (_usingVersionVectors) {
@@ -145,14 +150,21 @@ namespace litecore { namespace repl {
         }
     }
 
-    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(bool orderByID) {
+    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Collection* coll) {
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeBodies;
         options.flags &= ~kC4IncludeNonConflicted;
         options.flags |= kC4IncludeDeleted;
         if (!orderByID)
             options.flags |= kC4Unsorted;
-        return make_unique<C4DocEnumerator>(useLocked(), options);
+        if (coll == nullptr) {
+            return make_unique<C4DocEnumerator>(useLocked(), options);
+        } else {
+            return useLocked<unique_ptr<C4DocEnumerator>>([&](const Retained<C4Database>& db) {
+                DebugAssert(db.get() == coll->getDatabase());
+                return make_unique<C4DocEnumerator>(coll, options);
+            });
+        }
     }
 
 
@@ -420,14 +432,20 @@ namespace litecore { namespace repl {
             try {
                 C4Database::Transaction transaction(idb);
                 for (ReplicatedRev *rev : *revs) {
-                    logDebug("Marking rev '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
+                    C4CollectionSpec coll = rev->collectionSpec;
+                    C4Collection* collection = idb->getCollection(coll);
+                    if (collection == nullptr) {
+                        // TBD: handle error.
+                    }
+                    logDebug("Marking rev '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
+                             SPLAT(coll.scope), SPLAT(coll.name),
                              SPLAT(rev->docID), SPLAT(rev->revID), static_cast<uint64_t>(rev->sequence), remoteDBID());
                     try {
-                        idb->getDefaultCollection()
-                          ->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());
+                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);
-                        warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
+                        warn("Unable to mark '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
+                             SPLAT(coll.scope), SPLAT(coll.name),
                              SPLAT(rev->docID), SPLAT(rev->revID), (uint64_t)rev->sequence,
                              error.domain, error.code);
                     }

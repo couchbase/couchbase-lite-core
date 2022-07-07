@@ -16,6 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Message.hh"
 #include "Error.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
 #include <functional>
@@ -64,7 +65,7 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        virtual bool passive(unsigned collectionIndex =0) const {return false;}
+        virtual bool passive() const {return false;}
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
         void connectionClosed() {
@@ -73,12 +74,14 @@ namespace litecore { namespace repl {
 
         /// Child workers call this on their parent when their status changes.
         void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
         }
 
         C4ReplicatorProgressLevel progressNotificationLevel() const {
             return _options->progressLevel;
         }
+
+        CollectionIndex collectionIndex() const         {return _collectionIndex;}
 
 #if !DEBUG
     protected:
@@ -100,10 +103,11 @@ namespace litecore { namespace repl {
                Worker *parent,
                const Options* options NONNULL,
                std::shared_ptr<DBAccess> db,
-               const char *namePrefix NONNULL);
+               const char *namePrefix NONNULL,
+               CollectionIndex);
 
         /// Simplified constructor. Gets the other parameters from the parent object.
-        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
+        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL, CollectionIndex);
 
         virtual ~Worker();
 
@@ -128,8 +132,15 @@ namespace litecore { namespace repl {
         bool isOpenServer() const               {return _connection &&
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
-        bool isContinuous() const               {return _options->pushOf() == kC4Continuous
-                                                     || _options->pullOf() == kC4Continuous;}
+        bool isContinuous() const               {
+            auto collIndex = collectionIndex();
+            if (collIndex == kNotCollectionIndex) {
+                //TBD: this is a Replicator. what should it be?
+                collIndex = 0;
+            }
+            return _options->pushOf(collIndex) == kC4Continuous
+                || _options->pullOf(collIndex) == kC4Continuous;
+        }
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
         virtual void _connectionClosed() {
@@ -187,7 +198,8 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Worker *task, Status) { }
+        virtual void _childChangedStatus(Retained<Worker> task, Status) { 
+        }
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);
@@ -212,6 +224,7 @@ namespace litecore { namespace repl {
         int                         _pendingResponseCount {0};  // # of responses I'm awaiting
         Status                      _status {kC4Idle};          // My status
         bool                        _statusChanged {false};     // Status changed during this event
+        const CollectionIndex       _collectionIndex;
     };
 
 } }

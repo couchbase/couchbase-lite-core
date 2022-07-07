@@ -40,8 +40,8 @@ namespace litecore { namespace repl {
         void revisionProvisionallyInserted();
         void revisionInserted();
 
-        bool passive(unsigned collectionIndex =0) const override {
-            return _options->pullOf(collectionIndex) <= kC4Passive;
+        bool passive() const override {
+            return _options->pullOf(collectionIndex()) <= kC4Passive;
         }
 
     protected:

@@ -67,8 +67,11 @@ namespace litecore { namespace repl {
         virtual void trim() =0;
 
     protected:
-        ReplicatedRev(slice docID_, slice revID_, C4SequenceNumber sequence_ ={})
-        :docID(alloc_slice::nullPaddedString(docID_))
+        ReplicatedRev(C4CollectionSpec collSpec,
+                      slice docID_, slice revID_, C4SequenceNumber sequence_ ={})
+        :collectionName(collSpec.name)
+        ,scopeName(collSpec.scope)
+        ,docID(alloc_slice::nullPaddedString(docID_))
         ,revID(alloc_slice::nullPaddedString(revID_))
         ,sequence(sequence_)
         { }
