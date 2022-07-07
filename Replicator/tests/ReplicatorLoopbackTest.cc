@@ -883,7 +883,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[.broken][Pull]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
     fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey("filter"_sl);
