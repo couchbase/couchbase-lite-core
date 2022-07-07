@@ -339,9 +339,17 @@ namespace litecore { namespace repl {
                 _pushStatus.level = it->level;
             }
         }
+
         auto delta = status.progress - _pushStatusV[i].progress;
         _pushStatusV[i].progress = status.progress;
         _pushStatus.progress += delta;
+        if (_pushStatusV[i].error.code == 0) {
+            _pushStatusV[i].error = status.error;
+        }
+
+        if (_pushStatus.error.code == 0) {
+            _pushStatus.error = status.error;
+        }
     }
 
     void Replicator::updatePullStatus(CollectionIndex i, const Status& status) {
@@ -366,6 +374,13 @@ namespace litecore { namespace repl {
         auto delta = status.progress - _pullStatusV[i].progress;
         _pullStatusV[i].progress = status.progress;
         _pullStatus.progress += delta;
+        if (_pullStatusV[i].error.code == 0) {
+            _pullStatusV[i].error = status.error;
+        }
+
+        if (_pullStatus.error.code == 0) {
+            _pullStatus.error = status.error;
+        }
     }
 
     // The status of one of the actors has changed; update mine
