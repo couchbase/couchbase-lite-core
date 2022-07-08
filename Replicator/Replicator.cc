@@ -793,13 +793,18 @@ namespace litecore { namespace repl {
         if (_getCollectionsRequested)
             return;     // already in progress
         
+        if (_connectionState != Connection::kConnected)
+            return;         // Not ready yet; Will be called again from _onConnect.
+        
         for (int i = 0; i < _collections.size(); i++) {
             if (!_remoteCheckpointDocID[i])
                 _remoteCheckpointDocID[i] = _checkpointer[i]->initialCheckpointID();
             
-            // Note: is there a case that _remoteCheckpointDocID[i] is nullslice?
-            if (!_remoteCheckpointDocID[i] || _connectionState != Connection::kConnected)
-                return;     // Not ready yet; Will be called again from _onConnect.
+            // Note:
+            // This check is copied from getRemoteCheckpoint().
+            // Is there a case that _remoteCheckpointDocID[i] is nullslice?
+            if (!_remoteCheckpointDocID[i])
+                return;     // Not ready yet.
         }
         
         logVerbose("Requesting get collections");
@@ -815,10 +820,8 @@ namespace litecore { namespace repl {
         enc.endArray();
         enc.writeKey("collections"_sl);
         enc.beginArray();
-        for (auto it = _collections.begin(); it != _collections.end(); ++it) {
-            auto spec = it->get()->getSpec();
-            auto collPath = Options::collectionSpecToPath(spec);
-            enc.writeString(collPath);
+        for (int i = 0; i < _collections.size(); i++) {
+            enc.writeString(_options->collectionOpts[i].collectionPath);
         }
         enc.endArray();
         enc.endDict();
@@ -852,8 +855,7 @@ namespace litecore { namespace repl {
                 // Validate and read each checkpoints:
                 vector<Checkpoint> remoteCheckpoints(_collections.size());
                 for (int i = 0; i < _collections.size(); i++) {
-                    auto spec = _collections[i]->getSpec();
-                    auto collPath = Options::collectionSpecToPath(spec);
+                    auto collPath = _options->collectionOpts[i].collectionPath;
                     
                     Dict dict = checkpointArray[i].asDict();
                     if (!dict) {
@@ -1126,10 +1128,17 @@ namespace litecore { namespace repl {
             return;
         }
         
-        unordered_set<C4Database::CollectionSpec> specs;
-        for (auto &coll : _collections) {
-            specs.insert(coll->getSpec());
+        unordered_map<C4Database::CollectionSpec, C4Collection*> passiveCollections;
+        for (int i = 0; i < _collections.size(); i++) {
+            if (_options->pushOf(i) == kC4Passive || _options->pullOf(i) == kC4Passive) {
+                C4Collection* coll = _collections[i];
+                passiveCollections.insert({coll->getSpec(), coll});
+            }
         }
+        
+        Assert(passiveCollections.size() > 0);
+        
+        _sessionCollections.clear();
         
         MessageBuilder response(request);
         auto &enc = response.jsonBody();
@@ -1143,7 +1152,11 @@ namespace litecore { namespace repl {
                     SPLAT(checkpointID), SPLAT(collectionPath));
             
             C4Database::CollectionSpec spec = Options::collectionPathToSpec(collectionPath);
-            if (specs.find(spec) == specs.end()) {
+            C4Collection* coll = passiveCollections[spec];
+            
+            if (!coll) {
+                logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found",
+                        SPLAT(checkpointID), SPLAT(collectionPath));
                 enc.writeNull();
                 continue;
             }
@@ -1162,6 +1175,7 @@ namespace litecore { namespace repl {
             
             if (status != 0) {
                 request->respondWithError({"HTTP"_sl, status});
+                _sessionCollections.clear();
                 return;
             }
             
@@ -1169,6 +1183,8 @@ namespace litecore { namespace repl {
             auto checkpoint = doc.root().asDict().mutableCopy();
             checkpoint.set("rev"_sl, revID);
             enc.writeValue(checkpoint);
+            
+            _sessionCollections.push_back(coll);
         }
         enc.endArray();
         request->respond(response);
