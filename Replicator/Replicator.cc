@@ -1128,13 +1128,16 @@ namespace litecore { namespace repl {
             return;
         }
         
+        if (_sessionCollections.size() > 0) {
+            request->respondWithError({"BLIP"_sl, 400, "getCollections is already settled for the replicator"_sl});
+            return;
+        }
+        
         unordered_map<C4Database::CollectionSpec, C4Collection*> collectionMap;
         for (int i = 0; i < _collections.size(); i++) {
             C4Collection* coll = _collections[i];
             collectionMap.insert({coll->getSpec(), coll});
         }
-        
-        _sessionCollections.clear();
         
         MessageBuilder response(request);
         auto &enc = response.jsonBody();
