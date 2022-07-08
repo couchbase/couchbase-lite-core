@@ -1128,15 +1128,11 @@ namespace litecore { namespace repl {
             return;
         }
         
-        unordered_map<C4Database::CollectionSpec, C4Collection*> passiveCollections;
+        unordered_map<C4Database::CollectionSpec, C4Collection*> collectionMap;
         for (int i = 0; i < _collections.size(); i++) {
-            if (_options->pushOf(i) == kC4Passive || _options->pullOf(i) == kC4Passive) {
-                C4Collection* coll = _collections[i];
-                passiveCollections.insert({coll->getSpec(), coll});
-            }
+            C4Collection* coll = _collections[i];
+            collectionMap.insert({coll->getSpec(), coll});
         }
-        
-        Assert(passiveCollections.size() > 0);
         
         _sessionCollections.clear();
         
@@ -1152,7 +1148,7 @@ namespace litecore { namespace repl {
                     SPLAT(checkpointID), SPLAT(collectionPath));
             
             C4Database::CollectionSpec spec = Options::collectionPathToSpec(collectionPath);
-            C4Collection* coll = passiveCollections[spec];
+            C4Collection* coll = collectionMap[spec];
             
             if (!coll) {
                 logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found",
