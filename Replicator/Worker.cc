@@ -20,6 +20,7 @@
 #include "fleece/PlatformCompat.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
+#include "DBAccess.hh"
 #include <sstream>
 
 #if defined(__clang__) && !defined(__ANDROID__)
@@ -212,6 +213,11 @@ namespace litecore { namespace repl {
     void Worker::onError(C4Error err) {
         _status.error = err;
         _statusChanged = true;
+    }
+
+    Retained<C4Collection> Worker::collection() {
+        DebugAssert(_collectionIndex != kNotCollectionIndex);
+        return replicator()->collections()[_collectionIndex];
     }
 
 

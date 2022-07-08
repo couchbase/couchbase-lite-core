@@ -83,6 +83,8 @@ namespace litecore::repl {
 
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
+        Assert(req->intProperty(kCollectionProperty, kNotCollectionIndex) == collectionIndex());
+
         try {
             slice reqType = req->property("Profile"_sl);
             bool proposed = (reqType == "proposeChanges"_sl);
@@ -234,8 +236,8 @@ namespace litecore::repl {
             _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
-        auto collection = replicator()->collection(collectionIndex());
-        vector<alloc_slice> ancestors = _db->useCollection(collection)->findDocAncestors(
+        auto coll = collection();
+        vector<alloc_slice> ancestors = _db->useCollection(coll)->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
                                                 !_options->disableDeltaSupport(),  // requireBodies
@@ -283,7 +285,7 @@ namespace litecore::repl {
                     // remote server, so I better make it so:
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
-                    _db->setDocRemoteAncestor(docID, revID);
+                    _db->setDocRemoteAncestor(coll, docID, revID);
                     if (!passive() && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
@@ -364,7 +366,8 @@ namespace litecore::repl {
             // Get the local doc's current revID/vector and flags:
             outCurrentRevID = nullslice;
             try {
-                if (Retained<C4Document> doc = _db->getDoc(docID, kDocGetMetadata); doc) {
+                auto coll = collection();
+                if (Retained<C4Document> doc = _db->useCollection(coll)->getDocument(docID, true, kDocGetMetadata); doc) {
                     flags = doc->flags();
                     outCurrentRevID = doc->getSelectedRevIDGlobalForm();
                 }

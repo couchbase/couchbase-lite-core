@@ -79,7 +79,7 @@ namespace litecore { namespace repl {
         alloc_slice getDocRemoteAncestor(C4Document *doc NONNULL);
         
         /** Updates the remote ancestor revision ID of a document, to an existing revision. */
-        void setDocRemoteAncestor(slice docID, slice revID);
+        void setDocRemoteAncestor(C4Collection* coll, slice docID, slice revID);
         
         /** Returns the document enumerator for all unresolved docs present in the DB */
         unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(bool orderByID, C4Collection*);

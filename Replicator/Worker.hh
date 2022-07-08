@@ -130,6 +130,8 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception &x) override;
 
+        fleece::Retained<C4Collection> collection();
+
 #pragma mark - BLIP:
 
         /// True if the WebSocket connection is open and acting as a client (active).

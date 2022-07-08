@@ -128,7 +128,7 @@ namespace litecore { namespace repl {
             return {};
     }
     
-    void DBAccess::setDocRemoteAncestor(slice docID, slice revID) {
+    void DBAccess::setDocRemoteAncestor(C4Collection* coll, slice docID, slice revID) {
         if (!_remoteDBID)
             return;
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
@@ -136,7 +136,7 @@ namespace litecore { namespace repl {
         try {
             useLocked([&](C4Database *db) {
                 C4Database::Transaction t(db);
-                Retained<C4Document> doc = db->getDocument(docID, true, kDocGetAll);
+                Retained<C4Document> doc = coll->getDocument(docID, true, kDocGetAll);
                 if (!doc)
                     error::_throw(error::NotFound);
                 doc->setRemoteAncestorRevID(_remoteDBID, revID);
