@@ -154,6 +154,7 @@ namespace litecore { namespace repl {
         void _findExistingConflicts();        
         bool getLocalCheckpoint(bool reset, CollectionIndex);
         void getRemoteCheckpoint(bool refresh, CollectionIndex);
+        void getCollections();
         void startReplicating(CollectionIndex);
         void reportStatus();
 
@@ -170,6 +171,7 @@ namespace litecore { namespace repl {
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
+        void handleGetCollections(Retained<blip::MessageIn>);
         void returnForbidden(Retained<blip::MessageIn>);
         slice getPeerCheckpointDocID(blip::MessageIn* request, const char *whatFor) const;
 
@@ -203,6 +205,8 @@ namespace litecore { namespace repl {
         vector<alloc_slice> _remoteCheckpointDocID;      // Checkpoint docID to use with peer
         vector<alloc_slice> _remoteCheckpointRevID;      // Latest revID of remote checkpoint
         std::vector<Retained<C4Collection>> _collections;
+        
+        bool                _getCollectionsRequested{};  // True while "getCollections" request pending
     };
 
 } }

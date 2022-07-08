@@ -49,6 +49,8 @@ namespace litecore { namespace repl {
         Checkpoint(fleece::slice json)                      {readJSON(json);}
 
         void readJSON(fleece::slice json);
+        
+        void readDict(fleece::Dict dict);
 
         fleece::alloc_slice toJSON() const;
 

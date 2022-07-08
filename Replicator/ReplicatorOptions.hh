@@ -189,7 +189,7 @@ namespace litecore { namespace repl {
             return ret;
         }
 
-        static C4CollectionSpec collectionPathToSpec(alloc_slice path) {
+        static C4CollectionSpec collectionPathToSpec(slice path) {
             const uint8_t* slash = path.findByte((uint8_t)'/');
             slice scope = kC4DefaultScopeID;
             slice name;

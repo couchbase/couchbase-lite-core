@@ -28,6 +28,7 @@
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
+#include "fleece/Mutable.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -155,6 +156,7 @@ namespace litecore { namespace repl {
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
+        registerHandler("getCollections",   &Replicator::handleGetCollections);
     }
 
 
@@ -783,6 +785,124 @@ namespace litecore { namespace repl {
             startReplicating(coll);
     }
 
+    // getCollections() will be called when the replicator starts (start() or _onConnect())
+    // when the _collections doesn't contain only the default collection. Otherwise,
+    // getRemoteCheckpoint() will be called so that the replicator could work with the
+    // pre-collection SG or CBL (P2P).
+    void Replicator::getCollections() {
+        if (_getCollectionsRequested)
+            return;     // already in progress
+        
+        for (int i = 0; i < _collections.size(); i++) {
+            if (!_remoteCheckpointDocID[i])
+                _remoteCheckpointDocID[i] = _checkpointer[i]->initialCheckpointID();
+            
+            // Note: is there a case that _remoteCheckpointDocID[i] is nullslice?
+            if (!_remoteCheckpointDocID[i] || _connectionState != Connection::kConnected)
+                return;     // Not ready yet; Will be called again from _onConnect.
+        }
+        
+        logVerbose("Requesting get collections");
+        
+        MessageBuilder msg("getCollections"_sl);
+        auto &enc = msg.jsonBody();
+        enc.beginDict();
+        enc.writeKey("checkpoint_ids"_sl);
+        enc.beginArray();
+        for (int i = 0; i < _collections.size(); i++) {
+            enc.writeString(_remoteCheckpointDocID[i]);
+        }
+        enc.endArray();
+        enc.writeKey("collections"_sl);
+        enc.beginArray();
+        for (auto it = _collections.begin(); it != _collections.end(); ++it) {
+            auto spec = it->get()->getSpec();
+            auto collPath = Options::collectionSpecToPath(spec);
+            enc.writeString(collPath);
+        }
+        enc.endArray();
+        enc.endDict();
+        
+        Signpost::begin(Signpost::blipSent);
+        sendRequest(msg, [this](MessageProgress progress) {
+            // ...after the checkpoint is received:
+            if (progress.state != MessageProgress::kComplete)
+                return;
+            Signpost::end(Signpost::blipSent);
+            MessageIn *response = progress.reply;
+            
+            if (response->isError()) {
+                return gotError(response);
+            } else {
+                alloc_slice json = response->body();
+                Doc root = Doc::fromJSON(json, nullptr);
+                if (!root) {
+                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
+                                                 "Unparseable checkpoints: %.*s", SPLAT(json));
+                    return gotError(error);
+                }
+                
+                Array checkpointArray = root.asArray();
+                if (checkpointArray.count() != _collections.size()) {
+                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
+                                                 "Invalid number of checkpoints: %.*s", SPLAT(json));
+                    return gotError(error);
+                }
+                
+                // Validate and read each checkpoints:
+                vector<Checkpoint> remoteCheckpoints(_collections.size());
+                for (int i = 0; i < _collections.size(); i++) {
+                    auto spec = _collections[i]->getSpec();
+                    auto collPath = Options::collectionSpecToPath(spec);
+                    
+                    Dict dict = checkpointArray[i].asDict();
+                    if (!dict) {
+                        auto error = C4Error::printf(LiteCoreDomain, kC4ErrorNotFound,
+                                                     "Collection '%.*s' is not found on the remote server",
+                                                     SPLAT(collPath));
+                        return gotError(error);
+                    }
+                    
+                    if (dict.empty()) {
+                        logInfo("No remote checkpoint '%.*s' for collection '%.*s'",
+                                SPLAT(_remoteCheckpointDocID[i]), SPLAT(collPath));
+                        _remoteCheckpointRevID[i].reset();
+                    } else {
+                        remoteCheckpoints[i].readDict(dict);
+                        _remoteCheckpointRevID[i] = dict["rev"].asString();
+                        logInfo("Received remote checkpoint (rev='%.*s') for collection '%.*s': %.*s",
+                                SPLAT(_remoteCheckpointRevID[i]), SPLAT(collPath), SPLAT(dict.toString()));
+                    }
+                }
+                
+                for (int i = 0; i < _collections.size(); i++) {
+                    _remoteCheckpointReceived[i] = true;
+                    
+                    if (_hadLocalCheckpoint[i]) {
+                        // Compare checkpoints, reset if mismatched:
+                        bool valid = _checkpointer[i]->validateWith(remoteCheckpoints[i]);
+                        if (!valid && _pushers[i])
+                            _pushers[i]->checkpointIsInvalid();
+
+                        // Now we have the checkpoints! Time to start replicating:
+                        startReplicating(i);
+                    }
+
+                    if (_checkpointJSONToSave[i])
+                        saveCheckpointNow(i);    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
+                }
+            }
+        });
+
+        _getCollectionsRequested = true;
+        
+        for (int i = 0; i < _collections.size(); i++) {
+            if (!_hadLocalCheckpoint[i]) {
+                startReplicating(i);
+            }
+        }
+    }
+
 
     void Replicator::_saveCheckpoint(CollectionIndex coll, alloc_slice json) {
         if (!connected())
@@ -977,6 +1097,80 @@ namespace litecore { namespace repl {
 
         MessageBuilder response(request);
         response["rev"_sl] = newRevID;
+        request->respond(response);
+    }
+
+
+    // Handles a "getCollections" request by looking up a peer checkpoint of each collection.
+    void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
+        auto root = request->JSONBody().asDict();
+        if (!root) {
+            request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no root"_sl});
+            return;
+        }
+        
+        auto checkpointIDs = root["checkpoint_ids"].asArray();
+        if (!checkpointIDs || checkpointIDs.empty()) {
+            request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no checkpoint_ids"_sl});
+            return;
+        }
+        
+        auto collections = root["collections"].asArray();
+        if (!collections || collections.empty()) {
+            request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no collections"_sl});
+            return;
+        }
+        
+        if (checkpointIDs.count() != collections.count()) {
+            request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: mismatched checkpoint_ids and collections"_sl});
+            return;
+        }
+        
+        unordered_set<C4Database::CollectionSpec> specs;
+        for (auto &coll : _collections) {
+            specs.insert(coll->getSpec());
+        }
+        
+        MessageBuilder response(request);
+        auto &enc = response.jsonBody();
+        enc.beginArray();
+        
+        for (int i = 0; i < checkpointIDs.count(); i++) {
+            auto checkpointID = checkpointIDs[i].asString();
+            auto collectionPath = collections[i].asString();
+            
+            logInfo("Request to get peer checkpoint '%.*s' for collection '%.*s'",
+                    SPLAT(checkpointID), SPLAT(collectionPath));
+            
+            C4Database::CollectionSpec spec = Options::collectionPathToSpec(collectionPath);
+            if (specs.find(spec) == specs.end()) {
+                enc.writeNull();
+                continue;
+            }
+            
+            alloc_slice body, revID;
+            int status = 0;
+            try {
+                if (!Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID)) {
+                    enc.writeValue(Dict::emptyDict());
+                    continue;
+                }
+            } catch (...) {
+                C4Error::warnCurrentException("Replicator::handleGetCollections");
+                status = 502;
+            }
+            
+            if (status != 0) {
+                request->respondWithError({"HTTP"_sl, status});
+                return;
+            }
+            
+            Doc doc(body);
+            auto checkpoint = doc.root().asDict().mutableCopy();
+            checkpoint.set("rev"_sl, revID);
+            enc.writeValue(checkpoint);
+        }
+        enc.endArray();
         request->respond(response);
     }
 

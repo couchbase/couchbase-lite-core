@@ -74,32 +74,44 @@ namespace litecore { namespace repl {
 
 
     void Checkpoint::readJSON(slice json) {
-        resetLocal();
-        _remote = {};
         if (json) {
             Doc root = Doc::fromJSON(json, nullptr);
-            if (!root) {
+            if (!root)
                 LogError(SyncLog, "Unparseable checkpoint: %.*s", SPLAT(json));
+            else {
+                readDict(root);
                 return;
             }
-            _remote = RemoteSequence(root["remote"_sl]);
+        }
+        resetLocal();
+        _remote = {};
+    }
+
+    void Checkpoint::readDict(Dict root) {
+        resetLocal();
+        _remote = {};
+        if (!root) {
+            LogError(SyncLog, "Invalid checkpoint dictionary");
+            return;
+        }
+        
+        _remote = RemoteSequence(root["remote"_sl]);
 
 #ifdef SPARSE_CHECKPOINTS
-            // New properties for sparse checkpoint:
-            Array pending = root["localCompleted"].asArray();
-            if (pending) {
-                for (Array::iterator i(pending); i; ++i) {
-                    auto first = C4SequenceNumber(i->asUnsigned());
-                    auto last = C4SequenceNumber((++i)->asUnsigned());
-                    if (last >= first)
-                        _completed.add(first, last + 1);
-                }
-            } else
-#endif
-            {
-                auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
-                _completed.add(0_seq, minSequence + 1);
+        // New properties for sparse checkpoint:
+        Array pending = root["localCompleted"].asArray();
+        if (pending) {
+            for (Array::iterator i(pending); i; ++i) {
+                auto first = C4SequenceNumber(i->asUnsigned());
+                auto last = C4SequenceNumber((++i)->asUnsigned());
+                if (last >= first)
+                    _completed.add(first, last + 1);
             }
+        } else
+#endif
+        {
+            auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
+            _completed.add(0_seq, minSequence + 1);
         }
     }
 
