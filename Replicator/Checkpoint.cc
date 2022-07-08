@@ -74,26 +74,22 @@ namespace litecore { namespace repl {
 
 
     void Checkpoint::readJSON(slice json) {
+        Doc root;
         if (json) {
-            Doc root = Doc::fromJSON(json, nullptr);
+            root = Doc::fromJSON(json, nullptr);
             if (!root)
                 LogError(SyncLog, "Unparseable checkpoint: %.*s", SPLAT(json));
-            else {
-                readDict(root);
-                return;
-            }
         }
-        resetLocal();
-        _remote = {};
+        readDict(root);
     }
+
 
     void Checkpoint::readDict(Dict root) {
         resetLocal();
         _remote = {};
-        if (!root) {
-            LogError(SyncLog, "Invalid checkpoint dictionary");
+        
+        if (!root)
             return;
-        }
         
         _remote = RemoteSequence(root["remote"_sl]);
 

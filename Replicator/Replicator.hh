@@ -206,7 +206,7 @@ namespace litecore { namespace repl {
         vector<alloc_slice> _remoteCheckpointRevID;      // Latest revID of remote checkpoint
         std::vector<Retained<C4Collection>> _collections;
         
-        bool                _getCollectionsRequested{};  // True while "getCollections" request pending
+        bool                _getCollectionsRequested {}; // True while "getCollections" request pending
     };
 
 } }
