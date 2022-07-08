@@ -382,6 +382,20 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
                 " FROM: [{AS: 'main'}, {AS: 'secondary', JOIN: 'CROSS'}]}")
           == "SELECT fl_result(fl_value(main.body, 'number1')), fl_result(fl_value(secondary.body, 'number2')) FROM kv_default AS "
              "main CROSS JOIN kv_default AS secondary");
+
+    // Result alias and property name are used in different scopes.
+    CHECK(parse("{'FROM':[{'AS':'coll','COLLECTION':'_'}],'WHAT':[['AS',['.x'],'label'],['.coll.label']]}")
+        == "SELECT fl_result(fl_value(coll.body, 'x')) AS label, fl_result(fl_value(coll.body, 'label')) "
+        "FROM kv_default AS coll");
+    // CBL-3040:
+    CHECK(parse(R"r({"WHERE":["AND",["=",[".machines.Type"],"machine"],["OR",["=",[".machines.Disabled"],false],[".machines.Disabled"]]],)r"
+        R"r("WHAT":[[".machines.Id"],["AS",[".machines.Label"],"Label2"],[".machines.ModelId"],["AS",[".models.Label2"],"ModelLabel"]],)r"
+        R"r("FROM":[{"AS":"machines"},{"AS":"models","ON":["=",[".models.Id"],[".machines.ModelId"]],"JOIN":"LEFT OUTER"}]})r")
+        == "SELECT fl_result(fl_value(machines.body, 'Id')), fl_result(fl_value(machines.body, 'Label')) AS Label2, "
+        "fl_result(fl_value(machines.body, 'ModelId')), fl_result(fl_value(models.body, 'Label2')) AS ModelLabel FROM kv_default AS machines "
+        "LEFT OUTER JOIN kv_default AS models ON (fl_value(models.body, 'Id') = fl_value(machines.body, 'ModelId')) "
+        "WHERE fl_value(machines.body, 'Type') = 'machine' AND (fl_value(machines.body, 'Disabled') = fl_bool(0) "
+        "OR fl_value(machines.body, 'Disabled'))");
 }
 
 
