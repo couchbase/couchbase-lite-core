@@ -154,6 +154,7 @@ namespace litecore { namespace repl {
         void _findExistingConflicts();        
         bool getLocalCheckpoint(bool reset, CollectionIndex);
         void getRemoteCheckpoint(bool refresh, CollectionIndex);
+        void getCollections();
         void startReplicating(CollectionIndex);
         void reportStatus();
 
@@ -170,6 +171,7 @@ namespace litecore { namespace repl {
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
+        void handleGetCollections(Retained<blip::MessageIn>);
         void returnForbidden(Retained<blip::MessageIn>);
         slice getPeerCheckpointDocID(blip::MessageIn* request, const char *whatFor) const;
 
@@ -195,14 +197,17 @@ namespace litecore { namespace repl {
         bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
         ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
 
-        vector<unique_ptr<Checkpointer>> _checkpointer;   // Object that manages checkpoints
-        vector<bool>        _hadLocalCheckpoint;         // True if local checkpoint pre-existed
-        vector<bool>        _remoteCheckpointRequested;  // True while "getCheckpoint" request pending
-        vector<bool>        _remoteCheckpointReceived;   // True if I got a "getCheckpoint" response
-        vector<alloc_slice> _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
-        vector<alloc_slice> _remoteCheckpointDocID;      // Checkpoint docID to use with peer
-        vector<alloc_slice> _remoteCheckpointRevID;      // Latest revID of remote checkpoint
-        std::vector<Retained<C4Collection>> _collections;
+        vector<unique_ptr<Checkpointer>> _checkpointer;     // Object that manages checkpoints
+        vector<bool>        _hadLocalCheckpoint;            // True if local checkpoint pre-existed
+        vector<bool>        _remoteCheckpointRequested;     // True while "getCheckpoint" request pending
+        vector<bool>        _remoteCheckpointReceived;      // True if I got a "getCheckpoint" response
+        vector<alloc_slice> _checkpointJSONToSave;          // JSON waiting to be saved to the checkpts
+        vector<alloc_slice> _remoteCheckpointDocID;         // Checkpoint docID to use with peer
+        vector<alloc_slice> _remoteCheckpointRevID;         // Latest revID of remote checkpoint
+        std::vector<Retained<C4Collection>> _collections;   // Configured collections.
+        std::vector<C4Collection*> _sessionCollections;     // Collections in the current session populated by handleGetCollections
+        
+        bool                _getCollectionsRequested {}; // True while "getCollections" request pending
     };
 
 } }
