@@ -891,6 +891,7 @@ namespace litecore { namespace repl {
         _getCollectionsRequested = true;
         
         for (int i = 0; i < _subRepls.size(); i++) {
+            _sessionCollections.push_back(_collections[i].get());
             if (!_subRepls[i].hadLocalCheckpoint) {
                 startReplicating(i);
             }

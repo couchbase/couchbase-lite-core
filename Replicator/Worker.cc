@@ -217,7 +217,7 @@ namespace litecore { namespace repl {
 
     Retained<C4Collection> Worker::collection() {
         DebugAssert(_collectionIndex != kNotCollectionIndex);
-        return replicator()->collections()[_collectionIndex];
+        return replicator()->sessionCollections()[_collectionIndex];
     }
 
 

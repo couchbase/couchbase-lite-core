@@ -115,6 +115,10 @@ namespace litecore { namespace repl {
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
         
+        const std::vector<C4Collection *>& sessionCollections() const {
+            return _sessionCollections;
+        }
+        
         C4Collection* collection(CollectionIndex i) const {
             Assert(i < _subRepls.size());
             return _subRepls[i].collection;

@@ -130,6 +130,8 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception &x) override;
 
+        /// Returns the collection that this worker is acting on.  Not valid for a worker
+        /// that is not associated with a single collection.
         fleece::Retained<C4Collection> collection();
 
 #pragma mark - BLIP:
