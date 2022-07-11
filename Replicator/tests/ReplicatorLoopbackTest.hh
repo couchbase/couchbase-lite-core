@@ -141,7 +141,7 @@ public:
         _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
 
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointer().checkpointID();
+        _checkpointID = _replClient->checkpointer(0).checkpointID();
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);
