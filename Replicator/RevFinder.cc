@@ -224,7 +224,7 @@ namespace litecore::repl {
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
                 revoked.emplace_back(new RevToInsert(docID, revID, mode,
-                    replicator()->collections()[collectionIndex()]->getSpec()));
+                    replicator()->collection(collectionIndex())->getSpec()));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
@@ -234,7 +234,7 @@ namespace litecore::repl {
             _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
-        auto collection = replicator()->collections()[collectionIndex()];
+        auto collection = replicator()->collection(collectionIndex());
         vector<alloc_slice> ancestors = _db->useCollection(collection)->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,

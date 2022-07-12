@@ -101,7 +101,7 @@ namespace litecore { namespace repl {
         /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
         std::optional<bool> isDocumentPending(slice docID);
 
-        Checkpointer& checkpointer(CollectionIndex coll =0)  {return *_checkpointer[coll];}
+        Checkpointer& checkpointer(CollectionIndex coll)  {return *_subRepls[coll].checkpointer;}
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
@@ -115,8 +115,9 @@ namespace litecore { namespace repl {
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
         
-        const std::vector<Retained<C4Collection>>& collections() const {
-            return _collections;
+        C4Collection* collection(CollectionIndex i) const {
+            Assert(i < _subRepls.size());
+            return _subRepls[i].collection;
         }
 
     protected:
@@ -181,32 +182,33 @@ namespace litecore { namespace repl {
 
         // Member variables:
 
+        struct SubReplicator {
+            Retained<Pusher>         pusher;
+            Retained<Puller>         puller;
+            Status                   pushStatus;   // Current status of Pusher
+            Status                   pullStatus;   // Current status of Puller
+            unique_ptr<Checkpointer> checkpointer; // Object that manages checkpoints
+            bool                     hadLocalCheckpoint {false}; // True if local checkpoint pre-existed
+            bool                     remoteCheckpointRequested {false}; // True while "getCheckpoint" request pending
+            bool                     remoteCheckpointReceived {false}; // True if I got a "getCheckpoint" response
+            alloc_slice              checkpointJSONToSave;  // JSON waiting to be saved to the checkpts
+            alloc_slice              remoteCheckpointDocID; // Checkpoint docID to use with peer
+            alloc_slice              remoteCheckpointRevID; // Latest revID of remote checkpoint
+            Retained<C4Collection>   collection;
+        };
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
         
         Delegate*         _delegate;                   // Delegate whom I report progress/errors to
-        std::vector<Retained<Pusher>> _pushers;
-        std::vector<Retained<Puller>> _pullers;
         blip::Connection::State _connectionState;      // Current BLIP connection state
 
         Status            _pushStatus {};              // Current status of Pusher
         Status            _pullStatus {};              // Current status of Puller
-        std::vector<Status> _pushStatusV;
-        std::vector<Status> _pullStatusV;
         fleece::Stopwatch _sinceDelegateCall;          // Time I last sent progress to the delegate
         ActivityLevel     _lastDelegateCallLevel {};   // Activity level I last reported to delegate
         bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
         ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
-
-        vector<unique_ptr<Checkpointer>> _checkpointer;     // Object that manages checkpoints
-        vector<bool>        _hadLocalCheckpoint;            // True if local checkpoint pre-existed
-        vector<bool>        _remoteCheckpointRequested;     // True while "getCheckpoint" request pending
-        vector<bool>        _remoteCheckpointReceived;      // True if I got a "getCheckpoint" response
-        vector<alloc_slice> _checkpointJSONToSave;          // JSON waiting to be saved to the checkpts
-        vector<alloc_slice> _remoteCheckpointDocID;         // Checkpoint docID to use with peer
-        vector<alloc_slice> _remoteCheckpointRevID;         // Latest revID of remote checkpoint
-        std::vector<Retained<C4Collection>> _collections;   // Configured collections.
-        std::vector<C4Collection*> _sessionCollections;     // Collections in the current session populated by handleGetCollections
-        
+        vector<SubReplicator> _subRepls;
+        std::vector<C4Collection*> _sessionCollections;  // Collections in the current session populated by handleGetCollections
         bool                _getCollectionsRequested {}; // True while "getCollections" request pending
     };
 
