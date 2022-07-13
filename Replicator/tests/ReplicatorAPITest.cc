@@ -604,7 +604,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
     CHECK_BEFORE(2s, c4repl_getStatus(_repl).level == kC4Connecting);
     
     c4repl_stop(_repl);
@@ -629,7 +629,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
     
     waitForStatus(kC4Offline);
     
@@ -664,7 +664,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
 
     waitForStatus(kC4Offline);
 

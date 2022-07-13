@@ -81,9 +81,6 @@ namespace litecore::repl {
         /** Returns true if the given rev matches the push filters. */
         virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
 
-        // True if replicator is passive
-        bool passive(unsigned collectionIndex =0) const;
-
     protected:
         std::string loggingClassName() const override;
         virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;

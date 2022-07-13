@@ -188,11 +188,11 @@ namespace litecore {
         }
 
         bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) const {
-            return PendingDocuments(this).isDocumentPending(docID, spec);
+            return PendingDocuments(this, spec).isDocumentPending(docID);
         }
 
         alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const {
-            return PendingDocuments(this).pendingDocumentIDs(spec);
+            return PendingDocuments(this, spec).pendingDocumentIDs();
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
@@ -485,7 +485,9 @@ namespace litecore {
 
         class PendingDocuments {
         public:
-            PendingDocuments(const C4ReplicatorImpl *repl) {
+            PendingDocuments(const C4ReplicatorImpl *repl, C4CollectionSpec spec)
+            : collectionSpec(spec)
+            {
                 // Lock the replicator and copy the necessary state now, so I don't have to lock while
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
@@ -496,25 +498,25 @@ namespace litecore {
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                // TBD: to adjust with the new API whereby the caller needs to provide the collection spec
-                C4Collection* collection = repl->_database->getCollection(kC4DefaultCollectionSpec);
-                Assert(collection != nullptr);
-                checkpointer.emplace(repl->_options, repl->URL(), collection);
+                C4Collection* collection = repl->_database->getCollection(collectionSpec);
+                if (collection != nullptr) {
+                    checkpointer.emplace(repl->_options, repl->URL(), collection);
+                }
                 database = repl->_database;
             }
 
-            alloc_slice pendingDocumentIDs(C4CollectionSpec spec) {
+            alloc_slice pendingDocumentIDs() {
                 Encoder enc;
                 enc.beginArray();
-                // TBD: account for spec
                 bool any = false;
                 auto callback = [&](const C4DocumentInfo &info) {
                     enc.writeString(info.docID);
                     any = true;
                 };
                 
-                if (!replicator || !replicator->pendingDocumentIDs(callback)) {
-                    checkpointer->pendingDocumentIDs(database, callback);
+                if (!replicator || !replicator->pendingDocumentIDs(collectionSpec, callback)) {
+                    if (checkpointer)
+                        checkpointer->pendingDocumentIDs(database, callback);
                 }
                 
                 if (!any)
@@ -523,10 +525,9 @@ namespace litecore {
                 return enc.finish();
             }
 
-            bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) {
-                // TBD: account for spec
+            bool isDocumentPending(C4Slice docID) {
                 if(replicator) {
-                    auto result = replicator->isDocumentPending(docID);
+                    auto result = replicator->isDocumentPending(docID, collectionSpec);
                     if(result.has_value()) {
                         return *result;
                     }
@@ -539,6 +540,7 @@ namespace litecore {
             Retained<Replicator> replicator;
             std::optional<Checkpointer> checkpointer;
             Retained<C4Database> database;
+            C4CollectionSpec     collectionSpec;
         };
 
 

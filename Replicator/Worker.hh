@@ -133,13 +133,21 @@ namespace litecore { namespace repl {
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
         bool isContinuous() const               {
+            if (!_options->isActive) {
+                return false;
+            }
             auto collIndex = collectionIndex();
             if (collIndex == kNotCollectionIndex) {
-                //TBD: this is a Replicator. what should it be?
-                collIndex = 0;
+                for (CollectionIndex i = 0; i < _options->collectionCount(); ++i) {
+                    if (_options->pushOf(i) == kC4Continuous) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return _options->pushOf(collIndex) == kC4Continuous
+                        || _options->pullOf(collIndex) == kC4Continuous;
             }
-            return _options->pushOf(collIndex) == kC4Continuous
-                || _options->pullOf(collIndex) == kC4Continuous;
         }
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
