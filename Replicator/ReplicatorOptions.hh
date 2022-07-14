@@ -13,6 +13,7 @@
 #pragma once
 #include "c4ReplicatorTypes.h"
 #include "c4Database.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
@@ -324,6 +325,11 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::sanitize() const {
+        if (collectionOpts.size() == 0) {
+            throw error(error::LiteCore, error::InvalidParameter,
+                        "Invalid replicator configuration: requiring at least one collection");
+        }
+
         for (size_t i = collectionOpts.size(); i-- > 0; ) {
             if (collectionOpts[i].push == kC4Disabled
                 && collectionOpts[i].pull == kC4Disabled) {
@@ -356,7 +362,29 @@ namespace litecore { namespace repl {
             }
         }
         isActive = actiCount > 0;
-        
+
+        // Do not mix one-shot and continous modes in one replicator.
+
+        unsigned oneshot = 0;
+        unsigned continuous = 0;
+        if (isActive && collectionOpts.size() > 1) {
+            for (auto c: collectionOpts) {
+                if (c.push == kC4OneShot)
+                    ++oneshot;
+                else if (c.push == kC4Continuous)
+                    ++continuous;
+                if (c.pull == kC4OneShot)
+                    ++oneshot;
+                else if (c.pull == kC4Continuous)
+                    ++continuous;
+
+                if (oneshot * continuous > 0) {
+                    throw error(error::LiteCore, error::InvalidParameter,
+                                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mised in one replicator.");
+                }
+            }
+        }
+
         if (collectionOpts.size() == 1) {
             auto spec = collectionPathToSpec(collectionOpts[0].collectionPath);
             if (spec == kC4DefaultCollectionSpec) {
@@ -368,6 +396,8 @@ namespace litecore { namespace repl {
     // Post-conditions:
     //   - collectionOpts contains no duplicated collection.
     inline void Options::constructorCheck() {
+        Assert(collectionOpts.size() < kNotCollectionIndex);
+
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {
             auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);

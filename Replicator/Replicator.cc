@@ -1004,15 +1004,17 @@ namespace litecore { namespace repl {
         }
 
         try {
-            db->useLocked([this, spec, callback](const Retained<C4Database>& db) {
+            bool attempted = false;
+            db->useLocked([this, spec, callback, &attempted](const Retained<C4Database>& db) {
                 for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
                     if (_subRepls[i].collection->getSpec() == spec) {
                         _subRepls[i].checkpointer->pendingDocumentIDs(db, callback);
+                        attempted = true;
                         break;
                     }
                 }
             });
-            return true;
+            return attempted;
         } catch (const error& err) {
             if (error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err) {
                 return false;
@@ -1037,7 +1039,7 @@ namespace litecore { namespace repl {
                         return _subRepls[i].checkpointer->isDocumentPending(db, docID);
                     }
                 }
-                throw error(error::LiteCore, error::NotOpen, format("collection '%*s' not open", SPLAT(Options::collectionSpecToPath(spec))));
+                throw error(error::LiteCore, error::NotFound, format("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
             });
         } catch(const error& err) {
             if (error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err) {
