@@ -216,10 +216,27 @@ namespace litecore { namespace repl {
     }
 
     Retained<C4Collection> Worker::collection() {
-        DebugAssert(_collectionIndex != kNotCollectionIndex);
-        return replicator()->sessionCollections()[_collectionIndex];
-    }
+        if (_inUseCollection) {
+            return _inUseCollection;
+        }
 
+        auto allCollections = replicator()->sessionCollections();
+        if (collectionIndex() == kNotCollectionIndex) {
+            auto found = std::find_if(allCollections.begin(), allCollections.end(), [this](const C4Collection* c) {
+                return c->getSpec() == kC4DefaultCollectionSpec;
+            });
+
+            if (found != allCollections.end()) {
+                _inUseCollection = *found;
+            }
+        }
+        else {
+            DebugAssert(collectionIndex() < allCollections.size());
+            _inUseCollection = allCollections[collectionIndex()];
+        }
+
+        return _inUseCollection;
+    }
 
     Retained<Replicator> Worker::replicatorIfAny() {
         Retained<Worker> parent = _parent;

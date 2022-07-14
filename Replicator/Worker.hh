@@ -130,8 +130,10 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception &x) override;
 
-        /// Returns the collection that this worker is acting on.  Not valid for a worker
-        /// that is not associated with a single collection.
+        /// Returns the collection that this worker is acting on.  If this worker is not
+        /// explicitly linked with a collection.  If not explicitly linked, this method
+        /// will search for the default collection in the list of replicator collections
+        /// and if not found, return nullptr.
         fleece::Retained<C4Collection> collection();
 
 #pragma mark - BLIP:
@@ -236,6 +238,7 @@ namespace litecore { namespace repl {
         Status                      _status {kC4Idle};          // My status
         bool                        _statusChanged {false};     // Status changed during this event
         const CollectionIndex       _collectionIndex;
+        Retained<C4Collection>      _inUseCollection;           // The cached collection based on index
     };
 
 } }

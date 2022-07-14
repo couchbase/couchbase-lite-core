@@ -83,8 +83,14 @@ namespace litecore::repl {
 
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
-        if (req->intProperty(kCollectionProperty, kNotCollectionIndex) == collectionIndex()) {
+        if (req->intProperty(kCollectionProperty, kNotCollectionIndex) != collectionIndex()) {
             return; // TODO: Assert once refactored to static handler
+        }
+
+        auto coll = collection();
+        if (!coll) {
+            req->respondWithError({ "BLIP"_sl, 400, "Legacy message received, but default collection disallowed!"_sl});
+            return;
         }
 
         try {
