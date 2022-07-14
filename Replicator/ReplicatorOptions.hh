@@ -47,6 +47,7 @@ namespace litecore { namespace repl {
         Options(Mode push_, Mode pull_)
         {
             setCollectionOptions(push_, pull_);
+            constructorCheck();
         }
 
         template <class SLICE>

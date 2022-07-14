@@ -741,6 +741,7 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            (void)collectionIn; // The following statement only compiles in Debug build.
             DebugAssert(collectionIn == kNotCollectionIndex || collectionIn == coll);
 
             Checkpoint remoteCheckpoint;
@@ -955,6 +956,7 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            (void)collectionIn; // The following statement only compiles in Debug build.
             DebugAssert(collectionIn == kNotCollectionIndex // legacy mode
                         || collectionIn == coll);
 
