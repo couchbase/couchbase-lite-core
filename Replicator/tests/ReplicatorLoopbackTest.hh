@@ -16,6 +16,7 @@
 #include "fleece/Fleece.hh"
 #include "c4CppUtils.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
@@ -63,7 +64,7 @@ public:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
         _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
-
+        
         if (isRevTrees()) {
             kNonLocalRev1ID = kRev1ID;
             kNonLocalRev2ID = kRev2ID;
@@ -141,7 +142,11 @@ public:
         _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
 
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointer(0).checkpointID();
+        
+        _checkpointIDs.clear();
+        for (int i = 0; i < opts1.collectionOpts.size(); ++i) {
+            _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
+        }
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);
@@ -412,26 +417,43 @@ public:
 
     int addDocs(C4Database *db, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        int docNo = 1;
-        for (int i = 1; docNo <= total; i++) {
-            sleepFor(interval);
-            Log("-------- Creating %d docs --------", 2*i);
-            TransactionHelper t(db);
-            for (int j = 0; j < 2*i; j++) {
-                char docID[20];
-                sprintf(docID, "newdoc%d", docNo++);
-                createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
-            }
-        }
-        Log("-------- Done creating docs --------");
-        return docNo - 1;
+        C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+        Assert(coll != nullptr);
+        return addDocs(coll, interval, total, "newdoc");
     }
 
     void addRevs(C4Database *db, duration interval,
                  alloc_slice docID,
                  int firstRev, int totalRevs, bool useFakeRevIDs)
     {
-        const char* name = (db == this->db) ? "db" : "db2";
+        C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+        Assert(coll != nullptr);
+        addRevs(coll, interval, docID, firstRev, totalRevs, useFakeRevIDs);
+    }
+    
+    int addDocs(C4Collection* coll, duration interval, int total, string idPrefix) {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        int docNo = 1;
+        for (int i = 1; docNo <= total; i++) {
+            Log("-------- Creating %d docs --------", 2*i);
+            TransactionHelper t(db);
+            for (int j = 0; j < 2*i; j++) {
+                char docID[20];
+                sprintf(docID, "%s%d", idPrefix.c_str(), docNo++);
+                createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+            }
+        }
+        Log("-------- Done creating docs --------");
+        return docNo - 1;
+    }
+
+    void addRevs(C4Collection *coll, duration interval,
+                 alloc_slice docID,
+                 int firstRev, int totalRevs, bool useFakeRevIDs)
+    {
+        auto db = c4coll_getDatabase(coll);
+        auto name = c4db_getName(db);
+        alloc_slice collPath = Options::collectionSpecToPath(c4coll_getSpec(coll));
         for (int i = 0; i < totalRevs; i++) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
@@ -440,14 +462,15 @@ public:
             string revID;
             if (useFakeRevIDs) {
                 revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
-                createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
+                createRev(coll, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
                 string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
                 revID = createFleeceRev(db, docID, nullslice, slice(json));
             }
-            Log("-------- %s %d: Created rev '%.*s' #%s --------", name, revNo, SPLAT(docID), revID.c_str());
+            Log("-------- %.*s/%.*s %d: Created rev '%.*s' #%s --------",
+                SPLAT(name), SPLAT(collPath), revNo, SPLAT(docID), revID.c_str());
         }
-        Log("-------- %s: Done creating revs --------", name);
+        Log("-------- %.*s/%.*s: Done creating revs --------", SPLAT(name), SPLAT(collPath));
     }
 
     static std::thread* runInParallel(std::function<void()> callback) {
@@ -535,43 +558,59 @@ public:
 
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        C4Error err = {};
-		C4Slice storeName;
-		if(local) {
-			storeName = C4STR("checkpoints");
-		} else {
-			storeName = C4STR("peerCheckpoints");
-		}
+        validateCollectionCheckpoint(database, 0, local, body, meta);
+    }
 
+    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
+                             const char *body, const char *meta = "1-cc") {
+        validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
+    }
+    
+    void clearCheckpoint(C4Database *database, bool local) {
+        clearCollectionCheckpoint(database, 0, local);
+    }
+
+    void validateCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local,
+                                      const char *body, const char *meta = "1-") {
+        C4Error err = {};
+        C4Slice storeName;
+        if(local) {
+            storeName = C4STR("checkpoints");
+        } else {
+            storeName = C4STR("peerCheckpoints");
+        }
+
+        REQUIRE(collectionIndex < _checkpointIDs.size());
+        alloc_slice checkpointID = _checkpointIDs[collectionIndex];
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               storeName,
-                                              _checkpointID,
+                                              checkpointID,
                                               WITH_ERROR(&err)) );
-        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID));
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(checkpointID));
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
-
-    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
-                             const char *body, const char *meta = "1-cc") {
-        validateCheckpoint(localDB,  true,  body, meta);
-        validateCheckpoint(remoteDB, false, body, meta);
+    
+    void validateCollectionCheckpoints(C4Database *localDB, C4Database *remoteDB, unsigned collectionIndex,
+                                       const char *body, const char *meta = "1-cc") {
+        validateCollectionCheckpoint(localDB, collectionIndex, true,  body, meta);
+        validateCollectionCheckpoint(remoteDB, collectionIndex, false, body, meta);
     }
-
-    void clearCheckpoint(C4Database *database, bool local) {
+    
+    void clearCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local) {
         C4Error err;
-		C4Slice storeName;
-		if(local) {
-			storeName = C4STR("checkpoints");
-		} else {
-			storeName = C4STR("peerCheckpoints");
-		}
-
+        C4Slice storeName;
+        if(local) {
+            storeName = C4STR("checkpoints");
+        } else {
+            storeName = C4STR("peerCheckpoints");
+        }
+        
         REQUIRE( c4raw_put(database,
                            storeName,
-                           _checkpointID,
+                           _checkpointIDs[collectionIndex],
                            kC4SliceNull, kC4SliceNull, ERROR_INFO(&err)) );
     }
 
@@ -585,7 +624,7 @@ public:
 
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
-    alloc_slice _checkpointID;
+    std::vector<alloc_slice> _checkpointIDs;
     std::unique_ptr<std::thread> _parallelThread;
     bool _stopOnIdle {0};
     std::mutex _mutex;

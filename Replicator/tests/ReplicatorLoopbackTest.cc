@@ -500,19 +500,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
 
     runPushReplication();
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk1 = _checkpointID;
+    alloc_slice chk1 = _checkpointIDs[0];
 
     _expectedDocumentCount = 0;     // because db2 already has the doc
     runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}),
                    Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk2 = _checkpointID;
+    alloc_slice chk2 = _checkpointIDs[0];
     CHECK(chk1 != chk2);
 
     runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionDocIDs, {"wot's", "up", "doc"}),
                    Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk3 = _checkpointID;
+    alloc_slice chk3 = _checkpointIDs[0];
     CHECK(chk3 != chk2);
     CHECK(chk3 != chk1);
 }

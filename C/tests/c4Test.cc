@@ -388,17 +388,30 @@ void C4Test::createConflictingRev(C4Collection *collection,
 
 
 string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4RevisionFlags flags) {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createNewRev(coll, docID, body, flags);
+}
+
+string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createNewRev(coll, docID, curRevID, body, flags);
+}
+
+string C4Test::createNewRev(C4Collection *coll, C4Slice docID, C4Slice body, C4RevisionFlags flags) {
+    C4Database* db = c4coll_getDatabase(coll);
     TransactionHelper t(db);
     C4Error error;
-    auto curDoc = c4doc_get(db, docID, false, &error);
+    auto curDoc = c4coll_getDoc(coll, docID, false, kDocGetCurrentRev, &error);
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
     C4Assert(curDoc != nullptr);
-    string revID = createNewRev(db, docID, curDoc->revID, body, flags);
+    string revID = createNewRev(coll, docID, curDoc->revID, body, flags);
     c4doc_release(curDoc);
     return revID;
 }
 
-string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
+string C4Test::createNewRev(C4Collection *coll, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
     C4Slice history[2] = {curRevID};
 
     C4DocPutRequest rq = {};
@@ -409,7 +422,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     rq.revFlags = flags;
     rq.save = true;
     C4Error error;
-    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    auto doc = c4coll_putDoc(coll, &rq, nullptr, &error);
     //if (!doc) {
         //char buf[256];
         //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
@@ -425,6 +438,15 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
 string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
                                C4RevisionFlags flags)
 {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createFleeceRev(coll, docID, revID, json, flags);
+}
+
+string C4Test::createFleeceRev(C4Collection *coll, C4Slice docID, C4Slice revID, C4Slice json,
+                               C4RevisionFlags flags)
+{
+    C4Database* db = c4coll_getDatabase(coll);
     TransactionHelper t(db);
     SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
     enc.convertJSON(json);
@@ -433,7 +455,7 @@ string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4S
 //    REQUIRE(fleeceBody);
     C4Assert(fleeceBody);
     if (revID.buf) {
-        createRev(db, docID, revID, fleeceBody, flags);
+        createRev(coll, docID, revID, fleeceBody, flags);
         return string(slice(revID));
     } else {
         return createNewRev(db, docID, fleeceBody, flags);
