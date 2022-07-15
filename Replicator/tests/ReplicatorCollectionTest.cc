@@ -201,7 +201,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Pull Multiple Collections", "[pull]"
     addDocs(db2, Tulips, 10);
     runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
     validateCollectionCheckpoints(db2, db, 0, "{\"remote\":15}");
-    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":30}");
+    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":30}");
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Push/Pull Multiple Collections", "[push][pull]") {
@@ -234,7 +234,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Continuous Pull Multiple Collections
     addDocs(db2, Tulips, 10);
     runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
     validateCollectionCheckpoints(db2, db, 0, "{\"remote\":15}");
-    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":30}");
+    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":30}");
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Continuous Push/Pull Multiple Collections", "[push][pull]") {
