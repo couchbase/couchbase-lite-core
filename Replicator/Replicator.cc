@@ -177,6 +177,9 @@ namespace litecore { namespace repl {
 
             for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
                 if (_options->pushOf(i) > kC4Passive || _options->pullOf(i) > kC4Passive) {
+                    DebugAssert(_sessionCollections.size() == 0);
+                    _sessionCollections.push_back(_subRepls[i].collection);
+
                     // Get the checkpoints:
                     if (getLocalCheckpoint(reset, i)) {
                         getRemoteCheckpoint(false, i);
@@ -891,7 +894,7 @@ namespace litecore { namespace repl {
         _getCollectionsRequested = true;
         
         for (int i = 0; i < _subRepls.size(); i++) {
-            _sessionCollections.push_back(_collections[i].get());
+            _sessionCollections.push_back(_subRepls[i].collection);
             if (!_subRepls[i].hadLocalCheckpoint) {
                 startReplicating(i);
             }
@@ -1041,6 +1044,19 @@ namespace litecore { namespace repl {
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+        if (_sessionCollections.size() == 0) {
+            auto found = std::find_if(_subRepls.begin(), _subRepls.end(), [this](const SubReplicator& s) {
+                return s.collection->getSpec() == kC4DefaultCollectionSpec;
+            });
+
+            if (found == _subRepls.end()) {
+                request->respondWithError({ "BLIP"_sl, 400, "Legacy getCheckpoint received, but default collection disallowed..."_sl });
+                return;
+            }
+
+            _sessionCollections.push_back(found->collection);
+        }
+        
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if (!checkpointID)
             return;

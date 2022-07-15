@@ -227,7 +227,10 @@ namespace litecore { namespace repl {
             req[kConflictIncludesRevProperty] = "true"_sl;
         }
 
-        req[kCollectionProperty] = collectionIndex();
+        if (_options->collectionAware) {
+            req[kCollectionProperty] = collectionIndex();
+        }
+        
         req.urgent = tuning::kChangeMessagesAreUrgent;
         req.compressed = !changes.empty();
 
