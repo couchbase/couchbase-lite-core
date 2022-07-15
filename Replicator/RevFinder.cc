@@ -83,7 +83,8 @@ namespace litecore::repl {
 
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
-        if (req->intProperty(kCollectionProperty, kNotCollectionIndex) != collectionIndex()) {
+        auto collIndex = req->intProperty(kCollectionProperty, kNotCollectionIndex);
+        if (collIndex != kNotCollectionIndex && collIndex != collectionIndex()) {
             return; // TODO: Assert once refactored to static handler
         }
 
