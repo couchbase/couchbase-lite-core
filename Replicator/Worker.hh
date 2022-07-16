@@ -133,7 +133,7 @@ namespace litecore { namespace repl {
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
         bool isContinuous() const               {
-            if (!_options->isActive) {
+            if (!_options->isActive()) {
                 return false;
             }
             auto collIndex = collectionIndex();

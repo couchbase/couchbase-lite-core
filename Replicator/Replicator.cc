@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
         //                                           collectionOpts[0].collectionPath == defaultCollectionPath
         //   isActive == true ? all collections are active
         //                    : all collections are passive.
-        _options->sanitize();
+        _options->verify();
         
         _loggingID = string(db->getPath()) + " " + _loggingID;
         _importance = 2;
@@ -638,7 +638,7 @@ namespace litecore { namespace repl {
                 sub.puller->connectionClosed();
         }
 
-        if (status.isNormal() && closedByPeer && _options->isActive) {
+        if (status.isNormal() && closedByPeer && _options->isActive()) {
             logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
             status.code = websocket::kCodeGoingAway;
             status.message = alloc_slice("WebSocket connection closed by peer");
@@ -720,7 +720,7 @@ namespace litecore { namespace repl {
         if (!sub.remoteCheckpointDocID || _connectionState != Connection::kConnected)
             return;     // not ready yet
 
-        if (!_options->collectionAware) {
+        if (!_options->collectionAware()) {
             logVerbose("Requesting remote checkpoint '%.*s' of the default collection",
                        SPLAT(sub.remoteCheckpointDocID));
         } else {
@@ -729,7 +729,7 @@ namespace litecore { namespace repl {
         }
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
-        if (_options->collectionAware) {
+        if (_options->collectionAware()) {
             msg["collection"_sl] = coll;
         }
         Signpost::begin(Signpost::blipSent);
@@ -750,7 +750,7 @@ namespace litecore { namespace repl {
                 auto err = response->getError();
                 if (!(err.domain == "HTTP"_sl && err.code == 404))
                     return gotError(response);
-                if (!_options->collectionAware) {
+                if (!_options->collectionAware()) {
                     logInfo("No remote checkpoint '%.*s' of the default collection",
                             SPLAT(sub.remoteCheckpointDocID));
                 } else {
@@ -761,7 +761,7 @@ namespace litecore { namespace repl {
             } else {
                 remoteCheckpoint.readJSON(response->body());
                 sub.remoteCheckpointRevID = response->property("rev"_sl);
-                if (!_options->collectionAware) {
+                if (!_options->collectionAware()) {
                     logInfo("Received remote checkpoint (rev='%.*s'): %.*s of the default collection",
                             SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()));
                 } else {
@@ -942,7 +942,7 @@ namespace litecore { namespace repl {
         Assert(json);
 
         MessageBuilder msg("setCheckpoint"_sl);
-        if (_options->collectionAware) {
+        if (_options->collectionAware()) {
             msg["collection"_sl] = coll;
         }
         msg["client"_sl] = sub.remoteCheckpointDocID;

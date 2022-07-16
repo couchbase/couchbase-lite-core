@@ -39,9 +39,12 @@ namespace litecore { namespace repl {
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
         std::atomic<C4ReplicatorProgressLevel> progressLevel {kC4ReplProgressOverall};
-        mutable bool            collectionAware         {true};
-        mutable bool            isActive                {true};
-        mutable std::unordered_map<C4CollectionSpec, size_t> collectionSpecToIndex;
+
+        bool collectionAware() const {return _collectionAware;}
+        bool isActive()        const {return _isActive;}
+        const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
+            return _collectionSpecToIndex;
+        }
         
         //---- Constructors/factories:
 
@@ -251,7 +254,7 @@ namespace litecore { namespace repl {
         //                                           collectionOpts[0].collectionPath == defaultCollectionPath
         //   isActive == true ? all collections are active
         //                    : all collections are passive.
-        inline void sanitize() const;
+        inline void verify() const;
 
         size_t collectionCount() const {
             return collectionOpts.size();
@@ -277,6 +280,10 @@ namespace litecore { namespace repl {
         inline void setCollectionOptions(C4ReplicatorParameters params);
         inline void setCollectionOptions(const Options& opt);
         inline void constructorCheck();
+        
+        mutable bool            _collectionAware         {true};
+        mutable bool            _isActive                {true};
+        mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
@@ -284,7 +291,7 @@ namespace litecore { namespace repl {
         auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
         back.push = push;
         back.pull = pull;
-        collectionAware = false;
+        _collectionAware = false;
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
@@ -324,7 +331,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    inline void Options::sanitize() const {
+    inline void Options::verify() const {
         if (collectionOpts.size() == 0) {
             throw error(error::LiteCore, error::InvalidParameter,
                         "Invalid replicator configuration: requiring at least one collection");
@@ -361,13 +368,13 @@ namespace litecore { namespace repl {
                             " both passive and active ReplicatorMode");
             }
         }
-        isActive = actiCount > 0;
+        _isActive = actiCount > 0;
 
         // Do not mix one-shot and continous modes in one replicator.
 
         unsigned oneshot = 0;
         unsigned continuous = 0;
-        if (isActive && collectionOpts.size() > 1) {
+        if (_isActive && collectionOpts.size() > 1) {
             for (auto c: collectionOpts) {
                 if (c.push == kC4OneShot)
                     ++oneshot;
@@ -388,7 +395,7 @@ namespace litecore { namespace repl {
         if (collectionOpts.size() == 1) {
             auto spec = collectionPathToSpec(collectionOpts[0].collectionPath);
             if (spec == kC4DefaultCollectionSpec) {
-                collectionAware = false;
+                _collectionAware = false;
             }
         }
     }
@@ -401,7 +408,7 @@ namespace litecore { namespace repl {
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {
             auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);
-            auto [at, b] = collectionSpecToIndex.insert(std::make_pair(spec, i));
+            auto [at, b] = _collectionSpecToIndex.insert(std::make_pair(spec, i));
             if (!b) {
                 throw error(error::LiteCore, error::InvalidParameter,
                             "Invalid replicator configuration: the collection list contains duplicated collections.");
