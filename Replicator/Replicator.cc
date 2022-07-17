@@ -754,8 +754,8 @@ namespace litecore { namespace repl {
                     logInfo("No remote checkpoint '%.*s' of the default collection",
                             SPLAT(sub.remoteCheckpointDocID));
                 } else {
-                    logInfo("Received remote checkpoint (rev='%.*s'): %.*s (collection: %u)",
-                            SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()), coll);
+                    logInfo("No remote checkpoint '%.*s' (collection: %u)",
+                            SPLAT(sub.remoteCheckpointRevID), coll);
                 }
                 sub.remoteCheckpointRevID.reset();
             } else {
