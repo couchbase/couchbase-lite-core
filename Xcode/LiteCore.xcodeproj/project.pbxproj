@@ -508,6 +508,7 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1639,6 +1640,7 @@
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
+		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2422,6 +2424,7 @@
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
+				FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
@@ -3935,6 +3938,7 @@
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
+				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,

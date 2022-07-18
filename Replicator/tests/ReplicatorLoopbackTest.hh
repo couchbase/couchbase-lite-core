@@ -16,6 +16,7 @@
 #include "fleece/Fleece.hh"
 #include "c4CppUtils.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
@@ -63,7 +64,7 @@ public:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
         _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
-
+        
         if (isRevTrees()) {
             kNonLocalRev1ID = kRev1ID;
             kNonLocalRev2ID = kRev2ID;
@@ -141,7 +142,11 @@ public:
         _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
 
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointer(0).checkpointID();
+        
+        _checkpointIDs.clear();
+        for (int i = 0; i < opts1.collectionOpts.size(); ++i) {
+            _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
+        }
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);
@@ -535,43 +540,59 @@ public:
 
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        C4Error err = {};
-		C4Slice storeName;
-		if(local) {
-			storeName = C4STR("checkpoints");
-		} else {
-			storeName = C4STR("peerCheckpoints");
-		}
+        validateCollectionCheckpoint(database, 0, local, body, meta);
+    }
 
+    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
+                             const char *body, const char *meta = "1-cc") {
+        validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
+    }
+    
+    void clearCheckpoint(C4Database *database, bool local) {
+        clearCollectionCheckpoint(database, 0, local);
+    }
+
+    void validateCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local,
+                                      const char *body, const char *meta = "1-") {
+        C4Error err = {};
+        C4Slice storeName;
+        if(local) {
+            storeName = C4STR("checkpoints");
+        } else {
+            storeName = C4STR("peerCheckpoints");
+        }
+
+        REQUIRE(collectionIndex < _checkpointIDs.size());
+        alloc_slice checkpointID = _checkpointIDs[collectionIndex];
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               storeName,
-                                              _checkpointID,
+                                              checkpointID,
                                               WITH_ERROR(&err)) );
-        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID));
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(checkpointID));
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
-
-    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
-                             const char *body, const char *meta = "1-cc") {
-        validateCheckpoint(localDB,  true,  body, meta);
-        validateCheckpoint(remoteDB, false, body, meta);
+    
+    void validateCollectionCheckpoints(C4Database *localDB, C4Database *remoteDB, unsigned collectionIndex,
+                                       const char *body, const char *meta = "1-cc") {
+        validateCollectionCheckpoint(localDB, collectionIndex, true,  body, meta);
+        validateCollectionCheckpoint(remoteDB, collectionIndex, false, body, meta);
     }
-
-    void clearCheckpoint(C4Database *database, bool local) {
+    
+    void clearCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local) {
         C4Error err;
-		C4Slice storeName;
-		if(local) {
-			storeName = C4STR("checkpoints");
-		} else {
-			storeName = C4STR("peerCheckpoints");
-		}
-
+        C4Slice storeName;
+        if(local) {
+            storeName = C4STR("checkpoints");
+        } else {
+            storeName = C4STR("peerCheckpoints");
+        }
+        
         REQUIRE( c4raw_put(database,
                            storeName,
-                           _checkpointID,
+                           _checkpointIDs[collectionIndex],
                            kC4SliceNull, kC4SliceNull, ERROR_INFO(&err)) );
     }
 
@@ -585,7 +606,7 @@ public:
 
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
-    alloc_slice _checkpointID;
+    std::vector<alloc_slice> _checkpointIDs;
     std::unique_ptr<std::thread> _parallelThread;
     bool _stopOnIdle {0};
     std::mutex _mutex;
