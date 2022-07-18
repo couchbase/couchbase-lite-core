@@ -417,43 +417,26 @@ public:
 
     int addDocs(C4Database *db, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
-        Assert(coll != nullptr);
-        return addDocs(coll, interval, total, "newdoc");
-    }
-
-    void addRevs(C4Database *db, duration interval,
-                 alloc_slice docID,
-                 int firstRev, int totalRevs, bool useFakeRevIDs)
-    {
-        C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
-        Assert(coll != nullptr);
-        addRevs(coll, interval, docID, firstRev, totalRevs, useFakeRevIDs);
-    }
-    
-    int addDocs(C4Collection* coll, duration interval, int total, string idPrefix) {
-        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
+            sleepFor(interval);
             Log("-------- Creating %d docs --------", 2*i);
             TransactionHelper t(db);
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
-                sprintf(docID, "%s%d", idPrefix.c_str(), docNo++);
-                createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+                sprintf(docID, "newdoc%d", docNo++);
+                createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
         }
         Log("-------- Done creating docs --------");
         return docNo - 1;
     }
 
-    void addRevs(C4Collection *coll, duration interval,
+    void addRevs(C4Database *db, duration interval,
                  alloc_slice docID,
                  int firstRev, int totalRevs, bool useFakeRevIDs)
     {
-        auto db = c4coll_getDatabase(coll);
-        auto name = c4db_getName(db);
-        alloc_slice collPath = Options::collectionSpecToPath(c4coll_getSpec(coll));
+        const char* name = (db == this->db) ? "db" : "db2";
         for (int i = 0; i < totalRevs; i++) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
@@ -462,15 +445,14 @@ public:
             string revID;
             if (useFakeRevIDs) {
                 revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
-                createRev(coll, docID, slice(revID), alloc_slice(kFleeceBody));
+                createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
                 string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
                 revID = createFleeceRev(db, docID, nullslice, slice(json));
             }
-            Log("-------- %.*s/%.*s %d: Created rev '%.*s' #%s --------",
-                SPLAT(name), SPLAT(collPath), revNo, SPLAT(docID), revID.c_str());
+            Log("-------- %s %d: Created rev '%.*s' #%s --------", name, revNo, SPLAT(docID), revID.c_str());
         }
-        Log("-------- %.*s/%.*s: Done creating revs --------", SPLAT(name), SPLAT(collPath));
+        Log("-------- %s: Done creating revs --------", name);
     }
 
     static std::thread* runInParallel(std::function<void()> callback) {

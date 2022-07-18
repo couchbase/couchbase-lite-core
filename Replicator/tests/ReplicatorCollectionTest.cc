@@ -106,10 +106,20 @@ public:
         return coll;
     }
     
-    int addDocs(C4Database* db, CollectionSpec spec, int total) {
+    // Add new docs to a collection
+    int addCollDocs(C4Database* db, CollectionSpec spec, int total) {
         C4Collection* coll = getCollection(db, spec);
-        string prefix = db == this->db ? "db1" : (db == this->db2 ? "db2" : "newdoc");
-        return ReplicatorLoopbackTest::addDocs(coll, 0ms, total, prefix);
+        string prefix = (db == this->db ? "newdoc-db1-" : (db == this->db2 ? "newdoc-db2-" : "newdoc-"));
+        int docNo = 1;
+        for (int i = 1; docNo <= total; i++) {
+            Log("-------- Creating %d docs --------", i);
+            TransactionHelper t(db);
+            char docID[20];
+            sprintf(docID, "%s%d", prefix.c_str(), docNo++);
+            createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+        }
+        Log("-------- Done creating docs --------");
+        return docNo - 1;
     }
     
 private:
@@ -145,114 +155,99 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
+    addCollDocs(db, Default, 10);
+    addCollDocs(db2, Default, 10);
+    
     SECTION("PUSH") {
-        _expectedDocumentCount = addDocs(db, Default, 10);
+        _expectedDocumentCount = 10;
         runPushReplication({Default}, {Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
     
     SECTION("PULL") {
-        _expectedDocumentCount = addDocs(db, Default, 10);
+        _expectedDocumentCount = 10;
         runPullReplication({Default}, {Default});
-        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":20}");
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
     
     SECTION("PUSH and PULL") {
-        _expectedDocumentCount = addDocs(db, Default, 10);
-        _expectedDocumentCount += addDocs(db2, Default, 5);
+        _expectedDocumentCount = 20;
         runPushPullReplication({Default}, {Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30,\"remote\":30}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":40,\"remote\":40}");
     }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
+    addCollDocs(db, Guitars, 10);
+    addCollDocs(db2, Guitars, 10);
+    
     SECTION("PUSH") {
-        _expectedDocumentCount = addDocs(db, Guitars, 10);
+        _expectedDocumentCount = 10;
         runPushReplication({Guitars}, {Guitars});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
     
     SECTION("PULL") {
-        _expectedDocumentCount = addDocs(db, Guitars, 10);
+        _expectedDocumentCount = 10;
         runPullReplication({Guitars}, {Guitars});
-        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":20}");
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
  
     SECTION("PUSH and PULL") {
-        _expectedDocumentCount = addDocs(db, Guitars, 10);
-        _expectedDocumentCount += addDocs(db2, Guitars, 5);
+        _expectedDocumentCount = 20;
         runPushPullReplication({Guitars}, {Guitars});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30,\"remote\":30}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20,\"remote\":20}");
     }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
+    addCollDocs(db, Roses, 10);
+    addCollDocs(db, Tulips, 10);
+    addCollDocs(db, Lavenders, 10);
+    addCollDocs(db2, Roses, 20);
+    addCollDocs(db2, Tulips, 20);
+    addCollDocs(db2, Lavenders, 20);
+    
     SECTION("PUSH") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        addDocs(db2, Roses, 5);
-        addDocs(db2, Tulips, 10);
-        addDocs(db2, Lavenders, 15);
+        _expectedDocumentCount = 20;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":60}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+        validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
     }
     
     SECTION("PULL") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        addDocs(db, Lavenders, 30);
-        addDocs(db2, Roses, 5);
-        addDocs(db2, Tulips, 10);
+        _expectedDocumentCount = 20;
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":30}");
-        validateCollectionCheckpoints(db2, db, 1, "{\"remote\":60}");
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+        validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
     }
     
     SECTION("PUSH and PULL") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        _expectedDocumentCount += addDocs(db2, Roses, 5);
-        _expectedDocumentCount += addDocs(db2, Tulips, 10);
-        addDocs(db2, Lavenders, 15);
+        _expectedDocumentCount = 60;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30,\"remote\":30}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":60,\"remote\":60}");
-    }
-}
-
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Continuous Sync with Multiple Collections", "[Push][Pull]") {
-    SECTION("PUSH") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        addDocs(db2, Roses, 5);
-        addDocs(db2, Tulips, 15);
-        addDocs(db2, Lavenders, 20);
-        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":60}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
+        validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
     }
     
-    SECTION("PULL") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        addDocs(db, Lavenders, 30);
-        addDocs(db2, Roses, 5);
-        addDocs(db2, Tulips, 10);
-        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
-        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":30}");
-        validateCollectionCheckpoints(db2, db, 1, "{\"remote\":60}");
+    SECTION("PUSH CONTINUOUS") {
+        _expectedDocumentCount = 20;
+        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+        validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
     }
- 
-    SECTION("PUSH and PULL") {
-        _expectedDocumentCount = addDocs(db, Roses, 10);
-        _expectedDocumentCount += addDocs(db, Tulips, 20);
-        _expectedDocumentCount += addDocs(db2, Roses, 5);
-        _expectedDocumentCount += addDocs(db2, Tulips, 10);
-        addDocs(db2, Lavenders, 15);
+    
+    SECTION("PULL CONTINUOUS") {
+        _expectedDocumentCount = 20;
+        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+        validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
+    }
+    
+    SECTION("PUSH and PULL CONTINUOUS") {
+        _expectedDocumentCount = 60;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30,\"remote\":30}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":60,\"remote\":60}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
+        validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
     }
 }
 
