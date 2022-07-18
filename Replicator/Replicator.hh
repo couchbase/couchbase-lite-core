@@ -96,10 +96,10 @@ namespace litecore { namespace repl {
 
         /** Invokes the callback for each document which has revisions pending push.
             Returns false if unable to do so.  */
-        bool pendingDocumentIDs(Checkpointer::PendingDocCallback);
+        bool pendingDocumentIDs(C4CollectionSpec, Checkpointer::PendingDocCallback);
 
         /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
-        std::optional<bool> isDocumentPending(slice docID);
+        std::optional<bool> isDocumentPending(slice docID, C4CollectionSpec);
 
         Checkpointer& checkpointer(CollectionIndex coll)  {return *_subRepls[coll].checkpointer;}
 
@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options->isAllPassive ? "repl" : "Repl";
+            return _options->isActive() ? "Repl" : "repl";
         }
 
         // BLIP ConnectionDelegate API:

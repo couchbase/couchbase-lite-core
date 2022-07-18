@@ -46,6 +46,11 @@ namespace litecore { namespace repl {
         using alloc_slice = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
 
+        /** A key to set the collection that a worker is sending BLIP messages for
+                    Omitted if the default collection is being used, otherwise an index into
+                    the original list of collections received via getCollections.
+        */
+        static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
             Status(ActivityLevel lvl =kC4Stopped) {
@@ -133,13 +138,21 @@ namespace litecore { namespace repl {
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
         bool isContinuous() const               {
+            if (!_options->isActive()) {
+                return false;
+            }
             auto collIndex = collectionIndex();
             if (collIndex == kNotCollectionIndex) {
-                //TBD: this is a Replicator. what should it be?
-                collIndex = 0;
+                for (CollectionIndex i = 0; i < _options->collectionCount(); ++i) {
+                    if (_options->push(i) == kC4Continuous) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return _options->push(collIndex) == kC4Continuous
+                        || _options->pull(collIndex) == kC4Continuous;
             }
-            return _options->pushOf(collIndex) == kC4Continuous
-                || _options->pullOf(collIndex) == kC4Continuous;
         }
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.

@@ -42,7 +42,7 @@ namespace litecore { namespace repl {
         void insertRevision(RevToInsert *rev NONNULL);
 
         bool passive() const override {
-            return _options->pullOf(collectionIndex()) <= kC4Passive;
+            return _options->pull(collectionIndex()) <= kC4Passive;
         }
 
     protected:

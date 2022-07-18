@@ -12,9 +12,12 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
+#include "c4Database.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
+#include <unordered_map>
 
 namespace litecore { namespace repl {
 
@@ -36,13 +39,19 @@ namespace litecore { namespace repl {
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
         std::atomic<C4ReplicatorProgressLevel> progressLevel {kC4ReplProgressOverall};
-        bool                    collectionAware         {true};
 
+        bool collectionAware() const {return _collectionAware;}
+        bool isActive()        const {return _isActive;}
+        const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
+            return _collectionSpecToIndex;
+        }
+        
         //---- Constructors/factories:
 
         Options(Mode push_, Mode pull_)
         {
             setCollectionOptions(push_, pull_);
+            constructorCheck();
         }
 
         template <class SLICE>
@@ -50,6 +59,7 @@ namespace litecore { namespace repl {
         :properties(propertiesFleece)
         {
             setCollectionOptions(push_, pull_);
+            constructorCheck();
         }
 
         explicit Options(C4ReplicatorParameters params)
@@ -61,6 +71,7 @@ namespace litecore { namespace repl {
         ,callbackContext(params.callbackContext)
         {
             setCollectionOptions(params);
+            constructorCheck();
         }
 
         Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
@@ -71,9 +82,9 @@ namespace litecore { namespace repl {
         ,callbackContext(opt.callbackContext)
         ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
         ,progressLevel(opt.progressLevel.load())
-        ,collectionAware(opt.collectionAware)
         {
             setCollectionOptions(opt);
+            constructorCheck();
         }
 
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
@@ -182,7 +193,7 @@ namespace litecore { namespace repl {
             size_t nameOffset = 0;
             if (addScope) {
                 slice(spec.scope).copyTo(buf);
-                ((uint8_t*)buf)[spec.scope.size] = '/';
+                ((uint8_t*)buf)[spec.scope.size] = '.';
                 nameOffset = spec.scope.size + 1;
             }
             slice(spec.name).copyTo((uint8_t*)buf + nameOffset);
@@ -190,7 +201,7 @@ namespace litecore { namespace repl {
         }
 
         static C4CollectionSpec collectionPathToSpec(slice path) {
-            const uint8_t* slash = path.findByte((uint8_t)'/');
+            const uint8_t* slash = path.findByte((uint8_t)'.');
             slice scope = kC4DefaultScopeID;
             slice name;
             if (slash != nullptr) {
@@ -236,16 +247,24 @@ namespace litecore { namespace repl {
         };
 
         std::vector<CollectionOptions> collectionOpts;
+        
+        // Post-conditions:
+        //   collectionOpts.size() > 0
+        //   collectionAware == false if and only if collectionOpts.size() == 1 &&
+        //                                           collectionOpts[0].collectionPath == defaultCollectionPath
+        //   isActive == true ? all collections are active
+        //                    : all collections are passive.
+        inline void verify() const;
 
         size_t collectionCount() const {
             return collectionOpts.size();
         }
 
-        Mode pushOf(unsigned i) const {
+        Mode push(unsigned i) const {
             return collectionOpts[i].push;
         }
 
-        Mode pullOf(unsigned i) const {
+        Mode pull(unsigned i) const {
             return collectionOpts[i].pull;
         }
 
@@ -256,18 +275,15 @@ namespace litecore { namespace repl {
             }
         }
 
-        // isAllPassive if push/pull of all collections are kC4Passive, i.e. passive replicator.
-        // hasPassiveCollection if exists a collection of which both push/pull are kC4Passive.
-        // In practice, we don't mix pure passive collection with non-passive one.
-        // That is: we may assert, hasPassiveCollection ? isAllPassive : true
-        mutable bool isAllPassive {true};
-        mutable bool hasPassiveCollection {false};
-
     private:
         inline void setCollectionOptions(Mode push, Mode pull);
         inline void setCollectionOptions(C4ReplicatorParameters params);
         inline void setCollectionOptions(const Options& opt);
-        inline void trimDisabledCollections();
+        inline void constructorCheck();
+        
+        mutable bool            _collectionAware         {true};
+        mutable bool            _isActive                {true};
+        mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
@@ -275,8 +291,7 @@ namespace litecore { namespace repl {
         auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
         back.push = push;
         back.pull = pull;
-        collectionAware = false;
-        trimDisabledCollections();
+        _collectionAware = false;
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
@@ -301,7 +316,6 @@ namespace litecore { namespace repl {
             back.pullFilter = c4Coll.pullFilter;
             back.callbackContext = c4Coll.callbackContext;
         }
-        trimDisabledCollections();
     }
 
     inline void Options::setCollectionOptions(const Options& opt) {
@@ -315,26 +329,89 @@ namespace litecore { namespace repl {
             back.pullFilter = collOpts.pullFilter;
             back.callbackContext = collOpts.callbackContext;
         }
-        trimDisabledCollections();
     }
 
-    inline void Options::trimDisabledCollections() {
+    inline void Options::verify() const {
+        if (collectionOpts.size() == 0) {
+            throw error(error::LiteCore, error::InvalidParameter,
+                        "Invalid replicator configuration: requiring at least one collection");
+        }
+
         for (size_t i = collectionOpts.size(); i-- > 0; ) {
             if (collectionOpts[i].push == kC4Disabled
                 && collectionOpts[i].pull == kC4Disabled) {
-                collectionOpts.erase(collectionOpts.begin() + i);
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: a collection with both push and pull disabled");
             }
         }
 
         // Assertion: collectionOpts contains no disabled collections
         // (of which both push and pull are disabled)
 
+        // Do not allow active and passive to be mixed in the same replicator.
+        
+        unsigned passCount = 0;
+        unsigned actiCount = 0;
         for (auto c: collectionOpts) {
-            if (c.push == kC4Passive && c.pull == kC4Passive) {
-                hasPassiveCollection = true;
+            if (c.push == kC4Passive)
+                ++passCount;
+            else if (c.push > kC4Passive)
+                ++actiCount;
+            if (c.pull == kC4Passive)
+                ++passCount;
+            else if (c.pull > kC4Passive)
+                ++actiCount;
+
+            if (passCount * actiCount > 0) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: the collection list includes"
+                            " both passive and active ReplicatorMode");
             }
-            if (c.push != kC4Passive || c.pull != kC4Passive) {
-                isAllPassive = false;
+        }
+        _isActive = actiCount > 0;
+
+        // Do not mix one-shot and continous modes in one replicator.
+
+        unsigned oneshot = 0;
+        unsigned continuous = 0;
+        if (_isActive && collectionOpts.size() > 1) {
+            for (auto c: collectionOpts) {
+                if (c.push == kC4OneShot)
+                    ++oneshot;
+                else if (c.push == kC4Continuous)
+                    ++continuous;
+                if (c.pull == kC4OneShot)
+                    ++oneshot;
+                else if (c.pull == kC4Continuous)
+                    ++continuous;
+
+                if (oneshot * continuous > 0) {
+                    throw error(error::LiteCore, error::InvalidParameter,
+                                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mised in one replicator.");
+                }
+            }
+        }
+
+        if (collectionOpts.size() == 1) {
+            auto spec = collectionPathToSpec(collectionOpts[0].collectionPath);
+            if (spec == kC4DefaultCollectionSpec) {
+                _collectionAware = false;
+            }
+        }
+    }
+
+    // Post-conditions:
+    //   - collectionOpts contains no duplicated collection.
+    inline void Options::constructorCheck() {
+        Assert(collectionOpts.size() < kNotCollectionIndex);
+
+        // Create the mapping from CollectionSpec to the index to collctionOpts
+        for (size_t i = 0; i < collectionOpts.size(); ++i) {
+            auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);
+            auto [at, b] = _collectionSpecToIndex.insert(std::make_pair(spec, i));
+            if (!b) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: the collection list contains duplicated collections.");
             }
         }
     }

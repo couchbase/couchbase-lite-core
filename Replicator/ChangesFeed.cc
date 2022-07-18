@@ -44,9 +44,11 @@ namespace litecore { namespace repl {
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
-    ,_continuous(_options->pushOf(0) == kC4Continuous) // TBD: replacing 0 with actual collection index.
     ,_skipDeleted(_options->skipDeleted())
     {
+        DebugAssert(_checkpointer);
+        auto i = _options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
+        _continuous = _options->push((CollectionIndex)i) == kC4Continuous;
         filterByDocIDs(_options->docIDs());
     }
 
@@ -56,7 +58,7 @@ namespace litecore { namespace repl {
 
     string ChangesFeed::loggingClassName() const  {
         string className = Logging::loggingClassName();
-        if (passive())
+        if (!_options->isActive())
             toLowercase(className);
         return className;
     }
@@ -73,7 +75,7 @@ namespace litecore { namespace repl {
                 combined->insert(move(docID));
         }
         _docIDs = move(combined);
-        if (passive())
+        if (!_options->isActive())
             logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
     }
 
@@ -100,7 +102,7 @@ namespace litecore { namespace repl {
             getHistoricalChanges(changes, limit);
         changes.lastSequence = _maxSequence;
 
-        if (!passive() && _checkpointer && changes.lastSequence >= changes.firstSequence) {
+        if (_options->isActive() && changes.lastSequence >= changes.firstSequence) {
             _checkpointer->addPendingSequences(changes.revs,
                                                changes.firstSequence, changes.lastSequence);
         }
@@ -238,13 +240,12 @@ namespace litecore { namespace repl {
         if (info.expiration > C4Timestamp::None && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
-        } else if (!passive() && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {
+        } else if (_options->isActive() && _checkpointer->isSequenceCompleted(info.sequence)) {
             return nullptr;             // skip rev: checkpoint says we already pushed it before
         } else if (_docIDs != nullptr
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            // TBD: checking _checkpointer != nullptr
             auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec());
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
@@ -255,9 +256,6 @@ namespace litecore { namespace repl {
         return shouldPushRev(rev, nullptr);
     }
 
-    bool ChangesFeed::passive(unsigned collectionIndex) const {
-        return _options->pushOf(collectionIndex) <= kC4Passive;
-    }
 
     // This is called both by revToSend, and by Pusher::doneWithRev.
     bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e) const {
@@ -338,8 +336,7 @@ namespace litecore { namespace repl {
         if (foreignAncestor && !_usingVersionVectors
                     && C4Document::getRevIDGeneration(foreignAncestor)
                         >= C4Document::getRevIDGeneration(doc->revID())) {
-            // TBD: replacing 0 with actual collection index
-            if (_options->pullOf(0) <= kC4Passive) {
+            if (!_options->isActive()) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);

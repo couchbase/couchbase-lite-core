@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
 
         // Passive replicator always sends "changes"
         bool passive() const override {
-            return _options->pushOf(collectionIndex()) <= kC4Passive;
+            return _options->push(collectionIndex()) <= kC4Passive;
         }
 
     protected:
