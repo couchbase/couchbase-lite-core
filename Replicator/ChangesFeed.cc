@@ -48,7 +48,7 @@ namespace litecore { namespace repl {
     {
         DebugAssert(_checkpointer);
         auto i = _options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
-        _continuous = _options->pushOf((CollectionIndex)i) == kC4Continuous;
+        _continuous = _options->push((CollectionIndex)i) == kC4Continuous;
         filterByDocIDs(_options->docIDs());
     }
 

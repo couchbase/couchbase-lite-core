@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
         bool isPullBusy = false;
         for (CollectionIndex i = 0; i < _options->collectionCount(); ++i) {
             SubReplicator& sub = _subRepls[i];
-            if (_options->pushOf(i) != kC4Disabled) {
+            if (_options->push(i) != kC4Disabled) {
                 sub.checkpointer.reset(new Checkpointer(_options, webSocket->url(), sub.collection));
                 sub.pusher = new Pusher(this, *sub.checkpointer, i);
                 sub.pushStatus = kC4Busy;
@@ -121,7 +121,7 @@ namespace litecore { namespace repl {
             } else {
                 sub.pushStatus = kC4Stopped;
             }
-            if (_options->pullOf(i) != kC4Disabled) {
+            if (_options->pull(i) != kC4Disabled) {
                 sub.puller = new Puller(this, i);
                 sub.pullStatus = kC4Busy;
                 if (sub.checkpointer.get() == nullptr) {
@@ -183,7 +183,7 @@ namespace litecore { namespace repl {
             logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
 
             for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                if (_options->pushOf(i) > kC4Passive || _options->pullOf(i) > kC4Passive) {
+                if (_options->push(i) > kC4Passive || _options->pull(i) > kC4Passive) {
                     // Get the checkpoints:
                     if (getLocalCheckpoint(reset, i)) {
                         getRemoteCheckpoint(false, i);
@@ -202,7 +202,7 @@ namespace litecore { namespace repl {
     void Replicator::_findExistingConflicts() {
         Stopwatch st;
         for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-            if (_options->pullOf(i) <= kC4Passive) // only check in pull mode
+            if (_options->pull(i) <= kC4Passive) // only check in pull mode
                 continue;
 
             SubReplicator& sub = _subRepls[i];
@@ -271,9 +271,9 @@ namespace litecore { namespace repl {
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating(CollectionIndex coll) {
-        if (_options->pushOf(coll) > kC4Passive)
+        if (_options->push(coll) > kC4Passive)
              _subRepls[coll].pusher->start();
-         if (_options->pullOf(coll) > kC4Passive)
+         if (_options->pull(coll) > kC4Passive)
              _subRepls[coll].puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
     }
 
@@ -287,14 +287,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
-        auto collectionIn = request->intProperty("collection"_sl, kNotCollectionIndex);
+        auto collectionIn = request->intProperty(kCollectionProperty, kNotCollectionIndex);
         CollectionIndex c = 0;
         if (collectionIn != kNotCollectionIndex) {
             c = (CollectionIndex)collectionIn;
         } else {
             warn("\"collection\" property is not present in the request; 0 is used");
         }
-        if (_options->pushOf(c) != kC4Disabled) {
+        if (_options->push(c) != kC4Disabled) {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
         } else {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
@@ -608,7 +608,7 @@ namespace litecore { namespace repl {
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                if (_options->pushOf(i) > kC4Passive || _options->pullOf(i) > kC4Passive)
+                if (_options->push(i) > kC4Passive || _options->pull(i) > kC4Passive)
                     getRemoteCheckpoint(false, i);
             }
         }
@@ -669,7 +669,8 @@ namespace litecore { namespace repl {
 
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        CollectionIndex collection = (CollectionIndex)msg->intProperty("collection"_sl, kNotCollectionIndex);
+        CollectionIndex collection = (CollectionIndex)msg->intProperty(kCollectionProperty,
+                                                                       kNotCollectionIndex);
         warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
                 msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
@@ -696,7 +697,7 @@ namespace litecore { namespace repl {
                 logInfo("No local checkpoint '%.*s' (collection: %u)", SPLAT(sub.checkpointer->initialCheckpointID()), coll);
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
-                if (_options->pullOf(coll) > kC4Passive && sub.puller
+                if (_options->pull(coll) > kC4Passive && sub.puller
                         && _db->useCollection(sub.collection)->getLastSequence() == 0_seq)
                     sub.puller->setSkipDeleted();
             }
@@ -730,7 +731,7 @@ namespace litecore { namespace repl {
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
         if (_options->collectionAware()) {
-            msg["collection"_sl] = coll;
+            msg[kCollectionProperty] = coll;
         }
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this, refresh, coll, &sub](MessageProgress progress) {
@@ -740,7 +741,7 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
 
-            auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            auto collectionIn = response->intProperty(kCollectionProperty, kNotCollectionIndex);
             (void)collectionIn; // The following statement only compiles in Debug build.
             DebugAssert(collectionIn == kNotCollectionIndex || collectionIn == coll);
 
@@ -943,7 +944,7 @@ namespace litecore { namespace repl {
 
         MessageBuilder msg("setCheckpoint"_sl);
         if (_options->collectionAware()) {
-            msg["collection"_sl] = coll;
+            msg[kCollectionProperty] = coll;
         }
         msg["client"_sl] = sub.remoteCheckpointDocID;
         msg["rev"_sl] = sub.remoteCheckpointRevID;
@@ -955,7 +956,7 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
 
-            auto collectionIn = response->intProperty("collection"_sl, kNotCollectionIndex);
+            auto collectionIn = response->intProperty(kCollectionProperty, kNotCollectionIndex);
             (void)collectionIn; // The following statement only compiles in Debug build.
             DebugAssert(collectionIn == kNotCollectionIndex // legacy mode
                         || collectionIn == coll);

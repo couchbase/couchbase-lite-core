@@ -56,7 +56,7 @@ namespace litecore { namespace repl {
         void onError(C4Error err) override;
         
         bool passive() const override {
-            return _options->pullOf(collectionIndex()) <= kC4Passive;
+            return _options->pull(collectionIndex()) <= kC4Passive;
         }
 
     private:

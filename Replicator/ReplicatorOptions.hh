@@ -260,11 +260,11 @@ namespace litecore { namespace repl {
             return collectionOpts.size();
         }
 
-        Mode pushOf(unsigned i) const {
+        Mode push(unsigned i) const {
             return collectionOpts[i].push;
         }
 
-        Mode pullOf(unsigned i) const {
+        Mode pull(unsigned i) const {
             return collectionOpts[i].pull;
         }
 

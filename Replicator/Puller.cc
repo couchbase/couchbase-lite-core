@@ -67,7 +67,7 @@ namespace litecore { namespace repl {
         MessageBuilder msg("subChanges"_sl);
         if (sinceStr)
             msg["since"_sl] = sinceStr;
-        if (_options->pullOf(collectionIndex()) == kC4Continuous)
+        if (_options->pull(collectionIndex()) == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
@@ -358,7 +358,7 @@ namespace litecore { namespace repl {
                 || (!_caughtUp && !passive())
                 || _pendingRevMessages > 0) {
             level = kC4Busy;
-        } else if (_options->pullOf(collectionIndex()) == kC4Continuous || isOpenServer()) {
+        } else if (_options->pull(collectionIndex()) == kC4Continuous || isOpenServer()) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {
