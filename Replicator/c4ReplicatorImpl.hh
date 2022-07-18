@@ -244,8 +244,8 @@ namespace litecore {
 
 
         bool continuous(unsigned collectionIndex =0) const noexcept {
-            return _options->pushOf(collectionIndex) == kC4Continuous
-                || _options->pullOf(collectionIndex) == kC4Continuous;
+            return _options->push(collectionIndex) == kC4Continuous
+                || _options->pull(collectionIndex) == kC4Continuous;
         }
 
         inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept {
