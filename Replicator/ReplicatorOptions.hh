@@ -245,8 +245,7 @@ namespace litecore { namespace repl {
                 return *this;
             }
         };
-
-        std::vector<CollectionOptions> collectionOpts;
+        mutable std::vector<CollectionOptions> collectionOpts;
         
         // Post-conditions:
         //   collectionOpts.size() > 0
@@ -268,11 +267,48 @@ namespace litecore { namespace repl {
             return collectionOpts[i].pull;
         }
 
-        void forEachCollection(function_ref<void(unsigned index,
-                                const CollectionOptions&)> callback) const {
-            for (unsigned i = 0; i < collectionOpts.size(); ++i) {
-                callback(i, collectionOpts[i]);
+        CollectionIndex workingCollectionCount() const {
+            return _workingCollectionCount;
+        }
+
+        // RearrangeCollections() is called only by the passive replicator. For the passive replicator, we presume
+        // that the order of the collection properties is not important. So, we take it as legit to permutate
+        // it in const method. (The Replicator holds a const Options object.) It is supposed to be called as it
+        // starts to interact with the active replicator.
+        // "collections" is a list of CollectionSpecs that the active replicatore proposes to replicate, and the
+        // order will be used as index to refer to respective collections.
+        // Post-conditions: collectionOpts[i] and collections[i] share the same CollectionSpec if
+        //                    collections[i] is found in collectionOpts;
+        //                  Otherwise, an empty collectionOptions is inserted in collectionOpts[i].
+        // By empty collectionOptions we mean the collection path is a null slice.
+
+        void rearrangeCollections(const std::vector<C4CollectionSpec>& collections) const {
+            DebugAssert(!_isActive);
+
+            size_t origCount = collectionOpts.size();
+            std::vector<C4CollectionSpec> specs;
+            specs.reserve(origCount);
+            for (auto opt : collectionOpts) {
+                specs.emplace_back(collectionPathToSpec(opt.collectionPath));
             }
+            for (size_t i = 0; i < collections.size(); ++i) {
+                auto findIt = _collectionSpecToIndex.find(collections[i]);
+                if (findIt == _collectionSpecToIndex.end()) {
+                    // Put the unfound spec to the end of collectionOpts
+                    size_t j = collectionOpts.size();
+                    collectionOpts.emplace_back(nullslice);
+                    // Assertion: collectionOpts[j].collectionPath == nullslice
+                    _collectionSpecToIndex[specs[i]] = j;
+                    std::swap(collectionOpts[i], collectionOpts[j]);
+                } else {
+                    DebugAssert(findIt->second >= i && findIt->second < origCount);
+                    if (findIt->second > i) {
+                        _collectionSpecToIndex[specs[i]] = findIt->second;
+                        std::swap(collectionOpts[i], collectionOpts[findIt->second]);
+                    }
+                }
+            }
+            _workingCollectionCount = (CollectionIndex)collections.size();
         }
 
     private:
@@ -280,7 +316,8 @@ namespace litecore { namespace repl {
         inline void setCollectionOptions(C4ReplicatorParameters params);
         inline void setCollectionOptions(const Options& opt);
         inline void constructorCheck();
-        
+
+        mutable CollectionIndex _workingCollectionCount;
         mutable bool            _collectionAware         {true};
         mutable bool            _isActive                {true};
         mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
@@ -291,7 +328,6 @@ namespace litecore { namespace repl {
         auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
         back.push = push;
         back.pull = pull;
-        _collectionAware = false;
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
@@ -404,6 +440,9 @@ namespace litecore { namespace repl {
     //   - collectionOpts contains no duplicated collection.
     inline void Options::constructorCheck() {
         Assert(collectionOpts.size() < kNotCollectionIndex);
+        // _workingCollectionCount will be adjusted for the passive replicator
+        // when rearrangeCollections() is called.
+        _workingCollectionCount = (CollectionIndex)collectionCount();
 
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {

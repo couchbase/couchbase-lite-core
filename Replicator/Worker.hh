@@ -15,6 +15,7 @@
 #include "ReplicatorOptions.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "MessageBuilder.hh"
 #include "Error.hh"
 #include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
@@ -227,6 +228,8 @@ namespace litecore { namespace repl {
 
 #pragma mark - INSTANCE DATA:
     protected:
+        void setMsgCollection(blip::MessageBuilder& msg, CollectionIndex);
+
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me
         std::shared_ptr<DBAccess>   _db;                        // Database

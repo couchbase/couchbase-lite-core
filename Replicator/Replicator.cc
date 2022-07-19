@@ -74,7 +74,6 @@ namespace litecore { namespace repl {
     ,_delegate(&delegate)
     ,_connectionState(connection().state())
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
-    ,_subRepls(_options->collectionCount())
     {
         // Post-conditions:
         //   collectionOpts.size() > 0
@@ -88,66 +87,19 @@ namespace litecore { namespace repl {
         _importance = 2;
 
         logInfo("%s", string(*options).c_str());
-        Assert(_options->collectionCount() < kNotCollectionIndex);
 
-        // Retained C4Collection object may become invalid if the underlying collection
-        // is deleted. By spec, all collections must exist when replication starts,
-        // and it is an error if any collection is deleted while in progress.
-        // Note: retained C4Collection* may blow up if it is used after becoming invalid,
-        // and this is expected.
-        _db->useLocked([this](Retained<C4Database>& db) {
-            _options->forEachCollection([this,&db](unsigned i, const Options::CollectionOptions& coll) {
-                C4Collection* c = db->getCollection(Options::collectionPathToSpec(coll.collectionPath));
-                if (c == nullptr) {
-                    error::_throw(error::UnexpectedError);
-                }
-                this->_subRepls[i].collection = c;
-            });
-        });
-
-        actor::Timer::duration saveDelay = tuning::kDefaultCheckpointSaveDelay;
-        if (auto i = options->properties[kC4ReplicatorCheckpointInterval].asInt(); i > 0)
-            saveDelay = chrono::seconds(i);
-
-        bool isPushBusy = false;
-        bool isPullBusy = false;
-        for (CollectionIndex i = 0; i < _options->collectionCount(); ++i) {
-            SubReplicator& sub = _subRepls[i];
-            if (_options->push(i) != kC4Disabled) {
-                sub.checkpointer.reset(new Checkpointer(_options, webSocket->url(), sub.collection));
-                sub.pusher = new Pusher(this, *sub.checkpointer, i);
-                sub.pushStatus = kC4Busy;
-                isPushBusy = true;
-            } else {
-                sub.pushStatus = kC4Stopped;
-            }
-            if (_options->pull(i) != kC4Disabled) {
-                sub.puller = new Puller(this, i);
-                sub.pullStatus = kC4Busy;
-                if (sub.checkpointer.get() == nullptr) {
-                    sub.checkpointer.reset(new Checkpointer(_options, webSocket->url(), sub.collection));
-                }
-                isPullBusy = true;
-            } else {
-                sub.pullStatus = kC4Stopped;
-            }
-            DebugAssert(sub.checkpointer.get() != nullptr);
-            sub.checkpointer->enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, i, _1));
+        _remoteURL = webSocket->url();
+        if (_options->isActive()) {
+            prepareWorkers();
         }
-        _pushStatus = isPushBusy ? kC4Busy : kC4Stopped;
-        _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
 
-        if (std::none_of(_subRepls.begin(), _subRepls.end(), [](const SubReplicator& sub) {
-            return sub.pusher;
-        })) {
-            for (auto profile : {"subChanges", "getAttachment", "proveAttachment"})
-                registerHandler(profile,  &Replicator::returnForbidden);
-        }
-        if (std::none_of(_subRepls.begin(), _subRepls.end(), [](const SubReplicator& sub) {
-            return sub.puller;
-        })) {
-            for (auto profile : {"changes", "proposeChanges", "rev", "norev"})
-                registerHandler(profile,  &Replicator::returnForbidden);
+        // Following messages are handled by appropriate workers.
+        // Replicator receives all the messages. Based on collectionIndex,
+        // it dispatches the message to appropriate workers.
+        for (auto profile : {"subChanges", "getAttachment", "proveAttachment", // passive pushers
+                "changes", "proposeChanges", "rev", "norev"                    // passive pullers
+        }) {
+            registerHandler(profile, &Replicator::handleConnectionMessage);
         }
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
@@ -172,6 +124,10 @@ namespace litecore { namespace repl {
             connection().start();
             // Now wait for _onConnect or _onClose...
 
+            if (!_options->isActive()) {
+                return;
+            }
+
             _findExistingConflicts();
 
             // Get the remote DB ID:
@@ -182,12 +138,15 @@ namespace litecore { namespace repl {
             C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
             logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
 
-            for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                if (_options->push(i) > kC4Passive || _options->pull(i) > kC4Passive) {
-                    // Get the checkpoints:
-                    if (getLocalCheckpoint(reset, i)) {
-                        getRemoteCheckpoint(false, i);
-                    }
+            bool goOn = true;
+            for (CollectionIndex i = 0; goOn && i < _subRepls.size(); ++i) {
+                goOn = goOn && getLocalCheckpoint(reset, i);
+            }
+            if (goOn) {
+                if (_options->collectionAware()) {
+                    getCollections();
+                } else {
+                    getRemoteCheckpoint(false, 0);
                 }
             }
         } catch (...) {
@@ -200,11 +159,9 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_findExistingConflicts() {
+        // Active replicator
         Stopwatch st;
         for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-            if (_options->pull(i) <= kC4Passive) // only check in pull mode
-                continue;
-
             SubReplicator& sub = _subRepls[i];
             try {
                 unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(false, sub.collection);
@@ -250,6 +207,7 @@ namespace litecore { namespace repl {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
+            _workerHandlers.clear();
         }
 
         // CBL-1061: This used to be inside the connected(), but static analysis shows
@@ -519,6 +477,7 @@ namespace litecore { namespace repl {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
+            _workerHandlers.clear();
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
@@ -607,9 +566,12 @@ namespace litecore { namespace repl {
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
-            for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                if (_options->push(i) > kC4Passive || _options->pull(i) > kC4Passive)
-                    getRemoteCheckpoint(false, i);
+            if (_options->isActive()) {
+                if (_options->collectionAware()) {
+                    getCollections();
+                } else {
+                    getRemoteCheckpoint(false, 0);
+                }
             }
         }
     }
@@ -710,6 +672,13 @@ namespace litecore { namespace repl {
         }
     }
 
+// For 3.1 server (passive) replicator, we don't know the collections to sync with until
+// the first message, getCollections, from the client (active) replicator. Because of it,
+// we put off creating workers until that message is received. This approach does not work
+// with 3.0 active replicator which may start a message that requires readiness of workers.
+// As a temporary work around to the legacy mode, we do not call startReplicating() from
+// outside the response to "getCheckpoint" message.
+#define TEMP_WORK_AROUND
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
     void Replicator::getRemoteCheckpoint(bool refresh, CollectionIndex coll) {
@@ -730,9 +699,7 @@ namespace litecore { namespace repl {
         }
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
-        if (_options->collectionAware()) {
-            msg[kCollectionProperty] = coll;
-        }
+        setMsgCollection(msg, coll);
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this, refresh, coll, &sub](MessageProgress progress) {
             // ...after the checkpoint is received:
@@ -777,10 +744,14 @@ namespace litecore { namespace repl {
                 bool valid = sub.checkpointer->validateWith(remoteCheckpoint);
                 if (!valid && sub.pusher)
                     sub.pusher->checkpointIsInvalid();
-
+#ifdef TEMP_WORK_AROUND
+            }
+#endif
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating(coll);
-            }
+#ifndef TEMP_WORK_AROUND
+        }
+#endif
 
             if (sub.checkpointJSONToSave)
                 saveCheckpointNow(coll);    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
@@ -788,10 +759,12 @@ namespace litecore { namespace repl {
 
         sub.remoteCheckpointRequested = true;
 
+#ifndef TEMP_WORK_AROUND
         // If there's no local checkpoint, we know we're starting from zero and don't need to
         // wait for the remote one before getting started:
         if (!refresh && !sub.hadLocalCheckpoint)
             startReplicating(coll);
+#endif
     }
 
     // getCollections() will be called when the replicator starts (start() or _onConnect())
@@ -894,10 +867,9 @@ namespace litecore { namespace repl {
                         bool valid = _subRepls[i].checkpointer->validateWith(remoteCheckpoints[i]);
                         if (!valid && _subRepls[i].pusher)
                             _subRepls[i].pusher->checkpointIsInvalid();
-
-                        // Now we have the checkpoints! Time to start replicating:
-                        startReplicating(i);
                     }
+                    // Now we have the checkpoints! Time to start replicating:
+                    startReplicating(i);
 
                     if (_subRepls[i].checkpointJSONToSave)
                         saveCheckpointNow(i);    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
@@ -906,12 +878,6 @@ namespace litecore { namespace repl {
         });
 
         _getCollectionsRequested = true;
-        
-        for (int i = 0; i < _subRepls.size(); i++) {
-            if (!_subRepls[i].hadLocalCheckpoint) {
-                startReplicating(i);
-            }
-        }
     }
 
 
@@ -944,7 +910,7 @@ namespace litecore { namespace repl {
 
         MessageBuilder msg("setCheckpoint"_sl);
         if (_options->collectionAware()) {
-            msg[kCollectionProperty] = coll;
+            setMsgCollection(msg, coll);
         }
         msg["client"_sl] = sub.remoteCheckpointDocID;
         msg["rev"_sl] = sub.remoteCheckpointRevID;
@@ -1071,7 +1037,16 @@ namespace litecore { namespace repl {
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if (!checkpointID)
             return;
-        
+
+        auto collectionIn = request->intProperty(kCollectionProperty, kNotCollectionIndex);
+        if (collectionIn == kNotCollectionIndex && _subRepls.size() == 0) {
+            // This is a 3.0 client and we have't created workers yet.
+            std::vector<C4CollectionSpec> v;
+            v.emplace_back(kC4DefaultCollectionSpec);
+            _options->rearrangeCollections(v);
+            prepareWorkers();
+        }
+
         alloc_slice body, revID;
         int status = 0;
         try {
@@ -1148,35 +1123,48 @@ namespace litecore { namespace repl {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: mismatched checkpoint_ids and collections"_sl});
             return;
         }
-        
-        if (_sessionCollections.size() > 0) {
-            request->respondWithError({"BLIP"_sl, 400, "getCollections is already settled for the replicator"_sl});
-            return;
+
+        // Convert to collection specs
+        vector<C4CollectionSpec> collSpecs;
+        collSpecs.reserve(collections.count());
+        for (fleece::Array::iterator i(collections); i; ++i) {
+            if (!i.value().asString()) {
+                request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: empty collection path"_sl});
+                return;
+            }
+            collSpecs.emplace_back(Options::collectionPathToSpec(i.value().asString()));
         }
         
-        unordered_map<C4Database::CollectionSpec, C4Collection*> collectionMap;
-        for (int i = 0; i < _subRepls.size(); i++) {
-            C4Collection* coll = collection(i);
-            collectionMap.insert({coll->getSpec(), coll});
+        // check duplicates
+        std::unordered_set<C4CollectionSpec> specSet;
+        for (size_t i = 0; i < collSpecs.size(); ++i) {
+            auto [it, b] = specSet.insert(collSpecs[i]);
+            if (!b) {
+                request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: duplicate collection path"_sl});
+                return;
+            }
         }
-        
+
+        // Rearrange _options->collectionOpts according to collSpecs. If i-th CollectionSpec
+        // is not found, put an empty collectionOptions at i-th position.
+        _options->rearrangeCollections(collSpecs);
+        prepareWorkers();
+        DebugAssert(_options->workingCollectionCount() == _subRepls.size() &&
+                    _options->workingCollectionCount() == collSpecs.size());
+
         MessageBuilder response(request);
         auto &enc = response.jsonBody();
         enc.beginArray();
         
         for (int i = 0; i < checkpointIDs.count(); i++) {
             auto checkpointID = checkpointIDs[i].asString();
-            auto collectionPath = collections[i].asString();
-            
+
             logInfo("Request to get peer checkpoint '%.*s' for collection '%.*s'",
-                    SPLAT(checkpointID), SPLAT(collectionPath));
-            
-            C4Database::CollectionSpec spec = Options::collectionPathToSpec(collectionPath);
-            C4Collection* coll = collectionMap[spec];
-            
-            if (!coll) {
-                logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found",
-                        SPLAT(checkpointID), SPLAT(collectionPath));
+                    SPLAT(checkpointID), SPLAT(collections[i].asString()));
+
+            if (!_options->collectionOpts[i].collectionPath) {
+                logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found in the Replicator's config",
+                        SPLAT(checkpointID), SPLAT(collections[i].asString()));
                 enc.writeNull();
                 continue;
             }
@@ -1195,7 +1183,6 @@ namespace litecore { namespace repl {
             
             if (status != 0) {
                 request->respondWithError({"HTTP"_sl, status});
-                _sessionCollections.clear();
                 return;
             }
             
@@ -1203,11 +1190,77 @@ namespace litecore { namespace repl {
             auto checkpoint = doc.root().asDict().mutableCopy();
             checkpoint.set("rev"_sl, revID);
             enc.writeValue(checkpoint);
-            
-            _sessionCollections.push_back(coll);
         }
         enc.endArray();
         request->respond(response);
+    }
+
+    void Replicator::prepareWorkers() {
+        _subRepls.resize(_options->workingCollectionCount());
+
+        // Retained C4Collection object may become invalid if the underlying collection
+        // is deleted. By spec, all collections must exist when replication starts,
+        // and it is an error if any collection is deleted while in progress.
+        // Note: retained C4Collection* may blow up if it is used after becoming invalid,
+        // and this is expected.
+        _db->useLocked([this](Retained<C4Database>& db) {
+            for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
+                C4Collection* c = db->getCollection(Options::collectionPathToSpec(
+                                                    _options->collectionOpts[i].collectionPath));
+                if (c == nullptr) {
+                    error::_throw(error::UnexpectedError);
+                }
+                _subRepls[i].collection = c;
+            }
+        });
+
+        actor::Timer::duration saveDelay = tuning::kDefaultCheckpointSaveDelay;
+        if (auto i = _options->properties[kC4ReplicatorCheckpointInterval].asInt(); i > 0)
+            saveDelay = chrono::seconds(i);
+
+        bool isPushBusy = false;
+        bool isPullBusy = false;
+        for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
+            SubReplicator& sub = _subRepls[i];
+            if (_options->push(i) != kC4Disabled) {
+                sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
+                sub.pusher = new Pusher(this, *sub.checkpointer, i);
+                sub.pushStatus = kC4Busy;
+                isPushBusy = true;
+            } else {
+                sub.pushStatus = kC4Stopped;
+            }
+            if (_options->pull(i) != kC4Disabled) {
+                sub.puller = new Puller(this, i);
+                sub.pullStatus = kC4Busy;
+                if (sub.checkpointer.get() == nullptr) {
+                    sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
+                }
+                isPullBusy = true;
+            } else {
+                sub.pullStatus = kC4Stopped;
+            }
+            DebugAssert(sub.checkpointer.get() != nullptr);
+            sub.checkpointer->enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, i, _1));
+        }
+        _pushStatus = isPushBusy ? kC4Busy : kC4Stopped;
+        _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
+    }
+
+    void Replicator::handleConnectionMessage(Retained<blip::MessageIn> msg) {
+        slice profile = msg->property("Profile"_sl);
+        if (!profile)
+            return;
+
+        auto coll = msg->intProperty(kCollectionProperty, kNotCollectionIndex);
+        CollectionIndex i = (coll == kNotCollectionIndex) ? 0 : (CollectionIndex)coll;
+        DebugAssert(i < _subRepls.size());
+        auto it = _workerHandlers.find({profile.asString(),i});
+        if (it != _workerHandlers.end()) {
+            it->second(msg);
+        } else {
+            returnForbidden(msg);
+        }
     }
 
 } }

@@ -179,6 +179,32 @@ namespace litecore { namespace repl {
         string statusVString() const;
         void updatePushStatus(CollectionIndex i, const Status& status);
         void updatePullStatus(CollectionIndex i, const Status& status);
+        void prepareWorkers();
+
+        void handleConnectionMessage(Retained<blip::MessageIn>);
+    public:
+        template<typename WORKER>
+        void registerWorkerHandler(WORKER* worker,
+                                   const char *profile NONNULL,
+                                   void (WORKER::*method)(Retained<blip::MessageIn>)) {
+            std::function<void(Retained<blip::MessageIn>)> fn(
+                                        std::bind(method, worker, std::placeholders::_1));
+            pair<string, CollectionIndex> key {profile, worker->collectionIndex()};
+            _workerHandlers.emplace(key, worker->asynchronize(profile, fn));
+        }
+
+    private:
+        using WorkerHandler  = std::function<void(Retained<blip::MessageIn>)>;
+        using WorkerHandlers = std::map<pair<string, CollectionIndex>,
+                                        blip::Connection::RequestHandler>;
+
+        void _setWorkerHandler(const char* profile, CollectionIndex i,
+                               blip::Connection::RequestHandler handler) {
+            pair<string, CollectionIndex> key {profile, i};
+            _workerHandlers.emplace(key, handler);
+        }
+
+        WorkerHandlers _workerHandlers;
 
         // Member variables:
 
@@ -208,8 +234,8 @@ namespace litecore { namespace repl {
         bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
         ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
         vector<SubReplicator> _subRepls;
-        std::vector<C4Collection*> _sessionCollections;  // Collections in the current session populated by handleGetCollections
-        bool                _getCollectionsRequested {}; // True while "getCollections" request pending
+        bool              _getCollectionsRequested {}; // True while "getCollections" request pending
+        alloc_slice       _remoteURL;
     };
 
 } }

@@ -313,5 +313,10 @@ namespace litecore { namespace repl {
             _parent = nullptr;
     }
 
+    void Worker::setMsgCollection(blip::MessageBuilder& msg, CollectionIndex i) {
+        if (_options->collectionAware()) {
+            msg[kCollectionProperty] = i;
+        }
+    }
 
 } }
