@@ -140,6 +140,7 @@ namespace litecore { namespace repl {
 
             bool goOn = true;
             for (CollectionIndex i = 0; goOn && i < _subRepls.size(); ++i) {
+                // if any getLocalCheckpoint fails, the replicator would already be stopped.
                 goOn = goOn && getLocalCheckpoint(reset, i);
             }
             if (goOn) {
@@ -678,7 +679,8 @@ namespace litecore { namespace repl {
 // with 3.0 active replicator which may start a message that requires readiness of workers.
 // As a temporary work around to the legacy mode, we do not call startReplicating() from
 // outside the response to "getCheckpoint" message.
-#define TEMP_WORK_AROUND
+// Keep the following define until CBL-3442 is resolved.
+#define CBL_3442
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
     void Replicator::getRemoteCheckpoint(bool refresh, CollectionIndex coll) {
@@ -744,22 +746,23 @@ namespace litecore { namespace repl {
                 bool valid = sub.checkpointer->validateWith(remoteCheckpoint);
                 if (!valid && sub.pusher)
                     sub.pusher->checkpointIsInvalid();
-#ifdef TEMP_WORK_AROUND
+#ifdef CBL_3442
             }
 #endif
+            if (!refresh) {
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating(coll);
-#ifndef TEMP_WORK_AROUND
+            }
+#ifndef CBL_3442
         }
 #endif
-
             if (sub.checkpointJSONToSave)
                 saveCheckpointNow(coll);    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
         });
 
         sub.remoteCheckpointRequested = true;
 
-#ifndef TEMP_WORK_AROUND
+#ifndef CBL_3442
         // If there's no local checkpoint, we know we're starting from zero and don't need to
         // wait for the remote one before getting started:
         if (!refresh && !sub.hadLocalCheckpoint)

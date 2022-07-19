@@ -282,7 +282,7 @@ namespace litecore { namespace repl {
         //                  Otherwise, an empty collectionOptions is inserted in collectionOpts[i].
         // By empty collectionOptions we mean the collection path is a null slice.
 
-        void rearrangeCollections(const std::vector<C4CollectionSpec>& collections) const {
+        void rearrangeCollections(const std::vector<C4CollectionSpec>& activeCollections) const {
             DebugAssert(!_isActive);
 
             size_t origCount = collectionOpts.size();
@@ -291,8 +291,8 @@ namespace litecore { namespace repl {
             for (auto opt : collectionOpts) {
                 specs.emplace_back(collectionPathToSpec(opt.collectionPath));
             }
-            for (size_t i = 0; i < collections.size(); ++i) {
-                auto findIt = _collectionSpecToIndex.find(collections[i]);
+            for (size_t i = 0; i < activeCollections.size(); ++i) {
+                auto findIt = _collectionSpecToIndex.find(activeCollections[i]);
                 if (findIt == _collectionSpecToIndex.end()) {
                     // Put the unfound spec to the end of collectionOpts
                     size_t j = collectionOpts.size();
@@ -308,7 +308,7 @@ namespace litecore { namespace repl {
                     }
                 }
             }
-            _workingCollectionCount = (CollectionIndex)collections.size();
+            _workingCollectionCount = (CollectionIndex)activeCollections.size();
         }
 
     private:

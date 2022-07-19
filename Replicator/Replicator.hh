@@ -197,13 +197,6 @@ namespace litecore { namespace repl {
         using WorkerHandler  = std::function<void(Retained<blip::MessageIn>)>;
         using WorkerHandlers = std::map<pair<string, CollectionIndex>,
                                         blip::Connection::RequestHandler>;
-
-        void _setWorkerHandler(const char* profile, CollectionIndex i,
-                               blip::Connection::RequestHandler handler) {
-            pair<string, CollectionIndex> key {profile, i};
-            _workerHandlers.emplace(key, handler);
-        }
-
         WorkerHandlers _workerHandlers;
 
         // Member variables:
