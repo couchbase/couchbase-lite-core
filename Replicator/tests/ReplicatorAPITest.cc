@@ -317,8 +317,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
         expectedOverall = 24;
     }
 
+    C4ReplicationCollection coll;
     SECTION("When using a collection, but not setting a per collection context, only overall is used") {
-        C4ReplicationCollection coll = {
+        coll = {
             kC4DefaultCollectionSpec,
             kC4Disabled,
             kC4OneShot
@@ -331,7 +332,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     }
 
     SECTION("When using a collection, and setting a per collection context, both contexts are available") {
-        C4ReplicationCollection coll = {
+        coll = {
             kC4DefaultCollectionSpec,
             kC4Disabled,
             kC4OneShot
