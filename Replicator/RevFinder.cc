@@ -37,8 +37,8 @@ namespace litecore::repl {
     {
         _mustBeProposed = passive() && _options->noIncomingConflicts()
                                    && !_db->usingVersionVectors();
-        registerHandler("changes",          &RevFinder::handleChanges);
-        registerHandler("proposeChanges",   &RevFinder::handleChanges);
+        replicator->registerWorkerHandler(this, "changes", &RevFinder::handleChanges);
+        replicator->registerWorkerHandler(this, "proposeChanges", &RevFinder::handleChanges);
     }
 
     void RevFinder::onError(C4Error err) {

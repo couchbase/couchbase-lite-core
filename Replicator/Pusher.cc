@@ -46,9 +46,9 @@ namespace litecore { namespace repl {
             _proposeChanges = true;
             _proposeChangesKnown = true;
         }
-        registerHandler("subChanges",      &Pusher::handleSubChanges);
-        registerHandler("getAttachment",   &Pusher::handleGetAttachment);
-        registerHandler("proveAttachment", &Pusher::handleProveAttachment);
+        replicator->registerWorkerHandler(this, "subChanges", &Pusher::handleSubChanges);
+        replicator->registerWorkerHandler(this, "getAttachment", &Pusher::handleGetAttachment);
+        replicator->registerWorkerHandler(this, "proveAttachment", &Pusher::handleProveAttachment);
     }
 
 

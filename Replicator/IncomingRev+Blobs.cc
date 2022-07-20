@@ -59,12 +59,7 @@ namespace litecore { namespace repl {
         _blobBytesWritten = 0;
 
         MessageBuilder req("getAttachment"_sl);
-        
-        if (_options->collectionAware) {
-            // TODO: Use Worker::kCollectionProperty
-            req["collection"_sl] = collectionIndex();
-        }
-        
+        setMsgCollection(req, collectionIndex());
         req["digest"_sl] = _blob->key.digestString();
         req["docID"] = _blob->docID;
         if (_blob->compressible)

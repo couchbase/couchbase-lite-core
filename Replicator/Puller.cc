@@ -47,8 +47,8 @@ namespace litecore { namespace repl {
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
-        registerHandler("rev",              &Puller::handleRev);
-        registerHandler("norev",            &Puller::handleNoRev);
+        replicator->registerWorkerHandler(this, "rev",      &Puller::handleRev);
+        replicator->registerWorkerHandler(this, "norev",    &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
         if (!passive() && _options->noIncomingConflicts())
