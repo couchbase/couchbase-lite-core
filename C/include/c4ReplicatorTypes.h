@@ -115,6 +115,7 @@ C4API_BEGIN_DECLS
         C4SequenceNumber sequence;
         C4Error error;
         bool errorIsTransient;
+        void* collectionContext;
     } C4DocumentEnded;
 
 

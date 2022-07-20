@@ -38,13 +38,15 @@ namespace litecore { namespace repl {
 
 
     ChangesFeed::ChangesFeed(Delegate &delegate, const Options *options,
-                             DBAccess &db, Checkpointer *checkpointer)
+                             DBAccess &db, Checkpointer *checkpointer,
+                             CollectionIndex collectionIndex)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
     ,_skipDeleted(_options->skipDeleted())
+    ,_collectionIndex(collectionIndex)
     {
         DebugAssert(_checkpointer);
         auto i = _options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
@@ -246,7 +248,8 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec());
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
+                _options->collectionOpts[_collectionIndex].callbackContext);
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }
@@ -317,8 +320,8 @@ namespace litecore { namespace repl {
 
 
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, const Options *options,
-                                                 DBAccess &db, Checkpointer *cp)
-    :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
+                                                 DBAccess &db, Checkpointer *cp, CollectionIndex collectionIndex)
+    :ChangesFeed(delegate, options, db, cp, collectionIndex)     // DBAccess is a subclass of access_lock<C4Database*>
     ,_usingVersionVectors(db.usingVersionVectors())
     { }
 

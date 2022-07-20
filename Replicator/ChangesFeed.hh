@@ -47,7 +47,7 @@ namespace litecore::repl {
             virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) =0;
         };
 
-        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*);
+        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*, CollectionIndex);
         ~ChangesFeed();
 
         // Setup:
@@ -108,13 +108,14 @@ namespace litecore::repl {
         bool _isCheckpointValid {true};
         bool _caughtUp {false};                             // Delivered all historical changes
         std::atomic<bool> _notifyOnChanges {false};         // True if expecting change notification
+        CollectionIndex _collectionIndex;                   // Identifies the collection index (in the replicator) of the collection being used
     };
 
 
     class ReplicatorChangesFeed final : public ChangesFeed {
     public:
         ReplicatorChangesFeed(Delegate &delegate, const Options *options,
-                              DBAccess &db, Checkpointer *cp);
+                              DBAccess &db, Checkpointer *cp, CollectionIndex);
 
         void setFindForeignAncestors(bool use)      {_getForeignAncestors = use;}
 

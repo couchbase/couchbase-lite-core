@@ -63,7 +63,7 @@ namespace litecore { namespace repl {
         bool            deltaOK {false};            // Can send a delta
         int8_t          retryCount {0};             // Number of times this revision has been retried
 
-        RevToSend(const C4DocumentInfo &info, C4CollectionSpec);
+        RevToSend(const C4DocumentInfo &info, C4CollectionSpec, void*);
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
@@ -97,12 +97,14 @@ namespace litecore { namespace repl {
                     slice historyBuf,
                     bool deleted,
                     bool noConflicts,
-                    C4CollectionSpec);
+                    C4CollectionSpec,
+                    void*);
 
         /// Constructor for a revoked document
         RevToInsert(slice docID, slice revID,
                     RevocationMode,
-                    C4CollectionSpec);
+                    C4CollectionSpec,
+                    void*);
 
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;

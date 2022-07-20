@@ -72,7 +72,8 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options->noIncomingConflicts(),
-                               replicator()->collection(collectionIndex())->getSpec());
+                               replicator()->collection(collectionIndex())->getSpec(),
+                               _options->collectionOpts[collectionIndex()].callbackContext);
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
         _remoteSequence = RemoteSequence(sequenceStr);

@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
     :Worker(replicator, "Push", collIndex)
     ,_continuous(_options->push(collectionIndex()) == kC4Continuous)
     ,_checkpointer(checkpointer)
-    ,_changesFeed(*this, _options, *_db, &checkpointer)
+    ,_changesFeed(*this, _options, *_db, &checkpointer, collectionIndex())
     {
         if (_options->push(collectionIndex()) <= kC4Passive) {
             _proposeChanges = false;

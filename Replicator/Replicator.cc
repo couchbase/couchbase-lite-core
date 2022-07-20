@@ -176,7 +176,8 @@ namespace litecore { namespace repl {
                                                         nullslice,      /* history buf */
                                                         info.flags & kDocDeleted,
                                                         false,
-                                                        sub.collection->getSpec()));
+                                                        sub.collection->getSpec(),
+                                                        _options->collectionOpts[i].callbackContext));
                     rev->error = C4Error::make(LiteCoreDomain, kC4ErrorConflict);
                     _docsEnded.push(rev);
                     ++nConflicts;

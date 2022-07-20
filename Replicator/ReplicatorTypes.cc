@@ -29,8 +29,8 @@ namespace litecore { namespace repl {
 #pragma mark - REVTOSEND:
 
 
-    RevToSend::RevToSend(const C4DocumentInfo &info, C4CollectionSpec collSpec)
-    :ReplicatedRev(collSpec, slice(info.docID), slice(info.revID), info.sequence)
+    RevToSend::RevToSend(const C4DocumentInfo &info, C4CollectionSpec collSpec, void* context)
+    :ReplicatedRev(collSpec, slice(info.docID), slice(info.revID), context, info.sequence)
     ,bodySize(info.bodySize)
     ,expiration(info.expiration)
     {
@@ -99,8 +99,9 @@ namespace litecore { namespace repl {
                              slice historyBuf_,
                              bool deleted_,
                              bool noConflicts_,
-                             C4CollectionSpec spec)
-    :ReplicatedRev(spec, docID_, revID_)
+                             C4CollectionSpec spec,
+                             void* collectionContext)
+    :ReplicatedRev(spec, docID_, revID_, collectionContext)
     ,historyBuf(historyBuf_)
     ,owner(owner_)
     ,noConflicts(noConflicts_)
@@ -111,8 +112,8 @@ namespace litecore { namespace repl {
 
 
     RevToInsert::RevToInsert(slice docID_, slice revID_, RevocationMode mode,
-                             C4CollectionSpec spec)
-    :ReplicatedRev(spec, move(docID_), move(revID_))
+                             C4CollectionSpec spec, void* collectionContext)
+    :ReplicatedRev(spec, move(docID_), move(revID_), collectionContext)
     ,revocationMode(mode)
     {
         flags |= kRevPurged;

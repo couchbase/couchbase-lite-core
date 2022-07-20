@@ -287,6 +287,73 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == kRevID);
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[Pull][Sync]") {
+    createDB2();
+    createRev(db2, "doc"_sl, kRevID, kFleeceBody);
+
+    C4Error err;
+    C4ReplicatorParameters params{};
+    std::vector<std::string> docIDs;
+    params.pull = kC4OneShot;
+    int overall = 0;
+    int perCollection = 0;
+    params.callbackContext = &overall;
+    params.onDocumentsEnded = [](C4Replicator* repl,
+        bool pushing,
+        size_t numDocs,
+        const C4DocumentEnded* docs[],
+        void* context) {
+            *((int*)context) = 42;
+            if (docs[0]->collectionContext) {
+                *((int*)docs[0]->collectionContext) = 24;
+            }
+    };
+
+    int expectedOverall = 0;
+    int expectedPerCollection = 0;
+    SECTION("In legacy mode, only the overall context is used") {
+        // Both writes will affect the same variable
+        expectedOverall = 24;
+    }
+
+    SECTION("When using a collection, but not setting a per collection context, only overall is used") {
+        C4ReplicationCollection coll = {
+            kC4DefaultCollectionSpec,
+            kC4Disabled,
+            kC4OneShot
+        };
+
+        params.collectionCount = 1;
+        params.collections = &coll;
+        expectedOverall = 42;
+        // perCollection is untouched
+    }
+
+    SECTION("When using a collection, and setting a per collection context, both contexts are available") {
+        C4ReplicationCollection coll = {
+            kC4DefaultCollectionSpec,
+            kC4Disabled,
+            kC4OneShot
+        };
+
+        coll.callbackContext = &perCollection;
+        params.collectionCount = 1;
+        params.collections = &coll;
+        expectedOverall = 42;
+        expectedPerCollection = 24;
+    }
+
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    REQUIRE(repl);
+    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, ERROR_INFO(err)));
+
+    c4repl_start(repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+    CHECK(overall == expectedOverall);
+    CHECK(perCollection == expectedPerCollection);
+}
 #endif
 
 
