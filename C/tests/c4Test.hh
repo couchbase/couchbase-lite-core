@@ -273,6 +273,13 @@ public:
                                                  const char *contentType,
                                                  std::vector<std::string>* legacyNames =nullptr,
                                                  C4RevisionFlags flags =0);
+    std::vector<C4BlobKey> addDocWithAttachments(C4Database* database,
+                                                 C4CollectionSpec collectionSpec,
+                                                 C4Slice docID,
+                                                 std::vector<std::string> attachments,
+                                                 const char *contentType,
+                                                 std::vector<std::string>* legacyNames =nullptr,
+                                                 C4RevisionFlags flags =0);
     void checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData);
     void checkAttachments(C4Database *inDB, std::vector<C4BlobKey> blobKeys,
                           std::vector<std::string> expectedData);
