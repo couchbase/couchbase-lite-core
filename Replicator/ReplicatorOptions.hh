@@ -447,7 +447,8 @@ namespace litecore { namespace repl {
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {
             auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);
-            auto [at, b] = _collectionSpecToIndex.insert(std::make_pair(spec, i));
+            bool b;
+            std::tie(std::ignore, b) = _collectionSpecToIndex.insert(std::make_pair(spec, i));
             if (!b) {
                 throw error(error::LiteCore, error::InvalidParameter,
                             "Invalid replicator configuration: the collection list contains duplicated collections.");
