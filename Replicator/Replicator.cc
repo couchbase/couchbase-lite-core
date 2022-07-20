@@ -1141,7 +1141,8 @@ namespace litecore { namespace repl {
         // check duplicates
         std::unordered_set<C4CollectionSpec> specSet;
         for (size_t i = 0; i < collSpecs.size(); ++i) {
-            auto [it, b] = specSet.insert(collSpecs[i]);
+            bool b;
+            std::tie(std::ignore, b) = specSet.insert(collSpecs[i]);
             if (!b) {
                 request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: duplicate collection path"_sl});
                 return;
