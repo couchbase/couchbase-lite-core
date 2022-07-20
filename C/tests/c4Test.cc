@@ -519,6 +519,21 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 vector<string>* legacyNames,
                                                 C4RevisionFlags flags)
 {
+    return addDocWithAttachments(db, kC4DefaultCollectionSpec, docID, attachments,
+                                 contentType, legacyNames, flags);
+}
+
+vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database,
+                                                C4CollectionSpec collSpec,
+                                                C4Slice docID,
+                                                vector<string> attachments,
+                                                const char *contentType,
+                                                vector<string>* legacyNames,
+                                                C4RevisionFlags flags)
+{
+    C4Collection* coll = c4db_getCollection(database, collSpec, ERROR_INFO());
+    REQUIRE(coll);
+    
     vector<C4BlobKey> keys;
     stringstream json;
     int i = 0;
@@ -549,12 +564,13 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     rq.revFlags = flags | kRevHasAttachments;
     rq.allocedBody = body;
     rq.save = true;
-    C4Document* doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
+    C4Document* doc = c4coll_putDoc(coll, &rq, nullptr, ERROR_INFO());
     c4slice_free(body);
     REQUIRE(doc != nullptr);
     c4doc_release(doc);
     return keys;
 }
+
 
 void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
     C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, ERROR_INFO());

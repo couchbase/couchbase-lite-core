@@ -70,14 +70,17 @@ public:
 
     void runPushPullReplication(vector<CollectionSpec>specs1,
                                 vector<CollectionSpec>specs2,
-                                C4ReplicatorMode activeMode =kC4OneShot) {
+                                C4ReplicatorMode activeMode =kC4OneShot,
+                                bool reset =false)
+    {
         vector<C4ReplicationCollection> coll1 = replCollections(specs1, kC4Disabled, activeMode);
         vector<C4ReplicationCollection> coll2 = replCollections(specs2, kC4Passive, kC4Passive);
-        runReplicationCollections(coll1, coll2);
+        runReplicationCollections(coll1, coll2, reset);
     }
     
     void runReplicationCollections(vector<C4ReplicationCollection>& coll1,
-                                   vector<C4ReplicationCollection>& coll2)
+                                   vector<C4ReplicationCollection>& coll2,
+                                   bool reset =false)
     {
         C4ReplicatorParameters params1 {};
         params1.collections = coll1.data();
@@ -89,7 +92,7 @@ public:
         params2.collectionCount = (unsigned) coll2.size();
         Options opts2 = Options(params2);
         
-        runReplicators(opts1, opts2);
+        runReplicators(opts1, opts2, reset);
     }
     
     vector<CollectionSpec> getCollectionSpecs(C4Database* db, slice scope) {
@@ -107,9 +110,11 @@ public:
     }
     
     // Add new docs to a collection
-    int addCollDocs(C4Database* db, CollectionSpec spec, int total) {
+    int addCollDocs(C4Database* db, CollectionSpec spec, int total, string prefix = "") {
         C4Collection* coll = getCollection(db, spec);
-        string prefix = (db == this->db ? "newdoc-db1-" : (db == this->db2 ? "newdoc-db2-" : "newdoc-"));
+        if (prefix.empty()) {
+            prefix= (db == this->db ? "newdoc-db1-" : (db == this->db2 ? "newdoc-db2-" : "newdoc-"));
+        }
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
             Log("-------- Creating %d docs --------", i);
@@ -120,6 +125,26 @@ public:
         }
         Log("-------- Done creating docs --------");
         return docNo - 1;
+    }
+    
+    void purgeAllDocs(C4Database* db, CollectionSpec spec) {
+        C4Collection* coll = getCollection(db, spec);
+        
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags |= kC4IncludeDeleted;
+        options.flags &= ~kC4IncludeBodies;
+        
+        C4Error error;
+        auto e = c4coll_enumerateAllDocs(coll, &options, ERROR_INFO(error));
+        REQUIRE(e);
+        {
+            TransactionHelper t(db2);
+            while(c4enum_next(e, &error)) {
+                C4DocumentInfo info;
+                REQUIRE(c4enum_getDocumentInfo(e, &info));
+                REQUIRE(c4coll_purgeDoc(coll, info.docID, nullptr));
+            }
+        }
     }
     
 private:
@@ -175,6 +200,24 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
         runPushPullReplication({Default}, {Default});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":40,\"remote\":40}");
     }
+    
+    SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 10;
+        runPushReplication({Default}, {Guitars, Default});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+    }
+    
+    SECTION("PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 10;
+        runPullReplication({Guitars, Default}, {Default});
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+    }
+    
+    SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 20;
+        runPushPullReplication({Default}, {Guitars, Default});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":40,\"remote\":40}");
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
@@ -195,7 +238,25 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
  
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 20;
-        runPushPullReplication({Guitars}, {Guitars});
+        runPushPullReplication({Guitars}, {Guitars, Default});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20,\"remote\":20}");
+    }
+    
+    SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 10;
+        runPushReplication({Guitars}, {Guitars});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+    }
+    
+    SECTION("PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 10;
+        runPullReplication({Guitars, Default}, {Guitars});
+        validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+    }
+ 
+    SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        _expectedDocumentCount = 20;
+        runPushPullReplication({Guitars}, {Guitars, Default});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":20,\"remote\":20}");
     }
 }
@@ -249,6 +310,90 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
         validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
     }
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Incremental Push and Pull", "[Push][Pull]") {
+    addCollDocs(db, Roses, 10);
+    addCollDocs(db, Tulips, 10);
+    addCollDocs(db2, Roses, 10);
+    addCollDocs(db2, Tulips, 10);
+    
+    _expectedDocumentCount = 40;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    
+    addCollDocs(db, Roses, 1, "rose1");
+    addCollDocs(db, Tulips, 2, "tulip1");
+    
+    addCollDocs(db2, Roses, 3, "rose2");
+    addCollDocs(db2, Tulips, 4, "tulip2");
+    
+    _expectedDocumentCount = 10;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":11,\"remote\":13}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":12,\"remote\":14}");
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push and Pull", "[Push][Pull]") {
+    addCollDocs(db, Roses, 10);
+    addCollDocs(db, Tulips, 10);
+    addCollDocs(db2, Roses, 10);
+    addCollDocs(db2, Tulips, 10);
+    
+    _expectedDocumentCount = 40;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    
+    purgeAllDocs(db, Roses);
+    purgeAllDocs(db, Tulips);
+    purgeAllDocs(db2, Roses);
+    purgeAllDocs(db2, Tulips);
+    
+    _expectedDocumentCount = 0;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    
+    _expectedDocumentCount = 40;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4OneShot, true);
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
+    vector<string> attachments1 = {"Attachment A", "Attachment B", ""};
+    vector<C4BlobKey> blobKeys1a, blobKeys1b;
+    {
+        TransactionHelper t(db);
+        blobKeys1a = addDocWithAttachments(db, Roses, "doc1"_sl, attachments1, "text/plain");
+        blobKeys1b = addDocWithAttachments(db, Tulips, "doc2"_sl, attachments1, "text/plain");
+    }
+    
+    vector<string> attachments2 = {"Attachment C", "Attachment D", ""};
+    vector<C4BlobKey> blobKeys2a, blobKeys2b;
+    {
+        TransactionHelper t(db2);
+        blobKeys2a = addDocWithAttachments(db2, Tulips, "doc3"_sl, attachments2, "text/plain");
+        blobKeys2b = addDocWithAttachments(db2, Tulips, "doc4"_sl, attachments2, "text/plain");
+    }
+    
+    _expectedDocumentCount = 4;
+    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":2}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"remote\":2}");
+    
+    checkAttachments(db, blobKeys1a, attachments1);
+    checkAttachments(db, blobKeys1b, attachments1);
+    checkAttachments(db, blobKeys2a, attachments2);
+    checkAttachments(db, blobKeys2b, attachments2);
+    
+    checkAttachments(db2, blobKeys1a, attachments1);
+    checkAttachments(db2, blobKeys1b, attachments1);
+    checkAttachments(db2, blobKeys2a, attachments2);
+    checkAttachments(db2, blobKeys2b, attachments2);
 }
 
 #endif
