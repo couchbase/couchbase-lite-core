@@ -105,7 +105,7 @@ below.
 [[getcheckpoint]]
 getCheckpoint
 ^^^^^^^^^^^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `client`: Unique ID of client checkpoint to retrieve
 
 Retrieves a checkpoint stored on the receiver. The checkpoint is a JSON
@@ -120,7 +120,7 @@ Body: JSON data of the checkpoint
 
 [[getCollections]]
 getCollections [3.1+]
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 Body: JSON dictionary
 
@@ -134,6 +134,7 @@ An array of items each identical in structure to the result of `getCheckpoint`. 
 setCheckpoint
 ^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `client`: Unique ID of client checkpoint to store +
 `rev`: Last known MVCC revision ID of the checkpoint _(omitted if this
 is a new checkpoint)_ +
@@ -390,6 +391,7 @@ the replication to get stuck.
 getAttachment
 ^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.)
 
@@ -421,6 +423,7 @@ Body: raw contents of attachment
 proveAttachment
 ^^^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.) +
 Body: A _nonce_: 16 to 255 bytes of random binary data
