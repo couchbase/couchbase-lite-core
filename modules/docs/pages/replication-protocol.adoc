@@ -12,7 +12,7 @@ Protocol version 1.2
 
 This document specifies the new replication protocol in development for
 Couchbase Mobile 2.0. It supersedes the REST-based protocol inherited
-from CouchDB.
+from CouchDB.  Updates after 2.0 will have their minimum version indicated.
 
 Benefits of the new protocol are:
 
@@ -110,12 +110,25 @@ getCheckpoint
 
 Retrieves a checkpoint stored on the receiver. The checkpoint is a JSON
 object that's stored as the value of the key given by the `client`
-property.
+property.  This property should be derived in a way that is collection
+aware (i.e. each collection can have its own checkpoint).  If this message is sent before `getCollections` then the replication will operate in legacy mode and only the default collection can be replicated. 
 
 Response:
 
 `rev`: The MVCC revision ID of the checkpoint +
 Body: JSON data of the checkpoint
+
+[[getCollections]]
+getCollections [3.1+]
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Body: JSON dictionary
+
+A collection aware parallelized version of `getCheckpoint`.  If this message is sent before any `getCheckpoint` calls then replication will operate in 3.1+ mode, which can fully handle collections.  The body of this message will contain two arrays (`collections` and `checkpoint_ids`) each of the same length.  The combination of the two at a given index provide information about a checkpoint to retrieve (i.e. request checkpoint X for collection Y).  
+
+Response:
+
+An array of items each identical in structure to the result of `getCheckpoint`.  The entries will be ordered according to the order in the request message.
 
 [[setcheckpoint]]
 setCheckpoint
@@ -140,6 +153,7 @@ Response:
 subChanges
 ^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `since`: Latest sequence ID already known to the requestor, JSON-encoded
 _(optional)_ +
 `continuous`: Set to `true` if the requestor wants change notifications
@@ -156,7 +170,7 @@ Body: JSON dictionary _(optional)_
 
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
-beginning if no `since` is given.
+beginning if no `since` is given.  If a collection index is provided, that collections changes are used.  Otherwise, the default collection will be used if possible.
 
 Note: A sequence ID can be any type of JSON value, so the `since`
 property MUST be JSON-encoded. In particular, if the sequence ID is a
@@ -189,10 +203,11 @@ the dictionary MUST be ignored.
 changes
 ^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted
+
 Body: JSON array
 
-Notifies the recipient of a series of changes made to the sender's
-database. A passive replicator (like Sync Gateway) is triggered to send
+Notifies the recipient of a series of changes made to either the sender's default collection, or the collection specified by the provided index.  A passive replicator (like Sync Gateway) is triggered to send
 these by a prior `subChanges` request sent by the client. An active
 replicator (Couchbase Lite) will send them spontaneously as part of a
 push replication.
@@ -261,6 +276,8 @@ it's missing, the history length is unlimited.
 proposeChanges
 ^^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted
+
 Body: JSON array
 
 Sends proposed changes to a server that’s in conflict-free mode. This is
@@ -273,7 +290,7 @@ server revision (if any). If there is no known server revision, the
 (As with `changes`, the estimated body size MAY be appended, if the
 `serverRevID` is present.)
 
-The recipient SHOULD then look through each document in its database. If
+The recipient SHOULD then look through each document in its relevant collection. If
 the document exists, but the given serverRevID is not known or not
 current, the proposed document SHOULD be rejected with a 409 status (see
 below.) Or if the document exists and the revID is current, the server
@@ -303,7 +320,7 @@ all of the proposed revisions.
 [[rev]]
 rev
 ^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
 `rev`: Revision ID _(optional)_ +
 `deleted`: true if the revision is a tombstone _(optional)_ +
@@ -313,7 +330,7 @@ q.v.)_ +
 Body: Document JSON
 `noconflicts`: true if the revision may not create a conflict _(optional; default is false)_  
 
-Sends one document revision. The `id`, `rev`, `deleted` properties are
+Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
 the JSON body (and vice versa.) The `sequence` property is optional
 unless this message was unsolicited.
@@ -353,7 +370,7 @@ to its database.
 [[norev]]
 norev
 ^^^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
 `rev`: Revision ID _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional)_ +
@@ -447,6 +464,8 @@ reject the `rev` message with the revision containing it.)
 Here are informal descriptions of the flow of control of both push and
 pull replication. Note the symmetry: a lot of the steps are the same in
 both lists but with "client" and "server" swapped.
+
+[3.1+] With the introduction of collections, and in order to maintain maximum compatibility, the algorithm now has an overall choice of two flavors: legacy and collection-aware.  The mode that is entered into depends on the presence or lack of the newly introduced `getCollections` message.  If this message is sent as the first message, the connection is thereafter a collection-aware connection and every message that is capable of including a `collection` property *must* do so, or the server side should return a 400 error.  Conversely, if any other message is received (often `getCheckpoint`) then the connection is thereafter a legacy connection and the inverse is true: Any message that contains a `collection` property is incorrect and the server side should return a 400 error.  
 
 [[push]]
 Push
