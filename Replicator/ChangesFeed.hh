@@ -47,7 +47,7 @@ namespace litecore::repl {
             virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) =0;
         };
 
-        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*, CollectionIndex);
+        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*);
         ~ChangesFeed();
 
         // Setup:
@@ -115,7 +115,7 @@ namespace litecore::repl {
     class ReplicatorChangesFeed final : public ChangesFeed {
     public:
         ReplicatorChangesFeed(Delegate &delegate, const Options *options,
-                              DBAccess &db, Checkpointer *cp, CollectionIndex);
+                              DBAccess &db, Checkpointer *cp);
 
         void setFindForeignAncestors(bool use)      {_getForeignAncestors = use;}
 

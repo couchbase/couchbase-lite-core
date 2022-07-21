@@ -38,19 +38,19 @@ namespace litecore { namespace repl {
 
 
     ChangesFeed::ChangesFeed(Delegate &delegate, const Options *options,
-                             DBAccess &db, Checkpointer *checkpointer,
-                             CollectionIndex collectionIndex)
+                             DBAccess &db, Checkpointer *checkpointer)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
     ,_skipDeleted(_options->skipDeleted())
-    ,_collectionIndex(collectionIndex)
     {
         DebugAssert(_checkpointer);
-        auto i = _options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
-        _continuous = _options->push((CollectionIndex)i) == kC4Continuous;
+
+        // JIM: This breaks tons of encapsulation, and should be reworked
+        _collectionIndex = (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
+        _continuous = _options->push(_collectionIndex) == kC4Continuous;
         filterByDocIDs(_options->docIDs());
     }
 
@@ -320,8 +320,8 @@ namespace litecore { namespace repl {
 
 
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, const Options *options,
-                                                 DBAccess &db, Checkpointer *cp, CollectionIndex collectionIndex)
-    :ChangesFeed(delegate, options, db, cp, collectionIndex)     // DBAccess is a subclass of access_lock<C4Database*>
+                                                 DBAccess &db, Checkpointer *cp)
+    :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
     ,_usingVersionVectors(db.usingVersionVectors())
     { }
 
