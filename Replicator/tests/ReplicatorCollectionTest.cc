@@ -13,6 +13,7 @@
 #include "ReplicatorLoopbackTest.hh"
 #include "c4Collection.hh"
 #include "c4Database.hh"
+#include "fleece/Mutable.hh"
 
 static constexpr slice GuitarsName = "guitars"_sl;
 static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
@@ -143,6 +144,103 @@ public:
                 REQUIRE(c4coll_purgeDoc(coll, info.docID, nullptr));
             }
         }
+    }
+    
+    class ResolvedDocument {
+    public:
+        ResolvedDocument()                      =default;   // Resolved as a deleted doc
+        ResolvedDocument(C4Document* doc)       :_doc(c4doc_retain(doc)) { }
+        ResolvedDocument(FLDict mergedProps)    :_mergedProps(mergedProps) { }
+        
+        C4Document* doc()                       {return _doc;}
+        FLDict mergedProps()                    {return _mergedProps;}
+    private:
+        c4::ref<C4Document> _doc                {nullptr};
+        RetainedDict _mergedProps               {nullptr};
+    };
+    
+    void setConflictResolver(C4Database* activeDatabase,
+                             std::function<ResolvedDocument(CollectionSpec collection,
+                                                            C4Document* local,
+                                                            C4Document* remote)> resolver)
+    {
+        if (!resolver) {
+            _conflictHandler = nullptr;
+            return;
+        }
+        
+        assert(activeDatabase);
+        
+        c4::ref<C4Database> resolvDB = c4db_openAgain(activeDatabase, nullptr);
+        REQUIRE(resolvDB);
+        auto& conflictHandlerRunning = _conflictHandlerRunning;
+        _conflictHandler = [resolvDB, resolver, &conflictHandlerRunning](ReplicatedRev *rev) {
+            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+            auto collPath = Options::collectionSpecToPath(rev->collectionSpec);
+            Log("Resolving conflict for '%.*s' in '%.*s' ...", SPLAT(rev->docID), SPLAT(collPath));
+            
+            C4Error error;
+            C4Collection* coll = c4db_getCollection(resolvDB, rev->collectionSpec, &error);
+            Assert(coll, "conflictHandler: Couldn't find collection '%.*s'", SPLAT(collPath));
+
+            conflictHandlerRunning = true;
+            TransactionHelper t(resolvDB);
+            
+            // Get the local doc:
+            c4::ref<C4Document> localDoc = c4coll_getDoc(coll, rev->docID, true, kDocGetAll, &error);
+            Assert(localDoc, "conflictHandler: Couldn't read doc '%.*s' in '%.*s'",
+                   SPLAT(rev->docID), SPLAT(collPath));
+            
+            // Get the remote doc:
+            c4::ref<C4Document> remoteDoc = c4coll_getDoc(coll, rev->docID, true, kDocGetAll, &error);
+            if (!c4doc_selectNextLeafRevision(remoteDoc, true, false, &error)) {
+                Assert(false, "conflictHandler: Couldn't get conflicting remote revision of '%.*s' in '%.*s'",
+                       SPLAT(rev->docID), SPLAT(collPath));
+            }
+            
+            ResolvedDocument resolvedDoc;
+            if ((localDoc->selectedRev.flags & kRevDeleted) &&
+                (remoteDoc->selectedRev.flags & kRevDeleted))
+            {
+                resolvedDoc = ResolvedDocument(remoteDoc);
+            } else {
+                resolvedDoc = resolver(coll->getSpec(), localDoc.get(), remoteDoc.get());
+            }
+            
+            FLDict mergedBody = nullptr;
+            C4RevisionFlags mergedFlags = 0;
+            
+            if (resolvedDoc.doc() == remoteDoc) {
+                mergedFlags |= resolvedDoc.doc()->selectedRev.flags;
+            } else {
+                C4Document* resDoc = resolvedDoc.doc();
+                FLDict mergedProps = resolvedDoc.mergedProps();
+                if (resDoc) {
+                    mergedBody = c4doc_getProperties(resolvedDoc.doc());
+                    mergedFlags |= resolvedDoc.doc()->selectedRev.flags;
+                } else if (mergedProps) {
+                    mergedBody = mergedProps;
+                } else {
+                    mergedFlags |= kRevDeleted;
+                    mergedBody = kFLEmptyDict;
+                }
+            }
+            
+            alloc_slice winRevID = remoteDoc->selectedRev.revID;
+            alloc_slice lostRevID = localDoc->selectedRev.revID;
+            bool result = c4doc_resolveConflict2(localDoc, winRevID, lostRevID,
+                                                 mergedBody, mergedFlags, &error);
+            
+            Assert(result, "conflictHandler: c4doc_resolveConflict2 failed for '%.*s' in '%.*s'",
+                   SPLAT(rev->docID), SPLAT(collPath));
+            Assert((localDoc->flags & kDocConflicted) == 0);
+            
+            if (!c4doc_save(localDoc, 0, &error)) {
+                Assert(false, "conflictHandler: c4doc_save failed for '%.*s' in '%.*s'",
+                       SPLAT(rev->docID), SPLAT(collPath));
+            }
+            conflictHandlerRunning = false;
+        };
     }
     
 private:
@@ -484,6 +582,53 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
     checkAttachments(db2, blobKeys1b, attachments1);
     checkAttachments(db2, blobKeys2a, attachments2);
     checkAttachments(db2, blobKeys2b, attachments2);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
+    int resolveCount = 0;
+    auto resolver = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {
+        resolveCount++;
+        C4Document* resolvedDoc;
+        if (spec == Roses) {
+            resolvedDoc = remoteDoc;
+        } else {
+            resolvedDoc = localDoc;
+        }
+        return ResolvedDocument(resolvedDoc);
+    };
+    setConflictResolver(db, resolver);
+    
+    auto roses1 = getCollection(db, Roses);
+    auto roses2 = getCollection(db2, Roses);
+    
+    auto tulips1 = getCollection(db, Tulips);
+    auto tulips2 = getCollection(db2, Tulips);
+    
+    // Create docs and push to the other db:
+    createFleeceRev(roses1,  "rose1"_sl,  kRev1ID, "{}"_sl);
+    createFleeceRev(tulips1, "tulip1"_sl, kRev1ID, "{}"_sl);
+    
+    _expectedDocumentCount = 2;
+    runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    
+    // Update docs on both dbs and run pull replication:
+    createFleeceRev(roses1,  "rose1"_sl,  revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
+    createFleeceRev(roses2,  "rose1"_sl,  revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
+    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
+    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
+    
+    runPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    CHECK(resolveCount == 2);
+    
+    c4::ref<C4Document> doc1 = c4coll_getDoc(roses1, "rose1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc1);
+    CHECK(fleece2json(c4doc_getRevisionBody(doc1)) == "{db:2}"); // Remote Wins
+    REQUIRE(!c4doc_selectNextLeafRevision(doc1, true, false, nullptr));
+    
+    c4::ref<C4Document> doc2 = c4coll_getDoc(tulips1, "tulip1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc2);
+    CHECK(fleece2json(c4doc_getRevisionBody(doc2)) == "{db:1}"); // Local Wins
+    REQUIRE(!c4doc_selectNextLeafRevision(doc2, true, false, nullptr));
 }
 
 #endif
