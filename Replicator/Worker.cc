@@ -313,10 +313,37 @@ namespace litecore { namespace repl {
             _parent = nullptr;
     }
 
-    void Worker::setMsgCollection(blip::MessageBuilder& msg, CollectionIndex i) {
+    // Either there is error, or return a valid collection index
+    std::pair<CollectionIndex, slice>
+    Worker::checkCollectionOfMsg(const blip::MessageIn& msg, CollectionIndex i) const {
+        CollectionIndex collIn = getCollectionIndex(msg);
+        static slice error1 = "the collection property of the response does not match that of the request."_sl;
+        static slice error2 = "inconsistent use of the collection property."_sl;
+        static slice error3 = "the collection property is out of range."_sl;
+        slice err = nullslice;
         if (_options->collectionAware()) {
-            msg[kCollectionProperty] = i;
+            if (collIn == kNotCollectionIndex) {
+                err = error2;
+            }
+        } else {
+            if (collIn != kNotCollectionIndex) {
+                err = error2;
+            } else {
+                collIn = 0;
+            }
         }
+
+        if (!err && collIn >= _options->workingCollectionCount()) {
+            err = error3;
+        }
+
+        if (!err && i != kNotCollectionIndex) {
+            // check against i if it is a valid collection index
+            if (collIn != i) {
+                err = error1;
+            }
+        }
+        return std::make_pair(collIn, err);
     }
 
 } }

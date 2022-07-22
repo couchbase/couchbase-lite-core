@@ -278,6 +278,8 @@ namespace litecore { namespace repl {
             ss << "/";
             ss << sub.pushStatus.progress.unitsTotal
                 + sub.pullStatus.progress.unitsTotal;
+            ss << ", docCount=" << sub.pushStatus.progress.documentCount
+                                + sub.pullStatus.progress.documentCount;
         }
         return ss.str();
     }
@@ -368,10 +370,11 @@ namespace litecore { namespace repl {
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
         if (SyncBusyLog.willLog(LogLevel::Info)) {
-            logInfo("pushStatus=%-s, pullStatus=%-s, progress=%" PRIu64 "/%" PRIu64 "",
+            logInfo("pushStatus=%-s, pullStatus=%-s, progress=%" PRIu64 "/%" PRIu64 "/%" PRIu64 "",
                     kC4ReplicatorActivityLevelNames[_pushStatus.level],
                     kC4ReplicatorActivityLevelNames[_pullStatus.level],
-                    status().progress.unitsCompleted, status().progress.unitsTotal);
+                    status().progress.unitsCompleted, status().progress.unitsTotal,
+                    status().progress.documentCount);
         }
         if (SyncBusyLog.willLog(LogLevel::Verbose)) {
             logVerbose("Replicator status collection-wise: %s", statusVString().c_str());
@@ -702,7 +705,7 @@ namespace litecore { namespace repl {
         }
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
-        setMsgCollection(msg, coll);
+        assignCollectionToMsg(msg, coll);
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this, refresh, coll, &sub](MessageProgress progress) {
             // ...after the checkpoint is received:
@@ -711,9 +714,12 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
 
-            auto collectionIn = response->intProperty(kCollectionProperty, kNotCollectionIndex);
-            (void)collectionIn; // The following statement only compiles in Debug build.
-            DebugAssert(collectionIn == kNotCollectionIndex || collectionIn == coll);
+            slice error;
+            std::tie(std::ignore, error) = checkCollectionOfMsg(*response, coll);
+            if (error) {
+                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, error));
+                return;
+            }
 
             Checkpoint remoteCheckpoint;
 
@@ -778,10 +784,10 @@ namespace litecore { namespace repl {
     void Replicator::getCollections() {
         if (_getCollectionsRequested)
             return;     // already in progress
-        
+
         if (_connectionState != Connection::kConnected)
             return;         // Not ready yet; Will be called again from _onConnect.
-        
+
         for (int i = 0; i < _subRepls.size(); i++) {
             if (!_subRepls[i].remoteCheckpointDocID)
                 _subRepls[i].remoteCheckpointDocID = _subRepls[i].checkpointer->initialCheckpointID();
@@ -792,9 +798,9 @@ namespace litecore { namespace repl {
             if (!_subRepls[i].remoteCheckpointDocID)
                 return;     // Not ready yet.
         }
-        
+
         logVerbose("Requesting get collections");
-        
+
         MessageBuilder msg("getCollections"_sl);
         auto &enc = msg.jsonBody();
         enc.beginDict();
@@ -819,7 +825,7 @@ namespace litecore { namespace repl {
                 return;
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
-            
+
             if (response->isError()) {
                 return gotError(response);
             } else {
@@ -830,7 +836,7 @@ namespace litecore { namespace repl {
                                                  "Unparseable checkpoints: %.*s", SPLAT(json));
                     return gotError(error);
                 }
-                
+
                 Array checkpointArray = root.asArray();
                 if (checkpointArray.count() != _subRepls.size()) {
                     auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
@@ -913,9 +919,7 @@ namespace litecore { namespace repl {
         Assert(json);
 
         MessageBuilder msg("setCheckpoint"_sl);
-        if (_options->collectionAware()) {
-            setMsgCollection(msg, coll);
-        }
+        assignCollectionToMsg(msg, coll);
         msg["client"_sl] = sub.remoteCheckpointDocID;
         msg["rev"_sl] = sub.remoteCheckpointRevID;
         msg << json;
@@ -926,10 +930,12 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
 
-            auto collectionIn = response->intProperty(kCollectionProperty, kNotCollectionIndex);
-            (void)collectionIn; // The following statement only compiles in Debug build.
-            DebugAssert(collectionIn == kNotCollectionIndex // legacy mode
-                        || collectionIn == coll);
+            slice errMsg;
+            std::tie(std::ignore, errMsg) = checkCollectionOfMsg(*response, coll);
+            if (errMsg) {
+                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, errMsg));
+                return;
+            }
 
             if (response->isError()) {
                 Error responseErr = response->getError();
@@ -1042,13 +1048,28 @@ namespace litecore { namespace repl {
         if (!checkpointID)
             return;
 
-        auto collectionIn = request->intProperty(kCollectionProperty, kNotCollectionIndex);
+        auto collectionIn = getCollectionIndex(*request);
         if (collectionIn == kNotCollectionIndex && _subRepls.size() == 0) {
+            DebugAssert(!_options->isActive());
+
             // This is a 3.0 client and we have't created workers yet.
+
             std::vector<C4CollectionSpec> v;
             v.emplace_back(kC4DefaultCollectionSpec);
-            _options->rearrangeCollections(v);
+            _options->rearrangeCollectionsFor3_0_Client();
+            DebugAssert(!_options->collectionAware());
             prepareWorkers();
+            collectionIn = 0;
+        } else {
+            // Either it is 3.1 client, hence collectionAware()==true,
+            // or a 3.0 client and the above piece of code should have been already called.
+
+            auto [checked, err] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+            if (err) {
+                request->respondWithError({"HTTP"_sl, 400, err});
+                return;
+            }
+            collectionIn = checked;
         }
 
         alloc_slice body, revID;
@@ -1067,6 +1088,7 @@ namespace litecore { namespace repl {
         }
 
         MessageBuilder response(request);
+        assignCollectionToMsg(response, collectionIn);
         response["rev"_sl] = revID;
         response << body;
         request->respond(response);
@@ -1078,6 +1100,12 @@ namespace litecore { namespace repl {
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if (!checkpointID)
             return;
+
+        auto [collectionIn, errMsg] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+        if (errMsg) {
+            request->respondWithError({"BLIP"_sl, 400, errMsg});
+            return;
+        }
 
         bool ok;
         alloc_slice newRevID;
@@ -1098,6 +1126,7 @@ namespace litecore { namespace repl {
         }
 
         MessageBuilder response(request);
+        assignCollectionToMsg(response, collectionIn);
         response["rev"_sl] = newRevID;
         request->respond(response);
     }
@@ -1185,13 +1214,15 @@ namespace litecore { namespace repl {
                 C4Error::warnCurrentException("Replicator::handleGetCollections");
                 status = 502;
             }
-            
+
             if (status != 0) {
                 request->respondWithError({"HTTP"_sl, status});
                 return;
             }
             
-            Doc doc(body);
+            FLError flError = kFLNoError;
+            Doc doc = Doc::fromJSON(body, &flError);
+            DebugAssert(flError == kFLNoError);
             auto checkpoint = doc.root().asDict().mutableCopy();
             checkpoint.set("rev"_sl, revID);
             enc.writeValue(checkpoint);
@@ -1252,19 +1283,23 @@ namespace litecore { namespace repl {
         _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
     }
 
-    void Replicator::handleConnectionMessage(Retained<blip::MessageIn> msg) {
-        slice profile = msg->property("Profile"_sl);
-        if (!profile)
-            return;
+    void Replicator::handleConnectionMessage(Retained<blip::MessageIn> request) {
+        slice profile = request->property("Profile"_sl);
+        Assert(profile);
 
-        auto coll = msg->intProperty(kCollectionProperty, kNotCollectionIndex);
-        CollectionIndex i = (coll == kNotCollectionIndex) ? 0 : (CollectionIndex)coll;
-        DebugAssert(i < _subRepls.size());
+        auto [i, errMsg] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+        if (errMsg) {
+            if (errMsg) {
+                request->respondWithError({"HTTP"_sl, 400, errMsg});
+                return;
+            }
+        }
+
         auto it = _workerHandlers.find({profile.asString(),i});
         if (it != _workerHandlers.end()) {
-            it->second(msg);
+            it->second(request);
         } else {
-            returnForbidden(msg);
+            returnForbidden(request);
         }
     }
 

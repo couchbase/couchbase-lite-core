@@ -144,7 +144,7 @@ public:
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
         
         _checkpointIDs.clear();
-        for (int i = 0; i < opts1.collectionOpts.size(); ++i) {
+        for (int i = 0; i < optsRef1->collectionOpts.size(); ++i) {
             _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
         }
         _replClient = _replServer = nullptr;

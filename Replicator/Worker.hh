@@ -228,7 +228,18 @@ namespace litecore { namespace repl {
 
 #pragma mark - INSTANCE DATA:
     protected:
-        void setMsgCollection(blip::MessageBuilder& msg, CollectionIndex);
+        static CollectionIndex getCollectionIndex(const blip::MessageIn&  msgIn) {
+            long l = msgIn.intProperty(kCollectionProperty, kNotCollectionIndex);
+            Assert(l <= kNotCollectionIndex);
+            return (CollectionIndex)l;
+        }
+        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
+            if (_options->collectionAware()) {
+                msg[kCollectionProperty] = i;
+            }
+        }
+        std::pair<CollectionIndex, slice>
+            checkCollectionOfMsg(const blip::MessageIn& msg, CollectionIndex) const;
 
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me

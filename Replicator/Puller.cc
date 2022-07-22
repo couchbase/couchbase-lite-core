@@ -65,6 +65,7 @@ namespace litecore { namespace repl {
 
         Signpost::begin(Signpost::blipSent);
         MessageBuilder msg("subChanges"_sl);
+        assignCollectionToMsg(msg, collectionIndex());
         if (sinceStr)
             msg["since"_sl] = sinceStr;
         if (_options->pull(collectionIndex()) == kC4Continuous)
@@ -185,6 +186,7 @@ namespace litecore { namespace repl {
             completedSequence(RemoteSequence(sequence));
         if (!msg->noReply()) {
             MessageBuilder response(msg);
+            assignCollectionToMsg(response, collectionIndex());
             msg->respond(response);
         }
     }

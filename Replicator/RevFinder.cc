@@ -119,6 +119,7 @@ namespace litecore::repl {
                     _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
                 MessageBuilder response(req);
+                assignCollectionToMsg(response, collectionIndex());
                 response.compressed = true;
                 if (!_db->usingVersionVectors()) {
 #if 1
