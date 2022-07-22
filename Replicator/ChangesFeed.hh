@@ -108,6 +108,7 @@ namespace litecore::repl {
         bool _isCheckpointValid {true};
         bool _caughtUp {false};                             // Delivered all historical changes
         std::atomic<bool> _notifyOnChanges {false};         // True if expecting change notification
+        CollectionIndex _collectionIndex;                   // Identifies the collection index (in the replicator) of the collection being used
     };
 
 

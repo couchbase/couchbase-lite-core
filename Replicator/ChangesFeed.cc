@@ -47,8 +47,10 @@ namespace litecore { namespace repl {
     ,_skipDeleted(_options->skipDeleted())
     {
         DebugAssert(_checkpointer);
-        auto i = _options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
-        _continuous = _options->push((CollectionIndex)i) == kC4Continuous;
+
+        // JIM: This breaks tons of encapsulation, and should be reworked
+        _collectionIndex = (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
+        _continuous = _options->push(_collectionIndex) == kC4Continuous;
         filterByDocIDs(_options->docIDs());
     }
 
@@ -246,7 +248,8 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec());
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
+                _options->collectionOpts[_collectionIndex].callbackContext);
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }
