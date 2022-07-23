@@ -101,7 +101,7 @@ public:
         return specs;
     }
     
-    C4Collection* getCollection(C4Database* db, CollectionSpec spec, bool mustExist =true) {
+    static C4Collection* getCollection(C4Database* db, CollectionSpec spec, bool mustExist =true) {
         auto coll = db->getCollection(spec);
         Assert(!mustExist || coll != nil);
         return coll;
@@ -183,17 +183,78 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]
 #define DISABLE_PUSH_AND_PULL
 #define DISABLE_CONTINUOUS
 
+static std::set<string> getDocInfos(C4Database* db, C4CollectionSpec coll) {
+    std::set<string> ret;
+    C4Collection* collection = ReplicatorCollectionTest::getCollection(db, coll);
+    auto e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
+    {
+        TransactionHelper t(db);
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            alloc_slice docID(info.docID);
+            alloc_slice revID(info.revID);
+            string entry = docID.asString()+"/"+revID.asString();
+            ret.insert(entry);
+        }
+    }
+    c4enum_free(e);
+    return ret;
+}
+
+
+struct CheckDBEntries {
+    CheckDBEntries(C4Database* db, C4Database* db2, vector<C4CollectionSpec> specs)
+    : _db(db)
+    , _db2(db2)
+    {
+        for (auto i = 0; i < specs.size(); ++i) {
+            _collSpecs.push_back(specs[i]);
+            _dbBefore.push_back(getDocInfos(_db, specs[i]));
+            _db2Before.push_back(getDocInfos(_db2, specs[i]));
+        }
+    }
+    
+    ~CheckDBEntries() {
+        vector<set<string>> dbAfter;
+        vector<set<string>> db2After;
+        for (auto i = 0; i < _collSpecs.size(); ++i) {
+            dbAfter.push_back(getDocInfos(_db, _collSpecs[i]));
+            db2After.push_back(getDocInfos(_db2, _collSpecs[i]));
+            CHECK(dbAfter[i].size() == _dbBefore[i].size());
+            for (auto& doc : _dbBefore[i]) {
+                CHECK(db2After[i].erase(doc) == 1);
+            }
+            for (auto& doc : _db2Before[i]) {
+                CHECK(db2After[i].erase(doc) == 1);
+            }
+            REQUIRE(db2After[i].size() == 0);
+        }
+    }
+    
+    C4Database* _db;
+    C4Database* _db2;
+    vector<C4CollectionSpec> _collSpecs;
+    vector<set<string>> _dbBefore;
+    vector<set<string>> _db2Before;
+};
+
+
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
     addCollDocs(db, Default, 10);
     addCollDocs(db2, Default, 10);
     
     SECTION("PUSH") {
+        CheckDBEntries check(db, db2, {Default});
+
         _expectedDocumentCount = 10;
         runPushReplication({Default}, {Default});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
 
     SECTION("PULL") {
+        CheckDBEntries check(db, db2, {Default});
+
         _expectedDocumentCount = 10;
         runPullReplication({Default}, {Default});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
@@ -206,12 +267,16 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
     }
 #endif
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
+        CheckDBEntries check(db, db2, {Default});
+
         _expectedDocumentCount = 10;
         runPushReplication({Default}, {Guitars, Default});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
     
     SECTION("PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        CheckDBEntries check(db, db2, {Default});
+
         _expectedDocumentCount = 10;
         runPullReplication({Guitars, Default}, {Default});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
@@ -229,14 +294,18 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
     addCollDocs(db, Guitars, 10);
     addCollDocs(db2, Guitars, 10);
-    
+
     SECTION("PUSH") {
+        CheckDBEntries check(db, db2, {Guitars});
+
         _expectedDocumentCount = 10;
         runPushReplication({Guitars}, {Guitars});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
 
     SECTION("PULL") {
+        CheckDBEntries check(db, db2, {Guitars});
+
         _expectedDocumentCount = 10;
         runPullReplication({Guitars}, {Guitars});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
@@ -249,12 +318,16 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
     }
 #endif
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
+        CheckDBEntries check(db, db2, {Guitars});
+
         _expectedDocumentCount = 10;
         runPushReplication({Guitars}, {Default, Guitars});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
 
     SECTION("PULL with MULTIPLE PASSIVE COLLECTIONS") {
+        CheckDBEntries check(db, db2, {Guitars});
+
         _expectedDocumentCount = 10;
         runPullReplication({Guitars, Default}, {Guitars});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
@@ -277,6 +350,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
     addCollDocs(db2, Lavenders, 20);
     
     SECTION("PUSH") {
+        CheckDBEntries check(db, db2, {Roses, Tulips});
+
         _expectedDocumentCount = 20;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
@@ -284,6 +359,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
     }
 
     SECTION("PULL") {
+        CheckDBEntries check(db, db2, {Roses, Tulips});
+
         _expectedDocumentCount = 20;
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");

@@ -158,7 +158,17 @@ namespace litecore { namespace repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                auto doc = _db->insertionDB().useLocked()->putDocument(put, nullptr, outError);
+                C4CollectionSpec spec = replicator()->collection(collectionIndex())->getSpec();
+                Retained<C4Document> doc
+                =_db->insertionDB().useLocked<Retained<C4Document>>([spec, outError, &put](C4Database* db) {
+                    C4Collection* collection = db->getCollection(spec);
+                    if (!collection || !collection->isValid()) {
+                        return Retained<C4Document>();
+                    } else {
+                        return collection->putDocument(put, nullptr, outError);
+                    }
+                });
+
                 if (!doc)
                     return false;
                 logVerbose("    {'%.*s' #%.*s <- %.*s} seq %" PRIu64,
