@@ -288,7 +288,7 @@ namespace litecore { namespace repl {
             size_t origCount = collectionOpts.size();
             std::vector<C4CollectionSpec> specs;
             specs.reserve(origCount);
-            for (auto opt : collectionOpts) {
+            for (auto& opt : collectionOpts) {
                 specs.emplace_back(collectionPathToSpec(opt.collectionPath));
             }
             for (size_t i = 0; i < activeCollections.size(); ++i) {
@@ -303,12 +303,22 @@ namespace litecore { namespace repl {
                 } else {
                     DebugAssert(findIt->second >= i && findIt->second < origCount);
                     if (findIt->second > i) {
-                        _collectionSpecToIndex[specs[i]] = findIt->second;
-                        std::swap(collectionOpts[i], collectionOpts[findIt->second]);
+                        C4CollectionSpec spec;
+                        size_t           indx;
+                        std::tie(spec, indx) = *findIt;
+                        _collectionSpecToIndex[specs[i]] = indx;
+                        _collectionSpecToIndex[spec] = i;
+                        std::swap(collectionOpts[i], collectionOpts[indx]);
                     }
                 }
             }
             _workingCollectionCount = (CollectionIndex)activeCollections.size();
+        }
+
+        void rearrangeCollectionsFor3_0_Client() const {
+            _collectionAware = false;
+            std::vector<C4CollectionSpec> activeCollections {kC4DefaultCollectionSpec};
+            rearrangeCollections(activeCollections);
         }
 
     private:
@@ -388,7 +398,7 @@ namespace litecore { namespace repl {
         
         unsigned passCount = 0;
         unsigned actiCount = 0;
-        for (auto c: collectionOpts) {
+        for (auto& c: collectionOpts) {
             if (c.push == kC4Passive)
                 ++passCount;
             else if (c.push > kC4Passive)

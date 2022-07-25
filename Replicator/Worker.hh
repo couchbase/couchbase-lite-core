@@ -16,6 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Message.hh"
 #include "MessageBuilder.hh"
+#include "NumConversion.hh"
 #include "Error.hh"
 #include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
@@ -228,7 +229,31 @@ namespace litecore { namespace repl {
 
 #pragma mark - INSTANCE DATA:
     protected:
-        void setMsgCollection(blip::MessageBuilder& msg, CollectionIndex);
+        // Basic type checking: CollectionIndex (alias of unsigned) vs. long.
+        // We store an unsigned in intProperty and this method is to enure the integrity.
+        static CollectionIndex getCollectionIndex(const blip::MessageIn&  msgIn) {
+            return fleece::narrow_cast<CollectionIndex>(
+                msgIn.intProperty(kCollectionProperty, kNotCollectionIndex)
+            );
+        }
+
+        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
+            if (_options->collectionAware()) {
+                msg[kCollectionProperty] = i;
+            }
+        }
+
+        // This method does two things. First it fetches the collectino index from 'msg';
+        // then, it returns a pair of {collectionIndex, errorSlice} with the post-conditions:
+        //   errorSlice != nullslice || (0 <= collectionIndex < _options->workingCollectionCount()
+        // 'errorSlice' describes the nature of the violation.
+        // It may be used in two contexts. When handling a reqeust, the collection index must
+        // be in the range of 0, inclusive, and workingCollectionCount(), exclusive.
+        // When handling a response, we further check it against the collection index of
+        // the original request. This context is indicated by the second argument of
+        // CollectionIndex being not kNotCollectionIndex.
+        std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg,
+                                                               CollectionIndex) const;
 
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me

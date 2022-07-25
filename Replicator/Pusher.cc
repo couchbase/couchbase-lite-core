@@ -223,6 +223,7 @@ namespace litecore { namespace repl {
     // Sends a "changes" or "proposeChanges" message.
     void Pusher::sendChanges(RevToSendList &changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
+        assignCollectionToMsg(req, collectionIndex());
         if(_proposeChanges) {
             req[kConflictIncludesRevProperty] = "true"_sl;
         }
