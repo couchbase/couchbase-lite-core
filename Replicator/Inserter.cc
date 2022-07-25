@@ -163,7 +163,10 @@ namespace litecore { namespace repl {
                 =_db->insertionDB().useLocked<Retained<C4Document>>([spec, outError, &put](C4Database* db) {
                     C4Collection* collection = db->getCollection(spec);
                     if (!collection || !collection->isValid()) {
-                        return Retained<C4Document>();
+                        C4Error err{LiteCoreDomain, kC4ErrorNotOpen};
+                        if (outError)
+                            *outError = err;
+                        C4Error::raise(err);
                     } else {
                         return collection->putDocument(put, nullptr, outError);
                     }
