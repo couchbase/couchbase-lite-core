@@ -16,6 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Message.hh"
 #include "MessageBuilder.hh"
+#include "NumConversion.hh"
 #include "Error.hh"
 #include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
@@ -231,9 +232,9 @@ namespace litecore { namespace repl {
         // Basic type checking: CollectionIndex (alias of unsigned) vs. long.
         // We store an unsigned in intProperty and this method is to enure the integrity.
         static CollectionIndex getCollectionIndex(const blip::MessageIn&  msgIn) {
-            long l = msgIn.intProperty(kCollectionProperty, kNotCollectionIndex);
-            Assert(0 <= l && l <= kNotCollectionIndex);
-            return (CollectionIndex)l;
+            return fleece::narrow_cast<CollectionIndex>(
+                msgIn.intProperty(kCollectionProperty, kNotCollectionIndex)
+            );
         }
 
         void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
