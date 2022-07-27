@@ -155,36 +155,34 @@ public:
         C4Document* doc()                       {return _doc;}
         FLDict mergedProps()                    {return _mergedProps;}
     private:
-        c4::ref<C4Document> _doc                {nullptr};
-        RetainedDict _mergedProps               {nullptr};
+        c4::ref<C4Document> _doc;
+        RetainedDict _mergedProps;
     };
     
-    void setConflictResolver(C4Database* activeDatabase,
+    void setConflictResolver(C4Database* activeDB,
                              std::function<ResolvedDocument(CollectionSpec collection,
                                                             C4Document* local,
                                                             C4Document* remote)> resolver)
     {
+        REQUIRE(activeDB);
+        
         if (!resolver) {
             _conflictHandler = nullptr;
             return;
         }
         
-        assert(activeDatabase);
-        
-        c4::ref<C4Database> resolvDB = c4db_openAgain(activeDatabase, nullptr);
-        REQUIRE(resolvDB);
         auto& conflictHandlerRunning = _conflictHandlerRunning;
-        _conflictHandler = [resolvDB, resolver, &conflictHandlerRunning](ReplicatedRev *rev) {
+        _conflictHandler = [activeDB, resolver, &conflictHandlerRunning](ReplicatedRev *rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             auto collPath = Options::collectionSpecToPath(rev->collectionSpec);
             Log("Resolving conflict for '%.*s' in '%.*s' ...", SPLAT(rev->docID), SPLAT(collPath));
             
             C4Error error;
-            C4Collection* coll = c4db_getCollection(resolvDB, rev->collectionSpec, &error);
+            C4Collection* coll = c4db_getCollection(activeDB, rev->collectionSpec, &error);
             Assert(coll, "conflictHandler: Couldn't find collection '%.*s'", SPLAT(collPath));
 
             conflictHandlerRunning = true;
-            TransactionHelper t(resolvDB);
+            TransactionHelper t(activeDB);
             
             // Get the local doc:
             c4::ref<C4Document> localDoc = c4coll_getDoc(coll, rev->docID, true, kDocGetAll, &error);
