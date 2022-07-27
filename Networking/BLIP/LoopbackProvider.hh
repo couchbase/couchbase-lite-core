@@ -74,7 +74,10 @@ namespace litecore { namespace websocket {
         }
 
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override {
-            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_close), status, fleece::alloc_slice(message));
+            // Close() may be called before bind()
+            if (_driver) {
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_close), status, fleece::alloc_slice(message));
+            }
         }
 
 

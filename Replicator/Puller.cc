@@ -186,7 +186,6 @@ namespace litecore { namespace repl {
             completedSequence(RemoteSequence(sequence));
         if (!msg->noReply()) {
             MessageBuilder response(msg);
-            assignCollectionToMsg(response, collectionIndex());
             msg->respond(response);
         }
     }

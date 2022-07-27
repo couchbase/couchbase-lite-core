@@ -75,36 +75,42 @@ namespace litecore { namespace repl {
     ,_connectionState(connection().state())
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     {
-        // Post-conditions:
-        //   collectionOpts.size() > 0
-        //   collectionAware == false if and only if collectionOpts.size() == 1 &&
-        //                                           collectionOpts[0].collectionPath == defaultCollectionPath
-        //   isActive == true ? all collections are active
-        //                    : all collections are passive.
-        _options->verify();
-        
-        _loggingID = string(db->getPath()) + " " + _loggingID;
-        _importance = 2;
+        try {
+            // Post-conditions:
+            //   collectionOpts.size() > 0
+            //   collectionAware == false if and only if collectionOpts.size() == 1 &&
+            //                                           collectionOpts[0].collectionPath == defaultCollectionPath
+            //   isActive == true ? all collections are active
+            //                    : all collections are passive.
+            _options->verify();
 
-        logInfo("%s", string(*options).c_str());
+            _loggingID = string(db->getPath()) + " " + _loggingID;
+            _importance = 2;
 
-        _remoteURL = webSocket->url();
-        if (_options->isActive()) {
-            prepareWorkers();
+            logInfo("%s", string(*options).c_str());
+
+            _remoteURL = webSocket->url();
+            if (_options->isActive()) {
+                prepareWorkers();
+            }
+
+            // Following messages are handled by appropriate workers.
+            // Replicator receives all the messages. Based on collectionIndex,
+            // it dispatches the message to appropriate workers.
+            for (auto profile : {"subChanges", "getAttachment", "proveAttachment", // passive pushers
+                    "changes", "proposeChanges", "rev", "norev"                    // passive pullers
+            }) {
+                registerHandler(profile, &Replicator::handleConnectionMessage);
+            }
+
+            registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
+            registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
+            registerHandler("getCollections",   &Replicator::handleGetCollections);
+        } catch (...) {
+            // terminate to break the circular references: connection -> BLIPIO -> connection.
+            terminate();
+            throw;
         }
-
-        // Following messages are handled by appropriate workers.
-        // Replicator receives all the messages. Based on collectionIndex,
-        // it dispatches the message to appropriate workers.
-        for (auto profile : {"subChanges", "getAttachment", "proveAttachment", // passive pushers
-                "changes", "proposeChanges", "rev", "norev"                    // passive pullers
-        }) {
-            registerHandler(profile, &Replicator::handleConnectionMessage);
-        }
-
-        registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
-        registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
-        registerHandler("getCollections",   &Replicator::handleGetCollections);
     }
 
 
@@ -713,14 +719,6 @@ namespace litecore { namespace repl {
                 return;
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
-
-            slice error;
-            std::tie(std::ignore, error) = checkCollectionOfMsg(*response, coll);
-            if (error) {
-                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, error));
-                return;
-            }
-
             Checkpoint remoteCheckpoint;
 
             if (response->isError()) {
@@ -851,7 +849,8 @@ namespace litecore { namespace repl {
                     SubReplicator& sub = _subRepls[i];
                     Dict dict = checkpointArray[i].asDict();
                     if (!dict) {
-                        auto error = C4Error::printf(LiteCoreDomain, kC4ErrorNotFound,
+                        // Make it fatal error, UnexpectedError.
+                        auto error = C4Error::printf(LiteCoreDomain, kC4ErrorUnexpectedError,
                                                      "Collection '%.*s' is not found on the remote server",
                                                      SPLAT(collPath));
                         return gotError(error);
@@ -927,16 +926,9 @@ namespace litecore { namespace repl {
         sendRequest(msg, [=, &sub](MessageProgress progress) {
             if (progress.state != MessageProgress::kComplete)
                 return;
+
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
-
-            slice errMsg;
-            std::tie(std::ignore, errMsg) = checkCollectionOfMsg(*response, coll);
-            if (errMsg) {
-                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, errMsg));
-                return;
-            }
-
             if (response->isError()) {
                 Error responseErr = response->getError();
                 if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
@@ -1064,7 +1056,7 @@ namespace litecore { namespace repl {
             // Either it is 3.1 client, hence collectionAware()==true,
             // or a 3.0 client and the above piece of code should have been already called.
 
-            auto [checked, err] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+            auto [checked, err] = checkCollectionOfMsg(*request);
             if (err) {
                 request->respondWithError({"HTTP"_sl, 400, err});
                 return;
@@ -1088,7 +1080,6 @@ namespace litecore { namespace repl {
         }
 
         MessageBuilder response(request);
-        assignCollectionToMsg(response, collectionIn);
         response["rev"_sl] = revID;
         response << body;
         request->respond(response);
@@ -1101,7 +1092,7 @@ namespace litecore { namespace repl {
         if (!checkpointID)
             return;
 
-        auto [collectionIn, errMsg] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+        auto [collectionIn, errMsg] = checkCollectionOfMsg(*request);
         if (errMsg) {
             request->respondWithError({"BLIP"_sl, 400, errMsg});
             return;
@@ -1126,7 +1117,6 @@ namespace litecore { namespace repl {
         }
 
         MessageBuilder response(request);
-        assignCollectionToMsg(response, collectionIn);
         response["rev"_sl] = newRevID;
         request->respond(response);
     }
@@ -1182,14 +1172,11 @@ namespace litecore { namespace repl {
         // Rearrange _options->collectionOpts according to collSpecs. If i-th CollectionSpec
         // is not found, put an empty collectionOptions at i-th position.
         _options->rearrangeCollections(collSpecs);
-        prepareWorkers();
-        DebugAssert(_options->workingCollectionCount() == _subRepls.size() &&
-                    _options->workingCollectionCount() == collSpecs.size());
-
         MessageBuilder response(request);
         auto &enc = response.jsonBody();
         enc.beginArray();
-        
+
+        bool hasUnfoundCollection = false;
         for (int i = 0; i < checkpointIDs.count(); i++) {
             auto checkpointID = checkpointIDs[i].asString();
 
@@ -1200,9 +1187,10 @@ namespace litecore { namespace repl {
                 logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found in the Replicator's config",
                         SPLAT(checkpointID), SPLAT(collections[i].asString()));
                 enc.writeNull();
+                hasUnfoundCollection = true;
                 continue;
             }
-            
+
             alloc_slice body, revID;
             int status = 0;
             try {
@@ -1228,6 +1216,15 @@ namespace litecore { namespace repl {
             enc.writeValue(checkpoint);
         }
         enc.endArray();
+
+        if (!hasUnfoundCollection) {
+            prepareWorkers();
+            DebugAssert(_options->workingCollectionCount() == _subRepls.size() &&
+                        _options->workingCollectionCount() == collSpecs.size());
+        }
+        // Else, with current plan, the client should not proceed normally.
+        // It should move to stop
+
         request->respond(response);
     }
 
@@ -1244,7 +1241,7 @@ namespace litecore { namespace repl {
                 C4Collection* c = db->getCollection(Options::collectionPathToSpec(
                                                     _options->collectionOpts[i].collectionPath));
                 if (c == nullptr) {
-                    error::_throw(error::UnexpectedError);
+                    error::_throw(error::NotFound);
                 }
                 _subRepls[i].collection = c;
             }
@@ -1287,7 +1284,7 @@ namespace litecore { namespace repl {
         slice profile = request->property("Profile"_sl);
         Assert(profile);
 
-        auto [i, errMsg] = checkCollectionOfMsg(*request, kNotCollectionIndex);
+        auto [i, errMsg] = checkCollectionOfMsg(*request);
         if (errMsg) {
             if (errMsg) {
                 request->respondWithError({"HTTP"_sl, 400, errMsg});

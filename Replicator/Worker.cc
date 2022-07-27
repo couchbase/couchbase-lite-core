@@ -315,11 +315,9 @@ namespace litecore { namespace repl {
 
     // Either there is error, or return a valid collection index
     std::pair<CollectionIndex, slice>
-    Worker::checkCollectionOfMsg(const blip::MessageIn& msg, CollectionIndex i) const {
+    Worker::checkCollectionOfMsg(const blip::MessageIn& msg) const {
         CollectionIndex collIn = getCollectionIndex(msg);
 
-        constexpr static slice kErrorIndexMismatched  =
-            "the collection property of the response does not match that of the request."_sl;
         constexpr static slice kErrorIndexInappropriateUse =
             "inappropriate use of the collection property."_sl;
         constexpr static slice kErrorIndexOutOfRange  =
@@ -342,12 +340,6 @@ namespace litecore { namespace repl {
             err = kErrorIndexOutOfRange;
         }
 
-        if (!err && i != kNotCollectionIndex) {
-            // check against i if it is a valid collection index
-            if (collIn != i) {
-                err = kErrorIndexMismatched;
-            }
-        }
         return std::make_pair(collIn, err);
     }
 
