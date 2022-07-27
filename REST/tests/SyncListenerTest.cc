@@ -331,6 +331,5 @@ TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]")
     stop();
     waitForStatus(kC4Stopped);
 }
-
-
 #endif
+

@@ -106,8 +106,16 @@ namespace litecore::repl {
         if (!blob)
             return;
 
+        slice err;
+        std::tie(std::ignore, err) = checkCollectionOfMsg(*req, collectionIndex());
+        if (err) {
+            req->respondWithError({"BLIP"_sl, 400, err});
+            return;
+        }
+
         increment(_blobsInFlight);
         MessageBuilder reply(req);
+        assignCollectionToMsg(reply, collectionIndex());
         reply.compressed = req->boolProperty("compress"_sl);
         logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
                    SPLAT(digest), blob->getLength(), reply.compressed);
@@ -132,6 +140,13 @@ namespace litecore::repl {
         unique_ptr<C4ReadStream> blob = readBlobFromRequest(request, digest, progress);
         if (!blob)
             return;
+
+        slice err;
+        std::tie(std::ignore, err) = checkCollectionOfMsg(*request, collectionIndex());
+        if (err) {
+            request->respondWithError({"BLIP"_sl, 400, err});
+            return;
+        }
 
         logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
         SHA1Builder sha;
@@ -159,6 +174,7 @@ namespace litecore::repl {
         string proofStr = proofDigest.digestString();
 
         MessageBuilder reply(request);
+        assignCollectionToMsg(reply, collectionIndex());
         reply.write(proofStr);
         request->respond(reply);
     }

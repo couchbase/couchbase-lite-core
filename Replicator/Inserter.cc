@@ -32,8 +32,8 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    Inserter::Inserter(Replicator *repl)
-    :Worker(repl, "Insert")
+    Inserter::Inserter(Replicator *repl, CollectionIndex coll)
+    :Worker(repl, "Insert", coll)
     ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     { }
@@ -158,7 +158,20 @@ namespace litecore { namespace repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                auto doc = _db->insertionDB().useLocked()->putDocument(put, nullptr, outError);
+                C4CollectionSpec spec = replicator()->collection(collectionIndex())->getSpec();
+                Retained<C4Document> doc
+                =_db->insertionDB().useLocked<Retained<C4Document>>([spec, outError, &put](C4Database* db) {
+                    C4Collection* collection = db->getCollection(spec);
+                    if (!collection || !collection->isValid()) {
+                        C4Error err{LiteCoreDomain, kC4ErrorNotOpen};
+                        if (outError)
+                            *outError = err;
+                        C4Error::raise(err);
+                    } else {
+                        return collection->putDocument(put, nullptr, outError);
+                    }
+                });
+
                 if (!doc)
                     return false;
                 logVerbose("    {'%.*s' #%.*s <- %.*s} seq %" PRIu64,

@@ -29,6 +29,7 @@
 
 namespace litecore { namespace repl {
     class ReplicatedRev;
+    class UseCollection;
 
     using AccessLockedDB = access_lock<Retained<C4Database>>;
 
@@ -51,6 +52,9 @@ namespace litecore { namespace repl {
         /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
             it after this point is considered undefined behavior. */
         void close();
+        
+        /** Check the C4Collection inside the lock and returns a holder object that hodes this->useLocked().*/
+        UseCollection useCollection(C4Collection*);
 
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
@@ -78,7 +82,7 @@ namespace litecore { namespace repl {
         void setDocRemoteAncestor(slice docID, slice revID);
         
         /** Returns the document enumerator for all unresolved docs present in the DB */
-        unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(bool orderByID);
+        unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(bool orderByID, C4Collection*);
 
          /** Mark this revision as synced (i.e. the server's current revision) soon.
              NOTE: While this is queued, calls to C4Document::getRemoteAncestor() for this doc won't
@@ -186,4 +190,18 @@ namespace litecore { namespace repl {
         std::atomic_flag _closed = ATOMIC_FLAG_INIT;
     };
 
+    class UseCollection {
+        DBAccess& _dbAccess;
+        decltype(_dbAccess.useLocked()) _access;
+        C4Collection* _collection;
+    public:
+        UseCollection(DBAccess& db_, C4Collection* collection)
+        :_dbAccess(db_)
+        ,_access(_dbAccess.useLocked())
+        ,_collection(collection)
+        {
+            Assert(_access.get() == _collection->getDatabase());
+        }
+        C4Collection* operator->() { return _collection; }
+    };
 } }

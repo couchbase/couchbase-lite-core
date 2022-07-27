@@ -27,7 +27,7 @@ namespace litecore { namespace repl {
     /** Top-level object managing the pull side of replication (receiving revisions.) */
     class Puller final : public RevFinder::Delegate {
     public:
-        Puller(Replicator* NONNULL);
+        Puller(Replicator* NONNULL, CollectionIndex);
 
         void setSkipDeleted()                       {_skipDeleted = true;}
 
@@ -41,8 +41,8 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev NONNULL);
 
-        bool passive(unsigned collectionIndex =0) const override {
-            return _options->pullOf(collectionIndex) <= kC4Passive;
+        bool passive() const override {
+            return _options->pull(collectionIndex()) <= kC4Passive;
         }
 
     protected:
@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
         virtual void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
             enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), move(revs));
         }
-        virtual void _childChangedStatus(Worker *task NONNULL, Status) override;
+        virtual void _childChangedStatus(Retained<Worker>, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);
 
@@ -99,7 +99,6 @@ namespace litecore { namespace repl {
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
-
     };
 
 

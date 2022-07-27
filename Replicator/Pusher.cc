@@ -28,13 +28,13 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
-    :Worker(replicator, "Push")
-    ,_continuous(_options->pushOf() == kC4Continuous)
+    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer, CollectionIndex collIndex)
+    :Worker(replicator, "Push", collIndex)
+    ,_continuous(_options->push(collectionIndex()) == kC4Continuous)
     ,_checkpointer(checkpointer)
     ,_changesFeed(*this, _options, *_db, &checkpointer)
     {
-        if (_options->pushOf() <= kC4Passive) {
+        if (_options->push(collectionIndex()) <= kC4Passive) {
             _proposeChanges = false;
             _proposeChangesKnown = true;
         } else if (_db->usingVersionVectors()) {
@@ -46,9 +46,9 @@ namespace litecore { namespace repl {
             _proposeChanges = true;
             _proposeChangesKnown = true;
         }
-        registerHandler("subChanges",      &Pusher::handleSubChanges);
-        registerHandler("getAttachment",   &Pusher::handleGetAttachment);
-        registerHandler("proveAttachment", &Pusher::handleProveAttachment);
+        replicator->registerWorkerHandler(this, "subChanges", &Pusher::handleSubChanges);
+        replicator->registerWorkerHandler(this, "getAttachment", &Pusher::handleGetAttachment);
+        replicator->registerWorkerHandler(this, "proveAttachment", &Pusher::handleProveAttachment);
     }
 
 
@@ -223,6 +223,7 @@ namespace litecore { namespace repl {
     // Sends a "changes" or "proposeChanges" message.
     void Pusher::sendChanges(RevToSendList &changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
+        assignCollectionToMsg(req, collectionIndex());
         if(_proposeChanges) {
             req[kConflictIncludesRevProperty] = "true"_sl;
         }
@@ -415,7 +416,7 @@ namespace litecore { namespace repl {
                 RevToSendList changes = {change};
                 sendChanges(changes);
                 return true;
-            } else if (_options->pullOf() <= kC4Passive) {
+            } else if (_options->pull(collectionIndex()) <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                              "conflicts with newer server revision"_sl);
                 finishedDocumentWithError(change, error, false);
@@ -469,7 +470,7 @@ namespace litecore { namespace repl {
                     }
                 }
 
-                if(_options->pullOf() <= kC4Passive) {
+                if(_options->pull(collectionIndex()) <= kC4Passive) {
                     // None of this other stuff is relevant if there's 
                     // no puller getting stuff from the server
                     return false;
