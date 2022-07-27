@@ -37,7 +37,7 @@ namespace litecore {
         LogStatement(allStores);
         while (allStores.executeStep()) {
             string storeName = allStores.getColumn(0).getString();
-            names.push_back(storeName);
+            names.push_back(SQLiteKeyStore::transformCollectionName(storeName, false));
         }
         
         return names;
@@ -45,26 +45,27 @@ namespace litecore {
 
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
-        exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
-        exec("DROP TABLE IF EXISTS \"kv_del_" + name + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_del_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
         // TODO: Do I need to drop indexes, triggers?
     }
 
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
         Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
-        return getKeyStore(tableName.from(3));
+        auto tableName_ = string(tableName.from(3));
+        return getKeyStore(SQLiteKeyStore::transformCollectionName(tableName_, false));
     }
 
 
     bool SQLiteDataFile::keyStoreExists(const string &name) const {
-        return tableExists(string("kv_") + name);
+        return tableExists(string("kv_") + SQLiteKeyStore::transformCollectionName(name, true));
     }
 
 
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
-    ,_tableName("kv_" + name)
+    ,_tableName("kv_" + transformCollectionName(name, true))
     ,_quotedTableName("\"" + _tableName + "\"")
     {
         reopen();
@@ -253,6 +254,24 @@ namespace litecore {
             rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
         else
             rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(RecordColumn::ExtraOrSize));
+    }
+
+
+    string SQLiteKeyStore::transformCollectionName(const string& name, bool mangle) {
+        ostringstream ss;
+        for (uint8_t c : name) {
+            if (mangle) {
+                if (c >= 'A' && c <= 'Z') {
+                    ss << '\\';
+                }
+            } else if (c == '\\') {
+                continue;
+            }
+
+            ss << c;
+        }
+
+        return ss.str();
     }
     
 
