@@ -49,8 +49,8 @@ struct C4Replicator : public fleece::RefCounted,
     virtual C4ReplicatorStatus getStatus() const noexcept =0;
     virtual alloc_slice getResponseHeaders() const noexcept =0;
 
-    alloc_slice pendingDocIDs() const;
-    bool isDocumentPending(slice docID) const;
+    alloc_slice pendingDocIDs(C4CollectionSpec) const;
+    bool isDocumentPending(slice docID, C4CollectionSpec) const;
 
 #ifdef COUCHBASE_ENTERPRISE
     C4Cert* C4NULLABLE getPeerTLSCertificate() const;

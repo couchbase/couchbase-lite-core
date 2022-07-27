@@ -53,8 +53,14 @@ namespace litecore {
 
     void Housekeeper::_scheduleExpiration(bool onlyIfEarlier) {
         expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile *df) {
-            return df ? df->defaultKeyStore().nextExpiration() : expiration_t::None;
+            if (!df) {
+                return expiration_t::None;
+            }
+
+            auto& store = df->getKeyStore(_keyStoreName);
+            return store.nextExpiration();
         });
+
         if (nextExp == expiration_t::None) {
             logVerbose("Housekeeper: no scheduled document expiration");
             return;
@@ -78,7 +84,7 @@ namespace litecore {
 
     void Housekeeper::_doExpiration() {
         logVerbose("Housekeeper: expiring documents...");
-        _bgdb->useInTransaction(DataFile::kDefaultKeyStoreName,
+        _bgdb->useInTransaction(_keyStoreName,
                                 [&](KeyStore &keyStore, SequenceTracker *sequenceTracker) -> bool {
             if (sequenceTracker) {
                 keyStore.expireRecords([&](slice docID) {
