@@ -714,13 +714,6 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
 
-            slice error;
-            std::tie(std::ignore, error) = checkCollectionOfMsg(*response, coll);
-            if (error) {
-                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, error));
-                return;
-            }
-
             Checkpoint remoteCheckpoint;
 
             if (response->isError()) {
@@ -929,13 +922,6 @@ namespace litecore { namespace repl {
                 return;
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
-
-            slice errMsg;
-            std::tie(std::ignore, errMsg) = checkCollectionOfMsg(*response, coll);
-            if (errMsg) {
-                gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, errMsg));
-                return;
-            }
 
             if (response->isError()) {
                 Error responseErr = response->getError();

@@ -71,13 +71,6 @@ namespace litecore { namespace repl {
                     // Set some error, so my IncomingRev will know I didn't complete [CBL-608]
                     blobGotError({POSIXDomain, ECONNRESET});
                 } else if (progress.reply) {
-                    slice errMsg;
-                    std::tie(std::ignore, errMsg) = checkCollectionOfMsg(*progress.reply, collectionIndex());
-                    if (errMsg) {
-                        blobGotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, errMsg));
-                        return;
-                    }
-
                     if (progress.reply->isError()) {
                         auto err = progress.reply->getError();
                         logError("Got error response: %.*s %d '%.*s'",
