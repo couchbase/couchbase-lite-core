@@ -17,6 +17,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
 #pragma clang diagnostic pop
 
 #ifdef __APPLE__
@@ -33,19 +34,23 @@
 namespace litecore {
 
     void SHA1::computeFrom(fleece::slice s) {
-        (SHA1Builder() << s).finish(&bytes, sizeof(bytes));
+        (SHA1Builder() << s).finish(&_bytes, size());
     }
 
+    void SHA256::computeFrom(fleece::slice s) {
+        (SHA256Builder() << s).finish(&_bytes, size());
+    }
 
-    bool SHA1::setDigest(fleece::slice s) {
-        if (s.size != sizeof(bytes))
+    template<unsigned int N>
+    bool Hash<N>::setDigest(fleece::slice s) {
+        if (s.size != size())
             return false;
-        memcpy(bytes, s.buf, sizeof(bytes));
+        memcpy(_bytes, s.buf, size());
         return true;
     }
 
-
-    std::string SHA1::asBase64() const {
+    template<unsigned int N>
+    std::string Hash<N>::asBase64() const {
         return fleece::base64::encode(asSlice());
     }
 
@@ -73,7 +78,7 @@ namespace litecore {
 
 
     void SHA1Builder::finish(void *result, size_t resultSize) {
-        DebugAssert(resultSize == sizeof(SHA1::bytes));
+        DebugAssert(resultSize == sizeof(SHA1::_bytes));
 #ifdef USE_COMMON_CRYPTO
         CC_SHA1_Final((uint8_t*)result, _CONTEXT);
 #else
@@ -81,5 +86,50 @@ namespace litecore {
         mbedtls_sha1_free(_CONTEXT);
 #endif
     }
+
+#undef _CONTEXT
+#ifdef USE_COMMON_CRYPTO
+#include <CommonCrypto/CommonDigest.h>
+#define _CONTEXT ((CC_SHA256_CTX*)_context)
+#else
+#define _CONTEXT ((mbedtls_sha256_context*)_context)
+#endif
+
+    SHA256Builder::SHA256Builder() {
+        static_assert(sizeof(_context) >= sizeof(mbedtls_sha256_context));
+#ifdef USE_COMMON_CRYPTO
+        static_assert(sizeof(_context) >= sizeof(CC_SHA256_CTX));
+        CC_SHA256_Init(_CONTEXT);
+#else
+        mbedtls_sha256_init(_CONTEXT);
+        mbedtls_sha256_starts(_CONTEXT, 0);
+#endif
+    }
+
+
+    SHA256Builder& SHA256Builder::operator<< (fleece::slice s) {
+#ifdef USE_COMMON_CRYPTO
+        CC_SHA256_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
+#else
+        mbedtls_sha256_update(_CONTEXT, (unsigned char*)s.buf, s.size);
+#endif
+        return *this;
+    }
+
+
+    void SHA256Builder::finish(void* result, size_t resultSize) {
+        DebugAssert(resultSize == sizeof(SHA256::_bytes));
+#ifdef USE_COMMON_CRYPTO
+        CC_SHA256_Final((uint8_t*)result, _CONTEXT);
+#else
+        mbedtls_sha256_finish(_CONTEXT, (uint8_t*)result);
+        mbedtls_sha256_free(_CONTEXT);
+#endif
+    }
+
+    // It seems odd to need these since they are base classes
+    // But without them there are linker errors.
+    template class Hash<20>;
+    template class Hash<32>;
 
 }
