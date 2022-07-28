@@ -124,11 +124,11 @@ getCollections [3.1+]
 
 Body: JSON dictionary
 
-A collection aware parallelized version of `getCheckpoint`.  If this message is sent before any `getCheckpoint` calls then replication will operate in 3.1+ mode, which can fully handle collections.  The body of this message will contain two arrays (`collections` and `checkpoint_ids`) each of the same length.  The combination of the two at a given index provide information about a checkpoint to retrieve (i.e. request checkpoint X for collection Y).  
+A collection aware parallelized version of `getCheckpoint`.  If this message is sent before any `getCheckpoint` calls then replication will operate in 3.1+ mode, which can fully handle collections.  The body of this message will contain two arrays (`collections` and `checkpoint_ids`) each of the same length.  The combination of the two at a given index provide information about a checkpoint to retrieve (i.e. request checkpoint X for collection Y).  The format of each entry in the `collections` array will be of the format `[scope.]collection` where if scope is omitted the collection will be considered to be from the default scope.
 
 Response:
 
-An array of items each identical in structure to the result of `getCheckpoint`.  The entries will be ordered according to the order in the request message.
+An array of items each identical in structure to the result of `getCheckpoint`.  The entries will be ordered according to the order in the request message.  There are two special entries in this case, however.  An entry which is an empty dictionary (`{}`) means that there is no existing checkpoint for the given checkpoint ID.  An entry which is `null` means that the collection does not exist in the remote, and the replication should not proceed.
 
 [[setcheckpoint]]
 setCheckpoint
