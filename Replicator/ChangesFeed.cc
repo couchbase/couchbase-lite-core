@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
         // JIM: This breaks tons of encapsulation, and should be reworked
         _collectionIndex = (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
         _continuous = _options->push(_collectionIndex) == kC4Continuous;
-        filterByDocIDs(_options->docIDs());
+        filterByDocIDs(_options->docIDs(_collectionIndex));
     }
 
 
@@ -118,7 +118,7 @@ namespace litecore { namespace repl {
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         // TBD: pushFilter should be collection-aware.
-        if (!_getForeignAncestors && !_options->pushFilter)
+        if (!_getForeignAncestors && !_options->pushFilter(_collectionIndex))
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
@@ -264,7 +264,7 @@ namespace litecore { namespace repl {
     bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
                                                     && _isCheckpointValid;
-        if (needRemoteRevID || _options->pushFilter) {
+        if (needRemoteRevID || _options->pushFilter(_collectionIndex)) {
             C4Error error;
             Retained<C4Document> doc;
             try {
@@ -293,14 +293,15 @@ namespace litecore { namespace repl {
                 if (!getRemoteRevID(rev, doc))
                     return false;     // skip or fail rev: it's already on the peer
             }
-            if (_options->pushFilter) {
+            if (_options->pushFilter(_collectionIndex)) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options->pushFilter({nullslice, nullslice},     // TODO: Collection support
-                                         doc->docID(),
-                                         doc->selectedRev().revID,
-                                         doc->selectedRev().flags,
-                                         doc->getProperties(),
-                                         _options->callbackContext)) {
+                if (!_options->pushFilter(_collectionIndex)(
+                                _checkpointer->collection()->getSpec(),
+                                doc->docID(),
+                                doc->selectedRev().revID,
+                                doc->selectedRev().flags,
+                                doc->getProperties(),
+                                _options->collectionCallbackContext(_collectionIndex))) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID()));
                     return false;     // skip rev: rejected by push filter
                 }

@@ -1640,6 +1640,7 @@
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
+		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2807,6 +2808,7 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				275E98FF238360B200EA516B /* Checkpointer.cc */,
 				275E9904238360B200EA516B /* Checkpointer.hh */,
+				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				277B9567224597E1005B7E79 /* Support */,
