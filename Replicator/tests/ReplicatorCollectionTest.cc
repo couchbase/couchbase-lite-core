@@ -173,7 +173,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
-    _expectedError = {LiteCoreDomain, kC4ErrorUnexpectedError};
+    _expectedError = {WebSocketDomain, 404};
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 

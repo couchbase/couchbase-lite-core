@@ -850,10 +850,12 @@ namespace litecore { namespace repl {
                     Dict dict = checkpointArray[i].asDict();
                     if (!dict) {
                         // Make it fatal error, UnexpectedError.
-                        auto error = C4Error::printf(LiteCoreDomain, kC4ErrorUnexpectedError,
+                        auto error = C4Error::printf(WebSocketDomain, 404,
                                                      "Collection '%.*s' is not found on the remote server",
                                                      SPLAT(collPath));
-                        return gotError(error);
+                        gotError(error);
+                        _stop();
+                        return;
                     }
                     
                     if (dict.empty()) {
@@ -1055,7 +1057,6 @@ namespace litecore { namespace repl {
         } else {
             // Either it is 3.1 client, hence collectionAware()==true,
             // or a 3.0 client and the above piece of code should have been already called.
-
             auto [checked, err] = checkCollectionOfMsg(*request);
             if (err) {
                 request->respondWithError({"HTTP"_sl, 400, err});
@@ -1063,6 +1064,8 @@ namespace litecore { namespace repl {
             }
             collectionIn = checked;
         }
+        // We don't save checkpointID by collection.
+        (void)collectionIn;
 
         alloc_slice body, revID;
         int status = 0;
@@ -1097,6 +1100,8 @@ namespace litecore { namespace repl {
             request->respondWithError({"BLIP"_sl, 400, errMsg});
             return;
         }
+        // We don't save checkpointID by collection
+        (void)collectionIn;
 
         bool ok;
         alloc_slice newRevID;
@@ -1241,7 +1246,8 @@ namespace litecore { namespace repl {
                 C4Collection* c = db->getCollection(Options::collectionPathToSpec(
                                                     _options->collectionOpts[i].collectionPath));
                 if (c == nullptr) {
-                    error::_throw(error::NotFound);
+                    error::_throw(error::NotFound, "collection %s is not found in the database.",
+                                  _options->collectionOpts[i].collectionPath.asString().c_str());
                 }
                 _subRepls[i].collection = c;
             }
