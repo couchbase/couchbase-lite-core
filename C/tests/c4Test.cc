@@ -330,13 +330,15 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
 
 /*static*/ C4Collection* C4Test::createCollection(C4Database* db, C4CollectionSpec spec) {
     auto coll = c4db_createCollection(db, spec, ERROR_INFO());
-    Assert(coll);
+    REQUIRE(coll);
     return coll;
 }
 
 /*static*/ C4Collection* C4Test::getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist) {
     auto coll = c4db_getCollection(db, spec, ERROR_INFO());
-    Assert(!mustExist || coll != nullptr);
+    if (mustExist) {
+        REQUIRE(coll);
+    }
     return coll;
 }
 
