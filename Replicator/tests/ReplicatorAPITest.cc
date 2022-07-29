@@ -14,6 +14,7 @@
 
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
+#include "c4Collection.h"
 #include "StringUtil.hh"
 #include "c4Socket.h"
 //#include "c4Socket+Internal.hh"
@@ -355,6 +356,56 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     CHECK(overall == expectedOverall);
     CHECK(perCollection == expectedPerCollection);
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][Sync]") {
+    createDB2();
+    
+    C4CollectionSpec Roses = { "roses"_sl, "flowers"_sl };
+    auto collRose1 = createCollection(db, Roses);
+    auto collRose2 = createCollection(db2, Roses);
+    
+    addDocs(db, Roses, 10);
+    addDocs(db2, Roses, 10);
+    
+    int expectDocCountInDB = 0;
+    int expectDocCountInDB2 = 0;
+    
+    C4ReplicationCollection coll;
+    SECTION("Push") {
+        coll = {
+            Roses,
+            kC4OneShot,
+            kC4Disabled,
+        };
+        expectDocCountInDB = 10;
+        expectDocCountInDB2 = 20;
+    }
+    
+    SECTION("Pull") {
+        coll = {
+            Roses,
+            kC4Disabled,
+            kC4OneShot
+        };
+        expectDocCountInDB = 20;
+        expectDocCountInDB2 = 10;
+    }
+    
+    C4ReplicatorParameters params{};
+    params.collections = &coll;
+    params.collectionCount = 1;
+    
+    C4Error err;
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    REQUIRE(repl);
+
+    c4repl_start(repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    
+    CHECK(c4coll_getDocumentCount(collRose1) == expectDocCountInDB);
+    CHECK(c4coll_getDocumentCount(collRose2) == expectDocCountInDB2);
+}
+
 #endif
 
 

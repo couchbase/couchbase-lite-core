@@ -328,6 +328,38 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
 }
 
 
+/*static*/ C4Collection* C4Test::createCollection(C4Database* db, C4CollectionSpec spec) {
+    auto coll = c4db_createCollection(db, spec, ERROR_INFO());
+    REQUIRE(coll);
+    return coll;
+}
+
+/*static*/ C4Collection* C4Test::getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist) {
+    auto coll = c4db_getCollection(db, spec, ERROR_INFO());
+    if (mustExist) {
+        REQUIRE(coll);
+    }
+    return coll;
+}
+
+int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) {
+    C4Collection* coll = getCollection(database, spec);
+    if (idprefix.empty()) {
+        idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-");
+    }
+    int docNo = 1;
+    for (int i = 1; docNo <= total; i++) {
+        C4Log("-------- Creating %d docs --------", i);
+        TransactionHelper t(database);
+        char docID[20];
+        sprintf(docID, "%s%d", idprefix.c_str(), docNo++);
+        createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+    }
+    C4Log("-------- Done creating docs --------");
+    return docNo - 1;
+}
+
+
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Test::createRev(db, docID, revID, body, flags);
 }
