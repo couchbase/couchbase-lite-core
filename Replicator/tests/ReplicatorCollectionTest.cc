@@ -14,6 +14,7 @@
 #include "c4Collection.hh"
 #include "c4Database.hh"
 #include "fleece/Mutable.hh"
+#include "c4Replicator.h"
 
 static constexpr slice GuitarsName = "guitars"_sl;
 static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
@@ -47,6 +48,8 @@ public:
         db2->createCollection(Tulips);
         db2->createCollection(Lavenders);
     }
+    
+    using C4Test::addDocs;
     
     // Push from db1 to db2
     void runPushReplication(vector<CollectionSpec>specs1,
@@ -100,30 +103,6 @@ public:
             specs.push_back(spec);
         });
         return specs;
-    }
-    
-    static C4Collection* getCollection(C4Database* db, CollectionSpec spec, bool mustExist =true) {
-        auto coll = db->getCollection(spec);
-        Assert(!mustExist || coll != nil);
-        return coll;
-    }
-    
-    // Add new docs to a collection
-    int addCollDocs(C4Database* db, CollectionSpec spec, int total, string prefix = "") {
-        C4Collection* coll = getCollection(db, spec);
-        if (prefix.empty()) {
-            prefix= (db == this->db ? "newdoc-db1-" : (db == this->db2 ? "newdoc-db2-" : "newdoc-"));
-        }
-        int docNo = 1;
-        for (int i = 1; docNo <= total; i++) {
-            Log("-------- Creating %d docs --------", i);
-            TransactionHelper t(db);
-            char docID[20];
-            sprintf(docID, "%s%d", prefix.c_str(), docNo++);
-            createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
-        }
-        Log("-------- Done creating docs --------");
-        return docNo - 1;
     }
     
     void purgeAllDocs(C4Database* db, CollectionSpec spec) {
@@ -335,10 +314,9 @@ struct CheckDBEntries {
     vector<set<string>> _db2Before;
 };
 
-
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
-    addCollDocs(db, Default, 10);
-    addCollDocs(db2, Default, 10);
+    addDocs(db, Default, 10);
+    addDocs(db2, Default, 10);
     
     SECTION("PUSH") {
         CheckDBEntries check(db, db2, {Default});
@@ -388,8 +366,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
 
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
-    addCollDocs(db, Guitars, 10);
-    addCollDocs(db2, Guitars, 10);
+    addDocs(db, Guitars, 10);
+    addDocs(db2, Guitars, 10);
 
     SECTION("PUSH") {
         CheckDBEntries check(db, db2, {Guitars});
@@ -438,12 +416,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
-    addCollDocs(db, Roses, 10);
-    addCollDocs(db, Tulips, 10);
-    addCollDocs(db, Lavenders, 10);
-    addCollDocs(db2, Roses, 20);
-    addCollDocs(db2, Tulips, 20);
-    addCollDocs(db2, Lavenders, 20);
+    addDocs(db, Roses, 10);
+    addDocs(db, Tulips, 10);
+    addDocs(db, Lavenders, 10);
+    addDocs(db2, Roses, 20);
+    addDocs(db2, Tulips, 20);
+    addDocs(db2, Lavenders, 20);
     
     SECTION("PUSH") {
         CheckDBEntries check(db, db2, {Roses, Tulips});
@@ -499,21 +477,21 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
 #ifdef ENABLE_REPLICATOR_COLLECTION_TEST
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Incremental Push and Pull", "[Push][Pull]") {
-    addCollDocs(db, Roses, 10);
-    addCollDocs(db, Tulips, 10);
-    addCollDocs(db2, Roses, 10);
-    addCollDocs(db2, Tulips, 10);
+    addDocs(db, Roses, 10);
+    addDocs(db, Tulips, 10);
+    addDocs(db2, Roses, 10);
+    addDocs(db2, Tulips, 10);
     
     _expectedDocumentCount = 40;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
     validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
     validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
     
-    addCollDocs(db, Roses, 1, "rose1");
-    addCollDocs(db, Tulips, 2, "tulip1");
+    addDocs(db, Roses, 1, "rose1");
+    addDocs(db, Tulips, 2, "tulip1");
     
-    addCollDocs(db2, Roses, 3, "rose2");
-    addCollDocs(db2, Tulips, 4, "tulip2");
+    addDocs(db2, Roses, 3, "rose2");
+    addDocs(db2, Tulips, 4, "tulip2");
     
     _expectedDocumentCount = 10;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
@@ -522,10 +500,10 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Incremental Push and Pull", "[Push][
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push and Pull", "[Push][Pull]") {
-    addCollDocs(db, Roses, 10);
-    addCollDocs(db, Tulips, 10);
-    addCollDocs(db2, Roses, 10);
-    addCollDocs(db2, Tulips, 10);
+    addDocs(db, Roses, 10);
+    addDocs(db, Tulips, 10);
+    addDocs(db2, Roses, 10);
+    addDocs(db2, Tulips, 10);
     
     _expectedDocumentCount = 40;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});

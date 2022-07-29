@@ -234,6 +234,10 @@ public:
 
     static void deleteAndRecreateDB(C4Database*&);
     static alloc_slice copyFixtureDB(const std::string &name);
+    
+    static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
+    static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist =true);
+    int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "");
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
