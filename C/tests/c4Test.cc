@@ -572,7 +572,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database,
     json << (legacyNames ? "{_attachments: {" : "{attached: [");
     for (string &attachment : attachments) {
         C4BlobKey key;
-        REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), fleece::slice(attachment),
+        REQUIRE(c4blob_create(c4db_getBlobStore(database, nullptr), fleece::slice(attachment),
                               nullptr, &key,  WITH_ERROR()));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
@@ -587,7 +587,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database,
     }
     json << (legacyNames ? "}}" : "]}");
     string jsonStr = json5(json.str());
-    C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), ERROR_INFO());
+    C4SliceResult body = c4db_encodeJSON(database, c4str(jsonStr.c_str()), ERROR_INFO());
     REQUIRE(body.buf);
 
     // Save document:
