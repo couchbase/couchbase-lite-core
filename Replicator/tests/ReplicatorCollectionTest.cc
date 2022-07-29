@@ -82,15 +82,19 @@ public:
                                    bool reset =false)
     {
         C4ReplicatorParameters params1 {};
-        params1.collections = coll1.data();
-        params1.collectionCount = (unsigned) coll1.size();
+        params1.collectionCount = coll1.size();
+        if (coll1.size() > 0) {
+            params1.collections = coll1.data();
+        }
         Options opts1 = Options(params1);
         
         C4ReplicatorParameters params2 {};
-        params2.collections = coll2.data();
-        params2.collectionCount = (unsigned) coll2.size();
+        params2.collectionCount = coll2.size();
+        if (coll2.size() > 0) {
+            params2.collections = coll2.data();
+        }
         Options opts2 = Options(params2);
-        
+
         runReplicators(opts1, opts2, reset);
     }
     
@@ -257,7 +261,6 @@ private:
     }
 };
 
-#ifdef ENABLE_REPLICATOR_COLLECTION_TEST
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
     vector<CollectionSpec>specs = {CollectionSpec("dummy1"_sl), CollectionSpec("dummy2"_sl)};
@@ -266,7 +269,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
-    _expectedError = {LiteCoreDomain, kC4ErrorNotFound};
+    _expectedError = {WebSocketDomain, 404};
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 
@@ -274,7 +277,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
     runPushPullReplication({}, {});
 }
-#endif
+
 
 #define DISABLE_PUSH_AND_PULL
 #define DISABLE_CONTINUOUS

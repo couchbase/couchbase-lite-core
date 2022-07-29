@@ -136,14 +136,6 @@ namespace litecore::repl {
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, [this, request](MessageProgress progress) {
-                if (progress.reply) {
-                    slice err;
-                    std::tie(std::ignore, err) = checkCollectionOfMsg(*progress.reply, collectionIndex());
-                    if (err) {
-                        gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, err));
-                        return;
-                    }
-                }
                 onRevProgress(request, progress);
             });
             increment(_revisionsInFlight);

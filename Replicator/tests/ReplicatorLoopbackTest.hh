@@ -117,40 +117,50 @@ public:
         optsRef1->setProgressLevel(_clientProgressLevel);
         optsRef2->setProgressLevel(_serverProgressLevel);
 
+        bool createReplicatorThrew = false;
         // Create client (active) and server (passive) replicators:
-        _replClient = new Replicator(dbClient,
-                                     new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
-                                     *this, optsRef1);
+        try {
+            _replClient = new Replicator(dbClient,
+                                         new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
+                                         *this, optsRef1);
 
-        _replServer = new Replicator(dbServer,
-                                     new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
-                                     *this, optsRef2);
+            _replServer = new Replicator(dbServer,
+                                         new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
+                                         *this, optsRef2);
 
-        Log("Client replicator is %s", _replClient->loggingName().c_str());
+            Log("Client replicator is %s", _replClient->loggingName().c_str());
 
-        // Response headers:
-        Headers headers;
-        headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
+            // Response headers:
+            Headers headers;
+            headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
 
-        // Bind the replicators' WebSockets and start them:
-        LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
-        Stopwatch st;
-        _replClient->start(reset);
-        _replServer->start();
+            // Bind the replicators' WebSockets and start them:
+            LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+            Stopwatch st;
+            _replClient->start(reset);
+            _replServer->start();
 
-        Log("Waiting for replication to complete...");
-        _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
+            Log("Waiting for replication to complete...");
+            _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
 
-        Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        
-        _checkpointIDs.clear();
-        for (int i = 0; i < optsRef1->collectionOpts.size(); ++i) {
-            _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
+            Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
+
+            _checkpointIDs.clear();
+            for (int i = 0; i < optsRef1->collectionOpts.size(); ++i) {
+                _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
+            }
+        } catch (const exception &exc) {
+            // In this suite of tests, we don't use C4Replicator as the holder.
+            // The delegate of the respective Replicators is 'this'. With C4Replicator
+            // as the holder, the exception would have been caught by C4Replicator when it
+            // calls createReplicator(). We try to match that logic here.
+            createReplicatorThrew = true;
+            _statusReceived.error = C4Error::fromException(exc);
         }
         _replClient = _replServer = nullptr;
 
-        CHECK(_gotResponse);
-        CHECK(_statusChangedCalls > 0);
+        CHECK((createReplicatorThrew || _gotResponse));
+        CHECK((createReplicatorThrew || _statusChangedCalls > 0));
         CHECK(_statusReceived.level == kC4Stopped);
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)

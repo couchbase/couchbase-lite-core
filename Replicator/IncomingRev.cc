@@ -346,7 +346,6 @@ namespace litecore { namespace repl {
 
         if (_revMessage) {
             MessageBuilder response(_revMessage);
-            assignCollectionToMsg(response, collectionIndex());
             if (_rev->error.code != 0)
                 response.makeError(c4ToBLIPError(_rev->error));
             _revMessage->respond(response);

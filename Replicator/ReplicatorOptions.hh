@@ -433,7 +433,7 @@ namespace litecore { namespace repl {
 
                 if (oneshot * continuous > 0) {
                     throw error(error::LiteCore, error::InvalidParameter,
-                                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mised in one replicator.");
+                                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed in one replicator.");
                 }
             }
         }
