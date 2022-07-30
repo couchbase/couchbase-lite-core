@@ -13,7 +13,6 @@
 #include "c4Base.hh"
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
-#include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
 #include "Base64.hh"
 #include "Logging.hh"
@@ -222,10 +221,10 @@ namespace litecore { namespace repl {
     // Computes the ID of the checkpoint document.
     string Checkpointer::docIDForUUID(const C4UUID &localUUID, URLTransformStrategy urlStrategy) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
-        Array channels = _options->channels();
+        Array channels = _options->channels(collectionIndex());
         Value filter = _options->properties[kC4ReplicatorOptionFilter];
         const Value filterParams = _options->properties[kC4ReplicatorOptionFilterParams];
-        Array docIDs = _options->docIDs();
+        Array docIDs = _options->docIDs(collectionIndex());
 
         // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
         fleece::Encoder enc;
@@ -334,11 +333,12 @@ namespace litecore { namespace repl {
 
 
     void Checkpointer::initializeDocIDs() {
-        if(!_docIDs.empty() || !_options->docIDs() || _options->docIDs().empty()) {
+        CollectionIndex idx = collectionIndex();
+        if(!_docIDs.empty() || !_options->docIDs(idx) || _options->docIDs(idx).empty()) {
             return;
         }
 
-        Array::iterator i(_options->docIDs());
+        Array::iterator i(_options->docIDs(idx));
         while(i) {
             string docID = i.value().asString().asString();
             if(!docID.empty()) {
@@ -351,13 +351,15 @@ namespace litecore { namespace repl {
 
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
+        CollectionIndex i = collectionIndex();
         return isDocumentIDAllowed(doc->docID())
-        && (!_options->pushFilter || _options->pushFilter({nullslice, nullslice},   // TODO: Collection support
-                                                            doc->docID(),
-                                                            doc->selectedRev().revID,
-                                                            doc->selectedRev().flags,
-                                                            doc->getProperties(),
-                                                            _options->callbackContext));
+            && (!_options->pushFilter(i) ||
+                _options->pushFilter(i)(_collection->getSpec(),
+                                        doc->docID(),
+                                        doc->selectedRev().revID,
+                                        doc->selectedRev().flags,
+                                        doc->getProperties(),
+                                        _options->collectionCallbackContext(collectionIndex())));
     }
 
 
@@ -385,8 +387,9 @@ namespace litecore { namespace repl {
         }
 
         C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
-        const auto hasDocIDs = bool(_options->docIDs());
-        if(!hasDocIDs && _options->pushFilter) {
+        CollectionIndex i = collectionIndex();
+        const auto hasDocIDs = bool(_options->docIDs(i));
+        if(!hasDocIDs && _options->pushFilter(i)) {
             // docIDs has precedence over push filter
             opts.flags |= kC4IncludeBodies;
         }
@@ -401,7 +404,7 @@ namespace litecore { namespace repl {
             if(!isDocumentIDAllowed(info.docID))
                 continue;
 
-            if (!hasDocIDs && _options->pushFilter) {
+            if (!hasDocIDs && _options->pushFilter(i)) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
                 Retained<C4Document> nextDoc = e.getDocument();
                 if(!nextDoc) {

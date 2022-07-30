@@ -15,6 +15,7 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "c4Collection.h"
+#include "c4ReplicatorHelpers.hh"
 #include "StringUtil.hh"
 #include "c4Socket.h"
 //#include "c4Socket+Internal.hh"
@@ -24,6 +25,7 @@
 
 using namespace fleece;
 using namespace std;
+using namespace litecore;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
@@ -142,7 +144,7 @@ TEST_CASE("URL Generation", "[C]][Replicator]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -239,7 +241,7 @@ __attribute__((no_sanitize("nullability-arg"))) // suppress breakpoint passing n
 {
     C4Error err;
     C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
-    C4ReplicatorParameters params {};
+    repl::C4ReplParamsDefaultCollection params;
     params.pull = kC4OneShot;
     c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, ERROR_INFO(err));
     REQUIRE(repl);
@@ -294,7 +296,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     createRev(db2, "doc"_sl, kRevID, kFleeceBody);
 
     C4Error err;
-    C4ReplicatorParameters params{};
+    repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string> docIDs;
     params.pull = kC4OneShot;
     int overall = 0;
@@ -313,10 +315,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
 
     int expectedOverall = 0;
     int expectedPerCollection = 0;
-    SECTION("In legacy mode, only the overall context is used") {
-        // Both writes will affect the same variable
-        expectedOverall = 24;
-    }
 
     C4ReplicationCollection coll;
     SECTION("When using a collection, but not setting a per collection context, only overall is used") {
@@ -501,7 +499,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     FLSliceResult options {};
 
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -531,7 +529,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.optionsDictFleece = C4Slice(options);
+        params.defaultCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -561,7 +559,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     FLSliceResult options {};
 
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -574,7 +572,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.callbackContext = this;
+        params.defaultCollection.callbackContext = this;
         params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
@@ -594,7 +592,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.optionsDictFleece = C4Slice(options);
+        params.defaultCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -806,7 +804,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     createDB2();
 
     C4Error err;
-    C4ReplicatorParameters params {};
+    repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string> docIDs;
     params.pull = kC4OneShot;
     params.onDocumentsEnded = [](C4Replicator* repl,
@@ -868,7 +866,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     createDB2();
 
     C4Error err;
-    C4ReplicatorParameters params {};std::vector<std::string> docIDs;
+    repl::C4ReplParamsDefaultCollection params;
+    std::vector<std::string> docIDs;
     params.pull = kC4OneShot;
     params.onDocumentsEnded = [](C4Replicator* repl,
                       bool pushing,

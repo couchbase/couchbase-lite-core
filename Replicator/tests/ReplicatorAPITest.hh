@@ -286,8 +286,6 @@ public:
 
         C4ReplicatorParameters params = {};
         // When params.collections is non-empty, params.push/pull are ignored.
-        params.push = (C4ReplicatorMode)(rand() % 4);
-        params.pull = (C4ReplicatorMode)(rand() % 4);
         C4ReplicationCollection colls[] = {
             { kC4DefaultCollectionSpec, push, pull }
         };
@@ -295,8 +293,9 @@ public:
         params.collectionCount = sizeof(colls) / sizeof(C4ReplicationCollection);
         _options = options();
         params.optionsDictFleece = _options.data();
-        params.pushFilter = _pushFilter;
-        params.validationFunc = _pullFilter;
+        params.collections[0].pushFilter = _pushFilter;
+        params.collections[0].pullFilter = _pullFilter;
+        params.collections[0].callbackContext = this;
         params.onStatusChanged = onStateChanged;
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;

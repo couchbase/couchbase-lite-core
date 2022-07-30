@@ -33,8 +33,6 @@ namespace litecore { namespace repl {
         using PropertyDecryptor = C4ReplicatorPropertyDecryptionCallback;
 
         fleece::AllocedDict     properties;
-        Validator               pushFilter              {nullptr};
-        Validator               pullValidator           {nullptr};
         PropertyEncryptor       propertyEncryptor       {nullptr};
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
@@ -64,8 +62,6 @@ namespace litecore { namespace repl {
 
         explicit Options(C4ReplicatorParameters params)
         :properties(params.optionsDictFleece)
-        ,pushFilter(params.pushFilter)
-        ,pullValidator(params.validationFunc)
         ,propertyEncryptor(params.propertyEncryptor)
         ,propertyDecryptor(params.propertyDecryptor)
         ,callbackContext(params.callbackContext)
@@ -75,9 +71,7 @@ namespace litecore { namespace repl {
         }
 
         Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
-        :pushFilter(opt.pushFilter)
-        ,pullValidator(opt.pullValidator)
-        ,propertyEncryptor(opt.propertyEncryptor)
+        :propertyEncryptor(opt.propertyEncryptor)
         ,propertyDecryptor(opt.propertyDecryptor)
         ,callbackContext(opt.callbackContext)
         ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
@@ -98,8 +92,6 @@ namespace litecore { namespace repl {
             return progressLevel.exchange(level) != level;
         }
 
-        fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
-        fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
         fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
         fleece::Dict filterParams() const
                                   {return properties[kC4ReplicatorOptionFilterParams].asDict();}
@@ -224,9 +216,9 @@ namespace litecore { namespace repl {
 
             fleece::AllocedDict                 properties;
 
-            C4ReplicatorValidationFunction      pushFilter;
-            C4ReplicatorValidationFunction      pullFilter;
-            void*                               callbackContext;
+            C4ReplicatorValidationFunction      pushFilter {nullptr};
+            C4ReplicatorValidationFunction      pullFilter {nullptr};
+            void*                               callbackContext {nullptr};
 
             CollectionOptions(alloc_slice collectionPath_)
             {
@@ -259,12 +251,32 @@ namespace litecore { namespace repl {
             return collectionOpts.size();
         }
 
-        Mode push(unsigned i) const {
+        Mode push(CollectionIndex i) const {
             return collectionOpts[i].push;
         }
 
-        Mode pull(unsigned i) const {
+        Mode pull(CollectionIndex i) const {
             return collectionOpts[i].pull;
+        }
+
+        Validator pushFilter(CollectionIndex i) const {
+            return collectionOpts[i].pushFilter;
+        }
+
+        Validator pullFilter(CollectionIndex i) const  {
+            return collectionOpts[i].pullFilter;
+        }
+
+        void* collectionCallbackContext(CollectionIndex i) const {
+            return collectionOpts[i].callbackContext;
+        }
+
+        fleece::Array channels(CollectionIndex i) const {
+            return collectionOpts[i].properties[kC4ReplicatorOptionChannels].asArray();
+        }
+
+        fleece::Array docIDs(CollectionIndex i) const {
+            return collectionOpts[i].properties[kC4ReplicatorOptionDocIDs].asArray();
         }
 
         CollectionIndex workingCollectionCount() const {
@@ -341,16 +353,6 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
-        if (params.collectionCount == 0) {
-            setCollectionOptions(params.push, params.pull);
-            auto& back = collectionOpts.back();
-            back.pushFilter = params.pushFilter;
-            back.pullFilter = params.validationFunc;
-            back.callbackContext = params.callbackContext;
-            return;
-        }
-
-        // Assertion: params.collectionCount > 0
         collectionOpts.reserve(params.collectionCount);
         for (unsigned i = 0; i < params.collectionCount; ++i) {
             C4ReplicationCollection& c4Coll = params.collections[i];
@@ -365,7 +367,6 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::setCollectionOptions(const Options& opt) {
-        Assert(opt.collectionOpts.size() > 0);
         collectionOpts.reserve(opt.collectionOpts.size());
         for (auto& collOpts : opt.collectionOpts) {
             auto& back = collectionOpts.emplace_back(collOpts.collectionPath, collOpts.properties.data());
