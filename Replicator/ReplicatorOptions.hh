@@ -263,7 +263,7 @@ namespace litecore { namespace repl {
             return collectionOpts[i].pushFilter;
         }
 
-        Validator pullValidator(CollectionIndex i) const  {
+        Validator pullFilter(CollectionIndex i) const  {
             return collectionOpts[i].pullFilter;
         }
 
