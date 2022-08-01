@@ -24,19 +24,19 @@ CLANG_STATIC_ANALYZER_MODE = shallow
 LITECORE_VERSION_STRING                            = 3.1.0
 LITECORE_BUILD_NUMBER                              = 0
 
-IPHONEOS_DEPLOYMENT_TARGET                         =  10.0
+IPHONEOS_DEPLOYMENT_TARGET                         =  11.0
 MACOSX_DEPLOYMENT_TARGET                           = 10.12
-TVOS_DEPLOYMENT_TARGET                             =  10.0
+TVOS_DEPLOYMENT_TARGET                             =  11.0
 ONLY_ACTIVE_ARCH                                   = YES
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
 
-VALID_ARCHS                                        = x86_64 i386 arm64 armv7 armv7s
-VALID_ARCHS[sdk=macosx*]                           = x86_64      arm64
-VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64 i386 arm64
-VALID_ARCHS[sdk=appletvsimulator*]                 = x86_64      arm64
-VALID_ARCHS[sdk=iphoneos*]                         =             arm64 armv7 armv7s
-VALID_ARCHS[sdk=appletvos*]                        =             arm64
+VALID_ARCHS                                        = x86_64 arm64
+VALID_ARCHS[sdk=macosx*]                           = x86_64 arm64
+VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64 arm64
+VALID_ARCHS[sdk=appletvsimulator*]                 = x86_64 arm64
+VALID_ARCHS[sdk=iphoneos*]                         =        arm64
+VALID_ARCHS[sdk=appletvos*]                        =        arm64
 
 CODE_SIGN_IDENTITY                                 =
 VERSION_INFO_PREFIX                                =
@@ -72,9 +72,3 @@ COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from c
 
 SUPPORTS_MACCATALYST                               = YES
 OTHER_CFLAGS                                       = $(inherited) -DHAVE_GETHOSTUUID=0
-
-// Disable C++17 aligned-allocation feature in 32-bit builds, to avoid compile errors about lack
-// of support pre-iOS 11. Remove these lines when we stop supporting either 32-bit or iOS 9/10.
-// (CBL-734)
-OTHER_CFLAGS[arch=armv7]  = $(inherited) -fno-aligned-allocation
-OTHER_CFLAGS[arch=armv7s] = $(inherited) -fno-aligned-allocation
