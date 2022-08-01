@@ -54,20 +54,23 @@ public:
     // Push from db1 to db2
     void runPushReplication(vector<CollectionSpec>specs1,
                             vector<CollectionSpec>specs2,
-                            C4ReplicatorMode activeMode =kC4OneShot)
+                            C4ReplicatorMode activeMode =kC4OneShot,
+                            bool reset =false)
     {
         vector<C4ReplicationCollection> coll1 = replCollections(specs1, activeMode, kC4Disabled);
         vector<C4ReplicationCollection> coll2 = replCollections(specs2, kC4Passive, kC4Passive);
-        runReplicationCollections(coll1, coll2);
+        runReplicationCollections(coll1, coll2, reset);
     }
 
     // Pull from db1 to db2
     void runPullReplication(vector<CollectionSpec>specs1,
                             vector<CollectionSpec>specs2,
-                            C4ReplicatorMode activeMode =kC4OneShot) {
+                            C4ReplicatorMode activeMode =kC4OneShot,
+                            bool reset =false)
+    {
         vector<C4ReplicationCollection> coll1 = replCollections(specs1, kC4Passive, kC4Passive);
         vector<C4ReplicationCollection> coll2 = replCollections(specs2, kC4Disabled, activeMode);
-        runReplicationCollections(coll1, coll2);
+        runReplicationCollections(coll1, coll2, reset);
     }
 
     void runPushPullReplication(vector<CollectionSpec>specs1,
@@ -75,7 +78,7 @@ public:
                                 C4ReplicatorMode activeMode =kC4OneShot,
                                 bool reset =false)
     {
-        vector<C4ReplicationCollection> coll1 = replCollections(specs1, kC4Disabled, activeMode);
+        vector<C4ReplicationCollection> coll1 = replCollections(specs1, activeMode, activeMode);
         vector<C4ReplicationCollection> coll2 = replCollections(specs2, kC4Passive, kC4Passive);
         runReplicationCollections(coll1, coll2, reset);
     }
@@ -127,6 +130,8 @@ public:
                 REQUIRE(c4coll_purgeDoc(coll, info.docID, nullptr));
             }
         }
+        c4enum_free(e);
+        CHECK(coll->getDocumentCount() == 0);
     }
     
     class ResolvedDocument {
@@ -258,9 +263,6 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]
 }
 
 
-#define DISABLE_PUSH_AND_PULL
-#define DISABLE_CONTINUOUS
-
 static std::set<string> getDocInfos(C4Database* db, C4CollectionSpec coll) {
     std::set<string> ret;
     C4Collection* collection = ReplicatorCollectionTest::getCollection(db, coll);
@@ -336,13 +338,13 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
         runPullReplication({Default}, {Default});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
-#ifndef DISABLE_PUSH_AND_PULL
+
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Default}, {Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":40,\"remote\":40}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
     }
-#endif
+    
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
         CheckDBEntries check(db, db2, {Default});
 
@@ -350,7 +352,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
         runPushReplication({Default}, {Guitars, Default});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
     }
-    
+
     SECTION("PULL with MULTIPLE PASSIVE COLLECTIONS") {
         CheckDBEntries check(db, db2, {Default});
 
@@ -358,15 +360,13 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
         runPullReplication({Guitars, Default}, {Default});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
-#ifndef DISABLE_PUSH_AND_PULL
+
     SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Default}, {Guitars, Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":40,\"remote\":40}");
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
     }
-#endif
 }
-
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
     addDocs(db, Guitars, 10);
@@ -387,13 +387,13 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
         runPullReplication({Guitars}, {Guitars});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
-#ifndef DISABLE_PUSH_AND_PULL
+
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 20;
-        runPushPullReplication({Guitars}, {Guitars, Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20,\"remote\":20}");
+        runPushPullReplication({Guitars}, {Guitars});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
     }
-#endif
+
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
         CheckDBEntries check(db, db2, {Guitars});
 
@@ -406,16 +406,15 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
         CheckDBEntries check(db, db2, {Guitars});
 
         _expectedDocumentCount = 10;
-        runPullReplication({Guitars, Default}, {Guitars});
+        runPullReplication({Default, Guitars}, {Guitars});
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
     }
-#ifndef DISABLE_PUSH_AND_PULL
+    
     SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
         _expectedDocumentCount = 20;
-        runPushPullReplication({Guitars}, {Guitars, Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":20,\"remote\":20}");
+        runPushPullReplication({Guitars}, {Default, Guitars});
+        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
     }
-#endif
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
@@ -444,42 +443,39 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
         validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
     }
 
-#ifndef DISABLE_PUSH_AND_PULL
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 60;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
         validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
     }
-#endif
-#ifndef DISABLE_CONTINUOUS
+
     SECTION("PUSH CONTINUOUS") {
         _expectedDocumentCount = 20;
+        stopWhenIdle();
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
         validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
     }
-    
+
     SECTION("PULL CONTINUOUS") {
         _expectedDocumentCount = 20;
+        stopWhenIdle();
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
         validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
         validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
     }
-#endif
-#ifndef DISABLE_PUSH_AND_PULL
+    
     SECTION("PUSH and PULL CONTINUOUS") {
         _expectedDocumentCount = 60;
+        stopWhenIdle();
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
         validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
         validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
     }
-#endif
 }
 
-#ifdef ENABLE_REPLICATOR_COLLECTION_TEST
-
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Incremental Push and Pull", "[Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Push and Pull", "[Push][Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
     addDocs(db2, Roses, 10);
@@ -498,39 +494,59 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Incremental Push and Pull", "[Push][
     
     _expectedDocumentCount = 10;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":11,\"remote\":13}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":12,\"remote\":14}");
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":21,\"remote\":23}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":22,\"remote\":24}");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push and Pull", "[Push][Pull]") {
+// Failed : CBL-3500
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
-    addDocs(db2, Roses, 10);
-    addDocs(db2, Tulips, 10);
     
-    _expectedDocumentCount = 40;
-    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    _expectedDocumentCount = 20;
+    runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
     
-    purgeAllDocs(db, Roses);
-    purgeAllDocs(db, Tulips);
     purgeAllDocs(db2, Roses);
     purgeAllDocs(db2, Tulips);
     
     _expectedDocumentCount = 0;
-    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
     
-    _expectedDocumentCount = 40;
-    runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4OneShot, true);
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    _expectedDocumentCount = 20;
+    runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4OneShot, true);
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
+    addDocs(db, Roses, 10);
+    addDocs(db, Tulips, 10);
+    
+    _expectedDocumentCount = 20;
+    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
+    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
+    
+    purgeAllDocs(db2, Roses);
+    purgeAllDocs(db2, Tulips);
+    
+    _expectedDocumentCount = 0;
+    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
+    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
+    
+    _expectedDocumentCount = 20;
+    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4OneShot, true);
+    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
+    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
-    vector<string> attachments1 = {"Attachment A", "Attachment B", ""};
+    vector<string> attachments1 = {"Attachment A", "Attachment B", "Attachment Z"};
     vector<C4BlobKey> blobKeys1a, blobKeys1b;
     {
         TransactionHelper t(db);
@@ -538,19 +554,19 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
         blobKeys1b = addDocWithAttachments(db, Tulips, "doc2"_sl, attachments1, "text/plain");
     }
     
-    vector<string> attachments2 = {"Attachment C", "Attachment D", ""};
+    vector<string> attachments2 = {"Attachment C", "Attachment D", "Attachment Z"};
     vector<C4BlobKey> blobKeys2a, blobKeys2b;
     {
         TransactionHelper t(db2);
-        blobKeys2a = addDocWithAttachments(db2, Tulips, "doc3"_sl, attachments2, "text/plain");
+        blobKeys2a = addDocWithAttachments(db2, Roses, "doc3"_sl, attachments2, "text/plain");
         blobKeys2b = addDocWithAttachments(db2, Tulips, "doc4"_sl, attachments2, "text/plain");
     }
     
     _expectedDocumentCount = 4;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
     
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":2}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"remote\":2}");
+    validateCollectionCheckpoints(db, db2, 0, "{\"local\":1,\"remote\":1}");
+    validateCollectionCheckpoints(db, db2, 1, "{\"local\":1,\"remote\":1}");
     
     checkAttachments(db, blobKeys1a, attachments1);
     checkAttachments(db, blobKeys1b, attachments1);
@@ -575,12 +591,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
         }
         return ResolvedDocument(resolvedDoc);
     };
-    setConflictResolver(db, resolver);
+    setConflictResolver(db2, resolver);
     
     auto roses1 = getCollection(db, Roses);
-    auto roses2 = getCollection(db2, Roses);
-    
     auto tulips1 = getCollection(db, Tulips);
+    
+    auto roses2 = getCollection(db2, Roses);
     auto tulips2 = getCollection(db2, Tulips);
     
     // Create docs and push to the other db:
@@ -596,18 +612,17 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
     createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
     
-    runPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+    // Pull from db (Passive) to db2 (Active)
+    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
     CHECK(resolveCount == 2);
     
-    c4::ref<C4Document> doc1 = c4coll_getDoc(roses1, "rose1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc1 = c4coll_getDoc(roses2, "rose1"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc1);
-    CHECK(fleece2json(c4doc_getRevisionBody(doc1)) == "{db:2}"); // Remote Wins
+    CHECK(fleece2json(c4doc_getRevisionBody(doc1)) == "{db:1}"); // Remote Wins
     REQUIRE(!c4doc_selectNextLeafRevision(doc1, true, false, nullptr));
     
-    c4::ref<C4Document> doc2 = c4coll_getDoc(tulips1, "tulip1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc2 = c4coll_getDoc(tulips2, "tulip1"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc2);
-    CHECK(fleece2json(c4doc_getRevisionBody(doc2)) == "{db:1}"); // Local Wins
+    CHECK(fleece2json(c4doc_getRevisionBody(doc2)) == "{db:2}"); // Local Wins
     REQUIRE(!c4doc_selectNextLeafRevision(doc2, true, false, nullptr));
 }
-
-#endif
