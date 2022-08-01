@@ -30,7 +30,7 @@ namespace litecore { namespace repl {
         }
 
     private:
-        C4Collection* collection(); // Get the collection from the insertionDB
+        C4Collection* insertionCollection(); // Get the collection from the insertionDB
         
         void _insertRevisionsNow(int gen);
         bool insertRevisionNow(RevToInsert* NONNULL, C4Error*);
@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
                                          C4Error *outError);
 
         actor::ActorBatcher<Inserter,RevToInsert> _revsToInsert; // Pending revs to be added to db
-        C4Collection* _collection {nullptr};
+        C4Collection* _insertionCollection {nullptr};
     };
 
 } }

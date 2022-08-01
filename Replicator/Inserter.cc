@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
                 // Server says the document is no longer accessible, i.e. it's been
                 // removed from all channels the client has access to. Purge it.
                 auto locked = _db->insertionDB().useLocked();
-                if (collection()->purgeDocument(rev->docID)) {
+                if (insertionCollection()->purgeDocument(rev->docID)) {
                     auto collPath = _options->collectionOpts[collectionIndex()].collectionPath;
                     logVerbose("    {'%.*s (%.*s)' removed (purged)}", SPLAT(rev->docID), SPLAT(collPath));
                 }
@@ -162,7 +162,7 @@ namespace litecore { namespace repl {
                 // The save!!
                 Retained<C4Document> doc = _db->insertionDB().useLocked<Retained<C4Document>>
                 ([outError, &put, this](C4Database* db) {
-                    return collection()->putDocument(put, nullptr, outError);
+                    return insertionCollection()->putDocument(put, nullptr, outError);
                 });
                 if (!doc)
                     return false;
@@ -213,16 +213,16 @@ namespace litecore { namespace repl {
         return C4SliceResult(body);
     }
 
-    C4Collection* Inserter::collection() {
-        if (_collection)
-            return _collection;
+    C4Collection* Inserter::insertionCollection() {
+        if (_insertionCollection)
+            return _insertionCollection;
         
         auto c4db = _db->insertionDB().useLocked();
         auto coll = c4db->getCollection(replicator()->collection(collectionIndex())->getSpec());
         if (!coll)
             C4Error::raise({LiteCoreDomain, kC4ErrorNotOpen});
-        _collection = coll;
-        return _collection;
+        _insertionCollection = coll;
+        return _insertionCollection;
     }
 
 } }
