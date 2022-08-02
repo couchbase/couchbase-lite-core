@@ -606,7 +606,19 @@ public:
                            _checkpointIDs[collectionIndex],
                            kC4SliceNull, kC4SliceNull, ERROR_INFO(&err)) );
     }
+    
+#pragma mark - Property Encryption:
+    
+    static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
+        alloc_slice ciphertext(cleartext);
+        for (size_t i = 0; i < ciphertext.size; ++i)
+            (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
+        return ciphertext;
+    }
+    
+#pragma mark - UTILS:
 
+    
     template <class SET>
     static std::vector<std::string> asVector(const SET &strings) {
         std::vector<std::string> out;
@@ -614,7 +626,11 @@ public:
             out.push_back(s);
         return out;
     }
-
+    
+    
+#pragma mark - VARS:
+    
+    
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
     std::vector<alloc_slice> _checkpointIDs;
