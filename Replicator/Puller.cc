@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
                     _options->enableAutoPurge(), progressNotificationLevel());
         }
 
-        auto channels = _options->channels();
+        auto channels = _options->channels(collectionIndex());
         if (channels) {
             stringstream value;
             unsigned n = 0;
@@ -103,7 +103,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        auto docIDs = _options->docIDs();
+        auto docIDs = _options->docIDs(collectionIndex());
         if (docIDs) {
             auto &enc = msg.jsonBody();
             enc.beginDict();
@@ -186,7 +186,6 @@ namespace litecore { namespace repl {
             completedSequence(RemoteSequence(sequence));
         if (!msg->noReply()) {
             MessageBuilder response(msg);
-            assignCollectionToMsg(response, collectionIndex());
             msg->respond(response);
         }
     }

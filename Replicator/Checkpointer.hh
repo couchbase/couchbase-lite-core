@@ -15,7 +15,10 @@
 #include "Error.hh"
 #include "Timer.hh"
 #include "c4Base.hh"
+#include "c4Collection.hh"
 #include "fleece/slice.hh"
+#include "NumConversion.hh"
+#include "ReplicatorOptions.hh"
 #include "URLTransformer.hh"
 #include <chrono>
 #include <functional>
@@ -171,6 +174,10 @@ namespace litecore { namespace repl {
         alloc_slice _read(C4Database *db NONNULL, slice);
         void initializeDocIDs();
         void saveSoon();
+        CollectionIndex collectionIndex() const {
+            return fleece::narrow_cast<CollectionIndex>(
+                _options->collectionSpecToIndex().at(_collection->getSpec()));
+        }
 
         Logging*                        _logger;
         RetainedConst<Options>          _options;

@@ -487,7 +487,7 @@ static Replicator::Options pushOptionsWithProperty(const char *property, vector<
     enc.endArray();
     enc.endDict();
     auto opts = Replicator::Options::pushing();
-    opts.properties = AllocedDict(enc.finish());
+    opts.collectionOpts[0].properties = AllocedDict(enc.finish());
     return opts;
 }
 
@@ -860,14 +860,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 
     SECTION("Push") {
         auto pushOptions = Replicator::Options::pushing();
-        pushOptions.properties = properties;
+        pushOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
         runReplicators(pushOptions,
                        Replicator::Options::passive());
     }
     SECTION("Pull") {
         auto pullOptions = Replicator::Options::pulling();
-        pullOptions.properties = properties;
+        pullOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
         runReplicators(Replicator::Options::passive(),
                        pullOptions);
@@ -903,8 +903,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     auto pullOptions = Replicator::Options::passive();
     atomic<int> validationCount {0};
-    pullOptions.callbackContext = &validationCount;
-    pullOptions.pullValidator = [](C4CollectionSpec collectionSpec,
+    pullOptions.collectionOpts[0].callbackContext = &validationCount;
+    pullOptions.collectionOpts[0].pullFilter = [](C4CollectionSpec collectionSpec,
                                    FLString docID, FLString revID,
                                    C4RevisionFlags flags, FLDict body, void *context)->bool {
         assert_always(flags == 0);      // can't use CHECK on a bg thread
@@ -1551,9 +1551,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     SECTION("No filter") {
     }
     SECTION("With filter") {
+        Options::CollectionOptions& collOpts = serverOpts.collectionOpts[0];
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
-        serverOpts.callbackContext = &validationCount;
-        serverOpts.pullValidator = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
+        collOpts.callbackContext = &validationCount;
+        collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
                                       C4RevisionFlags flags, FLDict body, void *context)->bool {
             assert_always(flags == 0);      // can't use CHECK on a bg thread
             ++(*(atomic<int>*)context);

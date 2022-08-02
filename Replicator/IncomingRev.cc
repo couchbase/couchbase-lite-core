@@ -127,7 +127,7 @@ namespace litecore { namespace repl {
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
-        if (_options->pullValidator|| jsonBody.size > kMaxImmediateParseSize
+        if (_options->pullFilter(collectionIndex())|| jsonBody.size > kMaxImmediateParseSize
                                   || _mayContainBlobs || _mayContainEncryptedProperties)
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
@@ -148,7 +148,7 @@ namespace litecore { namespace repl {
         }
         
         // Call the custom validation function if any:
-        if (_options->pullValidator) {
+        if (_options->pullFilter(collectionIndex())) {
             // Revoked rev body is empty when sent to the filter:
             auto body = Dict::emptyDict();
             if (!performPullValidation(body))
@@ -170,7 +170,7 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options->pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
+        } else if (_options->pullFilter(collectionIndex()) || _mayContainBlobs || _mayContainEncryptedProperties) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, it may contain new blobs to download, or it may
             // have properties to decrypt.
@@ -280,10 +280,11 @@ namespace litecore { namespace repl {
 
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
-        if (_options->pullValidator) {
-            if (!_options->pullValidator({nullslice, nullslice},     // TODO: Collection support
-                                        _rev->docID, _rev->revID, _rev->flags, body,
-                                        _options->callbackContext)) {
+        if (_options->pullFilter(collectionIndex())) {
+            if (!_options->pullFilter(collectionIndex())(
+                replicator()->collection(collectionIndex())->getSpec(),
+                _rev->docID, _rev->revID, _rev->flags, body,
+                _options->collectionOpts[collectionIndex()].callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 return false;
             }
@@ -346,7 +347,6 @@ namespace litecore { namespace repl {
 
         if (_revMessage) {
             MessageBuilder response(_revMessage);
-            assignCollectionToMsg(response, collectionIndex());
             if (_rev->error.code != 0)
                 response.makeError(c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
