@@ -11,10 +11,11 @@
 //
 
 #include "ReplicatorLoopbackTest.hh"
+#include "Base64.hh"
 #include "c4Collection.hh"
 #include "c4Database.hh"
-#include "fleece/Mutable.hh"
 #include "c4Replicator.h"
+#include "fleece/Mutable.hh"
 
 static constexpr slice GuitarsName = "guitars"_sl;
 static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
@@ -102,6 +103,16 @@ public:
         Options opts2 = Options(params2);
 
         runReplicators(opts1, opts2, reset);
+    }
+    
+    Options replicatorOptions(vector<CollectionSpec>specs, C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
+        vector<C4ReplicationCollection> coll = replCollections(specs, pushMode, pullMode);
+        C4ReplicatorParameters params {};
+        params.collectionCount = coll.size();
+        if (coll.size() > 0) {
+            params.collections = coll.data();
+        }
+        return Options(params);
     }
     
     vector<CollectionSpec> getCollectionSpecs(C4Database* db, slice scope) {
@@ -628,3 +639,123 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     CHECK(fleece2json(c4doc_getRevisionBody(doc2)) == "{db:2}"); // Local Wins
     REQUIRE(!c4doc_selectNextLeafRevision(doc2, true, false, nullptr));
 }
+
+#ifdef COUCHBASE_ENTERPRISE
+
+struct CipherContext {
+    C4Collection* collection;
+    slice docID;
+    slice keyPath;
+    bool called;
+};
+
+using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext*>;
+
+static void validateCipherInputs(void* ctx, C4CollectionSpec& spec, C4String& docID, C4String& keyPath) {
+    auto contextMap = (CipherContextMap*)ctx;
+    auto i = contextMap->find(spec);
+    REQUIRE(i != contextMap->end());
+    
+    auto context = i->second;
+    CHECK(spec == context->collection->getSpec());
+    CHECK(docID == context->docID);
+    CHECK(keyPath == context->keyPath);
+    
+    context->called = true;
+}
+
+static C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
+                                   C4StringResult* outKeyID, C4Error* outError)
+{
+    validateCipherInputs(ctx, spec, docID, keyPath);
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
+}
+
+static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                                   C4String keyPath, C4Slice input, C4String algorithm,
+                                   C4String keyID, C4Error* outError)
+{
+    validateCipherInputs(ctx, spec, docID, keyPath);
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
+}
+
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections", "[Push][Pull][Encryption]") {
+    const bool TestDecryption = GENERATE(false, true);
+    C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
+
+    auto roses1 = getCollection(db, Roses);
+    auto tulips1 = getCollection(db, Tulips);
+    
+    slice originalJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+    {
+        TransactionHelper t(db);
+        createFleeceRev(roses1, "hiddenRose"_sl, kRevID, originalJSON);
+        createFleeceRev(tulips1, "invisibleTulip"_sl, kRevID, originalJSON);
+        _expectedDocumentCount = 1;
+    }
+    
+    CipherContextMap encContexts;
+    CipherContext encContext1 = {roses1, "hiddenRose", "xNum", false};
+    CipherContext encContext2 = {tulips1, "invisibleTulip", "xNum", false};
+    encContexts[Roses]  = &encContext1;
+    encContexts[Tulips] = &encContext2;
+    
+    _expectedDocumentCount = 2;
+    auto opts = replicatorOptions({Roses, Tulips}, kC4OneShot, kC4Disabled);
+    opts.propertyEncryptor = &propEncryptor;
+    opts.propertyDecryptor = &propDecryptor;
+    opts.callbackContext = &encContexts;
+    
+    auto roses2 = getCollection(db2, Roses);
+    auto tulips2 = getCollection(db2, Tulips);
+    
+    CipherContextMap decContexts;
+    CipherContext decContext1 = {roses2, "hiddenRose", "xNum", false};
+    CipherContext decContext2 = {tulips2, "invisibleTulip", "xNum", false};
+    decContexts[Roses]  = &decContext1;
+    decContexts[Tulips] = &decContext2;
+
+    auto serverOpts = replicatorOptions({Roses, Tulips}, kC4Passive, kC4Passive);
+    serverOpts.propertyEncryptor = &propEncryptor;
+    serverOpts.propertyDecryptor = &propDecryptor;
+    serverOpts.callbackContext = &decContexts;
+    
+    if (!TestDecryption)
+        serverOpts.setNoPropertyDecryption(); // default is true
+
+    runReplicators(opts, serverOpts);
+    
+    // Check encryption on active replicator:
+    for (auto i = encContexts.begin(); i != encContexts.end(); i++) {
+        CipherContext* context = i->second;
+        CHECK(context->called);
+    }
+    
+    // Check decryption on passive replicator:
+    for (auto i = decContexts.begin(); i != decContexts.end(); i++) {
+        auto context = i->second;
+        c4::ref<C4Document> doc = c4coll_getDoc(context->collection, context->docID, true,
+                                                kDocGetAll, ERROR_INFO());
+        REQUIRE(doc);
+        Dict props = c4doc_getProperties(doc);
+        
+        if (TestDecryption) {
+            CHECK(context->called);
+            CHECK(props.toJSON(false, true) == originalJSON);
+        } else {
+            CHECK(!context->called);
+            CHECK(props.toJSON(false, true) == R"({"encrypted$xNum":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
+
+            // Decrypt the "ciphertext" property by hand. We disabled decryption on the destination,
+            // so the property won't be converted back from the server schema.
+            slice cipherb64 = props["encrypted$xNum"].asDict()["ciphertext"].asString();
+            auto cipher = base64::decode(cipherb64);
+            alloc_slice clear = UnbreakableEncryption(cipher, -1);
+            CHECK(clear == "\"123-45-6789\"");
+        }
+    }
+}
+
+#endif
