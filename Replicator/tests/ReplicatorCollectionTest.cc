@@ -248,6 +248,7 @@ private:
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
     vector<CollectionSpec>specs = {CollectionSpec("dummy1"_sl), CollectionSpec("dummy2"_sl)};
+    ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorNotFound};
     runPushPullReplication(specs, specs);
 }
@@ -258,6 +259,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
+    ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
     runPushPullReplication({}, {});
 }
