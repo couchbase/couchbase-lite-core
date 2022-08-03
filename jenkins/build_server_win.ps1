@@ -74,9 +74,7 @@ function Build-Store() {
     New-Item -ItemType Directory -ErrorAction Ignore $directory
     Push-Location $directory
     $MsArchStore = $architecture
-    if($architecture -eq "Win32") {
-        $MsArchStore = "x86"
-    } elseif($architecture -eq "Win64") {
+    if($architecture -eq "Win64") {
         $MsArchStore = "x64"
     }
 
@@ -112,9 +110,7 @@ function Build() {
     New-Item -ItemType Directory -ErrorAction Ignore $directory
     Push-Location $directory
     $MsArch = $architecture
-    if($architecture -eq "Win32") {
-        $MsArch = "x86"
-    } elseif($architecture -eq "Win64") {
+    if($architecture -eq "Win64") {
         $MsArch = "x64"
     }
 
