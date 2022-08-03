@@ -223,8 +223,7 @@ namespace litecore::repl {
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode,
-                    replicator()->collection(collectionIndex())->getSpec(),
+                revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
                     _options->collectionOpts[collectionIndex()].callbackContext));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
@@ -235,7 +234,7 @@ namespace litecore::repl {
             _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
-        auto collection = replicator()->collection(collectionIndex());
+        auto collection = getCollection();
         vector<alloc_slice> ancestors = _db->useCollection(collection)->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
@@ -284,7 +283,7 @@ namespace litecore::repl {
                     // remote server, so I better make it so:
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
-                    _db->setDocRemoteAncestor(docID, revID);
+                    _db->setDocRemoteAncestor(getCollection(), docID, revID);
                     if (!passive() && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
@@ -365,7 +364,7 @@ namespace litecore::repl {
             // Get the local doc's current revID/vector and flags:
             outCurrentRevID = nullslice;
             try {
-                if (Retained<C4Document> doc = _db->getDoc(docID, kDocGetMetadata); doc) {
+                if (Retained<C4Document> doc = _db->getDoc(getCollection(), docID, kDocGetMetadata); doc) {
                     flags = doc->flags();
                     outCurrentRevID = doc->getSelectedRevIDGlobalForm();
                 }

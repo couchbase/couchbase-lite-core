@@ -249,6 +249,12 @@ namespace litecore { namespace repl {
         // 'errorSlice' describes the nature of the violation.
         std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
 
+        C4Collection* getCollection() {
+            return const_cast<C4Collection*>(((const Worker*)this)->getCollection());
+        }
+
+        const C4Collection* getCollection() const;
+
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me
         std::shared_ptr<DBAccess>   _db;                        // Database
