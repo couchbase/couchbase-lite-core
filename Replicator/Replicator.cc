@@ -171,7 +171,7 @@ namespace litecore { namespace repl {
         for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
             SubReplicator& sub = _subRepls[i];
             try {
-                unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(false, sub.collection);
+                unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(sub.collection, false);
                 logInfo("Scanning for pre-existing conflicts (collection: %u)...", i);
                 unsigned nConflicts = 0;
                 while (e->next()) {

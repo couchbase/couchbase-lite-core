@@ -284,7 +284,8 @@ namespace litecore::repl {
                     // remote server, so I better make it so:
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
-                    _db->setDocRemoteAncestor(docID, revID);
+                    _db->setDocRemoteAncestor(replicator()->collection(collectionIndex()),
+                                              docID, revID);
                     if (!passive() && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
@@ -365,7 +366,8 @@ namespace litecore::repl {
             // Get the local doc's current revID/vector and flags:
             outCurrentRevID = nullslice;
             try {
-                if (Retained<C4Document> doc = _db->getDoc(docID, kDocGetMetadata); doc) {
+                if (Retained<C4Document> doc = _db->getDoc(replicator()->collection(collectionIndex()),
+                                                           docID, kDocGetMetadata); doc) {
                     flags = doc->flags();
                     outCurrentRevID = doc->getSelectedRevIDGlobalForm();
                 }

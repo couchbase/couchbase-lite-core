@@ -67,7 +67,6 @@ namespace litecore { namespace repl {
         void handleMoreChanges();
         void handleChangesNow(blip::MessageIn *req);
 
-        void findOrRequestRevs(Retained<blip::MessageIn>);
         int findRevs(fleece::Array, fleece::JSONEncoder&, std::vector<ChangeSequence>&);
         int findProposedRevs(fleece::Array, fleece::JSONEncoder&, bool, std::vector<ChangeSequence>&);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
