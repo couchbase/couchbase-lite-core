@@ -498,7 +498,14 @@ namespace litecore {
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                C4Collection* collection = repl->_database->getCollection(collectionSpec);
+                C4Collection* collection = nullptr;
+                // The collection must be included in the replicator's config options.
+                auto it = repl->_options->collectionSpecToIndex().find(collectionSpec);
+                if (it != repl->_options->collectionSpecToIndex().end()) {
+                    if (it->second < repl->_options->workingCollectionCount()) {
+                        collection = repl->_database->getCollection(collectionSpec);
+                    }
+                }
                 if (collection != nullptr) {
                     checkpointer.emplace(repl->_options, repl->URL(), collection);
                 }
