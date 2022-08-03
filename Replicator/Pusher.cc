@@ -452,8 +452,7 @@ namespace litecore { namespace repl {
         if (!_proposeChanges)
             return false;
         try {
-            Retained<C4Document> doc = _db->getDoc(replicator()->collection(collectionIndex()),
-                                                   rev->docID, kDocGetAll);
+            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetAll);
             if (doc && C4Document::equalRevIDs(doc->revID(), rev->revID)) {
                 if(receivedRevID && receivedRevID != rev->remoteAncestorRevID) {
                     // Remote ancestor received in proposeChanges response, so try with 
@@ -513,7 +512,7 @@ namespace litecore { namespace repl {
             // See if the doc is unchanged, by getting it by sequence:
             Retained<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
-            auto* collection = replicator()->collection(collectionIndex());
+            auto* collection = getCollection();
             Retained<C4Document> doc = _db->useCollection(collection)->getDocumentBySequence(rev->sequence);
             if (!doc || !C4Document::equalRevIDs(doc->revID(), rev->revID)) {
                 // Local document has changed, so stop working on this revision:

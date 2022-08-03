@@ -218,7 +218,7 @@ namespace litecore { namespace repl {
             return _insertionCollection;
         
         auto c4db = _db->insertionDB().useLocked();
-        auto coll = c4db->getCollection(replicator()->collection(collectionIndex())->getSpec());
+        auto coll = c4db->getCollection(getCollection()->getSpec());
         if (!coll)
             C4Error::raise({LiteCoreDomain, kC4ErrorNotOpen});
         _insertionCollection = coll;

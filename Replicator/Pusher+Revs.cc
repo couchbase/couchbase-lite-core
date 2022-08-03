@@ -56,7 +56,7 @@ namespace litecore::repl {
         // Get the document & revision:
         C4Error c4err = {};
         Dict root;
-        auto collection = replicator()->collection(collectionIndex());
+        auto collection = getCollection();
         Retained<C4Document> doc = _db->useCollection(collection)
                                 ->getDocument(request->docID, true, kDocGetAll);
         if (doc) {

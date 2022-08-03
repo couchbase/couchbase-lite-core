@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options->noIncomingConflicts(),
-                               replicator()->collection(collectionIndex())->getSpec(),
+                               getCollection()->getSpec(),
                                _options->collectionOpts[collectionIndex()].callbackContext);
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
@@ -176,8 +176,7 @@ namespace litecore { namespace repl {
             // have properties to decrypt.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            fleeceDoc = _db->applyDelta(replicator()->collection(collectionIndex()),
-                                        _rev->docID, _rev->deltaSrcRevID, jsonBody);
+            fleeceDoc = _db->applyDelta(getCollection(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
             if (!fleeceDoc) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
@@ -283,7 +282,7 @@ namespace litecore { namespace repl {
     bool IncomingRev::performPullValidation(Dict body) {
         if (_options->pullFilter(collectionIndex())) {
             if (!_options->pullFilter(collectionIndex())(
-                replicator()->collection(collectionIndex())->getSpec(),
+                getCollection()->getSpec(),
                 _rev->docID, _rev->revID, _rev->flags, body,
                 _options->collectionOpts[collectionIndex()].callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
