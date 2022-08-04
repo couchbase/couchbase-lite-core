@@ -796,7 +796,7 @@ namespace litecore {
         if (collection == "_" || slice(collection) == KeyStore::kDefaultCollectionName || slice(collection) == KeyStore::kDefaultFullCollectionName)
             name += kDefaultKeyStoreName;
         else {
-            string candidate = name + string(KeyStore::kCollectionPrefix) + collection;
+            string candidate = name + string(KeyStore::kCollectionPrefix) + SQLiteKeyStore::transformCollectionName(collection, true);
             if (collection == delegate()->databaseName() && !tableExists(candidate)) {
                 // The name of this database represents the default collection,
                 // _unless_ there is a collection with that name.
