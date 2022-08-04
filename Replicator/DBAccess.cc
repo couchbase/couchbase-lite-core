@@ -147,6 +147,7 @@ namespace litecore { namespace repl {
                 SPLAT(coll->getSpec().scope), SPLAT(coll->getSpec().name));
         try {
             useLocked([&](C4Database *db) {
+                Assert(db == coll->getDatabase());
                 C4Database::Transaction t(db);
                 Retained<C4Document> doc = coll->getDocument(docID, true, kDocGetAll);
                 if (!doc)

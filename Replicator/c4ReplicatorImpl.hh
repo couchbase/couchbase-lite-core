@@ -492,16 +492,26 @@ namespace litecore {
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
                 replicator = repl->_replicator;
-                
+
                 // CBL-2448: Also make my own checkpointer and database in case a call comes in
                 // after Replicator::terminate() is called.  The fix includes the replicator
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                C4Collection* collection = repl->_database->getCollection(collectionSpec);
-                if (collection != nullptr) {
-                    checkpointer.emplace(repl->_options, repl->URL(), collection);
+                C4Collection* collection = nullptr;
+                // The collection must be included in the replicator's config options.
+                auto it = repl->_options->collectionSpecToIndex().find(collectionSpec);
+                if (it != repl->_options->collectionSpecToIndex().end()) {
+                    if (it->second < repl->_options->workingCollectionCount()) {
+                        collection = repl->_database->getCollection(collectionSpec);
+                    }
                 }
+
+                if (collection == nullptr) {
+                    error::_throw(error::NotOpen, "collection not in the Replicator's config");
+                }
+
+                checkpointer = new Checkpointer{repl->_options, repl->URL(), collection};
                 database = repl->_database;
             }
 
@@ -515,10 +525,9 @@ namespace litecore {
                 };
                 
                 if (!replicator || !replicator->pendingDocumentIDs(collectionSpec, callback)) {
-                    if (checkpointer)
-                        checkpointer->pendingDocumentIDs(database, callback);
+                    checkpointer->pendingDocumentIDs(database, callback);
                 }
-                
+
                 if (!any)
                     return {};
                 enc.endArray();
@@ -532,13 +541,12 @@ namespace litecore {
                         return *result;
                     }
                 }
-                
                 return checkpointer->isDocumentPending(database, docID);
             }
 
         private:
             Retained<Replicator> replicator;
-            std::optional<Checkpointer> checkpointer;
+            Checkpointer*        checkpointer {nullptr}; // assigned in the constructor
             Retained<C4Database> database;
             C4CollectionSpec     collectionSpec;
         };
