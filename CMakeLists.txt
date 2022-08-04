@@ -39,6 +39,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 
 cmake_minimum_required (VERSION 3.9)
 cmake_policy(VERSION 3.9)
+cmake_policy(SET CMP0057 NEW)
 
 # Mac/apple setup -- must appear before the first "project()" line"
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12")
