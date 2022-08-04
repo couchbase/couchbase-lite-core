@@ -15,7 +15,7 @@
 #include "LiteCore-dylib.xcconfig"
 
 // TODO: Move to xcframework?
-VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64 i386
+VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64
 
 DEFINES_MODULE              = YES
 EXECUTABLE_PREFIX           =
