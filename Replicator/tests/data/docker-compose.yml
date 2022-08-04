@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  cb-server:
+    image: couchbase/server:enterprise-7.1.1
+    ports:
+      - "8091-8094:8091-8094"
+      - 11210:11210
+    healthcheck:
+      test: "curl -u Administrator:password --fail http://localhost:8091/pools/default/buckets || exit 1"
+      retries: 5
+  sync-gateway:
+    image: couchbase/sync-gateway:3.0.3-enterprise
+    command: -adminInterface :4985 /etc/sync_gateway/sync_gateway.json
+    ports:
+      - 4984:4984
+    volumes:
+      - ${PWD}/config.json:/etc/sync_gateway/sync_gateway.json
+    depends_on:
+      cb-server:
+        condition: service_healthy
