@@ -547,6 +547,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
     encodedDocIDs = c4repl_getPendingDocIDs(_repl, kC4DefaultCollectionSpec, &err);
+    CHECK(err.code == 0);
     CHECK(encodedDocIDs == nullslice);
 }
 #endif
@@ -600,6 +601,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     REQUIRE(_repl);
 
     bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
+    CHECK(err.code == 0);
     CHECK(isPending == expectedIsPending);
 
     c4repl_start(_repl, false);
