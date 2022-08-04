@@ -540,7 +540,7 @@ namespace litecore {
                     }
                 }
                 
-                return checkpointer->isDocumentPending(database, docID);
+                return checkpointer ? checkpointer->isDocumentPending(database, docID) : false;
             }
 
         private:
