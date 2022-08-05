@@ -685,8 +685,9 @@ namespace litecore {
             deletedTableName += name.substr(4);
             checkName = &deletedTableName;
         }
+        string finalName = SQLiteKeyStore::transformCollectionName(*checkName, true);
         string sql;
-        return getSchema(*checkName, "table", *checkName, sql);
+        return getSchema(finalName, "table", finalName, sql);
     }
 
 
@@ -813,16 +814,16 @@ namespace litecore {
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
-        return onTable + "::" + property;
+        return onTable + "::" + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
     string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
-        return onTable + ":unnest:" + property;
+        return onTable + ":unnest:" + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
-        return onTable + ":predict:" + property;
+        return onTable + ":predict:" + SQLiteKeyStore::transformCollectionName(property, true);
     }
 #endif
 
