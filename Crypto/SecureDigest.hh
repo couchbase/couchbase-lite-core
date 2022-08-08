@@ -60,10 +60,10 @@ namespace litecore {
     public:
         SHA1Builder();
 
-        /// Add a single byte
+        /// Add data
         SHA1Builder& operator<< (fleece::slice s);
 
-        /// Add data
+        /// Add a single byte
         SHA1Builder& operator<< (uint8_t b)     {return *this << fleece::slice(&b, 1);}
 
         /// Finish and write the digest to `result`. (Don't reuse the builder.)
@@ -99,10 +99,10 @@ namespace litecore {
     public:
         SHA256Builder();
 
-        /// Add a single byte
+        /// Add data
         SHA256Builder& operator<< (fleece::slice s);
 
-        /// Add data
+        /// Add a single byte
         SHA256Builder& operator<< (uint8_t b) { return *this << fleece::slice(&b, 1); }
 
         /// Finish and write the digest to `result`. (Don't reuse the builder.)

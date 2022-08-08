@@ -231,11 +231,12 @@ namespace litecore { namespace repl {
         fleece::Encoder enc;
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
-        // Existing documents of are considered in the default collection
-        // and they should keep the same docID or current checkpointers would be
-        // inaccessible.
+        // Existing documents (prior to 3.1 upgrade) are considered in the 
+        // default collection and they should keep the same docID or current 
+        // checkpointers would be inaccessible.  For this reason, the default
+        // collection must remain unchanged.
         bool useSha1 = true;
-        if (_collection != nullptr && !(_collection->getSpec() == kC4DefaultCollectionSpec)) {
+        if (_collection != nullptr && _collection->getSpec() != kC4DefaultCollectionSpec) {
             auto spec = _collection->getSpec();
             auto index = _options->collectionSpecToIndex().at(spec);
             enc.writeString(spec.name);

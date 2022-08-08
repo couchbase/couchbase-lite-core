@@ -276,6 +276,13 @@ static inline bool operator== (const C4CollectionSpec &a,
 {
     return a.name == b.name && a.scope == b.scope;
 }
+
+static inline bool operator!= (const C4CollectionSpec& a,
+    const C4CollectionSpec& b)
+{
+    return !(a == b);
+}
+
 template<> struct std::hash<C4CollectionSpec> {
     std::size_t operator() (C4CollectionSpec const& spec) const {
         return fleece::slice(spec.name).hash() ^ fleece::slice(spec.scope).hash();
