@@ -140,13 +140,11 @@ namespace litecore { namespace repl {
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
         bool isContinuous() const               {
-            if (!_options->isActive()) {
-                return false;
-            }
             auto collIndex = collectionIndex();
             if (collIndex == kNotCollectionIndex) {
-                for (CollectionIndex i = 0; i < _options->collectionCount(); ++i) {
-                    if (_options->push(i) == kC4Continuous) {
+                for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
+                    if (_options->push(i) == kC4Continuous
+                        || _options->pull(i) == kC4Continuous) {
                         return true;
                     }
                 }
@@ -248,6 +246,12 @@ namespace litecore { namespace repl {
         //   errorSlice != nullslice || (0 <= collectionIndex < _options->workingCollectionCount()
         // 'errorSlice' describes the nature of the violation.
         std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
+
+        C4Collection* getCollection() {
+            return const_cast<C4Collection*>(((const Worker*)this)->getCollection());
+        }
+
+        const C4Collection* getCollection() const;
 
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me

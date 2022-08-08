@@ -343,4 +343,9 @@ namespace litecore { namespace repl {
         return std::make_pair(collIn, err);
     }
 
+    const C4Collection* Worker::getCollection() const {
+        Assert(collectionIndex() != kNotCollectionIndex);
+        Worker* nonConstThis = const_cast<Worker*>(this);
+        return nonConstThis->replicator()->collection(collectionIndex());
+    }
 } }

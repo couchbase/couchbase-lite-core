@@ -1933,13 +1933,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
 
 #ifdef COUCHBASE_ENTERPRISE
 
-static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
-    alloc_slice ciphertext(cleartext);
-    for (size_t i = 0; i < ciphertext.size; ++i)
-        (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
-    return ciphertext;
-}
-
 struct TestEncryptorContext {
     slice docID;
     slice keyPath;
@@ -1960,7 +1953,7 @@ static C4SliceResult testEncryptor(void* rawCtx,
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);
-    return C4SliceResult(UnbreakableEncryption(input, 1));
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
 }
 
 static C4SliceResult testDecryptor(void* rawCtx,
@@ -1977,7 +1970,7 @@ static C4SliceResult testDecryptor(void* rawCtx,
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);
-    return C4SliceResult(UnbreakableEncryption(input, -1));
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
 

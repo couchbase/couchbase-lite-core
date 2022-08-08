@@ -379,7 +379,7 @@ namespace litecore { namespace repl {
         }
 
         read(db, false);
-        const auto dbLastSequence = db->getLastSequence();
+        const auto dbLastSequence = collection()->getLastSequence();
         const auto replLastSequence = this->localMinSequence();
         if(replLastSequence >= dbLastSequence) {
             // No changes since the last checkpoint
@@ -394,7 +394,7 @@ namespace litecore { namespace repl {
             opts.flags |= kC4IncludeBodies;
         }
 
-        C4DocEnumerator e(db, replLastSequence, opts);
+        C4DocEnumerator e(collection(), replLastSequence, opts);
         while(e.next()) {
             C4DocumentInfo info = e.documentInfo();
 
@@ -433,7 +433,7 @@ namespace litecore { namespace repl {
         }
 
         read(db, false);
-        Retained<C4Document> doc = db->getDocument(docId, false, kDocGetCurrentRev);
+        Retained<C4Document> doc = collection()->getDocument(docId, false, kDocGetCurrentRev);
         return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
     }
 

@@ -11,6 +11,7 @@
 //
 
 #include "DataFile.hh"
+#include "SQLiteKeyStore.hh"
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -978,4 +979,40 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[Data
     }
     CHECK(!db->keyStoreExists("keystore"));
     CHECK(!db->keyStoreExists("KEYSTORE"));
+}
+
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Check name mangling", "[DataFile]") {
+    string input, expectedOutput, expectedFinal;
+
+    SECTION("All lower case is unchanged") {
+        input = "input";
+        expectedOutput = expectedFinal = input;
+    }
+
+    SECTION("Upper case is mangled with a backslash") {
+        input = "InpuT";
+        expectedOutput = "\\Inpu\\T";
+        expectedFinal = input;
+    }
+
+    SECTION("Already mangled names are not remangled") {
+        input = "\\Inpu\\T";
+        expectedOutput = "\\Inpu\\T";
+        expectedFinal = "InpuT";
+    }
+
+    SECTION("Numeric characters are not mangled") {
+        input = "12345";
+        expectedOutput = expectedFinal = input;
+    }
+
+    SECTION("Invalid characters are not mangled") {
+        input = "!!!$$$";
+        expectedOutput = expectedFinal = input;
+    }
+
+    string output = SQLiteKeyStore::transformCollectionName(input, true);
+    REQUIRE(output == expectedOutput);
+    output = SQLiteKeyStore::transformCollectionName(output, false);
+    CHECK(output == expectedFinal);
 }

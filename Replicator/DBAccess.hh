@@ -54,7 +54,8 @@ namespace litecore { namespace repl {
         void close();
         
         /** Check the C4Collection inside the lock and returns a holder object that hodes this->useLocked().*/
-        UseCollection useCollection(C4Collection*);
+        UseCollection       useCollection(C4Collection*);
+        const UseCollection useCollection(C4Collection*) const;
 
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
@@ -71,18 +72,18 @@ namespace litecore { namespace repl {
         //////// DOCUMENTS:
 
         /** Gets a document by ID */
-        Retained<C4Document> getDoc(slice docID, C4DocContentLevel content) const {
-            return useLocked()->getDocument(docID, true, content);
-        }
+        Retained<C4Document> getDoc(C4Collection* NONNULL,
+                                    slice docID,
+                                    C4DocContentLevel content) const;
 
         /** Returns the remote ancestor revision ID of a document. */
         alloc_slice getDocRemoteAncestor(C4Document *doc NONNULL);
         
         /** Updates the remote ancestor revision ID of a document, to an existing revision. */
-        void setDocRemoteAncestor(slice docID, slice revID);
+        void setDocRemoteAncestor(C4Collection* NONNULL, slice docID, slice revID);
         
         /** Returns the document enumerator for all unresolved docs present in the DB */
-        unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(bool orderByID, C4Collection*);
+        unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(C4Collection* NONNULL, bool orderByID);
 
          /** Mark this revision as synced (i.e. the server's current revision) soon.
              NOTE: While this is queued, calls to C4Document::getRemoteAncestor() for this doc won't
@@ -105,7 +106,8 @@ namespace litecore { namespace repl {
         /** Reads a document revision and applies a delta to it.
             Returns NULL if the baseRevID no longer exists or its body is not known.
             Other errors (including doc-not-found) are thrown as exceptions. */
-        fleece::Doc applyDelta(slice docID,
+        fleece::Doc applyDelta(C4Collection* NONNULL,
+                               slice docID,
                                slice baseRevID,
                                slice deltaJSON);
 
@@ -167,7 +169,6 @@ namespace litecore { namespace repl {
         };
 
 
-
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
     private:
@@ -202,6 +203,7 @@ namespace litecore { namespace repl {
         {
             Assert(_access.get() == _collection->getDatabase());
         }
-        C4Collection* operator->() { return _collection; }
+        C4Collection*       operator->()       { return _collection; }
+        const C4Collection* operator->() const { return _collection; }
     };
 } }

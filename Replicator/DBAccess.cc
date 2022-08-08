@@ -99,6 +99,11 @@ namespace litecore { namespace repl {
     }
 
 
+    const UseCollection DBAccess::useCollection(C4Collection* coll) const {
+        return UseCollection(*const_cast<DBAccess*>(this), coll);
+    }
+
+
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
         if (_usingVersionVectors) {
@@ -121,6 +126,12 @@ namespace litecore { namespace repl {
     }
 
 
+    Retained<C4Document> DBAccess::getDoc(C4Collection* collection,
+                                          slice docID,
+                                          C4DocContentLevel content) const {
+        return useCollection(collection)->getDocument(docID, true, content);
+    }
+
     alloc_slice DBAccess::getDocRemoteAncestor(C4Document *doc) {
         if (_remoteDBID)
             return doc->remoteAncestorRevID(_remoteDBID);
@@ -128,15 +139,17 @@ namespace litecore { namespace repl {
             return {};
     }
     
-    void DBAccess::setDocRemoteAncestor(slice docID, slice revID) {
+    void DBAccess::setDocRemoteAncestor(C4Collection* coll, slice docID, slice revID) {
         if (!_remoteDBID)
             return;
-        logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
-                _remoteDBID, SPLAT(docID), SPLAT(revID));
+        logInfo("Updating remote #%u's rev of '%.*s' to %.*s of collection %.*s.%.*s",
+                _remoteDBID, SPLAT(docID), SPLAT(revID),
+                SPLAT(coll->getSpec().scope), SPLAT(coll->getSpec().name));
         try {
             useLocked([&](C4Database *db) {
+                Assert(db == coll->getDatabase());
                 C4Database::Transaction t(db);
-                Retained<C4Document> doc = db->getDocument(docID, true, kDocGetAll);
+                Retained<C4Document> doc = coll->getDocument(docID, true, kDocGetAll);
                 if (!doc)
                     error::_throw(error::NotFound);
                 doc->setRemoteAncestorRevID(_remoteDBID, revID);
@@ -150,21 +163,17 @@ namespace litecore { namespace repl {
         }
     }
 
-    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Collection* coll) {
+    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(C4Collection* coll, bool orderByID) {
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeBodies;
         options.flags &= ~kC4IncludeNonConflicted;
         options.flags |= kC4IncludeDeleted;
         if (!orderByID)
             options.flags |= kC4Unsorted;
-        if (coll == nullptr) {
-            return make_unique<C4DocEnumerator>(useLocked(), options);
-        } else {
-            return useLocked<unique_ptr<C4DocEnumerator>>([&](const Retained<C4Database>& db) {
-                DebugAssert(db.get() == coll->getDatabase());
-                return make_unique<C4DocEnumerator>(coll, options);
-            });
-        }
+        return useLocked<unique_ptr<C4DocEnumerator>>([&](const Retained<C4Database>& db) {
+            DebugAssert(db.get() == coll->getDatabase());
+            return make_unique<C4DocEnumerator>(coll, options);
+        });
     }
 
 
@@ -401,11 +410,12 @@ namespace litecore { namespace repl {
     }
 
 
-    Doc DBAccess::applyDelta(slice docID,
+    Doc DBAccess::applyDelta(C4Collection* collection,
+                             slice docID,
                              slice baseRevID,
                              slice deltaJSON)
     {
-        Retained<C4Document> doc = getDoc(docID, kDocGetAll);
+        Retained<C4Document> doc = getDoc(collection, docID, kDocGetAll);
         if (!doc)
             error::_throw(error::NotFound);
         if (!doc->selectRevision(baseRevID, true) || !doc->loadRevisionBody())
