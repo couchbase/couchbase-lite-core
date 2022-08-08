@@ -1156,10 +1156,10 @@ public:
 
 TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
-    populate({"widgets"_sl}, "wikipedia_100.json");
+    populate({"Widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
 
-    compileSelect(json5("{WHAT: ['.widgets.title'], FROM: [{COLLECTION:'widgets'}]}"));
+    compileSelect(json5("{WHAT: ['.Widgets.title'], FROM: [{COLLECTION:'Widgets'}]}"));
     CHECK(run().size() == 100);
 
     compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'nested', SCOPE:'small'}],"

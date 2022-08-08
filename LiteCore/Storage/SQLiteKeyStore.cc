@@ -59,7 +59,7 @@ namespace litecore {
 
 
     bool SQLiteDataFile::keyStoreExists(const string &name) const {
-        return tableExists(string("kv_") + SQLiteKeyStore::transformCollectionName(name, true));
+        return tableExists(string("kv_") + name);
     }
 
 
@@ -259,13 +259,16 @@ namespace litecore {
 
     string SQLiteKeyStore::transformCollectionName(const string& name, bool mangle) {
         ostringstream ss;
-        for (uint8_t c : name) {
+        const char* name_cstr = name.c_str();
+        while(char c = *name_cstr++) {
+            if (c == '\\') {
+                continue;
+            } 
+            
             if (mangle) {
                 if (c >= 'A' && c <= 'Z') {
                     ss << '\\';
                 }
-            } else if (c == '\\') {
-                continue;
             }
 
             ss << c;
