@@ -4,8 +4,6 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 
 **IMPORTANT:** We do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. Instead, use [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.
 
-![Travis CI status](https://travis-ci.org/couchbase/couchbase-lite-core.svg?branch=master)
-
 # Features
 
 * Database CRUD (Create, Read, Update, Delete) operations:
@@ -19,7 +17,7 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
       requires no parsing, making it extremely efficient to read
 * Direct querying of schemaless JSON documents:
     * Semantics based on SQL; supports most [N1QL][N1QL] functionality
-    * JSON query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate or LINQ
+    * JSON query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate
     * N1QL parser that translates to the above JSON syntax
     * Can search and index arbitrary document properties without requiring any schema
     * Can index arrays in documents, enabling efficient denormalized one-to-many relations
@@ -40,12 +38,8 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 * Pluggable storage engines:
     * SQLite is available by default
     * Others could be added by implementing C++ `DataFile`, `KeyStore`, `Query` interfaces
-* Command-line `cblite` tool
-    * Easy database inspection, document lookups and queries
-    * Can run replications (push and/or pull)
-    * Can serve a CouchDB-like REST API over HTTP
 * C and C++ APIs (rather low-level; not considered "public" APIs yet.)
-* Bindings to C# and Java
+* Bindings to C# and Java (via Couchbase Lite)
 
 # Platform Support
 
@@ -59,9 +53,16 @@ It has been experimentally built and run on the Raspberry Pi but this is not an 
 
 **As of June 2020:** LiteCore is in active use as the engine of Couchbase Lite 2! Development continues...
 
-* Active development usually happens on the `master` branch, which may therefore be temporarily broken. We don't currently have a "stable" branch.
-* Most development is done on macOS using Xcode, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too, since it's so similar to Mac at this level.
-* The CMake build is generally up to date but may fall behind.  CMake can be used to build every variant except for iOS.
+* Active development usually happens on the `master` branch, which may therefore be temporarily broken.
+* There are various `release` branches (prefixed with `release/`, *except* for `release/master` which will be in the next point) which track along with releases of Couchbase Lite in the following manner until 3.1.x, which will start using `release/x.y`:
+  * `release/iridium` : 2.5.x
+  * `release/cobalt` : 2.6.x
+  * `release/mercury` : 2.7.x
+  * `release/hydrogen` : 2.8.x
+  * `release/lithium` : 3.0.x
+* `release/master` tracks the latest stable master commit (with integration tests into Couchbase Lite), and `staging/master` is a place for candidates for a stable master build.
+* PR validation ensures that things keep building and passing tests (where possible) on all supported platforms.
+* CMake is available and used for all platforms except for iOS.  There is also an Xcode project that is independently maintained in the `Xcode` folder.
 
 # Building It
 
@@ -79,7 +80,7 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 
 The following instructions are to build just LiteCore on its own:
 
-* Make sure you have Xcode **12.2** or later (:warning: Do not use Xcode 13 because of a [downstream issue](https://github.com/ARMmbed/mbedtls/issues/5052) :warning:).
+* Make sure you have Xcode **12.2** or later.
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore static** or **LiteCore dylib**. 
 * Choose _Product>Build_ (for a debug build) or _Product>Build For>Profiling_ (for a release/optimized build).
@@ -102,14 +103,14 @@ You can use either g++ or clang++ for compilation but you will need to honor the
 
 ### Actually Building
 
-Once you've got the dependencies and compiler installed, do this from the root directory of the source tree:
+Once you've got the dependencies and compiler installed, do this from the root directory of the source tree (works for both macOS and Linux):
 
 ```sh
 mkdir build_cmake/unix
 cd build_cmake/unix
 
-# Use whatever clang you have installed
-cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
+# Use whatever compiler you have installed
+cmake -DCMAKE_BUILD_TYPE=MinSizeRel ../..
 
 # And a reasonable number (# of cores?) for the j flag
 make -j8 LiteCore
@@ -119,68 +120,53 @@ If CMake's initial configuration checks fail, the setup may be left in a broken 
 
 ## Android
 
-Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  Since Android now ships CMake and a toolchain file, the best course of action is to make use of it
+Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  The current stance of Google is that CMake support for Android should be a part of the main CMake downstream now, which is a departure from the previous stance that Google would fork and maintain their own version of CMake which they then distributed.  Similar story for the Ninja build system that Google favors.
 
 - Architecture:  The architecture of the device being built for (x86, x86_64, armeabi-v7a [in example], arm64-v8a)
 - Version: The minimum Android API level that the library will support (22 in the following)
 
+CMake must be 3.23 or higher for this technique.
+
 ```sh
 # Set these appropriately for your system
 export SDK_HOME=<path/to/android/sdk/root>
-export NDK_VER="20.1.5948944" # Or whatever version you want
-export CMAKE_VER="3.10.2.4988404" # Must be this or higher
-export CMAKE_PATH="${SDK_HOME}/cmake/${CMAKE_VER}/bin" 
+export NDK_VER="23.1.7779620" # Or whatever version you want, but if you go too much older you need to use a different technique
 
 # Use the same name as the architecture being built for (e.g. armeabi-v7a)
 mkdir -p build_cmake/android/lib/armeabi-v7a
 cd build_cmake/android/lib/armeabi-v7a
-${CMAKE_PATH}/cmake \
+cmake \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
-    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
-    -DANDROID_NATIVE_API_LEVEL=19 \
+    -DCMAKE_MAKE_PROGRAM="ninja" \
+    -DANDROID_NATIVE_API_LEVEL=22 \
     -DANDROID_ABI=armeabi-v7a \
     -DBUILD_ENTERPRISE=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     ../../../..
 
-${CMAKE_PATH}/cmake --build . --target LiteCore
+ninja LiteCore
 ```
 
 ## Windows Desktop
 
-Open the Visual Studio 2017 Developer Command Prompt and navigate to the repo root.  Then execute:
+Open the Visual Studio 2022 Developer Command Prompt and navigate to the repo root.  Then execute:
     
-    * 64-bit build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 17 2022" -A x64 ..
     
-    * 32-bit build *
-    cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017" ..
-    
-This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
+This will create `LiteCore.sln` in the directory that you can open with Visual Studio.  Note that only 64-bit x86 is supported now, but 32-bit x86 is still buildable.
 
 ## Windows Store
 
-Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo root.  Then execute:
+Open the Visual Studio 2022 Developer Command Prompt and navigate to the repo root.  Then execute:
     
-    * x64 build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0"
+    -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="10.0.19041.0" ..
     
-    * x86 build *
-    cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
-    
-    * ARM build *
-    cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 ARM" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
-    
-This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
+This will create `LiteCore.sln` in the directory that you can open with Visual Studio.  Swap `x64` with `ARM64` in the above to get a 64-bit ARM build.  `Win32` and `ARM` will also build but are no longer supported.  
 
 # Documentation
 
@@ -197,7 +183,7 @@ If this is out of date, or you want a local copy, you can generate your own by r
     
 The main page is then located at `../docs/C/html/modules.html`.
 
-**The C API is considered unstable** and may change without notice, since it's considered an internal API of Couchbase Lite. In the future we want to provide a stable and supported C/C++ API, but not yet.
+**The C API is considered unstable** and may change without notice, since it's considered an internal API of Couchbase Lite.
 
 **Do not call any C++ APIS**, nor include any headers not in `C/include/` -- these are the underlying implementation beneath the C API. They are even more unstable, expose internal functionality we don't support, and may blow up if used incorrectly. The exception is `c4.hh`, which provides some handy C++ wrappers around the C API and will make your life more pleasant if you code in C++.
 
@@ -207,11 +193,11 @@ For those interested in diving into the implementation, there is [an overview of
 
 # Current Authors
 
-Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden))
+Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden)), Jianmin Zhao ([@jianminzhao](https://github.com/jianminzhao))
 
 # License
 
-Like all Couchbase open source code, this is released under the Apache 2 [license](LICENSE).
+The source code in this repo is governed by the [BSL 1.1](LICENSE.txt) license.
 
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
 [CBL_C]: https://github.com/couchbaselabs/couchbase-lite-C
