@@ -298,45 +298,21 @@ namespace litecore { namespace repl {
             DebugAssert(!_isActive);
 
             size_t origCount = collectionOpts.size();
-            std::vector<C4CollectionSpec> specs;
-            specs.reserve(origCount);
-            for (auto& opt : collectionOpts) {
-                specs.emplace_back(collectionPathToSpec(opt.collectionPath));
-            }
+            decltype(collectionOpts) reordered;
+            reordered.reserve(origCount);
 
             for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
                 auto foundEntry = _collectionSpecToIndex.find(activeCollections[activeIndex]);
                 if (foundEntry == _collectionSpecToIndex.end()) {
-                    // Put the unfound spec to the end of collectionOpts
-                    size_t passiveCount = collectionOpts.size();
-                    collectionOpts.emplace_back(nullslice);
-                    if (activeIndex < origCount) {
-                        // Assertion: collectionOpts[j].collectionPath == nullslice
-                        // We haven't run out of passive entries yet, so make sure
-                        // the nullslice one is in the correct place alongside
-                        // its active counterpart.  The spec to index dictionary will
-                        // point to the out of bounds, and unusable, original entry
-                        // for the spec.
-                        _collectionSpecToIndex[specs[activeIndex]] = passiveCount;
-                        std::swap(collectionOpts[activeIndex], collectionOpts[passiveCount]);
-                    }
+                    reordered.emplace_back(nullslice);
                 } else {
-                    DebugAssert(foundEntry->second >= activeIndex && foundEntry->second < origCount);
-                    if (foundEntry->second > activeIndex) {
-                        // The entry is out of place, so swap it with the one
-                        // at the current position
-                        C4CollectionSpec foundSpec = foundEntry->first;
-                        size_t           foundIndex = foundEntry->second;
-
-                        // Since we are swapping the collectionOpts position,
-                        // the spec to index map needs to be updated for the new
-                        // positions inside of collectionOpts
-                        _collectionSpecToIndex[specs[activeIndex]] = foundIndex;
-                        _collectionSpecToIndex[foundSpec] = activeIndex;
-                        std::swap(collectionOpts[activeIndex], collectionOpts[foundIndex]);
-                    }
+                    reordered.push_back(collectionOpts[foundEntry->second]);
                 }
+
+                _collectionSpecToIndex[activeCollections[activeIndex]] = activeIndex;
             }
+
+            collectionOpts = reordered;
             _workingCollectionCount = (CollectionIndex)activeCollections.size();
         }
 
