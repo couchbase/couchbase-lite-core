@@ -141,7 +141,6 @@ cmake \
     -DCMAKE_MAKE_PROGRAM="ninja" \
     -DANDROID_NATIVE_API_LEVEL=22 \
     -DANDROID_ABI=armeabi-v7a \
-    -DBUILD_ENTERPRISE=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     ../../../..
 
