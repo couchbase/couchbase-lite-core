@@ -598,7 +598,9 @@ namespace litecore { namespace repl {
 
         std::for_each(_subRepls.begin(), _subRepls.end(),
                       [](SubReplicator& sub) {
-            sub.checkpointer->stopAutosave();
+            if (sub.checkpointer) {
+                sub.checkpointer->stopAutosave();
+            }
         });
 
         // Clear connection() and notify the other agents to do the same:

@@ -303,24 +303,37 @@ namespace litecore { namespace repl {
             for (auto& opt : collectionOpts) {
                 specs.emplace_back(collectionPathToSpec(opt.collectionPath));
             }
-            for (size_t i = 0; i < activeCollections.size(); ++i) {
-                auto findIt = _collectionSpecToIndex.find(activeCollections[i]);
-                if (findIt == _collectionSpecToIndex.end()) {
+
+            for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
+                auto foundEntry = _collectionSpecToIndex.find(activeCollections[activeIndex]);
+                if (foundEntry == _collectionSpecToIndex.end()) {
                     // Put the unfound spec to the end of collectionOpts
-                    size_t j = collectionOpts.size();
+                    size_t passiveCount = collectionOpts.size();
                     collectionOpts.emplace_back(nullslice);
-                    // Assertion: collectionOpts[j].collectionPath == nullslice
-                    _collectionSpecToIndex[specs[i]] = j;
-                    std::swap(collectionOpts[i], collectionOpts[j]);
+                    if (activeIndex < origCount) {
+                        // Assertion: collectionOpts[j].collectionPath == nullslice
+                        // We haven't run out of passive entries yet, so make sure
+                        // the nullslice one is in the correct place alongside
+                        // its active counterpart.  The spec to index dictionary will
+                        // point to the out of bounds, and unusable, original entry
+                        // for the spec.
+                        _collectionSpecToIndex[specs[activeIndex]] = passiveCount;
+                        std::swap(collectionOpts[activeIndex], collectionOpts[passiveCount]);
+                    }
                 } else {
-                    DebugAssert(findIt->second >= i && findIt->second < origCount);
-                    if (findIt->second > i) {
-                        C4CollectionSpec spec;
-                        size_t           indx;
-                        std::tie(spec, indx) = *findIt;
-                        _collectionSpecToIndex[specs[i]] = indx;
-                        _collectionSpecToIndex[spec] = i;
-                        std::swap(collectionOpts[i], collectionOpts[indx]);
+                    DebugAssert(foundEntry->second >= activeIndex && foundEntry->second < origCount);
+                    if (foundEntry->second > activeIndex) {
+                        // The entry is out of place, so swap it with the one
+                        // at the current position
+                        C4CollectionSpec foundSpec = foundEntry->first;
+                        size_t           foundIndex = foundEntry->second;
+
+                        // Since we are swapping the collectionOpts position,
+                        // the spec to index map needs to be updated for the new
+                        // positions inside of collectionOpts
+                        _collectionSpecToIndex[specs[activeIndex]] = foundIndex;
+                        _collectionSpecToIndex[foundSpec] = activeIndex;
+                        std::swap(collectionOpts[activeIndex], collectionOpts[foundIndex]);
                     }
                 }
             }

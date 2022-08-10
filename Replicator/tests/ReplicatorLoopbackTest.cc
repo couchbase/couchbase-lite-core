@@ -2022,4 +2022,30 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
     }
 }
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
+    Options opts = GENERATE(Options::pushing(), Options::pulling(), Options::pushpull());
+    Options serverOpts = Options::passive();
+
+    Retained<C4Collection> coll = createCollection(db, { "foo"_sl, "bar"_sl });
+    Options::CollectionOptions tmp(Options::collectionSpecToPath({ "foo"_sl, "bar"_sl }));
+    tmp.pull = opts.pull(0);
+    tmp.push = opts.push(0);
+    opts.collectionOpts.push_back(tmp);
+
+    SECTION("Mismatched count should return NotFound") {
+        // No-op
+    }
+
+    SECTION("Same count but mismatched names should return NotFound") {
+        tmp = Options::CollectionOptions(Options::collectionSpecToPath({ "foo"_sl, "baz"_sl }));
+        tmp.pull = kC4Passive;
+        tmp.push = kC4Passive;
+        serverOpts.collectionOpts.insert(serverOpts.collectionOpts.begin(), tmp);
+    }
+
+    _expectedError.domain = WebSocketDomain;
+    _expectedError.code = 404;
+    runReplicators(opts, serverOpts);
+}
+
 #endif // COUCHBASE_ENTERPRISE
