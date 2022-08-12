@@ -46,7 +46,7 @@ then
     # CMake options for iOS Simulator -- use ios.toolchain.cmake
     CMAKE_OPTS="$CMAKE_OPTS \
                 -DCMAKE_TOOLCHAIN_FILE=$SRCROOT/../vendor/ios-cmake/ios.toolchain.cmake \
-                -DPLATFORM=SIMULATOR64\
+                -DPLATFORM=SIMULATOR64 -DARCHS=$MAC_ARCHS \
                 -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET"
 elif [[ "$PLATFORM_NAME" == "macosx" ]]
 then
