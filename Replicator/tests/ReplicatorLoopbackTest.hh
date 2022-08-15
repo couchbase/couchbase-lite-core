@@ -216,6 +216,8 @@ public:
         return false;
     }
 
+    std::function<void()> _callbackWhenIdle;
+
 
 #pragma mark - CALLBACKS:
 
@@ -261,6 +263,9 @@ public:
             {
                 _statusReceived = status;
                 _checkStopWhenIdle();
+                if (_statusReceived.level == kC4Idle && _callbackWhenIdle) {
+                    _callbackWhenIdle();
+                }
             }
         }
 
