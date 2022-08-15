@@ -284,10 +284,6 @@ namespace litecore { namespace repl {
             return _workingCollections[i].collectionPath;
         }
 
-        void* callbackContextAt(CollectionIndex i) const {
-            return _workingCollections[i].callbackContext;
-        }
-
         CollectionIndex workingCollectionCount() const {
             return fleece::narrow_cast<CollectionIndex>(_workingCollections.size());
         }
@@ -306,9 +302,9 @@ namespace litecore { namespace repl {
         void rearrangeCollections(const std::vector<C4CollectionSpec>& activeCollections) const {
             DebugAssert(!_isActive);
 
-            size_t origCount = collectionOpts.size();
             _workingCollections.clear();
-            _workingCollections.reserve(origCount);
+            _collectionSpecToIndex.clear();
+            _workingCollections.reserve(activeCollections.size());
 
             for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
                 auto foundEntry = _collectionSpecToIndex.find(activeCollections[activeIndex]);

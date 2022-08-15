@@ -224,7 +224,7 @@ namespace litecore::repl {
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
                 revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
-                    _options->callbackContextAt(collectionIndex())));
+                    _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
