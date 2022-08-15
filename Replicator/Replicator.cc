@@ -183,7 +183,7 @@ namespace litecore { namespace repl {
                                                         info.flags & kDocDeleted,
                                                         false,
                                                         sub.collection->getSpec(),
-                                                        _options->collectionOpts[i].callbackContext));
+                                                        _options->collectionCallbackContext(collectionIndex())));
                     rev->error = C4Error::make(LiteCoreDomain, kC4ErrorConflict);
                     _docsEnded.push(rev);
                     ++nConflicts;
@@ -811,7 +811,7 @@ namespace litecore { namespace repl {
         enc.writeKey("collections"_sl);
         enc.beginArray();
         for (int i = 0; i < _subRepls.size(); i++) {
-            enc.writeString(_options->collectionOpts[i].collectionPath);
+            enc.writeString(_options->collectionPath(i));
         }
         enc.endArray();
         enc.endDict();
@@ -845,7 +845,7 @@ namespace litecore { namespace repl {
                 // Validate and read each checkpoints:
                 vector<Checkpoint> remoteCheckpoints(_subRepls.size());
                 for (int i = 0; i < _subRepls.size(); i++) {
-                    auto collPath = _options->collectionOpts[i].collectionPath;
+                    auto collPath = _options->collectionPath(i);
                     SubReplicator& sub = _subRepls[i];
                     Dict dict = checkpointArray[i].asDict();
                     if (!dict) {
@@ -1174,7 +1174,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        // Rearrange _options->collectionOpts according to collSpecs. If i-th CollectionSpec
+        // Create options->workingCollections according to collSpecs. If i-th CollectionSpec
         // is not found, put an empty collectionOptions at i-th position.
         _options->rearrangeCollections(collSpecs);
         MessageBuilder response(request);
@@ -1188,7 +1188,7 @@ namespace litecore { namespace repl {
             logInfo("Request to get peer checkpoint '%.*s' for collection '%.*s'",
                     SPLAT(checkpointID), SPLAT(collections[i].asString()));
 
-            if (!_options->collectionOpts[i].collectionPath) {
+            if (!_options->collectionPath(i)) {
                 logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found in the Replicator's config",
                         SPLAT(checkpointID), SPLAT(collections[i].asString()));
                 enc.writeNull();
@@ -1244,10 +1244,11 @@ namespace litecore { namespace repl {
         _db->useLocked([this](Retained<C4Database>& db) {
             for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
                 C4Collection* c = db->getCollection(Options::collectionPathToSpec(
-                                                    _options->collectionOpts[i].collectionPath));
+                                                    _options->collectionPath(i)));
                 if (c == nullptr) {
+                    _subRepls.clear();
                     error::_throw(error::NotFound, "collection %s is not found in the database.",
-                                  _options->collectionOpts[i].collectionPath.asString().c_str());
+                                  _options->collectionPath(i).asString().c_str());
                 }
                 _subRepls[i].collection = c;
             }
