@@ -302,13 +302,17 @@ namespace litecore { namespace repl {
         void rearrangeCollections(const std::vector<C4CollectionSpec>& activeCollections) const {
             DebugAssert(!_isActive);
 
-            _workingCollections.clear();
+            // Clear out the current spec to index map so there is not
+            // any stale info in it, but keep a copy to search for 
+            // existing entries
+            auto collectionSpecToIndexOld = _collectionSpecToIndex;
             _collectionSpecToIndex.clear();
+            _workingCollections.clear();
             _workingCollections.reserve(activeCollections.size());
 
             for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
-                auto foundEntry = _collectionSpecToIndex.find(activeCollections[activeIndex]);
-                if (foundEntry == _collectionSpecToIndex.end()) {
+                auto foundEntry = collectionSpecToIndexOld.find(activeCollections[activeIndex]);
+                if (foundEntry == collectionSpecToIndexOld.end()) {
                     _workingCollections.emplace_back(nullslice);
                 } else {
                     _workingCollections.push_back(collectionOpts[foundEntry->second]);

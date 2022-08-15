@@ -598,9 +598,7 @@ namespace litecore { namespace repl {
 
         std::for_each(_subRepls.begin(), _subRepls.end(),
                       [](SubReplicator& sub) {
-            if (sub.checkpointer) {
-                sub.checkpointer->stopAutosave();
-            }
+            sub.checkpointer->stopAutosave();
         });
 
         // Clear connection() and notify the other agents to do the same:
@@ -1248,6 +1246,7 @@ namespace litecore { namespace repl {
                 C4Collection* c = db->getCollection(Options::collectionPathToSpec(
                                                     _options->collectionPath(i)));
                 if (c == nullptr) {
+                    _subRepls.clear();
                     error::_throw(error::NotFound, "collection %s is not found in the database.",
                                   _options->collectionPath(i).asString().c_str());
                 }
