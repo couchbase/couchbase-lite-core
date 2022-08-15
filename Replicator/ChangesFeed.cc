@@ -249,7 +249,7 @@ namespace litecore { namespace repl {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
             auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
-                _options->collectionOpts[_collectionIndex].callbackContext);
+                _options->callbackContextAt(_collectionIndex));
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }

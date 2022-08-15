@@ -73,7 +73,7 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options->noIncomingConflicts(),
                                getCollection()->getSpec(),
-                               _options->collectionOpts[collectionIndex()].callbackContext);
+                               _options->callbackContextAt(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
         _remoteSequence = RemoteSequence(sequenceStr);
@@ -284,7 +284,7 @@ namespace litecore { namespace repl {
             if (!_options->pullFilter(collectionIndex())(
                 getCollection()->getSpec(),
                 _rev->docID, _rev->revID, _rev->flags, body,
-                _options->collectionOpts[collectionIndex()].callbackContext)) {
+                _options->callbackContextAt(collectionIndex()))) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 return false;
             }

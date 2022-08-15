@@ -114,7 +114,7 @@ namespace litecore { namespace repl {
                 // removed from all channels the client has access to. Purge it.
                 auto locked = _db->insertionDB().useLocked();
                 if (insertionCollection()->purgeDocument(rev->docID)) {
-                    auto collPath = _options->collectionOpts[collectionIndex()].collectionPath;
+                    auto collPath = _options->collectionPath(collectionIndex());
                     logVerbose("    {'%.*s (%.*s)' removed (purged)}", SPLAT(rev->docID), SPLAT(collPath));
                 }
                 return true;
@@ -166,7 +166,7 @@ namespace litecore { namespace repl {
                 });
                 if (!doc)
                     return false;
-                auto collPath = _options->collectionOpts[collectionIndex()].collectionPath;
+                auto collPath = _options->collectionPath(collectionIndex());
                 logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64,
                            SPLAT(rev->docID), SPLAT(collPath), SPLAT(rev->revID), SPLAT(rev->historyBuf),
                            (uint64_t)doc->selectedRev().sequence);

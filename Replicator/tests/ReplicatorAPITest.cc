@@ -969,7 +969,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4OneShot, &err));
+    REQUIRE(startReplicator(kC4Disabled, kC4OneShot, &err));
     
     // Before the fix, offline would never be reached
     waitForStatus(kC4Offline, 16s);

@@ -17,6 +17,7 @@
 #include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
+#include "NumConversion.hh"
 #include <unordered_map>
 
 namespace litecore { namespace repl {
@@ -24,7 +25,7 @@ namespace litecore { namespace repl {
     /** Replication configuration options */
     class Options final : public fleece::RefCounted {
     public:
-        
+
         //---- Public fields:
 
         using Mode = C4ReplicatorMode;
@@ -237,8 +238,8 @@ namespace litecore { namespace repl {
                 return *this;
             }
         };
-        mutable std::vector<CollectionOptions> collectionOpts;
-        
+        std::vector<CollectionOptions> collectionOpts;
+
         // Post-conditions:
         //   collectionOpts.size() > 0
         //   collectionAware == false if and only if collectionOpts.size() == 1 &&
@@ -248,39 +249,47 @@ namespace litecore { namespace repl {
         inline void verify() const;
 
         size_t collectionCount() const {
-            return collectionOpts.size();
+            return _workingCollections.size();
         }
 
         Mode push(CollectionIndex i) const {
-            return collectionOpts[i].push;
+            return _workingCollections[i].push;
         }
 
         Mode pull(CollectionIndex i) const {
-            return collectionOpts[i].pull;
+            return _workingCollections[i].pull;
         }
 
         Validator pushFilter(CollectionIndex i) const {
-            return collectionOpts[i].pushFilter;
+            return _workingCollections[i].pushFilter;
         }
 
-        Validator pullFilter(CollectionIndex i) const  {
-            return collectionOpts[i].pullFilter;
+        Validator pullFilter(CollectionIndex i) const {
+            return _workingCollections[i].pullFilter;
         }
 
         void* collectionCallbackContext(CollectionIndex i) const {
-            return collectionOpts[i].callbackContext;
+            return _workingCollections[i].callbackContext;
         }
 
         fleece::Array channels(CollectionIndex i) const {
-            return collectionOpts[i].properties[kC4ReplicatorOptionChannels].asArray();
+            return _workingCollections[i].properties[kC4ReplicatorOptionChannels].asArray();
         }
 
         fleece::Array docIDs(CollectionIndex i) const {
-            return collectionOpts[i].properties[kC4ReplicatorOptionDocIDs].asArray();
+            return _workingCollections[i].properties[kC4ReplicatorOptionDocIDs].asArray();
+        }
+
+        fleece::slice collectionPath(CollectionIndex i) const {
+            return _workingCollections[i].collectionPath;
+        }
+
+        void* callbackContextAt(CollectionIndex i) const {
+            return _workingCollections[i].callbackContext;
         }
 
         CollectionIndex workingCollectionCount() const {
-            return _workingCollectionCount;
+            return fleece::narrow_cast<CollectionIndex>(_workingCollections.size());
         }
 
         // RearrangeCollections() is called only by the passive replicator. For the passive replicator, we presume
@@ -298,22 +307,18 @@ namespace litecore { namespace repl {
             DebugAssert(!_isActive);
 
             size_t origCount = collectionOpts.size();
-            decltype(collectionOpts) reordered;
-            reordered.reserve(origCount);
+            _workingCollections.clear();
+            _workingCollections.reserve(origCount);
 
             for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
                 auto foundEntry = _collectionSpecToIndex.find(activeCollections[activeIndex]);
                 if (foundEntry == _collectionSpecToIndex.end()) {
-                    reordered.emplace_back(nullslice);
+                    _workingCollections.emplace_back(nullslice);
                 } else {
-                    reordered.push_back(collectionOpts[foundEntry->second]);
+                    _workingCollections.push_back(collectionOpts[foundEntry->second]);
+                    _collectionSpecToIndex[activeCollections[activeIndex]] = activeIndex;
                 }
-
-                _collectionSpecToIndex[activeCollections[activeIndex]] = activeIndex;
             }
-
-            collectionOpts = reordered;
-            _workingCollectionCount = (CollectionIndex)activeCollections.size();
         }
 
         void rearrangeCollectionsFor3_0_Client() const {
@@ -328,7 +333,7 @@ namespace litecore { namespace repl {
         inline void setCollectionOptions(const Options& opt);
         inline void constructorCheck();
 
-        mutable CollectionIndex _workingCollectionCount;
+        mutable std::vector<CollectionOptions> _workingCollections;
         mutable bool            _collectionAware         {true};
         mutable bool            _isActive                {true};
         mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
@@ -440,9 +445,9 @@ namespace litecore { namespace repl {
     //   - collectionOpts contains no duplicated collection.
     inline void Options::constructorCheck() {
         Assert(collectionOpts.size() < kNotCollectionIndex);
-        // _workingCollectionCount will be adjusted for the passive replicator
-        // when rearrangeCollections() is called.
-        _workingCollectionCount = (CollectionIndex)collectionCount();
+        // _workingCollections will be cleared and reordered later for passive
+        // replicators, but stay the same for active
+        _workingCollections = collectionOpts;
 
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {
