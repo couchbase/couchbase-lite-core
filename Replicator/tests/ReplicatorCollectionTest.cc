@@ -589,7 +589,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
             _callbackWhenIdle = nullptr;
         };
 
-        // 3 revs from roess to roses2, 3 from roses2 to roses,     total 6
+        // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
         // 3 revs from tulips to tulips2, 3 from tulips2 to tulips, total 6
         // 4 docs for push, 4docs for pull,                         total 8
         _expectedDocumentCount = 20;
