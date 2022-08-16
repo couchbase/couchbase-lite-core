@@ -216,6 +216,8 @@ public:
         return false;
     }
 
+    std::function<void()> _callbackWhenIdle;
+
 
 #pragma mark - CALLBACKS:
 
@@ -261,6 +263,9 @@ public:
             {
                 _statusReceived = status;
                 _checkStopWhenIdle();
+                if (_statusReceived.level == kC4Idle && _callbackWhenIdle) {
+                    _callbackWhenIdle();
+                }
             }
         }
 
@@ -443,11 +448,10 @@ public:
         return docNo - 1;
     }
 
-    void addRevs(C4Database *db, duration interval,
-                 alloc_slice docID,
-                 int firstRev, int totalRevs, bool useFakeRevIDs)
-    {
-        const char* name = (db == this->db) ? "db" : "db2";
+    static void addRevs(C4Collection *collection, duration interval,
+                        alloc_slice docID,
+                        int firstRev, int totalRevs, bool useFakeRevIDs, const char* logName) {
+        C4Database* db = c4coll_getDatabase(collection);
         for (int i = 0; i < totalRevs; i++) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
@@ -455,15 +459,23 @@ public:
             TransactionHelper t(db);
             string revID;
             if (useFakeRevIDs) {
-                revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
-                createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
+                revID = isRevTrees(db) ? format("%d-ffff", revNo) : format("%d@*", revNo);
+                createRev(collection, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
                 string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
-                revID = createFleeceRev(db, docID, nullslice, slice(json));
+                revID = createFleeceRev(collection, docID, nullslice, slice(json));
             }
-            Log("-------- %s %d: Created rev '%.*s' #%s --------", name, revNo, SPLAT(docID), revID.c_str());
+            Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
         }
-        Log("-------- %s: Done creating revs --------", name);
+        Log("-------- %s: Done creating revs --------", logName);
+    }
+
+    void addRevs(C4Database *db, duration interval,
+                 alloc_slice docID,
+                 int firstRev, int totalRevs, bool useFakeRevIDs)
+    {
+        addRevs(c4db_getDefaultCollection(db, nullptr), interval, docID, firstRev,
+                totalRevs, useFakeRevIDs, db == this->db ? "db" : "db2");
     }
 
     static std::thread* runInParallel(std::function<void()> callback) {
