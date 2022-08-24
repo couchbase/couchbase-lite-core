@@ -350,8 +350,8 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After DB Close", "[Observe
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After Collection Delete", "[Observer][C][CBL-3602]") {
     C4Collection* coll = c4db_createCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO());
     REQUIRE(coll);
-    auto* dbObs = c4dbobs_createOnCollection(coll, dbObserverCallback, this);
-    auto* docObs = c4docobs_createWithCollection(coll, C4STR("doc1"), docObserverCallback, this);
+    auto* dbObs = c4dbobs_createOnCollection(coll, dbObserverCallback, this, ERROR_INFO());
+    auto* docObs = c4docobs_createWithCollection(coll, C4STR("doc1"), docObserverCallback, this, ERROR_INFO());
     REQUIRE(c4db_deleteCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()));
     CHECK(c4db_getCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()) == nullptr);
 
