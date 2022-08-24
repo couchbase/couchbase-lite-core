@@ -347,6 +347,24 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After DB Close", "[Observe
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After Collection Delete", "[Observer][C][CBL-3602]") {
+    C4Collection* coll = c4db_createCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO());
+    REQUIRE(coll);
+    auto* dbObs = c4dbobs_createOnCollection(coll, dbObserverCallback, this);
+    auto* docObs = c4docobs_createWithCollection(coll, C4STR("doc1"), docObserverCallback, this);
+    REQUIRE(c4db_deleteCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()));
+    CHECK(c4db_getCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()) == nullptr);
+
+    // Previously this caused a SIGSEGV, and beyond that an exception
+    // because deleting the collection invalidates several naked pointers
+    // and references inside these observers.  The solution was to have the
+    // observers retain their collections, and check if they are valid 
+    // when destructing.  If not valid, perform steps to wipe the bad refs
+    c4dbobs_free(dbObs);
+    c4docobs_free(docObs);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Create Observer On Deleted Collection", "[Observer][C][CBL-3599]") {
     auto deleted = c4::ref<C4Collection>::retaining(c4db_createCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
     REQUIRE(deleted);
@@ -365,4 +383,5 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Create Observer On Deleted Collection", 
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorNotOpen);
 }
+                                                                                            
                                                                                             
