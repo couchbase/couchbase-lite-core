@@ -195,11 +195,11 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     
     // CBL-1036: Remove a left over cert that causes test failures on some machines.
     Cert::deleteCert("Jane Doe");
-    CHECK(Cert::loadCert("Jane Doe").get() == nullptr);
+    CHECK(!Cert::exists("Jane Doe"));
     
     // Delete the cert to cleanup:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Save the cert:
     cert->save("cert1", true);
@@ -216,7 +216,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     
     // Delete the cert:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Save and load again after delete:
     cert->save("cert1", true);
@@ -226,7 +226,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     
     // Delete the cert
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
 
     // Delete the key
     key->remove();
@@ -246,11 +246,11 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
 
     // CBL-1036: Remove a left over cert that causes test failures on some machines.
     Cert::deleteCert("Jane Doe");
-    CHECK(Cert::loadCert("Jane Doe").get() == nullptr);
+    CHECK(!Cert::exists("Jane Doe"));
     
     // Delete cert1 to cleanup:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Save cert1:
     cert1->save("cert1", true);
@@ -296,11 +296,11 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     
     // Delete cert1:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Delete cert2:
     Cert::deleteCert("cert2");
-    CHECK(Cert::loadCert("cert2").get() == nullptr);
+    CHECK(!Cert::exists("cert2"));
 
     // Delete keys
     key1->remove();
@@ -331,7 +331,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     
     // Delete cert1 to cleanup:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Save cert1:
     cert1->save("cert1", true);
@@ -354,7 +354,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     
     // Delete cert2 to cleanup:
     Cert::deleteCert("cert2");
-    CHECK(Cert::loadCert("cert2").get() == nullptr);
+    CHECK(!Cert::exists("cert2"));
     
     // Save cert2:
     cert2->save("cert2", true);
@@ -369,7 +369,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     
     // Delete cert1:
     Cert::deleteCert("cert1");
-    CHECK(Cert::loadCert("cert1").get() == nullptr);
+    CHECK(!Cert::exists("cert1"));
     
     // Load cert2 again to make sure that it's still loaded:
     Retained<Cert> cert2b = Cert::loadCert("cert2");
@@ -378,7 +378,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     
     // Delete cert2:
     Cert::deleteCert("cert2");
-    CHECK(Cert::loadCert("cert2").get() == nullptr);
+    CHECK(!Cert::exists("cert2"));
 }
 
 #endif
