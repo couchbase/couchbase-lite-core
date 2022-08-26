@@ -184,18 +184,30 @@ static int init_icudata_platform(void) {
   free(namelist);
 
   if (max_version == -1 || max_version < ICUDATA_VERSION_MIN) {
-    fprintf(stderr, "Cannot locate ICU data file at %s\n", icuDir);
+    fprintf(stderr, "\n!! ERROR: libicudata does not exist in %s\n\t(try setting CBL_ICU_LOCATION env var!)\n\n", icuDir);
     return -1;
   }
 
-  char buffer[128];
-  strcpy(buffer, "libicui18n.so.");
+  char buffer[PATH_MAX];
+  strcpy(buffer, icuDir);
+  strcat(buffer, "/");
+  strcat(buffer, "libicui18n.so.");
   strcat(buffer, icudata_version + 1);
   handle_i18n = dlopen(buffer, RTLD_LAZY);
+  if(!handle_i18n) {
+    fprintf(stderr, "\n!! ERROR: libicui18n does not exist in %s with libicudata!\n\n", icuDir);
+    return -1;
+  }
 
-  strcpy(buffer, "libicuuc.so.");
+  strcpy(buffer, icuDir);
+  strcat(buffer, "/");
+  strcat(buffer, "libicuuc.so.");
   strcat(buffer, icudata_version + 1);
   handle_common = dlopen(buffer, RTLD_LAZY);
+  if(!handle_common) {
+    fprintf(stderr, "\n!! ERROR: libicuuc does not exist in %s with libicudata!\n\n", icuDir);
+    return -1;
+  }
 
   return max_version;
 }
@@ -205,11 +217,10 @@ static void init_icudata_version(void) {
   int max_version = init_icudata_platform();
 
   if (!handle_i18n || !handle_common) {
-    fprintf(stderr, "Cannot open ICU libraries.\n");
     return;
   }
 
-  printf("Found ICU libraries for version %d\n", max_version);
+  printf("\nFound ICU libraries for version %d\n\n", max_version);
 
   char buffer[128];
   strcpy(buffer, "ucol_open");
