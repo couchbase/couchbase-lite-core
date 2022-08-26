@@ -404,6 +404,19 @@ C4Cert* c4cert_load(C4String name,
 #endif
 }
 
+bool c4cert_exists(C4String name,
+                   C4Error *outError)
+{
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return Cert::exists(toString(name));
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+    return false;
+#endif
+}
+
+
+
 
 #pragma mark - C4KEYPAIR:
 

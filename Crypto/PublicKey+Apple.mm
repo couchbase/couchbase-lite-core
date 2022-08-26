@@ -607,6 +607,25 @@ namespace litecore { namespace crypto {
         }
     }
 
+    bool Cert::exists(const std::string &persistentID) {
+        @autoreleasepool {
+            LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
+                  persistentID.c_str());
+
+            NSString* label = [NSString stringWithCString: persistentID.c_str()
+                                                 encoding: NSUTF8StringEncoding];
+
+            NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+                       (id)kSecClass:              (id)kSecClassCertificate,
+                       (id)kSecAttrLabel:          label,
+                       (id)kSecReturnRef:          @NO,
+                       (id)kSecReturnData:         @NO
+               }));
+
+            return !attrs ? false : true;
+        }
+    }
+
 
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {

@@ -169,6 +169,9 @@ namespace litecore { namespace crypto {
         /** Loads a certificate from persistent storage with the given subject public key. */
         static fleece::Retained<Cert> load(PublicKey*);
 
+        /** Check if a certificate with the given subject public key exists in the persistent storage. */
+        static bool exists(PublicKey*);
+
         virtual bool isSigned() override                        {return true;}
         bool isSelfSigned();
         DistinguishedName subjectName() override;
@@ -186,6 +189,9 @@ namespace litecore { namespace crypto {
         
         /** Load the certificate chain from a persistent key store with the persistent ID */
         static fleece::Retained<Cert> loadCert(const std::string &persistentID);
+
+        /** Check if a certificate with the given persistent ID exists in the persistent key store */
+        static bool exists(const std::string &persistentID);
         
         /** Delete the certificate chain with the persistent ID */
         static void deleteCert(const std::string &persistentID);

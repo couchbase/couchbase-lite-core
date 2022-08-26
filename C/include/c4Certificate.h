@@ -285,6 +285,9 @@ extern "C" {
     C4Cert* c4cert_load(C4String name,
                         C4Error *outError);
 
+    bool c4cert_exists(C4String name,
+                       C4Error *outError);
+
     /** @} */
 
 
