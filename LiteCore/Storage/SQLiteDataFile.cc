@@ -547,6 +547,9 @@ namespace litecore {
             
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
+            // Invarient: keyStore->tablaName()     == kv_<tableName>
+            //            deletedStore->tableName() == kv_del_<tableName>
+            //            all_<cname>               == all_<tableName>
             string tableName = keyStore->tableName().substr(3); // remove prefix "kv_"
             const char* cname = tableName.c_str();
             _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
@@ -776,8 +779,7 @@ namespace litecore {
 
     namespace {
         std::pair<slice, slice> splitCollectionPath(const string& collectionPath) {
-            const char* sdata = collectionPath.data();
-            slice collection {sdata, collectionPath.length()};
+            slice collection {collectionPath};
             auto sep = collection.findByte(KeyStore::kScopeCollectionSeparator);
             slice scope;
             if (sep) {
