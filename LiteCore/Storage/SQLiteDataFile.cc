@@ -547,7 +547,11 @@ namespace litecore {
             
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
-            const char *cname = name.c_str();
+            // Invarient: keyStore->tablaName()     == kv_<tableName>
+            //            deletedStore->tableName() == kv_del_<tableName>
+            //            all_<cname>               == all_<tableName>
+            string tableName = keyStore->tableName().substr(3); // remove prefix "kv_"
+            const char* cname = tableName.c_str();
             _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
                          "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
                          "SELECT " COLUMNS " from \"kv_del_%s\"",
@@ -773,6 +777,26 @@ namespace litecore {
         return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
+    namespace {
+        std::pair<slice, slice> splitCollectionPath(const string& collectionPath) {
+            slice collection {collectionPath};
+            auto sep = collection.findByte(KeyStore::kScopeCollectionSeparator);
+            slice scope;
+            if (sep) {
+                scope = slice {collection.buf, sep};
+                if (scope.size + 1 == collection.size) {
+                    // dot is the last char
+                    collection.setSize(0);
+                } else {
+                    collection.setStart(sep + 1);
+                }
+            }
+            return std::make_pair(scope, collection);
+        }
+
+        inline bool isDefaultCollection(slice id) {return id == KeyStore::kDefaultCollectionName;}
+        inline bool isDefaultScope(slice id) {return !id || isDefaultCollection(id); }
+    }
 
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // (The name might be of the form "scope.collection", which is fine because that's the same
@@ -794,21 +818,33 @@ namespace litecore {
             if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
-        if (collection == "_" || slice(collection) == KeyStore::kDefaultCollectionName || slice(collection) == KeyStore::kDefaultFullCollectionName)
+
+        auto [scope, coll] = splitCollectionPath(collection);
+        if (collection == "_" || (isDefaultScope(scope) && isDefaultCollection(coll))) {
             name += kDefaultKeyStoreName;
-        else {
-            string candidate = name + string(KeyStore::kCollectionPrefix) + SQLiteKeyStore::transformCollectionName(collection, true);
-            if (collection == delegate()->databaseName() && !tableExists(candidate)) {
-                // The name of this database represents the default collection,
-                // _unless_ there is a collection with that name.
-                name += kDefaultKeyStoreName;
-            } else {
-                // Validate the collection name, which might be of the form "scope.collection":
-                if (!KeyStore::isValidCollectionNameWithScope(collection))
-                    error::_throw(error::InvalidQuery,
-                                  "\"%s\" is not a valid collection name", collection.c_str());
-                name = candidate;
+        } else if (collection == delegate()->databaseName() &&
+                   !tableExists(name + string(KeyStore::kCollectionPrefix) + collection)) {
+            // The name of this database represents the default collection,
+            // _unless_ there is a collection with that name.
+            name += kDefaultKeyStoreName;
+        } else {
+            string candidate = name + string(KeyStore::kCollectionPrefix);
+            bool isValid = true;
+            if (!isDefaultScope(scope)) {
+                if (!KeyStore::isValidCollectionName(scope)) {
+                    isValid = false;
+                } else {
+                    candidate += SQLiteKeyStore::transformCollectionName(scope.asString(), true)
+                        + KeyStore::kScopeCollectionSeparator;
+                }
             }
+            if (isValid && KeyStore::isValidCollectionName(coll)) {
+                candidate += SQLiteKeyStore::transformCollectionName(coll.asString(), true);
+            } else {
+                error::_throw(error::InvalidQuery,
+                                  "\"%s\" is not a valid collection name", collection.c_str());
+            }
+            name = candidate;
         }
         return name;
     }
