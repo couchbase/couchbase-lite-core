@@ -1244,21 +1244,16 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
 #pragma mark - OBSERVERS:
 
 
-// semi-deprecated
-C4DatabaseObserver* c4dbobs_create(C4Database *db,
-                                   C4DatabaseObserverCallback callback,
-                                   void *context) noexcept
+C4DatabaseObserver * c4dbobs_createOnCollection(C4Collection* coll,
+    C4CollectionObserverCallback callback,
+    void* C4NULLABLE context,
+    C4Error* C4NULLABLE error) noexcept
 {
-    return c4dbobs_createOnCollection(db->getDefaultCollection(), callback, context);
-}
-
-
-C4DatabaseObserver* c4dbobs_createOnCollection(C4Collection* coll,
-                                               C4DatabaseObserverCallback callback,
-                                               void* C4NULLABLE context) noexcept
-{
-    return C4CollectionObserver::create(coll, [=](C4DatabaseObserver *obs) {
-        callback(obs, context);
+    return tryCatch<unique_ptr<C4DatabaseObserver>>(error, [&] {
+        auto fn = [=](C4DatabaseObserver* obs) {
+            callback(obs, context);
+        };
+        return C4CollectionObserver::create(coll, fn);
     }).release();
 }
 
@@ -1297,22 +1292,13 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 }
 
 
-// semi-deprecated
-C4DocumentObserver* c4docobs_create(C4Database *db,
-                                    C4Slice docID,
-                                    C4DocumentObserverCallback callback,
-                                    void *context) noexcept
-{
-    return c4docobs_createWithCollection(db->getDefaultCollection(), docID, callback, context);
-}
-
-
 C4DocumentObserver* c4docobs_createWithCollection(C4Collection *coll,
                                                   C4String docID,
                                                   C4DocumentObserverCallback callback,
-                                                  void* C4NULLABLE context) noexcept
+                                                  void* C4NULLABLE context,
+                                                  C4Error* C4NULLABLE error) noexcept
 {
-    return tryCatch<unique_ptr<C4DocumentObserver>>(nullptr, [&]{
+    return tryCatch<unique_ptr<C4DocumentObserver>>(error, [&]{
         auto fn = [=](C4DocumentObserver *obs, C4Collection* collection, fleece::slice docID, C4SequenceNumber seq) {
             callback(obs, collection, docID, seq, context);
         };

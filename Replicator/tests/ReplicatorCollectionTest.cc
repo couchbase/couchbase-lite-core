@@ -511,6 +511,96 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
     validateCollectionCheckpoints(db, db2, 1, "{\"local\":22,\"remote\":24}");
 }
 
+struct Jthread {
+    std::thread thread;
+    Jthread(std::thread&& thread_)
+    : thread(move(thread_))
+    {}
+    Jthread() = default;
+    ~Jthread() {
+        thread.join();
+    }
+};
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
+    addDocs(db, Roses, 2, "db-Roses-");
+    addDocs(db, Tulips, 2, "db-Tulips-");
+    C4Collection* roses = getCollection(db, Roses);
+    C4Collection* tulips = getCollection(db, Tulips);
+    C4Collection* roses2 = getCollection(db2, Roses);
+    C4Collection* tulips2 = getCollection(db2, Tulips);
+    Jthread jthread;
+
+    SECTION("PUSH") {
+        _callbackWhenIdle = [=, &jthread]() {
+            jthread.thread = std::thread(std::thread{[=]() {
+                CHECK(c4coll_getDocumentCount(roses2) == 2);
+                CHECK(c4coll_getDocumentCount(tulips2) == 2);
+
+                addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
+                addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
+                sleepFor(1s);
+                stopWhenIdle();
+            }});
+            _callbackWhenIdle = nullptr;
+        };
+
+        // 4 docs plus 6 revs
+        _expectedDocumentCount = 10;
+        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
+
+        CHECK(c4coll_getDocumentCount(roses2) == 3);
+        CHECK(c4coll_getDocumentCount(tulips2) == 3);
+    }
+
+    SECTION("PULL") {
+        _callbackWhenIdle = [=, &jthread]() {
+            jthread.thread = std::thread(std::thread{[=]() {
+                CHECK(c4coll_getDocumentCount(roses2) == 2);
+                CHECK(c4coll_getDocumentCount(tulips2) == 2);
+
+                addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
+                addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
+                sleepFor(1s);
+                stopWhenIdle();
+            }});
+            _callbackWhenIdle = nullptr;
+        };
+
+        _expectedDocumentCount = 10;
+        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
+        CHECK(c4coll_getDocumentCount(roses2) == 3);
+        CHECK(c4coll_getDocumentCount(tulips2) == 3);
+    }
+
+    SECTION("PUSH and PULL") {
+        addDocs(db2, Roses, 2, "db2-Roses-");
+        addDocs(db2, Tulips, 2, "db2-Tulips-");
+
+        _callbackWhenIdle = [=, &jthread]() {
+            jthread.thread = thread(std::thread{[=]() {
+                addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
+                addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
+                addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
+                addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
+                sleepFor(1s);
+                stopWhenIdle();
+            }});
+            _callbackWhenIdle = nullptr;
+        };
+
+        // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
+        // 3 revs from tulips to tulips2, 3 from tulips2 to tulips, total 6
+        // 4 docs for push, 4docs for pull,                         total 8
+        _expectedDocumentCount = 20;
+        runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
+        CHECK(c4coll_getDocumentCount(roses) == 6);
+        CHECK(c4coll_getDocumentCount(tulips) == 6);
+        CHECK(c4coll_getDocumentCount(roses2) == 6);
+        CHECK(c4coll_getDocumentCount(tulips2) == 6);
+    }
+}
+
 // Failed : CBL-3500
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
     addDocs(db, Roses, 10);

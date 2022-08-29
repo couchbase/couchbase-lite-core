@@ -193,7 +193,7 @@ foreach ($arch in $Architectures) {
 
     $Target = "${arch}_MinSizeRel"
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "MinSizeRel"
-    if($arch -eq "Win64" -or $arch -eq "Win32") {
+    if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "MinSizeRel"
         if($Edition -eq "enterprise" -and $arch -eq "Win64") {
             Run-UnitTest "${env:WORKSPACE}\build_${Target}\couchbase-lite-core" $arch

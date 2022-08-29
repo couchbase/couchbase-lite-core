@@ -119,7 +119,9 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     REQUIRE(openCollection);
 
     SECTION("Default Collection") {
-        dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+        C4Collection* defaultColl = requireCollection(db);
+        dbObserver = c4dbobs_createOnCollection(defaultColl, dbObserverCallback, this, ERROR_INFO());
+        REQUIRE(dbObserver);
         auto* expectedCollection = requireCollection(db);
         CHECK(dbCallbackCalls == 0);
 
@@ -149,7 +151,8 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     }
 
     SECTION("Custom Collection") {
-        dbObserver = c4dbobs_createOnCollection(openCollection, dbObserverCallback, this);
+        dbObserver = c4dbobs_createOnCollection(openCollection, dbObserverCallback, this, ERROR_INFO());
+        REQUIRE(dbObserver);
         CHECK(dbCallbackCalls == 0);
 
         createRev(openCollection, "A"_sl, kDocARev1, kFleeceBody);
@@ -181,9 +184,11 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
     SECTION("Default Collection") {
+        C4Collection* defaultColl = requireCollection(db);
         createRev("A"_sl, kDocARev1, kFleeceBody);
 
-        docObserver = c4docobs_create(db, "A"_sl, docObserverCallback, this);
+        docObserver = c4docobs_createWithCollection(defaultColl, "A"_sl, docObserverCallback, this, ERROR_INFO());
+        REQUIRE(docObserver);
         CHECK(docCallbackCalls == 0);
 
         createRev("A"_sl, kDocARev2, kFleeceBody);
@@ -201,7 +206,8 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
         
         createRev(openCollection, "A"_sl, kDocARev1, kFleeceBody);
 
-        docObserver = c4docobs_createWithCollection(openCollection, "A"_sl, docObserverCallback, this);
+        docObserver = c4docobs_createWithCollection(openCollection, "A"_sl, docObserverCallback, this, ERROR_INFO());
+        REQUIRE(docObserver);
         CHECK(docCallbackCalls == 0);
 
         createRev(openCollection, "A"_sl, kDocARev2, kFleeceBody);
@@ -215,8 +221,9 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
-    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     auto* expectedColl = requireCollection(db);
+    dbObserver = c4dbobs_createOnCollection(expectedColl, dbObserverCallback, this, ERROR_INFO());
+    REQUIRE(dbObserver);
     CHECK(dbCallbackCalls == 0);
 
     createRev("A"_sl, kDocARev1, kFleeceBody);
@@ -257,18 +264,23 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer With Reopen", "[Observ
     // Important step to reproduce the bug:
     reopenDB();
 
+    C4Collection* defaultColl = requireCollection(db);
+
     // Add a doc observer:
     C4Log("---- Adding docObserver to reopened db ---");
-    docObserver = c4docobs_create(db, "doc"_sl, docObserverCallback, this);
+    docObserver = c4docobs_createWithCollection(defaultColl, "doc"_sl, docObserverCallback, this, ERROR_INFO());
     REQUIRE(docObserver);
 
     // Open another database on the same file:
     C4Log("---- Opening another database instance ---");
-    c4::ref<C4Database> otherdb = c4db_openAgain(db, nullptr);
+    c4::ref<C4Database> otherdb = c4db_openAgain(db, ERROR_INFO());
     REQUIRE(otherdb);
+
+    C4Collection* otherDefaultColl = requireCollection(otherdb);
     
     // Start a database observer on otherdb:
-    dbObserver = c4dbobs_create(otherdb, dbObserverCallback, this);
+    dbObserver = c4dbobs_createOnCollection(otherDefaultColl, dbObserverCallback, this, ERROR_INFO());
+    REQUIRE(dbObserver);
 
     // Update the doc:
     C4Log("---- Updating doc ---");
@@ -282,12 +294,15 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer With Reopen", "[Observ
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Purge", "[Observer][C]") {
     createRev("A"_sl, kDocARev1, kFleeceBody);
 
-    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    C4Collection* defaultColl = requireCollection(db);
+
+    dbObserver = c4dbobs_createOnCollection(defaultColl, dbObserverCallback, this, ERROR_INFO());
+    REQUIRE(dbObserver);
     CHECK(dbCallbackCalls == 0);
 
-    REQUIRE(c4db_beginTransaction(db, nullptr));
-    REQUIRE(c4db_purgeDoc(db, "A"_sl, nullptr));
-    REQUIRE(c4db_endTransaction(db, true, nullptr));
+    REQUIRE(c4db_beginTransaction(db, ERROR_INFO()));
+    REQUIRE(c4db_purgeDoc(db, "A"_sl, ERROR_INFO()));
+    REQUIRE(c4db_endTransaction(db, true, ERROR_INFO()));
 
     CHECK(dbCallbackCalls == 1);
     checkChanges(requireCollection(db), {"A"}, {""});
@@ -300,7 +315,10 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     createRev("A"_sl, kDocARev1, kFleeceBody);
     createRev("B"_sl, kDocBRev1, kFleeceBody);
 
-    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    C4Collection* defaultColl = requireCollection(db);
+
+    dbObserver = c4dbobs_createOnCollection(defaultColl, dbObserverCallback, this, ERROR_INFO());
+    REQUIRE(dbObserver);
     CHECK(dbCallbackCalls == 0);
 
     REQUIRE(c4doc_setExpiration(db, "A"_sl, now - 100*1000, nullptr));
@@ -318,8 +336,52 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
 
 
 N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After DB Close", "[Observer][C]") {
+    C4Collection* defaultColl = requireCollection(db);
+
     // CBL-3193: Freeing a document observer after database close caused a SIGSEGV
-    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
-    docObserver = c4docobs_create(db, C4STR("doc1"), docObserverCallback, this);
+    dbObserver = c4dbobs_createOnCollection(defaultColl, dbObserverCallback, this, ERROR_INFO());
+    REQUIRE(dbObserver);
+    docObserver = c4docobs_createWithCollection(defaultColl, C4STR("doc1"), docObserverCallback, this, ERROR_INFO());
+    REQUIRE(docObserver);
     closeDB();
 }
+
+
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Observer Free After Collection Delete", "[Observer][C][CBL-3602]") {
+    C4Collection* coll = c4db_createCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO());
+    REQUIRE(coll);
+    auto* dbObs = c4dbobs_createOnCollection(coll, dbObserverCallback, this, ERROR_INFO());
+    auto* docObs = c4docobs_createWithCollection(coll, C4STR("doc1"), docObserverCallback, this, ERROR_INFO());
+    REQUIRE(c4db_deleteCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()));
+    CHECK(c4db_getCollection(db, { "bar"_sl, "foo"_sl }, ERROR_INFO()) == nullptr);
+
+    // Previously this caused a SIGSEGV, and beyond that an exception
+    // because deleting the collection invalidates several naked pointers
+    // and references inside these observers.  The solution was to have the
+    // observers retain their collections, and check if they are valid 
+    // when destructing.  If not valid, perform steps to wipe the bad refs
+    c4dbobs_free(dbObs);
+    c4docobs_free(docObs);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Create Observer On Deleted Collection", "[Observer][C][CBL-3599]") {
+    auto deleted = c4::ref<C4Collection>::retaining(c4db_createCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
+    REQUIRE(deleted);
+
+    REQUIRE(c4db_deleteCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
+    REQUIRE(!c4db_getCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
+
+    C4Error err{};
+
+    CHECK(!c4dbobs_createOnCollection(deleted, dbObserverCallback, nullptr, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorNotOpen);
+
+    err = {};
+    CHECK(!c4docobs_createWithCollection(deleted, C4STR("doc1"), docObserverCallback, nullptr, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorNotOpen);
+}
+                                                                                            
+                                                                                            
