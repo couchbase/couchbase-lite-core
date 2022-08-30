@@ -450,3 +450,28 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Expired", "[Collection][C][
     C4Log("---- Purge expired docs");
     CHECK(c4coll_purgeExpiredDocs(fresh, WITH_ERROR()) == 0);
 }
+
+
+N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Move Doc between Collections", "[Database][Collection][C]") {
+    // Create "guitars" collection:
+    C4Collection* guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
+    REQUIRE(guitars);
+    C4Collection* dflt = requireCollection(db);
+
+    // Add a document to collection Guitars:
+    {
+        C4Database::Transaction t(db);
+        addNumberedDocs(guitars, 1);
+        t.commit();
+    }
+
+    CHECK(c4coll_getDocumentCount(guitars) == 1);
+    CHECK(c4coll_getDocumentCount(dflt) == 0);
+
+    bool succ = c4coll_moveDoc(guitars, "doc-001"_sl,
+                               dflt, "from-doc-001"_sl, ERROR_INFO());
+    CHECK(succ);
+    CHECK(c4coll_getDocumentCount(guitars) == 0);
+    CHECK(c4coll_getDocumentCount(dflt) == 1);
+    CHECK(docExists(dflt, "from-doc-001"_sl));
+}
