@@ -566,7 +566,7 @@ namespace litecore {
     }
 
 
-    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) const {
+    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) {
         if (auto both = dynamic_cast<BothKeyStore*>(ks))
             ks = both->liveStore();
         auto sqlks = dynamic_cast<SQLiteKeyStore*>(ks);
