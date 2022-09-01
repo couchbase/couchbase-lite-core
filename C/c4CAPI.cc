@@ -286,6 +286,7 @@ bool c4coll_isValid(C4Collection* coll) noexcept {
 C4CollectionSpec c4coll_getSpec(C4Collection *coll) noexcept {
     // Unlike the others, this continues to return valid data even
     // after invalidation, so skip the validity check
+    if (!coll) return {};
     return coll->getSpec();
 }
 
