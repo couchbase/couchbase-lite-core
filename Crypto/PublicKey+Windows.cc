@@ -201,9 +201,7 @@ namespace litecore::crypto {
                 nullptr
         );
 
-        DEFER {
-            CertCloseStore(store, 0);
-        };
+        CertCloseStore(store, 0);
 
         return winCert;
     }
@@ -647,9 +645,7 @@ namespace litecore::crypto {
 
         const auto* const winCert = getWinCert(persistentID);
 
-        DEFER {
-            CertFreeCertificateContext(winCert);
-        };
+        CertFreeCertificateContext(winCert);
 
         return !winCert ? false : true;
     }
@@ -710,9 +706,7 @@ namespace litecore::crypto {
     bool Cert::exists(PublicKey *subjectKey) {
         auto winCert = getWinCert(subjectKey);
 
-        DEFER {
-            CertFreeCertificateContext(winCert);
-        };
+        CertFreeCertificateContext(winCert);
 
         return !winCert ? false : true;
     }
