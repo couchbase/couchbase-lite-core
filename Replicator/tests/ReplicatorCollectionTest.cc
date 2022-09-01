@@ -848,4 +848,250 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     }
 }
 
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
+    string db_roses = "db-roses-";
+    string db_tulips = "db-tulips-";
+    string db2_roses = "db2-roses-";
+    string db2_tulips = "db2-tulips-";
+    addDocs(db, Roses, 10, db_roses);
+    addDocs(db, Tulips, 10, db_tulips);
+    addDocs(db, Lavenders, 10);
+    addDocs(db2, Roses, 20, db2_roses);
+    addDocs(db2, Tulips, 20, db2_tulips);
+    addDocs(db2, Lavenders, 20);
+
+    SECTION("PUSH") {
+        C4ReplicatorValidationFunction pushFilter
+            = [](C4CollectionSpec collectionSpec,
+                 C4String docID,
+                 C4String revID,
+                 C4RevisionFlags,
+                 FLDict body,
+                 void* context) {
+                CHECK(collectionSpec == Roses);
+                slice drop {(const char*)context };
+                return drop != docID;
+            };
+        _updateClientOptions = [=](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                    o.pushFilter = pushFilter;
+                    o.callbackContext = (void*)"db-roses-1";
+                }
+            }
+            return ret;
+        };
+
+        // "db-roses-1" is filtered out as it is pushed from db/Roses to db2/Roses
+        _expectedDocumentCount = 19;
+        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        c4::ref<C4Document> rose1
+        = c4coll_getDoc(roses2, "db-roses-1"_sl, true, kDocGetMetadata, ERROR_INFO());
+        c4::ref<C4Document> tulip1
+        = c4coll_getDoc(tulips2, "db-tulips-1"_sl, true, kDocGetMetadata, ERROR_INFO());
+        
+        CHECK(!rose1);
+        CHECK( tulip1);
+    }
+
+    SECTION("PULL") {
+        C4ReplicatorValidationFunction pullFilter
+            = [](C4CollectionSpec collectionSpec,
+                 C4String docID,
+                 C4String revID,
+                 C4RevisionFlags,
+                 FLDict body,
+                 void* context) {
+                CHECK(collectionSpec == Tulips);
+                slice drop {(const char*)context };
+                return drop != docID;
+            };
+        _updateClientOptions = [=](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                    o.pullFilter = pullFilter;
+                    o.callbackContext = (void*)"db-tulips-1";
+                }
+            }
+            return ret;
+        };
+
+        // "db-tulips-1" is filtered out as it is pulled from db/Tulips to db2/Tulips
+        _expectedDocumentCount = 19;
+        // pull filter will generate errors for failed documents.
+        _expectedDocPullErrors = set<string>{"db-tulips-1"};
+        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
+
+        // db2 is the active client.
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        c4::ref<C4Document> rose1
+        = c4coll_getDoc(roses2, "db-roses-1"_sl, true, kDocGetMetadata, ERROR_INFO());
+        c4::ref<C4Document> tulip1
+        = c4coll_getDoc(tulips2, "db-tulips-1"_sl, true, kDocGetMetadata, ERROR_INFO());
+
+        CHECK( rose1);
+        CHECK(!tulip1);
+    }
+
+    SECTION("DocIDs on PULL") {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc.writeString("db-tulips-2"_sl);
+        enc.writeString("db-tulips-7"_sl);
+        enc.writeString("db-tulips-4"_sl);
+        enc.endArray();
+        Doc docIDs {enc.finish()};
+        _updateClientOptions = [&](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
+                }
+            }
+            return ret;
+        };
+
+        // Only 3 docs from db are pulled to db2. db2 is the active replicator.
+        _expectedDocumentCount = 13;
+        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
+
+        // db2 is the active client.
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        // All 10 docs are pulled to db2
+        CHECK(c4coll_getDocumentCount(roses2) == 30);
+        // Only 3 docs are pulled to db2
+        CHECK(c4coll_getDocumentCount(tulips2) == 23);
+    }
+    
+    SECTION("DocIDs & Filter on PULL") {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc.writeString("db-tulips-2"_sl);
+        enc.writeString("db-tulips-7"_sl);
+        enc.writeString("db-tulips-4"_sl);
+        enc.endArray();
+        Doc docIDs {enc.finish()};
+        C4ReplicatorValidationFunction pullFilter
+            = [](C4CollectionSpec collectionSpec,
+                 C4String docID,
+                 C4String revID,
+                 C4RevisionFlags,
+                 FLDict body,
+                 void* context) {
+                CHECK((docID == "db-tulips-2"_sl || docID == "db-tulips-4"_sl || docID == "db-tulips-7"_sl));
+                return docID != "db-tulips-4"_sl;
+            };
+        _updateClientOptions = [&](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
+                    o.pullFilter = pullFilter;
+                }
+            }
+            return ret;
+        };
+
+        // Only 2 docs from db are pulled to db2. db2 is the active replicator.
+        _expectedDocumentCount = 12;
+        // docIDs takes precedence. The pull filter only receives the docs from docIDs, and
+        // "db-tulips-4" fails the filter.
+        _expectedDocPullErrors = set<string>{"db-tulips-4"};
+        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
+
+        // db2 is the active client.
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        // All 10 docs are pulled to db2
+        CHECK(c4coll_getDocumentCount(roses2) == 30);
+        // Only 3 docs are pulled to db2
+        CHECK(c4coll_getDocumentCount(tulips2) == 22);
+    }
+
+    SECTION("DocIDs on PUSH") {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc.writeString("db-roses-2"_sl);
+        enc.writeString("db-roses-7"_sl);
+        enc.writeString("db-roses-4"_sl);
+        enc.endArray();
+        Doc docIDs {enc.finish()};
+
+        _updateClientOptions = [=](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
+                }
+            }
+            return ret;
+        };
+
+        // Only 3 docs from db are pushed to db2. db is the active replicator.
+        _expectedDocumentCount = 13;
+        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+
+        // db2 is the active client.
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        // Only 3 docs are pushed to db2
+        CHECK(c4coll_getDocumentCount(roses2) == 23);
+        // All 10 docs are pushed to db2
+        CHECK(c4coll_getDocumentCount(tulips2) == 30);
+    }
+
+    SECTION("DocIDs & Filter on PUSH") {
+        fleece::Encoder enc;
+        enc.beginArray();
+        enc.writeString("db-roses-2"_sl);
+        enc.writeString("db-roses-7"_sl);
+        enc.writeString("db-roses-4"_sl);
+        enc.endArray();
+        Doc docIDs {enc.finish()};
+
+        C4ReplicatorValidationFunction pushFilter
+            = [](C4CollectionSpec collectionSpec,
+                 C4String docID,
+                 C4String revID,
+                 C4RevisionFlags,
+                 FLDict body,
+                 void* context) {
+                CHECK((docID == "db-roses-2"_sl || docID == "db-roses-4"_sl || docID == "db-roses-7"_sl));
+                return docID != "db-roses-4"_sl;
+            };
+        _updateClientOptions = [=](const repl::Options& opts) {
+            repl::Options ret = opts;
+            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
+                    o.pushFilter = pushFilter;
+                }
+            }
+            return ret;
+        };
+
+        // Only 2 docs from db are pushed to db2. db is the active replicator.
+        // docIDs allows 3, pushFilter filters out 1.
+        _expectedDocumentCount = 12;
+        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
+
+        // db2 is the active client.
+        C4Collection* roses2  = getCollection(db2, Roses);
+        C4Collection* tulips2 = getCollection(db2, Tulips);
+        // Only 3 docs are pushed to db2
+        CHECK(c4coll_getDocumentCount(roses2) == 22);
+        // All 10 docs are pushed to db2
+        CHECK(c4coll_getDocumentCount(tulips2) == 30);
+    }
+
+}
+
 #endif

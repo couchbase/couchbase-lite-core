@@ -121,6 +121,9 @@ public:
         bool createReplicatorThrew = false;
         // Create client (active) and server (passive) replicators:
         try {
+            if (_updateClientOptions) {
+                optsRef1 = make_retained<repl::Options>(_updateClientOptions(*optsRef1));
+            }
             _replClient = new Replicator(dbClient,
                                          new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
                                          *this, optsRef1);
@@ -668,5 +671,6 @@ public:
     Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
     std::function<void(ReplicatedRev*)> _conflictHandler;
     bool _conflictHandlerRunning {false};
+    std::function<repl::Options(const repl::Options&)> _updateClientOptions;
 };
 
