@@ -876,6 +876,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [=](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                // Assign pushFilter to Roses
                 if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
                     o.pushFilter = pushFilter;
                     o.callbackContext = (void*)"db-roses-1";
@@ -884,7 +885,9 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // "db-roses-1" is filtered out as it is pushed from db/Roses to db2/Roses
+        // db is the active Push replicator.
+        // A Push filter is applied to Roses. It lets pass all docs but one, "db-roses-1",
+        // from db to db2
         _expectedDocumentCount = 19;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
@@ -914,6 +917,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [=](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
+                // Assign pullFilter to Tulips
                 if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
                     o.pullFilter = pullFilter;
                     o.callbackContext = (void*)"db-tulips-1";
@@ -922,13 +926,14 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // "db-tulips-1" is filtered out as it is pulled from db/Tulips to db2/Tulips
+        // db2 is the active Pull replicator.
+        // A pull filter is applied to collection Tulips. It requests to pull all docs from
+        // db except for "db-tulips-1".
         _expectedDocumentCount = 19;
         // pull filter will generate errors for failed documents.
         _expectedDocPullErrors = set<string>{"db-tulips-1"};
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
 
-        // db2 is the active client.
         C4Collection* roses2  = getCollection(db2, Roses);
         C4Collection* tulips2 = getCollection(db2, Tulips);
         c4::ref<C4Document> rose1
@@ -958,16 +963,17 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // Only 3 docs from db are pulled to db2. db2 is the active replicator.
+        // db2 is the active replicator. Only 3 documents are specifiec in docIDs for the Tulips
+        // collection, for a total of 13.
         _expectedDocumentCount = 13;
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
 
         // db2 is the active client.
         C4Collection* roses2  = getCollection(db2, Roses);
         C4Collection* tulips2 = getCollection(db2, Tulips);
-        // All 10 docs are pulled to db2
+        // All 10 docs in Roses are pulled to db2
         CHECK(c4coll_getDocumentCount(roses2) == 30);
-        // Only 3 docs are pulled to db2
+        // Only 3 docs in Tulips are pulled to db2
         CHECK(c4coll_getDocumentCount(tulips2) == 23);
     }
     
@@ -986,6 +992,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
                  C4RevisionFlags,
                  FLDict body,
                  void* context) {
+                // filters are applied after docIDs
                 CHECK((docID == "db-tulips-2"_sl || docID == "db-tulips-4"_sl || docID == "db-tulips-7"_sl));
                 return docID != "db-tulips-4"_sl;
             };
@@ -1000,19 +1007,20 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // Only 2 docs from db are pulled to db2. db2 is the active replicator.
+        // db2 is the active pull replicator. Both docIDs and pull filter are applied to the Tulips
+        // collecton. docIDs includes 3 documments. pullFilter rejects one among the three, giving rise
+        // to a total of 12 to be pulled from db to db2.
         _expectedDocumentCount = 12;
         // docIDs takes precedence. The pull filter only receives the docs from docIDs, and
         // "db-tulips-4" fails the filter.
         _expectedDocPullErrors = set<string>{"db-tulips-4"};
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
 
-        // db2 is the active client.
         C4Collection* roses2  = getCollection(db2, Roses);
         C4Collection* tulips2 = getCollection(db2, Tulips);
-        // All 10 docs are pulled to db2
+        // All 10 docs in Roses are pulled to db2
         CHECK(c4coll_getDocumentCount(roses2) == 30);
-        // Only 3 docs are pulled to db2
+        // Only 2 docs in Tulips are pulled to db2
         CHECK(c4coll_getDocumentCount(tulips2) == 22);
     }
 
@@ -1035,16 +1043,16 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // Only 3 docs from db are pushed to db2. db is the active replicator.
+        // db is the active Push filter.
+        // Only 3 documents are specified in docIDs for the Roses collection, for a total of 13.
         _expectedDocumentCount = 13;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
-        // db2 is the active client.
         C4Collection* roses2  = getCollection(db2, Roses);
         C4Collection* tulips2 = getCollection(db2, Tulips);
-        // Only 3 docs are pushed to db2
+        // Only 3 docs in Roese are pushed to db2
         CHECK(c4coll_getDocumentCount(roses2) == 23);
-        // All 10 docs are pushed to db2
+        // All 10 docs in Tulips are pushed to db2
         CHECK(c4coll_getDocumentCount(tulips2) == 30);
     }
 
@@ -1078,17 +1086,17 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             return ret;
         };
 
-        // Only 2 docs from db are pushed to db2. db is the active replicator.
-        // docIDs allows 3, pushFilter filters out 1.
+        // db is the active push replicator. Both docIDs and push filter are applied to the Roses
+        // collecton. docIDs includes 3 documments. pushFilter rejects one among the three, giving rise
+        // to a total of 12 to be pushed from db to db2.
         _expectedDocumentCount = 12;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
-        // db2 is the active client.
         C4Collection* roses2  = getCollection(db2, Roses);
         C4Collection* tulips2 = getCollection(db2, Tulips);
-        // Only 3 docs are pushed to db2
+        // Only 2 docs in Roses are pushed to db2
         CHECK(c4coll_getDocumentCount(roses2) == 22);
-        // All 10 docs are pushed to db2
+        // All 10 docs in Tulips are pushed to db2
         CHECK(c4coll_getDocumentCount(tulips2) == 30);
     }
 
