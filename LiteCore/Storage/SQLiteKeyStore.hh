@@ -56,6 +56,10 @@ namespace litecore {
         const std::string& tableName() const                            {return _tableName;}
         const std::string& quotedTableName() const                      {return _quotedTableName;}
 
+        /// Modifies a collection name to either add or remove mangling necessary for
+        /// case sensitive collection names in a case insensitive environment
+        MUST_USE_RESULT static std::string transformCollectionName(const std::string& name, bool mangle);
+
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;

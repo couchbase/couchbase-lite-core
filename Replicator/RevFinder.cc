@@ -31,14 +31,14 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
-    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
-    :Worker(replicator, "RevFinder")
+    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate, CollectionIndex coll)
+    :Worker(replicator, "RevFinder", coll)
     ,_delegate(delegate)
     {
         _mustBeProposed = passive() && _options->noIncomingConflicts()
                                    && !_db->usingVersionVectors();
-        registerHandler("changes",          &RevFinder::handleChanges);
-        registerHandler("proposeChanges",   &RevFinder::handleChanges);
+        replicator->registerWorkerHandler(this, "changes", &RevFinder::handleChanges);
+        replicator->registerWorkerHandler(this, "proposeChanges", &RevFinder::handleChanges);
     }
 
     void RevFinder::onError(C4Error err) {
@@ -223,7 +223,8 @@ namespace litecore::repl {
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode));
+                revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
+                    _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
@@ -233,8 +234,8 @@ namespace litecore::repl {
             _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
-        vector<alloc_slice> ancestors = _db->useLocked()->getDefaultCollection()
-                                                        ->findDocAncestors(
+        auto collection = getCollection();
+        vector<alloc_slice> ancestors = _db->useCollection(collection)->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
                                                 !_options->disableDeltaSupport(),  // requireBodies
@@ -282,12 +283,13 @@ namespace litecore::repl {
                     // remote server, so I better make it so:
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
-                    _db->setDocRemoteAncestor(docID, revID);
+                    _db->setDocRemoteAncestor(getCollection(), docID, revID);
                     if (!passive() && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
                             repl->docRemoteAncestorChanged(alloc_slice(docID),
-                                                                   alloc_slice(revID));
+                                                           alloc_slice(revID),
+                                                           collectionIndex());
                         } else {
                             Warn("findRevs no longer has a replicator reference (replicator stopped?), "
                                  "ignoring docRemoteAncestorChange callback");
@@ -362,7 +364,7 @@ namespace litecore::repl {
             // Get the local doc's current revID/vector and flags:
             outCurrentRevID = nullslice;
             try {
-                if (Retained<C4Document> doc = _db->getDoc(docID, kDocGetMetadata); doc) {
+                if (Retained<C4Document> doc = _db->getDoc(getCollection(), docID, kDocGetMetadata); doc) {
                     flags = doc->flags();
                     outCurrentRevID = doc->getSelectedRevIDGlobalForm();
                 }

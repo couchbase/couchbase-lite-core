@@ -59,6 +59,7 @@ namespace litecore { namespace repl {
         _blobBytesWritten = 0;
 
         MessageBuilder req("getAttachment"_sl);
+        assignCollectionToMsg(req, collectionIndex());
         req["digest"_sl] = _blob->key.digestString();
         req["docID"] = _blob->docID;
         if (_blob->compressible)
@@ -70,6 +71,7 @@ namespace litecore { namespace repl {
                     // Set some error, so my IncomingRev will know I didn't complete [CBL-608]
                     blobGotError({POSIXDomain, ECONNRESET});
                 } else if (progress.reply) {
+
                     if (progress.reply->isError()) {
                         auto err = progress.reply->getError();
                         logError("Got error response: %.*s %d '%.*s'",

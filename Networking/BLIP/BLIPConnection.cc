@@ -414,7 +414,9 @@ namespace litecore { namespace blip {
         void _onWebSocketMessages(int gen =actor::AnyGen) {
             auto messages = _incomingFrames.pop(gen);
             if (!messages) {
-                warn("onWebSocketMessages couldn't find any messages to process");
+                if (gen != actor::AnyGen) {
+                    warn("onWebSocketMessages couldn't find any messages to process");
+                }
                 return;
             }
 

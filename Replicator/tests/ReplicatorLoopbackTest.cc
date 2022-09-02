@@ -487,7 +487,7 @@ static Replicator::Options pushOptionsWithProperty(const char *property, vector<
     enc.endArray();
     enc.endDict();
     auto opts = Replicator::Options::pushing();
-    opts.properties = AllocedDict(enc.finish());
+    opts.collectionOpts[0].properties = AllocedDict(enc.finish());
     return opts;
 }
 
@@ -500,19 +500,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
 
     runPushReplication();
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk1 = _checkpointID;
+    alloc_slice chk1 = _checkpointIDs[0];
 
     _expectedDocumentCount = 0;     // because db2 already has the doc
     runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}),
                    Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk2 = _checkpointID;
+    alloc_slice chk2 = _checkpointIDs[0];
     CHECK(chk1 != chk2);
 
     runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionDocIDs, {"wot's", "up", "doc"}),
                    Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1}");
-    alloc_slice chk3 = _checkpointID;
+    alloc_slice chk3 = _checkpointIDs[0];
     CHECK(chk3 != chk2);
     CHECK(chk3 != chk1);
 }
@@ -860,14 +860,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 
     SECTION("Push") {
         auto pushOptions = Replicator::Options::pushing();
-        pushOptions.properties = properties;
+        pushOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
         runReplicators(pushOptions,
                        Replicator::Options::passive());
     }
     SECTION("Pull") {
         auto pullOptions = Replicator::Options::pulling();
-        pullOptions.properties = properties;
+        pullOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
         runReplicators(Replicator::Options::passive(),
                        pullOptions);
@@ -903,8 +903,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     auto pullOptions = Replicator::Options::passive();
     atomic<int> validationCount {0};
-    pullOptions.callbackContext = &validationCount;
-    pullOptions.pullValidator = [](C4CollectionSpec collectionSpec,
+    pullOptions.collectionOpts[0].callbackContext = &validationCount;
+    pullOptions.collectionOpts[0].pullFilter = [](C4CollectionSpec collectionSpec,
                                    FLString docID, FLString revID,
                                    C4RevisionFlags flags, FLDict body, void *context)->bool {
         assert_always(flags == 0);      // can't use CHECK on a bg thread
@@ -1551,9 +1551,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     SECTION("No filter") {
     }
     SECTION("With filter") {
+        Options::CollectionOptions& collOpts = serverOpts.collectionOpts[0];
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
-        serverOpts.callbackContext = &validationCount;
-        serverOpts.pullValidator = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
+        collOpts.callbackContext = &validationCount;
+        collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
                                       C4RevisionFlags flags, FLDict body, void *context)->bool {
             assert_always(flags == 0);      // can't use CHECK on a bg thread
             ++(*(atomic<int>*)context);
@@ -1932,13 +1933,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
 
 #ifdef COUCHBASE_ENTERPRISE
 
-static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
-    alloc_slice ciphertext(cleartext);
-    for (size_t i = 0; i < ciphertext.size; ++i)
-        (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
-    return ciphertext;
-}
-
 struct TestEncryptorContext {
     slice docID;
     slice keyPath;
@@ -1959,7 +1953,7 @@ static C4SliceResult testEncryptor(void* rawCtx,
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);
-    return C4SliceResult(UnbreakableEncryption(input, 1));
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
 }
 
 static C4SliceResult testDecryptor(void* rawCtx,
@@ -1976,7 +1970,7 @@ static C4SliceResult testDecryptor(void* rawCtx,
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);
-    return C4SliceResult(UnbreakableEncryption(input, -1));
+    return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
 
@@ -2026,6 +2020,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
         alloc_slice clear = UnbreakableEncryption(cipher, -1);
         CHECK(clear == "\"123-45-6789\"");
     }
+}
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
+    Options opts = GENERATE(Options::pushing(), Options::pulling(), Options::pushpull());
+    Options serverOpts = Options::passive();
+
+    Retained<C4Collection> coll = createCollection(db, { "foo"_sl, "bar"_sl });
+    Options::CollectionOptions tmp(Options::collectionSpecToPath({ "foo"_sl, "bar"_sl }));
+    tmp.pull = opts.pull(0);
+    tmp.push = opts.push(0);
+    opts.collectionOpts.push_back(tmp);
+
+    SECTION("Mismatched count should return NotFound") {
+        // No-op
+    }
+
+    SECTION("Same count but mismatched names should return NotFound") {
+        tmp = Options::CollectionOptions(Options::collectionSpecToPath({ "foo"_sl, "baz"_sl }));
+        tmp.pull = kC4Passive;
+        tmp.push = kC4Passive;
+        serverOpts.collectionOpts.insert(serverOpts.collectionOpts.begin(), tmp);
+    }
+
+    _expectedError.domain = WebSocketDomain;
+    _expectedError.code = 404;
+    runReplicators(opts, serverOpts);
 }
 
 #endif // COUCHBASE_ENTERPRISE

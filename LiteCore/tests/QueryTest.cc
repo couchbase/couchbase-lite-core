@@ -28,6 +28,9 @@ using namespace std;
 using namespace std::chrono;
 using namespace date;
 
+unsigned QueryTest::alter2 = 0;
+unsigned QueryTest::alter3 = 0;
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
@@ -2010,6 +2013,16 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc2"_sl);
     }
 
+    SECTION("WHERE explict db alias precludes result alias") {
+        // Here the alias is the same as the property used to define it...
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'dict']], \
+            FROM: [{AS: 'db', COLLECTION: '_'}], \
+            WHERE: ['=', ['.db.dict'], 1]}"));
+        // expect empty result
+    }
+
     SECTION("WHERE alias with special name") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
@@ -2484,7 +2497,7 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
         "%xx", "_xx", "x y",
         ".", "xx.", ".xx", "_b.c", "b._c",
         "in.val.id", "in..val",
-        "_default.foo", "foo._default",
+        "foo._default",
         tooLong.c_str(), tooLong2.c_str(), tooLong3.c_str()
     };
     for (auto badName : kBadCollectionNames) {

@@ -49,12 +49,13 @@ namespace litecore { namespace repl {
         C4SequenceNumber    sequence;
         C4Error             error {};
         bool                errorIsTransient {false};
+        void*               collectionContext { nullptr };
 
         const C4DocumentEnded* asDocumentEnded() const  {
             auto c4de = (const C4DocumentEnded*)&collectionSpec;
             // Verify the abovementioned compatibility:
             DebugAssert((void*)&c4de->docID == &docID);
-            DebugAssert((void*)&c4de->errorIsTransient == &errorIsTransient);
+            DebugAssert((void*)&c4de->collectionContext == &collectionContext);
             return c4de;
         }
 
@@ -67,10 +68,15 @@ namespace litecore { namespace repl {
         virtual void trim() =0;
 
     protected:
-        ReplicatedRev(slice docID_, slice revID_, C4SequenceNumber sequence_ ={})
-        :docID(alloc_slice::nullPaddedString(docID_))
+        ReplicatedRev(C4CollectionSpec collSpec,
+                      slice docID_, slice revID_, 
+                      void* collectionContext, C4SequenceNumber sequence_ ={})
+        :collectionName(collSpec.name)
+        ,scopeName(collSpec.scope)
+        ,docID(alloc_slice::nullPaddedString(docID_))
         ,revID(alloc_slice::nullPaddedString(revID_))
         ,sequence(sequence_)
+        ,collectionContext(collectionContext)
         { }
 
         ~ReplicatedRev() =default;

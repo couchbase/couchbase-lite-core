@@ -32,7 +32,7 @@ namespace litecore {
         ,_callback(move(callback))
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(st,
+                _notifier.emplace(&st,
                                   [this](CollectionChangeNotifier&) {_callback(this);},
                                   since);
             });
@@ -40,6 +40,13 @@ namespace litecore {
 
 
         ~C4CollectionObserverImpl() {
+            if (!_collection->isValid()) {
+                // HACK: If the collection is not valid anymore, the notifier tracker is probably
+                // also bad, so null it out so the destructor doesn't try to use it
+                _notifier->tracker = nullptr;
+                return;
+            }
+
             _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
@@ -65,7 +72,7 @@ namespace litecore {
 
     private:
         Retained<C4Database> _retainDatabase;
-        CollectionImpl* _collection;
+        Retained<CollectionImpl> _collection;
         optional<CollectionChangeNotifier> _notifier;
         Callback _callback;
         bool _inCallback {false};
@@ -78,14 +85,6 @@ unique_ptr<C4CollectionObserver>
 C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback callback) {
     return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, move(callback));
 }
-
-
-#ifndef C4_STRICT_COLLECTION_API
-unique_ptr<C4CollectionObserver>
-C4CollectionObserver::create(C4Database *db, Callback callback) {
-    return create(db->getDefaultCollection(), callback);
-}
-#endif
 
 
 #pragma mark - DOCUMENT OBSERVER:
@@ -103,7 +102,7 @@ namespace litecore {
         ,_callback(callback)
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(st,
+                _notifier.emplace(&st,
                                   docID,
                                   [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
                                         _callback(this, _collection, docID, sequence);
@@ -112,6 +111,13 @@ namespace litecore {
         }
 
         ~C4DocumentObserverImpl() {
+            if (!_collection->isValid()) {
+                // HACK: If the collection is not valid anymore, the notifier tracker is probably
+                // also bad, so null it out so the destructor doesn't try to use it
+                _notifier->tracker = nullptr;
+                return;
+            }
+
             _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
@@ -121,7 +127,7 @@ namespace litecore {
         
     private:
         Retained<C4Database> _retainedDatabase;
-        CollectionImpl* _collection;
+        Retained<CollectionImpl> _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
     };

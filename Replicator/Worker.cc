@@ -87,7 +87,8 @@ namespace litecore { namespace repl {
                    Worker *parent,
                    const Options *options,
                    std::shared_ptr<DBAccess> dbAccess,
-                   const char *namePrefix)
+                   const char *namePrefix,
+                   CollectionIndex coll)
     :Actor(SyncLog, string(namePrefix) + connection->name(),
            (parent ? parent->mailboxForChildren() : nullptr))
     ,_connection(connection)
@@ -96,11 +97,12 @@ namespace litecore { namespace repl {
     ,_db(dbAccess)
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(parent ? parent->replicator()->loggingName() : connection->name())
+    ,_collectionIndex(coll)
     { }
 
 
-    Worker::Worker(Worker *parent, const char *namePrefix)
-    :Worker(&parent->connection(), parent, parent->_options, parent->_db, namePrefix)
+    Worker::Worker(Worker *parent, const char *namePrefix, CollectionIndex coll)
+    :Worker(&parent->connection(), parent, parent->_options, parent->_db, namePrefix, coll)
     { }
 
 
@@ -280,7 +282,7 @@ namespace litecore { namespace repl {
         bool changed = _statusChanged;
         _statusChanged = false;
         if (changed && _importance) {
-            logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs",
+            logVerbose("(collection: %u) progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs", collectionIndex(),
                        _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount,
                        _status.progress.unitsCompleted, _status.progress.unitsTotal,
@@ -311,5 +313,39 @@ namespace litecore { namespace repl {
             _parent = nullptr;
     }
 
+    // Either there is error, or return a valid collection index
+    std::pair<CollectionIndex, slice>
+    Worker::checkCollectionOfMsg(const blip::MessageIn& msg) const {
+        CollectionIndex collIn = getCollectionIndex(msg);
 
+        constexpr static slice kErrorIndexInappropriateUse =
+            "inappropriate use of the collection property."_sl;
+        constexpr static slice kErrorIndexOutOfRange  =
+            "the collection property is out of range."_sl;
+
+        slice err = nullslice;
+        if (_options->collectionAware()) {
+            if (collIn == kNotCollectionIndex) {
+                err = kErrorIndexInappropriateUse;
+            }
+        } else {
+            if (collIn != kNotCollectionIndex) {
+                err = kErrorIndexInappropriateUse;
+            } else {
+                collIn = 0;
+            }
+        }
+
+        if (!err && collIn >= _options->workingCollectionCount()) {
+            err = kErrorIndexOutOfRange;
+        }
+
+        return std::make_pair(collIn, err);
+    }
+
+    const C4Collection* Worker::getCollection() const {
+        Assert(collectionIndex() != kNotCollectionIndex);
+        Worker* nonConstThis = const_cast<Worker*>(this);
+        return nonConstThis->replicator()->collection(collectionIndex());
+    }
 } }

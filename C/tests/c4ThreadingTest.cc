@@ -138,7 +138,9 @@ public:
 
     void observerTask() {
         C4Database* database = openDB();
-        auto observer = c4dbobs_create(database, obsCallback, this);
+        C4Collection* defaultColl = requireCollection(database);
+        auto observer = c4dbobs_createOnCollection(defaultColl, obsCallback, this, ERROR_INFO());
+        REQUIRE(observer);
         C4SequenceNumber lastSequence = 0;
         do {
             {

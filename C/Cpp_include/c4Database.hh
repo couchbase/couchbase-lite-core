@@ -271,16 +271,25 @@ protected:
 
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
-static inline bool operator== (const C4Database::CollectionSpec &a,
-                               const C4Database::CollectionSpec &b)
+static inline bool operator== (const C4CollectionSpec &a,
+                               const C4CollectionSpec &b)
 {
     return a.name == b.name && a.scope == b.scope;
 }
-template<> struct std::hash<C4Database::CollectionSpec> {
-    std::size_t operator() (C4Database::CollectionSpec const& spec) const {
+
+static inline bool operator!= (const C4CollectionSpec& a,
+    const C4CollectionSpec& b)
+{
+    return !(a == b);
+}
+
+template<> struct std::hash<C4CollectionSpec> {
+    std::size_t operator() (C4CollectionSpec const& spec) const {
         return fleece::slice(spec.name).hash() ^ fleece::slice(spec.scope).hash();
     }
 };
+template<> struct std::hash<C4Database::CollectionSpec>
+: public std::hash<C4CollectionSpec> {};
 
 
 C4_ASSUME_NONNULL_END

@@ -37,7 +37,7 @@ namespace litecore {
         LogStatement(allStores);
         while (allStores.executeStep()) {
             string storeName = allStores.getColumn(0).getString();
-            names.push_back(storeName);
+            names.push_back(SQLiteKeyStore::transformCollectionName(storeName, false));
         }
         
         return names;
@@ -45,15 +45,16 @@ namespace litecore {
 
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
-        exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
-        exec("DROP TABLE IF EXISTS \"kv_del_" + name + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_del_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
         // TODO: Do I need to drop indexes, triggers?
     }
 
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
         Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
-        return getKeyStore(tableName.from(3));
+        auto tableName_ = string(tableName.from(3));
+        return getKeyStore(SQLiteKeyStore::transformCollectionName(tableName_, false));
     }
 
 
@@ -64,7 +65,7 @@ namespace litecore {
 
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
-    ,_tableName("kv_" + name)
+    ,_tableName("kv_" + transformCollectionName(name, true))
     ,_quotedTableName("\"" + _tableName + "\"")
     {
         reopen();
@@ -253,6 +254,27 @@ namespace litecore {
             rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
         else
             rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(RecordColumn::ExtraOrSize));
+    }
+
+
+    string SQLiteKeyStore::transformCollectionName(const string& name, bool mangle) {
+        ostringstream ss;
+        const char* name_cstr = name.c_str();
+        while(char c = *name_cstr++) {
+            if (c == '\\') {
+                continue;
+            } 
+            
+            if (mangle) {
+                if (c >= 'A' && c <= 'Z') {
+                    ss << '\\';
+                }
+            }
+
+            ss << c;
+        }
+
+        return ss.str();
     }
     
 

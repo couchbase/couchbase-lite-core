@@ -15,6 +15,7 @@
 #include "DBAccess.hh"
 #include "PropertyEncryption.hh"
 #include "Increment.hh"
+#include "Replicator.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
@@ -35,7 +36,7 @@ namespace litecore { namespace repl {
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
 
     IncomingRev::IncomingRev(Puller *puller)
-    :Worker(puller, "inc")
+    :Worker(puller, "inc", puller->collectionIndex())
     ,_puller(puller)
     {
         _importance = false;
@@ -70,7 +71,9 @@ namespace litecore { namespace repl {
                                _revMessage->property("history"_sl),
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
-                                   || _options->noIncomingConflicts());
+                                   || _options->noIncomingConflicts(),
+                               getCollection()->getSpec(),
+                               _options->collectionCallbackContext(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
         _remoteSequence = RemoteSequence(sequenceStr);
@@ -124,7 +127,7 @@ namespace litecore { namespace repl {
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
-        if (_options->pullValidator|| jsonBody.size > kMaxImmediateParseSize
+        if (_options->pullFilter(collectionIndex())|| jsonBody.size > kMaxImmediateParseSize
                                   || _mayContainBlobs || _mayContainEncryptedProperties)
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
@@ -145,7 +148,7 @@ namespace litecore { namespace repl {
         }
         
         // Call the custom validation function if any:
-        if (_options->pullValidator) {
+        if (_options->pullFilter(collectionIndex())) {
             // Revoked rev body is empty when sent to the filter:
             auto body = Dict::emptyDict();
             if (!performPullValidation(body))
@@ -167,13 +170,13 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options->pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
+        } else if (_options->pullFilter(collectionIndex()) || _mayContainBlobs || _mayContainEncryptedProperties) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, it may contain new blobs to download, or it may
             // have properties to decrypt.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody);
+            fleeceDoc = _db->applyDelta(getCollection(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
             if (!fleeceDoc) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
@@ -277,10 +280,11 @@ namespace litecore { namespace repl {
 
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
-        if (_options->pullValidator) {
-            if (!_options->pullValidator({nullslice, nullslice},     // TODO: Collection support
-                                        _rev->docID, _rev->revID, _rev->flags, body,
-                                        _options->callbackContext)) {
+        if (_options->pullFilter(collectionIndex())) {
+            if (!_options->pullFilter(collectionIndex())(
+                getCollection()->getSpec(),
+                _rev->docID, _rev->revID, _rev->flags, body,
+                _options->collectionCallbackContext(collectionIndex()))) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 return false;
             }

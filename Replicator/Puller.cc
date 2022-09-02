@@ -37,18 +37,18 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Replicator *replicator)
-    :Delegate(replicator, "Pull")
+    Puller::Puller(Replicator *replicator, CollectionIndex coll)
+    :Delegate(replicator, "Pull", coll)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
-    ,_inserter(new Inserter(replicator))
-    ,_revFinder(new RevFinder(replicator, this))
+    ,_inserter(new Inserter(replicator, coll))
+    ,_revFinder(new RevFinder(replicator, this, coll))
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
-        registerHandler("rev",              &Puller::handleRev);
-        registerHandler("norev",            &Puller::handleNoRev);
+        replicator->registerWorkerHandler(this, "rev",      &Puller::handleRev);
+        replicator->registerWorkerHandler(this, "norev",    &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
         if (!passive() && _options->noIncomingConflicts())
@@ -65,9 +65,10 @@ namespace litecore { namespace repl {
 
         Signpost::begin(Signpost::blipSent);
         MessageBuilder msg("subChanges"_sl);
+        assignCollectionToMsg(msg, collectionIndex());
         if (sinceStr)
             msg["since"_sl] = sinceStr;
-        if (_options->pullOf() == kC4Continuous)
+        if (_options->pull(collectionIndex()) == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
@@ -79,7 +80,7 @@ namespace litecore { namespace repl {
                     _options->enableAutoPurge(), progressNotificationLevel());
         }
 
-        auto channels = _options->channels();
+        auto channels = _options->channels(collectionIndex());
         if (channels) {
             stringstream value;
             unsigned n = 0;
@@ -102,7 +103,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        auto docIDs = _options->docIDs();
+        auto docIDs = _options->docIDs(collectionIndex());
         if (docIDs) {
             auto &enc = msg.jsonBody();
             enc.beginDict();
@@ -325,9 +326,10 @@ namespace litecore { namespace repl {
         auto since = _missingSequences.since();
         if (since != _lastSequence) {
             _lastSequence = since;
-            logVerbose("Checkpoint now at '%s'", _lastSequence.toJSONString().c_str());
+            logVerbose("Checkpoint now at '%s' (collection: %u",
+                       _lastSequence.toJSONString().c_str(), collectionIndex());
             if (auto replicator = replicatorIfAny(); replicator)
-                replicator->checkpointer().setRemoteMinSequence(_lastSequence);
+                replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }
     }
 
@@ -340,7 +342,7 @@ namespace litecore { namespace repl {
 #pragma mark - STATUS / PROGRESS:
 
 
-    void Puller::_childChangedStatus(Worker *task, Status status) {
+    void Puller::_childChangedStatus(Retained<Worker> task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
     }
@@ -357,7 +359,7 @@ namespace litecore { namespace repl {
                 || (!_caughtUp && !passive())
                 || _pendingRevMessages > 0) {
             level = kC4Busy;
-        } else if (_options->pullOf() == kC4Continuous || isOpenServer()) {
+        } else if (_options->pull(collectionIndex()) == kC4Continuous || isOpenServer()) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {

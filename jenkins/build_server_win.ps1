@@ -23,7 +23,7 @@
 .PARAMETER Edition
     The edition to build (community vs enterprise)
 .PARAMETER Architectures
-    The architectures to build (default Win32, Win64, ARM)
+    The architectures to build (default Win32, Win64, ARM, ARM64)
 .PARAMETER Parallel
     The number of parallel subjobs to allow during the build (default 8)
 #>
@@ -33,12 +33,11 @@ param(
     [Parameter(Mandatory=$true, HelpMessage="The commit SHA that this build was built from")][string]$ShaVersion,
     [ValidateSet("community", "enterprise")]
     [Parameter(Mandatory=$true, HelpMessage="The edition to build (community vs enterprise)")][string]$Edition,
-    [Parameter(HelpMessage="The architectures to build (default Win32, Win32, ARM")][string[]]$Architectures=@("Win32", "Win64", "ARM"),
+    [Parameter(HelpMessage="The architectures to build (default Win32, Win32, ARM, ARM64)")][string[]]$Architectures=@("Win32", "Win64", "ARM", "ARM64"),
     [Parameter(HelpMessage="The number of parallel subjobs to allow during the build (default 8)")][int]$Parallel=8
 )
 
-$VSVersion = "15 2017"
-$WindowsMinimum = "10.0.16299.0"
+$WindowsMinimum = "10.0.19041.0"
 
 function Make-Package() {
     param(
@@ -74,13 +73,13 @@ function Build-Store() {
     Write-Host "Building blddir:$directory, arch:$architecture, flavor:$config"
     New-Item -ItemType Directory -ErrorAction Ignore $directory
     Push-Location $directory
-    $MsArchStore = ""
-    if($architecture -ne "Win32") {
-        $MsArchStore = " $architecture"
+    $MsArchStore = $architecture
+    if($architecture -eq "Win64") {
+        $MsArchStore = "x64"
     }
 
     & "C:\Program Files\CMake\bin\cmake.exe" `
-        -G "Visual Studio $VSVersion$MsArchStore" `
+        -A $MsArchStore `
         -DCMAKE_SYSTEM_NAME=WindowsStore `
         -DCMAKE_SYSTEM_VERSION="10.0" `
         -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="$WindowsMinimum" `
@@ -110,13 +109,13 @@ function Build() {
     Write-Host "Building blddir:$directory, arch:$architecture, flavor:$config"
     New-Item -ItemType Directory -ErrorAction Ignore $directory
     Push-Location $directory
-    $MsArch = ""
-    if($architecture -ne "Win32") {
-        $MsArch = " $architecture"
+    $MsArch = $architecture
+    if($architecture -eq "Win64") {
+        $MsArch = "x64"
     }
 
     & "C:\Program Files\CMake\bin\cmake.exe" `
-        -G "Visual Studio $VSVersion$MsArch" `
+        -A $MsArch `
         -DEDITION="$Edition" `
         -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
         ..
@@ -153,13 +152,8 @@ function Run-UnitTest() {
 
     Pop-Location
     Push-Location $directory\LiteCore\tests\MinSizeRel
-    # Disable test "REST root level" for Win32, CBL-3007
-    if($architecture -eq "Win32") {
-         & .\CppTests -r quiet exclude:"REST root level" exclude:"[.*]"
-    }
-    else {
-         & .\CppTests -r quiet
-    }
+    & .\CppTests -r quiet
+
     $env:LiteCoreTestsQuiet=0
     if($LASTEXITCODE -ne 0) {
         throw "CppTests failed"
@@ -201,7 +195,7 @@ foreach ($arch in $Architectures) {
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "MinSizeRel"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "MinSizeRel"
-        if($Edition -eq "enterprise") {
+        if($Edition -eq "enterprise" -and $arch -eq "Win64") {
             Run-UnitTest "${env:WORKSPACE}\build_${Target}\couchbase-lite-core" $arch
         }
 

@@ -38,16 +38,11 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
                                                  slice remoteDatabaseName,
                                                  const C4ReplicatorParameters &params)
 {
-    if (params.collectionCount == 0) {
-        AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
-                    "Either push or pull must be enabled");
-    } else {
-        std::for_each(params.collections, params.collections + params.collectionCount,
+    std::for_each(params.collections, params.collections + params.collectionCount,
                       [](const C4ReplicationCollection& coll) {
-            AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
-                        "Either push or pull must be enabled");
-        });
-    }
+        AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
+                    "Either push or pull must be enabled");
+    });
 
     if (!params.socketFactory) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
@@ -65,16 +60,11 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
 Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB,
                                                       const C4ReplicatorParameters &params)
 {
-    if (params.collectionCount == 0) {
-        AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
+    std::for_each(params.collections, params.collections + params.collectionCount,
+                  [](const C4ReplicationCollection& coll) {
+        AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
                     "Either push or pull must be enabled");
-    } else {
-        std::for_each(params.collections, params.collections + params.collectionCount,
-                      [](const C4ReplicationCollection& coll) {
-            AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
-                        "Either push or pull must be enabled");
-        });
-    }
+    });
     AssertParam(otherLocalDB != this, "Can't replicate a database to itself");
     return new C4LocalReplicator(this, params, otherLocalDB);
 }

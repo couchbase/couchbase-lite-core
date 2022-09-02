@@ -91,6 +91,12 @@ namespace litecore { namespace actor {
             anything else that might be called directly by the actor (on its thread.) */
         void waitTillCaughtUp();
 
+        template <class T>
+        auto asynchronize(const char* methodName, T t) -> decltype(get_fun_type(&T::operator())) {
+            decltype(get_fun_type(&T::operator())) fn = t;
+            return _asynchronize(methodName, fn);
+        }
+
     protected:
         /** Constructs an Actor.
             @param domain The domain which this actor is logged to.
@@ -127,12 +133,6 @@ namespace litecore { namespace actor {
             return [=](Args ...arg) mutable {
                 ret->_mailbox.enqueue(methodName, ACTOR_BIND_FN(fn, arg));
             };
-        }
-
-        template <class T>
-        auto asynchronize(const char* methodName, T t) -> decltype(get_fun_type(&T::operator())) {
-            decltype(get_fun_type(&T::operator())) fn = t;
-            return _asynchronize(methodName, fn);
         }
 
         virtual void afterEvent()                    { }

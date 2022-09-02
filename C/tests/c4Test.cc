@@ -328,6 +328,38 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
 }
 
 
+/*static*/ C4Collection* C4Test::createCollection(C4Database* db, C4CollectionSpec spec) {
+    auto coll = c4db_createCollection(db, spec, ERROR_INFO());
+    REQUIRE(coll);
+    return coll;
+}
+
+/*static*/ C4Collection* C4Test::getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist) {
+    auto coll = c4db_getCollection(db, spec, ERROR_INFO());
+    if (mustExist) {
+        REQUIRE(coll);
+    }
+    return coll;
+}
+
+int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) {
+    C4Collection* coll = getCollection(database, spec);
+    if (idprefix.empty()) {
+        idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-");
+    }
+    int docNo = 1;
+    for (int i = 1; docNo <= total; i++) {
+        C4Log("-------- Creating %d docs --------", i);
+        TransactionHelper t(database);
+        char docID[20];
+        sprintf(docID, "%s%d", idprefix.c_str(), docNo++);
+        createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+    }
+    C4Log("-------- Done creating docs --------");
+    return docNo - 1;
+}
+
+
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Test::createRev(db, docID, revID, body, flags);
 }
@@ -388,17 +420,30 @@ void C4Test::createConflictingRev(C4Collection *collection,
 
 
 string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4RevisionFlags flags) {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createNewRev(coll, docID, body, flags);
+}
+
+string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createNewRev(coll, docID, curRevID, body, flags);
+}
+
+string C4Test::createNewRev(C4Collection *coll, C4Slice docID, C4Slice body, C4RevisionFlags flags) {
+    C4Database* db = c4coll_getDatabase(coll);
     TransactionHelper t(db);
     C4Error error;
-    auto curDoc = c4doc_get(db, docID, false, &error);
+    auto curDoc = c4coll_getDoc(coll, docID, false, kDocGetCurrentRev, &error);
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
     C4Assert(curDoc != nullptr);
-    string revID = createNewRev(db, docID, curDoc->revID, body, flags);
+    string revID = createNewRev(coll, docID, curDoc->revID, body, flags);
     c4doc_release(curDoc);
     return revID;
 }
 
-string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
+string C4Test::createNewRev(C4Collection *coll, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
     C4Slice history[2] = {curRevID};
 
     C4DocPutRequest rq = {};
@@ -409,7 +454,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     rq.revFlags = flags;
     rq.save = true;
     C4Error error;
-    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    auto doc = c4coll_putDoc(coll, &rq, nullptr, &error);
     //if (!doc) {
         //char buf[256];
         //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
@@ -425,6 +470,15 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
 string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
                                C4RevisionFlags flags)
 {
+    C4Collection* coll = c4db_getDefaultCollection(db, nullptr);
+    C4Assert(coll != nullptr);
+    return createFleeceRev(coll, docID, revID, json, flags);
+}
+
+string C4Test::createFleeceRev(C4Collection *coll, C4Slice docID, C4Slice revID, C4Slice json,
+                               C4RevisionFlags flags)
+{
+    C4Database* db = c4coll_getDatabase(coll);
     TransactionHelper t(db);
     SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
     enc.convertJSON(json);
@@ -433,7 +487,7 @@ string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4S
 //    REQUIRE(fleeceBody);
     C4Assert(fleeceBody);
     if (revID.buf) {
-        createRev(db, docID, revID, fleeceBody, flags);
+        createRev(coll, docID, revID, fleeceBody, flags);
         return string(slice(revID));
     } else {
         return createNewRev(db, docID, fleeceBody, flags);
@@ -497,13 +551,28 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 vector<string>* legacyNames,
                                                 C4RevisionFlags flags)
 {
+    return addDocWithAttachments(db, kC4DefaultCollectionSpec, docID, attachments,
+                                 contentType, legacyNames, flags);
+}
+
+vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database,
+                                                C4CollectionSpec collSpec,
+                                                C4Slice docID,
+                                                vector<string> attachments,
+                                                const char *contentType,
+                                                vector<string>* legacyNames,
+                                                C4RevisionFlags flags)
+{
+    C4Collection* coll = c4db_getCollection(database, collSpec, ERROR_INFO());
+    REQUIRE(coll);
+    
     vector<C4BlobKey> keys;
     stringstream json;
     int i = 0;
     json << (legacyNames ? "{_attachments: {" : "{attached: [");
     for (string &attachment : attachments) {
         C4BlobKey key;
-        REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), fleece::slice(attachment),
+        REQUIRE(c4blob_create(c4db_getBlobStore(database, nullptr), fleece::slice(attachment),
                               nullptr, &key,  WITH_ERROR()));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
@@ -518,7 +587,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     }
     json << (legacyNames ? "}}" : "]}");
     string jsonStr = json5(json.str());
-    C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), ERROR_INFO());
+    C4SliceResult body = c4db_encodeJSON(database, c4str(jsonStr.c_str()), ERROR_INFO());
     REQUIRE(body.buf);
 
     // Save document:
@@ -527,12 +596,13 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     rq.revFlags = flags | kRevHasAttachments;
     rq.allocedBody = body;
     rq.save = true;
-    C4Document* doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
+    C4Document* doc = c4coll_putDoc(coll, &rq, nullptr, ERROR_INFO());
     c4slice_free(body);
     REQUIRE(doc != nullptr);
     c4doc_release(doc);
     return keys;
 }
+
 
 void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
     C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, ERROR_INFO());

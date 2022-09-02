@@ -12,16 +12,20 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
+#include "c4Database.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
+#include "NumConversion.hh"
+#include <unordered_map>
 
 namespace litecore { namespace repl {
 
     /** Replication configuration options */
     class Options final : public fleece::RefCounted {
     public:
-        
+
         //---- Public fields:
 
         using Mode = C4ReplicatorMode;
@@ -30,23 +34,23 @@ namespace litecore { namespace repl {
         using PropertyDecryptor = C4ReplicatorPropertyDecryptionCallback;
 
         fleece::AllocedDict     properties;
-        Validator               pushFilter              {nullptr};
-        Validator               pullValidator           {nullptr};
         PropertyEncryptor       propertyEncryptor       {nullptr};
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
         std::atomic<C4ReplicatorProgressLevel> progressLevel {kC4ReplProgressOverall};
-        bool                    collectionAware         {true};
 
+        bool collectionAware() const {return _collectionAware;}
+        bool isActive()        const {return _isActive;}
+        const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
+            return _collectionSpecToIndex;
+        }
+        
         //---- Constructors/factories:
-
-        inline void setCollectionOptions(Mode push, Mode pull);
-        inline void setCollectionOptions(C4ReplicatorParameters params);
-        inline void setCollectionOptions(const Options& opt);
 
         Options(Mode push_, Mode pull_)
         {
             setCollectionOptions(push_, pull_);
+            constructorCheck();
         }
 
         template <class SLICE>
@@ -54,30 +58,28 @@ namespace litecore { namespace repl {
         :properties(propertiesFleece)
         {
             setCollectionOptions(push_, pull_);
+            constructorCheck();
         }
 
         explicit Options(C4ReplicatorParameters params)
         :properties(params.optionsDictFleece)
-        ,pushFilter(params.pushFilter)
-        ,pullValidator(params.validationFunc)
         ,propertyEncryptor(params.propertyEncryptor)
         ,propertyDecryptor(params.propertyDecryptor)
         ,callbackContext(params.callbackContext)
         {
             setCollectionOptions(params);
+            constructorCheck();
         }
 
         Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
-        :pushFilter(opt.pushFilter)
-        ,pullValidator(opt.pullValidator)
-        ,propertyEncryptor(opt.propertyEncryptor)
+        :propertyEncryptor(opt.propertyEncryptor)
         ,propertyDecryptor(opt.propertyDecryptor)
         ,callbackContext(opt.callbackContext)
         ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
         ,progressLevel(opt.progressLevel.load())
-        ,collectionAware(opt.collectionAware)
         {
             setCollectionOptions(opt);
+            constructorCheck();
         }
 
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
@@ -91,8 +93,6 @@ namespace litecore { namespace repl {
             return progressLevel.exchange(level) != level;
         }
 
-        fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
-        fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
         fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
         fleece::Dict filterParams() const
                                   {return properties[kC4ReplicatorOptionFilterParams].asDict();}
@@ -186,15 +186,15 @@ namespace litecore { namespace repl {
             size_t nameOffset = 0;
             if (addScope) {
                 slice(spec.scope).copyTo(buf);
-                ((uint8_t*)buf)[spec.scope.size] = '/';
+                ((uint8_t*)buf)[spec.scope.size] = '.';
                 nameOffset = spec.scope.size + 1;
             }
             slice(spec.name).copyTo((uint8_t*)buf + nameOffset);
             return ret;
         }
 
-        static C4CollectionSpec collectionPathToSpec(alloc_slice path) {
-            const uint8_t* slash = path.findByte((uint8_t)'/');
+        static C4CollectionSpec collectionPathToSpec(slice path) {
+            const uint8_t* slash = path.findByte((uint8_t)'.');
             slice scope = kC4DefaultScopeID;
             slice name;
             if (slash != nullptr) {
@@ -217,9 +217,9 @@ namespace litecore { namespace repl {
 
             fleece::AllocedDict                 properties;
 
-            C4ReplicatorValidationFunction      pushFilter;
-            C4ReplicatorValidationFunction      pullFilter;
-            void*                               callbackContext;
+            C4ReplicatorValidationFunction      pushFilter {nullptr};
+            C4ReplicatorValidationFunction      pullFilter {nullptr};
+            void*                               callbackContext {nullptr};
 
             CollectionOptions(alloc_slice collectionPath_)
             {
@@ -238,26 +238,105 @@ namespace litecore { namespace repl {
                 return *this;
             }
         };
-
         std::vector<CollectionOptions> collectionOpts;
 
+        // Post-conditions:
+        //   collectionOpts.size() > 0
+        //   collectionAware == false if and only if collectionOpts.size() == 1 &&
+        //                                           collectionOpts[0].collectionPath == defaultCollectionPath
+        //   isActive == true ? all collections are active
+        //                    : all collections are passive.
+        inline void verify() const;
+
         size_t collectionCount() const {
-            return collectionOpts.size();
+            return _workingCollections.size();
         }
 
-        Mode pushOf(unsigned i =0) const {
-            return collectionOpts[i].push;
+        Mode push(CollectionIndex i) const {
+            return _workingCollections[i].push;
         }
 
-        Mode pullOf(unsigned i =0) const {
-            return collectionOpts[i].pull;
+        Mode pull(CollectionIndex i) const {
+            return _workingCollections[i].pull;
         }
 
-        void forEachCollection(function_ref<void(unsigned index, CollectionOptions&)> callback) {
-            for (unsigned i = 0; i < collectionOpts.size(); ++i) {
-                callback(i, collectionOpts[i]);
+        Validator pushFilter(CollectionIndex i) const {
+            return _workingCollections[i].pushFilter;
+        }
+
+        Validator pullFilter(CollectionIndex i) const {
+            return _workingCollections[i].pullFilter;
+        }
+
+        void* collectionCallbackContext(CollectionIndex i) const {
+            return _workingCollections[i].callbackContext;
+        }
+
+        fleece::Array channels(CollectionIndex i) const {
+            return _workingCollections[i].properties[kC4ReplicatorOptionChannels].asArray();
+        }
+
+        fleece::Array docIDs(CollectionIndex i) const {
+            return _workingCollections[i].properties[kC4ReplicatorOptionDocIDs].asArray();
+        }
+
+        fleece::slice collectionPath(CollectionIndex i) const {
+            return _workingCollections[i].collectionPath;
+        }
+
+        CollectionIndex workingCollectionCount() const {
+            return fleece::narrow_cast<CollectionIndex>(_workingCollections.size());
+        }
+
+        // RearrangeCollections() is called only by the passive replicator. For the passive replicator, we presume
+        // that the order of the collection properties is not important. So, we take it as legit to permutate
+        // it in const method. (The Replicator holds a const Options object.) It is supposed to be called as it
+        // starts to interact with the active replicator.
+        // "collections" is a list of CollectionSpecs that the active replicatore proposes to replicate, and the
+        // order will be used as index to refer to respective collections.
+        // Post-conditions: collectionOpts[i] and collections[i] share the same CollectionSpec if
+        //                    collections[i] is found in collectionOpts;
+        //                  Otherwise, an empty collectionOptions is inserted in collectionOpts[i].
+        // By empty collectionOptions we mean the collection path is a null slice.
+
+        void rearrangeCollections(const std::vector<C4CollectionSpec>& activeCollections) const {
+            DebugAssert(!_isActive);
+
+            // Clear out the current spec to index map so there is not
+            // any stale info in it, but keep a copy to search for 
+            // existing entries
+            auto collectionSpecToIndexOld = _collectionSpecToIndex;
+            _collectionSpecToIndex.clear();
+            _workingCollections.clear();
+            _workingCollections.reserve(activeCollections.size());
+
+            for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
+                auto foundEntry = collectionSpecToIndexOld.find(activeCollections[activeIndex]);
+                if (foundEntry == collectionSpecToIndexOld.end()) {
+                    _workingCollections.emplace_back(nullslice);
+                } else {
+                    _workingCollections.push_back(collectionOpts[foundEntry->second]);
+                    _collectionSpecToIndex[activeCollections[activeIndex]] = activeIndex;
+                }
             }
         }
+
+        void rearrangeCollectionsFor3_0_Client() const {
+            _collectionAware = false;
+            std::vector<C4CollectionSpec> activeCollections {kC4DefaultCollectionSpec};
+            rearrangeCollections(activeCollections);
+        }
+
+    private:
+        inline void setCollectionOptions(Mode push, Mode pull);
+        inline void setCollectionOptions(C4ReplicatorParameters params);
+        inline void setCollectionOptions(const Options& opt);
+        inline void constructorCheck();
+
+        mutable std::vector<CollectionOptions> _workingCollections;
+        mutable bool            _collectionAware         {true};
+        mutable bool            _isActive                {true};
+        mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
@@ -265,20 +344,9 @@ namespace litecore { namespace repl {
         auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
         back.push = push;
         back.pull = pull;
-        collectionAware = false;
     }
 
     inline void Options::setCollectionOptions(C4ReplicatorParameters params) {
-        if (params.collectionCount == 0) {
-            setCollectionOptions(params.push, params.pull);
-            auto& back = collectionOpts.back();
-            back.pushFilter = params.pushFilter;
-            back.pullFilter = params.validationFunc;
-            back.callbackContext = params.callbackContext;
-            return;
-        }
-
-        // Assertion: params.collectionCount > 0
         collectionOpts.reserve(params.collectionCount);
         for (unsigned i = 0; i < params.collectionCount; ++i) {
             C4ReplicationCollection& c4Coll = params.collections[i];
@@ -293,7 +361,6 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::setCollectionOptions(const Options& opt) {
-        Assert(opt.collectionOpts.size() > 0);
         collectionOpts.reserve(opt.collectionOpts.size());
         for (auto& collOpts : opt.collectionOpts) {
             auto& back = collectionOpts.emplace_back(collOpts.collectionPath, collOpts.properties.data());
@@ -302,6 +369,95 @@ namespace litecore { namespace repl {
             back.pushFilter = collOpts.pushFilter;
             back.pullFilter = collOpts.pullFilter;
             back.callbackContext = collOpts.callbackContext;
+        }
+    }
+
+    inline void Options::verify() const {
+        if (collectionOpts.size() == 0) {
+            throw error(error::LiteCore, error::InvalidParameter,
+                        "Invalid replicator configuration: requiring at least one collection");
+        }
+
+        for (size_t i = collectionOpts.size(); i-- > 0; ) {
+            if (collectionOpts[i].push == kC4Disabled
+                && collectionOpts[i].pull == kC4Disabled) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: a collection with both push and pull disabled");
+            }
+        }
+
+        // Assertion: collectionOpts contains no disabled collections
+        // (of which both push and pull are disabled)
+
+        // Do not allow active and passive to be mixed in the same replicator.
+        
+        unsigned passCount = 0;
+        unsigned actiCount = 0;
+        for (auto& c: collectionOpts) {
+            if (c.push == kC4Passive)
+                ++passCount;
+            else if (c.push > kC4Passive)
+                ++actiCount;
+            if (c.pull == kC4Passive)
+                ++passCount;
+            else if (c.pull > kC4Passive)
+                ++actiCount;
+
+            if (passCount * actiCount > 0) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: the collection list includes"
+                            " both passive and active ReplicatorMode");
+            }
+        }
+        _isActive = actiCount > 0;
+
+        // Do not mix one-shot and continous modes in one replicator.
+
+        unsigned oneshot = 0;
+        unsigned continuous = 0;
+        if (_isActive && collectionOpts.size() > 1) {
+            for (auto c: collectionOpts) {
+                if (c.push == kC4OneShot)
+                    ++oneshot;
+                else if (c.push == kC4Continuous)
+                    ++continuous;
+                if (c.pull == kC4OneShot)
+                    ++oneshot;
+                else if (c.pull == kC4Continuous)
+                    ++continuous;
+
+                if (oneshot * continuous > 0) {
+                    throw error(error::LiteCore, error::InvalidParameter,
+                                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed in one replicator.");
+                }
+            }
+        }
+
+        if (collectionOpts.size() == 1) {
+            auto spec = collectionPathToSpec(collectionOpts[0].collectionPath);
+            if (spec == kC4DefaultCollectionSpec) {
+                _collectionAware = false;
+            }
+        }
+    }
+
+    // Post-conditions:
+    //   - collectionOpts contains no duplicated collection.
+    inline void Options::constructorCheck() {
+        Assert(collectionOpts.size() < kNotCollectionIndex);
+        // _workingCollections will be cleared and reordered later for passive
+        // replicators, but stay the same for active
+        _workingCollections = collectionOpts;
+
+        // Create the mapping from CollectionSpec to the index to collctionOpts
+        for (size_t i = 0; i < collectionOpts.size(); ++i) {
+            auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);
+            bool b;
+            std::tie(std::ignore, b) = _collectionSpecToIndex.insert(std::make_pair(spec, i));
+            if (!b) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: the collection list contains duplicated collections.");
+            }
         }
     }
 

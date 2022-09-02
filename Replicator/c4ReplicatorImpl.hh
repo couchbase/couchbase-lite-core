@@ -188,11 +188,11 @@ namespace litecore {
         }
 
         bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) const {
-            return PendingDocuments(this).isDocumentPending(docID, spec);
+            return PendingDocuments(this, spec).isDocumentPending(docID);
         }
 
         alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const {
-            return PendingDocuments(this).pendingDocumentIDs(spec);
+            return PendingDocuments(this, spec).pendingDocumentIDs();
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
@@ -244,8 +244,8 @@ namespace litecore {
 
 
         bool continuous(unsigned collectionIndex =0) const noexcept {
-            return _options->pushOf(collectionIndex) == kC4Continuous
-                || _options->pullOf(collectionIndex) == kC4Continuous;
+            return _options->push(collectionIndex) == kC4Continuous
+                || _options->pull(collectionIndex) == kC4Continuous;
         }
 
         inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept {
@@ -485,57 +485,70 @@ namespace litecore {
 
         class PendingDocuments {
         public:
-            PendingDocuments(const C4ReplicatorImpl *repl) {
+            PendingDocuments(const C4ReplicatorImpl *repl, C4CollectionSpec spec)
+            : collectionSpec(spec)
+            {
                 // Lock the replicator and copy the necessary state now, so I don't have to lock while
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
                 replicator = repl->_replicator;
-                
+
                 // CBL-2448: Also make my own checkpointer and database in case a call comes in
                 // after Replicator::terminate() is called.  The fix includes the replicator
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                checkpointer.emplace(repl->_options, repl->URL());
+                C4Collection* collection = nullptr;
+                // The collection must be included in the replicator's config options.
+                auto it = repl->_options->collectionSpecToIndex().find(collectionSpec);
+                if (it != repl->_options->collectionSpecToIndex().end()) {
+                    if (it->second < repl->_options->workingCollectionCount()) {
+                        collection = repl->_database->getCollection(collectionSpec);
+                    }
+                }
+
+                if (collection == nullptr) {
+                    error::_throw(error::NotOpen, "collection not in the Replicator's config");
+                }
+
+                checkpointer = new Checkpointer{repl->_options, repl->URL(), collection};
                 database = repl->_database;
             }
 
-            alloc_slice pendingDocumentIDs(C4CollectionSpec spec) {
+            alloc_slice pendingDocumentIDs() {
                 Encoder enc;
                 enc.beginArray();
-                // TBD: account for spec
                 bool any = false;
                 auto callback = [&](const C4DocumentInfo &info) {
                     enc.writeString(info.docID);
                     any = true;
                 };
                 
-                if (!replicator || !replicator->pendingDocumentIDs(callback)) {
+                if (!replicator || !replicator->pendingDocumentIDs(collectionSpec, callback)) {
                     checkpointer->pendingDocumentIDs(database, callback);
                 }
-                
+
                 if (!any)
                     return {};
                 enc.endArray();
                 return enc.finish();
             }
 
-            bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) {
-                // TBD: account for spec
+            bool isDocumentPending(C4Slice docID) {
                 if(replicator) {
-                    auto result = replicator->isDocumentPending(docID);
+                    auto result = replicator->isDocumentPending(docID, collectionSpec);
                     if(result.has_value()) {
                         return *result;
                     }
                 }
-                
                 return checkpointer->isDocumentPending(database, docID);
             }
 
         private:
             Retained<Replicator> replicator;
-            std::optional<Checkpointer> checkpointer;
+            Checkpointer*        checkpointer {nullptr}; // assigned in the constructor
             Retained<C4Database> database;
+            C4CollectionSpec     collectionSpec;
         };
 
 

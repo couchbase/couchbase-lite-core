@@ -33,10 +33,6 @@ struct C4CollectionObserver : public fleece::InstanceCounted, C4Base {
     using Callback = C4Collection::CollectionObserverCallback;
 
     static std::unique_ptr<C4CollectionObserver> create(C4Collection*, Callback);
-
-#ifndef C4_STRICT_COLLECTION_API
-    static std::unique_ptr<C4CollectionObserver> create(C4Database*, Callback);
-#endif
     
     virtual ~C4CollectionObserver() =default;
 

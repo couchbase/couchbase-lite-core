@@ -41,16 +41,6 @@ C4API_BEGIN_DECLS
     typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer,
                                                void* C4NULLABLE context);
 
-#ifndef C4_STRICT_COLLECTION_API
-
-    typedef C4CollectionObserverCallback C4DatabaseObserverCallback;
-
-    /** Creates a collection observer on the database's default collection. */
-    CBL_CORE_API C4DatabaseObserver* c4dbobs_create(C4Database* database,
-                                       C4DatabaseObserverCallback callback,
-                                       void* C4NULLABLE context) C4API;
-
-#endif
 
     /** Creates a new collection observer, with a callback that will be invoked after one or more
         documents in the collection have changed.
@@ -61,7 +51,8 @@ C4API_BEGIN_DECLS
         @return  The new observer reference. */
     CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collection* collection,
                                                      C4CollectionObserverCallback callback,
-                                                     void* C4NULLABLE context) C4API;
+                                                     void* C4NULLABLE context,
+                                                     C4Error* C4NULLABLE error) C4API;
 
     /** Identifies which documents have changed in the collection since the last time this function
         was called, or since the observer was created. This function effectively "reads" changes
@@ -111,15 +102,6 @@ C4API_BEGIN_DECLS
                                                C4SequenceNumber sequence,
                                                void * C4NULLABLE context);
 
-#ifndef C4_STRICT_COLLECTION_API
-
-/** Creates a new document observer, on a document in the database's default collection. */
-    CBL_CORE_API C4DocumentObserver* c4docobs_create(C4Database* database,
-                                        C4String docID,
-                                        C4DocumentObserverCallback callback,
-                                        void* C4NULLABLE context) C4API;
-
-#endif
 
     /** Creates a new document observer, with a callback that will be invoked when the document
         changes.
@@ -132,7 +114,8 @@ C4API_BEGIN_DECLS
     CBL_CORE_API C4DocumentObserver* c4docobs_createWithCollection(C4Collection *collection,
                                                       C4String docID,
                                                       C4DocumentObserverCallback callback,
-                                                      void* C4NULLABLE context) C4API;
+                                                      void* C4NULLABLE context,
+                                                      C4Error* C4NULLABLE error) C4API;
 
     /** @} */
 

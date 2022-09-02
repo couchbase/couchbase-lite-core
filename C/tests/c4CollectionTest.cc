@@ -132,7 +132,9 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     
     // But you can't recreate it:
     c4log_warnOnErrors(false);
+    ++gC4ExpectExceptions;
     CHECK(!c4db_createCollection(db, kC4DefaultCollectionSpec, &err));
+    --gC4ExpectExceptions;
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
     c4log_warnOnErrors(true);
@@ -186,7 +188,9 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
 
     //TODO: Expose error?
     CHECK(!c4coll_getDatabase(guitars));
-    CHECK(c4coll_getDocumentCount(guitars) == 0); 
+    ++gC4ExpectExceptions;
+    CHECK(c4coll_getDocumentCount(guitars) == 0);
+    --gC4ExpectExceptions;
  
     CHECK(!c4db_hasCollection(db, Guitars));
     CHECK(c4db_getCollection(db, Guitars, ERROR_INFO()) == nullptr);
@@ -233,13 +237,15 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
     CHECK(!c4db_getCollection(db2, Guitars, ERROR_INFO()));
     CHECK(!c4db_getCollection(db, Guitars, ERROR_INFO()));
 
+    ++gC4ExpectExceptions;
     const C4Error notOpenError = { LiteCoreDomain, kC4ErrorNotOpen };
     C4Error err;
     CHECK(!c4coll_getDoc(guitars, "foo"_sl, false, kDocGetCurrentRev, &err));
     CHECK(err == notOpenError);
     CHECK(!c4coll_getDoc(guitars2, "foo"_sl, false, kDocGetCurrentRev, &err));
     CHECK(err == notOpenError);
-
+    --gC4ExpectExceptions;
+    
     // Then recreate it on the first DB instance
     guitars = c4db_createCollection(db, Guitars, ERROR_INFO());
     REQUIRE(guitars);
@@ -277,6 +283,8 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Use after close", "[Database][Collection][C]") {
     REQUIRE(c4db_close(db, ERROR_INFO()));
 
+    ++gC4ExpectExceptions;
+    
     const C4Error notOpen { LiteCoreDomain, kC4ErrorNotOpen };
     C4Error err;
     CHECK(!c4db_getDefaultCollection(db, &err));
@@ -301,6 +309,8 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Use after close", "[Database][Collecti
     err.code = 0;
     CHECK(!c4db_deleteCollection(db, Guitars, &err));
     CHECK(err == notOpen);
+    
+    --gC4ExpectExceptions;
     
     c4db_release(db);
     db = nullptr;

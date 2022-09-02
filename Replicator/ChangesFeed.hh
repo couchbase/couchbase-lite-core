@@ -81,9 +81,6 @@ namespace litecore::repl {
         /** Returns true if the given rev matches the push filters. */
         virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
 
-        // True if replicator is passive
-        bool passive(unsigned collectionIndex =0) const;
-
     protected:
         std::string loggingClassName() const override;
         virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
@@ -111,6 +108,7 @@ namespace litecore::repl {
         bool _isCheckpointValid {true};
         bool _caughtUp {false};                             // Delivered all historical changes
         std::atomic<bool> _notifyOnChanges {false};         // True if expecting change notification
+        CollectionIndex _collectionIndex;                   // Identifies the collection index (in the replicator) of the collection being used
     };
 
 
