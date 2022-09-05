@@ -1672,6 +1672,14 @@ C4Cert* c4cert_load(C4String name,
     });
 }
 
+bool c4cert_exists(C4String name,
+                   C4Error *outError)
+{
+    return tryCatch<bool>(outError, [&]() {
+        return C4Cert::exists(name);
+    });
+}
+
 
 #pragma mark - KEY PAIR API: (EE)
 

@@ -340,7 +340,7 @@ namespace litecore { namespace crypto {
                 (id)kSecAttrIsPermanent:    @YES,
                 (id)kSecAttrLabel:          @(timestr),
             };
-            
+
             SecKeyRef publicKey = NULL, privateKey = NULL;
             if (@available(macOS 10.12, iOS 10.0, *)) {
                 CFErrorRef error;
@@ -352,14 +352,14 @@ namespace litecore { namespace crypto {
                     return nullptr;
                 }
                 publicKey = SecKeyCopyPublicKey(privateKey);
-                
+
             } else {
                 ++gC4ExpectExceptions;
                 OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
                 --gC4ExpectExceptions;
                 checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
             }
-            
+
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }
@@ -610,7 +610,7 @@ namespace litecore { namespace crypto {
             }
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
-            
+
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
@@ -635,6 +635,26 @@ namespace litecore { namespace crypto {
             return cert;
         }
     }
+
+    bool Cert::exists(const std::string &persistentID) {
+        @autoreleasepool {
+            LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
+                  persistentID.c_str());
+
+            NSString* label = [NSString stringWithCString: persistentID.c_str()
+                                                 encoding: NSUTF8StringEncoding];
+
+            NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+                       (id)kSecClass:              (id)kSecClassCertificate,
+                       (id)kSecAttrLabel:          label,
+                       (id)kSecReturnRef:          @NO,
+                       (id)kSecReturnData:         @NO
+               }));
+
+            return !attrs ? false : true;
+        }
+    }
+
 
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {
@@ -714,7 +734,7 @@ namespace litecore { namespace crypto {
                         Assert(serialNum);
                         NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
                         Assert(certType != nil);
-                        
+
                         NSDictionary* params = @{
                             (id)kSecClass:                  (__bridge id)kSecClassCertificate,
                             (id)kSecAttrCertificateType:    certType,

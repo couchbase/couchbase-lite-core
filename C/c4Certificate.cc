@@ -299,6 +299,17 @@ Retained<C4Cert> C4Cert::load(slice name) {
 }
 
 
+bool C4Cert::exists(slice name) {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return Cert::exists(string(name));
+#else
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
+#endif
+}
+
+
+
+
 #pragma mark - C4KEYPAIR:
 
 
