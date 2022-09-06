@@ -777,19 +777,17 @@ namespace litecore {
         return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
+
     namespace {
-        std::pair<slice, slice> splitCollectionPath(const string& collectionPath) {
-            slice collection {collectionPath};
-            auto sep = collection.findByte(KeyStore::kScopeCollectionSeparator);
-            slice scope;
-            if (sep) {
-                scope = slice {collection.buf, sep};
-                if (scope.size + 1 == collection.size) {
-                    // dot is the last char
-                    collection.setSize(0);
-                } else {
-                    collection.setStart(sep + 1);
-                }
+        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
+            auto dot = DataFile::findCollectionPathSeparator(collectionPath);
+            alloc_slice scope;
+            alloc_slice collection;
+            if (dot == string::npos) {
+                collection = DataFile::unescapeCollectionName(collectionPath);
+            } else {
+                scope = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
+                collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
             }
             return std::make_pair(scope, collection);
         }
@@ -820,10 +818,11 @@ namespace litecore {
         }
 
         auto [scope, coll] = splitCollectionPath(collection);
+
         if (collection == "_" || (isDefaultScope(scope) && isDefaultCollection(coll))) {
             name += kDefaultKeyStoreName;
-        } else if (collection == delegate()->databaseName() &&
-                   !tableExists(name + string(KeyStore::kCollectionPrefix) + collection)) {
+        } else if (!scope && coll == delegate()->databaseName() &&
+                   !tableExists(name + string(KeyStore::kCollectionPrefix) + coll.asString())) {
             // The name of this database represents the default collection,
             // _unless_ there is a collection with that name.
             name += kDefaultKeyStoreName;

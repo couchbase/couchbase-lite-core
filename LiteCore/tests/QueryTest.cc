@@ -2265,7 +2265,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     string collectionAlias = collectionName;
     if (auto dot = collectionAlias.find('.'); dot != string::npos)
         collectionAlias = collectionAlias.substr(dot + 1);
-    
+
     query = store->compileQuery("SELECT meta(" + collectionAlias + ") from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
@@ -2457,18 +2457,26 @@ TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
             CHECK(e->columns()[0]->asString() == "number"_sl);
         }
     };
-    
+
     checkType(json5("{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"));
     checkType(json5("{'WHAT': ['.foo.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}"));
-    
+
     checkTypeN1QL("SELECT type FROM _");
     checkTypeN1QL("SELECT type FROM _default");
     checkTypeN1QL("SELECT type FROM _default._default");
     checkTypeN1QL("SELECT foo.type FROM _ AS foo");
     checkTypeN1QL("SELECT `foo.bar`.type FROM _ AS `foo.bar`");
+
+    // For database names that include dot, we must properly quote it.
+    // In JSON, we escape dot inside the JSON string value.
+    // In N1QL expression, we back-quote quote it.
+
+    _databaseName = "cbl.core.temp";
+    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\\\.core\\\\.temp'}]}"));
+    checkTypeN1QL("SELECT type FROM `cbl.core.temp`");
 }
 
 
