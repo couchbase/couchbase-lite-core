@@ -15,24 +15,31 @@
 
 namespace litecore { namespace repl {
 
-    struct C4ReplParamsDefaultCollection : C4ReplicatorParameters {
-        C4ReplicationCollection defaultCollection{kC4DefaultCollectionSpec};
-
-        C4ReplParamsDefaultCollection()
-        : C4ReplicatorParameters()
-        , push(defaultCollection.push)
-        , pull(defaultCollection.pull)
-        , pushFilter(defaultCollection.pushFilter)
-        , validationFunc(defaultCollection.pullFilter)
+    // Helper struct to make testing with collections easier
+    struct C4ReplParamsCollection : C4ReplicatorParameters {
+        explicit C4ReplParamsCollection(
+                C4CollectionSpec collectionSpec
+        ):  C4ReplicatorParameters{ }
+            , replCollection { collectionSpec }
+            , push(replCollection.push)
+            , pull(replCollection.pull)
+            , pushFilter(replCollection.pushFilter)
+            , validationFunc(replCollection.pullFilter)
         {
-            collections = &defaultCollection;
+            collections = &replCollection;
             collectionCount = 1;
         }
-
+        C4ReplicationCollection replCollection;
         C4ReplicatorMode& push;
         C4ReplicatorMode& pull;
         C4ReplicatorValidationFunction C4NONNULL & pushFilter;
         C4ReplicatorValidationFunction C4NONNULL & validationFunc;
     };
+
+struct C4ReplParamsDefaultCollection : C4ReplParamsCollection {
+    C4ReplParamsDefaultCollection()
+            : C4ReplParamsCollection{ kC4DefaultCollectionSpec }
+    {}
+};
 
 }}

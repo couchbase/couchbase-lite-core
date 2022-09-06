@@ -529,7 +529,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.defaultCollection.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -573,7 +573,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.defaultCollection.callbackContext = this;
+        params.replCollection.callbackContext = this;
         params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
@@ -593,7 +593,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.defaultCollection.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -610,6 +610,110 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Existing Collection", "[C][Push]") {
+    // Create collection and import documents to it
+    C4CollectionSpec Eisley = { "mos_eisley"_sl, "cantina"_sl };
+    auto collEisley = createCollection(db, Eisley);
+    importJSONLines(sFixturesDir + "names_100.json", collEisley);
+
+    // Create the collection in the database to be replicated to
+    createDB2();
+    createCollection(db2, Eisley);
+
+    // Set options for the replication
+    FLSliceResult options {};
+    C4Error err;
+    repl::C4ReplParamsCollection params { Eisley };
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+
+    bool expectedIsPending = true;
+    SECTION("Normal") {
+        expectedIsPending = true;
+    }
+
+    SECTION("Filtered") {
+        expectedIsPending = false;
+        params.replCollection.callbackContext = this;
+        params.pushFilter = []( C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                                C4RevisionFlags flags, FLDict flbody, void *context) {
+            auto test = (ReplicatorAPITest*)context;
+            c4repl_getStatus(test->_repl);
+            return FLSlice_Compare(docID, "0000005"_sl) != 0;
+        };
+    }
+
+    SECTION("Set Doc IDs") {
+        expectedIsPending = false;
+        FLEncoder e = FLEncoder_New();
+        FLEncoder_BeginDict(e, 1);
+        FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
+        FLEncoder_BeginArray(e, 2);
+        FLEncoder_WriteString(e, FLSTR("0000002"));
+        FLEncoder_WriteString(e, FLSTR("0000004"));
+        FLEncoder_EndArray(e);
+        FLEncoder_EndDict(e);
+        options = FLEncoder_Finish(e, nullptr);
+        params.replCollection.optionsDictFleece = C4Slice(options);
+        FLEncoder_Free(e);
+    }
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Eisley,  ERROR_INFO(err));
+    CHECK(err.code == 0);
+    CHECK(isPending == expectedIsPending);
+
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Eisley,  ERROR_INFO(err));
+    CHECK(!isPending);
+    CHECK(err.code == 0);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push]") {
+    ExpectingExceptions x;
+    // Create collection in the db and import documents
+    C4CollectionSpec Kyber = {"kyber"_sl, "crystal"_sl};
+    auto collKyber = createCollection(db, Kyber);
+    importJSONLines(sFixturesDir + "names_100.json", collKyber);
+
+    // Create the collection in the database to be replicated to
+    createDB2();
+    createCollection(db2, Kyber);
+
+    // Create collection spec but do not create collection in db
+    C4CollectionSpec Republic = {"republic"_sl, "galactic"_sl};
+
+    // Set options for the replication
+    C4Error err;
+    repl::C4ReplParamsCollection params{Kyber};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+
+    _repl = c4repl_newLocal(db, (C4Database *) db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Republic, ERROR_INFO(err));
+    CHECK(err.code == kC4ErrorNotOpen);
+
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Republic, ERROR_INFO(err));
+    CHECK(err.code == kC4ErrorNotOpen);
 }
 #endif
 
