@@ -633,13 +633,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Existing Collection", 
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
 
-    bool expectedIsPending = true;
+    int expectedPending = 0;
     SECTION("Normal") {
-        expectedIsPending = true;
+        expectedPending = 100;
     }
 
     SECTION("Filtered") {
-        expectedIsPending = false;
+        expectedPending = 99;
         params.replCollection.callbackContext = this;
         params.pushFilter = []( C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                 C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -650,7 +650,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Existing Collection", 
     }
 
     SECTION("Set Doc IDs") {
-        expectedIsPending = false;
+        expectedPending = 2;
         FLEncoder e = FLEncoder_New();
         FLEncoder_BeginDict(e, 1);
         FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
@@ -667,16 +667,20 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Existing Collection", 
     _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Eisley,  ERROR_INFO(err));
-    CHECK(err.code == 0);
-    CHECK(isPending == expectedIsPending);
+    FLSliceResult_Release(options);
+
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Eisley, ERROR_INFO(err));
+    REQUIRE(encodedDocIDs != nullslice);
+    FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == expectedPending);
+    c4slice_free(encodedDocIDs);
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
-
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Eisley,  ERROR_INFO(err));
-    CHECK(!isPending);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Eisley, &err);
     CHECK(err.code == 0);
+    CHECK(encodedDocIDs == nullslice);
+
 }
 #endif
 
@@ -703,17 +707,118 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
 
-    _repl = c4repl_newLocal(db, (C4Database *) db2, params, ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Republic, ERROR_INFO(err));
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, ERROR_INFO(err));
     CHECK(err.code == kC4ErrorNotOpen);
+    c4slice_free(encodedDocIDs);
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
-
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, Republic, ERROR_INFO(err));
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
     CHECK(err.code == kC4ErrorNotOpen);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push]") {
+    // Create collections and import documents to them
+    C4CollectionSpec Council = { "council"_sl, "jedi"_sl };
+    C4CollectionSpec Federation = { "federation"_sl, "trade"_sl };
+    auto collCouncil = createCollection(db, Council);
+    auto collFederation = createCollection(db, Federation);
+    importJSONLines(sFixturesDir + "names_100.json", collCouncil);
+    importJSONLines(sFixturesDir + "wikipedia_100.json", collFederation);
+
+    // Create the collections in the database to be replicated to
+    createDB2();
+    createCollection(db2, Council);
+    createCollection(db2, Federation);
+
+    // Set options for the replication
+    // Replicating only the Council collection
+    FLSliceResult options {};
+    C4Error err;
+    repl::C4ReplParamsCollection paramsCouncil { Council };
+    paramsCouncil.push = kC4OneShot;
+    paramsCouncil.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    // Create replicator config for Federation collection
+    // This won't actually be replicated, but is needed to call c4repl_getPendingDocIDs for the collection
+    repl::C4ReplParamsCollection paramsFederation { Federation };
+    paramsFederation.push = kC4OneShot;
+    paramsFederation.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    int expectedPending = 0;
+    SECTION("Normal") {
+        expectedPending = 100;
+    }
+
+    SECTION("Filtered") {
+        expectedPending = 99;
+        paramsCouncil.replCollection.callbackContext = this;
+        paramsCouncil.pushFilter = []( C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                                C4RevisionFlags flags, FLDict flbody, void *context) {
+            auto test = (ReplicatorAPITest*)context;
+            c4repl_getStatus(test->_repl);
+            return FLSlice_Compare(docID, "0000005"_sl) != 0;
+        };
+    }
+
+    SECTION("Set Doc IDs") {
+        expectedPending = 2;
+        FLEncoder e = FLEncoder_New();
+        FLEncoder_BeginDict(e, 1);
+        FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
+        FLEncoder_BeginArray(e, 2);
+        FLEncoder_WriteString(e, FLSTR("0000002"));
+        FLEncoder_WriteString(e, FLSTR("0000004"));
+        FLEncoder_EndArray(e);
+        FLEncoder_EndDict(e);
+        options = FLEncoder_Finish(e, nullptr);
+        paramsCouncil.replCollection.optionsDictFleece = C4Slice(options);
+        FLEncoder_Free(e);
+    }
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    // Not actually used for replication
+    auto replFed = c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err));
+    REQUIRE(replFed);
+
+    FLSliceResult_Release(options);
+
+    // Check that collection 1 has the right amount of pending documents
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, ERROR_INFO(err));
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == expectedPending);
+    c4slice_free(encodedDocIDs);
+    
+    // Replicate collection 1
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+
+    // Now collection 1 shouldn't have any pending documents
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, ERROR_INFO(err));
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs == nullslice);
+
+    // Check that collection 2 still has all the documents pending
+    encodedDocIDs = c4repl_getPendingDocIDs(replFed, Federation, ERROR_INFO(err));
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == 100);
+
+    c4repl_free(replFed);
 }
 #endif
 

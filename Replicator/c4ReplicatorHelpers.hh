@@ -17,6 +17,8 @@ namespace litecore { namespace repl {
 
     // Helper struct to make testing with collections easier
     struct C4ReplParamsCollection : C4ReplicatorParameters {
+        C4ReplicationCollection replCollection;
+
         explicit C4ReplParamsCollection(
                 C4CollectionSpec collectionSpec
         ):  C4ReplicatorParameters{ }
@@ -29,7 +31,7 @@ namespace litecore { namespace repl {
             collections = &replCollection;
             collectionCount = 1;
         }
-        C4ReplicationCollection replCollection;
+
         C4ReplicatorMode& push;
         C4ReplicatorMode& pull;
         C4ReplicatorValidationFunction C4NONNULL & pushFilter;
