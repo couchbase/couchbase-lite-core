@@ -78,13 +78,13 @@ from =
          )*                             { $$ = d;}
 
 dataSource =
-    n:collectionName   					{ n = dictWith("COLLECTION"_sl, n); }
-		(AS? a:collectionAlias			{ setAny(n, "AS"_sl, a); }
-		)?								{ $$ = n; }
+    n:collectionName                    { n = dictWithCollectionArray(n); }
+		(AS? a:collectionAlias          { setAny(n, "AS"_sl, a); }
+		)?                              { $$ = n; }
 
 collectionName  =
-    c:IDENTIFIER
-        ('.' c2:IDENTIFIER              { c = c.as<string>() + "." +c2.as<string>(); }
+    c:IDENTIFIER                        { c = arrayWith(c); }
+        ('.' c2:IDENTIFIER              { appendAny(c, c2); }
         )?                              { $$ = c; }
 
 join =
@@ -324,7 +324,7 @@ propertyName
 
 function =
     "meta"i _ '(' _                    { f = op("meta()");}
-    (c:collectionName _                { appendAny(f, c.as<string>());}
+    (c:IDENTIFIER _                    { appendAny(f, c.as<string>());}
     )? ')' _                           { $$ = f;}
   | "match"i _ '(' _                   { f = op("MATCH()");}
     ind:indexName _ ',' _              { appendAny(f, ind.as<string>());}

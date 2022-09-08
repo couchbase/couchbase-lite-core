@@ -216,6 +216,15 @@ namespace litecore {
         static Factory* factoryNamed(const char *name);
         static Factory* factoryForFile(const FilePath&);
 
+        // kScopeCollectionSeparator must not be escaped as it separates the scope from the
+        // generalized collection name, a.k.a. collection path.
+        // This function returns the position of unescaped separator starting from pos.
+        // It returns string::npos if not found.
+        static size_t findCollectionPathSeparator(const string& collectionPath, size_t pos =0);
+        // After separating out the scope from collection path by kScopeCollectionSeparator ('.'),
+        // the following function can be used to unescape the escaped separator.
+        static string unescapeCollectionName(const string& unescaped);
+
     protected:
         virtual std::string loggingIdentifier() const override;
 
