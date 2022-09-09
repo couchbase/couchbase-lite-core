@@ -111,8 +111,9 @@ namespace litecore { namespace net {
         rq << " HTTP/1.1\r\n"
               "Host: " << string(slice(_address.hostname));
         // Omit port from header if using standard ports
-        if(_address.port != 80 and _address.port != 443)
+        if(_address.port != 80 and _address.port != 443) {
             rq << ':' << _address.port;
+        }
 
         rq << "\r\n";
 
