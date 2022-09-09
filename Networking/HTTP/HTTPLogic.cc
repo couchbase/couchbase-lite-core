@@ -114,7 +114,7 @@ namespace litecore { namespace net {
         if(_address.port != 80 and _address.port != 443)
             rq << ':' << _address.port;
 
-        rq << "\r\n"
+        rq << "\r\n";
 
         addHeader(rq, "User-Agent", _userAgent);
 
