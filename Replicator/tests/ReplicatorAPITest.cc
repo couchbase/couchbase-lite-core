@@ -631,7 +631,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
 
     // Set options for the replication
     C4Error err;
-    repl::C4ReplParamsCollection params{Kyber};
+    repl::C4ReplParamsOneCollection params{Kyber};
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -666,9 +666,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
 
     // Set options for the replication
     // Replicating only the Council collection
-    FLSliceResult options {};
     C4Error err;
-    repl::C4ReplParamsCollection paramsCouncil { Council };
+    repl::C4ReplParamsOneCollection paramsCouncil {Council };
     paramsCouncil.push = kC4OneShot;
     paramsCouncil.pull = kC4Disabled;
     paramsCouncil.callbackContext = this;
@@ -676,16 +675,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
 
     // Create replicator config for Federation collection
     // This won't actually be replicated, but is needed to call c4repl_getPendingDocIDs for the collection
-    repl::C4ReplParamsCollection paramsFederation { Federation };
+    repl::C4ReplParamsOneCollection paramsFederation {Federation };
     paramsFederation.push = kC4OneShot;
     paramsFederation.pull = kC4Disabled;
     paramsCouncil.callbackContext = this;
     paramsCouncil.socketFactory = _socketFactory;
-
-    int expectedPending = 0;
-    SECTION("Normal") {
-        expectedPending = 100;
-    }
 
     _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
     REQUIRE(_repl);
@@ -694,14 +688,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
     auto replFed = c4::ref{ c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err)) };
     REQUIRE(replFed);
 
-    FLSliceResult_Release(options);
-
     // Check that collection 1 has the right amount of pending documents
     C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, &err);
     CHECK(err.code == 0);
     REQUIRE(encodedDocIDs != nullslice);
     FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
-    CHECK(FLArray_Count(docIDs) == expectedPending);
+    CHECK(FLArray_Count(docIDs) == 100);
     c4slice_free(encodedDocIDs);
 
     // Replicate collection 1
