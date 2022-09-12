@@ -69,7 +69,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#gaca3692b1a8c065365bf06a01c869aa62" title="One-time registration of socket callbacks.">c4socket_registerFactory()</a> before using any socket-based API.  
+<p>A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#gaca3692b1a8c065365bf06a01c869aa62" title="One-time registration of default socket callbacks.">c4socket_registerFactory()</a> before using any socket-based API.  
  <a href="struct_c4_socket_factory.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="c4_socket_types_8h_source.html">c4SocketTypes.h</a>&gt;</code></p>
@@ -102,7 +102,7 @@ Data Fields</h2></td></tr>
 <tr class="separator:a54f2b9f38eeee2bffcc6da3fc0d35654"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#gaca3692b1a8c065365bf06a01c869aa62" title="One-time registration of socket callbacks.">c4socket_registerFactory()</a> before using any socket-based API. </p>
+<div class="textblock"><p>A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#gaca3692b1a8c065365bf06a01c869aa62" title="One-time registration of default socket callbacks.">c4socket_registerFactory()</a> before using any socket-based API. </p>
 <p>A group of callbacks that define the implementation of sockets.</p>
 <p>These callbacks will be invoked on arbitrary background threads owned by LiteCore. They should return quickly, and perform the operation asynchronously without blocking. </p>
 </div><h2 class="groupheader">Field Documentation</h2>

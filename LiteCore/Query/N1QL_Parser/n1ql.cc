@@ -2530,6 +2530,24 @@ YY_ACTION(void) yy_1_join(yycontext *yy, char *yytext, int yyleng)
 #undef s
 #undef o
 }
+YY_ACTION(void) yy_3_collectionName(yycontext *yy, char *yytext, int yyleng)
+{
+#define c2 yy->__val[-1]
+#define c yy->__val[-2]
+#define __ yy->__
+#define yypos yy->__pos
+#define yythunkpos yy->__thunkpos
+  yyprintf((stderr, "do yy_3_collectionName\n"));
+  {
+#line 88
+   __ = c; ;
+  }
+#undef yythunkpos
+#undef yypos
+#undef yy
+#undef c2
+#undef c
+}
 YY_ACTION(void) yy_2_collectionName(yycontext *yy, char *yytext, int yyleng)
 {
 #define c2 yy->__val[-1]
@@ -2539,8 +2557,8 @@ YY_ACTION(void) yy_2_collectionName(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_collectionName\n"));
   {
-#line 88
-   __ = c; ;
+#line 87
+   appendAny(c, c2); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -2557,8 +2575,8 @@ YY_ACTION(void) yy_1_collectionName(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_collectionName\n"));
   {
-#line 87
-   c = c.as<string>() + "." +c2.as<string>(); ;
+#line 86
+   c = arrayWith(c); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -2612,7 +2630,7 @@ YY_ACTION(void) yy_1_dataSource(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_dataSource\n"));
   {
 #line 81
-   n = dictWith("COLLECTION"_sl, n); ;
+   n = dictWithCollectionArray(n); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -3464,7 +3482,7 @@ YY_RULE(int) yy_function(yycontext *yy)
 {  int yypos0= yy->__pos, yythunkpos0= yy->__thunkpos;  yyDo(yy, yyPush, 5, 0);
   yyprintf((stderr, "%s\n", "function"));
   {  int yypos55= yy->__pos, yythunkpos55= yy->__thunkpos;  if (!yymatchIString(yy, "meta")) goto l56;  if (!yy__(yy)) goto l56;  if (!yymatchChar(yy, '(')) goto l56;  if (!yy__(yy)) goto l56;  yyDo(yy, yy_1_function, yy->__begin, yy->__end);
-  {  int yypos57= yy->__pos, yythunkpos57= yy->__thunkpos;  if (!yy_collectionName(yy)) goto l57;  yyDo(yy, yySet, -5, 0);  if (!yy__(yy)) goto l57;  yyDo(yy, yy_2_function, yy->__begin, yy->__end);  goto l58;
+  {  int yypos57= yy->__pos, yythunkpos57= yy->__thunkpos;  if (!yy_IDENTIFIER(yy)) goto l57;  yyDo(yy, yySet, -5, 0);  if (!yy__(yy)) goto l57;  yyDo(yy, yy_2_function, yy->__begin, yy->__end);  goto l58;
   l57:;	  yy->__pos= yypos57; yy->__thunkpos= yythunkpos57;
   }
   l58:;	  if (!yymatchChar(yy, ')')) goto l56;  if (!yy__(yy)) goto l56;  yyDo(yy, yy_3_function, yy->__begin, yy->__end);  goto l55;
@@ -4558,11 +4576,11 @@ YY_RULE(int) yy_collectionAlias(yycontext *yy)
 }
 YY_RULE(int) yy_collectionName(yycontext *yy)
 {  int yypos0= yy->__pos, yythunkpos0= yy->__thunkpos;  yyDo(yy, yyPush, 2, 0);
-  yyprintf((stderr, "%s\n", "collectionName"));  if (!yy_IDENTIFIER(yy)) goto l272;  yyDo(yy, yySet, -2, 0);
-  {  int yypos273= yy->__pos, yythunkpos273= yy->__thunkpos;  if (!yymatchChar(yy, '.')) goto l273;  if (!yy_IDENTIFIER(yy)) goto l273;  yyDo(yy, yySet, -1, 0);  yyDo(yy, yy_1_collectionName, yy->__begin, yy->__end);  goto l274;
+  yyprintf((stderr, "%s\n", "collectionName"));  if (!yy_IDENTIFIER(yy)) goto l272;  yyDo(yy, yySet, -2, 0);  yyDo(yy, yy_1_collectionName, yy->__begin, yy->__end);
+  {  int yypos273= yy->__pos, yythunkpos273= yy->__thunkpos;  if (!yymatchChar(yy, '.')) goto l273;  if (!yy_IDENTIFIER(yy)) goto l273;  yyDo(yy, yySet, -1, 0);  yyDo(yy, yy_2_collectionName, yy->__begin, yy->__end);  goto l274;
   l273:;	  yy->__pos= yypos273; yy->__thunkpos= yythunkpos273;
   }
-  l274:;	  yyDo(yy, yy_2_collectionName, yy->__begin, yy->__end);
+  l274:;	  yyDo(yy, yy_3_collectionName, yy->__begin, yy->__end);
   yyprintf((stderr, "  ok   %s @ %s\n", "collectionName", yy->__buf+yy->__pos));  yyDo(yy, yyPop, 2, 0);
   return 1;
   l272:;	  yy->__pos= yypos0; yy->__thunkpos= yythunkpos0;

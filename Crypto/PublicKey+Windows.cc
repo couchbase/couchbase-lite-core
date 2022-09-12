@@ -168,6 +168,44 @@ namespace litecore::crypto {
         return winCert;
     }
 
+    PCCERT_CONTEXT getWinCert(PublicKey *subjectKey) {
+        auto keyData = subjectKey->publicKeyData(KeyFormat::Raw);
+        unsigned char hash[16];
+
+        mbedtls_md5_context context;
+        mbedtls_md5_init(&context);
+        mbedtls_md5_starts(&context);
+        mbedtls_md5_update(&context, (const unsigned char *)keyData.buf, keyData.size);
+        mbedtls_md5_finish(&context, hash);
+        mbedtls_md5_free(&context);
+
+        CRYPT_HASH_BLOB hashBlob {
+                16,
+                hash
+        };
+
+        auto* const store = CertOpenStore(
+                CERT_STORE_PROV_SYSTEM_A,
+                X509_ASN_ENCODING,
+                NULL,
+                CERT_SYSTEM_STORE_CURRENT_USER,
+                "CA"
+        );
+
+        auto winCert = CertFindCertificateInStore(
+                store,
+                X509_ASN_ENCODING,
+                0,
+                CERT_FIND_PUBKEY_MD5_HASH,
+                &hashBlob,
+                nullptr
+        );
+
+        CertCloseStore(store, 0);
+
+        return winCert;
+    }
+
     PCCERT_CHAIN_CONTEXT getCertChain(PCCERT_CONTEXT leaf) {
         CERT_CHAIN_PARA para = {
             sizeof(CERT_CHAIN_PARA),
@@ -601,6 +639,17 @@ namespace litecore::crypto {
         return cert;
     }
 
+    bool Cert::exists(const std::string &persistentID) {
+        LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
+              persistentID.c_str());
+
+        const auto* const winCert = getWinCert(persistentID);
+
+        CertFreeCertificateContext(winCert);
+
+        return !winCert ? false : true;
+    }
+
     void Cert::deleteCert(const std::string &persistentID) {
         LogTo(TLSLogDomain, "Deleting a certificate with the id '%s' from the store",
                 persistentID.c_str());
@@ -641,41 +690,10 @@ namespace litecore::crypto {
     }
 
     Retained<Cert> Cert::load(PublicKey *subjectKey) {
-        auto keyData = subjectKey->publicKeyData(KeyFormat::Raw);
-        unsigned char hash[16];
-
-        mbedtls_md5_context context;
-        mbedtls_md5_init(&context);
-        mbedtls_md5_starts(&context);
-        mbedtls_md5_update(&context, (const unsigned char *)keyData.buf, keyData.size);
-        mbedtls_md5_finish(&context, hash);
-        mbedtls_md5_free(&context);
-
-        CRYPT_HASH_BLOB hashBlob {
-            16,
-            hash
-        };
-
-        auto* const store = CertOpenStore(
-            CERT_STORE_PROV_SYSTEM_A,
-            X509_ASN_ENCODING,
-            NULL,
-            CERT_SYSTEM_STORE_CURRENT_USER,
-            "CA"
-        );
-
-        auto winCert = CertFindCertificateInStore(
-            store,
-            X509_ASN_ENCODING,
-            0,
-            CERT_FIND_PUBKEY_MD5_HASH,
-            &hashBlob,
-            nullptr
-        );
+        auto winCert = getWinCert(subjectKey);
 
         DEFER {
             CertFreeCertificateContext(winCert);
-            CertCloseStore(store, 0);
         };
 
         if(!winCert) {
@@ -683,6 +701,14 @@ namespace litecore::crypto {
         }
 
         return new Cert(slice(winCert->pbCertEncoded, winCert->cbCertEncoded));
+    }
+
+    bool Cert::exists(PublicKey *subjectKey) {
+        auto winCert = getWinCert(subjectKey);
+
+        CertFreeCertificateContext(winCert);
+
+        return !winCert ? false : true;
     }
 
     Retained<PersistentPrivateKey> Cert::loadPrivateKey() {

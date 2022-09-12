@@ -330,12 +330,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7b8bfc1886f4cd7870e8a73eaae50078">c4repl_getResponseHeaders</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
 <tr class="memdesc:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the HTTP response headers as a Fleece-encoded dictionary.  <a href="group___replicator.html#ga7b8bfc1886f4cd7870e8a73eaae50078">More...</a><br /></td></tr>
 <tr class="separator:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf584db13180cbd2be5d89698cb86ccfa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaf584db13180cbd2be5d89698cb86ccfa">c4repl_getPendingDocIDs</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:gaf584db13180cbd2be5d89698cb86ccfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a fleece encoded list of IDs of documents who have revisions pending push.  <a href="group___replicator.html#gaf584db13180cbd2be5d89698cb86ccfa">More...</a><br /></td></tr>
-<tr class="separator:gaf584db13180cbd2be5d89698cb86ccfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7ea1ab91c75cb86c6d359a5f027f1d72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7ea1ab91c75cb86c6d359a5f027f1d72">c4repl_isDocumentPending</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:ga7ea1ab91c75cb86c6d359a5f027f1d72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if the document with the given ID has revisions pending push.  <a href="group___replicator.html#ga7ea1ab91c75cb86c6d359a5f027f1d72">More...</a><br /></td></tr>
-<tr class="separator:ga7ea1ab91c75cb86c6d359a5f027f1d72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39aad33c5038dae3b90292461c56c932"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga39aad33c5038dae3b90292461c56c932">c4repl_getPendingDocIDs</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:ga39aad33c5038dae3b90292461c56c932"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a fleece encoded list of IDs of documents who have revisions pending push.  <a href="group___replicator.html#ga39aad33c5038dae3b90292461c56c932">More...</a><br /></td></tr>
+<tr class="separator:ga39aad33c5038dae3b90292461c56c932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaab4d62ac12203d46ad18d7abbe8881ad">c4repl_isDocumentPending</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if the document with the given ID has revisions pending push.  <a href="group___replicator.html#gaab4d62ac12203d46ad18d7abbe8881ad">More...</a><br /></td></tr>
+<tr class="separator:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7bdb28e1b51e7d3dd741830804331530"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7bdb28e1b51e7d3dd741830804331530">c4repl_getPeerTLSCertificate</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
 <tr class="memdesc:ga7bdb28e1b51e7d3dd741830804331530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket)  <a href="group___replicator.html#ga7bdb28e1b51e7d3dd741830804331530">More...</a><br /></td></tr>
 <tr class="separator:ga7bdb28e1b51e7d3dd741830804331530"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1496,8 +1496,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaf584db13180cbd2be5d89698cb86ccfa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf584db13180cbd2be5d89698cb86ccfa">&#9670;&nbsp;</a></span>c4repl_getPendingDocIDs()</h2>
+<a id="ga39aad33c5038dae3b90292461c56c932"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39aad33c5038dae3b90292461c56c932">&#9670;&nbsp;</a></span>c4repl_getPendingDocIDs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1507,6 +1507,12 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1527,6 +1533,7 @@ Variables</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">repl</td><td>The C4Replicator instance. </td></tr>
+    <tr><td class="paramname">spec</td><td>The collection spec </td></tr>
     <tr><td class="paramname">outErr</td><td>On failure, error information will be written here if non-NULL. </td></tr>
   </table>
   </dd>
@@ -1579,8 +1586,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga7ea1ab91c75cb86c6d359a5f027f1d72"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7ea1ab91c75cb86c6d359a5f027f1d72">&#9670;&nbsp;</a></span>c4repl_isDocumentPending()</h2>
+<a id="gaab4d62ac12203d46ad18d7abbe8881ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab4d62ac12203d46ad18d7abbe8881ad">&#9670;&nbsp;</a></span>c4repl_isDocumentPending()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1596,6 +1603,12 @@ Variables</h2></td></tr>
           <td></td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>docID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1617,6 +1630,7 @@ Variables</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">repl</td><td>The C4Replicator instance. </td></tr>
     <tr><td class="paramname">docID</td><td>The ID of the document to check </td></tr>
+    <tr><td class="paramname">spec</td><td>The collection the docID belongs to. </td></tr>
     <tr><td class="paramname">outErr</td><td>On failure, error information will be written here if non-NULL. </td></tr>
   </table>
   </dd>
