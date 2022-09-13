@@ -53,7 +53,7 @@ TEST_CASE("Options password logging redaction") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
     // Push a doc:
-    createRev("doc"_sl, kRevID, kEmptyFleeceBody);
+    createRev(_collDB1, "doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
     runPushReplication();
 
@@ -98,7 +98,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
     compareDatabases();
@@ -107,7 +107,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
-    createRev("doc"_sl, kRevID, kEmptyFleeceBody);
+    createRev(_collDB1, "doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
 
     runPushReplication();
@@ -117,7 +117,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
-    importJSONLines(sFixturesDir + "wikipedia_100.json");
+    importJSONLines(sFixturesDir + "wikipedia_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
     compareDatabases();
@@ -126,7 +126,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
-    createRev("dok"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "dok"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
     runPushReplication();
 
@@ -140,15 +140,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, kRev1ID, kFleeceBody);
-    createRev("new2"_sl, kRev1ID_Alt, kFleeceBody);
+    createRev(_collDB1, "new1"_sl, kRev1ID, kFleeceBody);
+    createRev(_collDB1, "new2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPushReplication();
@@ -180,10 +180,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") {
-    createRev("eenie"_sl, kRevID, kFleeceBody);
-    createRev("meenie"_sl, kRevID, kFleeceBody);
-    createRev("miney"_sl, kRevID, kFleeceBody);
-    createRev("moe"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "eenie"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "meenie"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "miney"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "moe"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 4;
     runPullReplication();
 
@@ -196,7 +196,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
     runPullReplication();
 
     _expectedDocumentCount = 1; // resetting checkpoint does re-pull purged doc
-    runReplicators(Replicator::Options::passive(), Replicator::Options::pulling(), true);
+    runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(), true);
 
     c4::ref<C4Document> doc = c4doc_get(db2, "meenie"_sl, true, nullptr);
     CHECK(doc != nullptr);
@@ -213,8 +213,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("0000001"_sl, kRev2ID, kFleeceBody);
-    createRev("0000002"_sl, kRev2ID, kFleeceBody);
+    createRev(_collDB1, "0000001"_sl, kRev2ID, kFleeceBody);
+    createRev(_collDB1, "0000002"_sl, kRev2ID, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runReplicators(Replicator::Options(kC4OneShot, kC4OneShot), serverOpts);
@@ -277,8 +277,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, kRev1ID, kFleeceBody);
-    createRev("new2"_sl, kRev1ID_Alt, kFleeceBody);
+    createRev(_collDB1, "new1"_sl, kRev1ID, kFleeceBody);
+    createRev(_collDB1, "new2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPullReplication();
@@ -338,7 +338,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
         C4Error c4err;
         alloc_slice body = c4db_encodeJSON(db2, "{\"name\":\"obo\", \"gender\":-7}"_sl, &c4err);
         REQUIRE(body.buf);
-        createRev(db2, "another"_sl, kRevID, body);
+        createRev(_collDB2, "another"_sl, kRevID, body);
     }
 
     // Import names_100.json into db:
@@ -363,13 +363,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
     // Start with "mydoc" in both dbs with the same revs, so it won't be replicated.
     // But each db has one unique document.
-    createRev(db, kDocID, kNonLocalRev1ID, kFleeceBody);
-    createRev(db, kDocID, kNonLocalRev2ID, kFleeceBody);
-    createRev(db, "onlyInDB1"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB1, kDocID, kNonLocalRev2ID, kFleeceBody);
+    createRev(_collDB1, "onlyInDB1"_sl, kRevID, kFleeceBody);
     
-    createRev(db2, kDocID, kNonLocalRev1ID, kFleeceBody);
-    createRev(db2, kDocID, kNonLocalRev2ID, kFleeceBody);
-    createRev(db2, "onlyInDB2"_sl, kRevID, kFleeceBody);
+    createRev(_collDB2, kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB2, kDocID, kNonLocalRev2ID, kFleeceBody);
+    createRev(_collDB2, "onlyInDB2"_sl, kRevID, kFleeceBody);
 
     _expectedDocumentCount = 1;
     SECTION("Pull") {
@@ -382,9 +382,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
-    createRev(db, "obsolete"_sl,  kNonLocalRev1ID, kFleeceBody);
-    createRev(db, "fresh"_sl,     kNonLocalRev1ID, kFleeceBody);
-    createRev(db, "permanent"_sl, kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB1, "obsolete"_sl,  kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB1, "fresh"_sl,     kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB1, "permanent"_sl, kNonLocalRev1ID, kFleeceBody);
 
     REQUIRE(c4doc_setExpiration(db, "obsolete"_sl, c4_now() - 1, nullptr));
     REQUIRE(c4doc_setExpiration(db, "fresh"_sl, c4_now() + 100000, nullptr));
@@ -413,8 +413,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
     {
         TransactionHelper t(db);
         // Start with "mydoc" in both dbs with the same revs
-        createRev(db, kDocID, kRevID, kFleeceBody);
-        createRev(db2, kDocID, kRevID, kFleeceBody);
+        createRev(_collDB1, kDocID, kRevID, kFleeceBody);
+        createRev(_collDB2, kDocID, kRevID, kFleeceBody);
 
         // Add the "_removed" property. (Normally this is never added to a doc; it's just returned in
         // a fake revision body by the SG replictor, to indicate that the doc is removed from all
@@ -423,7 +423,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
         enc.beginDict();
         enc["_removed"_sl] = true;
         enc.endDict();
-        createRev(db, kDocID, kRev2ID, enc.finish());
+        createRev(_collDB1, kDocID, kRev2ID, enc.finish());
     }
 
     _expectedDocumentCount = 1;
@@ -523,7 +523,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     if (!isRevTrees())
         return;
 
-    createRev("doc"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
 
     runPushReplication();
@@ -535,7 +535,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     for (int gen = 2; gen <= 50; gen++) {
         char revID[32];
         sprintf(revID, "%d-0000", gen);
-        createRev("doc"_sl, slice(revID), kFleeceBody);
+        createRev(_collDB1, "doc"_sl, slice(revID), kFleeceBody);
     }
 
     runPushReplication();
@@ -550,7 +550,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     if (!isRevTrees())
         return;
 
-    createRev("doc"_sl, kRevID, kFleeceBody);
+    createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
 
     runPullReplication();
@@ -560,7 +560,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     for (int gen = 2; gen <= 50; gen++) {
         char revID[32];
         sprintf(revID, "%d-0000", gen);
-        createRev("doc"_sl, slice(revID), kFleeceBody);
+        createRev(_collDB1, "doc"_sl, slice(revID), kFleeceBody);
     }
 
     runPullReplication();
@@ -579,8 +579,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
-    createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
-    createRev(db, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
+    createRev(_collDB1, "doc1"_sl, kRev1ID, kFleeceBody);
+    createRev(_collDB1, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
@@ -590,8 +590,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
-    createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
-    createRev(db, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
+    createRev(_collDB1, "doc1"_sl, kRev1ID, kFleeceBody);
+    createRev(_collDB1, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
@@ -611,8 +611,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
         sleepFor(1s);
         {
             TransactionHelper t(db);
-            createRev(db, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
-            createRev(db, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+            createRev(_collDB1, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+            createRev(_collDB1, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             c4db_purgeDoc(db, c4str("docA"), ERROR_INFO());
         }
         sleepFor(1s); // give replicator a moment to detect the latest revs
@@ -632,12 +632,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
 //        serverOpts.setNoIncomingConflicts();
 //    }
     SECTION("Pre-existing docs") {
-        createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
-        createRev(db, "doc2"_sl, kRev1ID, kFleeceBody);
+        createRev(_collDB1, "doc1"_sl, kRev1ID, kFleeceBody);
+        createRev(_collDB1, "doc2"_sl, kRev1ID, kFleeceBody);
         _expectedDocumentCount = 2;
         runPushReplication();
         C4Log("-------- Finished pre-existing push --------");
-        createRev(db2, "other1"_sl, kRev1ID, kFleeceBody);
+        createRev(_collDB2, "other1"_sl, kRev1ID, kFleeceBody);
     }
     addRevsInParallel(1000ms, alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
@@ -667,7 +667,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continu
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][Continuous]") {
     alloc_slice docID("dock");
-    createRev(db, docID, kRev1ID, kFleeceBody);
+    createRev(_collDB1, docID, kRev1ID, kFleeceBody);
     _expectedDocumentCount = -1;
     addRevsInParallel(10ms, docID, 2, 200);
     runPushReplication(kC4Continuous);
@@ -1101,15 +1101,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
 
     Log("-------- Update Doc --------");
     if (isRevTrees()) {
-        createRev(db, kDocID, kRev3ID, kFleeceBody);
-        createRev(db, kDocID, "4-baba"_sl, kFleeceBody);
+        createRev(_collDB1, kDocID, kRev3ID, kFleeceBody);
+        createRev(_collDB1, kDocID, "4-baba"_sl, kFleeceBody);
 
-        createRev(db2, kDocID, kRev3ID, kFleeceBody);
+        createRev(_collDB2, kDocID, kRev3ID, kFleeceBody);
     } else {
-        createRev(db, kDocID, "1@d00d"_sl, kFleeceBody);
-        createRev(db, kDocID, "1@*"_sl, kFleeceBody);
+        createRev(_collDB1, kDocID, "1@d00d"_sl, kFleeceBody);
+        createRev(_collDB1, kDocID, "1@*"_sl, kFleeceBody);
 
-        createRev(db2, kDocID, "1@d00d"_sl, kFleeceBody);
+        createRev(_collDB2, kDocID, "1@d00d"_sl, kFleeceBody);
     }
 
     Log("-------- Second Replication db<->db2 --------");
@@ -1284,10 +1284,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
     {
         TransactionHelper t(db);
-        createRev(db,  docID, C4STR("1-11111111"), kFleeceBody);
-        createConflictingRev(db, docID, C4STR("1-11111111"), C4STR("2-22222222"));
-        createConflictingRev(db, docID, C4STR("1-11111111"), C4STR("2-ffffffff"));
-        createConflictingRev(db, docID, C4STR("2-22222222"), C4STR("3-33333333"));
+        createRev(_collDB1,  docID, C4STR("1-11111111"), kFleeceBody);
+        createConflictingRev(_collDB1, docID, C4STR("1-11111111"), C4STR("2-22222222"));
+        createConflictingRev(_collDB1, docID, C4STR("1-11111111"), C4STR("2-ffffffff"));
+        createConflictingRev(_collDB1, docID, C4STR("2-22222222"), C4STR("3-33333333"));
     }
     _expectedDocumentCount = 1;
     runPullReplication();
@@ -1300,7 +1300,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
     {
         TransactionHelper t(db);
-        createConflictingRev(db, docID, C4STR("3-33333333"), C4STR("4-dddddddd"), kFleeceBody, kRevDeleted);
+        createConflictingRev(_collDB1, docID, C4STR("3-33333333"), C4STR("4-dddddddd"), kFleeceBody, kRevDeleted);
     }
 
     doc = c4doc_get(db, docID, true, nullptr);
@@ -1322,7 +1322,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     SECTION("Modify before 2nd pull") {
         {
             TransactionHelper t(db2);
-            createRev(db2, docID, C4STR("4-4444"), kC4SliceNull);
+            createRev(_collDB2, docID, C4STR("4-4444"), kC4SliceNull);
             _expectedDocPullErrors = {"Khan"};
         }
 

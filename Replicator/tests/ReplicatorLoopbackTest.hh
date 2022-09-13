@@ -53,7 +53,7 @@ public:
 
     ReplicatorLoopbackTest()
 #if SkipVersionVectorTest
-    :C4Test(0)
+    :   C4Test(0)
 #else
     :C4Test(GENERATE(0, 1))
 #endif
@@ -64,6 +64,10 @@ public:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
         _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
+
+        _collSpec = { "test"_sl, "loopback"_sl };
+        _collDB1 = createCollection(db, _collSpec);
+        _collDB2 = createCollection(db2, _collSpec);
         
         if (isRevTrees()) {
             kNonLocalRev1ID = kRev1ID;
@@ -183,15 +187,15 @@ public:
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
-        runReplicators(Replicator::Options::pushing(mode), Replicator::Options::passive());
+        runReplicators(Replicator::Options::pushing(mode, _collSpec), Replicator::Options::passive(_collSpec));
     }
 
     void runPullReplication(C4ReplicatorMode mode =kC4OneShot) {
-        runReplicators(Replicator::Options::passive(), Replicator::Options::pulling(mode));
+        runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(mode, _collSpec));
     }
 
     void runPushPullReplication(C4ReplicatorMode mode =kC4OneShot) {
-        runReplicators(Replicator::Options(mode, mode), Replicator::Options::passive());
+        runReplicators(Replicator::Options::pushpull(mode, _collSpec), Replicator::Options::passive(_collSpec));
     }
 
 
@@ -444,7 +448,7 @@ public:
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
                 sprintf(docID, "newdoc%d", docNo++);
-                createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+                createRev(_collDB1, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
         }
         Log("-------- Done creating docs --------");
@@ -477,7 +481,7 @@ public:
                  alloc_slice docID,
                  int firstRev, int totalRevs, bool useFakeRevIDs)
     {
-        addRevs(c4db_getDefaultCollection(db, nullptr), interval, docID, firstRev,
+        addRevs(db == this->db ? _collDB1 : _collDB2, interval, docID, firstRev,
                 totalRevs, useFakeRevIDs, db == this->db ? "db" : "db2");
     }
 
@@ -540,9 +544,9 @@ public:
         if (compareDeletedDocs)
             options.flags |= kC4IncludeDeleted;
         C4Error error;
-        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
+        c4::ref<C4DocEnumerator> e1 = c4coll_enumerateAllDocs(_collDB1, &options, ERROR_INFO(error));
         REQUIRE(e1);
-        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, ERROR_INFO(error));
+        c4::ref<C4DocEnumerator> e2 = c4coll_enumerateAllDocs(_collDB2, &options, ERROR_INFO(error));
         REQUIRE(e2);
 
         unsigned i = 0;
@@ -647,6 +651,9 @@ public:
     
     
     C4Database* db2 {nullptr};
+    C4CollectionSpec _collSpec;
+    C4Collection* _collDB1;
+    C4Collection* _collDB2;
     Retained<Replicator> _replClient, _replServer;
     std::vector<alloc_slice> _checkpointIDs;
     std::unique_ptr<std::thread> _parallelThread;
