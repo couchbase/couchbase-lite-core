@@ -32,6 +32,15 @@ namespace litecore { namespace repl {
             collectionCount = 1;
         }
 
+        C4ReplParamsOneCollection(
+                C4CollectionSpec collectionSpec
+            ,   C4ReplicatorMode pushMode
+            ,   C4ReplicatorMode pullMode
+        ): C4ReplParamsOneCollection(collectionSpec) {
+            push = pushMode;
+            pull = pullMode;
+        }
+
         C4ReplicatorMode& push;
         C4ReplicatorMode& pull;
         C4ReplicatorValidationFunction C4NONNULL & pushFilter;
