@@ -130,7 +130,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
     _expectedDocumentCount = 1;
     runPushReplication();
 
-    createNewRev(db, "dok"_sl, nullslice, kRevDeleted);
+    createNewRev(_collDB1, "dok"_sl, nullslice, kRevDeleted);
     Log("-------- Second Replication --------");
     runPushReplication();
 
@@ -161,7 +161,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
     string revID;
     {
         TransactionHelper t(db);
-        revID = createNewRev(db, "Doc"_sl, nullslice, kFleeceBody);
+        revID = createNewRev(_collDB1, "Doc"_sl, nullslice, kFleeceBody);
     }
     _expectedDocumentCount = 1;
     runPushReplication();
@@ -170,7 +170,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
     {
         TransactionHelper t(db);
         for (int i = 2; i <= 5000; ++i)
-            revID = createNewRev(db, "Doc"_sl, slice(revID), kFleeceBody);
+            revID = createNewRev(_collDB1, "Doc"_sl, slice(revID), kFleeceBody);
     }
 
     Log("-------- Second Replication --------");
@@ -189,14 +189,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
 
     {
         TransactionHelper t(db2);
-        REQUIRE(c4db_purgeDoc(db2, "meenie"_sl, nullptr));
+        REQUIRE(c4coll_purgeDoc(_collDB2, "meenie"_sl, nullptr));
     }
     
     _expectedDocumentCount = 0;  // normal replication will not re-pull purged doc
     runPullReplication();
 
     _expectedDocumentCount = 1; // resetting checkpoint does re-pull purged doc
-    runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(), true);
+    runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(kC4OneShot, _collSpec), true);
 
     c4::ref<C4Document> doc = c4doc_get(db2, "meenie"_sl, true, nullptr);
     CHECK(doc != nullptr);
@@ -204,7 +204,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
@@ -233,22 +233,22 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":12189}");
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;
-    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":12189}");
 }
@@ -303,15 +303,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     SECTION("Pull") {
         // Pull replication. skipDeleted is automatic because destination is empty.
         pull = true;
-        pullOpt.emplace(Replicator::Options::pulling());
-        pushOpt.emplace(Replicator::Options::passive());
+        pullOpt.emplace(Replicator::Options::pulling(kC4OneShot, _collSpec));
+        pushOpt.emplace(Replicator::Options::passive(_collSpec));
         skipDeleted = true;
         //pullOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
     }
     SECTION("Push") {
         // Push replication. skipDeleted is not automatic, so test both ways:
-        pushOpt.emplace(Replicator::Options::pushing());
-        pullOpt.emplace(Replicator::Options::passive());
+        pushOpt.emplace(Replicator::Options::pushing(kC4OneShot, _collSpec));
+        pullOpt.emplace(Replicator::Options::passive(_collSpec));
         SECTION("Push + SkipDeleted") {
             skipDeleted = true;
             pushOpt->setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
@@ -327,7 +327,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
         validateCheckpoints(db, db2, "{\"local\":100}");
 
     // If skipDeleted was used, ensure only 50 revisions got created (no tombstones):
-    CHECK(c4db_getLastSequence(db2) == (skipDeleted ?50 : 100));
+    CHECK(c4coll_getLastSequence(_collDB2) == (skipDeleted ?50 : 100));
 }
 
 
@@ -454,7 +454,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]")
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
     SECTION("Default") {
     }
     SECTION("No-conflicts") {
@@ -463,21 +463,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
 
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(serverOpts, Replicator::Options::pulling());
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
     Log("--- Erasing db, now pushing back to db...");
     deleteAndRecreateDB();
     // Give the replication a unique ID so it won't know it's pushing to db again
-    auto pushOpts = Replicator::Options::pushing();
+    auto pushOpts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     pushOpts.setProperty(C4STR(kC4ReplicatorOptionRemoteDBUniqueID), "three"_sl);
     runReplicators(serverOpts, pushOpts);
     validateCheckpoints(db2, db, "{\"local\":100}");
 }
 
 
-static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array) {
+static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array, C4CollectionSpec collSpec = kC4DefaultCollectionSpec) {
     fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(slice(property));
@@ -486,7 +486,7 @@ static Replicator::Options pushOptionsWithProperty(const char *property, vector<
         enc << item;
     enc.endArray();
     enc.endDict();
-    auto opts = Replicator::Options::pushing();
+    auto opts = Replicator::Options::pushing(kC4OneShot, collSpec);
     opts.collectionOpts[0].properties = AllocedDict(enc.finish());
     return opts;
 }
@@ -503,14 +503,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     alloc_slice chk1 = _checkpointIDs[0];
 
     _expectedDocumentCount = 0;     // because db2 already has the doc
-    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}),
-                   Replicator::Options::passive());
+    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}, _collSpec),
+                   Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":1}");
     alloc_slice chk2 = _checkpointIDs[0];
     CHECK(chk1 != chk2);
 
-    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionDocIDs, {"wot's", "up", "doc"}),
-                   Replicator::Options::passive());
+    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionDocIDs, {"wot's", "up", "doc"}, _collSpec),
+                   Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":1}");
     alloc_slice chk3 = _checkpointIDs[0];
     CHECK(chk3 != chk2);
@@ -528,7 +528,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
 
     runPushReplication();
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "doc"_sl, true, kDocGetAll, nullptr);
     alloc_slice remote(c4doc_getRemoteAncestor(doc, 1));
     CHECK(remote == slice(kRevID));
 
@@ -568,7 +568,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     validateCheckpoints(db2, db, "{\"remote\":50}");
 
     // Check that doc is not conflicted in db2:
-    doc = c4db_getDoc(db2, "doc"_sl, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB2, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "50-0000"_sl);
     CHECK(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
@@ -584,8 +584,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
-    auto pushOpt = Replicator::Options::pushing(kC4Continuous);
-    runReplicators(pushOpt, Replicator::Options::passive());
+    auto pushOpt = Replicator::Options::pushing(kC4Continuous, _collSpec);
+    runReplicators(pushOpt, Replicator::Options::passive(_collSpec));
 }
 
 
@@ -595,8 +595,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
-    auto pullOpt = Replicator::Options::pulling(kC4Continuous);
-    runReplicators(Replicator::Options::passive(), pullOpt);
+    auto pullOpt = Replicator::Options::pulling(kC4Continuous, _collSpec);
+    runReplicators(Replicator::Options::passive(_collSpec), pullOpt);
 }
 
 
@@ -613,7 +613,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
             TransactionHelper t(db);
             createRev(_collDB1, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             createRev(_collDB1, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
-            c4db_purgeDoc(db, c4str("docA"), ERROR_INFO());
+            c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
         }
         sleepFor(1s); // give replicator a moment to detect the latest revs
         stopWhenIdle();
@@ -625,7 +625,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Empty", "[Push][Continuous]") {
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 //    SECTION("Default") {
 //    }
 //    SECTION("No-conflicts") {
@@ -641,7 +641,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
     }
     addRevsInParallel(1000ms, alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
-    runReplicators(Replicator::Options::pushing(kC4Continuous), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4Continuous, _collSpec), serverOpts);
 }
 
 
@@ -661,7 +661,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continu
     addDocsInParallel(100ms, 5000);
     runPushReplication(kC4Continuous);
 
-	CHECK(c4db_getDocumentCount(db) == c4db_getDocumentCount(db2));
+	CHECK(c4coll_getDocumentCount(_collDB1) == c4coll_getDocumentCount(_collDB2));
 }
 
 
@@ -689,9 +689,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto opts = Replicator::Options::pushing();
+    auto opts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     _clientProgressLevel = kC4ReplProgressPerAttachment;
-    runReplicators(opts, Replicator::Options::passive());
+    runReplicators(opts, Replicator::Options::passive(_collSpec));
 
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":1}");
@@ -712,8 +712,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto pullOpts = Replicator::Options::pulling();
-    auto serverOpts = Replicator::Options::passive();
+    auto pullOpts = Replicator::Options::pulling(kC4OneShot, _collSpec);
+    auto serverOpts = Replicator::Options::passive(_collSpec);
     _clientProgressLevel = _serverProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(serverOpts, pullOpts);
 
@@ -768,9 +768,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
         }
     }
 
-    auto pullOpts = Replicator::Options::pulling();
+    auto pullOpts = Replicator::Options::pulling(kC4OneShot, _collSpec);
     _serverProgressLevel = kC4ReplProgressPerAttachment;
-    runReplicators(Replicator::Options::passive(), pullOpts);
+    runReplicators(Replicator::Options::passive(_collSpec), pullOpts);
 
     compareDatabases();
 
@@ -808,8 +808,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
         _expectedDocumentCount = 1;
     }
 
-    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
 
     checkAttachments(db2, blobKeys, attachments);
 
@@ -834,8 +834,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
         _expectedDocumentCount = 1;
     }
 
-    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
-    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
 
     checkAttachments(db2, blobKeys, attachments);
 }
@@ -859,21 +859,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     AllocedDict properties(enc.finish());
 
     SECTION("Push") {
-        auto pushOptions = Replicator::Options::pushing();
+        auto pushOptions = Replicator::Options::pushing(kC4OneShot, _collSpec);
         pushOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
         runReplicators(pushOptions,
-                       Replicator::Options::passive());
+                       Replicator::Options::passive(_collSpec));
     }
     SECTION("Pull") {
-        auto pullOptions = Replicator::Options::pulling();
+        auto pullOptions = Replicator::Options::pulling(kC4OneShot, _collSpec);
         pullOptions.collectionOpts[0].properties = properties;
         _expectedDocumentCount = 3;
-        runReplicators(Replicator::Options::passive(),
+        runReplicators(Replicator::Options::passive(_collSpec),
                        pullOptions);
     }
 
-    CHECK(c4db_getDocumentCount(db2) == 3);
+    CHECK(c4coll_getDocumentCount(_collDB2) == 3);
     c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
     CHECK(doc != nullptr);
     doc = c4doc_get(db2, "0000010"_sl, true, nullptr);
@@ -890,18 +890,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
     enc.writeString("Melitta"_sl);
     enc.endDict();
     alloc_slice data = enc.finish();
-    auto opts = Replicator::Options::pulling();
+    auto opts = Replicator::Options::pulling(kC4OneShot, _collSpec);
     opts.properties = AllocedDict(data);
 
     // LiteCore's replicator doesn't support filters, so we expect an Unsupported error back:
     _expectedError = {LiteCoreDomain, kC4ErrorUnsupported};
-    runReplicators(opts, Replicator::Options::passive());
+    runReplicators(opts, Replicator::Options::passive(_collSpec));
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
-    auto pullOptions = Replicator::Options::passive();
+    auto pullOptions = Replicator::Options::passive(_collSpec);
     atomic<int> validationCount {0};
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
     pullOptions.collectionOpts[0].pullFilter = [](C4CollectionSpec collectionSpec,
@@ -913,14 +913,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     };
     _expectedDocPushErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
     _expectedDocumentCount = 100 - 4;
-    runReplicators(Replicator::Options::pushing(),
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec),
                    pullOptions);
     validateCheckpoints(db, db2, "{\"local\":100}");
     
     // CBL-123: Change from == 100 to >= 100 to account for 403 getting
     // one retry before giving up
     CHECK(validationCount >= 100);
-    CHECK(c4db_getDocumentCount(db2) == 96);
+    CHECK(c4coll_getDocumentCount(_collDB2) == 96);
 }
 
 
@@ -941,7 +941,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
 
     if (isRevTrees()) {
         // Verify that rev 1 body is still available, for later use in conflict resolution:
-        c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("conflict"), true, kDocGetAll, nullptr);
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, C4STR("conflict"), true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK(doc->selectedRev.revID == kConflictRev2AID);
         CHECK(c4doc_getProperties(doc) != nullptr);
@@ -954,10 +954,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"conflict"};
-    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("conflict"), true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, C4STR("conflict"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
@@ -982,53 +982,53 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoConflicts]") {
     // In the default no-outgoing-conflicts mode, make sure a local conflict isn't pushed to server:
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
     createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
     createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
     createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
-    REQUIRE(c4db_getLastSequence(db2) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 
     // Push db to db2 again:
     _expectedDocumentCount = 0;
     _expectedDocPushErrors = {"conflict"};
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 
     // Verify db2 didn't change:
-    REQUIRE(c4db_getLastSequence(db2) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "[Push][Conflict][NoConflicts]") {
     // Put server in no-conflicts mode and verify that a conflict can't be pushed to it.
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
     createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
     createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
-    REQUIRE(c4db_getLastSequence(db2) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 
     // Push db to db2 again:
     _expectedDocumentCount = 0;
     _expectedDocPushErrors = {"conflict"};
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 
     // Verify db2 didn't change:
-    REQUIRE(c4db_getLastSequence(db2) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 }
 
 
@@ -1037,7 +1037,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     static constexpr slice kVersions[7] = {"", "1@*", "2@*", "1@*", "2@*", "3@*", "4@*"};
     const slice* kRevIDs = isRevTrees() ? kTreeRevs : kVersions;
 
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     createRev(kDocID, kRevIDs[1], kFleeceBody);
     createRev(kDocID, kRevIDs[2], kFleeceBody);
@@ -1045,7 +1045,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
     Log("-------- First Replication db->db2 --------");
     runReplicators(serverOpts,
-                   Replicator::Options::pulling());
+                   Replicator::Options::pulling(kC4OneShot, _collSpec));
     validateCheckpoints(db2, db, "{\"remote\":2}");
 
     Log("-------- Update Doc --------");
@@ -1058,26 +1058,26 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
         enc.writeInt(666);
         enc.endDict();
         body = enc.finish();
-        createNewRev(db2, kDocID, body);
-        createNewRev(db2, kDocID, body);
+        createNewRev(_collDB2, kDocID, body);
+        createNewRev(_collDB2, kDocID, body);
         _expectedDocumentCount = 1;
     }
 
 
     Log("-------- Second Replication db2->db --------");
     runReplicators(serverOpts,
-                   Replicator::Options::pushing());
+                   Replicator::Options::pushing(kC4OneShot, _collSpec));
     validateCheckpoints(db2, db, "{\"local\":3,\"remote\":2}");
     compareDatabases();
 
     Log("-------- Update Doc Again --------");
-    createNewRev(db2, kDocID, body);
-    createNewRev(db2, kDocID, body);
+    createNewRev(_collDB2, kDocID, body);
+    createNewRev(_collDB2, kDocID, body);
     _expectedDocumentCount = 1;
 
     Log("-------- Third Replication db2->db --------");
     runReplicators(serverOpts,
-                   Replicator::Options::pushing());
+                   Replicator::Options::pushing(kC4OneShot, _collSpec));
     validateCheckpoints(db2, db, "{\"local\":5,\"remote\":2}");
     compareDatabases();
 }
@@ -1090,14 +1090,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     // Pusher will fail with a 409 because the remote rev is too old.
     // When the puller sees the server has 3-deadbeef and updates the remote-rev, the puller
     // can retry and this time succeed.
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     createRev(kDocID, kNonLocalRev1ID, kFleeceBody);
     createRev(kDocID, kNonLocalRev2ID, kFleeceBody);
     _expectedDocumentCount = 1;
 
     Log("-------- First Replication db<->db2 --------");
-    runReplicators(Replicator::Options::pushpull(), serverOpts);
+    runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
 
     Log("-------- Update Doc --------");
     if (isRevTrees()) {
@@ -1113,32 +1113,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     }
 
     Log("-------- Second Replication db<->db2 --------");
-    runReplicators(Replicator::Options::pushpull(), serverOpts);
+    runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][Conflict][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);
 
     Log("-------- First Replication: push db->db2 --------");
     _expectedDocumentCount = 1;
-    runReplicators(Replicator::Options::pushing(), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 
     clearCheckpoint(db, true);
     Log("-------- Second Replication: push db->db2 --------");
     _expectedDocumentCount = 0;
-    runReplicators(Replicator::Options::pushing(), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[Push]") {
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     _ignoreLackOfDocErrors = true;
     _checkDocsFinished = false;
 
@@ -1147,17 +1147,17 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[
 
     createRev(doc1_id, kRevID, kFleeceBody);
     createRev(doc2_id, kRevID, kFleeceBody);
-    c4::ref<C4Document> doc1 = c4db_getDoc(db, doc1_id, true, kDocGetAll, ERROR_INFO());
+    c4::ref<C4Document> doc1 = c4coll_getDoc(_collDB1, doc1_id, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc1);
 
-    REQUIRE(c4db_getDocumentCount(db) == 2);
-    REQUIRE(c4db_getDocumentCount(db2) == 0);
+    REQUIRE(c4coll_getDocumentCount(_collDB1) == 2);
+    REQUIRE(c4coll_getDocumentCount(_collDB2) == 0);
 
     Log("-------- First Replication: push db->db2 --------");
     _expectedDocumentCount = 2;
-    runReplicators(Replicator::Options::pushing(), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
 
-    REQUIRE(c4db_getDocumentCount(db2) == 2);
+    REQUIRE(c4coll_getDocumentCount(_collDB2) == 2);
 
     // delete doc1 from local
     {
@@ -1167,11 +1167,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[
         REQUIRE(deletedDoc);
         REQUIRE(deletedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     }
-    REQUIRE(c4db_getDocumentCount(db) == 1);
+    REQUIRE(c4coll_getDocumentCount(_collDB1) == 1);
 
     _expectedDocumentCount = 1;
-    runReplicators(Replicator::Options::pushing(), serverOpts);
-    c4::ref<C4Document> doc1InDb2 = c4db_getDoc(db2, doc1_id, true, kDocGetMetadata, ERROR_INFO());
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
+    c4::ref<C4Document> doc1InDb2 = c4coll_getDoc(_collDB2, doc1_id, true, kDocGetMetadata, ERROR_INFO());
     CHECK( (doc1InDb2 && (doc1InDb2->flags | kDocDeleted)) );
 }
 
@@ -1192,9 +1192,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"Khan"};
-    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK(c4doc_getProperties(doc) != nullptr);
@@ -1216,7 +1216,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
     CHECK(doc->revID == revOrVersID(kConflictRev2BID, "2@*"));
 
     // Update the doc and push it to db2:
-    createNewRev(db, docID, kFleeceBody);
+    createNewRev(_collDB1, docID, kFleeceBody);
     C4Log("-------- Push db -> db2 --------");
     runPushReplication();
 
@@ -1240,9 +1240,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"Khan"};
-    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
@@ -1260,7 +1260,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
 
-    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     if (isRevTrees())
         CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
@@ -1268,7 +1268,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         CHECK(mergedID == "2@*,1@babe2,1@babe1"_sl);
 
     // Update the doc and push it to db2:
-    createNewRev(db, docID, kFleeceBody);
+    createNewRev(_collDB1, docID, kFleeceBody);
     runPushReplication();
 
     compareDatabases();
@@ -1329,7 +1329,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         Log("-------- Second pull --------");
         runPullReplication();
 
-        doc = c4db_getDoc(db2, docID, true, kDocGetAll, nullptr);
+        doc = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) != 0);
 		revID = C4STR("4-4444");
@@ -1347,7 +1347,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
             CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         }
 
-        doc = c4db_getDoc(db2, docID, true, kDocGetAll, nullptr);
+        doc = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) == 0);
 		revID = C4STR("4-4444");
@@ -1373,7 +1373,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     alloc_slice docID("doc");
     auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous);
     _clientProgressLevel = kC4ReplProgressPerDocument;
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     installConflictHandler();
 
     static const int intervalMs = -500;     // random interval
@@ -1414,9 +1414,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     _expectedDocumentCount = 100;
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
-    auto opts = Replicator::Options::pushing();
+    auto opts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     _clientProgressLevel = kC4ReplProgressPerDocument;
-    runReplicators(opts, Replicator::Options::passive());
+    runReplicators(opts, Replicator::Options::passive(_collSpec));
 }
 
 
@@ -1425,9 +1425,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
     _expectedDocumentCount = 100;
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
-    auto opts = Replicator::Options::pulling();
+    auto opts = Replicator::Options::pulling(kC4OneShot, _collSpec);
     _serverProgressLevel = kC4ReplProgressPerDocument;
-    runReplicators(Replicator::Options::passive(), opts);
+    runReplicators(Replicator::Options::passive(_collSpec), opts);
 }
 
 
@@ -1453,7 +1453,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"conflict", "db-deleted", "db2-deleted"};
     _expectedDocumentCount = 3;
-    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":4,\"remote\":7}");
     
     auto e = DBAccessTestWrapper::unresolvedDocsEnumerator(db);
@@ -1534,12 +1534,12 @@ static void mutationsForDelta(C4Database *db) {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -1564,7 +1564,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     _expectedDocumentCount = (100+6)/7;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
@@ -1572,7 +1572,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta]") {
     static constexpr int kNumDocs = 100, kNumProps = 1000;
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
     {
@@ -1587,12 +1587,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
             }
             enc.endDict();
             alloc_slice body = enc.finish();
-            createNewRev(db, slice(docID), body);
+            createNewRev(_collDB1, slice(docID), body);
         }
     }
 
     _expectedDocumentCount = kNumDocs;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
 
     Log("-------- Mutate Docs --------");
@@ -1617,19 +1617,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     Log("-------- Second Push --------");
     _expectedDocumentCount = kNumDocs;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     CHECK(DBAccessTestWrapper::numDeltasApplied() - before == kNumDocs);
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]") {
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -1639,7 +1639,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = (100+6)/7;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
@@ -1648,7 +1648,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
-    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
@@ -1658,7 +1658,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
         _expectedDocumentCount = 1;
     }
     Log("-------- Push To db2 --------");
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     Log("-------- Mutate Doc In db --------");
@@ -1688,7 +1688,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
@@ -1716,7 +1716,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
-    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
@@ -1729,7 +1729,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
         _expectedDocumentCount = 1;
     }
     Log("-------- Pull To db2 --------");
-    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     validateCheckpoints(db2, db, "{\"remote\":1}");
 
     Log("-------- Mutate Doc In db --------");
@@ -1759,7 +1759,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     Log("-------- Pull To db2 Again --------");
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
@@ -1781,7 +1781,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
-    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
@@ -1791,7 +1791,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
         _expectedDocumentCount = 1;
     }
     Log("-------- Push Doc To db2 --------");
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     Log("-------- Mutate Doc In db2 --------");
@@ -1807,7 +1807,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
-    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
@@ -1821,12 +1821,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
     // CBSE-7341
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -1834,7 +1834,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     _expectedDocumentCount = 0;
 
     // This line causes a null deference SIGSEGV before the fix
-    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
@@ -1844,8 +1844,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     _expectedDocumentCount = 2;
     runPushReplication();
     validateCheckpoints(db, db2, "{\"local\":2}");
-    REQUIRE(c4db_getLastSequence(db) == 2);
-    REQUIRE(c4db_getLastSequence(db2) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB1) == 2);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 
     const slice kDoc1Rev2A = revOrVersID("2-1111111a", "1@1a1a");
     const slice kDoc1Rev2B = revOrVersID("2-1111111b", "1@1b1b");
@@ -1856,18 +1856,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     createFleeceRev(db2, C4STR("doc1"), kDoc1Rev2B, C4STR("{\"db\":2}"));
     createFleeceRev(db,  C4STR("doc2"), kDoc2Rev2A, C4STR("{\"db\":1}"));
     createFleeceRev(db2, C4STR("doc2"), kDoc2Rev2B, C4STR("{\"db\":2}"), kRevDeleted);
-    REQUIRE(c4db_getLastSequence(db) == 4);
-    REQUIRE(c4db_getLastSequence(db2) == 4);
+    REQUIRE(c4coll_getLastSequence(_collDB1) == 4);
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 4);
     
     _expectedDocPullErrors = set<string> { "doc1", "doc2" };
-    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":2,\"remote\":4}");
     if (isRevTrees())
-        REQUIRE(c4db_getLastSequence(db) == 6); // #5(doc1) and #6(doc2) seq, received from other side
-    REQUIRE(c4db_getLastSequence(db2) == 4);
+        REQUIRE(c4coll_getLastSequence(_collDB1) == 6); // #5(doc1) and #6(doc2) seq, received from other side
+    REQUIRE(c4coll_getLastSequence(_collDB2) == 4);
     
     // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
-    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("doc1"), true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, C4STR("doc1"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kDoc1Rev2A);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
@@ -1883,10 +1883,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
     auto seq = C4SequenceNumber(isRevTrees() ? 7 : 5);
     CHECK(doc->sequence == seq);
-    CHECK(c4db_getLastSequence(db) == seq); // db-sequence is greater than #6(doc2)
+    CHECK(c4coll_getLastSequence(_collDB1) == seq); // db-sequence is greater than #6(doc2)
     
     // resolve doc2; choose remote revision, so no need to create a new revision
-    doc = c4db_getDoc(db, C4STR("doc2"), true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kDoc2Rev2A);
     CHECK(c4doc_getProperties(doc) != nullptr);
@@ -1907,7 +1907,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
     seq = C4SequenceNumber(isRevTrees() ? 8 : 6);
     CHECK(doc->sequence == seq);
-    CHECK(c4db_getLastSequence(db) == seq);
+    CHECK(c4coll_getLastSequence(_collDB1) == seq);
 }
 
 
@@ -1923,9 +1923,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
 
     _expectedDocumentCount = 0;
     _expectedDocPushErrors = {"seekrit"};
-    auto opts = Replicator::Options::pushing();
+    auto opts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     ExpectingExceptions x;
-    runReplicators(opts, Replicator::Options::passive());
+    runReplicators(opts, Replicator::Options::passive(_collSpec));
 
     REQUIRE(db2->getDocumentCount() == 0);
 }
@@ -1988,12 +1988,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
     TestEncryptorContext encryptContext = {"seekrit", "SSN", false};
     TestEncryptorContext decryptContext = {"seekrit", "SSN", false};
 
-    auto opts = Replicator::Options::pushing();
+    auto opts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     opts.propertyEncryptor = &testEncryptor;
     opts.propertyDecryptor = &testDecryptor;
     opts.callbackContext = &encryptContext;
 
-    auto serverOpts = Replicator::Options::passive();
+    auto serverOpts = Replicator::Options::passive(_collSpec);
     serverOpts.propertyEncryptor = &testEncryptor;
     serverOpts.propertyDecryptor = &testDecryptor;
     serverOpts.callbackContext = &decryptContext;
@@ -2004,7 +2004,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
 
     // Verify the synced document in db2:
     CHECK(encryptContext.called);
-    c4::ref<C4Document> doc = c4db_getDoc(db2, "seekrit"_sl, true, kDocGetAll, ERROR_INFO());
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "seekrit"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
     Dict props = c4doc_getProperties(doc);
 
@@ -2023,8 +2023,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
-    Options opts = GENERATE(Options::pushing(), Options::pulling(), Options::pushpull());
-    Options serverOpts = Options::passive();
+    Options opts = GENERATE(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec), Options::pushpull(kC4OneShot, _collSpec));
+    Options serverOpts = Options::passive(_collSpec);
 
     Retained<C4Collection> coll = createCollection(db, { "foo"_sl, "bar"_sl });
     Options::CollectionOptions tmp(Options::collectionSpecToPath({ "foo"_sl, "bar"_sl }));

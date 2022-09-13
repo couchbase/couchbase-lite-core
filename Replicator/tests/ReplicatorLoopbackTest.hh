@@ -573,6 +573,7 @@ public:
         validateCollectionCheckpoint(database, 0, local, body, meta);
     }
 
+    // IF THIS DOESN'T WORK WITH INDEX 0, CHANGE TO USE REPLICATOR.OPTIONS.COLLECTIONSPECTOINDEX
     void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
                              const char *body, const char *meta = "1-cc") {
         validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
