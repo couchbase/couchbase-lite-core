@@ -438,7 +438,7 @@ public:
         std::this_thread::sleep_for(interval);
     }
 
-    int addDocs(C4Database *db, duration interval, int total) {
+    int addDocs(C4Collection *coll, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
@@ -448,7 +448,7 @@ public:
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
                 sprintf(docID, "newdoc%d", docNo++);
-                createRev(_collDB1, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+                createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
         }
         Log("-------- Done creating docs --------");
@@ -477,14 +477,6 @@ public:
         Log("-------- %s: Done creating revs --------", logName);
     }
 
-    void addRevs(C4Database *db, duration interval,
-                 alloc_slice docID,
-                 int firstRev, int totalRevs, bool useFakeRevIDs)
-    {
-        addRevs(db == this->db ? _collDB1 : _collDB2, interval, docID, firstRev,
-                totalRevs, useFakeRevIDs, db == this->db ? "db" : "db2");
-    }
-
     static std::thread* runInParallel(std::function<void()> callback) {
         return new std::thread([=]() mutable {
             callback();
@@ -493,7 +485,7 @@ public:
 
     void addDocsInParallel(duration interval, int total) {
         _parallelThread.reset(runInParallel([=]() {
-            _expectedDocumentCount = addDocs(db, interval, total);
+            _expectedDocumentCount = addDocs(_collDB1, interval, total);
             sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
@@ -502,7 +494,7 @@ public:
     void addRevsInParallel(duration interval, alloc_slice docID, int firstRev, int totalRevs,
                            bool useFakeRevIDs = true) {
         _parallelThread.reset( runInParallel([=]() {
-            addRevs(db, interval, docID, firstRev, totalRevs, useFakeRevIDs);
+            addRevs(_collDB1, interval, docID, firstRev, totalRevs, useFakeRevIDs, "db");
             sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
@@ -568,22 +560,23 @@ public:
         }
     }
 
-    void validateCheckpoint(C4Database *database, bool local,
+    void validateCheckpoint(C4Collection *collection, bool local,
                             const char *body, const char *meta = "1-") {
-        validateCollectionCheckpoint(database, 0, local, body, meta);
+        validateCollectionCheckpoint(collection, local, body, meta);
     }
 
     // IF THIS DOESN'T WORK WITH INDEX 0, CHANGE TO USE REPLICATOR.OPTIONS.COLLECTIONSPECTOINDEX
-    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
+    // There are two member replicators; _replClient and _replServer
+    void validateCheckpoints(C4Collection *localColl, C4Collection *remoteColl,
                              const char *body, const char *meta = "1-cc") {
-        validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
+        validateCollectionCheckpoints(localColl, remoteColl, body, meta);
     }
     
-    void clearCheckpoint(C4Database *database, bool local) {
-        clearCollectionCheckpoint(database, 0, local);
+    void clearCheckpoint(C4Collection *collection, bool local) {
+        clearCollectionCheckpoint(collection, local);
     }
 
-    void validateCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local,
+    void validateCollectionCheckpoint(C4Collection *collection, bool local,
                                       const char *body, const char *meta = "1-") {
         C4Error err = {};
         C4Slice storeName;
@@ -591,6 +584,16 @@ public:
             storeName = C4STR("checkpoints");
         } else {
             storeName = C4STR("peerCheckpoints");
+        }
+
+        C4Database *database = collection->getDatabase();
+        C4CollectionSpec collectionSpec = collection->getSpec();
+
+        unsigned collectionIndex;
+        if(local) {
+            collectionIndex = _replClient->collectionSpecToIndex()[collectionSpec];
+        } else {
+            collectionIndex = _replServer->collectionSpecToIndex()[collectionSpec];
         }
 
         REQUIRE(collectionIndex < _checkpointIDs.size());
@@ -606,19 +609,29 @@ public:
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
     
-    void validateCollectionCheckpoints(C4Database *localDB, C4Database *remoteDB, unsigned collectionIndex,
+    void validateCollectionCheckpoints(C4Collection *localColl, C4Collection *remoteColl,
                                        const char *body, const char *meta = "1-cc") {
-        validateCollectionCheckpoint(localDB, collectionIndex, true,  body, meta);
-        validateCollectionCheckpoint(remoteDB, collectionIndex, false, body, meta);
+        validateCollectionCheckpoint(localColl, true,  body, meta);
+        validateCollectionCheckpoint(remoteColl, false, body, meta);
     }
     
-    void clearCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local) {
+    void clearCollectionCheckpoint(C4Collection *collection, bool local) {
         C4Error err;
         C4Slice storeName;
         if(local) {
             storeName = C4STR("checkpoints");
         } else {
             storeName = C4STR("peerCheckpoints");
+        }
+
+        C4Database *database = collection->getDatabase();
+        C4CollectionSpec collectionSpec = collection->getSpec();
+
+        unsigned collectionIndex;
+        if(local) {
+            collectionIndex = _replClient->_options->collectionSpecToIndex()[collectionSpec];
+        } else {
+            collectionIndex = _replServer->collectionSpecToIndex()[collectionSpec];
         }
         
         REQUIRE( c4raw_put(database,
