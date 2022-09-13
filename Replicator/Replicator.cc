@@ -683,14 +683,6 @@ namespace litecore { namespace repl {
         }
     }
 
-// For 3.1 server (passive) replicator, we don't know the collections to sync with until
-// the first message, getCollections, from the client (active) replicator. Because of it,
-// we put off creating workers until that message is received. This approach does not work
-// with 3.0 active replicator which may start a message that requires readiness of workers.
-// As a temporary work around to the legacy mode, we do not call startReplicating() from
-// outside the response to "getCheckpoint" message.
-// Keep the following define until CBL-3442 is resolved.
-#define CBL_3442
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
     void Replicator::getRemoteCheckpoint(bool refresh, CollectionIndex coll) {
@@ -751,28 +743,24 @@ namespace litecore { namespace repl {
                 bool valid = sub.checkpointer->validateWith(remoteCheckpoint);
                 if (!valid && sub.pusher)
                     sub.pusher->checkpointIsInvalid();
-#ifdef CBL_3442
+
+                if (!refresh) {
+                    // Now we have the checkpoints! Time to start replicating:
+                    startReplicating(coll);
+                }
             }
-#endif
-            if (!refresh) {
-                // Now we have the checkpoints! Time to start replicating:
-                startReplicating(coll);
-            }
-#ifndef CBL_3442
-        }
-#endif
+
             if (sub.checkpointJSONToSave)
                 saveCheckpointNow(coll);    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
         });
 
         sub.remoteCheckpointRequested = true;
 
-#ifndef CBL_3442
         // If there's no local checkpoint, we know we're starting from zero and don't need to
         // wait for the remote one before getting started:
         if (!refresh && !sub.hadLocalCheckpoint)
             startReplicating(coll);
-#endif
+
     }
 
     // getCollections() will be called when the replicator starts (start() or _onConnect())
@@ -1038,32 +1026,20 @@ namespace litecore { namespace repl {
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+        // 3.0 client may send this message as the first one.
+        setMsgHandlerFor3_0_Client(request);
+
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if (!checkpointID)
             return;
 
-        auto collectionIn = getCollectionIndex(*request);
-        if (collectionIn == kNotCollectionIndex && _subRepls.size() == 0) {
-            DebugAssert(!_options->isActive());
-
-            // This is a 3.0 client and we have't created workers yet.
-
-            std::vector<C4CollectionSpec> v;
-            v.emplace_back(kC4DefaultCollectionSpec);
-            _options->rearrangeCollectionsFor3_0_Client();
-            DebugAssert(!_options->collectionAware());
-            prepareWorkers();
-            collectionIn = 0;
-        } else {
-            // Either it is 3.1 client, hence collectionAware()==true,
-            // or a 3.0 client and the above piece of code should have been already called.
-            auto [checked, err] = checkCollectionOfMsg(*request);
-            if (err) {
-                request->respondWithError({"HTTP"_sl, 400, err});
-                return;
-            }
-            collectionIn = checked;
+        auto [checked, err] = checkCollectionOfMsg(*request);
+        if (err) {
+            request->respondWithError({"HTTP"_sl, 400, err});
+            return;
         }
+        auto collectionIn = checked;
+
         // We don't save checkpointID by collection.
         (void)collectionIn;
 
@@ -1091,6 +1067,9 @@ namespace litecore { namespace repl {
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
+        // 3.0 client may send this message as the first one.
+        setMsgHandlerFor3_0_Client(request);
+
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if (!checkpointID)
             return;
@@ -1129,6 +1108,13 @@ namespace litecore { namespace repl {
 
     // Handles a "getCollections" request by looking up a peer checkpoint of each collection.
     void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
+        if (_subRepls.size() != 0) {
+            // Request of 3.0 style has been received prior to this one.
+            logError("Some message has preceded 'getCollections'");
+            request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: not the first message"_sl});
+            return;
+        }
+
         auto root = request->JSONBody().asDict();
         if (!root) {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no root"_sl});
@@ -1288,6 +1274,8 @@ namespace litecore { namespace repl {
     }
 
     void Replicator::handleConnectionMessage(Retained<blip::MessageIn> request) {
+        setMsgHandlerFor3_0_Client(request);
+
         slice profile = request->property("Profile"_sl);
         Assert(profile);
 
@@ -1304,6 +1292,38 @@ namespace litecore { namespace repl {
             it->second(request);
         } else {
             returnForbidden(request);
+        }
+    }
+
+    void Replicator::setMsgHandlerFor3_0_Client(Retained<blip::MessageIn> request)
+    {
+        if (_setMsgHandlerFor3_0_ClientDone) {
+            return;
+        } else {
+            _setMsgHandlerFor3_0_ClientDone = true;
+        }
+
+        if (_options->isActive()) {
+            return; // only deal with passive replicator.
+        }
+
+        if (request->intProperty(kCollectionProperty, kNotCollectionIndex)
+            != kNotCollectionIndex) {
+            return; // 3.0 message should not include the collection property
+        }
+
+        std::vector<C4CollectionSpec> v;
+        v.emplace_back(kC4DefaultCollectionSpec);
+        _options->rearrangeCollectionsFor3_0_Client();
+        DebugAssert(!_options->collectionAware());
+        DebugAssert(_options->workingCollectionCount() == 1);
+        if (!_options->collectionPath(0)) {
+            logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 replicator.");
+            // what should the message be? 3.0 client is not aware of default collection.
+            request->respondWithError({"BLIP"_sl, 400, "This server does not support 3.0 client"_sl});
+            return;
+        } else {
+            prepareWorkers();
         }
     }
 
