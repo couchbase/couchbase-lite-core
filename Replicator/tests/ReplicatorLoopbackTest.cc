@@ -2023,7 +2023,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
-    Options opts = GENERATE(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec), Options::pushpull(kC4OneShot, _collSpec));
+    Options opts = GENERATE_COPY(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec), Options::pushpull(kC4OneShot, _collSpec));
     Options serverOpts = Options::passive(_collSpec);
 
     Retained<C4Collection> coll = createCollection(db, { "foo"_sl, "bar"_sl });
