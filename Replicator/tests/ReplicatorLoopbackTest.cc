@@ -205,8 +205,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
+    C4Collection* coll = db->getCollection(_collSpec);
 
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", coll);
     _expectedDocumentCount = 100;
     runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
