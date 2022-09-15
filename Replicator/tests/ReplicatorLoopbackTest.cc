@@ -351,7 +351,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     validateCheckpoints(_collDB1, _collDB2, "{\"local\":100}");
 
     // Get one of the pushed docs from db2 and look up "gender":
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, "0000001"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "0000001"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     Dict rev = c4doc_getProperties(doc);
     Value gender = rev["gender"_sl];
@@ -386,7 +386,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
     createRev(_collDB1, "fresh"_sl,     kNonLocalRev1ID, kFleeceBody);
     createRev(_collDB1, "permanent"_sl, kNonLocalRev1ID, kFleeceBody);
 
-    REQUIRE(c4coll_setDocExpiration(_collDB1, "obsolete"_sl, c4_now() - 1, nullptr))
+    REQUIRE(c4coll_setDocExpiration(_collDB1, "obsolete"_sl, c4_now() - 1, nullptr));
     REQUIRE(c4coll_setDocExpiration(_collDB1, "fresh"_sl, c4_now() + 100000, nullptr));
 
     _expectedDocumentCount = 2;
@@ -394,16 +394,16 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
 
     // Verify that "obsolete" wasn't pushed, but the other two were:
     C4Error error;
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, "obsolete"_sl, true, kDocGetAll, &error);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "obsolete"_sl, true, kDocGetAll, &error);
     CHECK(!doc);
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
 
-    doc = c4coll_get(_collDB1, "fresh"_sl, true, kDocGetAll, ERROR_INFO(error));
+    doc = c4coll_getDoc(_collDB1, "fresh"_sl, true, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc);
     CHECK(doc->revID == kNonLocalRev1ID);
 
-    doc = c4coll_get(_collDB1, "permanent"_sl, true, kDocGetAll, ERROR_INFO(error));
+    doc = c4coll_getDoc(_collDB1, "permanent"_sl, true, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc);
     CHECK(doc->revID == kNonLocalRev1ID);
 }
@@ -431,7 +431,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
 
     // Verify the doc was purged:
     C4Error error;
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, kDocID, true, kDocGetAll, &error);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, kDocID, true, kDocGetAll, &error);
     CHECK(!doc);
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
@@ -555,7 +555,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
 
     runPullReplication();
 
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, "doc"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "doc"_sl, true, kDocGetAll, nullptr);
 
     for (int gen = 2; gen <= 50; gen++) {
         char revID[32];
@@ -684,7 +684,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
         _expectedDocsFinished.insert("att1");
     }
@@ -707,7 +707,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
         _expectedDocsFinished.insert("att1");
     }
@@ -735,7 +735,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     runPullReplication();
@@ -762,7 +762,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
                 attachments.push_back(body);
             }
             sprintf(docid, "doc%03d", iDoc);
-            addDocWithAttachments(c4str(docid), attachments, "text/plain");
+            addDocWithAttachments(db, _collSpec, c4str(docid), attachments, "text/plain");
             _expectedDocsFinished.insert(docid);
             ++_expectedDocumentCount;
         }
@@ -788,7 +788,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blo
     {
         TransactionHelper t(db);
         // Use type text/plain so the replicator will try to compress the attachment
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     runPushReplication();
@@ -804,7 +804,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
 
@@ -813,7 +813,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
 
     checkAttachments(db2, blobKeys, attachments);
 
-    string json = getDocJSON(db2, "att1"_sl);
+    string json = getDocJSON(_collDB2, "att1"_sl);
     replace(json, '"', '\'');
     CHECK(json ==
           "{'_attachments':{'blob_/attached/0':{'content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
@@ -830,7 +830,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain"); //legacy
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain"); //legacy
         _expectedDocumentCount = 1;
     }
 
@@ -874,11 +874,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     }
 
     CHECK(c4coll_getDocumentCount(_collDB2) == 3);
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, "0000001"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "0000001"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
-    doc = c4coll_get(_collDB1, "0000010"_sl, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, "0000010"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
-    doc = c4coll_get(_collDB1, "0000100"_sl, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, "0000100"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
 }
 
@@ -1212,7 +1212,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
     
-    doc = c4coll_get(_collDB1, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     CHECK(doc->revID == revOrVersID(kConflictRev2BID, "2@*"));
 
     // Update the doc and push it to db2:
@@ -1292,7 +1292,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     _expectedDocumentCount = 1;
     runPullReplication();
 
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("3-33333333");
     CHECK(doc->selectedRev.revID == revID);
@@ -1303,7 +1303,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         createConflictingRev(_collDB1, docID, C4STR("3-33333333"), C4STR("4-dddddddd"), kFleeceBody, kRevDeleted);
     }
 
-    doc = c4coll_get(_collDB1, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 	revID = C4STR("2-ffffffff");
     CHECK(doc->revID == revID);
@@ -1313,7 +1313,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         Log("-------- Second pull --------");
         runPullReplication();
 
-        doc = c4coll_get(_collDB1, docID, true, kDocGetAll, nullptr);
+        doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->flags & kDocConflicted) == 0);
@@ -1491,7 +1491,7 @@ static void mutateDoc(C4Collection *collection, slice docID, function<void(Dict,
     C4Database *db = c4coll_getDatabase(collection);
     TransactionHelper t(db);
     C4Error error;
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, docID, false, kDocGetAll, ERROR_INFO(error));
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, false, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc);
     Dict props = c4doc_getProperties(doc);
 
@@ -1655,7 +1655,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     Log("-------- Push To db2 --------");
@@ -1690,7 +1690,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
-    c4::ref<C4Document> doc2 = c4coll_get(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
         // No delta used as delta size (including modified revpos of each attachments) > revisionSize * 1.2
@@ -1724,7 +1724,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     {
         TransactionHelper t(db);
         vector<string> legacyNames {"attachment1", "attachment2", "attachment3"};
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain",
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain",
                                          &legacyNames,
                                          kRevKeepBody);
         _expectedDocumentCount = 1;
@@ -1764,7 +1764,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
-    c4::ref<C4Document> doc2 = c4coll_get(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
         CHECK(string(json) ==
@@ -1788,7 +1788,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     Log("-------- Push Doc To db2 --------");
@@ -1812,7 +1812,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
-    c4::ref<C4Document> doc = c4coll_get(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);
     CHECK(string(json) ==
           "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
@@ -1881,7 +1881,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
                                     json2fleece("{\"merged\":true}"), 0, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
-    doc = c4coll_get(_collDB1, C4STR("doc1"), true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, C4STR("doc1"), true, kDocGetAll, nullptr);
     auto seq = C4SequenceNumber(isRevTrees() ? 7 : 5);
     CHECK(doc->sequence == seq);
     CHECK(c4coll_getLastSequence(_collDB1) == seq); // db-sequence is greater than #6(doc2)
@@ -1903,7 +1903,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
     
-    doc = c4coll_get(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
     CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "2@*"));
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
     seq = C4SequenceNumber(isRevTrees() ? 8 : 6);

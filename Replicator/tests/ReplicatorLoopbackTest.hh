@@ -590,7 +590,6 @@ public:
         const unsigned collectionIndex = 0;
 
         C4Database *database = c4coll_getDatabase(collection);
-        C4CollectionSpec collectionSpec = c4coll_getSpec(collection);
 
         REQUIRE(collectionIndex < _checkpointIDs.size());
         alloc_slice checkpointID = _checkpointIDs[collectionIndex];
@@ -609,6 +608,14 @@ public:
                                        const char *body, const char *meta = "1-cc") {
         validateCollectionCheckpoint(localColl, true,  body, meta);
         validateCollectionCheckpoint(remoteColl, false, body, meta);
+    }
+
+    void validateCollectionCheckpoints(C4Database *local, C4Database *remote,
+                                       const char *body, const char *meta = "1-cc") {
+        validateCollectionCheckpoints(
+                c4db_getCollection(local, kC4DefaultCollectionSpec, nullptr),
+                c4db_getCollection(remote, kC4DefaultCollectionSpec, nullptr),
+                body, meta);
     }
     
     void clearCollectionCheckpoint(C4Collection *collection, bool local) {
