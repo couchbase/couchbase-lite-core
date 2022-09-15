@@ -1295,6 +1295,12 @@ namespace litecore { namespace repl {
         }
     }
 
+    // This method is to properly initialize the passive replicator to get ready to
+    // serve 3.0 replicator, which is unaware of the collection.
+    // It is a no-op if
+    // 1. it is working in the active mode,                             or
+    // 2. the incoming meesage includes explicit "collection" property, or
+    // 3. the second time and after that this method is called.
     void Replicator::setMsgHandlerFor3_0_Client(Retained<blip::MessageIn> request)
     {
         if (_setMsgHandlerFor3_0_ClientDone) {
@@ -1312,15 +1318,13 @@ namespace litecore { namespace repl {
             return; // 3.0 message should not include the collection property
         }
 
-        std::vector<C4CollectionSpec> v;
-        v.emplace_back(kC4DefaultCollectionSpec);
         _options->rearrangeCollectionsFor3_0_Client();
         DebugAssert(!_options->collectionAware());
         DebugAssert(_options->workingCollectionCount() == 1);
         if (!_options->collectionPath(0)) {
             logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 replicator.");
             // what should the message be? 3.0 client is not aware of default collection.
-            request->respondWithError({"BLIP"_sl, 400, "This server does not support 3.0 client"_sl});
+            request->respondWithError({"BLIP"_sl, 400, "This server is not configured for 3.0 client support"_sl});
             return;
         } else {
             prepareWorkers();
