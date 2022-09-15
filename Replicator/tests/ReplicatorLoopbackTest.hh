@@ -560,23 +560,21 @@ public:
         }
     }
 
-    void validateCheckpoint(C4Collection *collection, bool local,
+    void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        validateCollectionCheckpoint(collection, local, body, meta);
+        validateCollectionCheckpoint(database, 0, local, body, meta);
     }
 
-    // IF THIS DOESN'T WORK WITH INDEX 0, CHANGE TO USE REPLICATOR.OPTIONS.COLLECTIONSPECTOINDEX
-    // There are two member replicators; _replClient and _replServer
-    void validateCheckpoints(C4Collection *localColl, C4Collection *remoteColl,
+    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB,
                              const char *body, const char *meta = "1-cc") {
-        validateCollectionCheckpoints(localColl, remoteColl, body, meta);
+        validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
     }
     
-    void clearCheckpoint(C4Collection *collection, bool local) {
-        clearCollectionCheckpoint(collection, local);
+    void clearCheckpoint(C4Database *database, bool local) {
+        clearCollectionCheckpoint(database, 0, local);
     }
 
-    void validateCollectionCheckpoint(C4Collection *collection, bool local,
+    void validateCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local,
                                       const char *body, const char *meta = "1-") {
         C4Error err = {};
         C4Slice storeName;
@@ -585,11 +583,6 @@ public:
         } else {
             storeName = C4STR("peerCheckpoints");
         }
-
-        // There is only one collection in each database, so index is 0
-        const unsigned collectionIndex = 0;
-
-        C4Database *database = c4coll_getDatabase(collection);
 
         REQUIRE(collectionIndex < _checkpointIDs.size());
         alloc_slice checkpointID = _checkpointIDs[collectionIndex];
@@ -604,21 +597,13 @@ public:
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
     
-    void validateCollectionCheckpoints(C4Collection *localColl, C4Collection *remoteColl,
+    void validateCollectionCheckpoints(C4Database *localDB, C4Database *remoteDB, unsigned collectionIndex,
                                        const char *body, const char *meta = "1-cc") {
-        validateCollectionCheckpoint(localColl, true,  body, meta);
-        validateCollectionCheckpoint(remoteColl, false, body, meta);
-    }
-
-    void validateCollectionCheckpoints(C4Database *local, C4Database *remote,
-                                       const char *body, const char *meta = "1-cc") {
-        validateCollectionCheckpoints(
-                c4db_getCollection(local, kC4DefaultCollectionSpec, nullptr),
-                c4db_getCollection(remote, kC4DefaultCollectionSpec, nullptr),
-                body, meta);
+        validateCollectionCheckpoint(localDB, collectionIndex, true,  body, meta);
+        validateCollectionCheckpoint(remoteDB, collectionIndex, false, body, meta);
     }
     
-    void clearCollectionCheckpoint(C4Collection *collection, bool local) {
+    void clearCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local) {
         C4Error err;
         C4Slice storeName;
         if(local) {
@@ -626,10 +611,6 @@ public:
         } else {
             storeName = C4STR("peerCheckpoints");
         }
-
-        C4Database *database = c4coll_getDatabase(collection);
-
-        constexpr unsigned collectionIndex = 0;
         
         REQUIRE( c4raw_put(database,
                            storeName,
