@@ -208,7 +208,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
 
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options(kC4OneShot, kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -217,7 +217,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
     createRev(_collDB1, "0000002"_sl, kRev2ID, kFleeceBody);
     _expectedDocumentCount = 2;
 
-    runReplicators(Replicator::Options(kC4OneShot, kC4OneShot), serverOpts);
+    runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":102,\"remote\":100}", "2-cc");
 }

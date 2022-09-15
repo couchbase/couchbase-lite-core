@@ -65,7 +65,6 @@ public:
         litecore::repl::Checkpoint::gWriteTimestamps = false;
         _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
 
-        _collSpec = { "test"_sl, "loopback"_sl };
         _collDB1 = createCollection(db, _collSpec);
         _collDB2 = createCollection(db2, _collSpec);
         
@@ -643,7 +642,7 @@ public:
     
     
     C4Database* db2 {nullptr};
-    C4CollectionSpec _collSpec;
+    static constexpr C4CollectionSpec _collSpec { "test"_sl, "loopback"_sl };
     C4Collection* _collDB1;
     C4Collection* _collDB2;
     Retained<Replicator> _replClient, _replServer;
