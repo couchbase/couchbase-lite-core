@@ -586,15 +586,11 @@ public:
             storeName = C4STR("peerCheckpoints");
         }
 
-        C4Database *database = collection->getDatabase();
-        C4CollectionSpec collectionSpec = collection->getSpec();
+        // There is only one collection in each database, so index is 0
+        const unsigned collectionIndex = 0;
 
-        unsigned collectionIndex;
-        if(local) {
-            collectionIndex = _replClient->collectionSpecToIndex()[collectionSpec];
-        } else {
-            collectionIndex = _replServer->collectionSpecToIndex()[collectionSpec];
-        }
+        C4Database *database = c4coll_getDatabase(collection);
+        C4CollectionSpec collectionSpec = c4coll_getSpec(collection);
 
         REQUIRE(collectionIndex < _checkpointIDs.size());
         alloc_slice checkpointID = _checkpointIDs[collectionIndex];
@@ -624,15 +620,9 @@ public:
             storeName = C4STR("peerCheckpoints");
         }
 
-        C4Database *database = collection->getDatabase();
-        C4CollectionSpec collectionSpec = collection->getSpec();
+        C4Database *database = c4coll_getDatabase(collection);
 
-        unsigned collectionIndex;
-        if(local) {
-            collectionIndex = _replClient->_options->collectionSpecToIndex()[collectionSpec];
-        } else {
-            collectionIndex = _replServer->collectionSpecToIndex()[collectionSpec];
-        }
+        constexpr unsigned collectionIndex = 0;
         
         REQUIRE( c4raw_put(database,
                            storeName,
