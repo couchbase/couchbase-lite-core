@@ -1330,7 +1330,6 @@ namespace litecore { namespace repl {
         DebugAssert(_options->workingCollectionCount() == 1);
         if (!_options->collectionPath(0)) {
             logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 replicator.");
-            // what should the message be? 3.0 client is not aware of default collection.
             request->respondWithError({"BLIP"_sl, 400, "This server is not configured for 3.0 client support"_sl});
             return;
         } else {
