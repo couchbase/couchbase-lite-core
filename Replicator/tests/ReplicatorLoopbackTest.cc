@@ -205,9 +205,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
-    C4Collection* coll = db->getCollection(_collSpec);
 
-    importJSONLines(sFixturesDir + "names_100.json", coll);
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
@@ -225,7 +224,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
-    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
     _expectedDocumentCount = 12189;
     runPushReplication();
     compareDatabases();
@@ -236,7 +235,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
-    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
     _expectedDocumentCount = 12189;
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
@@ -247,7 +246,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[P
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
-    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
     _expectedDocumentCount = 12189;
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     compareDatabases();
@@ -262,7 +261,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Empty DB", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPullReplication();
     compareDatabases();
@@ -271,7 +270,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPullReplication();
     compareDatabases();
@@ -290,7 +289,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     // Add 100 docs, then delete 50 of them:
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     for (unsigned i = 1; i <= 100; i += 2) {
         char docID[20];
         sprintf(docID, "%07u", i);
@@ -343,7 +342,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     }
 
     // Import names_100.json into db:
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
 
     // Push db into db2:
@@ -441,7 +440,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]") {
     // Push; erase destination; push again. For #453
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
 
@@ -462,7 +461,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
         serverOpts.setNoIncomingConflicts();
     }
 
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
     compareDatabases();
@@ -846,7 +845,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
 
     fleece::Encoder enc;
     enc.beginDict();
@@ -901,7 +900,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     auto pullOptions = Replicator::Options::passive(_collSpec);
     atomic<int> validationCount {0};
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
@@ -1411,7 +1410,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
@@ -1422,7 +1421,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
@@ -1539,7 +1538,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
@@ -1629,7 +1628,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
@@ -1826,7 +1825,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
-    importJSONLines(sFixturesDir + "names_100.json");
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
