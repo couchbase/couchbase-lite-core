@@ -331,52 +331,102 @@ namespace litecore {
 
         enum { VersionParam = 1, BodyParam, ExtraParam, FlagsParam, SequenceParam, KeyParam,
                OldSequenceParam, OldSubsequenceParam };
-        const char *opName;
-        SQLite::Statement *stmt;
-        if (rec.sequence == 0_seq) {
-            // Insert only:
-            stmt = &compileCached(
-                    "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
-                    " VALUES (?, ?, ?, ?, ?, ?)");
-            opName = "insert";
-        } else {
-            // Replace only:
-            stmt = &compileCached(
-                    "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
-                    " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
-            stmt->bind(OldSequenceParam,    (long long)rec.sequence);
-            stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
-            opName = "update";
-        }
 
-        sequence_t seq;
-        int64_t rawFlags = int(rec.flags);
-        if (updateSequence) {
-            seq = lastSequence() + 1;
-        } else {
-            Assert(rec.sequence > 0_seq);
-            seq = rec.sequence;
-            // If we don't update the sequence, update the subsequence so MVCC can work:
-            rawFlags |= (rec.subsequence + 1) << 16;
-        }
+        bool tryAgain = false;
+        sequence_t ret;
+        std::tuple<std::string, int, int> lastExcArgs;
 
-        stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
-        stmt->bindNoCopy(BodyParam,    rec.body.buf, (int)rec.body.size);
-        stmt->bindNoCopy(ExtraParam,   rec.extra.buf, (int)rec.extra.size);
-        stmt->bind      (FlagsParam,   (long long)rawFlags);
-        stmt->bindNoCopy(KeyParam,     (const char*)rec.key.buf, (int)rec.key.size);
-        stmt->bind      (SequenceParam,(long long)seq);
+        do {
+            if (tryAgain) {
+                SQLite::Statement *stmt = &compileCached("SELECT MAX(sequence) FROM kv_@");
+                UsingStatement u(*stmt);
+                int64_t maxSeq = -1;
+                if (stmt->executeStep())
+                    maxSeq = int64_t(stmt->getColumn(0));
 
-        if (db().willLog(LogLevel::Verbose) && name() != "default")
-            db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
+                if (maxSeq < 0 || (uint64_t)lastSequence() >= maxSeq) {
+                    // rethrow the original exception that gets us here.
+                    // The re-try is to fix the situation when lastSequence() lags behind maxSeq
+                    throw SQLite::Exception(std::get<0>(lastExcArgs), std::get<1>(lastExcArgs), std::get<2>(lastExcArgs));
+                }
 
-        UsingStatement u(*stmt);
-        if (stmt->exec() == 0)
-            return 0_seq;               // condition wasn't met, i.e. conflict
+                setLastSequence((sequence_t)maxSeq);
+            }
 
-        if (updateSequence)
-            setLastSequence(seq);
-        return seq;
+            const char *opName;
+            SQLite::Statement *stmt;
+            if (rec.sequence == 0_seq) {
+                // Insert only:
+                stmt = &compileCached(
+                        "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
+                        " VALUES (?, ?, ?, ?, ?, ?)");
+                opName = "insert";
+            } else {
+                // Replace only:
+                stmt = &compileCached(
+                        "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
+                        " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
+                stmt->bind(OldSequenceParam,    (long long)rec.sequence);
+                stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
+                opName = "update";
+            }
+
+            sequence_t seq;
+            int64_t rawFlags = int(rec.flags);
+            if (updateSequence) {
+                seq = lastSequence() + 1;
+            } else {
+                Assert(rec.sequence > 0_seq);
+                seq = rec.sequence;
+                // If we don't update the sequence, update the subsequence so MVCC can work:
+                rawFlags |= (rec.subsequence + 1) << 16;
+            }
+
+            stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
+            stmt->bindNoCopy(BodyParam,    rec.body.buf, (int)rec.body.size);
+            stmt->bindNoCopy(ExtraParam,   rec.extra.buf, (int)rec.extra.size);
+            stmt->bind      (FlagsParam,   (long long)rawFlags);
+            stmt->bindNoCopy(KeyParam,     (const char*)rec.key.buf, (int)rec.key.size);
+            stmt->bind      (SequenceParam,(long long)seq);
+
+            if (db().willLog(LogLevel::Verbose) && name() != "default")
+                db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
+
+            UsingStatement u(*stmt);
+            int status;
+            try {
+                status = stmt->exec();
+                // We are good, don't try again.
+                tryAgain = false;
+            } catch (const SQLite::Exception& exc) {
+                // We won't try again twice.
+                tryAgain = !tryAgain;
+                int sqliteErrorCode = exc.getErrorCode();
+                int sqliteExtErrorCode = exc.getExtendedErrorCode();
+                if (tryAgain && sqliteErrorCode == 19 && sqliteExtErrorCode == 2067) {
+                    // We only handle this error,
+                    // Log: Database | UNIQUE constraint failed: kv_default.sequence (19/2067)
+                    // Jot down the exception that makes us to try again.
+                    lastExcArgs = std::make_tuple(exc.what(), sqliteErrorCode, sqliteExtErrorCode);
+                    continue;
+                } else {
+                    // Otherwise, rethrow.
+                    throw;
+                }
+            }
+
+            // Assertion: tryAgain == false
+
+            if (status == 0) {
+                ret = 0_seq;               // condition wasn't met, i.e. conflict
+                break;
+            }
+            if (updateSequence)
+                setLastSequence(seq);
+
+            ret = seq;
+        } while (tryAgain);
+        return ret;
     }
 
 
