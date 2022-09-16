@@ -957,7 +957,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"conflict"};
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
-    validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
+    validateCheckpoints(db, db2, "{\"remote\":2}");
 
     c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, C4STR("conflict"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
@@ -1069,7 +1069,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Second Replication db2->db --------");
     runReplicators(serverOpts,
                    Replicator::Options::pushing(kC4OneShot, _collSpec));
-    validateCheckpoints(db2, db, "{\"local\":3,\"remote\":2}");
+    validateCheckpoints(db2, db, "{\"local\":3}");
     compareDatabases();
 
     Log("-------- Update Doc Again --------");
@@ -1080,7 +1080,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Third Replication db2->db --------");
     runReplicators(serverOpts,
                    Replicator::Options::pushing(kC4OneShot, _collSpec));
-    validateCheckpoints(db2, db, "{\"local\":5,\"remote\":2}");
+    validateCheckpoints(db2, db, "{\"local\":5}");
     compareDatabases();
 }
 
@@ -1373,7 +1373,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
     //       But both sides are rapidly changing the single document.
     alloc_slice docID("doc");
-    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous);
+    auto clientOpts = Replicator::Options::pushpull(kC4Continuous, _collSpec);
     _clientProgressLevel = kC4ReplProgressPerDocument;
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     installConflictHandler();
@@ -1456,9 +1456,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     _expectedDocPullErrors = set<string>{"conflict", "db-deleted", "db2-deleted"};
     _expectedDocumentCount = 3;
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
-    validateCheckpoints(db, db2, "{\"local\":4,\"remote\":7}");
+    validateCheckpoints(db, db2, "{\"remote\":7}");
     
-    auto e = DBAccessTestWrapper::unresolvedDocsEnumerator(db);
+    auto e = DBAccessTestWrapper::unresolvedDocsEnumerator(_collDB1);
     REQUIRE(e);
     
     // verify only returns the conflicted documents, including the deleted ones.
@@ -1865,7 +1865,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     
     _expectedDocPullErrors = set<string> { "doc1", "doc2" };
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
-    validateCheckpoints(db, db2, "{\"local\":2,\"remote\":4}");
+    validateCheckpoints(db, db2, "{\"remote\":4}");
     if (isRevTrees())
         REQUIRE(c4coll_getLastSequence(_collDB1) == 6); // #5(doc1) and #6(doc2) seq, received from other side
     REQUIRE(c4coll_getLastSequence(_collDB2) == 4);
