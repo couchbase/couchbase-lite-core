@@ -24,8 +24,12 @@ using namespace std;
 using namespace litecore::repl;
 
 C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Database *db) {
-    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
-    return acc->unresolvedDocsEnumerator(db->getDefaultCollection(), true).release();
+    return unresolvedDocsEnumerator(db->getDefaultCollection());
+}
+
+C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Collection *coll) {
+    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(coll->getDatabase(), false);
+    return acc->unresolvedDocsEnumerator(coll, true).release();
 }
 
 
