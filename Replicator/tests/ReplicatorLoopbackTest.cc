@@ -293,7 +293,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     for (unsigned i = 1; i <= 100; i += 2) {
         char docID[20];
         sprintf(docID, "%07u", i);
-        createRev(slice(docID), kRev2ID, nullslice, kRevDeleted); // delete it
+        createRev(_collDB1, slice(docID), kRev2ID, nullslice, kRevDeleted); // delete it
     }
     _expectedDocumentCount = 50;
 
@@ -431,7 +431,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
 
     // Verify the doc was purged:
     C4Error error;
-    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, kDocID, true, kDocGetAll, &error);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, kDocID, true, kDocGetAll, &error);
     CHECK(!doc);
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
@@ -446,6 +446,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]")
 
     Log("--- Erasing db2, now pushing back to db...");
     deleteAndRecreateDB(db2);
+    _collDB2 = createCollection(db2, _collSpec);
 
     runPushReplication();
     compareDatabases();
@@ -469,6 +470,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
 
     Log("--- Erasing db, now pushing back to db...");
     deleteAndRecreateDB();
+    _collDB1 = createCollection(db, _collSpec);
     // Give the replication a unique ID so it won't know it's pushing to db again
     auto pushOpts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     pushOpts.setProperty(C4STR(kC4ReplicatorOptionRemoteDBUniqueID), "three"_sl);
@@ -874,11 +876,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     }
 
     CHECK(c4coll_getDocumentCount(_collDB2) == 3);
-    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "0000001"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "0000001"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
-    doc = c4coll_getDoc(_collDB1, "0000010"_sl, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB2, "0000010"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
-    doc = c4coll_getDoc(_collDB1, "0000100"_sl, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(_collDB2, "0000100"_sl, true, kDocGetAll, nullptr);
     CHECK(doc != nullptr);
 }
 
@@ -1039,8 +1041,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
-    createRev(kDocID, kRevIDs[1], kFleeceBody);
-    createRev(kDocID, kRevIDs[2], kFleeceBody);
+    createRev(_collDB1, kDocID, kRevIDs[1], kFleeceBody);
+    createRev(_collDB1, kDocID, kRevIDs[2], kFleeceBody);
     _expectedDocumentCount = 1;
 
     Log("-------- First Replication db->db2 --------");
@@ -1092,8 +1094,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     // can retry and this time succeed.
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
-    createRev(kDocID, kNonLocalRev1ID, kFleeceBody);
-    createRev(kDocID, kNonLocalRev2ID, kFleeceBody);
+    createRev(_collDB1, kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(_collDB1, kDocID, kNonLocalRev2ID, kFleeceBody);
     _expectedDocumentCount = 1;
 
     Log("-------- First Replication db<->db2 --------");
@@ -1121,8 +1123,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][Conflict][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
-    createRev(kDocID, kRevID, kFleeceBody);
-    createRev(kDocID, kRev2ID, kFleeceBody);
+    createRev(_collDB1, kDocID, kRevID, kFleeceBody);
+    createRev(_collDB1, kDocID, kRev2ID, kFleeceBody);
 
     Log("-------- First Replication: push db->db2 --------");
     _expectedDocumentCount = 1;
@@ -1145,8 +1147,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[
     slice doc1_id = "doc1"_sl;
     slice doc2_id = "doc2"_sl;
 
-    createRev(doc1_id, kRevID, kFleeceBody);
-    createRev(doc2_id, kRevID, kFleeceBody);
+    createRev(_collDB1, doc1_id, kRevID, kFleeceBody);
+    createRev(_collDB1, doc2_id, kRevID, kFleeceBody);
     c4::ref<C4Document> doc1 = c4coll_getDoc(_collDB1, doc1_id, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc1);
 
@@ -1292,7 +1294,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     _expectedDocumentCount = 1;
     runPullReplication();
 
-    c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("3-33333333");
     CHECK(doc->selectedRev.revID == revID);
@@ -1313,7 +1315,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         Log("-------- Second pull --------");
         runPullReplication();
 
-        doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+        doc = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->flags & kDocConflicted) == 0);
@@ -1690,7 +1692,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     _expectedDocumentCount = 1;
     auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
-    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB2, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
         // No delta used as delta size (including modified revpos of each attachments) > revisionSize * 1.2
@@ -1764,7 +1766,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
-    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB2, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if (modifiedDigest) {
         CHECK(string(json) ==
@@ -1832,6 +1834,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     deleteAndRecreateDB(db2);
+    _collDB2 = createCollection(db2, _collSpec);
     _expectedDocumentCount = 0;
 
     // This line causes a null deference SIGSEGV before the fix
