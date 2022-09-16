@@ -1026,7 +1026,6 @@ namespace litecore { namespace repl {
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
-        // 3.0 client may send this message as the first one.
         setMsgHandlerFor3_0_Client(request);
 
         slice checkpointID = getPeerCheckpointDocID(request, "get");
@@ -1067,7 +1066,6 @@ namespace litecore { namespace repl {
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
-        // 3.0 client may send this message as the first one.
         setMsgHandlerFor3_0_Client(request);
 
         slice checkpointID = getPeerCheckpointDocID(request, "set");
@@ -1108,6 +1106,8 @@ namespace litecore { namespace repl {
 
     // Handles a "getCollections" request by looking up a peer checkpoint of each collection.
     void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
+        // This message only comes from 3.1+ client.
+
         if (_subRepls.size() != 0) {
             // Request of 3.0 style has been received prior to this one.
             logError("Some message has preceded 'getCollections'");
@@ -1317,6 +1317,13 @@ namespace litecore { namespace repl {
             != kNotCollectionIndex) {
             return; // 3.0 message should not include the collection property
         }
+
+        // At this point, we are dealing with a 3.0 style replicator which can only have exactly
+        // one collection, which is the default one.  If the default collection is not specified in
+        // the passive config, rearrangeCollectionsFor3_0_Client() will put a null collection path
+        // at the place of index 0, and then we return an error here.
+        // (If the collection does not exist in the database, prepareWorkers() will fail and an
+        //  error will be returned from there.)
 
         _options->rearrangeCollectionsFor3_0_Client();
         DebugAssert(!_options->collectionAware());
