@@ -143,6 +143,8 @@ namespace litecore {
 
     void RawRevision::copyTo(Rev &dst, const deque<Rev> &revs) const {
         const void* end = this->next();
+        dst._hasInsertedRevID = false;
+        dst._hasInsertedBody = false;
         dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & ~kPersistentOnlyFlags);
         auto parentIndex = endian::dec16(this->parentIndex_BE);
