@@ -67,11 +67,15 @@ namespace litecore {
     private:
         slice       _body;          /**< Revision body (JSON), or empty if not stored in this tree*/
 
+        bool _hasInsertedRevID;     /**< Whether revID is owned by RevTree._insertedData */
+        bool _hasInsertedBody;      /**< Whether body is owned by RevTree._insertedData */
+
         void addFlag(Flags f)           {flags = (Flags)(flags | f);}
         void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
         void removeBody()               {clearFlag((Flags)(kKeepBody | kHasAttachments));
+                                         _hasInsertedBody = false;
                                          _body = nullslice;}
-        bool isMarkedForPurge() const FLPURE   {return (flags & kPurge) != 0;}
+        bool isMarkedForPurge() const FLPURE    {return (flags & kPurge) != 0;}
 #if DEBUG
         void dump(std::ostream&);
 #endif
