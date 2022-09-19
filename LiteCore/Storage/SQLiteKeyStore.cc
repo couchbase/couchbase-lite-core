@@ -403,7 +403,8 @@ namespace litecore {
                 tryAgain = !tryAgain;
                 int sqliteErrorCode = exc.getErrorCode();
                 int sqliteExtErrorCode = exc.getExtendedErrorCode();
-                if (tryAgain && sqliteErrorCode == 19 && sqliteExtErrorCode == 2067) {
+                if (tryAgain && sqliteErrorCode == SQLITE_CONSTRAINT &&
+                    sqliteExtErrorCode == SQLITE_CONSTRAINT_UNIQUE) {
                     // We only handle this error,
                     // Log: Database | UNIQUE constraint failed: kv_default.sequence (19/2067)
                     // Jot down the exception that makes us to try again.
