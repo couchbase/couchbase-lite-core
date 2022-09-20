@@ -254,7 +254,6 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     REQUIRE(reader);
     static const int increment = 3*3*3*3;
     int line = increment;
-    constexpr size_t bufSize = 100;
     for (uint64_t i = 0; i < 1000; i++) {
         line = (line + increment) % 1000;
         INFO("Reading line " << line << " at offset " << 18*line);
