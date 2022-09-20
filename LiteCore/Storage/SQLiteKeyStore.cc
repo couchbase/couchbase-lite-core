@@ -337,12 +337,14 @@ namespace litecore {
         std::tuple<std::string, int, int> lastExcArgs;
 
         do {
+            // This is a band-aid for an undiagnosed bug, that lastSeq stored in the meta
+            // table may be short of the largest sequence used in the kv table. c.f. cbl-3612
             if (tryAgain) {
-                SQLite::Statement *stmt = &compileCached("SELECT MAX(sequence) FROM kv_@");
-                UsingStatement u(*stmt);
+                SQLite::Statement& stmt = compileCached("SELECT MAX(sequence) FROM kv_@");
+                UsingStatement u(stmt);
                 int64_t maxSeq = -1;
-                if (stmt->executeStep())
-                    maxSeq = int64_t(stmt->getColumn(0));
+                if (stmt.executeStep())
+                    maxSeq = int64_t(stmt.getColumn(0));
 
                 if (maxSeq < 0 || (uint64_t)lastSequence() >= maxSeq) {
                     // rethrow the original exception that gets us here.
