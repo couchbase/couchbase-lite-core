@@ -34,6 +34,9 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kImagesDBName;
 std::once_flag           ReplicatorAPITest::once;
 
+constexpr size_t kDocBufSize = 20;
+constexpr size_t kJsonBufSize = 100;
+
 TEST_CASE("URL Parsing", "[C]][Replicator]") {
     C4Address address;
     C4String dbName;
@@ -927,10 +930,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        char docID[kDocBufSize], json[kJsonBufSize];
         for (unsigned i = 1; i <= 50; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, kDocBufSize, "doc-%03u", i);
+            snprintf(json, kJsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -946,10 +949,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        char docID[kDocBufSize], json[kJsonBufSize];
         for (unsigned i = 51; i <= 100; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, kDocBufSize, "doc-%03u", i);
+            snprintf(json, kJsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             C4Test::createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -1001,10 +1004,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     c4repl_setOptions(repl, _options.data());
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        char docID[kDocBufSize], json[kJsonBufSize];
         for (unsigned i = 1; i <= 50; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, kDocBufSize, "doc-%03u", i);
+            snprintf(json, kJsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }

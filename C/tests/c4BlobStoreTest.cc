@@ -223,10 +223,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
     REQUIRE(stream);
     CHECK(c4stream_bytesWritten(stream) == 0);
-
+    
+    constexpr size_t bufSize = 100;
+    
     for (int i = 0; i < 1000; i++) {
-        char buf[100];
-        sprintf(buf, "This is line %03d.\n", i);
+        char buf[bufSize];
+        snprintf(buf, bufSize, "This is line %03d.\n", i);
         REQUIRE(c4stream_write(stream, buf, strlen(buf), WITH_ERROR(&error)));
     }
 
@@ -252,11 +254,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     REQUIRE(reader);
     static const int increment = 3*3*3*3;
     int line = increment;
+    constexpr size_t bufSize = 100;
     for (uint64_t i = 0; i < 1000; i++) {
         line = (line + increment) % 1000;
         INFO("Reading line " << line << " at offset " << 18*line);
-        char buf[100], readBuf[100];
-        sprintf(buf, "This is line %03d.\n", line);
+        char buf[bufSize], readBuf[readBufSize];
+        snprintf(buf, bufSize, "This is line %03d.\n", line);
         REQUIRE(c4stream_seek(reader, 18*line, WITH_ERROR(&error)));
         REQUIRE(c4stream_read(reader, readBuf, 18, WITH_ERROR(&error)) == 18);
         readBuf[18] = '\0';
@@ -331,10 +334,11 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
         REQUIRE(stream);
         CHECK(c4stream_bytesWritten(stream) == 0);
         streams[iter] = stream;
+        constexpr size_t bufSize = 100;
 
         for (int i = 0; i < 1000; i++) {
-            char buf[100];
-            sprintf(buf, "This is line %03d.\n", i);
+            char buf[bufSize];
+            snprintf(buf, bufSize, "This is line %03d.\n", i);
             REQUIRE(c4stream_write(stream, buf, strlen(buf), WITH_ERROR(&error)));
         }
 

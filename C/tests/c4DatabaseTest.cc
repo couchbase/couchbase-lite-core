@@ -302,12 +302,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Docume
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
     e = REQUIRED(c4db_enumerateAllDocs(db, &options, WITH_ERROR()));
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     int i = 1;
     while (c4enum_next(e, &error)) {
         auto doc = c4enum_getDocument(e, ERROR_INFO());
         REQUIRE(doc);
-        sprintf(docID, "doc-%03d", i);
+        snprintf(docID, bufSize, "doc-%03d", i);
         CHECK(doc->docID == c4str(docID));
         CHECK(doc->revID == kRevID);
         CHECK(doc->selectedRev.revID == kRevID);
@@ -342,11 +343,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Databa
     e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
     CHECK(e);
     int i = 1;
+    constexpr size_t bufSize = 20;
     while(c4enum_next(e, &error)) {
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
-        char docID[20];
-        sprintf(docID, "doc-%03d", i);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03d", i);
         CHECK(info.docID == c4str(docID));
         CHECK(info.revID == kRevID);
         CHECK(info.sequence == (C4SequenceNumber)i);
@@ -405,10 +407,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO());
     REQUIRE(e);
     C4SequenceNumber seq = 1;
+    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq++;
@@ -420,10 +423,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 6, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 7;
+    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq++;
@@ -437,10 +441,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 94, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 99;
+    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq--;
@@ -916,10 +921,11 @@ static const string kVersionedFixturesSubDir = "db_versions/";
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Maintenance]") {
     {
         TransactionHelper t(db);
-        char docID[20], json[100];
+        constexpr size_t docBufSize = 20, jsonBufSize = 100;
+        char docID[docBuffSize], json[jsonBufSize];
         for (unsigned i = 1; i <= 100; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, docBufSize, "doc-%03u", i);
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db, slice(docID), kRevID, slice(json), (i <= 50 ? 0 : kRevDeleted));
         }
         // TODO: Create some blobs too
@@ -965,9 +971,10 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     // Documents 51-100 are deleted (but still have those properties, which is unusual.)
 
     // Verify getting documents by ID:
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     for (unsigned i = 1; i <= 100; i++) {
-        sprintf(docID, "doc-%03u", i);
+        snprintf(docID, bufSize, "doc-%03u", i);
         INFO("Checking docID " << docID);
         C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
@@ -986,7 +993,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         unsigned i = 1;
         while (c4enum_next(e, ERROR_INFO(&error))) {
             INFO("Checking enumeration #" << i);
-            sprintf(docID, "doc-%03u", i);
+            snprintf(docID, bufSize, "doc-%03u", i);
             C4DocumentInfo info;
             REQUIRE(c4enum_getDocumentInfo(e, &info));
             CHECK(slice(info.docID) == slice(docID));
