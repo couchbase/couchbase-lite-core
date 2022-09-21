@@ -1,48 +1,47 @@
 meta:
   src-root-dir: ..
 components:
-  libb64:
-    bd-id: 574849b1-902f-4367-a686-ca11c8815ba4
-    versions: [ 1.2.1 ]
-    src-path: vendor/fleece/vendor/libb64
-    parent-repo: vendor/fleece
   jsonsl:
     bd-id: 945f9005-9509-40f6-b912-c0b69a8f2ef1
     # See [0]
     versions: [ 20171103-snapshot-684b60f9 ]
     src-path: vendor/fleece/vendor/jsonsl
     parent-repo: vendor/fleece
-  mbedtls:
-    bd-id: 98e2dba0-77c4-402f-96f3-ceb702a6e6e7
-    versions: [ 2.28.1 ]
-    src-path: vendor/mbedtls
-  # sockpp has no KB entry
-  sqlite3-unicodesn:
-    bd-id: a44ae168-f007-4a28-9fc3-3052067f9f5a
-    # See [0]
-    versions: [ 20160920-snapshot-af75748c ]
-    src-path: vendor/sqlite3-unicodesn
+  libb64:
+    bd-id: 574849b1-902f-4367-a686-ca11c8815ba4
+    versions: [ 1.2.1 ]
+    src-path: vendor/fleece/vendor/libb64
+    parent-repo: vendor/fleece
+  libicu:
+    bd-id: a7441c50-9be3-493b-82ed-19666236acef
+    versions: [ 71.1 ]
   libstemmer:
     bd-id: 2bb510eb-0940-4656-82fe-11631fbf2416
     # See [0]
     versions: [ 0 ]
     src-path: vendor/sqlite3-unicodesn/libstemmer_c
     parent-repo: vendor/sqlite3-unicodesn
-  sqlitecpp:
-    bd-id: 603b3d54-1d5d-4236-835c-f0d178f50354
-    versions: [ 2.0.0 ]
-    src-path: vendor/SQLiteCpp
+  mbedtls:
+    bd-id: 98e2dba0-77c4-402f-96f3-ceb702a6e6e7
+    versions: [ 2.28.1 ]
+    src-path: vendor/mbedtls
+  # sockpp has no KB entry
   sqlite:
     bd-id: 302ca56c-2cf6-4cfd-9173-94c1ee2a44f7
     versions: [ 3.39.3 ]
     src-path: vendor/SQLiteCpp/sqlite3
     parent-repo: vendor/SQLiteCpp
-  zlib:
-    bd-id: b9185555-6e31-401e-b373-bfec7955a8ab
-    versions: [ 1.2.12 ]
-    src-path: vendor/zlib
+  sqlitecpp:
+    bd-id: 603b3d54-1d5d-4236-835c-f0d178f50354
+    versions: [ 2.0.0 ]
+    src-path: vendor/SQLiteCpp
+  sqlite3-unicodesn:
+    bd-id: a44ae168-f007-4a28-9fc3-3052067f9f5a
+    # See [0]
+    versions: [ 20160920-snapshot-af75748c ]
+    src-path: vendor/sqlite3-unicodesn
 
-# [0] 
+# [0]
 # The KB doesn't track the versions of this library well,
 # so this is not the actual version we use, just the newest
-# versions available in the KB.  
+# versions available in the KB.

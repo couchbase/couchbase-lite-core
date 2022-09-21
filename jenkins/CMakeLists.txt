@@ -18,13 +18,12 @@ IF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 ENDIF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-# Configure tlm the way it wants to be configured
+# Download additional cbdeps packages
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    SET (CB_DOWNLOAD_DEPS 1)
-    SET (CB_DOWNLOAD_DEPS_DEFAULT_MANIFEST
-    "${PROJECT_SOURCE_DIR}/couchbase-lite-core/jenkins/manifest.cmake")
-    LIST (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/tlm/cmake/Modules")
-    ADD_SUBDIRECTORY (tlm/deps)
+  INCLUDE (couchbase-lite-core/jenkins/CBDeps.cmake)
+
+  # Install cbdeps packages using cbdep tool
+  CBDEP_INSTALL (PACKAGE icu4c VERSION 71.1-50422)
 endif()
 
 if("${EDITION}" STREQUAL "enterprise")
