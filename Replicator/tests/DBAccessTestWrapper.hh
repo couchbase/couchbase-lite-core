@@ -11,6 +11,7 @@
 struct DBAccessTestWrapper {
 
     static C4DocEnumerator* unresolvedDocsEnumerator(C4Database*);
+    static C4DocEnumerator* unresolvedDocsEnumerator(C4Collection*);
 
     static unsigned numDeltasApplied();
 };

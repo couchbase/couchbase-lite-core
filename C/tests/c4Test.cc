@@ -522,7 +522,11 @@ string C4Test::listSharedKeys(string delimiter) {
 
 
 string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
-    auto doc = c4doc_get(inDB, docID, true, ERROR_INFO());
+    return getDocJSON(c4db_getCollection(inDB, kC4DefaultCollectionSpec, nullptr), docID);
+}
+
+string C4Test::getDocJSON(C4Collection* collection, C4Slice docID) {
+    auto doc = c4coll_getDoc(collection, docID, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
     fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, ERROR_INFO()) );
     REQUIRE(json);

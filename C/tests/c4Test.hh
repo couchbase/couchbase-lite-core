@@ -289,6 +289,7 @@ public:
                           std::vector<std::string> expectedData);
 
     static std::string getDocJSON(C4Database* inDB, C4Slice docID);
+    static std::string getDocJSON(C4Collection* collection, C4Slice docID);
 
     std::string listSharedKeys(std::string delimiter =", ");
 
