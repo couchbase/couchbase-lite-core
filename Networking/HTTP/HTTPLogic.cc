@@ -107,8 +107,16 @@ namespace litecore { namespace net {
             else
                 rq << string(slice(_address.path));
         }
+
         rq << " HTTP/1.1\r\n"
-              "Host: " << string(slice(_address.hostname)) << ':' << _address.port << "\r\n";
+              "Host: " << string(slice(_address.hostname));
+        // Omit port from header if using standard ports
+        if(_address.port != 80 && _address.port != 443) {
+            rq << ':' << _address.port;
+        }
+
+        rq << "\r\n";
+
         addHeader(rq, "User-Agent", _userAgent);
 
         if (_proxy && _proxy->username)

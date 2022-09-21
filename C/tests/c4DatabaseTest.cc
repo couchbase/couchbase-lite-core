@@ -17,6 +17,7 @@
 #include "c4Index.h"
 #include "c4IndexTypes.h"
 #include "c4Query.h"
+#include "c4Collection.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
@@ -654,6 +655,36 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
     } while (c4_now() < stopAt);
 
     c4log_setLevel(kC4DatabaseLog, oldLevel);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while in batch", "[Database][C][Expiration][CBL-3626]") {
+    createRev("expire_me"_sl, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 10000 * ms;
+   
+    {
+        // Prior to fix, this would cause a hang
+        TransactionHelper t(db);
+        REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, WITH_ERROR()));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while deleting collection", "[Database][C][Expiration]") {
+    createRev("expire_me"_sl, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 10000 * ms;
+
+    SECTION("Deleting before setting expiration should set an error") {
+        REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+        C4Error err;
+        CHECK(!c4doc_setExpiration(db, "expire_me"_sl, expire, &err));
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorNotOpen);
+    }
+
+    SECTION("Deleting after setting expiration won't set an error, but also won't crash") {
+        CHECK(c4doc_setExpiration(db, "expire_me"_sl, expire, ERROR_INFO()));
+        REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]")

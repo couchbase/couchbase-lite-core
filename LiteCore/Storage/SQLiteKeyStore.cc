@@ -408,9 +408,9 @@ namespace litecore {
 
 
     void SQLiteKeyStore::moveTo(slice key, KeyStore &dst, ExclusiveTransaction &t, slice newKey) {
-        if (&dst == this || &dst.dataFile() != &dataFile())
+        SQLiteKeyStore* dstStore = SQLiteDataFile::asSQLiteKeyStore(&dst);
+        if (dstStore == this || &dstStore->dataFile() != &dataFile())
             error::_throw(error::InvalidParameter);
-        auto dstStore = dynamic_cast<SQLiteKeyStore*>(&dst);
 
         if (newKey == nullslice)
             newKey = key;

@@ -51,7 +51,7 @@ protected:
 // NOTE: the translate() method converts `"` to `'` in its output, to make the string literals
 // in the tests below less cumbersome to type (and read).
 
-TEST_CASE_METHOD(N1QLParserTest, "N1QL literals", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL literals", "[Query][N1QL][C]") { 
     CHECK(translate("SELECT FALSE") == "{'WHAT':[false]}");
     CHECK(translate("SELECT TRUE") == "{'WHAT':[true]}");
     CHECK(translate("SELECT NULL") == "{'WHAT':[null]}");
@@ -366,12 +366,12 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
     CHECK(translate("SELECT x FROM scope.coll ORDER BY y")
-          == "{'FROM':[{'COLLECTION':'scope.coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
+          == "{'FROM':[{'COLLECTION':'coll','SCOPE':'scope'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
     CHECK(translate("SELECT coll.x, scoped.y FROM coll CROSS JOIN scope.coll scoped")
-          == "{'FROM':[{'COLLECTION':'coll'},{'AS':'scoped','COLLECTION':'scope.coll','JOIN':'CROSS'}],"
+          == "{'FROM':[{'COLLECTION':'coll'},{'AS':'scoped','COLLECTION':'coll','JOIN':'CROSS','SCOPE':'scope'}],"
              "'WHAT':[['.coll.x'],['.scoped.y']]}");
     CHECK(translate("SELECT a.x, b.y FROM coll a JOIN scope.coll b ON a.name = b.name")
           == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
-             "{'AS':'b','COLLECTION':'scope.coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']]}],"
+             "{'AS':'b','COLLECTION':'coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']],'SCOPE':'scope'}],"
              "'WHAT':[['.a.x'],['.b.y']]}");
 }

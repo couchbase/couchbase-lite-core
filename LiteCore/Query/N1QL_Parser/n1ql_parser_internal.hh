@@ -211,6 +211,26 @@ static bool hasPathPrefix(slice path, slice prefix) {
 }
 
 
+// Collection-path quoting
+
+
+static MutableDict dictWithCollectionArray(MutableArray coll) {
+    auto d = MutableDict::newDict();
+    if (coll.count() == 2) {
+        string quoted = coll[0].asString().asString();
+        replace(quoted, ".", "\\.");
+        d.set("SCOPE"_sl, slice(quoted));
+        quoted = coll[1].asString().asString();
+        replace(quoted, ".", "\\.");
+        d.set("COLLECTION"_sl, slice(quoted));
+    } else if (coll.count() == 1) {
+        string quoted = coll[0].asString().asString();
+        replace(quoted, ".", "\\.");
+        d.set("COLLECTION"_sl, slice(quoted));
+    }
+    return d;
+}
+
 // Variable substitution:
 
 

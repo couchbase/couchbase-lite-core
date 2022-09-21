@@ -17,6 +17,7 @@
 #include "QueryParserTables.hh"
 #include "Record.hh"
 #include "Base64.hh"
+#include "DataFile.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
 #include "MutableDict.hh"
@@ -457,9 +458,12 @@ namespace litecore {
         }
         if (from.alias.empty()) {
             if (collection) {
-                if (auto dot = collection.findByte('.'))
-                    collection.setStart(dot + 1);   // skip scope name: a dot in an alias is bad
-                from.alias = string(collection);
+                auto dot = DataFile::findCollectionPathSeparator(collection.asString());
+                if (dot != string::npos) {
+                    from.alias = DataFile::unescapeCollectionName(collection.asString().substr(dot+1));
+                } else {
+                    from.alias = DataFile::unescapeCollectionName(collection.asString());
+                }
             } else {
                 from.alias = _defaultCollectionName;
             }
@@ -507,7 +511,6 @@ namespace litecore {
     }
 
 
-
     static string aliasOfFromEntry(const Value *value, const string& defaultAlias) {
         auto dict = requiredDict(value, "FROM item");
         string ret {optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
@@ -516,8 +519,10 @@ namespace litecore {
                                          "COLLECTION in FROM item")};
             if (ret.empty()) {
                 ret = defaultAlias;
-            } else if (auto pos = ret.find('.'); pos != string::npos) {
-                ret = ret.substr(pos + 1);
+            } else if (auto pos = DataFile::findCollectionPathSeparator(ret); pos != string::npos) {
+                ret = DataFile::unescapeCollectionName(ret.substr(pos + 1));
+            } else {
+                ret = DataFile::unescapeCollectionName(ret);
             }
         }
         return ret;

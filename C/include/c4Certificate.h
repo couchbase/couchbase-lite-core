@@ -211,7 +211,15 @@ CBL_CORE_API bool c4cert_save(C4Cert* C4NULLABLE cert,
 CBL_CORE_API C4Cert* c4cert_load(C4String name,
                     C4Error* C4NULLABLE outError);
 
-/** @} */
+/** Check if a certificate with the given name exists in the persistent keystore.
+ * @param name The name the certificate was saved with.
+ * @param outError On failure, the error info will be stored here.
+ * @return true if the certificate exists, otherwise false.
+ */
+CBL_CORE_API bool c4cert_exists(C4String name,
+                       C4Error* C4NULLABLE outError);
+
+    /** @} */
 
 
 
