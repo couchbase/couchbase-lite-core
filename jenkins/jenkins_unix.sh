@@ -31,6 +31,8 @@ pushd "couchbase-lite-core/build_cmake/x64"
 cmake -DBUILD_ENTERPRISE=ON ../..
 make -j8
 
+echo "!!! ${ghprbPullId} !!!"
+
 # Note only for macOS
 export MallocScribble=1
 export MallocDebugReport=stderr
