@@ -423,7 +423,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 6, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 7;
-    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         char docID[bufSize];
@@ -441,7 +440,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 94, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 99;
-    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         char docID[bufSize];
@@ -922,7 +920,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
     {
         TransactionHelper t(db);
         constexpr size_t docBufSize = 20, jsonBufSize = 100;
-        char docID[docBuffSize], json[jsonBufSize];
+        char docID[docBufSize], json[jsonBufSize];
         for (unsigned i = 1; i <= 100; i++) {
             snprintf(docID, docBufSize, "doc-%03u", i);
             snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
