@@ -2,7 +2,7 @@ IF (NOT CBDeps_INCLUDED)
   SET (CBDeps_INCLUDED 1)
 
   # Global variables
-  SET (CBDEP_VERSION 1.1.2)
+  SET (CBDEP_VERSION 1.1.3)
 
   INCLUDE ("${CMAKE_CURRENT_LIST_DIR}/ParseArguments.cmake")
 
