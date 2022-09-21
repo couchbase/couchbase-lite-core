@@ -75,7 +75,6 @@ namespace litecore { namespace repl {
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
-    ,_weakConnectionDelegateThis(new WeakHolder<blip::ConnectionDelegate>(this))
     {
         _loggingID = string(db->getPath()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
@@ -107,11 +106,6 @@ namespace litecore { namespace repl {
     }
 
 
-    Replicator::~Replicator() {
-        _weakConnectionDelegateThis->rescind(this);
-    }
-
-
     void Replicator::start(bool reset, bool synchronous) {
         if (synchronous)
             _start(reset);
@@ -125,6 +119,10 @@ namespace litecore { namespace repl {
             Assert(_connectionState == Connection::kClosed);
             Signpost::begin(Signpost::replication, uintptr_t(this));
             _connectionState = Connection::kConnecting;
+
+            // _start'ed Replicator must be _onClose'ed
+            _weakConnectionDelegateThis = new WeakHolder<blip::ConnectionDelegate>(this);
+
             connection().start(_weakConnectionDelegateThis);
             // Now wait for _onConnect or _onClose...
 
@@ -146,6 +144,7 @@ namespace litecore { namespace repl {
             logError("Failed to start replicator: %s", err.description().c_str());
             gotError(err);
             stop();
+            _weakConnectionDelegateThis = nullptr;
         }
     }
 
@@ -492,6 +491,7 @@ namespace litecore { namespace repl {
             notifyEndedDocuments();
             _delegate->replicatorConnectionClosed(this, status);
         }
+        _weakConnectionDelegateThis = nullptr;
     }
 
 
