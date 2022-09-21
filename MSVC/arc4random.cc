@@ -36,7 +36,7 @@ extern "C" {
 
 	uint32_t arc4random_uniform(uint32_t upperBound)
 	{
-		const std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
+		std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
 		return uniform(e);
 	}
 
