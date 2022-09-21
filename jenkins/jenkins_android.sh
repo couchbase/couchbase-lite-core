@@ -15,6 +15,8 @@ NDK_VER="23.1.7779620"
 CMAKE_VER="3.23.0"
 NINJA_VER="1.10.2"
 
+printenv
+
 function usage() {
     echo "Usage: $0 <sdk path>"
     exit 1
