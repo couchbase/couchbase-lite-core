@@ -14,17 +14,18 @@ function(setup_globals)
         set (_icu_libs)
         foreach (_lib icuuc icui18n icudata)
             unset (_iculib CACHE)
-            find_library(_iculib ${_lib})
+            find_library(_iculib ${_lib} HINTS "${CBDEP_icu4c_DIR}/lib")
             if (NOT _iculib)
                 message(FATAL_ERROR "${_lib} not found")
             endif()
             list(APPEND _icu_libs ${_iculib})
         endforeach()
         set (ICU_LIBS ${_icu_libs} CACHE STRING "ICU libraries" FORCE)
+        install(FILES ${ICU_LIBS} DESTINATION lib)
         message("Found ICU libs at ${ICU_LIBS}")
 
         find_path(LIBICU_INCLUDE unicode/ucol.h
-            HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+            HINTS "${CBDEP_icu4c_DIR}"
             PATH_SUFFIXES include)
         if (NOT LIBICU_INCLUDE)
             message(FATAL_ERROR "libicu header files not found")
@@ -39,9 +40,7 @@ function(setup_globals)
         message(FATAL_ERROR "libz not found")
     endif()
     message("Found libz at ${ZLIB_LIB}")
-    find_path(ZLIB_INCLUDE NAMES zlib.h
-        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/zlib.exploded"
-        PATH_SUFFIXES include)
+    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
     if (NOT ZLIB_INCLUDE)
         message(FATAL_ERROR "libz header files not found")
     endif()
@@ -49,7 +48,7 @@ function(setup_globals)
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
-	    ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
+           ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
     )
 endfunction()
 
