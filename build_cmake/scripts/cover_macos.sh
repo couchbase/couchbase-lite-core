@@ -47,7 +47,7 @@ elif [ "$1" == "--export-results" ]; then
     -ignore-filename-regex="vendor/mbedtls/*" -ignore-filename-regex="vendor/sqlite3-unicodesn" -ignore-filename-regex="vendor/fleece/Fleece/Integration/ObjC/*" \
     libLiteCore.dylib > output.json
 
-    if [ "$2" == "--push" && -n "$CHANGE_ID"]; then
+    if [[ "$2" == "--push" ]] && [[ -n "$CHANGE_ID" ]]; then
       python3 -m venv venv
       source venv/bin/activate 
       pip install -r ../scripts/push_coverage_results_requirements.txt
