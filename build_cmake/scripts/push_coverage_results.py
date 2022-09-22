@@ -16,11 +16,16 @@ def post_coverage_comment(result_file: str, pr_number: str):
     with open(result_file, "r") as fin:
         result_content = json.load(fin)
 
-    branch_percent = round(float(result_content["data"][0]["totals"]["branches"]["percent"]), 2)
-    function_percent = round(float(result_content["data"][0]["totals"]["functions"]["percent"]), 2)
-    instantiation_percent = round(float(result_content["data"][0]["totals"]["instantiations"]["percent"]), 2)
-    line_percent = round(float(result_content["data"][0]["totals"]["lines"]["percent"]), 2)
-    region_percent = round(float(result_content["data"][0]["totals"]["regions"]["percent"]), 2)
+    totals = result_content["data"][0]["totals"]
+    comment_content = f"""Code Coverage Results:
+    
+| Type          | Percentage |
+| -             | -          |
+"""
+    
+    for key in totals.keys():
+        percentage = round(float(totals[key]["percent"]), 2)
+        comment_content += f"| {key}        | {percentage}      |\n"
     if(gh_pat is None):
         print("WARNING: GH_PAT environment variable not set, skipping comment post...")
         return
@@ -34,17 +39,6 @@ def post_coverage_comment(result_file: str, pr_number: str):
         if(str(c["body"]).startswith("Code Coverage Results")):
             comment_id = int(c["id"])
             break
-
-    comment_content = f"""Code Coverage Results:
-    
-| Type          | Percentage |
-| -             | -          |
-| Branch        | {branch_percent}      |
-| Function      | {function_percent}      |
-| Instantiation | {instantiation_percent}      |
-| Line          | {line_percent}      |
-| Region        | {region_percent}      |
-"""
 
     print(f"Posting comment as \n\n{comment_content}")
     if comment_id == 0:
