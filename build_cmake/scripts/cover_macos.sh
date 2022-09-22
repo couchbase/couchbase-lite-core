@@ -10,6 +10,9 @@
 
 SCRIPT_DIR=`dirname $0`
 pushd $SCRIPT_DIR/..
+pushd ..
+git submodule update --recursive --init
+popd
 
 mkdir -p macos
 pushd macos
@@ -18,11 +21,11 @@ core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 
 pushd LiteCore/tests
-./CppTests -r quiet || exit 1
+./CppTests -r quiet
 popd
 
 pushd C/tests
-./C4Tests -r quiet || exit 1
+./C4Tests -r quiet
 popd
 
 mkdir -p coverage_reports
