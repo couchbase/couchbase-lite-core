@@ -348,11 +348,12 @@ int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std:
         idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-");
     }
     int docNo = 1;
+    constexpr size_t bufSize = 20;
     for (int i = 1; docNo <= total; i++) {
         C4Log("-------- Creating %d docs --------", i);
         TransactionHelper t(database);
-        char docID[20];
-        sprintf(docID, "%s%d", idprefix.c_str(), docNo++);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%s%d", idprefix.c_str(), docNo++);
         createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
     }
     C4Log("-------- Done creating docs --------");
@@ -497,9 +498,10 @@ string C4Test::createFleeceRev(C4Collection *coll, C4Slice docID, C4Slice revID,
 
 void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     TransactionHelper t(db);
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     for (unsigned i = 1; i <= numberOfDocs; i++) {
-        sprintf(docID, "doc-%03u", i);
+        snprintf(docID, bufSize, "doc-%03u", i);
         createRev(c4str(docID), kRevID, kFleeceBody);
     }
 }
@@ -678,12 +680,13 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
     FLArrayIterator iter;
     FLValue item;
     unsigned numDocs = 0;
+    constexpr size_t bufSize = 20;
     for(FLArrayIterator_Begin(root, &iter);
             nullptr != (item = FLArrayIterator_GetValue(&iter));
             FLArrayIterator_Next(&iter))
     {
-        char docID[20];
-        sprintf(docID, "%s%07u", idPrefix.c_str(), numDocs+1);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs+1);
 
         FLEncoder enc = c4db_getSharedFleeceEncoder(db);
         FLEncoder_WriteValue(enc, item);
@@ -728,8 +731,9 @@ unsigned C4Test::importJSONLines(string path, C4Collection *collection,
             fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, ERROR_INFO());
             REQUIRE(body.buf);
 
-            char docID[20];
-            sprintf(docID, "%07u", numDocs+1);
+            constexpr size_t bufSize = 20;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%07u", numDocs+1);
 
             // Save document:
             C4DocPutRequest rq = {};

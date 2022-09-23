@@ -51,8 +51,9 @@ FilePath GetTempDirectory() {
     static FilePath kTempDir;
     static once_flag f;
     call_once(f, [=] {
-        char folderName[64];
-        sprintf(folderName, "LiteCore_Tests_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
+        constexpr size_t bufSize = 64;
+        char folderName[bufSize];
+        snprintf(folderName, bufSize, "LiteCore_Tests_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
         kTempDir = GetSystemTempDirectory()[folderName];
         kTempDir.mkdir();
     });
@@ -92,9 +93,10 @@ void InitTestLogging() {
 
 string sliceToHex(pure_slice result) {
     string hex;
+    constexpr size_t bufSize = 4;
     for (size_t i = 0; i < result.size; i++) {
-        char str[4];
-        sprintf(str, "%02X", result[i]);
+        char str[bufSize];
+        snprintf(str, bufSize, "%02X", result[i]);
         hex.append(str);
         if (i % 2 && i != result.size-1)
             hex.append(" ");
@@ -105,11 +107,12 @@ string sliceToHex(pure_slice result) {
 
 string sliceToHexDump(pure_slice result, size_t width) {
     string hex;
+    constexpr size_t bufSize = 4;
     for (size_t row = 0; row < result.size; row += width) {
         size_t end = min(row + width, result.size);
         for (size_t i = row; i < end; ++i) {
-            char str[4];
-            sprintf(str, "%02X", result[i]);
+            char str[bufSize];
+            snprintf(str, bufSize, "%02X", result[i]);
             hex.append(str);
             if (i % 2 && i != result.size-1)
                 hex.append(" ");

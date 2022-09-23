@@ -16,8 +16,8 @@
 #include "SecureRandomize.hh"
 #include <chrono>
 
-static const size_t kSizeOfDocument = 1000;
-static const unsigned kNumDocuments = 100000;
+static constexpr size_t kSizeOfDocument = 1000;
+static constexpr unsigned kNumDocuments = 100000;
 
 static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
@@ -37,14 +37,17 @@ public:
         
         C4Error error;
         REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&error)));
+        
+        constexpr size_t docBufSize = 50, revBufSize = 50,
+                         jsonBufSize = kSizeOfDocument + 100;
 
         for (unsigned i = 0; i < kNumDocuments; i++) {
-            char docID[50];
-            sprintf(docID, "doc-%08x-%08x-%08x-%04x", litecore::RandomNumber(), litecore::RandomNumber(), litecore::RandomNumber(), i);
-            char revID[50];
-            sprintf(revID, "1-deadbeefcafebabe80081e50");
-            char json[kSizeOfDocument+100];
-            sprintf(json, "{\"content\":\"%s\"}", content);
+            char docID[docBufSize];
+            snprintf(docID, docBufSize, "doc-%08x-%08x-%08x-%04x", litecore::RandomNumber(), litecore::RandomNumber(), litecore::RandomNumber(), i);
+            char revID[revBufSize];
+            snprintf(revID, revBufSize, "1-deadbeefcafebabe80081e50");
+            char json[jsonBufSize];
+            snprintf(json, jsonBufSize, "{\"content\":\"%s\"}", content);
             C4SliceResult body = c4db_encodeJSON(db, c4str(json), ERROR_INFO(error));
             REQUIRE(body.buf);
 

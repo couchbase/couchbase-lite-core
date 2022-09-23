@@ -55,8 +55,9 @@ namespace litecore::repl {
 
         fleece::alloc_slice toJSON() const {
             if (isInt()) {
-                char buf[30];
-                sprintf(buf, "%" PRIu64, intValue());
+                constexpr size_t bufSize = 30;
+                char buf[bufSize];
+                snprintf(buf, bufSize, "%" PRIu64, intValue());
                 return fleece::alloc_slice(buf);
             } else {
                 return sliceValue();
