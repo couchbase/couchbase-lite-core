@@ -21,7 +21,6 @@ function(setup_globals)
             list(APPEND _icu_libs ${_iculib})
         endforeach()
         set (ICU_LIBS ${_icu_libs} CACHE STRING "ICU libraries" FORCE)
-        install(FILES ${ICU_LIBS} DESTINATION lib)
         message("Found ICU libs at ${ICU_LIBS}")
 
         find_path(LIBICU_INCLUDE unicode/ucol.h
