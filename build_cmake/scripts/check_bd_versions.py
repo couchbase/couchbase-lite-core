@@ -32,7 +32,7 @@ def get_submodule_base(git: str):
 def check_component(branch: str, title: str, component, expectChange: bool) -> bool:
     if "src-path" not in component:
         print(f"No src-path listed for {title}, skipping check...")
-        return
+        return True
     
     print(f"Checking for changes in {title}...")
     cwd = os.getcwd()
