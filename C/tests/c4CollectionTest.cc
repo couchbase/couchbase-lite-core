@@ -27,9 +27,10 @@ public:
     C4CollectionTest(int testOption) :C4Test(testOption) { }
 
     void addNumberedDocs(C4Collection *coll, unsigned n, unsigned start = 1) {
+        constexpr size_t bufSize = 20;
         for (unsigned i = 0; i < n; i++) {
-            char docID[20];
-            sprintf(docID, "doc-%03u", start + i);
+            char docID[bufSize];
+            snprintf(docID, bufSize, "doc-%03u", start + i);
             C4String history[1] = {kRev1ID};
             C4DocPutRequest rq = {};
             rq.existingRevision = true;

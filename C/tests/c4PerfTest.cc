@@ -146,9 +146,10 @@ public:
     void readRandomDocs(size_t numDocs, size_t numDocsToRead, const char* sf_title = nullptr) {
         std::cerr << "Reading " <<numDocsToRead<< " random docs...\n";
         Benchmark b;
+        constexpr size_t bufSize = 30;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
-            char docID[30];
-            sprintf(docID, "%07zu", ((unsigned)litecore::RandomNumber() % numDocs) + 1);
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%07zu", ((unsigned)litecore::RandomNumber() % numDocs) + 1);
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;

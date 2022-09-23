@@ -486,8 +486,9 @@ namespace litecore {
 
 
     alloc_slice DatabaseImpl::getPeerID() const {
-        char buf[32];
-        sprintf(buf, "%" PRIx64, myPeerID());
+        constexpr size_t bufSize = 32;
+        char buf[bufSize];
+        snprintf(buf, bufSize, "%" PRIx64, myPeerID());
         return alloc_slice(buf);
     }
 

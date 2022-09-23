@@ -29,6 +29,8 @@
 
 using namespace fleece;
 
+constexpr size_t kDocBufSize = 20;
+
 
 /* REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
@@ -482,8 +484,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         TransactionHelper t(db);
         std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
@@ -508,8 +510,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -602,8 +604,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < numDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "%07u", docNo + 1);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%07u", docNo + 1);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -677,7 +679,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
@@ -772,7 +774,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
@@ -849,7 +851,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);

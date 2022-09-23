@@ -470,8 +470,9 @@ namespace litecore { namespace repl {
             return false;
 
         // Generate new revID:
-        char newRevBuf[20];
-        newRevID = alloc_slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
+        constexpr size_t bufSize = 20;
+        char newRevBuf[bufSize];
+        newRevID = alloc_slice(newRevBuf, snprintf(newRevBuf, bufSize, "%lu-cc", ++generation));
 
         // Save:
         db->putRawDocument(constants::kPeerCheckpointStore, {checkpointID, newRevID, body});

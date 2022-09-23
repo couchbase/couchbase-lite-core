@@ -516,7 +516,7 @@ namespace litecore {
         string path = fp->path();
         const char *basePath = path.c_str();
         Assert(strlen(basePath) + 6 < kPathBufSize - 1);
-        sprintf(pathBuf, "%sXXXXXX", basePath);
+        snprintf(pathBuf, kPathBufSize, "%sXXXXXX", basePath);
     }
 
 
