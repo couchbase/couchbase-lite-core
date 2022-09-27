@@ -216,6 +216,8 @@ namespace litecore { namespace repl {
             Retained<C4Collection>   collection;
         };
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
+
+        void              setMsgHandlerFor3_0_Client(Retained<blip::MessageIn>);
         
         Delegate*         _delegate;                   // Delegate whom I report progress/errors to
         blip::Connection::State _connectionState;      // Current BLIP connection state
@@ -229,6 +231,7 @@ namespace litecore { namespace repl {
         vector<SubReplicator> _subRepls;
         bool              _getCollectionsRequested {}; // True while "getCollections" request pending
         alloc_slice       _remoteURL;
+        bool              _setMsgHandlerFor3_0_ClientDone {false};
     };
 
 } }

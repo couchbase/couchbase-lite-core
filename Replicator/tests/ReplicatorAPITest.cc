@@ -529,7 +529,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.defaultCollection.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -573,7 +573,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.defaultCollection.callbackContext = this;
+        params.replCollection.callbackContext = this;
         params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
@@ -593,7 +593,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.defaultCollection.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -610,6 +610,107 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push]") {
+    ExpectingExceptions x;
+    // Create collection in the db and import documents
+    C4CollectionSpec Kyber = {"kyber"_sl, "crystal"_sl};
+    auto collKyber = createCollection(db, Kyber);
+    importJSONLines(sFixturesDir + "names_100.json", collKyber);
+
+    // Create the collection in the database to be replicated to
+    createDB2();
+    createCollection(db2, Kyber);
+
+    // Create collection spec but do not create collection in db
+    C4CollectionSpec Republic = {"republic"_sl, "galactic"_sl};
+
+    // Set options for the replication
+    C4Error err;
+    repl::C4ReplParamsOneCollection params{Kyber};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
+    CHECK(err.code == kC4ErrorNotOpen);
+    c4slice_free(encodedDocIDs);
+
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
+    CHECK(err.code == kC4ErrorNotOpen);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push]") {
+    // Create collections and import documents to them
+    C4CollectionSpec Council = { "council"_sl, "jedi"_sl };
+    C4CollectionSpec Federation = { "federation"_sl, "trade"_sl };
+    auto collCouncil = createCollection(db, Council);
+    auto collFederation = createCollection(db, Federation);
+    importJSONLines(sFixturesDir + "names_100.json", collCouncil);
+    importJSONLines(sFixturesDir + "wikipedia_100.json", collFederation);
+
+    // Create the collections in the database to be replicated to
+    createDB2();
+    createCollection(db2, Council);
+    createCollection(db2, Federation);
+
+    // Set options for the replication
+    // Replicating only the Council collection
+    C4Error err;
+    repl::C4ReplParamsOneCollection paramsCouncil {Council };
+    paramsCouncil.push = kC4OneShot;
+    paramsCouncil.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    // Create replicator config for Federation collection
+    // This won't actually be replicated, but is needed to call c4repl_getPendingDocIDs for the collection
+    repl::C4ReplParamsOneCollection paramsFederation {Federation };
+    paramsFederation.push = kC4OneShot;
+    paramsFederation.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    // Not actually used for replication
+    auto replFed = c4::ref{ c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err)) };
+    REQUIRE(replFed);
+
+    // Check that collection 1 has the right amount of pending documents
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, &err);
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == 100);
+    c4slice_free(encodedDocIDs);
+
+    // Replicate collection 1
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+
+    // Now collection 1 shouldn't have any pending documents
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, &err);
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs == nullslice);
+
+    // Check that collection 2 still has all the documents pending
+    encodedDocIDs = c4repl_getPendingDocIDs(replFed, Federation, ERROR_INFO(err));
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == 100);
 }
 #endif
 

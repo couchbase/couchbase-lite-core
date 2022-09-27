@@ -12,6 +12,7 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
+#include "c4ReplicatorHelpers.hh"
 #include "c4Database.hh"
 #include "ReplicatorTypes.hh"
 #include "fleece/RefCounted.hh"
@@ -82,10 +83,14 @@ namespace litecore { namespace repl {
             constructorCheck();
         }
 
-        static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
-        static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
-        static Options pushpull(Mode mode =kC4OneShot) {return Options(mode, mode);}
-        static Options passive()                       {return Options(kC4Passive,kC4Passive);}
+        static Options pushing(Mode mode =kC4OneShot, C4CollectionSpec coll =kC4DefaultCollectionSpec)
+            {return Options(C4ReplParamsOneCollection(coll, mode, kC4Disabled));}
+        static Options pulling(Mode mode =kC4OneShot, C4CollectionSpec coll =kC4DefaultCollectionSpec)
+            {return Options(C4ReplParamsOneCollection(coll, kC4Disabled, mode));}
+        static Options pushpull(Mode mode =kC4OneShot, C4CollectionSpec coll =kC4DefaultCollectionSpec)
+            {return Options(C4ReplParamsOneCollection(coll, mode, mode));}
+        static Options passive(C4CollectionSpec coll =kC4DefaultCollectionSpec)
+            {return Options(C4ReplParamsOneCollection(coll, kC4Passive,kC4Passive));}
 
         //---- Property accessors:
 
