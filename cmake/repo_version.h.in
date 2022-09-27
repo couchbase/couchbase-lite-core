@@ -1,0 +1,17 @@
+/*
+Copyright 2020-Present Couchbase, Inc.
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
+#define GitCommit "@CBL_GIT_COMMIT@"
+#define GitCommitEE "@CBL_GIT_COMMIT_EE@"
+#define GitBranch "@CBL_GIT_BRANCH@"
+#define GitDirty  "@CBL_GIT_DIRTY@"
+#define LiteCoreVersion "@CBL_LITECORE_VERSION@"
+#define LiteCoreBuildNum "@CBL_LITECORE_BUILDNUM@"
+#define LiteCoreBuildID "@CBL_LITECORE_BUILDID@"
+#define LiteCoreOfficial @CBL_LITECORE_OFFICIAL@
