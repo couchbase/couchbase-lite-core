@@ -23,7 +23,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   INCLUDE (couchbase-lite-core/jenkins/CBDeps.cmake)
 
   # Install cbdeps packages using cbdep tool
-  CBDEP_INSTALL (PACKAGE icu4c VERSION 71.1-1)
+  CBDEP_INSTALL (PACKAGE icu4c VERSION 71.1-2)
   FILE (COPY "${CBDEP_icu4c_DIR}/lib" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
 
