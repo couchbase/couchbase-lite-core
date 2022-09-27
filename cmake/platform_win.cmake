@@ -102,6 +102,7 @@ function(setup_litecore_build_win)
             "/utf-8"
             "/wd4068;/wd4244;/wd4018;/wd4819;/wd4800;/wd5105"
             "-D_CRT_SECURE_NO_WARNINGS=1"
+            "/guard:cf"
             "$<$<COMPILE_LANGUAGE:CXX>:/EHsc>"
         )
     endforeach()
