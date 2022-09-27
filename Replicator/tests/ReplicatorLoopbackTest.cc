@@ -290,9 +290,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     // Add 100 docs, then delete 50 of them:
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
+    constexpr size_t bufSize = 20;
     for (unsigned i = 1; i <= 100; i += 2) {
-        char docID[20];
-        sprintf(docID, "%07u", i);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%07u", i);
         createRev(_collDB1, slice(docID), kRev2ID, nullslice, kRevDeleted); // delete it
     }
     _expectedDocumentCount = 50;
@@ -533,10 +534,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "doc"_sl, true, kDocGetAll, nullptr);
     alloc_slice remote(c4doc_getRemoteAncestor(doc, 1));
     CHECK(remote == slice(kRevID));
+    
+    constexpr size_t bufSize = 32;
 
     for (int gen = 2; gen <= 50; gen++) {
-        char revID[32];
-        sprintf(revID, "%d-0000", gen);
+        char revID[bufSize];
+        snprintf(revID, bufSize, "%d-0000", gen);
         createRev(_collDB1, "doc"_sl, slice(revID), kFleeceBody);
     }
 
@@ -558,10 +561,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     runPullReplication();
 
     c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, "doc"_sl, true, kDocGetAll, nullptr);
+    
+    constexpr size_t bufSize = 32;
 
     for (int gen = 2; gen <= 50; gen++) {
-        char revID[32];
-        sprintf(revID, "%d-0000", gen);
+        char revID[bufSize];
+        snprintf(revID, bufSize, "%d-0000", gen);
         createRev(_collDB1, "doc"_sl, slice(revID), kFleeceBody);
     }
 
@@ -754,16 +759,17 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
     {
         // Create 10 docs, each with 1000 blobs:
         TransactionHelper t(db);
-        char docid[100], body[100];
+        constexpr size_t docBufSize = 100, bodyBufSize = 100;
+        char docid[docBufSize], body[bodyBufSize];
         for (int iDoc = 0; iDoc < kNumDocs; ++iDoc) {
             //Log("Creating doc %3d ...", iDoc);
             vector<string> attachments;
             attachments.reserve(1000);
             for (int iAtt = 0; iAtt < kNumBlobsPerDoc; iAtt++) {
-                sprintf(body, "doc#%d attachment #%d", iDoc, iAtt);
+                snprintf(body, bodyBufSize, "doc#%d attachment #%d", iDoc, iAtt);
                 attachments.push_back(body);
             }
-            sprintf(docid, "doc%03d", iDoc);
+            snprintf(docid, docBufSize, "doc%03d", iDoc);
             addDocWithAttachments(db, _collSpec, c4str(docid), attachments, "text/plain");
             _expectedDocsFinished.insert(docid);
             ++_expectedDocumentCount;
@@ -1524,9 +1530,10 @@ static void mutateDoc(C4Collection *collection, slice docID, function<void(Mutab
 
 
 static void mutationsForDelta(C4Collection *collection) {
+    constexpr size_t bufSize = 20;
     for (int i = 1; i <= 100; i += 7) {
-        char docID[20];
-        sprintf(docID, "%07u", i);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%07u", i);
         mutateDoc(collection, slice(docID), [](MutableDict props) {
             props["birthday"_sl] = "1964-11-28"_sl;
             props["memberSince"_sl].remove();

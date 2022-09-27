@@ -36,8 +36,9 @@ protected:
         static constexpr char const* kVersioningName[3] = {"v2 rev trees", "v3 rev trees",
                                                            "version vectors"};
         C4Log("---- Upgrading to %s ----", kVersioningName[versioning]);
-        char folderName[64];
-        sprintf(folderName, "upgraded%" PRIms ".cblite2/", chrono::milliseconds(time(nullptr)).count());
+        constexpr size_t bufSize = 64;
+        char folderName[bufSize];
+        snprintf(folderName, bufSize, "upgraded%" PRIms ".cblite2/", chrono::milliseconds(time(nullptr)).count());
         FilePath newPath = sTempDir[folderName];
         newPath.delRecursive();
 
@@ -52,10 +53,11 @@ protected:
         db = DatabaseImpl::open(newPath, config);
     }
 
-    void upgradeInPlace(string fixturePath, C4DocumentVersioning versioning) {
+    void upgradeInPlace(const string fixturePath, const C4DocumentVersioning versioning) {
         auto srcPath = FilePath(fixturePath);
-        TempArray(folderName, char, fixturePath.size() + 32);
-        sprintf(folderName, "%" PRIms "%s/", chrono::milliseconds(time(nullptr)).count(), srcPath.fileOrDirName().c_str());
+        const size_t bufSize = fixturePath.size() + 32;
+        TempArray(folderName, char, bufSize);
+        snprintf(folderName, bufSize, "%" PRIms "%s/", chrono::milliseconds(time(nullptr)).count(), srcPath.fileOrDirName().c_str());
         FilePath dbPath = sTempDir[(const char *)folderName];
         dbPath.delRecursive();
         srcPath.copyTo(dbPath);

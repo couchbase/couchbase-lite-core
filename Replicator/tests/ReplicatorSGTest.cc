@@ -29,6 +29,8 @@
 
 using namespace fleece;
 
+constexpr size_t kDocBufSize = 20;
+
 
 /* REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
@@ -482,8 +484,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         TransactionHelper t(db);
         std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
@@ -508,8 +510,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -602,8 +604,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < numDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "%07u", docNo + 1);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%07u", docNo + 1);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -696,8 +698,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     std::vector<std::string> docIDs;
     revIDs.emplace_back();
     for (int docNo = 0; docNo < numDocs; ++docNo) {
-        char buf[20];
-        sprintf(buf, "%07u", docNo + 1);
+        char buf[kDocBufSize];
+        snprintf(buf, kDocBufSize, "%07u", docNo + 1);
         docIDs.emplace_back(buf);
         c4::ref<C4Document> doc = c4doc_get(db, slice(buf), true, ERROR_INFO());
         REQUIRE(doc);
