@@ -49,10 +49,26 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
-project (LiteCore)
+if(DEFINED ENV{VERSION})
+    message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
+    set(CBL_VERSION_STRING $ENV{VERSION})
+else()
+    message(WARNING "No VERSION set, defaulting to 0.0.0")
+    set(CBL_VERSION_STRING "0.0.0")
+endif()
+
+project (
+    LiteCore
+    VERSION ${CBL_VERSION_STRING}
+)
 include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
+
+set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
+file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+include(cmake/generate_edition.cmake)
+generate_edition()
 
 set(LITECORE_TARGETS "")
 
@@ -139,19 +155,7 @@ set(ENABLE_PROGRAMS OFF CACHE INTERNAL "Build mbed TLS programs.")
 set(ENABLE_TESTING OFF CACHE INTERNAL "Build mbed TLS tests.")
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
-# Generate file repo_version.h containing Git repo information, and add it to #include path:
-set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
-file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
 configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
-if (UNIX)
-    execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-else()
-    execute_process(COMMAND powershell "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.ps1"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
