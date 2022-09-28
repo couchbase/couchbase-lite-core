@@ -79,19 +79,23 @@ function(setup_litecore_build_unix)
     )
 
     target_compile_options(LiteCoreObjects PRIVATE 
-    ${LITECORE_WARNINGS} 
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+        ${LITECORE_WARNINGS} 
+        -Wformat=2
+        -fstack-protector
+        -D_FORTIFY_SOURCE=2
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
+        $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+        $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
+
     target_compile_options(BLIPObjects PRIVATE 
-	${LITECORE_WARNINGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
-    target_compile_options(FleeceStatic PRIVATE 
-	${LITECORE_WARNINGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+        ${LITECORE_WARNINGS} 
+        -Wformat=2
+        -fstack-protector
+        -D_FORTIFY_SOURCE=2
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
+        $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+        $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
