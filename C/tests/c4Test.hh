@@ -238,6 +238,7 @@ public:
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist =true);
     int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "");
+    int addDocs(C4Collection* collection, int total, std::string idprefix ="");
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
@@ -299,10 +300,11 @@ public:
                             double timeout =0.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
-    unsigned importJSONLines(std::string path, C4Collection*, 
-                             double timeout =0.0, bool verbose =false, size_t maxLines =0);
+    unsigned importJSONLines(std::string path, C4Collection*, double timeout =0.0, bool verbose =false,
+                             size_t maxLines =0, const std::string& idPrefix ="");
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
-                             C4Database* database = nullptr, size_t maxLines =0);
+                             C4Database* database = nullptr, size_t maxLines =0,
+                             const std::string& idPrefix ="");
 
 
     bool docBodyEquals(C4Document *doc NONNULL, slice fleece);

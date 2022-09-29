@@ -32,6 +32,7 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <variant>
 #include <vector>
 
 using namespace fleece;
@@ -222,9 +223,13 @@ public:
                 C4Assert(_headers);
         }
 
-        if (s.level == kC4Idle && _stopWhenIdle) {
+        if (s.level == kC4Idle) {
             C4Log("*** Replicator idle; stopping...");
-            c4repl_stop(r);
+            if (_stopWhenIdle.load()) {
+                c4repl_stop(r);
+            } else if (_callbackWhenIdle) {
+                _callbackWhenIdle();
+            }
         }
 
         _stateChangedCondition.notify_all();
@@ -265,13 +270,15 @@ public:
         }
     }
 
+    using PushPull = std::pair<C4ReplicatorMode, C4ReplicatorMode>;
+    using C4ParamsSetter = std::function<void(C4ReplicatorParameters&)>;
 
     bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
         std::unique_lock<std::mutex> lock(_mutex);
         return _startReplicator(push, pull, err);
     }
 
-    bool _startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
+    bool _startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error *err) {
         _callbackStatus = { };
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
@@ -279,27 +286,39 @@ public:
         _docsEnded = 0;
         _wentOffline = false;
 
+        C4ReplicatorMode push {kC4Disabled}, pull {kC4Disabled};
+        auto pp = std::get_if<PushPull>(&varParams);
+        if (pp) {
+            std::tie(push, pull) = *pp;
+        }
+
         if (push > kC4Passive && (slice(_remoteDBName).hasPrefix("scratch"_sl))
                 && !db2 && !_flushedScratch) {
             flushScratchDatabase();
         }
 
         C4ReplicatorParameters params = {};
-        // When params.collections is non-empty, params.push/pull are ignored.
-        C4ReplicationCollection colls[] = {
-            { kC4DefaultCollectionSpec, push, pull }
-        };
-        params.collections = colls;
-        params.collectionCount = sizeof(colls) / sizeof(C4ReplicationCollection);
         _options = options();
         params.optionsDictFleece = _options.data();
-        params.collections[0].pushFilter = _pushFilter;
-        params.collections[0].pullFilter = _pullFilter;
-        params.collections[0].callbackContext = this;
         params.onStatusChanged = onStateChanged;
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
+        C4ReplicationCollection coll;
+        if (pp) {
+            // Explicit Push/Pull for one collection
+            coll = { kC4DefaultCollectionSpec, push, pull };
+            params.collections = &coll;
+            params.collectionCount = 1;
+            params.collections[0].pushFilter = _pushFilter;
+            params.collections[0].pullFilter = _pullFilter;
+            params.collections[0].callbackContext = this;
+        } else {
+            // Caller will set the Params
+            auto pParamsSetter = std::get_if<C4ParamsSetter>(&varParams);
+            assert(pParamsSetter);
+            (*pParamsSetter)(params);
+        }
 
         if (_remoteDBName.buf) {
             _repl = c4repl_new(db, _address, _remoteDBName, params, err);
@@ -321,6 +340,12 @@ public:
         return true;
     }
 
+
+    bool _startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
+        std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
+        return _startReplicator(varParams, err);
+    }
+
     static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + 2s;
 
     void waitForStatus(C4ReplicatorActivityLevel level, std::chrono::milliseconds timeout =kDefaultWaitTimeout) {
@@ -337,11 +362,11 @@ public:
             FAIL("Timed out waiting for a status callback of level " << level);
     }
 
-    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+    void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess =true) {
         std::unique_lock<std::mutex> lock(_mutex);
 
         C4Error err;
-        REQUIRE(_startReplicator(push, pull, WITH_ERROR(&err)));
+        REQUIRE(_startReplicator(params, WITH_ERROR(&err)));
         _waitForStatus(lock, kC4Stopped, std::chrono::minutes(5));
 
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
@@ -359,6 +384,12 @@ public:
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
 
         _repl = nullptr;
+
+    }
+    
+    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
+        replicate(varParams, expectSuccess);
     }
 
 
@@ -497,7 +528,8 @@ public:
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
-    bool _stopWhenIdle {false};
+    std::atomic<bool> _stopWhenIdle {false};
+    std::function<void()> _callbackWhenIdle;
     int _docsEnded {0};
     std::set<std::string> _docPushErrors, _docPullErrors;
     std::set<std::string> _expectedDocPushErrors, _expectedDocPullErrors;
