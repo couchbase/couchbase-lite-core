@@ -87,6 +87,7 @@ static constexpr C4CollectionSpec Default = kC4DefaultCollectionSpec;
 using namespace std;
 using namespace litecore::repl;
 
+#ifdef COUCHBASE_ENTERPRISE
 static C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
                                    C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
                                    C4StringResult* outKeyID, C4Error* outError);
@@ -94,6 +95,7 @@ static C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String do
 static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
                                    C4String keyPath, C4Slice input, C4String algorithm,
                                    C4String keyID, C4Error* outError);
+#endif
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
@@ -200,11 +202,14 @@ public:
                         doc.root());
                 c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
             }
+#ifdef COUCHBASE_ENTERPRISE
             if (propertyEncryption > 0) {
                 c4Params.propertyEncryptor = (C4ReplicatorPropertyEncryptionCallback)propEncryptor;
                 c4Params.propertyDecryptor = (C4ReplicatorPropertyDecryptionCallback)propDecryptor;
             }
+#endif
         };
+#ifdef COUCHBASE_ENTERPRISE
         if (propertyEncryption == 1) {
             _options = repl::Options::updateProperties(_options,
                                                        kC4ReplicatorOptionDisablePropertyDecryption,
@@ -213,7 +218,9 @@ public:
                 p.second.collection = c4db_getCollection(verifyDb, p.first, ERROR_INFO());
             });
         }
-
+#else
+        (void)propertyEncryption;
+#endif
         {
             C4Database* savedb = db;
             DEFER {
@@ -738,8 +745,8 @@ static void validateCipherInputs(ReplicatorCollectionSGTest::CipherContextMap* c
 }
 
 C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
-                                   C4StringResult* outKeyID, C4Error* outError)
+                            C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
+                            C4StringResult* outKeyID, C4Error* outError)
 {
     auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
     validateCipherInputs(test->encContextMap.get(), spec, docID, keyPath);
@@ -747,8 +754,8 @@ C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FL
 }
 
 C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4String algorithm,
-                                   C4String keyID, C4Error* outError)
+                            C4String keyPath, C4Slice input, C4String algorithm,
+                            C4String keyID, C4Error* outError)
 {
     auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
     validateCipherInputs(test->decContextMap.get(), spec, docID, keyPath);
