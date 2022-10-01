@@ -18,6 +18,7 @@
 #include "c4Private.h"
 #include "fleece/function_ref.hh"
 #include "fleece/Expert.hh"
+#include <thread>
 #include <vector>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
@@ -270,6 +271,18 @@ public:
                                      C4Slice newRevID,
                                      C4Slice body =kFleeceBody,
                                      C4RevisionFlags flags =0);
+
+    // Makeshift of c++20 jthread, automatically rejoins on destruction
+    struct Jthread {
+        std::thread thread;
+        Jthread(std::thread&& thread_)
+        : thread(move(thread_))
+        {}
+        Jthread() = default;
+        ~Jthread() {
+            thread.join();
+        }
+    };
 
     void createNumberedDocs(unsigned numberOfDocs);
 

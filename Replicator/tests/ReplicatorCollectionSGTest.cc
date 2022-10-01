@@ -76,12 +76,12 @@ static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
 
 static constexpr slice RosesName = "roses"_sl;
 static constexpr slice TulipsName = "tulips"_sl;
-//static constexpr slice LavenderName = "lavenders"_sl;
+static constexpr slice LavenderName = "lavenders"_sl;
 static constexpr slice FlowersScopeName = "flowers"_sl;
 
 static constexpr C4CollectionSpec Roses = { RosesName, FlowersScopeName };
 static constexpr C4CollectionSpec Tulips = { TulipsName, FlowersScopeName };
-//static constexpr C4CollectionSpec Lavenders = { LavenderName, FlowersScopeName };
+static constexpr C4CollectionSpec Lavenders = { LavenderName, FlowersScopeName };
 static constexpr C4CollectionSpec Default = kC4DefaultCollectionSpec;
 
 using namespace std;
@@ -262,103 +262,6 @@ public:
         ss << std::hex << seconds << "-";
         return ss.str();
     }
-
-#if 0
-    class ResolvedDocument {
-    public:
-        ResolvedDocument()                      =default;   // Resolved as a deleted doc
-        ResolvedDocument(C4Document* doc)       :_doc(c4doc_retain(doc)) { }
-        ResolvedDocument(FLDict mergedProps)    :_mergedProps(mergedProps) { }
-        
-        C4Document* doc()                       {return _doc;}
-        FLDict mergedProps()                    {return _mergedProps;}
-    private:
-        c4::ref<C4Document> _doc;
-        RetainedDict _mergedProps;
-    };
-    
-    void setConflictResolver(C4Database* activeDB,
-                             std::function<ResolvedDocument(CollectionSpec collection,
-                                                            C4Document* local,
-                                                            C4Document* remote)> resolver)
-    {
-        REQUIRE(activeDB);
-        
-        if (!resolver) {
-            _conflictHandler = nullptr;
-            return;
-        }
-        
-        auto& conflictHandlerRunning = _conflictHandlerRunning;
-        _conflictHandler = [activeDB, resolver, &conflictHandlerRunning](ReplicatedRev *rev) {
-            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-            auto collPath = Options::collectionSpecToPath(rev->collectionSpec);
-            Log("Resolving conflict for '%.*s' in '%.*s' ...", SPLAT(rev->docID), SPLAT(collPath));
-            
-            C4Error error;
-            C4Collection* coll = c4db_getCollection(activeDB, rev->collectionSpec, &error);
-            Assert(coll, "conflictHandler: Couldn't find collection '%.*s'", SPLAT(collPath));
-
-            conflictHandlerRunning = true;
-            TransactionHelper t(activeDB);
-            
-            // Get the local doc:
-            c4::ref<C4Document> localDoc = c4coll_getDoc(coll, rev->docID, true, kDocGetAll, &error);
-            Assert(localDoc, "conflictHandler: Couldn't read doc '%.*s' in '%.*s'",
-                   SPLAT(rev->docID), SPLAT(collPath));
-            
-            // Get the remote doc:
-            c4::ref<C4Document> remoteDoc = c4coll_getDoc(coll, rev->docID, true, kDocGetAll, &error);
-            if (!c4doc_selectNextLeafRevision(remoteDoc, true, false, &error)) {
-                Assert(false, "conflictHandler: Couldn't get conflicting remote revision of '%.*s' in '%.*s'",
-                       SPLAT(rev->docID), SPLAT(collPath));
-            }
-            
-            ResolvedDocument resolvedDoc;
-            if ((localDoc->selectedRev.flags & kRevDeleted) &&
-                (remoteDoc->selectedRev.flags & kRevDeleted))
-            {
-                resolvedDoc = ResolvedDocument(remoteDoc);
-            } else {
-                resolvedDoc = resolver(coll->getSpec(), localDoc.get(), remoteDoc.get());
-            }
-            
-            FLDict mergedBody = nullptr;
-            C4RevisionFlags mergedFlags = 0;
-            
-            if (resolvedDoc.doc() == remoteDoc) {
-                mergedFlags |= resolvedDoc.doc()->selectedRev.flags;
-            } else {
-                C4Document* resDoc = resolvedDoc.doc();
-                FLDict mergedProps = resolvedDoc.mergedProps();
-                if (resDoc) {
-                    mergedBody = c4doc_getProperties(resolvedDoc.doc());
-                    mergedFlags |= resolvedDoc.doc()->selectedRev.flags;
-                } else if (mergedProps) {
-                    mergedBody = mergedProps;
-                } else {
-                    mergedFlags |= kRevDeleted;
-                    mergedBody = kFLEmptyDict;
-                }
-            }
-            
-            alloc_slice winRevID = remoteDoc->selectedRev.revID;
-            alloc_slice lostRevID = localDoc->selectedRev.revID;
-            bool result = c4doc_resolveConflict2(localDoc, winRevID, lostRevID,
-                                                 mergedBody, mergedFlags, &error);
-            
-            Assert(result, "conflictHandler: c4doc_resolveConflict2 failed for '%.*s' in '%.*s'",
-                   SPLAT(rev->docID), SPLAT(collPath));
-            Assert((localDoc->flags & kDocConflicted) == 0);
-            
-            if (!c4doc_save(localDoc, 0, &error)) {
-                Assert(false, "conflictHandler: c4doc_save failed for '%.*s' in '%.*s'",
-                       SPLAT(rev->docID), SPLAT(collPath));
-            }
-            conflictHandlerRunning = false;
-        };
-    }
-#endif // class ResolvedDocument
     
     struct CipherContext {
         C4Collection* collection;
@@ -438,6 +341,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     
     SECTION("Default Collection") {
         collectionSpecs = {Default};
+        // Not ready:
+        return;
+    }
+    
+    SECTION("Another Named Collection") {
+        collectionSpecs = {Lavenders};
         // Not ready:
         return;
     }
@@ -530,11 +439,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Push SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+    // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
     
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
         Roses
-        //, Tulips
     };
     std::array<C4Collection*, collectionCount> collections =
         collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
@@ -566,23 +475,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
     verifyDocs(collectionSpecs, docIDs);
 }
 
-struct Jthread {
-    std::thread thread;
-    Jthread(std::thread&& thread_)
-    : thread(move(thread_))
-    {}
-    Jthread() = default;
-    ~Jthread() {
-        thread.join();
-    }
-};
-
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Revisions SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+    // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
         Roses
-        //, Tulips
     };
     std::array<C4Collection*, collectionCount> collections =
         collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
@@ -618,31 +516,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     CHECK(_callbackStatus.progress.documentCount == 12);
     verifyDocs(collectionSpecs, docIDs, true);
 }
-
-#if 0
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
-    addDocs(db, Roses, 10);
-    addDocs(db, Tulips, 10);
-    
-    _expectedDocumentCount = 20;
-    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
-    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
-    
-    purgeAllDocs(db2, Roses);
-    purgeAllDocs(db2, Tulips);
-    
-    _expectedDocumentCount = 0;
-    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
-    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
-    
-    _expectedDocumentCount = 20;
-    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4OneShot, true);
-    validateCollectionCheckpoints(db2, db, 0, "{\"remote\":10}");
-    validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
-}
-#endif
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
@@ -680,56 +553,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     }
 }
 
-#if 0
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
-    int resolveCount = 0;
-    auto resolver = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {
-        resolveCount++;
-        C4Document* resolvedDoc;
-        if (spec == Roses) {
-            resolvedDoc = remoteDoc;
-        } else {
-            resolvedDoc = localDoc;
-        }
-        return ResolvedDocument(resolvedDoc);
-    };
-    setConflictResolver(db2, resolver);
-    
-    auto roses1 = getCollection(db, Roses);
-    auto tulips1 = getCollection(db, Tulips);
-    
-    auto roses2 = getCollection(db2, Roses);
-    auto tulips2 = getCollection(db2, Tulips);
-    
-    // Create docs and push to the other db:
-    createFleeceRev(roses1,  "rose1"_sl,  kRev1ID, "{}"_sl);
-    createFleeceRev(tulips1, "tulip1"_sl, kRev1ID, "{}"_sl);
-    
-    _expectedDocumentCount = 2;
-    runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    
-    // Update docs on both dbs and run pull replication:
-    createFleeceRev(roses1,  "rose1"_sl,  revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
-    createFleeceRev(roses2,  "rose1"_sl,  revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
-    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
-    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
-    
-    // Pull from db (Passive) to db2 (Active)
-    runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-    CHECK(resolveCount == 2);
-    
-    c4::ref<C4Document> doc1 = c4coll_getDoc(roses2, "rose1"_sl, true, kDocGetAll, nullptr);
-    REQUIRE(doc1);
-    CHECK(fleece2json(c4doc_getRevisionBody(doc1)) == "{db:1}"); // Remote Wins
-    REQUIRE(!c4doc_selectNextLeafRevision(doc1, true, false, nullptr));
-    
-    c4::ref<C4Document> doc2 = c4coll_getDoc(tulips2, "tulip1"_sl, true, kDocGetAll, nullptr);
-    REQUIRE(doc2);
-    CHECK(fleece2json(c4doc_getRevisionBody(doc2)) == "{db:2}"); // Local Wins
-    REQUIRE(!c4doc_selectNextLeafRevision(doc2, true, false, nullptr));
-}
-#endif
-
 #ifdef COUCHBASE_ENTERPRISE
 
 static void validateCipherInputs(ReplicatorCollectionSGTest::CipherContextMap* ctx,
@@ -762,17 +585,15 @@ C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FL
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
-
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties with Collections SG", "[.SyncServerCollection]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 
     string idPrefix = timePrefix();
-    //    constexpr size_t collectionCount = 2;
+    // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
         Roses
-        //, Tulips
     };
     std::array<C4Collection*, collectionCount> collections =
         collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
@@ -839,256 +660,3 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
-#if 0
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
-    string db_roses = "db-roses-";
-    string db_tulips = "db-tulips-";
-    string db2_roses = "db2-roses-";
-    string db2_tulips = "db2-tulips-";
-    addDocs(db, Roses, 10, db_roses);
-    addDocs(db, Tulips, 10, db_tulips);
-    addDocs(db, Lavenders, 10);
-    addDocs(db2, Roses, 20, db2_roses);
-    addDocs(db2, Tulips, 20, db2_tulips);
-    addDocs(db2, Lavenders, 20);
-
-    SECTION("PUSH") {
-        C4ReplicatorValidationFunction pushFilter
-            = [](C4CollectionSpec collectionSpec,
-                 C4String docID,
-                 C4String revID,
-                 C4RevisionFlags,
-                 FLDict body,
-                 void* context) {
-                CHECK(collectionSpec == Roses);
-                slice drop {(const char*)context };
-                return drop != docID;
-            };
-        _updateClientOptions = [=](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                // Assign pushFilter to Roses
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
-                    o.pushFilter = pushFilter;
-                    o.callbackContext = (void*)"db-roses-1";
-                }
-            }
-            return ret;
-        };
-
-        // db is the active Push replicator.
-        // A Push filter is applied to Roses. It lets pass all docs but one, "db-roses-1",
-        // from db to db2
-        _expectedDocumentCount = 19;
-        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        c4::ref<C4Document> rose1
-        = c4coll_getDoc(roses2, "db-roses-1"_sl, true, kDocGetMetadata, ERROR_INFO());
-        c4::ref<C4Document> tulip1
-        = c4coll_getDoc(tulips2, "db-tulips-1"_sl, true, kDocGetMetadata, ERROR_INFO());
-        
-        CHECK(!rose1);
-        CHECK( tulip1);
-    }
-
-    SECTION("PULL") {
-        C4ReplicatorValidationFunction pullFilter
-            = [](C4CollectionSpec collectionSpec,
-                 C4String docID,
-                 C4String revID,
-                 C4RevisionFlags,
-                 FLDict body,
-                 void* context) {
-                CHECK(collectionSpec == Tulips);
-                slice drop {(const char*)context };
-                return drop != docID;
-            };
-        _updateClientOptions = [=](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                // Assign pullFilter to Tulips
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
-                    o.pullFilter = pullFilter;
-                    o.callbackContext = (void*)"db-tulips-1";
-                }
-            }
-            return ret;
-        };
-
-        // db2 is the active Pull replicator.
-        // A pull filter is applied to collection Tulips. It requests to pull all docs from
-        // db except for "db-tulips-1".
-        _expectedDocumentCount = 19;
-        // pull filter will generate errors for failed documents.
-        _expectedDocPullErrors = set<string>{"db-tulips-1"};
-        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        c4::ref<C4Document> rose1
-        = c4coll_getDoc(roses2, "db-roses-1"_sl, true, kDocGetMetadata, ERROR_INFO());
-        c4::ref<C4Document> tulip1
-        = c4coll_getDoc(tulips2, "db-tulips-1"_sl, true, kDocGetMetadata, ERROR_INFO());
-
-        CHECK( rose1);
-        CHECK(!tulip1);
-    }
-
-    SECTION("DocIDs on PULL") {
-        fleece::Encoder enc;
-        enc.beginArray();
-        enc.writeString("db-tulips-2"_sl);
-        enc.writeString("db-tulips-7"_sl);
-        enc.writeString("db-tulips-4"_sl);
-        enc.endArray();
-        Doc docIDs {enc.finish()};
-        _updateClientOptions = [&](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
-                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
-                }
-            }
-            return ret;
-        };
-
-        // db2 is the active replicator. Only 3 documents are specifiec in docIDs for the Tulips
-        // collection, for a total of 13.
-        _expectedDocumentCount = 13;
-        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-
-        // db2 is the active client.
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        // All 10 docs in Roses are pulled to db2
-        CHECK(c4coll_getDocumentCount(roses2) == 30);
-        // Only 3 docs in Tulips are pulled to db2
-        CHECK(c4coll_getDocumentCount(tulips2) == 23);
-    }
-    
-    SECTION("DocIDs & Filter on PULL") {
-        fleece::Encoder enc;
-        enc.beginArray();
-        enc.writeString("db-tulips-2"_sl);
-        enc.writeString("db-tulips-7"_sl);
-        enc.writeString("db-tulips-4"_sl);
-        enc.endArray();
-        Doc docIDs {enc.finish()};
-        C4ReplicatorValidationFunction pullFilter
-            = [](C4CollectionSpec collectionSpec,
-                 C4String docID,
-                 C4String revID,
-                 C4RevisionFlags,
-                 FLDict body,
-                 void* context) {
-                // filters are applied after docIDs
-                CHECK((docID == "db-tulips-2"_sl || docID == "db-tulips-4"_sl || docID == "db-tulips-7"_sl));
-                return docID != "db-tulips-4"_sl;
-            };
-        _updateClientOptions = [&](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
-                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
-                    o.pullFilter = pullFilter;
-                }
-            }
-            return ret;
-        };
-
-        // db2 is the active pull replicator. Both docIDs and pull filter are applied to the Tulips
-        // collecton. docIDs includes 3 documments. pullFilter rejects one among the three, giving rise
-        // to a total of 12 to be pulled from db to db2.
-        _expectedDocumentCount = 12;
-        // docIDs takes precedence. The pull filter only receives the docs from docIDs, and
-        // "db-tulips-4" fails the filter.
-        _expectedDocPullErrors = set<string>{"db-tulips-4"};
-        runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
-
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        // All 10 docs in Roses are pulled to db2
-        CHECK(c4coll_getDocumentCount(roses2) == 30);
-        // Only 2 docs in Tulips are pulled to db2
-        CHECK(c4coll_getDocumentCount(tulips2) == 22);
-    }
-
-    SECTION("DocIDs on PUSH") {
-        fleece::Encoder enc;
-        enc.beginArray();
-        enc.writeString("db-roses-2"_sl);
-        enc.writeString("db-roses-7"_sl);
-        enc.writeString("db-roses-4"_sl);
-        enc.endArray();
-        Doc docIDs {enc.finish()};
-
-        _updateClientOptions = [=](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
-                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
-                }
-            }
-            return ret;
-        };
-
-        // db is the active Push filter.
-        // Only 3 documents are specified in docIDs for the Roses collection, for a total of 13.
-        _expectedDocumentCount = 13;
-        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        // Only 3 docs in Roese are pushed to db2
-        CHECK(c4coll_getDocumentCount(roses2) == 23);
-        // All 10 docs in Tulips are pushed to db2
-        CHECK(c4coll_getDocumentCount(tulips2) == 30);
-    }
-
-    SECTION("DocIDs & Filter on PUSH") {
-        fleece::Encoder enc;
-        enc.beginArray();
-        enc.writeString("db-roses-2"_sl);
-        enc.writeString("db-roses-7"_sl);
-        enc.writeString("db-roses-4"_sl);
-        enc.endArray();
-        Doc docIDs {enc.finish()};
-
-        C4ReplicatorValidationFunction pushFilter
-            = [](C4CollectionSpec collectionSpec,
-                 C4String docID,
-                 C4String revID,
-                 C4RevisionFlags,
-                 FLDict body,
-                 void* context) {
-                CHECK((docID == "db-roses-2"_sl || docID == "db-roses-4"_sl || docID == "db-roses-7"_sl));
-                return docID != "db-roses-4"_sl;
-            };
-        _updateClientOptions = [=](const repl::Options& opts) {
-            repl::Options ret = opts;
-            for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
-                    o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
-                    o.pushFilter = pushFilter;
-                }
-            }
-            return ret;
-        };
-
-        // db is the active push replicator. Both docIDs and push filter are applied to the Roses
-        // collecton. docIDs includes 3 documments. pushFilter rejects one among the three, giving rise
-        // to a total of 12 to be pushed from db to db2.
-        _expectedDocumentCount = 12;
-        runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-
-        C4Collection* roses2  = getCollection(db2, Roses);
-        C4Collection* tulips2 = getCollection(db2, Tulips);
-        // Only 2 docs in Roses are pushed to db2
-        CHECK(c4coll_getDocumentCount(roses2) == 22);
-        // All 10 docs in Tulips are pushed to db2
-        CHECK(c4coll_getDocumentCount(tulips2) == 30);
-    }
-}
-#endif
