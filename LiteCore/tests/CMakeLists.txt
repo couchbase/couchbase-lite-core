@@ -85,6 +85,8 @@ add_executable(
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
+    ${TOP}Replicator/tests/ReplicatorCollectionTest.cc
+    ${TOP}Replicator/tests/ReplicatorCollectionSGTest.cc
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc

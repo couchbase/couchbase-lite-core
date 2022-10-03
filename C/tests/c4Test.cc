@@ -342,24 +342,27 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     return coll;
 }
 
-int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) {
-    C4Collection* coll = getCollection(database, spec);
-    if (idprefix.empty()) {
-        idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-");
-    }
+int C4Test::addDocs(C4Collection* collection, int total, std::string idprefix) {
     int docNo = 1;
-    constexpr size_t bufSize = 20;
+    constexpr size_t bufSize = 80;
     for (int i = 1; docNo <= total; i++) {
         C4Log("-------- Creating %d docs --------", i);
-        TransactionHelper t(database);
+        TransactionHelper t(c4coll_getDatabase(collection));
         char docID[bufSize];
         snprintf(docID, bufSize, "%s%d", idprefix.c_str(), docNo++);
-        createRev(coll, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+        createRev(collection, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
     }
     C4Log("-------- Done creating docs --------");
     return docNo - 1;
 }
 
+int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) {
+    C4Collection* coll = getCollection(database, spec);
+    if (idprefix.empty()) {
+        idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-");
+    }
+    return addDocs(coll, total, idprefix);
+}
 
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Test::createRev(db, docID, revID, body, flags);
@@ -716,7 +719,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
 unsigned C4Test::importJSONLines(string path, C4Collection *collection,
-                                 double timeout, bool verbose, size_t maxLines)
+                                 double timeout, bool verbose, size_t maxLines, const string& idPrefix)
 {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
@@ -731,9 +734,9 @@ unsigned C4Test::importJSONLines(string path, C4Collection *collection,
             fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, ERROR_INFO());
             REQUIRE(body.buf);
 
-            constexpr size_t bufSize = 20;
+            constexpr size_t bufSize = 80;
             char docID[bufSize];
-            snprintf(docID, bufSize, "%07u", numDocs+1);
+            snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs+1);
 
             // Save document:
             C4DocPutRequest rq = {};
@@ -762,11 +765,12 @@ unsigned C4Test::importJSONLines(string path, C4Collection *collection,
 
 
 unsigned C4Test::importJSONLines(string path, double timeout, bool verbose,
-                                 C4Database* database, size_t maxLines)
+                                 C4Database* database, size_t maxLines, const string& idPrefix)
 {
     if(database == nullptr)
         database = db;
-    return importJSONLines(path, c4db_getDefaultCollection(database, nullptr), timeout, verbose, maxLines);
+    return importJSONLines(path, c4db_getDefaultCollection(database, nullptr), timeout, verbose,
+                           maxLines, idPrefix);
 }
 
 
