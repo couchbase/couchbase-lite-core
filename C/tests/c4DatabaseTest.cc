@@ -1232,3 +1232,53 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     c4doc_release(doc);
 }
 
+// CBL-3706: Previously, calling these functions after deleting the default collection causes
+//  Xcode to break into debugger due to "Invalid null argument".
+// Not testing for errors here as they are covered by other tests, simply testing to make sure
+//  that no crashes occur, and the return value is as expected.
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted default collection") {
+    C4Error err;
+    createRev("doc1"_sl, kRevID, kFleeceBody);
+    auto doc = c4db_getDoc(db, "doc1"_sl, true, kDocGetAll, &err);
+    auto seq = doc->sequence;
+    
+    REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, &err));
+    
+    SECTION("Expire Documents") {
+        C4Timestamp expire = c4_now() + 10000 * ms;
+        CHECK(!c4doc_setExpiration(db, "doc1"_sl, expire, &err));
+        CHECK(c4doc_getExpiration(db, "doc1"_sl, &err) == -1);
+        CHECK(c4db_nextDocExpiration(db) == -1);
+        CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+    }
+    SECTION("Document Access") {
+        CHECK(c4db_getDocumentCount(db) == 0);
+        CHECK(!c4doc_get(db, "doc1"_sl, false, &err));
+        CHECK(!c4doc_getBySequence(db, seq, &err));
+        CHECK(c4db_getLastSequence(db) == 0);
+        CHECK(!c4db_purgeDoc(db, "doc1"_sl, &err));
+        CHECK(!c4doc_create(db, "doc2"_sl, kFleeceBody, kRevKeepBody, &err));
+        CHECK(!c4db_enumerateChanges(db, 0, nullptr, &err));
+        CHECK(!c4db_enumerateAllDocs(db, nullptr, &err));
+    }
+    SECTION("Document Put Request") {
+        TransactionHelper t(db);
+        C4DocPutRequest rq = {};
+        rq.revFlags = kRevKeepBody;
+        rq.existingRevision = true;
+        rq.docID = "doc1"_sl;
+        rq.history = &kRevID;
+        rq.historyCount = 1;
+        rq.body = kFleeceBody;
+        rq.save = true;
+        CHECK(!c4doc_put(db, &rq, nullptr, &err));
+    }
+    SECTION("Indexes") {
+        REQUIRE(!c4db_createIndex(db, C4STR("byAnswer"),
+                                  R"([[".answer"]])"_sl,
+                                  kC4ValueIndex, nullptr, &err));
+        REQUIRE(!c4db_deleteIndex(db, C4STR("byAnswer"), &err));
+        REQUIRE(!c4db_getIndexesInfo(db, &err));
+    }
+    c4doc_release(doc);
+}

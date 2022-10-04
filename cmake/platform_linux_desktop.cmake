@@ -70,6 +70,14 @@ function(set_litecore_source)
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
+    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+    foreach(target ${LITECORE_TARGETS})
+        target_compile_options(
+            ${target} PRIVATE
+            "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
+        )
+    endforeach()
+
     target_link_libraries(
         LiteCoreObjects INTERFACE
         Threads::Threads

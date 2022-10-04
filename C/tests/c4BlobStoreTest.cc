@@ -223,9 +223,9 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
     REQUIRE(stream);
     CHECK(c4stream_bytesWritten(stream) == 0);
-    
+
     constexpr size_t bufSize = 100, readBufSize = 100;
-    
+
     for (int i = 0; i < 1000; i++) {
         char buf[bufSize];
         snprintf(buf, bufSize, "This is line %03d.\n", i);

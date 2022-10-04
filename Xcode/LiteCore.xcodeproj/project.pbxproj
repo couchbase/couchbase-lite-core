@@ -508,6 +508,9 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
@@ -1641,6 +1644,7 @@
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
+		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2421,6 +2425,7 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */,
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
@@ -3957,6 +3962,7 @@
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
+				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
@@ -4076,6 +4082,7 @@
 				278F477724C9138300E1CA7A /* ReplicatorLoopbackTest.cc in Sources */,
 				278F477824C9138300E1CA7A /* ReplicatorAPITest.cc in Sources */,
 				278F477924C9138300E1CA7A /* ReplicatorSGTest.cc in Sources */,
+				D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				278F475B24C9131000E1CA7A /* main.mm in Sources */,
 				278F475924C9131000E1CA7A /* ViewController.m in Sources */,
 				278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */,
@@ -4114,6 +4121,7 @@
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */,
+				D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
