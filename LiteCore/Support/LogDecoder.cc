@@ -296,9 +296,10 @@ namespace litecore {
                                     auto n = min(size, sizeof(buf));
                                     _in.read(buf, n);
                                     if (minus) {
+                                        constexpr size_t bufSize = 3;
                                         for (size_t i = 0; i < n; ++i) {
-                                            char hex[3];
-                                            sprintf(hex, "%02x", uint8_t(buf[i]));
+                                            char hex[bufSize];
+                                            snprintf(hex, bufSize, "%02x", uint8_t(buf[i]));
                                             out << hex;
                                         }
                                     } else {
@@ -374,8 +375,9 @@ namespace litecore {
             message = "error decoding log";
         else
             message = "I/O error reading log";
-        char what[50];
-        sprintf(what, "%s at %lld", message, (long long)_in.tellg());
+        constexpr size_t bufSize = 50;
+        char what[bufSize];
+        snprintf(what, bufSize, "%s at %lld", message, (long long)_in.tellg());
         throw error(what);
     }
 

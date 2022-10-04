@@ -1158,10 +1158,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-
-        char docID[6];
+        
+        constexpr size_t bufSize = 6;
+        char docID[bufSize];
         for(int i = 0; i < 20; i++) {
-            sprintf(docID, "doc%02d", i);
+            snprintf(docID, bufSize, "doc%02d", i);
             writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
                 enc.writeKey("identifier");
                 enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);

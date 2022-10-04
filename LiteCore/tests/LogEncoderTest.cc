@@ -25,6 +25,8 @@ using namespace std;
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
 
+constexpr size_t kFolderBufSize = 64;
+
 class LogObject : public Logging
 {
 public:
@@ -195,8 +197,8 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
 
 TEST_CASE("Logging rollover", "[Log]") {
     auto now = chrono::milliseconds(time(nullptr));
-    char folderName[64];
-    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    char folderName[kFolderBufSize];
+    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
@@ -224,7 +226,7 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     // HACK: Cause a flush so that the test has something in the second log
     // to actually read into the decoder
-    sprintf(folderName, "Log_Rollover2_%" PRIms "/", now.count());
+    snprintf(folderName, kFolderBufSize, "Log_Rollover2_%" PRIms "/", now.count());
     FilePath other = TestFixture::sTempDir[folderName];
     other.mkdir();
     LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
@@ -258,8 +260,8 @@ TEST_CASE("Logging rollover", "[Log]") {
 
 TEST_CASE("Logging throw in c++", "[Log]") {
     auto now = chrono::milliseconds(time(nullptr));
-    char folderName[64];
-    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    char folderName[kFolderBufSize];
+    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     LogFileOptions fileOptions { tmpLogDir.path(), LogLevel::Info, 1024, 1, false };
     // Note that we haven't created tmpLogDir. Therefore, there will be an exception.
@@ -279,8 +281,8 @@ TEST_CASE("Logging throw in c++", "[Log]") {
 
 TEST_CASE("Logging throw in c4", "[Log]") {
     auto now = chrono::milliseconds(time(nullptr));
-    char folderName[64];
-    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    char folderName[kFolderBufSize];
+    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     // Note that we haven't created tmpLogDir.
     C4Error error;
@@ -300,8 +302,8 @@ TEST_CASE("Logging throw in c4", "[Log]") {
 }
 
 TEST_CASE("Logging plaintext", "[Log]") {
-    char folderName[64];
-    sprintf(folderName, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
+    char folderName[kFolderBufSize];
+    snprintf(folderName, kFolderBufSize, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();

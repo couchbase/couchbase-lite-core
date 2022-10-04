@@ -30,6 +30,10 @@ def get_submodule_base(git: str):
 
 
 def check_component(branch: str, title: str, component, expectChange: bool) -> bool:
+    if "src-path" not in component:
+        print(f"No src-path listed for {title}, skipping check...")
+        return True
+    
     print(f"Checking for changes in {title}...")
     cwd = os.getcwd()
     srcPath = str(component["src-path"])
@@ -81,6 +85,10 @@ def main(manifest_path: Path, branch: str) -> int:
 
     failCount = 0
     for component in manifest["components"]:
+        if component not in manifest_old["components"]:
+            print(f"{component} is newly added, skipping check...")
+            continue
+
         versionBefore = manifest_old["components"][component]["versions"][0]
         versionAfter = manifest["components"][component]["versions"][0]
         if versionBefore == versionAfter:
