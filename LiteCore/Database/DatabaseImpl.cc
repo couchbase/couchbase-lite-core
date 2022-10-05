@@ -1014,6 +1014,13 @@ namespace litecore {
 
     C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
         bool inTransaction = false;
+        bool commit = false;
+        DEFER {
+            if (inTransaction) {
+                endTransaction(commit);
+            }
+        };
+
         C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
@@ -1040,10 +1047,8 @@ namespace litecore {
                 }
             }
 
-            if (remoteID > 0) {
-                // Found the remote ID!
-                return remoteID;
-            } else if (!canCreate) {
+            if (remoteID > 0 // Found the remote ID!
+                || !canCreate) {
                 break;
             } else if (creating) {
                 // Update or create the document, adding the identifier:
@@ -1065,13 +1070,10 @@ namespace litecore {
 
                 // Save the doc:
                 setInfo(kRemoteDBURLsDoc, body);
-                endTransaction(true);
-                inTransaction = false;
+                commit = true;
                 break;
             }
         }
-        if (inTransaction)
-            endTransaction(false);
         return remoteID;
     }
 
