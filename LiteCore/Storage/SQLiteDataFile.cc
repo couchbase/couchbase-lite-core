@@ -103,7 +103,7 @@ namespace litecore {
     // Prefix of the KeyStores for deleted documents
     static const string kDeletedKeyStorePrefix = "del_";
 
-    LogDomain SQL("SQL", LogLevel::Warning);
+    LogDomain SQL("SQL", LogLevel::Debug);
 
     void LogStatement(const SQLite::Statement &st) {
         LogTo(SQL, "... %s", st.getQuery().c_str());
