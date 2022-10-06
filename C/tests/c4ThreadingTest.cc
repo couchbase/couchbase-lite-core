@@ -79,10 +79,11 @@ public:
     void addDocsTask() {
         // This implicitly uses the 'db' connection created (but not used) by the main thread
         if (kLog) fprintf(stderr, "Adding documents...\n");
+        constexpr size_t bufSize = 20;
         for (int i = 1; i <= kNumDocs; i++) {
             if (kLog) fprintf(stderr, "(%d) ", i); else if (i%10 == 0) fprintf(stderr, ":");
-            char docID[20];
-            sprintf(docID, "doc-%05d", i);
+            char docID[bufSize];
+            snprintf(docID, bufSize, "doc-%05d", i);
             createRev(c4str(docID), kRevID, kFleeceBody);
             //std::this_thread::sleep_for(100us);
         }

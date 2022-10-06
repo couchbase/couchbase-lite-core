@@ -407,13 +407,14 @@ public:
     int addDocs(C4Database *db, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
+        constexpr size_t bufSize = 20;
         for (int i = 1; docNo <= total; i++) {
             sleepFor(interval);
             Log("-------- Creating %d docs --------", 2*i);
             TransactionHelper t(db);
             for (int j = 0; j < 2*i; j++) {
-                char docID[20];
-                sprintf(docID, "newdoc%d", docNo++);
+                char docID[bufSize];
+                snprintf(docID, bufSize, "newdoc%d", docNo++);
                 createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
         }

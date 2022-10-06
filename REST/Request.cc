@@ -286,8 +286,9 @@ namespace litecore { namespace REST {
         Assert(_contentLength < 0, "Content-Length has already been set");
         Log("Content-Length: %" PRIu64, length);
         _contentLength = (int64_t)length;
-        char len[20];
-        sprintf(len, "%" PRIu64, length);
+        constexpr size_t bufSize = 20;
+        char len[bufSize];
+        snprintf(len, bufSize, "%" PRIu64, length);
         setHeader("Content-Length", len);
     }
 

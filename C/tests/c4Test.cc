@@ -402,9 +402,10 @@ string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4S
 
 void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     TransactionHelper t(db);
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     for (unsigned i = 1; i <= numberOfDocs; i++) {
-        sprintf(docID, "doc-%03u", i);
+        snprintf(docID, bufSize, "doc-%03u", i);
         createRev(c4str(docID), kRevID, kFleeceBody);
     }
 }
@@ -558,12 +559,13 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
     FLArrayIterator iter;
     FLValue item;
     unsigned numDocs = 0;
+    constexpr size_t bufSize = 20;
     for(FLArrayIterator_Begin(root, &iter);
             nullptr != (item = FLArrayIterator_GetValue(&iter));
             FLArrayIterator_Next(&iter))
     {
-        char docID[20];
-        sprintf(docID, "%s%07u", idPrefix.c_str(), numDocs+1);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs+1);
 
         FLEncoder enc = c4db_getSharedFleeceEncoder(db);
         FLEncoder_WriteValue(enc, item);
@@ -598,7 +600,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     if(database == nullptr) {
         database = db;
     }
-    
+
     unsigned numDocs = 0;
     bool completed;
     {
@@ -608,8 +610,9 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, ERROR_INFO());
             REQUIRE(body.buf);
 
-            char docID[20];
-            sprintf(docID, "%07u", numDocs+1);
+            constexpr size_t bufSize = 20;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%07u", numDocs+1);
 
             // Save document:
             C4DocPutRequest rq = {};
