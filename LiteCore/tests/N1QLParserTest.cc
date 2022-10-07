@@ -158,7 +158,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
 
     CHECK(translate("SELECT 17 IN (1, 2, 3)") == "{'WHAT':[['IN',17,['[]',1,2,3]]]}");
     CHECK(translate("SELECT 17 NOT IN (1, 2, 3)") == "{'WHAT':[['NOT IN',17,['[]',1,2,3]]]}");
-    Log("%s", translate("SELECT 17 IN [1, 2, 3]").c_str());
+    
     CHECK(translate("SELECT 17 IN [1, 2, 3]") == "{'WHAT':[['IN',17,['[]',1,2,3]]]}");
     CHECK(translate("SELECT 17 NOT IN [1, 2, 3]") == "{'WHAT':[['NOT IN',17,['[]',1,2,3]]]}");
 
