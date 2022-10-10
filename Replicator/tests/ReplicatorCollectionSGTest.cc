@@ -553,6 +553,130 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     }
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+    std::array<string, collectionCount> collNames = {"rose"};
+
+    for (size_t i = 0; i < collectionCount; ++i) {
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-12121212", "1@cafe"),
+                        "{\"db\":\"remote\"}"_sl);
+        docIDs[i] = getDocIDs(collections[i]);
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+    }
+
+    // Send the docs to remote
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+    verifyDocs(collectionSpecs, docIDs, true);
+    
+    deleteAndRecreateDB();
+    for (size_t i = 0; i < collectionCount; ++i) {
+        collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-13131313", "1@babe"),
+                        "{\"db\":\"local\"}"_sl);
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
+    }
+    std::array<AllocedDict, collectionCount> docIDsDicts;
+    paramsSetter = [&replCollections, &docIDs, &docIDsDicts,
+                     collectionCount](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+        for (size_t i = 0; i < collectionCount; ++i) {
+            fleece::Encoder enc;
+            enc.beginArray();
+            for (const auto& d : docIDs[i]) {
+                enc.writeString(d.first);
+            }
+            enc.endArray();
+            Doc doc {enc.finish()};
+            docIDsDicts[i] =
+                repl::Options::updateProperties(
+                    AllocedDict(c4Params.collections[i].optionsDictFleece),
+                    kC4ReplicatorOptionDocIDs,
+                    doc.root());
+            c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
+        }
+    };
+    _conflictHandler = [&](const C4DocumentEnded* docEndedWithConflict) {
+        C4Error error;
+        int i = -1;
+        for (int k = 0; k < collectionCount; ++k) {
+            if (docEndedWithConflict->collectionSpec == collectionSpecs[k]) {
+                i = k;
+            }
+        }
+        Assert(i >= 0, "Internal logical error");
+
+        TransactionHelper t(db);
+
+        slice docID = docEndedWithConflict->docID;
+        // Get the local doc. It is the current revision
+        c4::ref<C4Document> localDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, &error);
+        CHECK(error.code == 0);
+
+        // Get the remote doc. It is the next leaf revision of the current revision.
+        c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, &error);
+        bool succ = c4doc_selectNextLeafRevision(remoteDoc, true, false, &error);
+        Assert(remoteDoc->selectedRev.revID == docEndedWithConflict->revID);
+        CHECK(error.code == 0);
+        CHECK(succ);
+
+        C4Document* resolvedDoc = nullptr;
+        switch (i) {
+            case 0:
+                resolvedDoc = remoteDoc;
+                break;
+            default:
+                Assert(false, "Unknown collection");
+        }
+        FLDict mergedBody = c4doc_getProperties(resolvedDoc);
+        C4RevisionFlags mergedFlags = resolvedDoc->selectedRev.flags;
+        alloc_slice winRevID = resolvedDoc->selectedRev.revID;
+        alloc_slice lostRevID = (resolvedDoc == remoteDoc) ? localDoc->selectedRev.revID
+                                                           : remoteDoc->selectedRev.revID;
+        bool result = c4doc_resolveConflict2(localDoc, winRevID, lostRevID,
+                                             mergedBody, mergedFlags, &error);
+        Assert(result, "conflictHandler: c4doc_resolveConflict2 failed for '%.*s' in '%.*s.%.*s'",
+               SPLAT(docID), SPLAT(collectionSpecs[i].scope), SPLAT(collectionSpecs[i].name));
+        Assert((localDoc->flags & kDocConflicted) == 0);
+
+        if (!c4doc_save(localDoc, 0, &error)) {
+            Assert(false, "conflictHandler: c4doc_save failed for '%.*s' in '%.*s.%.*s'",
+                   SPLAT(docID), SPLAT(collectionSpecs[i].scope), SPLAT(collectionSpecs[i].name));
+        }
+    };
+    replicate(paramsSetter);
+
+    for (int i = 0; i < collectionCount; ++i) {
+        switch (i) {
+            case 0: {
+                c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(idPrefix+collNames[i]),
+                                                        true, kDocGetAll, nullptr);
+                REQUIRE(doc);
+                // Remote wins for the first collection
+                CHECK(fleece2json(c4doc_getRevisionBody(doc)) == "{db:\"remote\"}"); // Remote Wins
+                REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+            } break;
+            default:
+                Assert(false, "Not ready yet");
+        }
+    }
+}
+
+
 #ifdef COUCHBASE_ENTERPRISE
 
 static void validateCipherInputs(ReplicatorCollectionSGTest::CipherContextMap* ctx,
