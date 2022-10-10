@@ -511,17 +511,6 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
     validateCollectionCheckpoints(db, db2, 1, "{\"local\":22,\"remote\":24}");
 }
 
-struct Jthread {
-    std::thread thread;
-    Jthread(std::thread&& thread_)
-    : thread(move(thread_))
-    {}
-    Jthread() = default;
-    ~Jthread() {
-        thread.join();
-    }
-};
-
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
     addDocs(db, Roses, 2, "db-Roses-");
     addDocs(db, Tulips, 2, "db-Tulips-");
