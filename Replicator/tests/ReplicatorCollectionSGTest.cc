@@ -128,8 +128,7 @@ public:
     template<size_t N>
     std::array<C4Collection*, N>
     collectionPreamble(std::array<C4CollectionSpec, N> collections,
-                            const char* user, const char* password,
-                            C4LogLevel logLevel =kC4LogNone) {
+                            const char* user, const char* password) {
         // Setup Replicator Options:
         Encoder enc;
         enc.beginDict();
@@ -153,12 +152,32 @@ public:
             ret[i] = db->getCollection(collections[i]);
         }
 
-        if (logLevel != kC4LogNone) {
-            c4log_setLevel(kC4SyncLog, logLevel);
-        }
         // This would effectively avoid flushing the bucket before the test.
         _flushedScratch = true;
         return ret;
+    }
+
+    template<size_t N>
+    static void setDocIDs(C4ReplicatorParameters& c4Params,
+                   std::array<C4ReplicationCollection, N>& replCollections,
+                   const std::array<unordered_map<alloc_slice, unsigned>, N>& docIDs,
+                   std::vector<AllocedDict>& allocedDicts) {
+        for (size_t i = 0; i < N; ++i) {
+            fleece::Encoder enc;
+            enc.beginArray();
+            for (const auto& d : docIDs[i]) {
+                enc.writeString(d.first);
+            }
+            enc.endArray();
+            Doc doc {enc.finish()};
+            allocedDicts.emplace_back(
+                repl::Options::updateProperties(
+                    AllocedDict(c4Params.collections[i].optionsDictFleece),
+                    kC4ReplicatorOptionDocIDs,
+                    doc.root())
+            );
+            c4Params.collections[i].optionsDictFleece = allocedDicts.back().data();
+        }
     }
 
     template<size_t N>
@@ -183,25 +202,11 @@ public:
             replCollections[i] =
             C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
         }
-        std::array<AllocedDict, N> docIDsDicts;
+        std::vector<AllocedDict> allocedDicts;
         C4ParamsSetter paramsSetter = [&](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
             c4Params.collections = replCollections.data();
-            for (size_t i = 0; i < N; ++i) {
-                fleece::Encoder enc;
-                enc.beginArray();
-                for (const auto& d : docIDs[i]) {
-                    enc.writeString(d.first);
-                }
-                enc.endArray();
-                Doc doc {enc.finish()};
-                docIDsDicts[i] =
-                    repl::Options::updateProperties(
-                        AllocedDict(c4Params.collections[i].optionsDictFleece),
-                        kC4ReplicatorOptionDocIDs,
-                        doc.root());
-                c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
-            }
+            setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
 #ifdef COUCHBASE_ENTERPRISE
             if (propertyEncryption > 0) {
                 c4Params.propertyEncryptor = (C4ReplicatorPropertyEncryptionCallback)propEncryptor;
@@ -304,7 +309,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
         // C4CollectionSpec{"dummy1"_sl, kC4DefaultScopeID},
           C4CollectionSpec{"dummy2"_sl, kC4DefaultScopeID} };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     string idPrefix = timePrefix();
     importJSONLines(sFixturesDir + "names_100.json", collections[0], 0, false, 2, idPrefix);
     
@@ -356,7 +361,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
         continuous = true;
     }
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
     importJSONLines(sFixturesDir + "names_100.json", collections[0], 0, false, docCount, idPrefix);
     docIDs[0] = getDocIDs(collections[0]);
 
@@ -411,7 +416,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
         return;
     }
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
     for (int i = 0; i < collectionCount; ++i) {
         importJSONLines(sFixturesDir + "names_100.json", collections[i], 0, false, docCount, idPrefix);
         docInfos[i] = getDocIDs(collections[i]);
@@ -446,7 +451,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
 
@@ -483,7 +488,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
 
@@ -526,7 +531,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         //, Tulips
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
     vector<string> attachments1 = {idPrefix+"Attachment A", idPrefix+"Attachment B", idPrefix+"Attachment Z"};
@@ -560,7 +565,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
     std::array<string, collectionCount> collNames = {"rose"};
@@ -589,26 +594,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
                         "{\"db\":\"local\"}"_sl);
         replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
     }
-    std::array<AllocedDict, collectionCount> docIDsDicts;
-    paramsSetter = [&replCollections, &docIDs, &docIDsDicts,
-                     collectionCount](C4ReplicatorParameters& c4Params) {
+
+    std::vector<AllocedDict> allocedDicts;
+    paramsSetter = [&replCollections, &docIDs, &allocedDicts](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
-        for (size_t i = 0; i < collectionCount; ++i) {
-            fleece::Encoder enc;
-            enc.beginArray();
-            for (const auto& d : docIDs[i]) {
-                enc.writeString(d.first);
-            }
-            enc.endArray();
-            Doc doc {enc.finish()};
-            docIDsDicts[i] =
-                repl::Options::updateProperties(
-                    AllocedDict(c4Params.collections[i].optionsDictFleece),
-                    kC4ReplicatorOptionDocIDs,
-                    doc.root());
-            c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
-        }
+        setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
     };
     _conflictHandler = [&](const C4DocumentEnded* docEndedWithConflict) {
         C4Error error;
@@ -720,7 +711,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
     encContextMap.reset(new CipherContextMap);
