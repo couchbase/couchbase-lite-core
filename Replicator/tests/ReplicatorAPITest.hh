@@ -264,8 +264,13 @@ public:
 
                 if (pushing)
                     test->_docPushErrors.emplace(slice(doc->docID));
-                else
+                else if (doc->error.domain == LiteCoreDomain &&
+                         doc->error.code == kC4ErrorConflict &&
+                         test->_conflictHandler) {
+                    test->_conflictHandler(doc);
+                } else {
                     test->_docPullErrors.emplace(slice(doc->docID));
+                }
             }
         }
     }
@@ -517,6 +522,7 @@ public:
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4ReplicatorValidationFunction _pullFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
+    std::function<void(const C4DocumentEnded*)> _conflictHandler {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     alloc_slice _networkInterface;
     bool _flushedScratch {false};
