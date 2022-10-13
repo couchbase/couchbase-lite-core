@@ -128,8 +128,7 @@ public:
     template<size_t N>
     std::array<C4Collection*, N>
     collectionPreamble(std::array<C4CollectionSpec, N> collections,
-                            const char* user, const char* password,
-                            C4LogLevel logLevel =kC4LogNone) {
+                            const char* user, const char* password) {
         // Setup Replicator Options:
         Encoder enc;
         enc.beginDict();
@@ -153,12 +152,32 @@ public:
             ret[i] = db->getCollection(collections[i]);
         }
 
-        if (logLevel != kC4LogNone) {
-            c4log_setLevel(kC4SyncLog, logLevel);
-        }
         // This would effectively avoid flushing the bucket before the test.
         _flushedScratch = true;
         return ret;
+    }
+
+    template<size_t N>
+    static void setDocIDs(C4ReplicatorParameters& c4Params,
+                   std::array<C4ReplicationCollection, N>& replCollections,
+                   const std::array<unordered_map<alloc_slice, unsigned>, N>& docIDs,
+                   std::vector<AllocedDict>& allocedDicts) {
+        for (size_t i = 0; i < N; ++i) {
+            fleece::Encoder enc;
+            enc.beginArray();
+            for (const auto& d : docIDs[i]) {
+                enc.writeString(d.first);
+            }
+            enc.endArray();
+            Doc doc {enc.finish()};
+            allocedDicts.emplace_back(
+                repl::Options::updateProperties(
+                    AllocedDict(c4Params.collections[i].optionsDictFleece),
+                    kC4ReplicatorOptionDocIDs,
+                    doc.root())
+            );
+            c4Params.collections[i].optionsDictFleece = allocedDicts.back().data();
+        }
     }
 
     template<size_t N>
@@ -183,25 +202,11 @@ public:
             replCollections[i] =
             C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
         }
-        std::array<AllocedDict, N> docIDsDicts;
+        std::vector<AllocedDict> allocedDicts;
         C4ParamsSetter paramsSetter = [&](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
             c4Params.collections = replCollections.data();
-            for (size_t i = 0; i < N; ++i) {
-                fleece::Encoder enc;
-                enc.beginArray();
-                for (const auto& d : docIDs[i]) {
-                    enc.writeString(d.first);
-                }
-                enc.endArray();
-                Doc doc {enc.finish()};
-                docIDsDicts[i] =
-                    repl::Options::updateProperties(
-                        AllocedDict(c4Params.collections[i].optionsDictFleece),
-                        kC4ReplicatorOptionDocIDs,
-                        doc.root());
-                c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
-            }
+            setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
 #ifdef COUCHBASE_ENTERPRISE
             if (propertyEncryption > 0) {
                 c4Params.propertyEncryptor = (C4ReplicatorPropertyEncryptionCallback)propEncryptor;
@@ -304,7 +309,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
         // C4CollectionSpec{"dummy1"_sl, kC4DefaultScopeID},
           C4CollectionSpec{"dummy2"_sl, kC4DefaultScopeID} };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     string idPrefix = timePrefix();
     importJSONLines(sFixturesDir + "names_100.json", collections[0], 0, false, 2, idPrefix);
     
@@ -356,7 +361,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
         continuous = true;
     }
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
     importJSONLines(sFixturesDir + "names_100.json", collections[0], 0, false, docCount, idPrefix);
     docIDs[0] = getDocIDs(collections[0]);
 
@@ -411,7 +416,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
         return;
     }
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
     for (int i = 0; i < collectionCount; ++i) {
         importJSONLines(sFixturesDir + "names_100.json", collections[i], 0, false, docCount, idPrefix);
         docInfos[i] = getDocIDs(collections[i]);
@@ -446,7 +451,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
 
@@ -483,7 +488,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
 
@@ -526,7 +531,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         //, Tulips
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
     vector<string> attachments1 = {idPrefix+"Attachment A", idPrefix+"Attachment B", idPrefix+"Attachment Z"};
@@ -552,6 +557,116 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         checkAttachments(verifyDb, blobKeys[i], attachments1);
     }
 }
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+    std::array<string, collectionCount> collNames = {"rose"};
+
+    for (size_t i = 0; i < collectionCount; ++i) {
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-12121212", "1@cafe"),
+                        "{\"db\":\"remote\"}"_sl);
+        docIDs[i] = getDocIDs(collections[i]);
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+    }
+
+    // Send the docs to remote
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+    verifyDocs(collectionSpecs, docIDs, true);
+    
+    deleteAndRecreateDB();
+    for (size_t i = 0; i < collectionCount; ++i) {
+        collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-13131313", "1@babe"),
+                        "{\"db\":\"local\"}"_sl);
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
+    }
+
+    std::vector<AllocedDict> allocedDicts;
+    paramsSetter = [&replCollections, &docIDs, &allocedDicts](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+        setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
+    };
+    _conflictHandler = [&](const C4DocumentEnded* docEndedWithConflict) {
+        C4Error error;
+        int i = -1;
+        for (int k = 0; k < collectionCount; ++k) {
+            if (docEndedWithConflict->collectionSpec == collectionSpecs[k]) {
+                i = k;
+            }
+        }
+        Assert(i >= 0, "Internal logical error");
+
+        TransactionHelper t(db);
+
+        slice docID = docEndedWithConflict->docID;
+        // Get the local doc. It is the current revision
+        c4::ref<C4Document> localDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, &error);
+        CHECK(error.code == 0);
+
+        // Get the remote doc. It is the next leaf revision of the current revision.
+        c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, &error);
+        bool succ = c4doc_selectNextLeafRevision(remoteDoc, true, false, &error);
+        Assert(remoteDoc->selectedRev.revID == docEndedWithConflict->revID);
+        CHECK(error.code == 0);
+        CHECK(succ);
+
+        C4Document* resolvedDoc = nullptr;
+        switch (i) {
+            case 0:
+                resolvedDoc = remoteDoc;
+                break;
+            default:
+                Assert(false, "Unknown collection");
+        }
+        FLDict mergedBody = c4doc_getProperties(resolvedDoc);
+        C4RevisionFlags mergedFlags = resolvedDoc->selectedRev.flags;
+        alloc_slice winRevID = resolvedDoc->selectedRev.revID;
+        alloc_slice lostRevID = (resolvedDoc == remoteDoc) ? localDoc->selectedRev.revID
+                                                           : remoteDoc->selectedRev.revID;
+        bool result = c4doc_resolveConflict2(localDoc, winRevID, lostRevID,
+                                             mergedBody, mergedFlags, &error);
+        Assert(result, "conflictHandler: c4doc_resolveConflict2 failed for '%.*s' in '%.*s.%.*s'",
+               SPLAT(docID), SPLAT(collectionSpecs[i].scope), SPLAT(collectionSpecs[i].name));
+        Assert((localDoc->flags & kDocConflicted) == 0);
+
+        if (!c4doc_save(localDoc, 0, &error)) {
+            Assert(false, "conflictHandler: c4doc_save failed for '%.*s' in '%.*s.%.*s'",
+                   SPLAT(docID), SPLAT(collectionSpecs[i].scope), SPLAT(collectionSpecs[i].name));
+        }
+    };
+    replicate(paramsSetter);
+
+    for (int i = 0; i < collectionCount; ++i) {
+        switch (i) {
+            case 0: {
+                c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(idPrefix+collNames[i]),
+                                                        true, kDocGetAll, nullptr);
+                REQUIRE(doc);
+                // Remote wins for the first collection
+                CHECK(fleece2json(c4doc_getRevisionBody(doc)) == "{db:\"remote\"}"); // Remote Wins
+                REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+            } break;
+            default:
+                Assert(false, "Not ready yet");
+        }
+    }
+}
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -596,7 +711,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
     encContextMap.reset(new CipherContextMap);
