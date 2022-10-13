@@ -449,7 +449,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
         Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password", kC4LogNone);
+        collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4ReplicationCollection, collectionCount> replCollections;
 
@@ -477,29 +477,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
         // OneShot Push & Pull
         replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4OneShot};
     }
-    std::array<AllocedDict, collectionCount> docIDsDicts;
-    paramsSetter = [&replCollections, &docIDs, &localDocIDs, &docIDsDicts,
-                     collectionCount](C4ReplicatorParameters& c4Params) {
+    
+    // Merge together the doc IDs
+    for (size_t i = 0; i < collectionCount; ++i) {
+        for (auto iter = localDocIDs[i].begin(); iter != localDocIDs[i].end(); ++iter) {
+            docIDs[i].emplace(iter->first, iter->second);
+        }
+    }
+
+    std::vector<AllocedDict> allocedDicts;
+    paramsSetter = [&replCollections, &docIDs, &allocedDicts](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
-        for (size_t i = 0; i < collectionCount; ++i) {
-            fleece::Encoder enc;
-            enc.beginArray();
-            for (const auto& d : docIDs[i]) {
-                enc.writeString(d.first);
-            }
-            for (const auto& d : localDocIDs[i]) {
-                enc.writeString(d.first);
-            }
-            enc.endArray();
-            Doc doc {enc.finish()};
-            docIDsDicts[i] =
-                repl::Options::updateProperties(
-                    AllocedDict(c4Params.collections[i].optionsDictFleece),
-                    kC4ReplicatorOptionDocIDs,
-                    doc.root());
-            c4Params.collections[i].optionsDictFleece = docIDsDicts[i].data();
-        }
+        setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
     };
 
     replicate(paramsSetter);
