@@ -442,6 +442,61 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
     verifyDocs(collectionSpecs, docInfos);
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    for (size_t i = 0; i < collectionCount; ++i) {
+        addDocs(collections[i], 20, idPrefix+"remote-");
+        docIDs[i] = getDocIDs(collections[i]);
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+    }
+
+    // Send the docs to remote
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+    verifyDocs(collectionSpecs, docIDs);
+
+    deleteAndRecreateDB();
+
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> localDocIDs;
+    for (size_t i = 0; i < collectionCount; ++i) {
+        collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
+        addDocs(collections[i], 10, idPrefix+"local-");
+        localDocIDs[i] = getDocIDs(collections[i]);
+        // OneShot Push & Pull
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4OneShot};
+    }
+    
+    // Merge together the doc IDs
+    for (size_t i = 0; i < collectionCount; ++i) {
+        for (auto iter = localDocIDs[i].begin(); iter != localDocIDs[i].end(); ++iter) {
+            docIDs[i].emplace(iter->first, iter->second);
+        }
+    }
+
+    std::vector<AllocedDict> allocedDicts;
+    paramsSetter = [&replCollections, &docIDs, &allocedDicts](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+        setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
+    };
+
+    replicate(paramsSetter);
+    // 10 docs are pushed and 20 docs are pulled from each collectiion.
+    CHECK(_callbackStatus.progress.documentCount == 30*collectionCount);
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Push SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
