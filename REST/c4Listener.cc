@@ -124,6 +124,11 @@ bool C4Listener::unshareDB(C4Database *db) {
 }
 
 bool C4Listener::shareCollection(slice name, C4Collection* coll) {
+    if (_usuallyFalse(!coll || !coll->isValid())) {
+        C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen,
+                       "Invalid collection: either deleted, or db closed");
+    }
+
     optional<string> nameStr;
     if (name.buf)
         nameStr = name;
