@@ -494,7 +494,7 @@ string C4Test::createFleeceRev(C4Collection *coll, C4Slice docID, C4Slice revID,
         createRev(coll, docID, revID, fleeceBody, flags);
         return string(slice(revID));
     } else {
-        return createNewRev(db, docID, fleeceBody, flags);
+        return createNewRev(coll, docID, fleeceBody, flags);
     }
 }
 
