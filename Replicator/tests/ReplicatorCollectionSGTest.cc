@@ -849,6 +849,83 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
+// This test requires SG 3.0
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+
+    // Setup pull filter to filter the _removed rev:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+    replCollections[0] = C4ReplicationCollection {
+        collectionSpecs[0], kC4Disabled, kC4OneShot,
+        nullslice, nullptr, _pullFilter, this
+    };
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(paramsSetter);
+
+    auto collRoses = c4db_getCollection(db, Roses, nullptr);
+    REQUIRE(collRoses);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("PUT", "_user/sguser", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+
+    C4Log("-------- Pull the revoked");
+    replicate(paramsSetter);
+
+    // Verify if doc1 is not purged as the revoked rev is filtered:
+    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+}
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
