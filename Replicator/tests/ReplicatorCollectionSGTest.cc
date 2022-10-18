@@ -670,7 +670,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 
         slice docID = docEndedWithConflict->docID;
         // Get the local doc. It is the current revision
-        c4::ref<C4Document> localDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, &error);
+        c4::ref<C4Document> localDoc = c4coll_getDoc(collections[i], docID, true, kDocGetAll, WITH_ERROR(error));
         CHECK(error.code == 0);
 
         // Get the remote doc. It is the next leaf revision of the current revision.
