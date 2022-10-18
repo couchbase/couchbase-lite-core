@@ -849,10 +849,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
     _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // "sguser:password" base64 encoded
-    // Put doc in remote DB, in channels a and b
-    sendRemoteRequest("PUT", "doc1", R"({"channels":["a", "b"]})");
+    slice docID = "apera-doc1"_sl;
 
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -899,12 +898,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     auto collRoses = c4db_getCollection(db, Roses, nullptr);
 
+    // Put doc in remote DB, in channels a and b
+    sendRemoteRequest("PUT", docID.asString(), R"({"channels":["a", "b"]})");
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(paramsSetter);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
@@ -918,13 +920,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", R"({"_rev":")" + oRevID + R"(", "channels":["b"]})");
+    sendRemoteRequest("PUT", docID.asString(), R"({"_rev":")" + oRevID + R"(", "channels":["b"]})");
 
     C4Log("-------- Pull update");
     replicate(paramsSetter);
 
     // Verify the update:
-    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
@@ -938,7 +940,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     replicate(paramsSetter);
 
     // Verify that doc1 is purged:
-    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
