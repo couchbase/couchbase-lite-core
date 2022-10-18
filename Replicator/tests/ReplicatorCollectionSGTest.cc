@@ -853,7 +853,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // "sguser:password" base64 encoded
     // Put doc on SG, in channels
     // , "scopes": {"flowers": {"collections":{"roses":{}}}}
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    sendRemoteRequest("PUT", "doc1", R"({"channels":["a", "b"]})");
 
     // Auth for SG
     Encoder enc;
@@ -869,11 +869,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     enc.endDict();
     enc.endDict();
 
-    // One-shot pull setup
-    constexpr slice docID = "doc1"_sl;
-    std::array<slice, 1> docIDs = {
-            docID
+    // Setup pull filter:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
     };
+
+    // One-shot pull setup
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
@@ -881,9 +888,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
-    docIDs[0] = get
+    docIDs[0] = getDocIDs(collections[0]);
     std::array<C4ReplicationCollection, collectionCount> replCollections;
-    replCollections[0] = C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot, enc.finish()};
+    replCollections[0] = C4ReplicationCollection {
+        collectionSpecs[0], kC4Disabled, kC4OneShot,
+        enc.finish(), nullptr, _pullFilter, this
+    };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = collectionCount;
         c4Params.collections = replCollections.data();
@@ -902,17 +912,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
                 ((ReplicatorAPITest*)context)->_docsEnded++;
             }
         }
-    };
-
-    // Setup pull filter:
-    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
-                     C4RevisionFlags flags, FLDict flbody, void *context) {
-        if ((flags & kRevPurged) == kRevPurged) {
-            ((ReplicatorAPITest*)context)->_counter++;
-            Dict body(flbody);
-            CHECK(body.count() == 0);
-        }
-        return true;
     };
 
     auto collRoses = c4db_getCollection(db, Roses, nullptr);
@@ -960,7 +959,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
-
     verifyDocs(collectionSpecs, docIDs);
 }
 
