@@ -849,6 +849,121 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SG", "[.SyncServerCollection]") {
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // "sguser:password" base64 encoded
+    // Put doc on SG, in channels
+    // , "scopes": {"flowers": {"collections":{"roses":{}}}}
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+
+    // Auth for SG
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorAuthType));
+    enc.writeString("Basic"_sl);
+    enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+    enc.writeString("sguser");
+    enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+    enc.writeString("password");
+    enc.endDict();
+    enc.endDict();
+
+    // One-shot pull setup
+    constexpr slice docID = "doc1"_sl;
+    std::array<slice, 1> docIDs = {
+            docID
+    };
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    docIDs[0] = get
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+    replCollections[0] = C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot, enc.finish()};
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = collectionCount;
+        c4Params.collections = replCollections.data();
+    };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    // Setup pull filter:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+
+    auto collRoses = c4db_getCollection(db, Roses, nullptr);
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(paramsSetter);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoked access to channel 'a':
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("PUT", "_user/sguser", &status, &error, "{\"admin_channels\":[\"b\"]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+
+    // Check if update to doc1 is still pullable:
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+
+    C4Log("-------- Pull update");
+    replicate(paramsSetter);
+
+    // Verify the update:
+    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    sendRemoteRequest("PUT", "_user/sguser", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+
+    C4Log("-------- Pull the revoked");
+    replicate(paramsSetter);
+
+    // Verify if doc1 is purged:
+    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    REQUIRE(!doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+
+    verifyDocs(collectionSpecs, docIDs);
+}
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
