@@ -6,12 +6,12 @@ This directory contains Sync Gateway configuration* and databases for use with L
 
 1. Install the latest build of Sync Gateway 2.0 (or later).
 2. Open a command shell at this directory.
-3. `sync_gateway config.json`
+3. `sync_gateway walrus_config.json`
 
 If you want to run a second Sync Gateway instance with SSL, to test SSL connections (there aren't currently any LiteCore tests for this, but there's a Couchbase Lite/iOS one), do this:
 
 4. Open another shell at this directory
-5. `sync_gateway ssl_config.json`
+5. `sync_gateway ssl_walrus_config.json`
 
 This uses a self-signed certificate. You can find a copy of the certificate at `sg_cert.pem`; the private key is `sg_key.pem`.
 
