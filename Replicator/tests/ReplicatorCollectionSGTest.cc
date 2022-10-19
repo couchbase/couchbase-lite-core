@@ -876,7 +876,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         collectionSpecs[0], kC4Disabled, kC4OneShot,
         nullslice, nullptr, _pullFilter, this
     };
-    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+    C4ParamsSetter paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = collectionCount;
         c4Params.collections = replCollections.data();
     };
@@ -896,7 +896,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         }
     };
 
-    auto collRoses = c4db_getCollection(db, Roses, nullptr);
+    auto collRoses = collections[0];
 
     // Put doc in remote DB, in channels a and b
     sendRemoteRequest("PUT", docID.asString(), R"({"channels":["a", "b"]})");
