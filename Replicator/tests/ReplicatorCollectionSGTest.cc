@@ -849,10 +849,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
-// This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
     _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    constexpr slice docID = "apefrr-doc1"_sl;
+    sendRemoteRequest("PUT", docID.asString(), "{\"channels\":[\"a\"]}"_sl);
 
     // Setup pull filter to filter the _removed rev:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -865,7 +865,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         }
         return true;
     };
-
+    // Set up replication parameters
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
@@ -901,11 +901,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     C4Log("-------- Pulling");
     replicate(paramsSetter);
 
-    auto collRoses = c4db_getCollection(db, Roses, nullptr);
-    REQUIRE(collRoses);
+    auto collRoses = collections[0];
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -920,7 +919,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     replicate(paramsSetter);
 
     // Verify if doc1 is not purged as the revoked rev is filtered:
-    doc1 = c4coll_getDoc(collRoses, "doc1"_sl, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
