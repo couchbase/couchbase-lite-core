@@ -34,6 +34,8 @@
 //     name    : any
 //     scope   : flowers
 //     collection: roses
+// Once the DB has been set up, you can run sg_setup.sh, or set up SG manually with the configs below.
+// sg_setup.sh should be run with the bucket name as the argument (i.e. './sg_setup.sh couch').
 // Sync-gateway:
 //   config.json:
 /*
