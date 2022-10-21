@@ -22,6 +22,7 @@
 #include "c4Database.h"
 #include "c4Replicator.hh"
 #include "fleece/Mutable.hh"
+#include "fleece/Fleece.h"
 #include <array>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
@@ -289,19 +290,45 @@ public:
     std::unique_ptr<CipherContextMap> decContextMap;
 };
 
-// map: docID -> rev generation
-static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
-    std::unordered_map<alloc_slice, unsigned> ret;
-    c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
-    {
-        while (c4enum_next(e, ERROR_INFO())) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            ret.emplace(info.docID, c4rev_getGeneration(info.revID));
+
+namespace {
+    // map: docID -> rev generation
+    std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
+        std::unordered_map<alloc_slice, unsigned> ret;
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
+        {
+            while (c4enum_next(e, ERROR_INFO())) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                ret.emplace(info.docID, c4rev_getGeneration(info.revID));
+            }
         }
+        return ret;
     }
-    return ret;
+
+    alloc_slice addChannel(slice jsonBody, slice ckey, string channelID) {
+        MutableDict dict {FLMutableDict_NewFromJSON(jsonBody, nullptr)};
+        MutableArray arr = MutableArray::newArray();
+        if (!channelID.empty()) {
+            arr.append(channelID);
+        }
+        dict.set(ckey, arr);
+        return dict.toJSON();
+    }
+
+    bool assignUserChannel(ReplicatorCollectionSGTest* self, string channelID, C4Error* err) {
+        auto bodyWithChannel = addChannel("{}"_sl, "admin_channels"_sl, channelID);
+        HTTPStatus status;
+        alloc_slice saveAuthHeader = self->_authHeader;
+        self->_authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
+        self->sendRemoteRequest("PUT", "_user/sguser", &status,
+                                err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
+                                bodyWithChannel, true);
+        self->_authHeader = saveAuthHeader;
+        return status == HTTPStatus::OK;
+    }
 }
+
 
 // The collection does not exist in the remote.
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "[.SyncServerCollection]") {
@@ -832,3 +859,115 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Access SG", "[..SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    // one collection now now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    string doc1ID = idPrefix + "doc1";
+    string chID = idPrefix.substr(0, idPrefix.length() - 1);
+
+    {
+        C4Error error;
+        REQUIRE(assignUserChannel(this, chID, &error));
+    }
+
+    // Create docs on SG:
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                        doc1ID, addChannel("{}"_sl, "channels"_sl, chID));
+    }
+
+    // Setup pull filter:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict, void *context)
+    {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+        }
+        return true;
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            this     // callbackContext
+        };
+    }
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    std::vector<AllocedDict> allocedDicts;
+    C4ParamsSetter paramsSetter
+        = [this, &replCollections, &allocedDicts](C4ReplicatorParameters& c4Params)
+    {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+        fleece::Encoder enc;
+        enc.writeBool(false);
+        Doc doc {enc.finish()};
+        allocedDicts.emplace_back(
+            repl::Options::updateProperties(
+                AllocedDict(c4Params.optionsDictFleece),
+                C4STR(kC4ReplicatorOptionAutoPurge),
+                doc.root())
+        );
+        c4Params.optionsDictFleece = allocedDicts.back().data();
+    };
+    replicate(paramsSetter);
+
+    // Verify: (only collections[0] for now)
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
+                                             true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    {
+        // Revoke access to all channels:
+        C4Error error;
+
+        DEFER {
+            REQUIRE(assignUserChannel(this, "*", &error));
+        };
+
+        REQUIRE(assignUserChannel(this, "", &error));
+
+        C4Log("-------- Pulling the revoked");
+        replicate(paramsSetter);
+    }
+
+    // Verify if the doc1 is not purged as the auto purge is disabled:
+    doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
+                         true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    // No pull filter called
+    CHECK(_counter == 0);
+}
