@@ -361,7 +361,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
     replicate(paramsSetter);
     c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
     REQUIRE(remoteDoc);
-    CHECK(slice(remoteDoc->revID).hasPrefix("5000-"_sl));
+    CHECK(c4rev_getGeneration(slice(revID)) == 5000);
     
 }
 
