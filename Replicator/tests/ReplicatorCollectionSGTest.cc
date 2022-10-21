@@ -303,6 +303,69 @@ static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collect
     return ret;
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    const string docID = idPrefix + "apipfcc-doc1";
+    
+    
+    string revID;
+    constexpr size_t collectionCount = 1;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
+    std::array<C4Collection *, collectionCount> collections;
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    collectionSpecs = {
+        Roses
+    };
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    docIDs[0] = getDocIDs(collections[0]);
+    replCollections = {
+        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+    };
+
+    C4ParamsSetter paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    {
+        TransactionHelper t(db);
+        revID = createNewRev(collections[0], slice(docID), nullslice, kFleeceBody);
+    }
+    
+    replicate(paramsSetter);
+    docIDs[0] = getDocIDs(collections[0]);
+    verifyDocs(collectionSpecs, docIDs);
+
+    C4Log("-------- Mutations --------");
+    {
+        TransactionHelper t(db);
+        for (int i = 2; i <= 5000; ++i)
+            revID = createNewRev(collections[0], slice(docID), slice(revID), kFleeceBody);
+    }
+
+    C4Log("-------- Second Replication --------");
+    replicate(paramsSetter);
+    verifyDocs(collectionSpecs, docIDs);
+
+    deleteAndRecreateDB();
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    replCollections = {
+        C4ReplicationCollection{collectionSpecs[0],kC4Disabled, kC4OneShot},
+    };
+    paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+    c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
+    REQUIRE(remoteDoc);
+    CHECK(slice(remoteDoc->revID).hasPrefix("5000-"_sl));
+    
+}
+
 // The collection does not exist in the remote.
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "[.SyncServerCollection]") {
     //    constexpr size_t collectionCount = 2;
@@ -327,8 +390,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
     // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
     // is not found on the remote server"
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
-    CHECK(_callbackStatus.error.code == 404);
-    
+    CHECK(_callbackStatus.error.code == 404); 
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "[.SyncServerCollection]") {
