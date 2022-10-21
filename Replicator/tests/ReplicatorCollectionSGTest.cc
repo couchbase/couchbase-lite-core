@@ -879,8 +879,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "purgeRevoke", "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
-            { collectionSpecs[0], kC4Disabled, kC4OneShot,
-              nullslice, nullptr, _pullFilter, this }
+        {{ // three sets of braces? because Xcode
+            collectionSpecs[0], kC4Disabled, kC4OneShot,
+            nullslice, nullptr, _pullFilter, this
+        }}
     };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
