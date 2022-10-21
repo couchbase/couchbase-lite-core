@@ -615,6 +615,59 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     }
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    const string docID = idPrefix + "ppd-doc1";
+    constexpr size_t collectionCount = 1;
+    string revID;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
+    std::array<C4Collection *, collectionCount> collections;
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    collectionSpecs = {
+        Roses
+    };
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    docIDs[0] = getDocIDs(collections[0]);
+    replCollections = {
+        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+    };
+
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    
+    createRev(collections[0], slice(docID), kRevID, kFleeceBody);
+    createRev(collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
+    replicate(paramsSetter);
+
+    C4Log("-------- Deleting and re-creating database --------");
+    deleteAndRecreateDB();
+
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    replCollections = {
+        C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
+    };
+    paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    createRev(collections[0], slice(docID), kRevID, kFleeceBody);
+    replicate(paramsSetter);
+
+    c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
+    REQUIRE(remoteDoc);
+    CHECK(remoteDoc->revID == kRev2ID);
+    CHECK((remoteDoc->flags & kDocDeleted) != 0);
+    CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
+    REQUIRE(c4doc_selectParentRevision(remoteDoc));
+    CHECK(remoteDoc->selectedRev.revID == kRevID);
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     constexpr size_t collectionCount = 1;
