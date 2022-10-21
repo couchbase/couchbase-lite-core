@@ -1262,6 +1262,137 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGCol
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
+// !Note! Not passing, pending CBG-2487
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Access SG",
+                 "[.SyncServerCollection]") {
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Tulips,
+        Roses,
+        Lavenders
+    };
+
+    string idPrefix = timePrefix();
+    string doc1ID = idPrefix + "doc1";
+    vector<string> chIDs {idPrefix};
+    constexpr const char* uname = "apdra";
+    SG::TestUser user {_sg, uname, chIDs, collectionSpecs};
+    _sg.authHeader = user.authHeader();
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, user);
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    for (auto collSpec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(collSpec, doc1ID, "{}"_sl, chIDs));
+    }
+
+    struct CBContext {
+        int docsEndedTotal = 0;
+        int docsEndedPurge = 0;
+        int pullFilterTotal = 0;
+        int pullFilterPurge = 0;
+        void reset() {
+            docsEndedTotal = 0;
+            docsEndedPurge = 0;
+            pullFilterTotal = 0;
+            pullFilterPurge = 0;
+        }
+    } cbContext[collectionCount];
+
+    // Setup pull filter:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict, void *context)
+    {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+        }
+        return true;
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            &cbContext[i]     // callbackContext
+        };
+    }
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void*) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+    std::vector<AllocedDict> allocedDicts;
+    C4ParamsSetter paramsSetter
+        = [&replCollections, &allocedDicts](C4ReplicatorParameters& c4Params)
+    {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+        fleece::Encoder enc;
+        enc.writeBool(false);
+        Doc doc {enc.finish()};
+        allocedDicts.emplace_back(
+            repl::Options::updateProperties(
+                AllocedDict(c4Params.optionsDictFleece),
+                C4STR(kC4ReplicatorOptionAutoPurge),
+                doc.root())
+            );
+        c4Params.optionsDictFleece = allocedDicts.back().data();
+    };
+    replicate(paramsSetter);
+
+    for (size_t i = 0; i < collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        CHECK(cbContext[i].docsEndedTotal == 1);
+        CHECK(cbContext[i].docsEndedPurge == 0);
+        CHECK(cbContext[i].pullFilterTotal == 1);
+        CHECK(cbContext[i].pullFilterPurge == 0);
+    }
+
+    // Revoke access to all channels:
+    REQUIRE(user.revokeAllChannels());
+
+    C4Log("-------- Pulling the revoked");
+    for (auto& c: cbContext) {
+        c.reset();
+    }
+
+    replicate(paramsSetter);
+
+    // Verify if the doc1 is not purged as the auto purge is disabled:
+    for (size_t i = 0; i < collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        // This check pending CBG-2487
+        CHECK(cbContext[i].docsEndedPurge == 1);
+        // No pull filter called
+        CHECK(cbContext[i].pullFilterTotal == 0);
+    }
+}
+
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     string        doc1ID {idPrefix + "doc1"};
