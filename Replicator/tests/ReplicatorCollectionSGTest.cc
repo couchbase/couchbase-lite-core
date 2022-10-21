@@ -850,9 +850,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
-    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
-    constexpr slice docID = "apefrr-doc1"_sl;
-    sendRemoteRequest("PUT", docID.asString(), "{\"channels\":[\"a\"]}"_sl);
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // Admin user for REST requests
+    const string docIDstr = timePrefix() + "apefrr-doc1";
+
+
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("POST", "_user", &status, &error, R"({"name":"filterRevoked","password":"password"})", true);
+    sendRemoteRequest("PUT", "_user/filterRevoked", &status, &error, R"({"admin_channels":["*"]})", true);
+    REQUIRE(status == HTTPStatus::OK);
 
     // Setup pull filter to filter the _removed rev:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -865,17 +871,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         }
         return true;
     };
+
     // Set up replication parameters
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
-    std::array<C4ReplicationCollection, collectionCount> replCollections;
-    replCollections[0] = C4ReplicationCollection {
-        collectionSpecs[0], kC4Disabled, kC4OneShot,
-        nullslice, nullptr, _pullFilter, this
+            collectionPreamble(collectionSpecs, "filterRevoked", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+            {
+                    collectionSpecs[0], kC4Disabled, kC4OneShot,
+                    nullslice, nullptr, _pullFilter, this
+            }
     };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
@@ -897,6 +905,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         }
     };
 
+    sendRemoteRequest("PUT", docIDstr, &status, &error,
+                      "{\"channels\":[\"a\"],\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}}}"_sl);
+    REQUIRE(status == HTTPStatus::Created);
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(paramsSetter);
@@ -904,25 +916,28 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     auto collRoses = collections[0];
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
 
     // Revoke access to all channels:
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("PUT", "_user/sguser", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    sendRemoteRequest("PUT", "_user/filterRevoked", &status, &error, "{\"admin_channels\":[]}"_sl, true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pull the revoked");
     replicate(paramsSetter);
 
     // Verify if doc1 is not purged as the revoked rev is filtered:
-    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
+
+    // Purge remote doc so test will succeed multiple times without flushing bucket
+    sendRemoteRequest("POST", "_purge", &status, &error, "{\"" + docIDstr + "\":[\"*\"]}", true);
+    // Delete temp user
+    sendRemoteRequest("DELETE", "_user/filterRevoked", &status, &error, nullslice, true);
 }
 
 
