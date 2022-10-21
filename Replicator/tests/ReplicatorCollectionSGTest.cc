@@ -850,8 +850,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
-    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // "sguser:password" base64 encoded
-    slice docID = "apera-doc1"_sl;
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // Admin user for REST requests
+    const string docIDstr = timePrefix() + "apera-doc1";
+
+    // Create a temporary user for this test
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("POST", "_user", &status, &error, R"({"name":"purgeRevoke","password":"password"})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":["*"]})", true);
+    REQUIRE(status == HTTPStatus::OK);
 
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -866,18 +873,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // One-shot pull setup
     constexpr size_t collectionCount = 1;
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
     std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
-    std::array<C4ReplicationCollection, collectionCount> replCollections;
-    replCollections[0] = C4ReplicationCollection {
-        collectionSpecs[0], kC4Disabled, kC4OneShot,
-        nullslice, nullptr, _pullFilter, this
+            collectionPreamble(collectionSpecs, "purgeRevoke", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+            { collectionSpecs[0], kC4Disabled, kC4OneShot,
+              nullslice, nullptr, _pullFilter, this }
     };
-    C4ParamsSetter paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
-        c4Params.collectionCount = collectionCount;
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
     };
 
@@ -899,53 +905,58 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     auto collRoses = collections[0];
 
     // Put doc in remote DB, in channels a and b
-    sendRemoteRequest("PUT", docID.asString(), R"({"channels":["a", "b"]})");
+    sendRemoteRequest("PUT", docIDstr, &status, &error, R"({"channels":["a", "b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
+    REQUIRE(status == HTTPStatus::Created);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(paramsSetter);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
 
     // Revoked access to channel 'a':
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("PUT", "_user/sguser", &status, &error, R"({"admin_channels":["b"]})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":["b"]})", true);
     REQUIRE(status == HTTPStatus::OK);
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", docID.asString(), R"({"_rev":")" + oRevID + R"(", "channels":["b"]})");
+    sendRemoteRequest("PUT", docIDstr, R"({"_rev":")" + oRevID + R"(", "channels":["b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
 
     C4Log("-------- Pull update");
     replicate(paramsSetter);
 
     // Verify the update:
-    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
 
+    auto curRevID = slice(doc1->revID).asString();
+
     // Revoke access to all channels:
-    sendRemoteRequest("PUT", "_user/sguser", &status, &error, R"({"admin_channels":[]})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":[]})", true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pull the revoked");
     replicate(paramsSetter);
 
     // Verify that doc1 is purged:
-    doc1 = c4coll_getDoc(collRoses, docID, true, kDocGetAll, nullptr);
+    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
-}
 
+    // Purge remote doc so test will succeed multiple times without flushing bucket
+    sendRemoteRequest("POST", "_purge", &status, &error, "{\"" + docIDstr + "\":[\"*\"]}", true);
+    // Delete temp user
+    sendRemoteRequest("DELETE", "_user/purgeRevoke", &status, &error, nullslice, true);
+}
 
 #ifdef COUCHBASE_ENTERPRISE
 
