@@ -306,8 +306,8 @@ namespace {
         return ret;
     }
 
-    alloc_slice addChannel(slice jsonBody, slice ckey, const vector<string>& channelIDs) {
-        MutableDict dict {FLMutableDict_NewFromJSON(jsonBody, nullptr)};
+    alloc_slice addChannelToJSON(slice json, slice ckey, const vector<string>& channelIDs) {
+        MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
         MutableArray arr = MutableArray::newArray();
         for (const auto& chID : channelIDs) {
             arr.append(chID);
@@ -318,7 +318,7 @@ namespace {
 
     bool assignUserChannel(ReplicatorCollectionSGTest* self,
                            const vector<string>& channelIDs, C4Error* err) {
-        auto bodyWithChannel = addChannel("{}"_sl, "admin_channels"_sl, channelIDs);
+        auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
         HTTPStatus status;
         alloc_slice saveAuthHeader = self->_authHeader;
         self->_authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
@@ -328,6 +328,8 @@ namespace {
         self->_authHeader = saveAuthHeader;
         return status == HTTPStatus::OK;
     }
+
+    constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
 }
 
 
@@ -876,15 +878,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
 
     C4Error error;
     DEFER {
-        REQUIRE(assignUserChannel(this, {"*"}, &error));
+        // Don't REQUIRE. It would terminate the entire test run.
+        assignUserChannel(this, {"*"}, &error);
     };
     REQUIRE(assignUserChannel(this, chIDs, &error));
 
     // Create docs on SG:
-    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    _authHeader = SGUserCredential;
     for (size_t i = 0; i < collectionCount; ++i) {
         sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
-                          doc1ID, addChannel("{}"_sl, "channels"_sl, chIDs));
+                          doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
     }
 
     struct CBContext {
@@ -964,8 +967,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
     sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
-                      doc1ID, addChannel("{\"_rev\":\"" + oRevID + "\"}",
-                                         "channels"_sl, {chIDs[1]}));
+                      doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
+                                               "channels"_sl, {chIDs[1]}));
 
     C4Log("-------- Pull update");
     context.reset();
@@ -983,8 +986,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
     sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
-                      doc1ID, addChannel("{\"_rev\":\"" + oRevID + "\"}",
-                                         "channels"_sl, {}));
+                      doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
+                                               "channels"_sl, {}));
 
     C4Log("-------- Pull the removed");
     context.reset();
