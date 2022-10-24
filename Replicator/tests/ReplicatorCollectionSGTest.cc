@@ -319,12 +319,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    docIDs[0] = getDocIDs(collections[0]);
     replCollections = {
         C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
     };
 
-    C4ParamsSetter paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
     };
@@ -333,9 +332,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
         TransactionHelper t(db);
         revID = createNewRev(collections[0], slice(docID), nullslice, kFleeceBody);
     }
+
+    docIDs[0] = getDocIDs(collections[0]);
     
     replicate(paramsSetter);
-    docIDs[0] = getDocIDs(collections[0]);
     verifyDocs(collectionSpecs, docIDs);
 
     C4Log("-------- Mutations --------");
