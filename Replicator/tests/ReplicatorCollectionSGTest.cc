@@ -849,6 +849,74 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGColl", "[.SyncServerCollection]") {
+
+    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    const string docID = timePrefix() + "uocd-doc";
+
+    // Create a conflicted doc on SG, and resolve the conflict
+    sendRemoteRequest("PUT", docID + "?new_edits=false",
+                      "{\"_rev\":\"1-aaaa\",\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}},\"foo\":1}"_sl, true);
+    sendRemoteRequest("PUT", docID + "?new_edits=false",
+                      "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}},\"foo\":2.1}"_sl, true);
+    sendRemoteRequest("PUT", docID + "?new_edits=false",
+                      "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}},\"foo\":2.2}"_sl, true);
+    sendRemoteRequest("PUT", docID + "?new_edits=false",
+                      "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}},\"_deleted\":true}"_sl, true);
+
+    // Set up pull replication
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        {{
+            collectionSpecs[0], kC4Disabled, kC4OneShot
+        }}
+    };
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(paramsSetter);
+
+    // Verify doc:
+    c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    C4Slice revID = C4STR("2-bbbb");
+    CHECK(doc->revID == revID);
+    CHECK((doc->flags & kDocDeleted) == 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
+
+    // Update doc:
+    createRev(collections[0], slice(docID), "3-ffff"_sl, kFleeceBody);
+
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
+            { getDocIDs(collections[0]) }
+    };
+
+    // Push replication set-up
+    replCollections[0] = {
+             collectionSpecs[0], kC4OneShot, kC4Disabled
+    };
+    paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    // Push change back to SG:
+    C4Log("-------- Pushing");
+    replicate(paramsSetter);
+
+    verifyDocs(collectionSpecs, docIDs);
+}
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
