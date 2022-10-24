@@ -271,6 +271,42 @@ public:
         return ss.str();
     }
     
+    // map: docID -> rev generation
+    static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
+        std::unordered_map<alloc_slice, unsigned> ret;
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
+        {
+            while (c4enum_next(e, ERROR_INFO())) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                ret.emplace(info.docID, c4rev_getGeneration(info.revID));
+            }
+        }
+        return ret;
+    }
+
+    static alloc_slice addChannelToJSON(slice json, slice ckey, const vector<string>& channelIDs) {
+        MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
+        MutableArray arr = MutableArray::newArray();
+        for (const auto& chID : channelIDs) {
+            arr.append(chID);
+        }
+        dict.set(ckey, arr);
+        return dict.toJSON();
+    }
+
+    bool assignUserChannel(const vector<string>& channelIDs, C4Error* err) {
+        auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
+        HTTPStatus status;
+        alloc_slice saveAuthHeader = _authHeader;
+        _authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
+        sendRemoteRequest("PUT", "_user/sguser", &status,
+                                err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
+                                bodyWithChannel, true);
+        _authHeader = saveAuthHeader;
+        return status == HTTPStatus::OK;
+    }
+
     struct CipherContext {
         C4Collection* collection;
         slice docID;
@@ -288,49 +324,10 @@ public:
     using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext>;
     std::unique_ptr<CipherContextMap> encContextMap;
     std::unique_ptr<CipherContextMap> decContextMap;
+
+    // base-64 encoded of, "Basic sguser:password"
+    static constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
 };
-
-
-namespace {
-    // map: docID -> rev generation
-    std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
-        std::unordered_map<alloc_slice, unsigned> ret;
-        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
-        {
-            while (c4enum_next(e, ERROR_INFO())) {
-                C4DocumentInfo info;
-                c4enum_getDocumentInfo(e, &info);
-                ret.emplace(info.docID, c4rev_getGeneration(info.revID));
-            }
-        }
-        return ret;
-    }
-
-    alloc_slice addChannelToJSON(slice json, slice ckey, const vector<string>& channelIDs) {
-        MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
-        MutableArray arr = MutableArray::newArray();
-        for (const auto& chID : channelIDs) {
-            arr.append(chID);
-        }
-        dict.set(ckey, arr);
-        return dict.toJSON();
-    }
-
-    bool assignUserChannel(ReplicatorCollectionSGTest* self,
-                           const vector<string>& channelIDs, C4Error* err) {
-        auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
-        HTTPStatus status;
-        alloc_slice saveAuthHeader = self->_authHeader;
-        self->_authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
-        self->sendRemoteRequest("PUT", "_user/sguser", &status,
-                                err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
-                                bodyWithChannel, true);
-        self->_authHeader = saveAuthHeader;
-        return status == HTTPStatus::OK;
-    }
-
-    constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
-}
 
 
 // The collection does not exist in the remote.
@@ -879,9 +876,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     C4Error error;
     DEFER {
         // Don't REQUIRE. It would terminate the entire test run.
-        assignUserChannel(this, {"*"}, &error);
+        assignUserChannel({"*"}, &error);
     };
-    REQUIRE(assignUserChannel(this, chIDs, &error));
+    REQUIRE(assignUserChannel(chIDs, &error));
 
     // Create docs on SG:
     _authHeader = SGUserCredential;
