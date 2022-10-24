@@ -343,25 +343,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
         TransactionHelper t(db);
         for (int i = 2; i <= 5000; ++i)
             revID = createNewRev(collections[0], slice(docID), slice(revID), kFleeceBody);
+            REQUIRE(!revID.empty());
     }
 
     C4Log("-------- Second Replication --------");
     replicate(paramsSetter);
     verifyDocs(collectionSpecs, docIDs);
-
-    deleteAndRecreateDB();
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    replCollections = {
-        C4ReplicationCollection{collectionSpecs[0],kC4Disabled, kC4OneShot},
-    };
-    paramsSetter = [&replCollections,&collectionCount](C4ReplicatorParameters& c4Params) {
-        c4Params.collectionCount = replCollections.size();
-        c4Params.collections = replCollections.data();
-    };
-    replicate(paramsSetter);
-    c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
-    REQUIRE(remoteDoc);
-    CHECK(c4rev_getGeneration(slice(revID)) == 5000);
     
 }
 
