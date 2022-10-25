@@ -87,6 +87,9 @@ static constexpr C4CollectionSpec Tulips = { TulipsName, FlowersScopeName };
 static constexpr C4CollectionSpec Lavenders = { LavenderName, FlowersScopeName };
 static constexpr C4CollectionSpec Default = kC4DefaultCollectionSpec;
 
+// sguser:password encoded in base64
+static constexpr slice kRESTCredentials = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+
 using namespace std;
 using namespace litecore::repl;
 
@@ -102,6 +105,10 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
+    ReplicatorCollectionSGTest()
+            : ReplicatorAPITest()
+            , _authHeader { kRESTCredentials }
+    {}
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
@@ -850,7 +857,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
-    _authHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl; // Admin user for REST requests
     const string docIDstr = timePrefix() + "apera-doc1";
 
     // Create a temporary user for this test
