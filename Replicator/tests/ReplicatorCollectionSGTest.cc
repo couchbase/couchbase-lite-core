@@ -22,6 +22,7 @@
 #include "c4Database.h"
 #include "c4Replicator.hh"
 #include "fleece/Mutable.hh"
+#include "fleece/Fleece.h"
 #include <array>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
@@ -266,10 +267,46 @@ public:
         auto epoch = now.time_since_epoch();
         auto seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
         std::stringstream ss;
-        ss << std::hex << seconds << "-";
+        ss << std::hex << seconds << "_";
         return ss.str();
     }
     
+    // map: docID -> rev generation
+    static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
+        std::unordered_map<alloc_slice, unsigned> ret;
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
+        {
+            while (c4enum_next(e, ERROR_INFO())) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                ret.emplace(info.docID, c4rev_getGeneration(info.revID));
+            }
+        }
+        return ret;
+    }
+
+    static alloc_slice addChannelToJSON(slice json, slice ckey, const vector<string>& channelIDs) {
+        MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
+        MutableArray arr = MutableArray::newArray();
+        for (const auto& chID : channelIDs) {
+            arr.append(chID);
+        }
+        dict.set(ckey, arr);
+        return dict.toJSON();
+    }
+
+    bool assignUserChannel(const vector<string>& channelIDs, C4Error* err) {
+        auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
+        HTTPStatus status;
+        alloc_slice saveAuthHeader = _authHeader;
+        _authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
+        sendRemoteRequest("PUT", "_user/sguser", &status,
+                                err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
+                                bodyWithChannel, true);
+        _authHeader = saveAuthHeader;
+        return status == HTTPStatus::OK;
+    }
+
     struct CipherContext {
         C4Collection* collection;
         slice docID;
@@ -287,21 +324,11 @@ public:
     using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext>;
     std::unique_ptr<CipherContextMap> encContextMap;
     std::unique_ptr<CipherContextMap> decContextMap;
+
+    // base-64 encoded of, "Basic sguser:password"
+    static constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
 };
 
-// map: docID -> rev generation
-static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
-    std::unordered_map<alloc_slice, unsigned> ret;
-    c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
-    {
-        while (c4enum_next(e, ERROR_INFO())) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            ret.emplace(info.docID, c4rev_getGeneration(info.revID));
-        }
-    }
-    return ret;
-}
 
 // The collection does not exist in the remote.
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "[.SyncServerCollection]") {
@@ -832,3 +859,142 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc From Channel SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    // one collection now now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    string        doc1ID {idPrefix + "doc1"};
+    vector<string> chIDs {idPrefix+"a", idPrefix+"b"};
+
+    C4Error error;
+    DEFER {
+        // Don't REQUIRE. It would terminate the entire test run.
+        assignUserChannel({"*"}, &error);
+    };
+    REQUIRE(assignUserChannel(chIDs, &error));
+
+    // Create docs on SG:
+    _authHeader = SGUserCredential;
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                          doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
+    }
+
+    struct CBContext {
+        int docsEndedTotal = 0;
+        int docsEndedPurge = 0;
+        int pullFilterTotal = 0;
+        int pullFilterPurge = 0;
+        void reset() {
+            docsEndedTotal = 0;
+            docsEndedPurge = 0;
+            pullFilterTotal = 0;
+            pullFilterPurge = 0;
+        }
+    } context;
+
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void*) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+
+    // Setup pull filter:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void *context)
+    {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            &context     // callbackContext
+        };
+    }
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Verify: (on collections[0] only
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
+                                             true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(c4rev_getGeneration(doc1->revID) == 1);
+    CHECK(context.docsEndedTotal == 1);
+    CHECK(context.docsEndedPurge == 0);
+    CHECK(context.pullFilterTotal == 1);
+    CHECK(context.pullFilterPurge == 0);
+
+    // Removed doc from channel 'a':
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
+                      doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
+                                               "channels"_sl, {chIDs[1]}));
+
+    C4Log("-------- Pull update");
+    context.reset();
+    replicate(paramsSetter);
+
+    // Verify the update:
+    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(c4rev_getGeneration(doc1->revID) == 2);
+    CHECK(context.docsEndedTotal == 1);
+    CHECK(context.docsEndedPurge == 0);
+    CHECK(context.pullFilterTotal == 1);
+    CHECK(context.pullFilterPurge == 0);
+
+    // Remove doc from all channels:
+    oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
+                      doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
+                                               "channels"_sl, {}));
+
+    C4Log("-------- Pull the removed");
+    context.reset();
+    replicate(paramsSetter);
+
+    // Verify if doc1 is purged:
+    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+    REQUIRE(!doc1);
+    CHECK(context.docsEndedTotal == 1);
+    CHECK(context.docsEndedPurge == 1);
+    CHECK(context.pullFilterTotal == 1);
+    CHECK(context.pullFilterPurge == 1);
+}
