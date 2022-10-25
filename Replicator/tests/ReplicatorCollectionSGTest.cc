@@ -105,10 +105,11 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
-    RepicatorCollectionSGTest()
+    ReplicatorCollectionSGTest()
         : ReplicatorAPITest()
-        , _authHeader { kRESTCredentials }
-    {}
+    {
+        _authHeader = kRESTCredentials;
+    }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
