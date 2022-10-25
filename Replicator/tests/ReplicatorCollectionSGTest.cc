@@ -109,6 +109,17 @@ public:
             c4db_release(verifyDb);
             verifyDb = nullptr;
         }
+        
+        if (hasCreatedTestUser) {
+            HTTPStatus status;
+            alloc_slice saveAuthHeader = _authHeader;
+            _authHeader = AdminAuthHeader;
+            sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
+            _authHeader = saveAuthHeader;
+            if (status != HTTPStatus::OK) {
+                C4WarnError("Fail to delete the test user.");
+            }
+        }
     }
 
     // Database verifyDb:
@@ -299,12 +310,23 @@ public:
         auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
         HTTPStatus status;
         alloc_slice saveAuthHeader = _authHeader;
-        _authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
+        _authHeader = AdminAuthHeader;
         sendRemoteRequest("PUT", "_user/sguser", &status,
                                 err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
                                 bodyWithChannel, true);
         _authHeader = saveAuthHeader;
         return status == HTTPStatus::OK;
+    }
+
+    bool createTestUser(const vector<string> channelIDs) {
+        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
+        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
+        HTTPStatus status;
+        alloc_slice savedAuthHeader = _authHeader;
+        _authHeader = AdminAuthHeader;
+        sendRemoteRequest("POST", "_user", &status, ERROR_INFO(), bodyWithChannel, true);
+        _authHeader = savedAuthHeader;
+        return status == HTTPStatus::Created;
     }
 
     struct CipherContext {
@@ -325,8 +347,15 @@ public:
     std::unique_ptr<CipherContextMap> encContextMap;
     std::unique_ptr<CipherContextMap> decContextMap;
 
-    // base-64 encoded of, "Basic sguser:password"
-    static constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    static constexpr const char* TestUser = "test_user";
+    bool hasCreatedTestUser = false;
+
+    // base-64 encoded of "sguser:password"
+    static constexpr slice SGUserAuthHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    // base-64 of "test_user:password"
+    static constexpr slice TestUserAuthHeader = "Basic dGVzdF91c2VyOnBhc3N3b3Jk"_sl;
+    // base-64 of, "Administrator:password"
+    static constexpr slice AdminAuthHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
 };
 
 
@@ -953,7 +982,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     REQUIRE(assignUserChannel(chIDs, &error));
 
     // Create docs on SG:
-    _authHeader = SGUserCredential;
+    _authHeader = SGUserAuthHeader;
     for (size_t i = 0; i < collectionCount; ++i) {
         sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
                           doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
@@ -1069,4 +1098,122 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     CHECK(context.docsEndedPurge == 1);
     CHECK(context.pullFilterTotal == 1);
     CHECK(context.pullFilterPurge == 1);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Removed Revision SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    // one collection for now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, TestUser, "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    string doc1ID = idPrefix + "doc1";
+    vector<string> chIDs {idPrefix+"a"};
+
+    hasCreatedTestUser = createTestUser(chIDs);
+    REQUIRE(hasCreatedTestUser);
+
+    // Create docs on SG:
+    _authHeader = SGUserAuthHeader;
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                        doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
+    }
+
+    struct CBContext {
+         int docsEndedTotal = 0;
+         int docsEndedPurge = 0;
+         int pullFilterTotal = 0;
+         int pullFilterPurge = 0;
+         void reset() {
+             docsEndedTotal = 0;
+             docsEndedPurge = 0;
+             pullFilterTotal = 0;
+             pullFilterPurge = 0;
+         }
+     } cbContext;
+
+    // Setup pull filter to filter the _removed rev:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void *context)
+    {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void*) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            &cbContext     // callbackContext
+        };
+    }
+    C4ParamsSetter paramsSetter
+        = [&replCollections](C4ReplicatorParameters& c4Params)
+    {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
+                                             true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(cbContext.docsEndedTotal == 1);
+    CHECK(cbContext.docsEndedPurge == 0);
+    CHECK(cbContext.pullFilterTotal == 1);
+    CHECK(cbContext.pullFilterPurge == 0);
+    
+    // Remove doc from all channels
+    auto oRevID = slice(doc1->revID).asString();
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                          doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}", "channels"_sl, {}));
+    }
+
+    C4Log("-------- Pull the removed");
+    cbContext.reset();
+    replicate(paramsSetter);
+
+    // Verify if doc1 is not purged as the removed rev is filtered:
+    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(cbContext.docsEndedPurge == 1);
+    CHECK(cbContext.pullFilterPurge == 1);
 }
