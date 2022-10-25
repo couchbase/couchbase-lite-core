@@ -107,8 +107,9 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
     ReplicatorCollectionSGTest()
             : ReplicatorAPITest()
-            , _authHeader { kRESTCredentials }
-    {}
+    {
+        _authHeader = kRESTCredentials;
+    }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
