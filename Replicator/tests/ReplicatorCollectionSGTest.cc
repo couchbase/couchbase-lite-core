@@ -934,7 +934,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", docIDstr, R"({"_rev":")" + oRevID + R"(", "channels":["b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
+    sendRemoteRequest("PUT", docIDstr, &status, &error, R"({"_rev":")" + oRevID + R"(", "channels":["b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
 
     C4Log("-------- Pull update");
     replicate(paramsSetter);
