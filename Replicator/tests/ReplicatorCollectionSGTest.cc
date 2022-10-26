@@ -667,6 +667,148 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     verifyDocs(collectionSpecs, docIDs, true);
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    HTTPStatus status;
+    C4Error error;
+
+    const string docID = idPrefix + "pdfsg-doc1";
+    // one collection now now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 1;
+    constexpr size_t kDocBufSize = 20;
+    constexpr int kNumDocs = 1000, kNumProps = 1000;
+    string revID;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
+    std::array<C4Collection *, collectionCount> collections;
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    collectionSpecs = {
+        Roses
+    };
+    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    replCollections = {
+        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+    };
+
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    
+
+    C4Log("-------- Populating local db --------");
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        std::srand(123456); // start random() sequence at a known place
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for (int p = 0; p < kNumProps; ++p) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(std::rand());
+            }
+            enc.endDict();
+            alloc_slice body = enc.finish();
+            string revID = createNewRev(collections[0], slice(docID), body);
+        }
+    };
+    populateDB();
+
+    C4Log("-------- Pushing to SG --------");
+    replicate(paramsSetter);
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    {
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
+            C4Error error;
+            c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            REQUIRE(doc);
+            Dict props = c4doc_getProperties(doc);
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(doc->revID);
+            for (Dict::iterator i(props); i; ++i) {
+                enc.writeKey(i.keyString());
+                auto value = i.value().asInt();
+                if (RandomNumber() % 8 == 0)
+                    value = RandomNumber();
+                enc.writeInt(value);
+            }
+            enc.endDict();
+        }
+        enc.endArray();
+        enc.endDict();
+        sendRemoteRequest("POST", "_bulk_docs", &status, &error, enc.finish(), true);
+        REQUIRE(status == HTTPStatus::Created);
+    }
+
+    double timeWithDelta = 0, timeWithoutDelta = 0;
+    for (int pass = 1; pass <= 3; ++pass) {
+        if (pass == 3) {
+            C4Log("-------- DISABLING DELTA SYNC --------");
+            Encoder enc;
+            enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
+            enc.writeBool(true);
+            enc.endDict();
+            _options = AllocedDict(enc.finish());
+        }
+
+        C4Log("-------- PASS #%d: Repopulating local db --------", pass);
+        deleteAndRecreateDB();
+        collections = collectionPreamble(collectionSpecs, "sguser", "password");
+        replCollections = {
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+        };
+        C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+            c4Params.collectionCount = replCollections.size();
+            c4Params.collections = replCollections.data();
+        };
+        populateDB();
+        C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
+        Stopwatch st;
+        replicate(paramsSetter);
+        double time = st.elapsed();
+        C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, kNumDocs/time);
+        if (pass == 2)
+            timeWithDelta = time;
+        else if (pass == 3)
+            timeWithoutDelta = time;
+
+        int n = 0;
+        C4Error error;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            CHECK(slice(info.docID).hasPrefix("doc-"_sl));
+            CHECK(slice(info.revID).hasPrefix("2-"_sl));
+            ++n;
+        }
+        CHECK(error.code == 0);
+        CHECK(n == kNumDocs);
+    }
+
+    C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
+          timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     //    constexpr size_t collectionCount = 2;
