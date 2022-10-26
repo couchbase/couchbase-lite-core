@@ -20,6 +20,7 @@
 #include "fleece/Expert.hh"
 #include <thread>
 #include <vector>
+#include <fstream>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
 // in the `c4` namespace. Check it out!
@@ -307,7 +308,8 @@ public:
 
     std::string listSharedKeys(std::string delimiter =", ");
 
-    static fleece::alloc_slice readFile(std::string path);
+    static std::filesystem::path findProjectRoot();
+    static fleece::alloc_slice readFile(std::filesystem::path path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
                             double timeout =0.0,

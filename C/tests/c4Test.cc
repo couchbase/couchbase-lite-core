@@ -627,22 +627,36 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 
 #pragma mark - FILE IMPORT:
 
-
-// Reads a file into memory.
-fleece::alloc_slice C4Test::readFile(std::string path) {
-    INFO("Opening file " << path);
-    FILE *fd = fopen(path.c_str(), "rb");
-    REQUIRE(fd != nullptr);
-    fseeko(fd, 0, SEEK_END);
-    auto size = (size_t)ftello(fd);
-    fseeko(fd, 0, SEEK_SET);
-    fleece::alloc_slice result(size);
-    ssize_t bytesRead = fread((void*)result.buf, 1, size, fd);
-    REQUIRE(bytesRead == size);
-    fclose(fd);
-    return result;
+std::filesystem::path C4Test::findProjectRoot() {
+    auto current = std::filesystem::current_path();
+    for(int i = 0; i < 10; ++i) { // Search for project root, max depth 10
+        current = current.parent_path();
+        auto lastElem = current.end();
+        if (*(--lastElem) == "couchbase-lite-core") {
+            return current;
+        }
+    }
+    // Empty return path to indicate project root could not be found
+    current.clear();
+    return current;
 }
 
+// Parameter is relative filepath for cert from project root
+fleece::alloc_slice C4Test::readFile(std::filesystem::path filepath) {
+    if(filepath.is_relative()) { // Append path to project root
+        auto projRoot = findProjectRoot();
+        if (projRoot.empty()) { // Will occur if tests were launched outside of project
+            return nullslice;
+        }
+        filepath = projRoot / filepath;
+    }
+    std::ifstream inFile(filepath);
+    REQUIRE(inFile.is_open());
+    std::stringstream outData;
+    outData << inFile.rdbuf();
+    alloc_slice result { outData.str() };
+    return result;
+}
 
 bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
     INFO("Reading lines from " << path);
