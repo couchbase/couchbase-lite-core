@@ -778,7 +778,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", collectionSpecs[0], "_bulk_docs", &status, &error, enc.finish(), true);
+        sendRemoteRequest("POST", repl::Options::collectionSpecToPath(collectionSpecs[0]), "_bulk_docs", &status, &error, enc.finish(), true);
         REQUIRE(status == HTTPStatus::Created);
     }
 
@@ -817,7 +817,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
         int n = 0;
         C4Error error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[0], nullptr, ERROR_INFO(error));
         REQUIRE(e);
         while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
