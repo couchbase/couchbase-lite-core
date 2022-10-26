@@ -369,7 +369,8 @@ public:
             TransactionHelper t(resolvDB);
             C4Error error;
             // Get the local rev:
-            c4::ref<C4Document> doc = c4db_getDoc(resolvDB, rev->docID, true, kDocGetAll, &error);
+            auto collection = c4db_getCollection(resolvDB, rev->collectionSpec, ERROR_INFO());
+            c4::ref<C4Document> doc = c4coll_getDoc(collection, rev->docID, true, kDocGetAll, &error);
             if (!doc) {
                 WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: Couldn't read doc");

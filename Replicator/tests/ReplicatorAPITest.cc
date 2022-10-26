@@ -1085,3 +1085,22 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     _socketFactory = nullptr;
 }
 
+// CBL-3747: createFleeceRev was creating rev in the default collection if revID
+// is null.
+TEST_CASE_METHOD(ReplicatorAPITest, "createFleeceRev - null revID", "[C]") {
+    C4CollectionSpec collSpec { "nullRevID"_sl, "fleeceRev"_sl };
+    auto coll = c4db_createCollection(db, collSpec, ERROR_INFO());
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(coll);
+    REQUIRE(defaultColl);
+    
+    constexpr size_t bufSize = 10;
+    for(int i = 0; i < 10; ++i) {
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%i", i);
+        createFleeceRev(coll, slice(docID), nullslice, slice(json5("{revID:'null',create:'fleece'}")));
+    }
+    
+    CHECK(c4coll_getDocumentCount(coll) == 10);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
+}
