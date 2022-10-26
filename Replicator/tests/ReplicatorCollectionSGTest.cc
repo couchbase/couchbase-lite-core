@@ -102,6 +102,30 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
+    ReplicatorCollectionSGTest()
+        : ReplicatorAPITest() {
+        pinnedCert = R"(-----BEGIN CERTIFICATE-----
+MIICqzCCAZMCFGrxed0RuxP+uYOzr9wIeRp4gBjHMA0GCSqGSIb3DQEBCwUAMBAx
+DjAMBgNVBAMMBUludGVyMB4XDTIyMTAyNTEwMjAzMFoXDTMyMTAyMjEwMjAzMFow
+FDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
+CgKCAQEAknbSS/newbZxs4afkUEgMO9WzE1LJAZ7oj3ovLzbsDYVJ3Ct1eBA2yYN
+t87ROTvJ85mw4lQ3puMhWGGddYUQzBT7rdtpvydk9aNIefLwU6Yn6YvXC1asxSsb
+yFr75j21UZ+qHZ1B4DYAR09Qaps43OKGKJl+4QBUkcLp+Hgo+5e29buv3VvoSK42
+MnYsFFtgjVsLBJcL0L9t5gxujPiK8jbdXDYN3Md602rKua9LNwff02w8FWJ8/nLZ
+LxtAVidgHJPEY2kDj+S2fUOaAypHcvkHAJ9KKwqHYpwvWzv32WpmmpKBxoiP2NFI
+655Efmx7g3pJ2LvUbyOthi8k/VT3/wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQC3
+c+kGcvn3d9QyGYif2CtyAYGRxUQpMjYjqQiwyZmKNp/xErgns5dD+Ri6kEOcq0Zl
+MrsPV5iprAKCvEDU6CurGE+sUiJH1csjPx+uCcUlZwT+tZF71IBJtkgfQx2a9Wfs
+CA+qS9xaNhuYFkbSIbA5uiSUf9MRxafY8mqjtrOtdPf4fxN5YVsbOzJLtrcVVL9i
+Y5rPGtUwixeiZsuGXYkFGLCZx8DWQQrENSu3PI5hshdHgPoHyqxls4yDTDyF3nqq
+w9Q3o9L/YDg9NGdW1XQoBgxgKy5G3YT7NGkZXUOJCHsupyoK4GGZQGxtb2eYMg/H
+lTIN5f2LxWf+8kJqfjlj
+-----END CERTIFICATE-----)";
+
+        _address = {kC4Replicator2TLSScheme,
+                    C4STR("localhost"),
+                    4984};
+    }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
@@ -668,6 +692,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
+    _authHeader = SGUserCredential;
     string idPrefix = timePrefix();
     HTTPStatus status;
     C4Error error;
@@ -753,7 +778,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", &status, &error, enc.finish(), true);
+        sendRemoteRequest("POST", collectionSpecs[0], "_bulk_docs", &status, &error, enc.finish(), true);
         REQUIRE(status == HTTPStatus::Created);
     }
 
