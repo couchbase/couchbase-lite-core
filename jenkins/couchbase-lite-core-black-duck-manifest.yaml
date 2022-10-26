@@ -42,7 +42,7 @@ components:
     src-path: vendor/sqlite3-unicodesn
   zlib:
     bd-id: b9185555-6e31-401e-b373-bfec7955a8ab
-    versions: [ 1.2.12 ]
+    versions: [ 1.2.13 ]
     src-path: vendor/zlib
 
 # [0]
