@@ -45,8 +45,8 @@ namespace litecore { namespace blip {
     const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?",
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
-    LogDomain BLIPLog("BLIP", LogLevel::Debug);
-    static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::Debug);
+    LogDomain BLIPLog("BLIP", LogLevel::Warning);
+    static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::None);
 
 
     /** Queue of outgoing messages; each message gets to send one frame in turn. */
