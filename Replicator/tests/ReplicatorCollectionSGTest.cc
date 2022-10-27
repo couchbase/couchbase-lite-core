@@ -693,15 +693,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
     _authHeader = SGUserCredential;
-    string idPrefix = timePrefix();
+    const string idPrefix = timePrefix(), channelID = timePrefix() ;
     HTTPStatus status;
     C4Error error;
 
     const string docIDPref = idPrefix + "pdfsg-doc";
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-    constexpr size_t kDocBufSize = 30;
-    constexpr int kNumDocs = 50, kNumProps = 1000;
+    constexpr size_t kDocBufSize = 60;
+    constexpr int kNumDocs = 50, kNumProps = 50;
     string revID;
 
     std::array<C4CollectionSpec, collectionCount> collectionSpecs;
@@ -713,9 +713,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    replCollections = {
-        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
-    };
 
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
@@ -733,6 +730,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
+            enc.beginArray();
+            enc.writeString(channelID);
+            enc.endArray();
             for (int p = 0; p < kNumProps; ++p) {
                 enc.writeKey(format("field%03d", p));
                 enc.writeInt(std::rand());
@@ -742,8 +742,25 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             string revID = createNewRev(collections[0], slice(docID), body);
         }
     };
+
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
+    enc.beginArray();
+    enc.writeString(channelID);
+    enc.endArray();
+    enc.endDict();
+    alloc_slice opts = enc.finish();
+
+
+    replCollections = {
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled, opts},
+        };
     populateDB();
 
+    
+
+    
     C4Log("-------- Pushing to SG --------");
     replicate(paramsSetter);
 
@@ -796,19 +813,23 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
+
         collections = collectionPreamble(collectionSpecs, "sguser", "password");
         replCollections = {
-            C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
+            C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot, opts},
         };
         C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
             c4Params.collections = replCollections.data();
         };
+        
         populateDB();
+
         C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
         Stopwatch st;
         replicate(paramsSetter);
         double time = st.elapsed();
+        
         C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, kNumDocs/time);
         if (pass == 2)
             timeWithDelta = time;
@@ -822,11 +843,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
-            bool IDCheck = CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
-            bool prefix = CHECK(slice(info.revID).hasPrefix("2-"_sl));
-            if(IDCheck && prefix){
-                ++n;
-            }
+            CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
+            CHECK(slice(info.revID).hasPrefix("2-"_sl));
+            ++n;
         }
         CHECK(error.code == 0);
         CHECK(n == kNumDocs);
