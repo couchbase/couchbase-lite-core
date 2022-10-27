@@ -627,29 +627,8 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 
 #pragma mark - FILE IMPORT:
 
-std::filesystem::path C4Test::findProjectRoot() {
-    auto current = std::filesystem::current_path();
-    for(int i = 0; i < 10; ++i) { // Search for project root, max depth 10
-        current = current.parent_path();
-        auto lastElem = current.end();
-        if (*(--lastElem) == "couchbase-lite-core") {
-            return current;
-        }
-    }
-    // Empty return path to indicate project root could not be found
-    current.clear();
-    return current;
-}
-
 // Parameter is relative filepath for cert from project root
 fleece::alloc_slice C4Test::readFile(std::filesystem::path filepath) {
-    if(filepath.is_relative()) { // Append path to project root
-        auto projRoot = findProjectRoot();
-        if (projRoot.empty()) { // Will occur if tests were launched outside of project
-            return nullslice;
-        }
-        filepath = projRoot / filepath;
-    }
     std::ifstream inFile(filepath);
     REQUIRE(inFile.is_open());
     std::stringstream outData;

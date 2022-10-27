@@ -308,7 +308,6 @@ public:
 
     std::string listSharedKeys(std::string delimiter =", ");
 
-    static std::filesystem::path findProjectRoot();
     static fleece::alloc_slice readFile(std::filesystem::path path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
