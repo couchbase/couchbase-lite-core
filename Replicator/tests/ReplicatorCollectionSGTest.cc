@@ -119,9 +119,7 @@ public:
             verifyDb = nullptr;
         }
     }
-
-
-
+    
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {

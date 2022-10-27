@@ -632,7 +632,12 @@ fleece::alloc_slice C4Test::readFile(std::string filepath) {
     std::ifstream inFile(filepath);
     REQUIRE(inFile.is_open());
     std::stringstream outData;
-    outData << inFile.rdbuf();
+    try { // The << operator can throw if an I/O error occured
+        inFile.exceptions(std::ifstream::failbit);
+        outData << inFile.rdbuf();
+    } catch(const std::ios_base::failure& f) {
+        REQUIRE(false);
+    }
     alloc_slice result { outData.str() };
     return result;
 }
