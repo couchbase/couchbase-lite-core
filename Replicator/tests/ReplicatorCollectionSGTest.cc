@@ -109,17 +109,6 @@ public:
             c4db_release(verifyDb);
             verifyDb = nullptr;
         }
-        
-        if (hasCreatedTestUser) {
-            HTTPStatus status;
-            alloc_slice saveAuthHeader = _authHeader;
-            _authHeader = AdminAuthHeader;
-            sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
-            _authHeader = saveAuthHeader;
-            if (status != HTTPStatus::OK) {
-                C4WarnError("Fail to delete the test user.");
-            }
-        }
     }
 
     // Database verifyDb:
@@ -319,11 +308,14 @@ public:
     }
 
     bool createTestUser(const vector<string> channelIDs) {
-        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
-        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
+        // Delete it first.
         HTTPStatus status;
         alloc_slice savedAuthHeader = _authHeader;
         _authHeader = AdminAuthHeader;
+        sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
+
+        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
+        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
         sendRemoteRequest("POST", "_user", &status, ERROR_INFO(), bodyWithChannel, true);
         _authHeader = savedAuthHeader;
         return status == HTTPStatus::Created;
@@ -348,7 +340,6 @@ public:
     std::unique_ptr<CipherContextMap> decContextMap;
 
     static constexpr const char* TestUser = "test_user";
-    bool hasCreatedTestUser = false;
 
     // base-64 encoded of "sguser:password"
     static constexpr slice SGUserAuthHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
@@ -994,6 +985,7 @@ lTIN5f2LxWf+8kJqfjlj
     };
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "sguser", "password");
+    (void)collections;
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1211,8 +1203,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
 
-    hasCreatedTestUser = createTestUser(chIDs);
-    REQUIRE(hasCreatedTestUser);
+    REQUIRE(createTestUser(chIDs));
 
     // Create docs on SG:
     _authHeader = SGUserAuthHeader;
@@ -1312,4 +1303,82 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     REQUIRE(doc1);
     CHECK(cbContext.docsEndedPurge == 1);
     CHECK(cbContext.pullFilterPurge == 1);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, TestUser, "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        { {collectionSpecs[0], kC4OneShot, kC4Disabled} }
+    };
+
+    string docID = idPrefix + "doc";
+    vector<string> chIDs {idPrefix+"a"};
+
+    REQUIRE(createTestUser(chIDs));
+
+    // Create a doc and push it:
+    c4::ref<C4Document> docs[collectionCount];
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (size_t i = 0; i < collectionCount; ++i) {
+            docs[i] = c4coll_createDoc(collections[i], slice(docID),
+                                       json2fleece(addChannelToJSON("{}"_sl, "channels"_sl, chIDs).asString().c_str()),
+                                       0, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(docs[i]);
+        }
+    }
+    for (auto coll : collections) {
+        REQUIRE(c4coll_getDocumentCount(coll) == 1);
+    }
+
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (auto doc : docs) {
+            doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(doc);
+            REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        }
+    }
+    for (auto coll : collections) {
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
+    replicate(paramsSetter);
+
+    // Apply a pull and verify that the document is not purged.
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
+    }
+    paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    replicate(paramsSetter);
+    for (auto coll: collections) {
+        C4Error error;
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        CHECK(doc != nullptr);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
 }
