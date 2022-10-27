@@ -858,7 +858,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
-    const string docIDstr = timePrefix() + "apera-doc1";
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apera-doc1";
+    const string channelIDa = idPrefix + "-a";
+    const string channelIDb = idPrefix + "-b";
 
     // Create a temporary user for this test
     HTTPStatus status;
@@ -883,12 +886,22 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
+    enc.beginArray();
+    enc.writeString(channelIDa);
+    enc.writeString(channelIDb);
+    enc.endArray();
+    enc.endDict();
+    fleece::alloc_slice opts { enc.finish() };
+    
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "purgeRevoke", "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
         {{ // three sets of braces? because Xcode
             collectionSpecs[0], kC4Disabled, kC4OneShot,
-            nullslice, nullptr, _pullFilter, this
+            opts, nullptr, _pullFilter, this
         }}
     };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
@@ -913,8 +926,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     auto collRoses = collections[0];
 
+    auto collRosesPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
+
     // Put doc in remote DB, in channels a and b
-    sendRemoteRequest("PUT", docIDstr, &status, &error, R"({"channels":["a", "b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
+    sendRemoteRequest("PUT", collRosesPath, docIDstr, &status, &error,
+                      addChannelToJSON("", "channels"_sl, { channelIDa, channelIDb }));
     REQUIRE(status == HTTPStatus::Created);
 
     // Pull doc into CBL:
@@ -929,12 +945,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     CHECK(_counter == 0);
 
     // Revoked access to channel 'a':
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":["b"]})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
+                      addChannelToJSON("", "admin_channels"_sl, { channelIDb }), true);
     REQUIRE(status == HTTPStatus::OK);
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", docIDstr, &status, &error, R"({"_rev":")" + oRevID + R"(", "channels":["b"],"scopes":{"flowers":{"collections":{"roses":{}}}}})");
+    sendRemoteRequest("PUT", collRosesPath, docIDstr, &status, &error,
+                       addChannelToJSON(R"({"_rev":")" + oRevID, "channels"_sl, { channelIDb }));
 
     C4Log("-------- Pull update");
     replicate(paramsSetter);
