@@ -714,13 +714,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
 
-    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
-        c4Params.collectionCount = replCollections.size();
-        c4Params.collections = replCollections.data();
-    };
-
-    
-
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         TransactionHelper t(db);
@@ -728,49 +721,49 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
-            Encoder enc(c4db_createFleeceEncoder(db));
-            enc.beginDict();
-            enc.beginArray();
-            enc.writeString(channelID);
-            enc.endArray();
+            Encoder encPopulate(c4db_createFleeceEncoder(db));
+            encPopulate.beginDict();
+            encPopulate.beginArray();
+            encPopulate.writeString(channelID);
+            encPopulate.endArray();
             for (int p = 0; p < kNumProps; ++p) {
-                enc.writeKey(format("field%03d", p));
-                enc.writeInt(std::rand());
+                encPopulate.writeKey(format("field%03d", p));
+                encPopulate.writeInt(std::rand());
             }
-            enc.endDict();
-            alloc_slice body = enc.finish();
+            encPopulate.endDict();
+            alloc_slice body = encPopulate.finish();
             string revID = createNewRev(collections[0], slice(docID), body);
         }
     };
 
-    Encoder enc;
-    enc.beginDict();
-    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
-    enc.beginArray();
-    enc.writeString(channelID);
-    enc.endArray();
-    enc.endDict();
-    alloc_slice opts = enc.finish();
-
+    Encoder encOpts;
+    encOpts.beginDict();
+    encOpts.writeKey(C4STR(kC4ReplicatorOptionChannels));
+    encOpts.beginArray();
+    encOpts.writeString(channelID);
+    encOpts.endArray();
+    encOpts.endDict();
+    alloc_slice opts = encOpts.finish();
 
     replCollections = {
             C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled, opts},
         };
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
     populateDB();
 
-    
-
-    
     C4Log("-------- Pushing to SG --------");
     replicate(paramsSetter);
 
     C4Log("-------- Updating docs on SG --------");
     // Now update the docs on SG:
     {
-        JSONEncoder enc;
-        enc.beginDict();
-        enc.writeKey("docs"_sl);
-        enc.beginArray();
+        JSONEncoder encUpdate;
+        encUpdate.beginDict();
+        encUpdate.writeKey("docs"_sl);
+        encUpdate.beginArray();
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
@@ -779,23 +772,23 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
-            enc.beginDict();
-            enc.writeKey("_id"_sl);
-            enc.writeString(docID);
-            enc.writeKey("_rev"_sl);
-            enc.writeString(doc->revID);
+            encUpdate.beginDict();
+            encUpdate.writeKey("_id"_sl);
+            encUpdate.writeString(docID);
+            encUpdate.writeKey("_rev"_sl);
+            encUpdate.writeString(doc->revID);
             for (Dict::iterator i(props); i; ++i) {
-                enc.writeKey(i.keyString());
+                encUpdate.writeKey(i.keyString());
                 auto value = i.value().asInt();
                 if (RandomNumber() % 8 == 0)
                     value = RandomNumber();
-                enc.writeInt(value);
+                encUpdate.writeInt(value);
             }
-            enc.endDict();
+            encUpdate.endDict();
         }
-        enc.endArray();
-        enc.endDict();
-        sendRemoteRequest("POST", repl::Options::collectionSpecToPath(collectionSpecs[0]), "_bulk_docs", &status, &error, enc.finish(), true);
+        encUpdate.endArray();
+        encUpdate.endDict();
+        sendRemoteRequest("POST", repl::Options::collectionSpecToPath(collectionSpecs[0]), "_bulk_docs", &status, &error, encUpdate.finish(), true);
         REQUIRE(status == HTTPStatus::Created);
     }
 
@@ -803,12 +796,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     for (int pass = 1; pass <= 3; ++pass) {
         if (pass == 3) {
             C4Log("-------- DISABLING DELTA SYNC --------");
-            Encoder enc;
-            enc.beginDict();
-            enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
-            enc.writeBool(true);
-            enc.endDict();
-            _options = AllocedDict(enc.finish());
+            Encoder encDelta;
+            encDelta.beginDict();
+            encDelta.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
+            encDelta.writeBool(true);
+            encDelta.endDict();
+            _options = AllocedDict(encDelta.finish());
         }
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
@@ -829,7 +822,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         Stopwatch st;
         replicate(paramsSetter);
         double time = st.elapsed();
-        
+
         C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, kNumDocs/time);
         if (pass == 2)
             timeWithDelta = time;
