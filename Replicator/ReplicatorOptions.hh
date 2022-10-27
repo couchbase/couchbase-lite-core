@@ -135,7 +135,10 @@ namespace litecore { namespace repl {
         static fleece::AllocedDict updateProperties(const fleece::AllocedDict& properties, fleece::slice name, T value) {
             fleece::Encoder enc;
             enc.beginDict();
-            if (value) {
+            if (std::is_same<decltype(value), bool>::value) {
+                enc.writeKey(name);
+                enc.writeBool((bool)value);
+            } else if (std::is_arithmetic<decltype(value)>::value || value) {
                 enc.writeKey(name);
                 enc << value;
             }

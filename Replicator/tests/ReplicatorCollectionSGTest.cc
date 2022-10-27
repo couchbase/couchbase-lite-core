@@ -965,6 +965,7 @@ lTIN5f2LxWf+8kJqfjlj
     };
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "sguser", "password");
+    (void)collections;
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1129,14 +1130,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
         paramsSetter = [&replCollections, &allocedDicts](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
             c4Params.collections     = replCollections.data();
-            fleece::Encoder enc;
-            enc.writeBool(false);
-            Doc doc {enc.finish()};
             allocedDicts.emplace_back(
                 repl::Options::updateProperties(
                     AllocedDict(c4Params.optionsDictFleece),
                     C4STR(kC4ReplicatorOptionAutoPurge),
-                    doc.root())
+                    false)
                 );
             c4Params.optionsDictFleece = allocedDicts.back().data();
         };
