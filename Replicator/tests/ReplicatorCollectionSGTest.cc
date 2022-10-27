@@ -801,7 +801,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             encDelta.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
             encDelta.writeBool(true);
             encDelta.endDict();
-            _options = AllocedDict(encDelta.finish());
+            encDelta.finish();
         }
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
