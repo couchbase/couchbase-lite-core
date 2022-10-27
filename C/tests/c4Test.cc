@@ -628,7 +628,7 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 #pragma mark - FILE IMPORT:
 
 // Parameter is relative filepath for cert from project root
-fleece::alloc_slice C4Test::readFile(std::filesystem::path filepath) {
+fleece::alloc_slice C4Test::readFile(std::string filepath) {
     std::ifstream inFile(filepath);
     REQUIRE(inFile.is_open());
     std::stringstream outData;

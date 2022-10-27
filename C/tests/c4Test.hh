@@ -308,7 +308,7 @@ public:
 
     std::string listSharedKeys(std::string delimiter =", ");
 
-    static fleece::alloc_slice readFile(std::filesystem::path path);
+    static fleece::alloc_slice readFile(std::string path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
                             double timeout =0.0,
