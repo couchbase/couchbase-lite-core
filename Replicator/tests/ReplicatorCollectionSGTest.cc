@@ -697,11 +697,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     HTTPStatus status;
     C4Error error;
 
-    const string docID = idPrefix + "pdfsg-doc1";
+    const string docIDPref = idPrefix + "pdfsg-doc";
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-    constexpr size_t kDocBufSize = 20;
-    constexpr int kNumDocs = 1000, kNumProps = 1000;
+    constexpr size_t kDocBufSize = 30;
+    constexpr int kNumDocs = 50, kNumProps = 1000;
     string revID;
 
     std::array<C4CollectionSpec, collectionCount> collectionSpecs;
@@ -730,7 +730,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
             char docID[kDocBufSize];
-            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
+            snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
@@ -756,7 +756,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         enc.beginArray();
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
             char docID[kDocBufSize];
-            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
+            snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             C4Error error;
             c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), false, kDocGetAll, ERROR_INFO(error));
             REQUIRE(doc);
@@ -798,7 +798,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         deleteAndRecreateDB();
         collections = collectionPreamble(collectionSpecs, "sguser", "password");
         replCollections = {
-            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+            C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
         };
         C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
@@ -822,9 +822,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
-            CHECK(slice(info.docID).hasPrefix("doc-"_sl));
-            CHECK(slice(info.revID).hasPrefix("2-"_sl));
-            ++n;
+            bool IDCheck = CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
+            bool prefix = CHECK(slice(info.revID).hasPrefix("2-"_sl));
+            if(IDCheck && prefix){
+                ++n;
+            }
         }
         CHECK(error.code == 0);
         CHECK(n == kNumDocs);
