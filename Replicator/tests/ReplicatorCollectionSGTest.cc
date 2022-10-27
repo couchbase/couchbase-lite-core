@@ -858,8 +858,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
-     // Admin user for REST requests
-    const string docIDstr = timePrefix() + "apefrr-doc1";
+    // Admin user for REST requests
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apefrr-doc1";
+    const string channelID = idPrefix + "-a";
 
     HTTPStatus status;
     C4Error error;
@@ -880,6 +882,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     };
 
     // Set up replication parameters
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
+    enc.beginArray();
+    enc.writeString(channelID);
+    enc.endArray();
+    enc.endDict();
+    fleece::alloc_slice opts { enc.finish() };
+
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
@@ -889,7 +900,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     std::array<C4ReplicationCollection, collectionCount> replCollections {
         {{
             collectionSpecs[0], kC4Disabled, kC4OneShot,
-            nullslice, nullptr, _pullFilter, this
+            opts, nullptr, _pullFilter, this
         }}
     };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
@@ -912,8 +923,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         }
     };
 
-    sendRemoteRequest("PUT", docIDstr, &status, &error,
-                      "{\"channels\":[\"a\"],\"scopes\":{\"flowers\":{\"collections\":{\"roses\":{}}}}}"_sl);
+    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]), docIDstr, &status, &error,
+                      addChannelToJSON("", "channels"_sl, { channelID }));
     REQUIRE(status == HTTPStatus::Created);
 
     // Pull doc into CBL:
