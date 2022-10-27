@@ -983,9 +983,7 @@ lTIN5f2LxWf+8kJqfjlj
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
-    std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
-    (void)collections;
+    collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1080,8 +1078,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGCol
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
-    std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
+    collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1383,7 +1380,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     CHECK(cbContext.pullFilterPurge == 1);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc SG",
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete then Create Doc SG",
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     constexpr size_t collectionCount = 1;
@@ -1402,14 +1399,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
 
     REQUIRE(createTestUser(chIDs));
 
-    // Create a doc and push it:
-    c4::ref<C4Document> docs[collectionCount];
+    alloc_slice bodyJSON = addChannelToJSON("{}"_sl, "channels"_sl, chIDs);
+
+    // Create a doc in each collection
+    //
+    std::array<c4::ref<C4Document>, collectionCount> docs;
     {
         TransactionHelper t(db);
         C4Error error;
         for (size_t i = 0; i < collectionCount; ++i) {
             docs[i] = c4coll_createDoc(collections[i], slice(docID),
-                                       json2fleece(addChannelToJSON("{}"_sl, "channels"_sl, chIDs).asString().c_str()),
+                                       json2fleece(bodyJSON.asString().c_str()),
                                        0, ERROR_INFO(error));
             REQUIRE(error.code == 0);
             REQUIRE(docs[i]);
@@ -1419,29 +1419,56 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
         REQUIRE(c4coll_getDocumentCount(coll) == 1);
     }
 
+    // Push parameter
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
     };
+    // Push to the remote
     replicate(paramsSetter);
 
     // Delete the doc and push it:
+    //
     {
         TransactionHelper t(db);
         C4Error error;
-        for (auto doc : docs) {
+        for (auto& doc : docs) {
             doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
             REQUIRE(error.code == 0);
-            REQUIRE(doc);
-            REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
         }
     }
-    for (auto coll : collections) {
-        CHECK(c4coll_getDocumentCount(coll) == 0);
+    for (size_t i = 0; i < collectionCount; ++i) {
+        REQUIRE(docs[i]);
+        REQUIRE(docs[i]->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        REQUIRE(c4coll_getDocumentCount(collections[i]) == 0);
     }
+    // Push the deleted docs
     replicate(paramsSetter);
 
-    // Apply a pull and verify that the document is not purged.
+    bool deleteThenCreate = true;
+    SECTION("Delete then Create") {
+        // Create a new doc with the same id that was deleted:
+        {
+            TransactionHelper t(db);
+            for (size_t i = 0; i < collectionCount; ++i) {
+                C4Error error;
+                docs[i] = c4coll_createDoc(collections[i], slice(docID),
+                                           json2fleece(bodyJSON.asString().c_str()),
+                                           0, ERROR_INFO(error));
+                REQUIRE(error.code == 0);
+                REQUIRE(docs[i] != nullptr);
+            }
+        }
+        for (auto coll : collections) {
+            REQUIRE(c4coll_getDocumentCount(coll) == 1);
+        }
+    }
+
+    SECTION("Delete without Create") {
+        deleteThenCreate = false;
+    }
+
+    // Perform Pull
     for (size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
     }
@@ -1449,14 +1476,26 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
     };
-
     replicate(paramsSetter);
-    for (auto coll: collections) {
-        C4Error error;
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO(error));
-        CHECK(error.code == 0);
-        CHECK(doc != nullptr);
-        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
-        CHECK(c4coll_getDocumentCount(coll) == 0);
+
+    if (deleteThenCreate) {
+        for (size_t i = 0; i < collectionCount; ++i) {
+            C4Error error;
+            c4::ref<C4Document> doc2 = c4coll_getDoc(collections[i], slice(docID), true, kDocGetAll, ERROR_INFO(error));
+            CHECK(error.code == 0);
+            CHECK(doc2 != nullptr);
+            CHECK(doc2->revID == docs[i]->revID);
+            CHECK(c4coll_getDocumentCount(collections[i]) == 1);
+        }
+    } else {
+        for (size_t i = 0; i < collectionCount; ++i) {
+            C4Error error;
+            c4::ref<C4Document> doc2 = c4coll_getDoc(collections[i], slice(docID), true,
+                                                     kDocGetAll, ERROR_INFO(error));
+            CHECK(error.code == 0);
+            CHECK(doc2 != nullptr);
+            CHECK(doc2->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+            CHECK(c4coll_getDocumentCount(collections[i]) == 0);
+        }
     }
 }
