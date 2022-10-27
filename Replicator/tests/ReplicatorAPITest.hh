@@ -88,7 +88,7 @@ public:
         }
 
         if (Address::isSecure(_address)) {
-            pinnedCert = readFile(sReplicatorFixturesDir + "cert.pem");
+            pinnedCert = readFile(sReplicatorFixturesDir + "cert/cert.pem");
         }
 
         _onDocsEnded = onDocsEnded;

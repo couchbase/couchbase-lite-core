@@ -24,6 +24,8 @@
 #include "fleece/Mutable.hh"
 #include "fleece/Fleece.h"
 #include <array>
+#include <fstream>
+#include <iostream>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run in locally with the following environment.
@@ -102,6 +104,13 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
+    ReplicatorCollectionSGTest()
+        : ReplicatorAPITest() {
+        pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
+        _address = {kC4Replicator2TLSScheme,
+                    C4STR("localhost"),
+                    4984};
+    }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
@@ -110,7 +119,7 @@ public:
             verifyDb = nullptr;
         }
     }
-
+    
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {
