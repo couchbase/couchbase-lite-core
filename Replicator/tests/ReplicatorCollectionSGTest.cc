@@ -404,7 +404,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
 
     C4Log("-------- Second Replication --------");
     replicate(paramsSetter);
-    verifyDocs(collectionSpecs, docIDs);
+    docIDs[0] = getDocIDs(collections[0]);
+    verifyDocs(collectionSpecs, docIDs, true);
     
 }
 
