@@ -20,6 +20,7 @@
 #include "fleece/Expert.hh"
 #include <thread>
 #include <vector>
+#include <fstream>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
 // in the `c4` namespace. Check it out!
