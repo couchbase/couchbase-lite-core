@@ -852,8 +852,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
     const string docIDstr = idPrefix + "apera-doc1";
-    const string channelIDa = idPrefix + "-a";
-    const string channelIDb = idPrefix + "-b";
+    const string channelIDa = idPrefix + "a";
+    const string channelIDb = idPrefix + "b";
+
+    _authHeader = SGUserAuthHeader;
 
     // Create a temporary user for this test
     HTTPStatus status;
@@ -885,20 +887,31 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     enc.writeString(channelIDa);
     enc.writeString(channelIDb);
     enc.endArray();
+    enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
+    enc.writeBool(true);
     enc.endDict();
-    fleece::alloc_slice opts { enc.finish() };
+    AllocedDict opts { enc.finish() };
 
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "purgeRevoke", "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
         {{ // three sets of braces? because Xcode
             collectionSpecs[0], kC4Disabled, kC4OneShot,
-            opts, nullptr, _pullFilter, this
+            opts.data(), nullptr, _pullFilter, this
         }}
     };
-    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+
+    C4ParamsSetter paramsSetter = [&replCollections, &opts](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
+        for(auto it = Dict(opts).begin(); it != Dict(opts).end(); ++it) {
+            auto updated = repl::Options::updateProperties(
+                    AllocedDict(c4Params.optionsDictFleece),
+                    it.key().asstring(),
+                    it.value()
+                    );
+            c4Params.optionsDictFleece = updated.data();
+        }
     };
 
     // Setup onDocsEnded:
@@ -922,7 +935,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // Put doc in remote DB, in channels a and b
     sendRemoteRequest("PUT", collRosesPath, docIDstr, &status, &error,
-                      addChannelToJSON("", "channels"_sl, { channelIDa, channelIDb }));
+                      addChannelToJSON("{}", "channels"_sl, { channelIDa, channelIDb }));
     REQUIRE(status == HTTPStatus::Created);
 
     // Pull doc into CBL:
@@ -938,13 +951,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // Revoked access to channel 'a':
     sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
-                      addChannelToJSON("", "admin_channels"_sl, { channelIDb }), true);
+                      addChannelToJSON("{}", "admin_channels"_sl, { channelIDb }), true);
     REQUIRE(status == HTTPStatus::OK);
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
     sendRemoteRequest("PUT", collRosesPath, docIDstr, &status, &error,
-                       addChannelToJSON(R"({"_rev":")" + oRevID, "channels"_sl, { channelIDb }));
+                       addChannelToJSON(R"({"_rev":")" + oRevID + "\"}", "channels"_sl, { channelIDb }));
 
     C4Log("-------- Pull update");
     replicate(paramsSetter);
@@ -959,7 +972,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     auto curRevID = slice(doc1->revID).asString();
 
     // Revoke access to all channels:
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":[]})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
+                      addChannelToJSON("{}", "admin_channels"_sl, { }), true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pull the revoked");
@@ -972,7 +986,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     CHECK(_counter == 1);
 
     // Purge remote doc so test will succeed multiple times without flushing bucket
-    sendRemoteRequest("POST", "_purge", &status, &error, "{\"" + docIDstr + "\":[\"*\"]}", true);
+//    sendRemoteRequest("POST", "_purge", &status, &error, "{\"" + docIDstr + "\":[\"*\"]}", true);
     // Delete temp user
     sendRemoteRequest("DELETE", "_user/purgeRevoke", &status, &error, nullslice, true);
 }
