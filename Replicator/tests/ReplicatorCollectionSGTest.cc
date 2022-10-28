@@ -24,6 +24,8 @@
 #include "fleece/Mutable.hh"
 #include "fleece/Fleece.h"
 #include <array>
+#include <fstream>
+#include <iostream>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run in locally with the following environment.
@@ -104,24 +106,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
     ReplicatorCollectionSGTest()
         : ReplicatorAPITest() {
-        pinnedCert = R"(-----BEGIN CERTIFICATE-----
-MIICqzCCAZMCFGrxed0RuxP+uYOzr9wIeRp4gBjHMA0GCSqGSIb3DQEBCwUAMBAx
-DjAMBgNVBAMMBUludGVyMB4XDTIyMTAyNTEwMjAzMFoXDTMyMTAyMjEwMjAzMFow
-FDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-CgKCAQEAknbSS/newbZxs4afkUEgMO9WzE1LJAZ7oj3ovLzbsDYVJ3Ct1eBA2yYN
-t87ROTvJ85mw4lQ3puMhWGGddYUQzBT7rdtpvydk9aNIefLwU6Yn6YvXC1asxSsb
-yFr75j21UZ+qHZ1B4DYAR09Qaps43OKGKJl+4QBUkcLp+Hgo+5e29buv3VvoSK42
-MnYsFFtgjVsLBJcL0L9t5gxujPiK8jbdXDYN3Md602rKua9LNwff02w8FWJ8/nLZ
-LxtAVidgHJPEY2kDj+S2fUOaAypHcvkHAJ9KKwqHYpwvWzv32WpmmpKBxoiP2NFI
-655Efmx7g3pJ2LvUbyOthi8k/VT3/wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQC3
-c+kGcvn3d9QyGYif2CtyAYGRxUQpMjYjqQiwyZmKNp/xErgns5dD+Ri6kEOcq0Zl
-MrsPV5iprAKCvEDU6CurGE+sUiJH1csjPx+uCcUlZwT+tZF71IBJtkgfQx2a9Wfs
-CA+qS9xaNhuYFkbSIbA5uiSUf9MRxafY8mqjtrOtdPf4fxN5YVsbOzJLtrcVVL9i
-Y5rPGtUwixeiZsuGXYkFGLCZx8DWQQrENSu3PI5hshdHgPoHyqxls4yDTDyF3nqq
-w9Q3o9L/YDg9NGdW1XQoBgxgKy5G3YT7NGkZXUOJCHsupyoK4GGZQGxtb2eYMg/H
-lTIN5f2LxWf+8kJqfjlj
------END CERTIFICATE-----)";
-
+        pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
         _address = {kC4Replicator2TLSScheme,
                     C4STR("localhost"),
                     4984};
@@ -134,7 +119,7 @@ lTIN5f2LxWf+8kJqfjlj
             verifyDb = nullptr;
         }
     }
-
+    
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {
@@ -323,12 +308,26 @@ lTIN5f2LxWf+8kJqfjlj
         auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
         HTTPStatus status;
         alloc_slice saveAuthHeader = _authHeader;
-        _authHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
+        _authHeader = AdminAuthHeader;
         sendRemoteRequest("PUT", "_user/sguser", &status,
                                 err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
                                 bodyWithChannel, true);
         _authHeader = saveAuthHeader;
         return status == HTTPStatus::OK;
+    }
+
+    bool createTestUser(const vector<string> channelIDs) {
+        // Delete it first.
+        HTTPStatus status;
+        alloc_slice savedAuthHeader = _authHeader;
+        _authHeader = AdminAuthHeader;
+        sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
+
+        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
+        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
+        sendRemoteRequest("POST", "_user", &status, ERROR_INFO(), bodyWithChannel, true);
+        _authHeader = savedAuthHeader;
+        return status == HTTPStatus::Created;
     }
 
     struct CipherContext {
@@ -349,8 +348,14 @@ lTIN5f2LxWf+8kJqfjlj
     std::unique_ptr<CipherContextMap> encContextMap;
     std::unique_ptr<CipherContextMap> decContextMap;
 
-    // base-64 encoded of, "Basic sguser:password"
-    static constexpr slice SGUserCredential = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    static constexpr const char* TestUser = "test_user";
+
+    // base-64 encoded of "sguser:password"
+    static constexpr slice SGUserAuthHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
+    // base-64 of "test_user:password"
+    static constexpr slice TestUserAuthHeader = "Basic dGVzdF91c2VyOnBhc3N3b3Jk"_sl;
+    // base-64 of, "Administrator:password"
+    static constexpr slice AdminAuthHeader = "Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA=="_sl;
 };
 
 
@@ -1146,6 +1151,7 @@ lTIN5f2LxWf+8kJqfjlj
     };
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "sguser", "password");
+    (void)collections;
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1206,9 +1212,60 @@ zzcNjA18pjiTtpuVeNBUAsBJcbHkNQLKnHGPsBNMAedVCe+AM5CVyZdDlZs//fov
 
     replicate(paramsSetter);
 }
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGColl", "[.SyncServerCollection]") {
+    if(!Address::isSecure(_address)) {
+        _address = { kC4Replicator2TLSScheme,
+                    C4STR("localhost"),
+                    4984 };
+    }
+    REQUIRE(Address::isSecure(_address));
+
+    // Using an unmatched pinned cert:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
+        "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
+        "VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDQ\r\n" \
+        "vl0M5D7ZglW76p428x7iQoSkhNyRBEjZgSqvQW3jAIsIElWu7mVIIAm1tpZ5i5+Q\r\n" \
+        "CHnFLha1TDACb0MUa1knnGj/8EsdOADvBfdBq7AotypiqBayRUNdZmLoQEhDDsen\r\n" \
+        "pEHMDmBrDsWrgNG82OMFHmjK+x0RioYTOlvBbqMAX8Nqp6Yu/9N2vW7YBZ5ovsr7\r\n" \
+        "vdFJkSgUYXID9zw/MN4asBQPqMT6jMwlxR1bPqjsNgXrMOaFHT/2xXdfCvq2TBXu\r\n" \
+        "H7evR6F7ayNcMReeMPuLOSWxA6Fefp8L4yDMW23jizNIGN122BgJXTyLXFtvg7CQ\r\n" \
+        "tMnE7k07LLYg3LcIeamrAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABdQVNSIWcDS\r\n" \
+        "sDPXk9ZMY3stY9wj7VZF7IO1V57n+JYV1tJsyU7HZPgSle5oGTSkB2Dj1oBuPqnd\r\n" \
+        "8XTS/b956hdrqmzxNii8sGcHvWWaZhHrh7Wqa5EceJrnyVM/Q4uoSbOJhLntLE+a\r\n" \
+        "FeFLQkPpJxdtjEUHSAB9K9zCO92UC/+mBUelHgztsTl+PvnRRGC+YdLy521ST8BI\r\n" \
+        "luKJ3JANncQ4pCTrobH/EuC46ola0fxF8G5LuP+kEpLAh2y2nuB+FWoUatN5FQxa\r\n" \
+        "+4F330aYRvDKDf8r+ve3DtchkUpV9Xa1kcDFyTcYGKBrINtjRmCIblA1fezw59ZT\r\n" \
+        "S5TnM2/TjtQ=\r\n"                                                     \
+        "-----END CERTIFICATE-----\r\n";
+
+    // One-shot push setup
+    constexpr size_t collectionCount = 1;
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+            {{ // three sets of braces? because Xcode
+                     collectionSpecs[0], kC4OneShot, kC4Disabled
+             }}
+    };
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    // expectSuccess = false so we can check the error code
+    replicate(paramsSetter, false);
+    CHECK(_callbackStatus.error.domain == NetworkDomain);
+    CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUntrusted);
+}
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc From Channel SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
@@ -1230,7 +1287,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     REQUIRE(assignUserChannel(chIDs, &error));
 
     // Create docs on SG:
-    _authHeader = SGUserCredential;
+    _authHeader = SGUserAuthHeader;
     for (size_t i = 0; i < collectionCount; ++i) {
         sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
                           doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
@@ -1294,10 +1351,33 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
             &context     // callbackContext
         };
     }
-    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
-        c4Params.collectionCount = replCollections.size();
-        c4Params.collections     = replCollections.data();
-    };
+
+    bool autoPurgeEnabled {true};
+    C4ParamsSetter paramsSetter {nullptr};
+    SECTION("Auto Purge Enabled") {
+        paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+            c4Params.collectionCount = replCollections.size();
+            c4Params.collections     = replCollections.data();
+        };
+        autoPurgeEnabled = true;
+    }
+
+    std::vector<AllocedDict> allocedDicts;
+    SECTION("Auto Purge Disabled") {
+        paramsSetter = [&replCollections, &allocedDicts](C4ReplicatorParameters& c4Params) {
+            c4Params.collectionCount = replCollections.size();
+            c4Params.collections     = replCollections.data();
+            allocedDicts.emplace_back(
+                repl::Options::updateProperties(
+                    AllocedDict(c4Params.optionsDictFleece),
+                    C4STR(kC4ReplicatorOptionAutoPurge),
+                    false)
+                );
+            c4Params.optionsDictFleece = allocedDicts.back().data();
+        };
+        autoPurgeEnabled = false;
+    }
+
     replicate(paramsSetter);
 
     // Verify: (on collections[0] only
@@ -1339,11 +1419,210 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     context.reset();
     replicate(paramsSetter);
 
-    // Verify if doc1 is purged:
     doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-    REQUIRE(!doc1);
-    CHECK(context.docsEndedTotal == 1);
     CHECK(context.docsEndedPurge == 1);
-    CHECK(context.pullFilterTotal == 1);
-    CHECK(context.pullFilterPurge == 1);
+    if (autoPurgeEnabled) {
+        // Verify if doc1 is purged:
+        REQUIRE(!doc1);
+        CHECK(context.pullFilterPurge == 1);
+    } else {
+        REQUIRE(doc1);
+        // No pull filter called
+        CHECK(context.pullFilterTotal == 0);
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Removed Revision SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    // one collection for now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, TestUser, "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    string doc1ID = idPrefix + "doc1";
+    vector<string> chIDs {idPrefix+"a"};
+
+    REQUIRE(createTestUser(chIDs));
+
+    // Create docs on SG:
+    _authHeader = SGUserAuthHeader;
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                        doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
+    }
+
+    struct CBContext {
+         int docsEndedTotal = 0;
+         int docsEndedPurge = 0;
+         int pullFilterTotal = 0;
+         int pullFilterPurge = 0;
+         void reset() {
+             docsEndedTotal = 0;
+             docsEndedPurge = 0;
+             pullFilterTotal = 0;
+             pullFilterPurge = 0;
+         }
+     } cbContext;
+
+    // Setup pull filter to filter the _removed rev:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void *context)
+    {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void*) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            &cbContext     // callbackContext
+        };
+    }
+    C4ParamsSetter paramsSetter
+        = [&replCollections](C4ReplicatorParameters& c4Params)
+    {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
+                                             true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(cbContext.docsEndedTotal == 1);
+    CHECK(cbContext.docsEndedPurge == 0);
+    CHECK(cbContext.pullFilterTotal == 1);
+    CHECK(cbContext.pullFilterPurge == 0);
+    
+    // Remove doc from all channels
+    auto oRevID = slice(doc1->revID).asString();
+    for (size_t i = 0; i < collectionCount; ++i) {
+        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+                          doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}", "channels"_sl, {}));
+    }
+
+    C4Log("-------- Pull the removed");
+    cbContext.reset();
+    replicate(paramsSetter);
+
+    // Verify if doc1 is not purged as the removed rev is filtered:
+    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc1);
+    CHECK(cbContext.docsEndedPurge == 1);
+    CHECK(cbContext.pullFilterPurge == 1);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, TestUser, "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        { {collectionSpecs[0], kC4OneShot, kC4Disabled} }
+    };
+
+    string docID = idPrefix + "doc";
+    vector<string> chIDs {idPrefix+"a"};
+
+    REQUIRE(createTestUser(chIDs));
+
+    // Create a doc and push it:
+    c4::ref<C4Document> docs[collectionCount];
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (size_t i = 0; i < collectionCount; ++i) {
+            docs[i] = c4coll_createDoc(collections[i], slice(docID),
+                                       json2fleece(addChannelToJSON("{}"_sl, "channels"_sl, chIDs).asString().c_str()),
+                                       0, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(docs[i]);
+        }
+    }
+    for (auto coll : collections) {
+        REQUIRE(c4coll_getDocumentCount(coll) == 1);
+    }
+
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (auto doc : docs) {
+            doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(doc);
+            REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        }
+    }
+    for (auto coll : collections) {
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
+    replicate(paramsSetter);
+
+    // Apply a pull and verify that the document is not purged.
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
+    }
+    paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    replicate(paramsSetter);
+    for (auto coll: collections) {
+        C4Error error;
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        CHECK(doc != nullptr);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
 }
