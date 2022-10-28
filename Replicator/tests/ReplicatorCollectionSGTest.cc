@@ -24,6 +24,8 @@
 #include "fleece/Mutable.hh"
 #include "fleece/Fleece.h"
 #include <array>
+#include <fstream>
+#include <iostream>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run in locally with the following environment.
@@ -102,6 +104,13 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
+    ReplicatorCollectionSGTest()
+        : ReplicatorAPITest() {
+        pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
+        _address = {kC4Replicator2TLSScheme,
+                    C4STR("localhost"),
+                    4984};
+    }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
             bool deletedDb = c4db_delete(verifyDb, ERROR_INFO());
@@ -109,19 +118,8 @@ public:
             c4db_release(verifyDb);
             verifyDb = nullptr;
         }
-        
-        if (hasCreatedTestUser) {
-            HTTPStatus status;
-            alloc_slice saveAuthHeader = _authHeader;
-            _authHeader = AdminAuthHeader;
-            sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
-            _authHeader = saveAuthHeader;
-            if (status != HTTPStatus::OK) {
-                C4WarnError("Fail to delete the test user.");
-            }
-        }
     }
-
+    
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {
@@ -319,11 +317,14 @@ public:
     }
 
     bool createTestUser(const vector<string> channelIDs) {
-        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
-        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
+        // Delete it first.
         HTTPStatus status;
         alloc_slice savedAuthHeader = _authHeader;
         _authHeader = AdminAuthHeader;
+        sendRemoteRequest("DELETE", "_user/"s+TestUser, &status, ERROR_INFO(), nullslice, true);
+
+        string body = "{\"name\":\""s + TestUser + "\",\"password\":\"password\"}";
+        alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
         sendRemoteRequest("POST", "_user", &status, ERROR_INFO(), bodyWithChannel, true);
         _authHeader = savedAuthHeader;
         return status == HTTPStatus::Created;
@@ -348,7 +349,6 @@ public:
     std::unique_ptr<CipherContextMap> decContextMap;
 
     static constexpr const char* TestUser = "test_user";
-    bool hasCreatedTestUser = false;
 
     // base-64 encoded of "sguser:password"
     static constexpr slice SGUserAuthHeader = "Basic c2d1c2VyOnBhc3N3b3Jk"_sl;
@@ -1076,6 +1076,7 @@ lTIN5f2LxWf+8kJqfjlj
     };
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, "sguser", "password");
+    (void)collections;
     std::array<C4ReplicationCollection, collectionCount> replCollections {
             {{ // three sets of braces? because Xcode
                      collectionSpecs[0], kC4OneShot, kC4Disabled
@@ -1136,9 +1137,60 @@ zzcNjA18pjiTtpuVeNBUAsBJcbHkNQLKnHGPsBNMAedVCe+AM5CVyZdDlZs//fov
 
     replicate(paramsSetter);
 }
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGColl", "[.SyncServerCollection]") {
+    if(!Address::isSecure(_address)) {
+        _address = { kC4Replicator2TLSScheme,
+                    C4STR("localhost"),
+                    4984 };
+    }
+    REQUIRE(Address::isSecure(_address));
+
+    // Using an unmatched pinned cert:
+    pinnedCert =                                                               \
+        "-----BEGIN CERTIFICATE-----\r\n"                                      \
+        "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
+        "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
+        "VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDQ\r\n" \
+        "vl0M5D7ZglW76p428x7iQoSkhNyRBEjZgSqvQW3jAIsIElWu7mVIIAm1tpZ5i5+Q\r\n" \
+        "CHnFLha1TDACb0MUa1knnGj/8EsdOADvBfdBq7AotypiqBayRUNdZmLoQEhDDsen\r\n" \
+        "pEHMDmBrDsWrgNG82OMFHmjK+x0RioYTOlvBbqMAX8Nqp6Yu/9N2vW7YBZ5ovsr7\r\n" \
+        "vdFJkSgUYXID9zw/MN4asBQPqMT6jMwlxR1bPqjsNgXrMOaFHT/2xXdfCvq2TBXu\r\n" \
+        "H7evR6F7ayNcMReeMPuLOSWxA6Fefp8L4yDMW23jizNIGN122BgJXTyLXFtvg7CQ\r\n" \
+        "tMnE7k07LLYg3LcIeamrAgMBAAEwDQYJKoZIhvcNAQELBQADggEBABdQVNSIWcDS\r\n" \
+        "sDPXk9ZMY3stY9wj7VZF7IO1V57n+JYV1tJsyU7HZPgSle5oGTSkB2Dj1oBuPqnd\r\n" \
+        "8XTS/b956hdrqmzxNii8sGcHvWWaZhHrh7Wqa5EceJrnyVM/Q4uoSbOJhLntLE+a\r\n" \
+        "FeFLQkPpJxdtjEUHSAB9K9zCO92UC/+mBUelHgztsTl+PvnRRGC+YdLy521ST8BI\r\n" \
+        "luKJ3JANncQ4pCTrobH/EuC46ola0fxF8G5LuP+kEpLAh2y2nuB+FWoUatN5FQxa\r\n" \
+        "+4F330aYRvDKDf8r+ve3DtchkUpV9Xa1kcDFyTcYGKBrINtjRmCIblA1fezw59ZT\r\n" \
+        "S5TnM2/TjtQ=\r\n"                                                     \
+        "-----END CERTIFICATE-----\r\n";
+
+    // One-shot push setup
+    constexpr size_t collectionCount = 1;
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+            {{ // three sets of braces? because Xcode
+                     collectionSpecs[0], kC4OneShot, kC4Disabled
+             }}
+    };
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    // expectSuccess = false so we can check the error code
+    replicate(paramsSetter, false);
+    CHECK(_callbackStatus.error.domain == NetworkDomain);
+    CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUntrusted);
+}
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc From Channel SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
@@ -1224,10 +1276,33 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
             &context     // callbackContext
         };
     }
-    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
-        c4Params.collectionCount = replCollections.size();
-        c4Params.collections     = replCollections.data();
-    };
+
+    bool autoPurgeEnabled {true};
+    C4ParamsSetter paramsSetter {nullptr};
+    SECTION("Auto Purge Enabled") {
+        paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+            c4Params.collectionCount = replCollections.size();
+            c4Params.collections     = replCollections.data();
+        };
+        autoPurgeEnabled = true;
+    }
+
+    std::vector<AllocedDict> allocedDicts;
+    SECTION("Auto Purge Disabled") {
+        paramsSetter = [&replCollections, &allocedDicts](C4ReplicatorParameters& c4Params) {
+            c4Params.collectionCount = replCollections.size();
+            c4Params.collections     = replCollections.data();
+            allocedDicts.emplace_back(
+                repl::Options::updateProperties(
+                    AllocedDict(c4Params.optionsDictFleece),
+                    C4STR(kC4ReplicatorOptionAutoPurge),
+                    false)
+                );
+            c4Params.optionsDictFleece = allocedDicts.back().data();
+        };
+        autoPurgeEnabled = false;
+    }
+
     replicate(paramsSetter);
 
     // Verify: (on collections[0] only
@@ -1269,13 +1344,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Remove Doc Fr
     context.reset();
     replicate(paramsSetter);
 
-    // Verify if doc1 is purged:
     doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-    REQUIRE(!doc1);
-    CHECK(context.docsEndedTotal == 1);
     CHECK(context.docsEndedPurge == 1);
-    CHECK(context.pullFilterTotal == 1);
-    CHECK(context.pullFilterPurge == 1);
+    if (autoPurgeEnabled) {
+        // Verify if doc1 is purged:
+        REQUIRE(!doc1);
+        CHECK(context.pullFilterPurge == 1);
+    } else {
+        REQUIRE(doc1);
+        // No pull filter called
+        CHECK(context.pullFilterTotal == 0);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Removed Revision SG",
@@ -1293,8 +1372,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
 
-    hasCreatedTestUser = createTestUser(chIDs);
-    REQUIRE(hasCreatedTestUser);
+    REQUIRE(createTestUser(chIDs));
 
     // Create docs on SG:
     _authHeader = SGUserAuthHeader;
@@ -1394,4 +1472,82 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     REQUIRE(doc1);
     CHECK(cbContext.docsEndedPurge == 1);
     CHECK(cbContext.pullFilterPurge == 1);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, TestUser, "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        { {collectionSpecs[0], kC4OneShot, kC4Disabled} }
+    };
+
+    string docID = idPrefix + "doc";
+    vector<string> chIDs {idPrefix+"a"};
+
+    REQUIRE(createTestUser(chIDs));
+
+    // Create a doc and push it:
+    c4::ref<C4Document> docs[collectionCount];
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (size_t i = 0; i < collectionCount; ++i) {
+            docs[i] = c4coll_createDoc(collections[i], slice(docID),
+                                       json2fleece(addChannelToJSON("{}"_sl, "channels"_sl, chIDs).asString().c_str()),
+                                       0, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(docs[i]);
+        }
+    }
+    for (auto coll : collections) {
+        REQUIRE(c4coll_getDocumentCount(coll) == 1);
+    }
+
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+    replicate(paramsSetter);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        for (auto doc : docs) {
+            doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+            REQUIRE(error.code == 0);
+            REQUIRE(doc);
+            REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        }
+    }
+    for (auto coll : collections) {
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
+    replicate(paramsSetter);
+
+    // Apply a pull and verify that the document is not purged.
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4Disabled, kC4OneShot};
+    }
+    paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+    };
+
+    replicate(paramsSetter);
+    for (auto coll: collections) {
+        C4Error error;
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        CHECK(doc != nullptr);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+        CHECK(c4coll_getDocumentCount(coll) == 0);
+    }
 }
