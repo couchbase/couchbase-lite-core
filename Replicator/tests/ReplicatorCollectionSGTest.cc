@@ -849,6 +849,106 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     }
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGColl", "[.SyncServerCollection]") {
+    _authHeader = SGUserAuthHeader;
+    const string idPrefix = timePrefix();
+    const string docID = idPrefix + "uocd-doc";
+    const string channelID = idPrefix + "a";
+
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+    auto collPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
+
+    // Create a conflicted doc on SG, and resolve the conflict
+    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+                      addChannelToJSON(R"({"_rev":"1-aaaa","foo":1})",
+                                       "channels"_sl, { channelID }), true);
+    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+                      addChannelToJSON(R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
+                                       "channels"_sl, { channelID }), true);
+    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+                      addChannelToJSON(R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
+                                       "channels"_sl, { channelID }), true);
+    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+                      addChannelToJSON(R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})",
+                                       "channels"_sl, { channelID }), true);
+
+    // Set up pull replication
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
+    enc.beginArray();
+    enc.writeString(channelID);
+    enc.endArray();
+    enc.endDict();
+    AllocedDict opts { enc.finish() };
+
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        {{
+            collectionSpecs[0], kC4Disabled, kC4OneShot, opts.data()
+        }}
+    };
+    C4ParamsSetter paramsSetter = [&replCollections, &opts](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+        for(auto it = Dict(opts).begin(); it != Dict(opts).end(); ++it) {
+            auto updated = repl::Options::updateProperties(
+                    AllocedDict(c4Params.optionsDictFleece),
+                    it.key().asstring(),
+                    it.value()
+            );
+            c4Params.optionsDictFleece = updated.data();
+        }
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(paramsSetter);
+
+    // Verify doc:
+    c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    C4Slice revID = C4STR("2-bbbb");
+    CHECK(doc->revID == revID);
+    CHECK((doc->flags & kDocDeleted) == 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
+
+    // Update doc:
+    createRev(collections[0], slice(docID), "3-ffff"_sl, kFleeceBody);
+
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
+            { getDocIDs(collections[0]) }
+    };
+
+    // Push replication set-up
+    replCollections[0] = {
+             collectionSpecs[0], kC4OneShot, kC4Disabled, opts.data()
+    };
+    paramsSetter = [&replCollections, &opts](C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections = replCollections.data();
+        for(auto it = Dict(opts).begin(); it != Dict(opts).end(); ++it) {
+            auto updated = repl::Options::updateProperties(
+                    AllocedDict(c4Params.optionsDictFleece),
+                    it.key().asstring(),
+                    it.value()
+            );
+            c4Params.optionsDictFleece = updated.data();
+        }
+    };
+
+    // Push change back to SG:
+    C4Log("-------- Pushing");
+    replicate(paramsSetter);
+
+    verifyDocs(collectionSpecs, docIDs);
+}
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
