@@ -1380,7 +1380,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     CHECK(cbContext.pullFilterPurge == 1);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete then Create Doc SG",
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc or Delete then Create Doc SG",
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     constexpr size_t collectionCount = 1;
@@ -1446,7 +1446,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     replicate(paramsSetter);
 
     bool deleteThenCreate = true;
-    SECTION("Delete then Create") {
+    SECTION("Delete then Create Doc") {
         // Create a new doc with the same id that was deleted:
         {
             TransactionHelper t(db);
@@ -1464,7 +1464,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
         }
     }
 
-    SECTION("Delete without Create") {
+    SECTION("Delete Doc") {
         deleteThenCreate = false;
     }
 
