@@ -1714,3 +1714,66 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
 }
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
+                 "[.SyncServerCollection]") {
+    // From <https://github.com/couchbase/couchbase-lite-core/issues/652>:
+    // 1. Setup CB cluster & Configure SG
+    // 2. Create a document using POST API via SG
+    // 3. Create a cblite db on local server using cblite serve
+    //      ./cblite/build/cblite serve  --create db.cblite2
+    // 4. Replicate between SG -> db.cblite2
+    //      ./cblite/build/cblite pull  ws://172.23.100.204:4985/db db.cblite2
+    // 5. Validate number of records on db.cblite2 ->Should be  equal to number of documents created in Step2
+    // 6. Update existing document using update API via SG (more than twice)
+    //      PUT sghost:4985/bd/doc_id?=rev_id
+    // 7. run replication between SG -> db.cblite2 again
+
+    string idPrefix = timePrefix();
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4ReplicationCollection, collectionCount> replCollections {
+        { {collectionSpecs[0], kC4Disabled, kC4OneShot} }
+    };
+
+    string docID = idPrefix + "doc";
+
+    _authHeader = SGUserAuthHeader;
+    alloc_slice collPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
+    sendRemoteRequest("PUT", collPath, docID+"?new_edits=false",
+                      "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
+
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
+        unordered_map<alloc_slice, unsigned> {
+            { alloc_slice(docID), 0 }
+        }
+    };
+    std::vector<AllocedDict> allocedDicts;
+    C4ParamsSetter paramsSetter = [&replCollections, &docIDs, &allocedDicts]
+    (C4ReplicatorParameters& c4Params) {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+        setDocIDs(c4Params, replCollections, docIDs, allocedDicts);
+    };
+    replicate(paramsSetter);
+    CHECK(_callbackStatus.progress.documentCount == 1);
+    c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID),
+                                            true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->revID == "1-1111"_sl);
+
+    sendRemoteRequest("PUT", collPath, docID, "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
+    sendRemoteRequest("PUT", collPath, docID,
+                      "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
+    sendRemoteRequest("PUT", collPath, docID,
+                      "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
+
+    replicate(paramsSetter);
+    doc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetCurrentRev, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
+}
