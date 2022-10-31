@@ -861,7 +861,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     HTTPStatus status;
     C4Error error;
     sendRemoteRequest("POST", "_user", &status, &error, R"({"name":"purgeRevoke","password":"password"})", true);
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error, R"({"admin_channels":["*"]})", true);
+    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
+                      addChannelToJSON("{}", "admin_channels", { channelIDa, channelIDb }), true);
     REQUIRE(status == HTTPStatus::OK);
 
     // Setup pull filter:
