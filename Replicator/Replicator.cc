@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options *options)
-    :Worker(new Connection(webSocket, options->properties, *this),
+    :Worker(new Connection(webSocket, options->properties, {}),
             nullptr,
             options,
             make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()),
@@ -127,7 +127,10 @@ namespace litecore { namespace repl {
             Assert(_connectionState == Connection::kClosed);
             Signpost::begin(Signpost::replication, uintptr_t(this));
             _connectionState = Connection::kConnecting;
-            connection().start();
+
+            // _start'ed Replicator must be _onClose'ed
+            _weakConnectionDelegateThis = new WeakHolder<blip::ConnectionDelegate>(this);
+            connection().start(_weakConnectionDelegateThis);
             // Now wait for _onConnect or _onClose...
 
             if (!_options->isActive()) {
@@ -161,6 +164,7 @@ namespace litecore { namespace repl {
             logError("Failed to start replicator: %s", err.description().c_str());
             gotError(err);
             stop();
+            _weakConnectionDelegateThis = nullptr;
         }
     }
 
@@ -637,6 +641,7 @@ namespace litecore { namespace repl {
             notifyEndedDocuments();
             _delegate->replicatorConnectionClosed(this, status);
         }
+        _weakConnectionDelegateThis = nullptr;
     }
 
 
