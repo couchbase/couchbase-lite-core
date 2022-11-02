@@ -50,6 +50,8 @@ namespace litecore {
     using namespace fleece;
 
 
+
+
     class ICUCollationContext : public CollationContext {
     public:
         UCollator* ucoll {nullptr};
@@ -135,6 +137,7 @@ namespace litecore {
 
 
     bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+        
         // FIXME: This is quite slow! Call ICU instead
         return ContainsUTF8_Slow(str, substr, ctx);
     }

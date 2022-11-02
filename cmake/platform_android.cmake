@@ -23,7 +23,7 @@ function(set_litecore_source)
     set(
         ${ANDROID_SSS_RESULT}
         ${BASE_LITECORE_FILES}
-        LiteCore/Unix/icu_shim.c
+        LiteCore/Support/icu_shim.c
         LiteCore/Android/getifaddrs.cc
         LiteCore/Android/bionic_netlink.cc
         PARENT_SCOPE
