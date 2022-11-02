@@ -344,7 +344,7 @@ namespace litecore { namespace repl {
     {
         Dict srcRoot = doc->getProperties();
         if (!srcRoot)
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "DBAccess applyDelta error getting document's properties");
 
         bool useLegacyAttachments = !_disableBlobSupport && containsAttachmentsProperty(deltaJSON);
         Doc reEncodedDoc;

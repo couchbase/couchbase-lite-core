@@ -495,7 +495,7 @@ namespace litecore {
                         Scope fleeceScope(fleeceData, _sk);
                         const Value *value = Value::fromTrustedData(fleeceData);
                         if (!value)
-                            error::_throw(error::CorruptRevisionData);
+                            error::_throw(error::CorruptRevisionData, "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
                         enc.writeValue(value);
                         break;
                     }

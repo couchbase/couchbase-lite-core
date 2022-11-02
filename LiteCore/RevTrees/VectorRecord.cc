@@ -141,7 +141,7 @@ namespace litecore {
             _bodyDoc = newLinkedFleeceDoc(body);
             _current.properties = _bodyDoc.asDict();
             if (!_current.properties)
-                error::_throw(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData, "VectorRecord reading properties error");
         } else  {
             _bodyDoc = nullptr;
             if (_whichContent != kMetaOnly)
@@ -161,7 +161,7 @@ namespace litecore {
         _revisions = _extraDoc.asArray();
         _mutatedRevisions = nullptr;
         if (extra && !_revisions)
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "VectorRecord readRecordExtra error");
 
         // The kSynced flag is set when the document's current revision is pushed to remote #1.
         // This is done instead of updating the doc body, for reasons of speed. So when loading
@@ -246,7 +246,7 @@ namespace litecore {
             if (!properties)
                 properties = Dict::emptyDict();
             if (!revID)
-                error::_throw(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData, "VectorRecord remoteRevision bad revID");
             return Revision{properties, revID, flags};
         } else {
             return nullopt;
@@ -313,7 +313,7 @@ namespace litecore {
             Assert((uint8_t(newRev.flags) & ~0x7) == 0);    // only deleted/attachments/conflicted are legal
             MutableDict revDict = mutableRevisionDict(remote);
             if (!newRev.revID)
-                error::_throw(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData, "VectorRecord setRemoteRevision bad revID");
             if (auto oldRevID = revDict[kRevIDKey].asData(); newRev.revID != oldRevID) {
                 revDict[kRevIDKey].setData(newRev.revID);
                 _changed = true;
