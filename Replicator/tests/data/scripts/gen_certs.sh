@@ -53,11 +53,11 @@ printf "\n[ v3_ca ]\nbasicConstraints = critical,CA:TRUE\nsubjectKeyIdentifier =
 
 echo ">> Create root CA certificate ..."
 openssl genrsa -out root.key 2048
-openssl req -new -x509 -sha256 -days 3650 -config openssl.cnf -extensions v3_ca -key root.key -out root.pem -subj "/CN=Root"
+openssl req -new -x509 -sha256 -days 3650 -config openssl.cnf -extensions v3_ca -key root.key -out root.pem -subj "/CN=Couchbase Root CA"
 
 echo ">> Create intermediate certificate ..."
 openssl genrsa -out inter.key 2048
-openssl req -new -sha256 -key inter.key -out inter.csr -subj "/CN=Inter" 
+openssl req -new -sha256 -key inter.key -out inter.csr -subj "/CN=Inter"
 openssl x509 -req -sha256 -days 3650 -extfile openssl.cnf -extensions v3_ca -CA root.pem -CAkey root.key -CAcreateserial -in inter.csr -out inter.pem
 rm -rf openssl.cnf
 
