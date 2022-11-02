@@ -858,12 +858,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     _authHeader = SGUserAuthHeader;
 
     // Create a temporary user for this test
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("POST", "_user", &status, &error, R"({"name":"purgeRevoke","password":"password"})", true);
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
-                      addChannelToJSON("{}", "admin_channels", { channelIDa, channelIDb }), true);
-    REQUIRE(status == HTTPStatus::OK);
+    createTestUser({ channelIDa, channelIDb });
 
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -888,13 +883,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     enc.writeString(channelIDa);
     enc.writeString(channelIDb);
     enc.endArray();
-    enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
-    enc.writeBool(true);
+//    enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
+//    enc.writeBool(true);
     enc.endDict();
     AllocedDict opts { enc.finish() };
 
     std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "purgeRevoke", "password");
+            collectionPreamble(collectionSpecs, TestUser, "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
         {{ // three sets of braces? because Xcode
             collectionSpecs[0], kC4Disabled, kC4OneShot,
@@ -902,17 +897,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         }}
     };
 
-    C4ParamsSetter paramsSetter = [&replCollections, &opts](C4ReplicatorParameters& c4Params) {
+    C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
         c4Params.collections = replCollections.data();
-        for(auto it = Dict(opts).begin(); it != Dict(opts).end(); ++it) {
-            auto updated = repl::Options::updateProperties(
-                    AllocedDict(c4Params.optionsDictFleece),
-                    it.key().asstring(),
-                    it.value()
-                    );
-            c4Params.optionsDictFleece = updated.data();
-        }
     };
 
     // Setup onDocsEnded:
@@ -935,6 +922,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     auto collRosesPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
 
     // Put doc in remote DB, in channels a and b
+    HTTPStatus status;
+    C4Error error;
     sendRemoteRequest("PUT", collRosesPath, docIDstr, &status, &error,
                       addChannelToJSON("{}", "channels"_sl, { channelIDa, channelIDb }));
     REQUIRE(status == HTTPStatus::Created);
@@ -951,8 +940,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     CHECK(_counter == 0);
 
     // Revoked access to channel 'a':
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
+    sendRemoteRequest("PUT", std::string("_user/") + TestUser, &status, &error,
                       addChannelToJSON("{}", "admin_channels"_sl, { channelIDb }), true);
+
     REQUIRE(status == HTTPStatus::OK);
 
     // Check if update to doc1 is still pullable:
@@ -973,7 +963,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     auto curRevID = slice(doc1->revID).asString();
 
     // Revoke access to all channels:
-    sendRemoteRequest("PUT", "_user/purgeRevoke", &status, &error,
+    sendRemoteRequest("PUT", std::string("_user/") + TestUser, &status, &error,
                       addChannelToJSON("{}", "admin_channels"_sl, { }), true);
     REQUIRE(status == HTTPStatus::OK);
 
@@ -985,9 +975,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
-
-    // Delete temp user
-    sendRemoteRequest("DELETE", "_user/purgeRevoke", &status, &error, nullslice, true);
 }
 
 #ifdef COUCHBASE_ENTERPRISE
