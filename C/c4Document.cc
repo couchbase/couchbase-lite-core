@@ -139,7 +139,7 @@ alloc_slice C4Document::bodyAsJSON(bool canonical) const {
         error::_throw(error::NotFound);
     if (FLDict root = getProperties())
         return ((const fleece::impl::Dict*)root)->toJSON(canonical);
-    error::_throw(error::CorruptRevisionData);
+    error::_throw(error::CorruptRevisionData, "Bad fleece body");
 }
 
 
