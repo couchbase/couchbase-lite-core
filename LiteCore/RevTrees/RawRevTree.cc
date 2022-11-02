@@ -73,7 +73,7 @@ namespace litecore {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto revIndex = endian::dec16(entry->revIndex_BE);
             if (remoteID == 0 || revIndex >= count)
-                error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error");
+                error::_throw(error::CorruptRevisionData, "RawRevision decodeTree revIndex error");
             remoteMap[remoteID] = &revs[revIndex];
             ++entry;
         }
