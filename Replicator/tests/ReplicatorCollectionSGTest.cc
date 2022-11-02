@@ -986,8 +986,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
 
-    // Purge remote doc so test will succeed multiple times without flushing bucket
-//    sendRemoteRequest("POST", "_purge", &status, &error, "{\"" + docIDstr + "\":[\"*\"]}", true);
     // Delete temp user
     sendRemoteRequest("DELETE", "_user/purgeRevoke", &status, &error, nullslice, true);
 }
