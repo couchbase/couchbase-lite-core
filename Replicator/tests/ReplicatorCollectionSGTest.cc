@@ -912,19 +912,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
-    auto collPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
 
     // Create a conflicted doc on SG, and resolve the conflict
-    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+    sendRemoteRequest("PUT", collectionSpecs[0], docID + "?new_edits=false",
                       addChannelToJSON(R"({"_rev":"1-aaaa","foo":1})",
                                        "channels"_sl, { channelID }), true);
-    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+    sendRemoteRequest("PUT", collectionSpecs[0], docID + "?new_edits=false",
                       addChannelToJSON(R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
                                        "channels"_sl, { channelID }), true);
-    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+    sendRemoteRequest("PUT", collectionSpecs[0], docID + "?new_edits=false",
                       addChannelToJSON(R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
                                        "channels"_sl, { channelID }), true);
-    sendRemoteRequest("PUT", collPath, docID + "?new_edits=false",
+    sendRemoteRequest("PUT", collectionSpecs[0], docID + "?new_edits=false",
                       addChannelToJSON(R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})",
                                        "channels"_sl, { channelID }), true);
 
@@ -1282,7 +1281,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     // Create docs on SG:
     _authHeader = SGUserAuthHeader;
     for (size_t i = 0; i < collectionCount; ++i) {
-        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+        sendRemoteRequest("PUT", collectionSpecs[i],
                           doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
     }
 
@@ -1385,7 +1384,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
+    sendRemoteRequest("PUT", collectionSpecs[0],
                       doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
                                                "channels"_sl, {chIDs[1]}));
 
@@ -1404,7 +1403,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
+    sendRemoteRequest("PUT", collectionSpecs[0],
                       doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}",
                                                "channels"_sl, {}));
 
@@ -1445,7 +1444,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     // Create docs on SG:
     _authHeader = SGUserAuthHeader;
     for (size_t i = 0; i < collectionCount; ++i) {
-        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+        sendRemoteRequest("PUT", collectionSpecs[i],
                         doc1ID, addChannelToJSON("{}"_sl, "channels"_sl, chIDs));
     }
 
@@ -1527,7 +1526,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
     for (size_t i = 0; i < collectionCount; ++i) {
-        sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[i]),
+        sendRemoteRequest("PUT", collectionSpecs[i],
                           doc1ID, addChannelToJSON("{\"_rev\":\"" + oRevID + "\"}", "channels"_sl, {}));
     }
 
@@ -1695,7 +1694,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     // Upate doc 13 on the remote
     string body = "{\"_rev\":\"" + originalRevID + "\",\"serverSideUpdate\":true}";
     _authHeader = SGUserAuthHeader;
-    sendRemoteRequest("PUT", repl::Options::collectionSpecToPath(collectionSpecs[0]),
+    sendRemoteRequest("PUT", collectionSpecs[0],
                       doc13ID, slice(body));
 
     // Create a conflict doc13 at local
@@ -1783,8 +1782,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     string docID = idPrefix + "doc";
 
     _authHeader = SGUserAuthHeader;
-    alloc_slice collPath = repl::Options::collectionSpecToPath(collectionSpecs[0]);
-    sendRemoteRequest("PUT", collPath, docID+"?new_edits=false",
+    sendRemoteRequest("PUT", collectionSpecs[0], docID+"?new_edits=false",
                       "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
 
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
@@ -1806,10 +1804,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    sendRemoteRequest("PUT", collPath, docID, "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
-    sendRemoteRequest("PUT", collPath, docID,
+    sendRemoteRequest("PUT", collectionSpecs[0], docID, "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
+    sendRemoteRequest("PUT", collectionSpecs[0], docID,
                       "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
-    sendRemoteRequest("PUT", collPath, docID,
+    sendRemoteRequest("PUT", collectionSpecs[0], docID,
                       "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
 
     replicate(paramsSetter);

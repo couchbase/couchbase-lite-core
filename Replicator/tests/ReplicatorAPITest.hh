@@ -406,11 +406,11 @@ public:
                                   slice body =nullslice,
                                   bool admin =false)
     {
-        return sendRemoteRequest(method, nullslice, path, outStatus, outError, body, admin);
+        return sendRemoteRequest(method, {}, path, outStatus, outError, body, admin);
     }
 
     alloc_slice sendRemoteRequest(const string &method,
-                                  slice collectionPath,
+                                  C4CollectionSpec collectionSpec,
                                   string path,
                                   HTTPStatus *outStatus NONNULL,
                                   C4Error *outError NONNULL,
@@ -422,13 +422,18 @@ public:
 
         auto port = uint16_t(_address.port + !!admin);
         if (!hasPrefix(path, "/")) {
-            string kspace = (string)(slice)_remoteDBName;
-            if (collectionPath) {
-                kspace += "." + collectionPath.asString();
-            }
             path = string("/") + path;
-            if (_remoteDBName.size > 0)
+            if (_remoteDBName.size > 0) {
+                string kspace = (string)(slice)_remoteDBName;
+                if (collectionSpec.name.size > 0) {
+                    kspace += ".";
+                    if (collectionSpec.scope.size > 0) {
+                        kspace += string(collectionSpec.scope) + ".";
+                    }
+                    kspace += string(collectionSpec.name);
+                }
                 path = string("/") + kspace + path;
+            }
         }
         if (_logRemoteRequests)
             C4Log("*** Server command: %s %.*s:%d%s",
@@ -479,11 +484,11 @@ public:
                                   bool admin =false,
                                   HTTPStatus expectedStatus = HTTPStatus::OK)
     {
-        return sendRemoteRequest(method, nullslice, path, body, admin, expectedStatus);
+        return sendRemoteRequest(method, {}, path, body, admin, expectedStatus);
     }
 
     alloc_slice sendRemoteRequest(const std::string &method,
-                                  slice collectionPath,
+                                  C4CollectionSpec collectionSpec,
                                   std::string path,
                                   slice body =nullslice,
                                   bool admin =false,
@@ -493,7 +498,7 @@ public:
             expectedStatus = HTTPStatus::Created;
         HTTPStatus status;
         C4Error error;
-        alloc_slice response = sendRemoteRequest(method, collectionPath, path, &status, &error, body, admin);
+        alloc_slice response = sendRemoteRequest(method, collectionSpec, path, &status, &error, body, admin);
         if (error.code)
             FAIL("Error: " << c4error_descriptionStr(error));
         INFO("Status: " << (int)status);
