@@ -40,6 +40,7 @@ namespace litecore { namespace repl {
     class Replicator final : public Worker,
                              private blip::ConnectionDelegate,
                              public InstanceCountedIn<Replicator> {
+        friend class WeakHolder<blip::ConnectionDelegate>;
     public:
 
         class Delegate;
@@ -50,7 +51,6 @@ namespace litecore { namespace repl {
                    websocket::WebSocket* NONNULL,
                    Delegate&,
                    Options);
-        ~Replicator();
 
         struct BlobProgress {
             Dir         dir;

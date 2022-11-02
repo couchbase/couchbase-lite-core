@@ -137,6 +137,7 @@ namespace litecore { namespace blip {
                 _webSocket->close();
                 _webSocket = nullptr;
                 _connection = nullptr;
+                _weakThis = nullptr;
             }
         }
 
@@ -171,7 +172,6 @@ namespace litecore { namespace blip {
                   _timeOpen.elapsed(),
                   _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
             logStats();
-            _weakThis->rescind(this);
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
@@ -245,6 +245,7 @@ namespace litecore { namespace blip {
                 cancelAll(_pendingRequests);
                 cancelAll(_pendingResponses);
                 _requestHandlers.clear();
+                _weakThis = nullptr;
                 release(this); // webSocket is done calling delegate now (balances retain in ctor)
             }
         }
