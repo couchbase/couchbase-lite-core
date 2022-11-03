@@ -304,12 +304,12 @@ public:
         return dict.toJSON();
     }
 
-    bool assignUserChannel(const vector<string>& channelIDs, C4Error* err) {
+    bool assignUserChannel(const string& user, const vector<string>& channelIDs, C4Error* err) {
         auto bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
         HTTPStatus status;
         alloc_slice saveAuthHeader = _authHeader;
         _authHeader = AdminAuthHeader;
-        sendRemoteRequest("PUT", "_user/sguser", &status,
+        sendRemoteRequest("PUT", "_user/"s + user, &status,
                                 err == nullptr ? ERROR_INFO() : ERROR_INFO(err),
                                 bodyWithChannel, true);
         _authHeader = saveAuthHeader;
@@ -855,10 +855,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     const string channelIDa = idPrefix + "a";
     const string channelIDb = idPrefix + "b";
 
-    _authHeader = SGUserAuthHeader;
-
     // Create a temporary user for this test
-    createTestUser({ channelIDa, channelIDb });
+    REQUIRE(createTestUser({ channelIDa, channelIDb }));
+
+    _authHeader = TestUserAuthHeader;
 
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
@@ -929,10 +929,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     CHECK(_counter == 0);
 
     // Revoked access to channel 'a':
-    sendRemoteRequest("PUT", std::string("_user/") + TestUser, &status, &error,
-                      addChannelToJSON("{}", "admin_channels"_sl, { channelIDb }), true);
-
-    REQUIRE(status == HTTPStatus::OK);
+    REQUIRE(assignUserChannel(TestUser, { channelIDb }, nullptr));
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
@@ -952,9 +949,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     auto curRevID = slice(doc1->revID).asString();
 
     // Revoke access to all channels:
-    sendRemoteRequest("PUT", std::string("_user/") + TestUser, &status, &error,
-                      addChannelToJSON("{}", "admin_channels"_sl, { }), true);
-    REQUIRE(status == HTTPStatus::OK);
+    REQUIRE(assignUserChannel(TestUser, {}, nullptr));
 
     C4Log("-------- Pull the revoked");
     replicate(paramsSetter);
@@ -1241,9 +1236,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     C4Error error;
     DEFER {
         // Don't REQUIRE. It would terminate the entire test run.
-        assignUserChannel({"*"}, &error);
+        assignUserChannel("sguser", {"*"}, &error);
     };
-    REQUIRE(assignUserChannel(chIDs, &error));
+    REQUIRE(assignUserChannel("sguser", chIDs, &error));
 
     // Create docs on SG:
     _authHeader = SGUserAuthHeader;
