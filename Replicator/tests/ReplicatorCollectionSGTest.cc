@@ -876,24 +876,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
-    Encoder enc;
-    enc.beginDict();
-    enc.writeKey(C4STR(kC4ReplicatorOptionChannels));
-    enc.beginArray();
-    enc.writeString(channelIDa);
-    enc.writeString(channelIDb);
-    enc.endArray();
-//    enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
-//    enc.writeBool(true);
-    enc.endDict();
-    AllocedDict opts { enc.finish() };
 
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, TestUser, "password");
     std::array<C4ReplicationCollection, collectionCount> replCollections {
         {{ // three sets of braces? because Xcode
             collectionSpecs[0], kC4Disabled, kC4OneShot,
-            opts.data(), nullptr, _pullFilter, this
+            nullslice, nullptr, _pullFilter, this
         }}
     };
 
