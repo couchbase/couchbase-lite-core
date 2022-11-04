@@ -26,6 +26,7 @@
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <typeinfo>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run in locally with the following environment.
@@ -698,18 +699,20 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
-    _authHeader = SGUserCredential;
-    const string idPrefix = timePrefix(), channelID = timePrefix() ;
-    HTTPStatus status;
-    C4Error error;
-
-    const string docIDPref = idPrefix + "pdfsg-doc";
+    _authHeader = TestUserAuthHeader;
+    const string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
+
     constexpr size_t kDocBufSize = 60;
     constexpr int kNumDocs = 50, kNumProps = 50;
     string revID;
 
+    const string docIDPref = idPrefix + "doc";
+    vector<string> chIDs {idPrefix+"a"};
+
+    REQUIRE(createTestUser({ chIDs }));
+    
     std::array<C4CollectionSpec, collectionCount> collectionSpecs;
     std::array<C4Collection *, collectionCount> collections;
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
@@ -718,7 +721,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     collectionSpecs = {
         Roses
     };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    collections = collectionPreamble(collectionSpecs, TestUser, "password");
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
@@ -729,9 +732,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             Encoder encPopulate(c4db_createFleeceEncoder(db));
             encPopulate.beginDict();
-            encPopulate.beginArray();
-            encPopulate.writeString(channelID);
-            encPopulate.endArray();
+            encPopulate.writeKey(kC4ReplicatorOptionChannels);
+            encPopulate.writeString(chIDs[0]);
+
             for (int p = 0; p < kNumProps; ++p) {
                 encPopulate.writeKey(format("field%03d", p));
                 encPopulate.writeInt(std::rand());
@@ -742,17 +745,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
     };
 
-    Encoder encOpts;
-    encOpts.beginDict();
-    encOpts.writeKey(C4STR(kC4ReplicatorOptionChannels));
-    encOpts.beginArray();
-    encOpts.writeString(channelID);
-    encOpts.endArray();
-    encOpts.endDict();
-    alloc_slice opts = encOpts.finish();
-
     replCollections = {
-            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled, opts},
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
         };
     C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
         c4Params.collectionCount = replCollections.size();
@@ -785,6 +779,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             encUpdate.writeString(doc->revID);
             for (Dict::iterator i(props); i; ++i) {
                 encUpdate.writeKey(i.keyString());
+                if(i.keyString() == kC4ReplicatorOptionChannels){
+                    encUpdate.writeString(i.value().asString());
+                    continue;
+                }
                 auto value = i.value().asInt();
                 if (RandomNumber() % 8 == 0)
                     value = RandomNumber();
@@ -794,8 +792,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
         encUpdate.endArray();
         encUpdate.endDict();
-        sendRemoteRequest("POST", repl::Options::collectionSpecToPath(collectionSpecs[0]), "_bulk_docs", &status, &error, encUpdate.finish(), true);
-        REQUIRE(status == HTTPStatus::Created);
+        for (size_t i = 0; i < collectionCount; ++i) {
+            sendRemoteRequest("POST", collectionSpecs[i], "_bulk_docs", encUpdate.finish(), false, HTTPStatus::Created);
+        }
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -813,9 +812,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
 
-        collections = collectionPreamble(collectionSpecs, "sguser", "password");
+        collections = collectionPreamble(collectionSpecs, TestUser, "password");
         replCollections = {
-            C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot, opts},
+            C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
         };
         C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
