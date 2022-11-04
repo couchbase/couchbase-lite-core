@@ -816,7 +816,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         replCollections = {
             C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
         };
-        C4ParamsSetter paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
+        paramsSetter = [&replCollections](C4ReplicatorParameters& c4Params) {
             c4Params.collectionCount = replCollections.size();
             c4Params.collections = replCollections.data();
         };
