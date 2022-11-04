@@ -705,6 +705,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     constexpr size_t collectionCount = 1;
 
     constexpr size_t kDocBufSize = 60;
+
+    // connection closing from SGW for 1000 docs => reduced to 50
     constexpr int kNumDocs = 50, kNumProps = 50;
     string revID;
 
@@ -806,7 +808,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             encDelta.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
             encDelta.writeBool(true);
             encDelta.endDict();
-            encDelta.finish();
         }
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
