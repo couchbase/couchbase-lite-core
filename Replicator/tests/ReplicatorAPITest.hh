@@ -23,6 +23,8 @@
 #include "ReplicatorTuning.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
+#include "SGConnection.hh"
+#include "SGRest.hh"
 #include <algorithm>
 #include <chrono>
 #include <cinttypes>
@@ -62,7 +64,8 @@ public:
     static std::once_flag once;
 
     ReplicatorAPITest()
-    :C4Test(0)
+    : C4Test(0)
+    , _sgConnection { kDefaultAddress, kScratchDBName }
     {
         std::call_once(once, [&]() {
             // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
@@ -71,24 +74,23 @@ public:
 
         // Environment variables can also override the default address above:
         if (getenv("REMOTE_TLS") || getenv("REMOTE_SSL"))
-            _address.scheme = C4STR("wss");
+            _sgConnection.address.scheme = kC4Replicator2TLSScheme;
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
-            _address.hostname = c4str(hostname);
+            _sgConnection.address.hostname = c4str(hostname);
         const char *portStr = getenv("REMOTE_PORT");
         if (portStr)
-            _address.port = (uint16_t)strtol(portStr, nullptr, 10);
+            _sgConnection.address.port = (uint16_t)strtol(portStr, nullptr, 10);
         const char *remoteDB = getenv("REMOTE_DB");
         if (remoteDB)
-            _remoteDBName = c4str(remoteDB);
+            _sgConnection.remoteDBName = c4str(remoteDB);
         const char *proxyURL = getenv("REMOTE_PROXY");
         if (proxyURL) {
-            Address proxyAddr{slice(proxyURL)};
-            _proxy = std::make_unique<ProxySpec>(proxyAddr);
+            _sgConnection.proxy = std::make_unique<ProxySpec>(Address(slice(proxyURL)));
         }
 
-        if (Address::isSecure(_address)) {
-            pinnedCert = readFile(sReplicatorFixturesDir + "cert/cert.pem");
+        if (Address::isSecure(_sgConnection.address)) {
+            _sgConnection.pinnedCert = readFile(sReplicatorFixturesDir + "cert/cert.pem");
         }
 
         _onDocsEnded = onDocsEnded;
@@ -105,26 +107,26 @@ public:
         db2 = c4db_openNamed(kDB2Name, config, ERROR_INFO(error));
         REQUIRE(db2 != nullptr);
 
-        _address = { };
-        _remoteDBName = nullslice;
+        _sgConnection.address = { };
+        _sgConnection.remoteDBName = nullslice;
     }
 #endif
 
     AllocedDict options() {
         Encoder enc;
         enc.beginDict();
-        if (pinnedCert) {
+        if (_sgConnection.pinnedCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-            enc.writeData(pinnedCert);
+            enc.writeData(_sgConnection.pinnedCert);
         }
 #ifdef COUCHBASE_ENTERPRISE
-        if (identityCert) {
+        if (_sgConnection.identityCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
             enc.beginDict();
             enc[C4STR(kC4ReplicatorAuthType)] = kC4AuthTypeClientCert;
             enc.writeKey(C4STR(kC4ReplicatorAuthClientCert));
-            enc.writeData(alloc_slice(c4cert_copyData(identityCert, false)));
-            alloc_slice privateKeyData(c4keypair_privateKeyData(identityKey));
+            enc.writeData(alloc_slice(c4cert_copyData(_sgConnection.identityCert, false)));
+            alloc_slice privateKeyData(c4keypair_privateKeyData(_sgConnection.identityKey));
             if (privateKeyData) {
                 enc.writeKey(C4STR(kC4ReplicatorAuthClientCertKey));
                 enc.writeData(privateKeyData);
@@ -143,9 +145,9 @@ public:
             enc.writeBool(true);
         }
         
-        if(_networkInterface) {
+        if(_sgConnection.networkInterface) {
             enc.writeKey(C4STR(kC4SocketOptionNetworkInterface));
-            enc.writeString(_networkInterface);
+            enc.writeString(_sgConnection.networkInterface);
         }
         
         // TODO: Set proxy settings from _proxy
@@ -199,10 +201,10 @@ public:
         }
         
 #ifdef COUCHBASE_ENTERPRISE
-        if(!_remoteCert) {
+        if(!_sgConnection.remoteCert) {
             C4Error err;
-            _remoteCert = c4cert_retain( c4repl_getPeerTLSCertificate(_repl, &err) );
-            if(!_remoteCert && err.code != 0) {
+            _sgConnection.remoteCert = c4cert_retain( c4repl_getPeerTLSCertificate(_repl, &err) );
+            if(!_sgConnection.remoteCert && err.code != 0) {
                 WARN("Failed to get remote TLS certificate: error " << err.domain << "/" << err.code);
                 C4Assert(err.code == 0);
             }
@@ -297,7 +299,7 @@ public:
             std::tie(push, pull) = *pp;
         }
 
-        if (push > kC4Passive && (slice(_remoteDBName).hasPrefix("scratch"_sl))
+        if (push > kC4Passive && (slice(_sgConnection.remoteDBName).hasPrefix("scratch"_sl))
                 && !db2 && !_flushedScratch) {
             flushScratchDatabase();
         }
@@ -325,8 +327,8 @@ public:
             (*pParamsSetter)(params);
         }
 
-        if (_remoteDBName.buf) {
-            _repl = c4repl_new(db, _address, _remoteDBName, params, err);
+        if (_sgConnection.remoteDBName.buf) {
+            _repl = c4repl_new(db, _sgConnection.address, _sgConnection.remoteDBName, params, err);
         } else {
 #ifdef COUCHBASE_ENTERPRISE
             _repl = c4repl_newLocal(db, db2, params, err);
@@ -398,131 +400,20 @@ public:
     }
 
 
-    /// Sends an HTTP request to the remote server.
-    alloc_slice sendRemoteRequest(const string &method,
-                                  string path,
-                                  HTTPStatus *outStatus NONNULL,
-                                  C4Error *outError NONNULL,
-                                  slice body =nullslice,
-                                  bool admin =false)
-    {
-        return sendRemoteRequest(method, {}, path, outStatus, outError, body, admin);
-    }
-
-    alloc_slice sendRemoteRequest(const string &method,
-                                  C4CollectionSpec collectionSpec,
-                                  string path,
-                                  HTTPStatus *outStatus NONNULL,
-                                  C4Error *outError NONNULL,
-                                  slice body =nullslice,
-                                  bool admin =false)
-    {
-        if (method != "GET")
-            REQUIRE(slice(_remoteDBName).hasPrefix("scratch"_sl));
-
-        auto port = uint16_t(_address.port + !!admin);
-        if (!hasPrefix(path, "/")) {
-            path = string("/") + path;
-            if (_remoteDBName.size > 0) {
-                string kspace = (string)(slice)_remoteDBName;
-                if (collectionSpec.name.size > 0) {
-                    kspace += ".";
-                    if (collectionSpec.scope.size > 0) {
-                        kspace += string(collectionSpec.scope) + ".";
-                    }
-                    kspace += string(collectionSpec.name);
-                }
-                path = string("/") + kspace + path;
-            }
-        }
-        if (_logRemoteRequests)
-            C4Log("*** Server command: %s %.*s:%d%s",
-              method.c_str(), SPLAT(_address.hostname), port, path.c_str());
-
-        Encoder enc;
-        enc.beginDict();
-        enc["Content-Type"_sl] = "application/json";
-        enc.endDict();
-        auto headers = enc.finishDoc();
-
-        string scheme = Address::isSecure(_address) ? "https" : "http";
-        auto r = std::make_unique<REST::Response>(scheme,
-                                             method,
-                                             (std::string)(slice)_address.hostname,
-                                             port,
-                                             path);
-        r->setHeaders(headers).setBody(body).setTimeout(5);
-        if (pinnedCert)
-            r->allowOnlyCert(pinnedCert);
-        if (_authHeader)
-            r->setAuthHeader(_authHeader);
-        if (_proxy)
-            r->setProxy(*_proxy);
-#ifdef COUCHBASE_ENTERPRISE
-        if (identityCert)
-            r->setIdentity(identityCert, identityKey);
-#endif
-
-        if (r->run()) {
-            *outStatus = r->status();
-            *outError = {};
-            _serverName = r->header("Server");
-            return r->body();
-        } else {
-            REQUIRE(r->error().code != 0);
-            *outStatus = HTTPStatus::undefined;
-            *outError = r->error();
-            return nullslice;
-        }
-    }
-
-
-    /// Sends an HTTP request to the remote server.
-    alloc_slice sendRemoteRequest(const std::string &method,
-                                  std::string path,
-                                  slice body =nullslice,
-                                  bool admin =false,
-                                  HTTPStatus expectedStatus = HTTPStatus::OK)
-    {
-        return sendRemoteRequest(method, {}, path, body, admin, expectedStatus);
-    }
-
-    alloc_slice sendRemoteRequest(const std::string &method,
-                                  C4CollectionSpec collectionSpec,
-                                  std::string path,
-                                  slice body =nullslice,
-                                  bool admin =false,
-                                  HTTPStatus expectedStatus = HTTPStatus::OK)
-    {
-        if (method == "PUT" && expectedStatus == HTTPStatus::OK)
-            expectedStatus = HTTPStatus::Created;
-        HTTPStatus status;
-        C4Error error;
-        alloc_slice response = sendRemoteRequest(method, collectionSpec, path, &status, &error, body, admin);
-        if (error.code)
-            FAIL("Error: " << c4error_descriptionStr(error));
-        INFO("Status: " << (int)status);
-        REQUIRE(status == expectedStatus);
-        return response;
-    }
-
-
     void flushScratchDatabase() {
-        sendRemoteRequest("POST", "_flush", nullslice, true);
+        SGRest::flushDatabase(_sgConnection);
         _flushedScratch = true;
     }
 
 
-    bool requireSG3() {
-        // `_serverName` is set by sendRemoteRequest
-        if (!_serverName)
-            sendRemoteRequest("HEAD", "/");
-        REQUIRE(_serverName.hasPrefix("Couchbase Sync Gateway/"));
-        if (_serverName >= "Couchbase Sync Gateway/3") {
+    bool requireSG3() const {
+        alloc_slice serverName { SGRest::getServerName(_sgConnection) };
+        REQUIRE(serverName.hasPrefix("Couchbase Sync Gateway/"));
+        if (serverName >= "Couchbase Sync Gateway/3") {
             return true;
         } else {
             C4Warn("*** Skipping test: server is %.*s, but this test requires SG 3.0 or later ***",
-                   SPLAT(_serverName));
+                   SPLAT(serverName));
             return false;
         }
     }
@@ -536,25 +427,13 @@ public:
 
 
     c4::ref<C4Database> db2;
-    C4Address _address = kDefaultAddress;
-    C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
-    alloc_slice _authHeader;
-    alloc_slice pinnedCert;
-#ifdef COUCHBASE_ENTERPRISE
-    c4::ref<C4Cert> _remoteCert;
-    c4::ref<C4Cert> identityCert;
-    c4::ref<C4KeyPair> identityKey;
-#endif
-    std::unique_ptr<ProxySpec> _proxy;
-    alloc_slice _serverName;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4ReplicatorValidationFunction _pullFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
     std::function<void(const C4DocumentEnded*)> _conflictHandler {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
-    alloc_slice _networkInterface;
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
 
@@ -570,10 +449,10 @@ public:
     std::set<std::string> _docPushErrors, _docPullErrors;
     std::set<std::string> _expectedDocPushErrors, _expectedDocPullErrors;
     int _counter {0};
-    bool _logRemoteRequests {true};
     bool _mayGoOffline {false};
     bool _wentOffline {false};
     bool _onlySelfSigned {false};
     alloc_slice _customCaCert {};
+    SGConnection _sgConnection;
 };
 

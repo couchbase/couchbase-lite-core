@@ -511,6 +511,7 @@
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA00E6F12915C2F900606365 /* SGRest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA00E6F02915C2F900606365 /* SGRest.cc */; };
 		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
@@ -1645,6 +1646,7 @@
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA00E6F02915C2F900606365 /* SGRest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGRest.cc; path = ../Replicator/tests/SGRest.cc; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2181,6 +2183,7 @@
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
+				EA00E6F02915C2F900606365 /* SGRest.cc */,
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* API */,
@@ -3934,6 +3937,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA00E6F12915C2F900606365 /* SGRest.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
@@ -4606,6 +4610,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug;
 		};
@@ -4620,6 +4625,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release;
 		};
@@ -4991,6 +4997,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug_EE;
 		};
@@ -5157,6 +5164,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release_EE;
 		};

@@ -33,11 +33,11 @@ public:
     :ReplicatorAPITest()
     {
         if (option == 0) {
-            _proxy = nullptr;
+            _sgConnection.proxy = nullptr;
             fprintf(stderr, "        --- No proxy ---\n");
         } else if (option == 1) {
-            if (!_proxy)
-                _proxy = make_unique<ProxySpec>(ProxyType::HTTP, "localhost"_sl, uint16_t(8888));
+            if (_sgConnection.proxy)
+                _sgConnection.proxy = make_unique<ProxySpec>(ProxyType::HTTP, "localhost"_sl, uint16_t(8888));
             fprintf(stderr, "        --- HTTP proxy ---\n");
         }
     }
@@ -46,9 +46,9 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
-    c4address_fromURL("https://www.couchbase.com/"_sl, &_address, nullptr);
-    _remoteDBName = ""_sl;
-    alloc_slice result = sendRemoteRequest("GET", "");
+    c4address_fromURL("https://www.couchbase.com/"_sl, &(_sgConnection.address), nullptr);
+    _sgConnection.remoteDBName = ""_sl;
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "");
 }
 
 
@@ -66,71 +66,71 @@ N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
  */
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Request", "[.SyncServer]") {
-    alloc_slice result = sendRemoteRequest("GET", "");
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "");
     C4Log("Response: %.*s", SPLAT(result));
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect", "[.SyncServer]") {
     // Lack of trailing "/" in path triggers a redirect from SG.
-    alloc_slice result = sendRemoteRequest("GET", "/scratch");
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "/scratch");
     C4Log("Response: %.*s", SPLAT(result));
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unauthorized", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
-    alloc_slice result = sendRemoteRequest("GET", "", nullslice, false, HTTPStatus::Unauthorized);
+    _sgConnection.remoteDBName = kProtectedDBName;
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "", nullslice, false, HTTPStatus::Unauthorized);
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Wrong Auth", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
-    _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "123456"_sl);
-    alloc_slice result = sendRemoteRequest("GET", "", nullslice, false, HTTPStatus::Unauthorized);
+    _sgConnection.remoteDBName = kProtectedDBName;
+    _sgConnection.authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "123456"_sl);
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "", nullslice, false, HTTPStatus::Unauthorized);
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Authorized", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
-    _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
-    alloc_slice result = sendRemoteRequest("GET", "", nullslice);
+    _sgConnection.remoteDBName = kProtectedDBName;
+    _sgConnection.authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "", nullslice);
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect Authorized", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
-    _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
-    alloc_slice result = sendRemoteRequest("GET", "/seekrit", nullslice);
+    _sgConnection.remoteDBName = kProtectedDBName;
+    _sgConnection.authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
+    alloc_slice result = SGRest::sendRemoteRequest(_sgConnection, "GET", "/seekrit", nullslice);
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer]") {
     //ExpectingExceptions x;
-    _address.hostname = C4STR("localhost");
-    _address.port = 1;  // wrong port!
+    _sgConnection.address.hostname = C4STR("localhost");
+    _sgConnection.address.port = 1;  // wrong port!
     HTTPStatus status;
     C4Error error;
-    sendRemoteRequest("GET", "", &status, &error);
+    SGRest::sendRemoteRequest(_sgConnection, "GET", "", &status, &error);
     CHECK(error == (C4Error{POSIXDomain, ECONNREFUSED}));
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    _sgConnection.address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     HTTPStatus status;
     C4Error error;
-    sendRemoteRequest("GET", "", &status, &error);
+    SGRest::sendRemoteRequest(_sgConnection, "GET", "", &status, &error);
     CHECK(error == (C4Error{NetworkDomain, kC4NetErrUnknownHost}));
 }
 
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Timeout", "[.SyncServer]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("10.1.99.99");
+    _sgConnection.address.hostname = C4STR("10.1.99.99");
     HTTPStatus status;
     C4Error error;
-    sendRemoteRequest("GET", "", &status, &error);
+    SGRest::sendRemoteRequest(_sgConnection, "GET", "", &status, &error);
     CHECK(error == (C4Error{POSIXDomain, ETIMEDOUT}));
 }
