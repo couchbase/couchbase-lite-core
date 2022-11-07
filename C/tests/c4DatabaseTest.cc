@@ -1282,3 +1282,17 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted default
     }
     c4doc_release(doc);
 }
+
+// CBL-3824
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Re-open database with an index", "[Database][C]") {
+    auto defaultColl = REQUIRED(c4db_getCollection(db, kC4DefaultCollectionSpec, nullptr));
+
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byAnswer"),
+                               R"([[".answer"]])"_sl, kC4JSONQuery,
+                               kC4ValueIndex, nullptr, ERROR_INFO()));
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byResult"),
+                               R"([[".result"]])"_sl, kC4JSONQuery,
+                               kC4ValueIndex, nullptr, ERROR_INFO()));
+
+    reopenDB();
+}
