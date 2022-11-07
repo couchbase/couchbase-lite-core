@@ -727,6 +727,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
+        constexpr size_t kDocBufSize = 60;
         TransactionHelper t(db);
         std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
