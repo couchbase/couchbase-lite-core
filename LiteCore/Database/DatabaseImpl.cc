@@ -576,12 +576,11 @@ namespace litecore {
                 DebugAssert(isValidScopeNameOrDefault(scope));
                 name.setStart(slash + 1);
             }
-            DebugAssert((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
-                        || KeyStore::isValidCollectionName(name));
-            return {name, scope};
-        } else {
-            return {nullslice, nullslice};
+            if((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
+                        || KeyStore::isValidCollectionName(name))
+                return {name, scope};
         }
+        return {nullslice, nullslice};
     }
 
 
