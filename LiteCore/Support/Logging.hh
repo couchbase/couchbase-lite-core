@@ -151,7 +151,7 @@ private:
 };
 
 extern "C" LogDomain kC4Cpp_DefaultLog;
-extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
+extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog, SQL;
 
 
 #ifdef _MSC_VER

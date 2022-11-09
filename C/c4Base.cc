@@ -195,6 +195,10 @@ C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept {
 
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
     auto domain = (LogDomain*)c4Domain;
+    constexpr slice cbl_3715 {"cbl-3715"};
+    if (cbl_3715 == slice((char*)c4Domain)) {
+        domain = &SQL;
+    }
     domain->setLevel((LogLevel)level);
 }
 

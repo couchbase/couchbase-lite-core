@@ -28,6 +28,7 @@
 #include <numeric>      // std::accumulate
 #include <sstream>
 #include <iostream>
+#include "c4Log.h"
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"        // for unicodesn_tokenizerRunningQuery()
@@ -517,6 +518,7 @@ namespace litecore {
             // Give this encoder its own SharedKeys instead of using the database's DocumentKeys,
             // because the query results might include dicts with new keys that aren't in the
             // DocumentKeys.
+            c4log(kC4QueryLog, kC4LogDebug, "QueryEnumerator fastForward begin");
             Encoder enc;
             auto sk = retained(new SharedKeys);
             enc.setSharedKeys(sk);
@@ -538,6 +540,7 @@ namespace litecore {
                     // Add an integer containing a bit-map of which columns are missing/undefined:
                     enc.writeUInt(missingCols);
                     ++rowCount;
+                    c4log(kC4QueryLog, kC4LogDebug, "QueryEnumerator fastForward row %llu", rowCount);
                 }
             } catch (...) {
                 unicodesn_tokenizerRunningQuery(false);
@@ -546,6 +549,8 @@ namespace litecore {
             unicodesn_tokenizerRunningQuery(false);
 
             enc.endArray();
+            
+            c4log(kC4QueryLog, kC4LogDebug, "QueryEnumerator fastForward end");
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
                                              enc.finishDoc().get(), rowCount, st.elapsed());
         }
