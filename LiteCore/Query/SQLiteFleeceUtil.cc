@@ -326,22 +326,27 @@ namespace litecore {
     }
 
     enhanced_bool_t booleanValue(sqlite3_context* ctx, sqlite3_value *arg) {
+        SQL.log(LogLevel::Debug, "sqlite booleanValue()");
         switch(sqlite3_value_type(arg)) {
             case SQLITE_NULL:
+                SQL.log(LogLevel::Debug, "sqlite booleanValue() - SQLITE_NULL");
                 return kMissing;
             case SQLITE_FLOAT:
             case SQLITE_INTEGER:
             {
                 auto val = sqlite3_value_double(arg);
+                SQL.log(LogLevel::Debug, "sqlite booleanValue NUMBER val = %f", val);
                 return static_cast<enhanced_bool_t>(val != 0.0 && !std::isnan(val));
             }
             case SQLITE_TEXT:
             {
+                SQL.log(LogLevel::Debug, "sqlite booleanValue() - SQLITE_TEXT");
                 // Need to call sqlite3_value_text here?
                 return static_cast<enhanced_bool_t>(sqlite3_value_bytes(arg) > 0);
             }
             case SQLITE_BLOB:
             {
+                SQL.log(LogLevel::Debug, "sqlite booleanValue() - SQLITE_BLOB");
                 auto fleece = fleeceParam(ctx, arg);
                 if (fleece == nullptr) {
                     return kFalse;
@@ -360,6 +365,7 @@ namespace litecore {
                 }
             }
             default:
+                SQL.log(LogLevel::Debug, "sqlite booleanValue() - DEFAULT");
                 return kTrue;
         }
     }
