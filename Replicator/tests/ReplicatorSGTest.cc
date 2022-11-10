@@ -63,7 +63,7 @@ public:
     ReplicatorSGTest() {
         if (getenv("USE_CLIENT_CERT")) {
 #ifdef COUCHBASE_ENTERPRISE
-            REQUIRE(Address::isSecure(_sgConnection.address));
+            REQUIRE(Address::isSecure(_sg.address));
             Identity ca = CertHelper::readIdentity(sReplicatorFixturesDir + "ca_cert.pem",
                                                    sReplicatorFixturesDir + "ca_key.pem",
                                                    "Couchbase");
@@ -71,8 +71,8 @@ public:
             // in Sync Gateway, or you only get guest access.
             Identity id = CertHelper::createIdentity(false, kC4CertUsage_TLSClient,
                                                      "Pupshaw", "pupshaw@couchbase.org", &ca);
-            _sgConnection.identityCert = id.cert;
-            _sgConnection.identityKey  = id.key;
+            _sg.identityCert = id.cert;
+            _sg.identityKey  = id.key;
 #else
             FAIL("USE_CLIENT_CERT only works with EE builds");
 #endif
@@ -83,7 +83,7 @@ public:
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Failure", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
     CHECK(_callbackStatus.error.code == 401);
@@ -92,7 +92,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Failure", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
 
     Encoder enc;
     enc.beginDict();
@@ -113,7 +113,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API ExtraHeaders", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
 
     // Use the extra-headers option to add HTTP Basic auth:
     Encoder enc;
@@ -187,7 +187,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push 5000 Changes", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Pull", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
@@ -198,7 +198,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull With Indexes", "[.SyncServer]") {
     REQUIRE(c4db_createIndex(db, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4ValueIndex, nullptr, nullptr));
     REQUIRE(c4db_createIndex(db, C4STR("Year"),   C4STR("[[\".Year\"]]"), kC4ValueIndex, nullptr, nullptr));
 
-    _sgConnection.remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
@@ -211,14 +211,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Push", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull Forever", "[.SyncServer_Special]") {
-    _sgConnection.remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     _stopWhenIdle = false;  // This test will NOT STOP ON ITS OWN
     _mayGoOffline = true;
     replicate(kC4Disabled, kC4Continuous);
@@ -233,7 +233,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Stop after Idle with Error", "[.SyncServer]"
     // CloseStatus { kWebSocketClose, kCodeAbnormal }
     // Before the fix: continuous retry after Stopping;
     // after the fix: stop with the error regardless of it being transient.
-    _sgConnection.remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     _mayGoOffline = true;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous, false);
@@ -326,7 +326,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") {
-    _sgConnection.remoteDBName = kImagesDBName;
+    _sg.remoteDBName = kImagesDBName;
     replicate(kC4Disabled, kC4OneShot);
 
     C4Error error;
@@ -344,7 +344,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     CHECK(size == 15198281);
 
     C4Log("-------- Pushing --------");
-    _sgConnection.remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     replicate(kC4OneShot, kC4Disabled);
 }
 
@@ -354,7 +354,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "0000013", "{\"_rev\":\"" + originalRevID + "\","
+    _sg.sendRemoteRequest("PUT", "0000013", "{\"_rev\":\"" + originalRevID + "\","
                                           "\"serverSideUpdate\":true}");
 
     createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
@@ -408,12 +408,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]") {
     // For issue #448.
     // Create a conflicted doc on SG, and resolve the conflict:
-    _sgConnection.remoteDBName = "scratch_allows_conflicts"_sl;
+    _sg.remoteDBName = "scratch_allows_conflicts"_sl;
     flushScratchDatabase();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl);
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl);
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl);
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -436,7 +436,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     replicate(kC4OneShot, kC4OneShot);
 
     // Verify doc is updated on SG:
-    auto body = SGRest::sendRemoteRequest(_sgConnection, "GET", "doc");
+    auto body = _sg.sendRemoteRequest("GET", "doc");
 	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
     CHECK(C4Slice(body) == bodySlice);
 }
@@ -456,16 +456,16 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     // 7. run replication between SG -> db.cblite2 again
 
     flushScratchDatabase();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc?new_edits=false", "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
 
     replicate(kC4Disabled, kC4OneShot);
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc", "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc", "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc", "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
 
     replicate(kC4Disabled, kC4OneShot);
     doc = c4doc_get(db, "doc"_sl, true, nullptr);
@@ -533,7 +533,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         }
         enc.endArray();
         enc.endDict();
-        SGRest::sendRemoteRequest(_sgConnection, "POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created, logRemoteRequests);
+        _sg.sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created, logRemoteRequests);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -628,7 +628,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         }
         enc.endArray();
         enc.endDict();
-        SGRest::sendRemoteRequest(_sgConnection, "POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created, logRemoteRequests);
+        _sg.sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created, logRemoteRequests);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -736,7 +736,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
                 enc.endDict();
 
                 FLError flError;
-                alloc_slice res = SGRest::sendRemoteRequest(_sgConnection, "PUT", docID, enc.finish(), false, HTTPStatus::OK, logRemoteRequests);
+                alloc_slice res = _sg.sendRemoteRequest("PUT", docID, enc.finish(), false, HTTPStatus::OK, logRemoteRequests);
                 fleece::Doc fdoc = Doc::fromJSON(res, &flError);
                 REQUIRE(flError == kFLNoError);
                 Dict resDict = fdoc.root().asDict();
@@ -789,14 +789,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -853,12 +853,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     // Revoked access to channel 'a':
     HTTPStatus status;
     C4Error error;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[\"b\"]}"_sl, true);
+    _sg.sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[\"b\"]}"_sl, true);
     REQUIRE(status == HTTPStatus::OK);
 
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
 
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
@@ -871,7 +871,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     CHECK(_counter == 0);
 
     // Revoke access to all channels:
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    _sg.sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pull the revoked");
@@ -886,14 +886,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -950,7 +950,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     // Revoke access to all channels:
     HTTPStatus status;
     C4Error error;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    _sg.sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pull the revoked");
@@ -965,14 +965,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1028,7 +1028,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     // Revoke access to all channels:
     HTTPStatus status;
     C4Error error;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    _sg.sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
     REQUIRE(status == HTTPStatus::OK);
 
     C4Log("-------- Pulling the revoked");
@@ -1044,12 +1044,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1105,7 +1105,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
 
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
 
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
@@ -1119,7 +1119,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
 
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
 
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
@@ -1133,12 +1133,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1194,7 +1194,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
 
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
 
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
@@ -1208,12 +1208,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channel", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Create docs on SG:
-    _sgConnection.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1268,7 +1268,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
 
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    SGRest::sendRemoteRequest(_sgConnection, "PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
     
     C4Log("-------- Pulling the removed");
     replicate(kC4Disabled, kC4OneShot);
@@ -1283,7 +1283,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Setup Replicator Options:
@@ -1338,7 +1338,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Create Doc", "[.SyncServer]") {
-    _sgConnection.remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Setup Replicator Options:
@@ -1402,13 +1402,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Cr
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]") {
-    if (!Address::isSecure(_sgConnection.address)) {
+    if (!Address::isSecure(_sg.address)) {
         return;
     }
     flushScratchDatabase();
     
     // Using an unmatched pinned cert:
-    _sgConnection.pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
         "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
@@ -1434,13 +1434,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]"
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]") {
-    if (!Address::isSecure(_sgConnection.address)) {
+    if (!Address::isSecure(_sg.address)) {
         return;
     }
     flushScratchDatabase();
     
     // Leaf:
-    _sgConnection.pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIICoDCCAYgCCQDOqeOThcl0DTANBgkqhkiG9w0BAQsFADAQMQ4wDAYDVQQDDAVJ\r\n" \
         "bnRlcjAeFw0yMjA0MDgwNDE2MjNaFw0zMjA0MDUwNDE2MjNaMBQxEjAQBgNVBAMM\r\n" \
@@ -1461,7 +1461,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
     replicate(kC4OneShot, kC4Disabled, true);
     
     // Intermediate:
-    _sgConnection.pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIIDFTCCAf2gAwIBAgIJANZ8gSANI5jNMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
         "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAQMQ4wDAYD\r\n" \
@@ -1484,7 +1484,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
     replicate(kC4OneShot, kC4Disabled, true);
     
     // Root:
-    _sgConnection.pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIIDFDCCAfygAwIBAgIJAPW07OznM9D/MA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
         "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAPMQ0wCwYD\r\n" \
@@ -1508,7 +1508,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
-    if (slice(_sgConnection.address.hostname) != "localhost")
+    if (slice(_sg.address.hostname) != "localhost")
         return;
     
     // Disable Retries:
@@ -1527,40 +1527,40 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
 #endif
     
     C4ErrorDomain domain = POSIXDomain;
-    _sgConnection.networkInterface = nullslice;
+    _sg.networkInterface = nullslice;
     
     SECTION("Reachable - Name") {
         // Use loopback interface connecting to localhost:
     #if defined(__APPLE__)
-        _sgConnection.networkInterface = "lo0"_sl;
+        _sg.networkInterface = "lo0"_sl;
     #elif defined(__linux__)
-        _sgConnection.networkInterface = "lo"_sl;
+        _sg.networkInterface = "lo"_sl;
     #elif defined(_WIN32)
-        _sgConnection.networkInterface = "Loopback Pseudo-Interface 1"_sl;
+        _sg.networkInterface = "Loopback Pseudo-Interface 1"_sl;
     #else
-        _sgConnection.networkInterface = "lo0"_sl;
+        _sg.networkInterface = "lo0"_sl;
     #endif
     }
     
     SECTION("Reachable - IP Address") {
         // Use loopback interface connecting to localhost:
-        _sgConnection.networkInterface = "127.0.0.1"_sl;
+        _sg.networkInterface = "127.0.0.1"_sl;
     }
 
     SECTION("Unreachable") {
         // Use ethernet interface connecting to localhost:
     #if defined(__APPLE__)
-        _sgConnection.networkInterface = "en0"_sl;
+        _sg.networkInterface = "en0"_sl;
         code = EADDRNOTAVAIL;
     #elif defined(__linux__)
-        _sgConnection.networkInterface = "eth0"_sl;
+        _sg.networkInterface = "eth0"_sl;
         code = ETIMEDOUT;
     #elif defined(_WIN32)
         // Note: Required Wi-Fi interface on the test machine.
-        _sgConnection.networkInterface = "Wi-Fi"_sl;
+        _sg.networkInterface = "Wi-Fi"_sl;
         code = EADDRNOTAVAIL;
     #else
-        _sgConnection.networkInterface = "eth0"_sl;
+        _sg.networkInterface = "eth0"_sl;
     #endif
     }
     
@@ -1573,7 +1573,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Set Invalid Network Interface", "[.SyncServer]") {
-    _sgConnection.networkInterface = "x0"_sl;
+    _sg.networkInterface = "x0"_sl;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ENXIO);

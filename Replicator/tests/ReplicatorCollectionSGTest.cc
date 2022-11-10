@@ -20,6 +20,7 @@
 #include "c4DocEnumerator.h"
 #include "c4Document.h"
 #include "c4Database.h"
+#include "SGTestUser.hh"
 #include <array>
 #include <iostream>
 
@@ -104,10 +105,10 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
     ReplicatorCollectionSGTest()
         : ReplicatorAPITest() {
-        _sgConnection.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
-        _sgConnection.address = {kC4Replicator2TLSScheme,
-                    C4STR("localhost"),
-                    4984};
+        _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
+        _sg.address = {kC4Replicator2TLSScheme,
+                       C4STR("localhost"),
+                       4984};
     }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
@@ -862,8 +863,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     const string docID = idPrefix + "uocd-doc";
     const string channelID = idPrefix + "a";
 
-    SGRest::assignUserChannel(_sgConnection, "sguser", { channelID });
-    _sgConnection.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    _sg.assignUserChannel("sguser", {channelID });
+    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
@@ -879,7 +880,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     };
 
     for(const auto& b : bodies) {
-        SGRest::upsertDoc(_sgConnection, collectionSpecs[0], docID + "?new_edits=false", b, { channelID });
+        _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false", b, {channelID });
     }
 
     // Set up pull replication
@@ -909,7 +910,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
 
     // Update doc:
-    auto body = SGRest::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, { channelID });
+    auto body = SG::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, {channelID });
     {
         TransactionHelper t { db };
         body = c4db_encodeJSON(db, body, ERROR_INFO());
@@ -1049,7 +1050,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Success - SGColl", "[.SyncServerCollection]") {
     // Leaf cert (Replicator/tests/data/cert/sg_cert.pem (1st cert))
-    _sgConnection.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
+    _sg.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
 MIICqzCCAZMCFGrxed0RuxP+uYOzr9wIeRp4gBjHMA0GCSqGSIb3DQEBCwUAMBAx
 DjAMBgNVBAMMBUludGVyMB4XDTIyMTAyNTEwMjAzMFoXDTMyMTAyMjEwMjAzMFow
 FDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
@@ -1068,12 +1069,12 @@ lTIN5f2LxWf+8kJqfjlj
 -----END CERTIFICATE-----)");
 
     // Ensure TLS connection to SGW
-    if(!Address::isSecure(_sgConnection.address)) {
-        _sgConnection.address = {kC4Replicator2TLSScheme,
-                    C4STR("localhost"),
-                    4984};
+    if(!Address::isSecure(_sg.address)) {
+        _sg.address = {kC4Replicator2TLSScheme,
+                       C4STR("localhost"),
+                       4984};
     }
-    REQUIRE(Address::isSecure(_sgConnection.address));
+    REQUIRE(Address::isSecure(_sg.address));
 
     // One-shot push setup
     constexpr size_t collectionCount = 1;
@@ -1094,7 +1095,7 @@ lTIN5f2LxWf+8kJqfjlj
     replicate(paramsSetter);
 
     // Intermediate cert (Replicator/tests/data/cert/sg_cert.pem (2nd cert))
-    _sgConnection.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
+    _sg.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
 MIIDRzCCAi+gAwIBAgIUQu1TjW0ZRWGCKRQh/JcZxfG/J/YwDQYJKoZIhvcNAQEL
 BQAwHDEaMBgGA1UEAwwRQ291Y2hiYXNlIFJvb3QgQ0EwHhcNMjIxMDI1MTAyMDMw
 WhcNMzIxMDIyMTAyMDMwWjAQMQ4wDAYDVQQDDAVJbnRlcjCCASIwDQYJKoZIhvcN
@@ -1118,7 +1119,7 @@ lb78xSgdpAaELOl18IEF5N3FHjVCtvXqStyS
     replicate(paramsSetter);
 
     // Root cert (Replicator/tests/data/cert/sg_cert.pem (3rd cert))
-    _sgConnection.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
+    _sg.pinnedCert = slice(R"(-----BEGIN CERTIFICATE-----
 MIIDUzCCAjugAwIBAgIUYyeh7cxGMUNIwkVN1PGCx/FbmgUwDQYJKoZIhvcNAQEL
 BQAwHDEaMBgGA1UEAwwRQ291Y2hiYXNlIFJvb3QgQ0EwHhcNMjIxMDI1MTAyMDMw
 WhcNMzIxMDIyMTAyMDMwWjAcMRowGAYDVQQDDBFDb3VjaGJhc2UgUm9vdCBDQTCC
@@ -1143,15 +1144,15 @@ zzcNjA18pjiTtpuVeNBUAsBJcbHkNQLKnHGPsBNMAedVCe+AM5CVyZdDlZs//fov
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGColl", "[.SyncServerCollection]") {
-    if(!Address::isSecure(_sgConnection.address)) {
-        _sgConnection.address = { kC4Replicator2TLSScheme,
-                    C4STR("localhost"),
-                    4984 };
+    if(!Address::isSecure(_sg.address)) {
+        _sg.address = {kC4Replicator2TLSScheme,
+                       C4STR("localhost"),
+                       4984 };
     }
-    REQUIRE(Address::isSecure(_sgConnection.address));
+    REQUIRE(Address::isSecure(_sg.address));
 
     // Using an unmatched pinned cert:
-    _sgConnection.pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
         "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
@@ -1209,14 +1210,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     DEFER {
         // Don't REQUIRE. It would terminate the entire test run.
-        SGRest::assignUserChannel(_sgConnection, "sguser", {"*"});
+        _sg.assignUserChannel("sguser", {"*"});
     };
-    REQUIRE(SGRest::assignUserChannel(_sgConnection, "sguser", chIDs));
+    REQUIRE(_sg.assignUserChannel("sguser", chIDs));
 
     // Create docs on SG:
-    _sgConnection.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
     for (size_t i = 0; i < collectionCount; ++i) {
-        SGRest::upsertDoc(_sgConnection, collectionSpecs[i], doc1ID, "{}"_sl, chIDs);
+        _sg.upsertDoc(collectionSpecs[i], doc1ID, "{}"_sl, chIDs);
     }
 
     struct CBContext {
@@ -1318,7 +1319,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
-    SGRest::upsertDoc(_sgConnection, collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", { chIDs[1] });
+    _sg.upsertDoc(collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", {chIDs[1] });
 
     C4Log("-------- Pull update");
     context.reset();
@@ -1335,7 +1336,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
-    SGRest::upsertDoc(_sgConnection, collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+    _sg.upsertDoc(collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
 
     C4Log("-------- Pull the removed");
     context.reset();
@@ -1369,12 +1370,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
 
-    SGRest::TestUser testUser { _sgConnection, kTestUserName, chIDs };
-    _sgConnection.authHeader = testUser.authHeader();
+    SG::TestUser testUser {_sg, kTestUserName, chIDs };
+    _sg.authHeader = testUser.authHeader();
 
     // Create docs on SG:
     for (size_t i = 0; i < collectionCount; ++i) {
-        REQUIRE(SGRest::upsertDoc(_sgConnection, collectionSpecs[i], doc1ID, "{}"_sl, chIDs));
+        REQUIRE(_sg.upsertDoc(collectionSpecs[i], doc1ID, "{}"_sl, chIDs));
     }
 
     struct CBContext {
@@ -1455,7 +1456,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
     for (size_t i = 0; i < collectionCount; ++i) {
-        SGRest::upsertDoc(_sgConnection, collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+        _sg.upsertDoc(collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
     }
 
     C4Log("-------- Pull the removed");
@@ -1486,10 +1487,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     string docID = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
-    SGRest::TestUser testUser { _sgConnection, kTestUserName, chIDs };
-    _sgConnection.authHeader = testUser.authHeader();
+    SG::TestUser testUser {_sg, kTestUserName, chIDs };
+    _sg.authHeader = testUser.authHeader();
 
-    alloc_slice bodyJSON = SGRest::addChannelToJSON("{}"_sl, "channels"_sl, chIDs);
+    alloc_slice bodyJSON = SG::addChannelToJSON("{}"_sl, "channels"_sl, chIDs);
 
     // Create a doc in each collection
     //
@@ -1623,8 +1624,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
 
     // Upate doc 13 on the remote
     string body = "{\"_rev\":\"" + originalRevID + "\",\"serverSideUpdate\":true}";
-    _sgConnection.authHeader = HTTPLogic::basicAuth("sguser", "password");
-    SGRest::upsertDoc(_sgConnection, collectionSpecs[0], doc13ID, slice(body), {});
+    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    REQUIRE(_sg.upsertDoc(collectionSpecs[0], doc13ID, slice(body), {}));
 
     // Create a conflict doc13 at local
     createRev(collections[0], slice(doc13ID), "2-f000"_sl, kFleeceBody);
@@ -1710,10 +1711,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
 
     string docID = idPrefix + "doc";
 
-    _sgConnection.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 
-    SGRest::upsertDoc(_sgConnection, collectionSpecs[0], docID+"?new_edits=false",
-                      R"({"count":1, "_rev":"1-1111"})", {});
+    _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false",
+                  R"({"count":1, "_rev":"1-1111"})", {});
 
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
         unordered_map<alloc_slice, unsigned> {
@@ -1741,7 +1742,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     };
 
     for(const auto& b : bodies) {
-        SGRest::upsertDoc(_sgConnection, collectionSpecs[0], docID, b, {});
+        _sg.upsertDoc(collectionSpecs[0], docID, b, {});
     }
 
     replicate(paramsSetter);
