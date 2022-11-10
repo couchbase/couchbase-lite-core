@@ -71,9 +71,27 @@ namespace litecore {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
 
+            constexpr const char* cbl_3715_s = "{\"FROM\":[{\"COLLECTION\":\"_default\"}],\"WHAT\":[[\"_.\",[\"meta()\"],\".id\"]],\"WHERE\":[\"toboolean()\",[\">\",1.6,1.2]]}";
+            constexpr slice  cbl_3715_sl {cbl_3715_s};
+            constexpr const char* cbl_3715_n1ql = "select meta().id from _default where toboolean(1.6 > 1.2)";
+
             switch (language) {
                 case QueryLanguage::kJSON:
-                    _json = queryStr;
+                    if (cbl_3715_sl.compare(queryStr) == 0) {
+                        unsigned errPos;
+                        FLMutableDict result = n1ql::parse(string(cbl_3715_n1ql), &errPos);
+                        if (!result) {
+                            throw Query::parseError("N1QL syntax error", errPos);
+                        } else if (!hasKeyCaseEquivalent((MutableDict*)result, "from")) {
+                            throw error(error::LiteCore, error::InvalidQuery,
+                                        format("%s", "N1QL error: missing the FROM clause"));
+                        }
+                        _json = ((MutableDict*)result)->toJSON(true);
+                        FLMutableDict_Release(result);
+                        logDebug(">>> Debug cbl-3715, queryStr == _json: %d", _json.compare(queryStr) == 0);
+                    } else {
+                        _json = queryStr;
+                    }
                     break;
                 case QueryLanguage::kN1QL: {
                     unsigned errPos;
@@ -86,6 +104,9 @@ namespace litecore {
                     }
                     _json = ((MutableDict*)result)->toJSON(true);
                     FLMutableDict_Release(result);
+                    if (string(queryStr) == cbl_3715_n1ql) {
+                        logDebug(">>> Debug cbl-3715, N1QL, cbl_3715_sl == _json: %d", _json.compare(cbl_3715_sl) == 0);
+                    }
                     break;
                 }
             }
