@@ -576,8 +576,26 @@ namespace litecore {
                 DebugAssert(isValidScopeNameOrDefault(scope));
                 name.setStart(slash + 1);
             }
-            if((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
-                        || KeyStore::isValidCollectionName(name))
+            // CBL-3824: This is necessary for determining if the keystore is an index, which may occur in
+            // the case of a Full-Text Index. The keystore name for an FTI looks like: <scope>.<collection>::<index>
+            slice idxName = nullslice;
+            // Find the first ':'
+            if (auto idxSep = name.findByte(KeyStore::kIndexSeparator)) {
+                idxName = slice(idxSep+1, name.end());
+                // Find the second colon and set index name accordingly
+                if (auto idxSep2 = idxName.findByte(KeyStore::kIndexSeparator); idxSep2 == idxSep+1) {
+                    idxName.setStart(idxSep2+1);
+                    // make sure name does not contain the index name, otherwise later assertion will fail
+                    name.setEnd(idxSep);
+                } else {
+                    idxName = nullslice;
+                }
+            }
+
+            DebugAssert((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
+                        || KeyStore::isValidCollectionName(name));
+            // If keystore name was not an index name
+            if(!idxName)
                 return {name, scope};
         }
         return {nullslice, nullslice};
