@@ -174,8 +174,8 @@ public:
     template<size_t N>
     std::array<C4Collection*, N>
     collectionPreamble(std::array<C4CollectionSpec, N> collections,
-                       SG::TestUser testUser) {
-        collectionPreamble(collections, testUser._username.c_str(), testUser._password.c_str());
+                       const SG::TestUser& testUser) {
+        return collectionPreamble(collections, testUser._username.c_str(), testUser._password.c_str());
     }
 
     template<size_t N>
@@ -664,7 +664,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
-    _authHeader = TestUserAuthHeader;
     const string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
@@ -678,7 +677,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     const string docIDPref = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
-    REQUIRE(createTestUser({ chIDs }));
+    SG::TestUser testUser { _sg, "pdfcsg", chIDs };
+    _sg.authHeader = testUser.authHeader();
     
     std::array<C4CollectionSpec, collectionCount> collectionSpecs;
     std::array<C4Collection *, collectionCount> collections;
@@ -688,7 +688,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     collectionSpecs = {
         Roses
     };
-    collections = collectionPreamble(collectionSpecs, TestUser, "password");
+    collections = collectionPreamble(collectionSpecs, testUser);
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
@@ -761,7 +761,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         encUpdate.endArray();
         encUpdate.endDict();
         for (size_t i = 0; i < collectionCount; ++i) {
-            sendRemoteRequest("POST", collectionSpecs[i], "_bulk_docs", encUpdate.finish(), false, HTTPStatus::Created);
+            _sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish());
         }
     }
 
@@ -779,7 +779,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
 
-        collections = collectionPreamble(collectionSpecs, TestUser, "password");
+        collections = collectionPreamble(collectionSpecs, testUser);
         replCollections = {
             C4ReplicationCollection{collectionSpecs[0], kC4Disabled, kC4OneShot},
         };
