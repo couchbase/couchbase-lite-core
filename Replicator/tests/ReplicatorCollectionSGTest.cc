@@ -109,6 +109,7 @@ public:
         _sg.address = {kC4Replicator2TLSScheme,
                        C4STR("localhost"),
                        4984};
+        _sg.assignUserChannel("sguser", {"*"});
     }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
@@ -166,6 +167,14 @@ public:
         // This would effectively avoid flushing the bucket before the test.
         _flushedScratch = true;
         return ret;
+    }
+
+    // An overload which allows simply passing an SG::TestUser object
+    template<size_t N>
+    std::array<C4Collection*, N>
+    collectionPreamble(std::array<C4CollectionSpec, N> collections,
+                       SG::TestUser testUser) {
+        collectionPreamble(collections, testUser._username.c_str(), testUser._password.c_str());
     }
 
     template<size_t N>
@@ -318,7 +327,8 @@ public:
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     const string docID = idPrefix + "apipfcc-doc1";
-    
+    const string channelID = idPrefix + "apipfcc";
+
     string revID;
     constexpr size_t collectionCount = 1;
 
@@ -344,10 +354,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
         TransactionHelper t(db);
         revID = createNewRev(collections[0], slice(docID), nullslice, kFleeceBody);
     }
-
-    docIDs[0] = getDocIDs(collections[0]);
     
     replicate(paramsSetter);
+    docIDs[0] = getDocIDs(collections[0]);
     verifyDocs(collectionSpecs, docIDs);
 
     C4Log("-------- Mutations --------");

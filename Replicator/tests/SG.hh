@@ -1,6 +1,16 @@
 //
 // Created by Callum Birks on 01/11/2022.
 //
+/**
+ * This class is used in tests to:
+ *     - Hold the connection config for SGW
+ *     - Perform REST requests on the SGW
+ * The REST requests have been abstracted into higher-level functions to make tests less convoluted and
+ * reduce re-used code.
+ * If you wish to set up replication with a TestUser in CollectionSGTest, you should create the TestUser before
+ * doing `collectionPreamble()`, and call collectionPreamble(collectionSpecs, testUser)
+ * The TestUser class's definition can be found in SGTestUser.hh/.cc
+ */
 
 #ifndef LITECORE_SG_HH
 #define LITECORE_SG_HH
