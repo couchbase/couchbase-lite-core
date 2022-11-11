@@ -88,6 +88,8 @@ public:
             _sg.proxy = std::make_shared<ProxySpec>(Address(slice(proxyURL)));
         }
 
+        _sg.address = address;
+
         if (Address::isSecure(_sg.address)) {
             _sg.pinnedCert = readFile(sReplicatorFixturesDir + "cert/cert.pem");
         }
