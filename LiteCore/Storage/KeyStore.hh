@@ -76,7 +76,7 @@ namespace litecore {
         static constexpr slice kCollectionNameCharacterSet
                             = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
         // Separator for an FTI keystore (i.e. <scope>.<collection>::<index>
-        static constexpr char kIndexSeparator = ':';
+        static constexpr slice kIndexSeparator = "::";
 
         /// Returns true if this is a valid collection name. Does NOT recognize "_default"!
         MUST_USE_RESULT static bool isValidCollectionName(slice name);
