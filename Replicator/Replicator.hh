@@ -181,7 +181,7 @@ namespace litecore { namespace repl {
         void updatePullStatus(CollectionIndex i, const Status& status);
         void prepareWorkers();
 
-        void handleConnectionMessage(Retained<blip::MessageIn>);
+        void delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn>);
     public:
         template<typename WORKER>
         void registerWorkerHandler(WORKER* worker,
