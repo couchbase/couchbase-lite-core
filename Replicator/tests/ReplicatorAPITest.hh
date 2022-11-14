@@ -23,6 +23,7 @@
 #include "ReplicatorTuning.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
+#include "ReplParams.hh"
 #include "SG.hh"
 #include <algorithm>
 #include <chrono>
@@ -368,6 +369,10 @@ public:
                                         [&]{return _numCallbacksWithLevel[level] > 0;});
         if (_numCallbacksWithLevel[level] == 0)
             FAIL("Timed out waiting for a status callback of level " << level);
+    }
+
+    void replicate(ReplParams& params, bool expectSuccess =true) {
+        replicate(params.paramSetter(), expectSuccess);
     }
 
     void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess =true) {
