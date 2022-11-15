@@ -1104,3 +1104,34 @@ TEST_CASE_METHOD(ReplicatorAPITest, "createFleeceRev - null revID", "[C]") {
     CHECK(c4coll_getDocumentCount(coll) == 10);
     CHECK(c4coll_getDocumentCount(defaultColl) == 0);
 }
+
+class ReplicatorAPITestRemoteReplicator : public C4ReplicatorImpl {
+public:
+    ReplicatorAPITestRemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params)
+        : C4ReplicatorImpl(db, params) {}
+
+    unsigned maxRetryCount() const {
+        return getIntProperty(kC4ReplicatorOptionMaxRetries, 0);
+    }
+
+    void createReplicator() override {
+
+    }
+
+    alloc_slice URL() const override {
+        return nullslice;
+    }
+};
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not turn to zero", "[Replicator][CBL-3872]") {
+    Encoder e;
+    e.beginDict(1);
+    e.writeKey(kC4ReplicatorOptionMaxRetries);
+    e.writeUInt(ULLONG_MAX);
+    e.endDict();
+    auto fleece = e.finish();
+
+    C4ReplicatorParameters parameters{fleece};
+    ReplicatorAPITestRemoteReplicator replicator(db, parameters);
+    CHECK(replicator.maxRetryCount() == UINT_MAX); // 32-bit capped
+}
