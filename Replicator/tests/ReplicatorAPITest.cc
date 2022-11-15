@@ -22,6 +22,7 @@
 #include "c4Socket.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
+#include "c4ReplicatorImpl.hh"
 
 using namespace fleece;
 using namespace std;
