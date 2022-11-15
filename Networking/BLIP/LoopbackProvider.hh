@@ -63,7 +63,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void connect() override {
-            Assert(_driver && _driver->_peer);
+            Assert(_driver);
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_connect));
         }
 
@@ -185,11 +185,20 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _connect() {
+                // Pre-conditions:
+                Assert(_state < State::connecting || _state == State::closed);
+
+                if (_state == State::closed) {
+                    // Already closed
+                    return;
+                }
+                // If not closed,
+                Assert(_peer);
+
                 // Connecting uses a handshake, to ensure both sides have notified their delegates
                 // they're connected before either side sends a message. In other words, to
                 // prevent one side from receiving a message from the peer before it's ready.
                 logVerbose("Connecting to peer...");
-                Assert(_state < State::connecting);
                 _peer->peerIsConnecting(_latency);
                 if (_state == State::peerConnecting)
                     connectCompleted();
