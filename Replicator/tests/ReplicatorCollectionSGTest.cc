@@ -180,29 +180,6 @@ public:
     }
 
     template<size_t N>
-    static void setDocIDs(C4ReplicatorParameters& c4Params,
-                   std::array<C4ReplicationCollection, N>& replCollections,
-                   const std::array<unordered_map<alloc_slice, unsigned>, N>& docIDs,
-                   std::vector<AllocedDict>& allocedDicts) {
-        for (size_t i = 0; i < N; ++i) {
-            fleece::Encoder enc;
-            enc.beginArray();
-            for (const auto& d : docIDs[i]) {
-                enc.writeString(d.first);
-            }
-            enc.endArray();
-            Doc doc {enc.finish()};
-            allocedDicts.emplace_back(
-                repl::Options::updateProperties(
-                    AllocedDict(c4Params.collections[i].optionsDictFleece),
-                    kC4ReplicatorOptionDocIDs,
-                    doc.root())
-            );
-            c4Params.collections[i].optionsDictFleece = allocedDicts.back().data();
-        }
-    }
-
-    template<size_t N>
     // propertyEncryption: 0, no encryption; 1, encryption only; 2, encryption and decryption
     void verifyDocs(const std::array<C4CollectionSpec, N>& collectionSpecs,
                     const std::array<unordered_map<alloc_slice, unsigned>, N>& docIDs,
@@ -228,8 +205,9 @@ public:
         replParams.setDocIDs(docIDs);
 #ifdef COUCHBASE_ENTERPRISE
         if(propertyEncryption > 0) {
-            replParams.propertyEncryptor = (C4ReplicatorPropertyEncryptionCallback)propEncryptor;
-            replParams.propertyDecryptor = (C4ReplicatorPropertyDecryptionCallback)propDecryptor;
+//            replParams.propertyEncryptor = (C4ReplicatorPropertyEncryptionCallback)propEncryptor;
+            replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
+//            replParams.propertyDecryptor = (C4ReplicatorPropertyDecryptionCallback)propDecryptor;
         }
         if (propertyEncryption == 1) {
             replParams.setOption(kC4ReplicatorOptionDisablePropertyDecryption, true);
@@ -1107,8 +1085,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     }
 
     ReplParams replParams { replCollections };
-    replParams.propertyEncryptor = propEncryptor;
-    replParams.propertyDecryptor = propDecryptor;
+    replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
 
     replicate(replParams);
     verifyDocs(collectionSpecs, docIDs, true, TestDecryption ? 2 : 1);

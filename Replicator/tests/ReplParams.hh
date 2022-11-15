@@ -28,39 +28,46 @@ using ValidationFunction = C4ReplicatorValidationFunction;
 class ReplParams : public C4ReplicatorParameters {
 public:
     // Constructor allows for passing all the same objects as C4ReplicatorParameters,
-    ReplParams(std::vector<C4ReplicationCollection> collections, const AllocedDict& options = {},
-               StatusCallback statusCallback = nullptr, DocsEndedCallback docsEndedCallback = nullptr,
-               BlobProgressCallback blobProgressCallback = nullptr, EncryptionCallback encryptionCallback = nullptr,
-               DecryptionCallback decryptionCallback = nullptr, void* callbackContext = nullptr,
-               C4SocketFactory* socketFactory = nullptr);
+    ReplParams(const std::vector<C4ReplicationCollection>& collections);
 
     ReplParams(const ReplParams& other);
     // Add collections to the params
     void addCollections(std::vector<C4ReplicationCollection> collections);
     // Get the value of an option in the dict
     fleece::Value getOption(slice key) { return AllocedDict(optionsDictFleece).get(key); }
+#pragma mark - SETTERS
     // Set the value of an option in the dict
     template <class T>
-    void setOption(fleece::slice key, T val) {
+    ReplParams& setOption(fleece::slice key, T val) {
         _optionsDict = repl::Options::updateProperties(_optionsDict, key, val);
         optionsDictFleece = _optionsDict.data();
+        return *this;
     }
     // Set the value of multiple options in the dict
-    static AllocedDict setOptions(const AllocedDict& params, const AllocedDict& options);
-    void setOptions(AllocedDict options);
+    ReplParams& setOptions(AllocedDict options);
     // Set an option for a single collection
-    void setCollectionOptions(C4CollectionSpec collectionSpec, const AllocedDict& options);
+    ReplParams& setCollectionOptions(C4CollectionSpec collectionSpec, const AllocedDict& options);
     // Set an option for all collections
-    void setCollectionOptions(const AllocedDict& options);
+    ReplParams& setCollectionOptions(const AllocedDict& options);
     // Set docIDs in options of each collection
     template<size_t N>
-    void setDocIDs(const std::array<std::unordered_map<alloc_slice, unsigned>, N>& docIDs);
+    ReplParams& setDocIDs(const std::array<std::unordered_map<alloc_slice, unsigned>, N>& docIDs);
     // Set the push and pull setting for every collection
-    void setPushPull(C4ReplicatorMode push, C4ReplicatorMode pull);
-    // Set the push filter for collections
-    void setPushFilter(ValidationFunction pushFilter);
-    // Set the pull filter for collections
-    void setPullFilter(ValidationFunction pullFilter);
+    ReplParams& setPushPull(C4ReplicatorMode push, C4ReplicatorMode pull);
+    // Set the callback context for each collection
+    ReplParams& setCollectionContext(void *callbackContext);
+    // Set the push filter for collections, ensure you have set collection context first
+    ReplParams& setPushFilter(ValidationFunction pushFilter);
+    // Set the pull filter for collections, ensure you have set collection context first
+    ReplParams& setPullFilter(ValidationFunction pullFilter);
+
+    ReplParams& setStatusCallback(StatusCallback statusCallback);
+    ReplParams& setDocsEndedCallback(DocsEndedCallback docsEndedCallback);
+    ReplParams& setBlobProgressCallback(BlobProgressCallback blobProgressCallback);
+    ReplParams& setPropertyEncryptor(EncryptionCallback encryptionCallback);
+    ReplParams& setPropertyDecryptor(DecryptionCallback decryptionCallback);
+    ReplParams& setCallbackContext(void *callbackContext);
+    ReplParams& setSocketFactory(C4SocketFactory* socketFactory);
 
     // Overwrite values in params which are non-null in this object
     C4ReplicatorParameters applyThisTo(C4ReplicatorParameters params);
@@ -76,6 +83,9 @@ private:
     std::vector<AllocedDict> _paramSetterOptions;
     // Retain memory for collections optionsDict
     std::vector<AllocedDict> _collectionsOptionsDict;
+
+    // Set the value of multiple options in the dict
+    static AllocedDict setOptions(const AllocedDict& params, const AllocedDict& options);
 };
 
 // Templated function has to be defined in header
@@ -84,7 +94,7 @@ private:
 // If you wish to replicate using the same ReplParams, without a docID filter, you can pass an empty docIDs
 // to this function.
 template<size_t N>
-void ReplParams::setDocIDs(const std::array<std::unordered_map<alloc_slice, unsigned int>, N>& docIDs) {
+ReplParams& ReplParams::setDocIDs(const std::array<std::unordered_map<alloc_slice, unsigned int>, N>& docIDs) {
     for (size_t i = 0; i < N; ++i) {
         fleece::Encoder enc;
         enc.beginArray();
@@ -102,6 +112,7 @@ void ReplParams::setDocIDs(const std::array<std::unordered_map<alloc_slice, unsi
         );
         _collectionVector[i].optionsDictFleece = _collectionsOptionsDict.back().data();
     }
+    return *this;
 }
 
 #endif //LITECORE_REPLPARAMS_HH

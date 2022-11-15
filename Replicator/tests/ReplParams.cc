@@ -4,29 +4,18 @@
 
 #include "ReplParams.hh"
 
-ReplParams::ReplParams(std::vector<C4ReplicationCollection> collections_, const AllocedDict& options,
-                       StatusCallback statusCallback, DocsEndedCallback docsEndedCallback,
-                       BlobProgressCallback blobProgressCallback, EncryptionCallback encryptionCallback,
-                       DecryptionCallback decryptionCallback, void *callbackContext_, C4SocketFactory *socketFactory_)
+ReplParams::ReplParams(const std::vector<C4ReplicationCollection>& collections_)
 {
-    _collectionVector = std::vector<C4ReplicationCollection>(collections_);
+    _collectionVector = { collections_ };
     collections = _collectionVector.data();
     collectionCount = _collectionVector.size();
-    _optionsDict = options;
-    optionsDictFleece = _optionsDict.data();
-    onStatusChanged = statusCallback;
-    onDocumentsEnded = docsEndedCallback;
-    propertyEncryptor = encryptionCallback;
-    propertyDecryptor = decryptionCallback;
-    callbackContext = callbackContext_;
-    socketFactory = socketFactory_;
 }
 
 ReplParams::ReplParams(const ReplParams &other) {
     _collectionVector = { other._collectionVector };
     _collectionsOptionsDict = { other._collectionsOptionsDict };
     _paramSetterOptions = { other._paramSetterOptions };
-    _optionsDict = AllocedDict(other._optionsDict);
+    _optionsDict = { other._optionsDict };
     collections = _collectionVector.data();
     collectionCount = other.collectionCount;
     optionsDictFleece = _optionsDict.data();
@@ -55,12 +44,13 @@ AllocedDict ReplParams::setOptions(const AllocedDict& params, const AllocedDict&
     return result;
 }
 
-void ReplParams::setOptions(AllocedDict options) {
+ReplParams& ReplParams::setOptions(AllocedDict options) {
     _optionsDict = setOptions(AllocedDict(optionsDictFleece), options);
     optionsDictFleece = _optionsDict.data();
+    return *this;
 }
 
-void ReplParams::setCollectionOptions(C4CollectionSpec collectionSpec, const AllocedDict &options) {
+ReplParams& ReplParams::setCollectionOptions(C4CollectionSpec collectionSpec, const AllocedDict &options) {
     for(auto& c : _collectionVector) {
         if(c.collection == collectionSpec) {
             _collectionsOptionsDict.emplace_back(
@@ -69,22 +59,25 @@ void ReplParams::setCollectionOptions(C4CollectionSpec collectionSpec, const All
             c.optionsDictFleece = _collectionsOptionsDict.back().data();
         }
     }
+    return *this;
 }
 
-void ReplParams::setCollectionOptions(const AllocedDict &options) {
+ReplParams& ReplParams::setCollectionOptions(const AllocedDict &options) {
     for(auto& c : _collectionVector) {
         _collectionsOptionsDict.emplace_back(
                 setOptions(AllocedDict(c.optionsDictFleece), options)
         );
         c.optionsDictFleece = _collectionsOptionsDict.back().data();
     }
+    return *this;
 }
 
-void ReplParams::setPushPull(C4ReplicatorMode push, C4ReplicatorMode pull) {
+ReplParams& ReplParams::setPushPull(C4ReplicatorMode push, C4ReplicatorMode pull) {
     for(auto& c : _collectionVector) {
         c.push = push;
         c.pull = pull;
     }
+    return *this;
 }
 
 C4ReplicatorParameters ReplParams::applyThisTo(C4ReplicatorParameters params) {
@@ -116,14 +109,60 @@ std::function<void(C4ReplicatorParameters &)> ReplParams::paramSetter() {
     };
 }
 
-void ReplParams::setPushFilter(ValidationFunction pushFilter) {
+ReplParams& ReplParams::setPushFilter(ValidationFunction pushFilter) {
     for(auto& c : _collectionVector) {
-        c.pushFilter = pushFilter;
+        if(c.callbackContext)
+            c.pushFilter = pushFilter;
     }
+    return *this;
 }
 
-void ReplParams::setPullFilter(ValidationFunction pullFilter) {
+ReplParams& ReplParams::setPullFilter(ValidationFunction pullFilter) {
     for(auto& c : _collectionVector) {
-        c.pullFilter = pullFilter;
+        if(c.callbackContext)
+            c.pullFilter = pullFilter;
     }
+    return *this;
+}
+
+ReplParams& ReplParams::setCollectionContext(void *callbackContext_) {
+    for(auto& c : _collectionVector) {
+        c.callbackContext = callbackContext_;
+    }
+    return *this;
+}
+
+ReplParams &ReplParams::setStatusCallback(StatusCallback statusCallback) {
+    onStatusChanged = statusCallback;
+    return *this;
+}
+
+ReplParams &ReplParams::setDocsEndedCallback(DocsEndedCallback docsEndedCallback) {
+    onDocumentsEnded = docsEndedCallback;
+    return *this;
+}
+
+ReplParams &ReplParams::setBlobProgressCallback(BlobProgressCallback blobProgressCallback) {
+    onBlobProgress = blobProgressCallback;
+    return *this;
+}
+
+ReplParams &ReplParams::setPropertyEncryptor(EncryptionCallback encryptionCallback) {
+    propertyEncryptor = encryptionCallback;
+    return *this;
+}
+
+ReplParams &ReplParams::setPropertyDecryptor(DecryptionCallback decryptionCallback) {
+    propertyDecryptor = decryptionCallback;
+    return *this;
+}
+
+ReplParams &ReplParams::setCallbackContext(void *callbackContext_) {
+    callbackContext = callbackContext_;
+    return *this;
+}
+
+ReplParams &ReplParams::setSocketFactory(C4SocketFactory *socketFactory_) {
+    socketFactory = socketFactory_;
+    return *this;
 }
