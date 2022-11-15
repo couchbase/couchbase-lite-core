@@ -184,6 +184,9 @@ namespace litecore { namespace repl {
         // collection paths, e.g. '[“scope/foo”,”bar”,”zzz/buzz”]'. So, we convert the
         // CollecttionSpec given in C4ReplicatorParamters to slash separated path.
         static alloc_slice collectionSpecToPath(C4CollectionSpec spec, bool omitDefaultScope=true) {
+            if(spec.scope == nullslice || spec.name == nullslice) {
+                return nullslice;
+            }
             bool addScope = true;
             if (FLSlice_Compare(spec.scope, kC4DefaultScopeID) == 0 && omitDefaultScope) {
                 addScope = false;
@@ -219,7 +222,7 @@ namespace litecore { namespace repl {
 
         struct CollectionOptions
         {
-            alloc_slice                         collectionPath;
+            C4CollectionSpec                    collectionSpec;
 
             C4ReplicatorMode                    push;
             C4ReplicatorMode                    pull;
@@ -230,15 +233,15 @@ namespace litecore { namespace repl {
             C4ReplicatorValidationFunction      pullFilter {nullptr};
             void*                               callbackContext {nullptr};
 
-            CollectionOptions(alloc_slice collectionPath_)
+            CollectionOptions(C4CollectionSpec collectionSpec_)
             {
-                collectionPath = collectionPath_;
+                collectionSpec = collectionSpec_;
             }
 
-            CollectionOptions(alloc_slice collectionPath_, C4Slice properties_)
+            CollectionOptions(C4CollectionSpec collectionSpec_, C4Slice properties_)
             : properties(properties_)
             {
-                collectionPath = collectionPath_;
+                collectionSpec = collectionSpec_;
             }
 
             template <class T>
@@ -289,8 +292,12 @@ namespace litecore { namespace repl {
             return _mutables._workingCollections[i].properties[kC4ReplicatorOptionDocIDs].asArray();
         }
 
-        fleece::slice collectionPath(CollectionIndex i) const {
-            return _mutables._workingCollections[i].collectionPath;
+        fleece::alloc_slice collectionPath(CollectionIndex i) const {
+            return collectionSpecToPath(_mutables._workingCollections[i].collectionSpec);
+        }
+
+        C4CollectionSpec collectionSpec(CollectionIndex i) const {
+            return _mutables._workingCollections[i].collectionSpec;
         }
 
         CollectionIndex workingCollectionCount() const {
@@ -322,7 +329,7 @@ namespace litecore { namespace repl {
             for (size_t activeIndex = 0; activeIndex < activeCollections.size(); ++activeIndex) {
                 auto foundEntry = collectionSpecToIndexOld.find(activeCollections[activeIndex]);
                 if (foundEntry == collectionSpecToIndexOld.end()) {
-                    _mutables._workingCollections.emplace_back(nullslice);
+                    _mutables._workingCollections.emplace_back(C4CollectionSpec { nullslice, nullslice });
                 } else {
                     _mutables._workingCollections.push_back(collectionOpts[foundEntry->second]);
                     _mutables._collectionSpecToIndex[activeCollections[activeIndex]] = activeIndex;
@@ -355,7 +362,7 @@ namespace litecore { namespace repl {
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
         collectionOpts.reserve(1);
-        auto& back = collectionOpts.emplace_back(kDefaultCollectionPath);
+        auto& back = collectionOpts.emplace_back(kC4DefaultCollectionSpec);
         back.push = push;
         back.pull = pull;
     }
@@ -364,8 +371,7 @@ namespace litecore { namespace repl {
         collectionOpts.reserve(params.collectionCount);
         for (unsigned i = 0; i < params.collectionCount; ++i) {
             C4ReplicationCollection& c4Coll = params.collections[i];
-            alloc_slice collPath = collectionSpecToPath(c4Coll.collection);
-            auto& back = collectionOpts.emplace_back(collPath, c4Coll.optionsDictFleece);
+            auto& back = collectionOpts.emplace_back(c4Coll.collection, c4Coll.optionsDictFleece);
             back.push = c4Coll.push;
             back.pull = c4Coll.pull;
             back.pushFilter = c4Coll.pushFilter;
@@ -377,7 +383,7 @@ namespace litecore { namespace repl {
     inline void Options::setCollectionOptions(const Options& opt) {
         collectionOpts.reserve(opt.collectionOpts.size());
         for (auto& collOpts : opt.collectionOpts) {
-            auto& back = collectionOpts.emplace_back(collOpts.collectionPath, collOpts.properties.data());
+            auto& back = collectionOpts.emplace_back(collOpts.collectionSpec, collOpts.properties.data());
             back.push = collOpts.push;
             back.pull = collOpts.pull;
             back.pushFilter = collOpts.pushFilter;
@@ -448,7 +454,7 @@ namespace litecore { namespace repl {
         }
 
         if (collectionOpts.size() == 1) {
-            auto spec = collectionPathToSpec(collectionOpts[0].collectionPath);
+            auto spec = collectionOpts[0].collectionSpec;
             if (spec == kC4DefaultCollectionSpec) {
                 _mutables._collectionAware = false;
             }
@@ -466,7 +472,7 @@ namespace litecore { namespace repl {
 
         // Create the mapping from CollectionSpec to the index to collctionOpts
         for (size_t i = 0; i < collectionOpts.size(); ++i) {
-            auto spec = collectionPathToSpec(collectionOpts[i].collectionPath);
+            auto spec = collectionOpts[i].collectionSpec;
             bool b;
             std::tie(std::ignore, b) = _mutables._collectionSpecToIndex.insert(std::make_pair(spec, i));
             if (!b) {

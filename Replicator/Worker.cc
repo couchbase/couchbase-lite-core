@@ -71,7 +71,7 @@ namespace litecore { namespace repl {
             } else {
                 firstline = false;
             }
-            s << "\"" << c.collectionPath.asString() << "\": {"
+            s << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
             << "\"Push\": " << kModeNames[c.push] << ", "
             << "\"Pull\": " << kModeNames[c.pull] << "}";
         }
