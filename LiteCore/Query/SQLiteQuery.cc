@@ -449,6 +449,8 @@ namespace litecore {
                         case kNull:
                             break;
                         case kBoolean:
+                            _statement->bind(sqlKey, (long long)val->asInt());
+                            break;
                         case kNumber:
                             if (val->isInteger() && !val->isUnsigned())
                                 _statement->bind(sqlKey, (long long)val->asInt());
