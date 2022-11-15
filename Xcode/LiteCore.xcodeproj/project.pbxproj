@@ -513,6 +513,7 @@
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
 		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
+		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
@@ -1650,6 +1651,7 @@
 		EA00E6F02915C2F900606365 /* SGRest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGRest.cc; path = ../Replicator/tests/SGRest.cc; sourceTree = "<group>"; };
 		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGTestUser.cc; path = ../Replicator/tests/SGTestUser.cc; sourceTree = "<group>"; };
 		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SG.cc; path = ../Replicator/tests/SG.cc; sourceTree = "<group>"; };
+		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ReplParams.cc; path = ../Replicator/tests/ReplParams.cc; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2189,6 +2191,7 @@
 				EA8E8AE1291D597C002106A3 /* SG.cc */,
 				EA8E8AE0291D597C002106A3 /* SGTestUser.cc */,
 				EA00E6F02915C2F900606365 /* SGRest.cc */,
+				EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */,
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* API */,
@@ -3944,6 +3947,7 @@
 			files = (
 				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
 				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
+				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
