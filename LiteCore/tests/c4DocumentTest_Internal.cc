@@ -15,6 +15,8 @@
 #include "c4Private.h"
 #include "Benchmark.hh"
 #include "fleece/Fleece.hh"
+#include "SecureDigest.hh"
+#include "slice_stream.hh"
 
 using namespace fleece;
 
@@ -178,4 +180,57 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     c4doc_release(curDocAfterMarkSync);
     c4doc_release(updatedDoc);
     c4doc_release(updatedDocRefreshed);
+}
+
+static alloc_slice digest(slice body, slice parentRevID, bool deleted) {
+    // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
+    uint8_t revLen = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
+    uint8_t delByte = deleted;
+    litecore::SHA1 sha1 = (litecore::SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
+                                    << delByte << body)
+                    .finish();
+    alloc_slice d = slice_ostream::alloced(100, [&sha1](slice_ostream& out) {
+        return out.writeHex(sha1.asSlice());
+    });
+    return d;
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
+    if (!isRevTrees()) {
+        return;
+    }
+
+    static constexpr slice
+        kEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"encryptable","value":"123-45-6789"}},3,4]})"
+        ,kNotEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"type":"encryptable","value":"123-45-6789"}},3,4]})";
+
+    slice json;
+    SECTION("verify sha1 digest") {
+        json = kNotEncryptable;
+    }
+    SECTION("verify encryptable") {
+        json = kEncryptable;
+    }
+    if (!json) {
+        return;
+    }
+    bool clear = json != kEncryptable;
+
+    fleece::alloc_slice fleeceBody;
+    {
+        TransactionHelper t(db);
+        SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+        enc.convertJSON(json);
+        fleeceBody = enc.finish();
+    }
+    std::string rid = C4Test::createFleeceRev(db, C4STR("doc"), nullslice, json, 0);
+    // rid == "1-<digest>"
+    rid = rid.substr(2);
+    alloc_slice sha1 = digest(fleeceBody, nullslice, false);
+    if (clear) {
+        REQUIRE(sha1.asString() == rid);
+    } else {
+        CHECK(sha1.asString() != rid.substr(2));
+        CHECK(sha1.asString().length() == rid.length());
+    }
 }

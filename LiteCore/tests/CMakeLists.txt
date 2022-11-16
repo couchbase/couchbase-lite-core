@@ -91,8 +91,10 @@ add_executable(
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
+    ${TOP}Replicator/tests/SG.cc
+    ${TOP}Replicator/tests/SGTestUser.cc
     main.cpp
-)
+        ../../Replicator/tests/ReplParams.cc ../../Replicator/tests/ReplParams.hh)
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
