@@ -100,7 +100,7 @@ namespace litecore { namespace repl {
             for (auto profile : {"subChanges", "getAttachment", "proveAttachment", // passive pushers
                     "changes", "proposeChanges", "rev", "norev"                    // passive pullers
             }) {
-                registerHandler(profile, &Replicator::handleConnectionMessage);
+                registerHandler(profile, &Replicator::delegateCollectionSpecificMessageToWorker);
             }
 
             registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
@@ -1273,7 +1273,7 @@ namespace litecore { namespace repl {
         _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
     }
 
-    void Replicator::handleConnectionMessage(Retained<blip::MessageIn> request) {
+    void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
         setMsgHandlerFor3_0_Client(request);
 
         slice profile = request->property("Profile"_sl);
