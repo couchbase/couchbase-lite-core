@@ -1015,7 +1015,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     verifyDocs(collectionSpecs, docIDs);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollectionTEMP]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
     const string docIDstr = idPrefix + "apera-doc1";
     const string channelIDa = idPrefix + "a";
