@@ -233,15 +233,21 @@ namespace litecore { namespace repl {
             C4ReplicatorValidationFunction      pullFilter {nullptr};
             void*                               callbackContext {nullptr};
 
+        private:
+            alloc_slice                         collectionPath;
+
+        public:
             CollectionOptions(C4CollectionSpec collectionSpec_)
             {
-                collectionSpec = collectionSpec_;
+                collectionPath = collectionSpecToPath(collectionSpec_);
+                collectionSpec = collectionPathToSpec(collectionPath);
             }
 
             CollectionOptions(C4CollectionSpec collectionSpec_, C4Slice properties_)
             : properties(properties_)
             {
-                collectionSpec = collectionSpec_;
+                collectionPath = collectionSpecToPath(collectionSpec_);
+                collectionSpec = collectionPathToSpec(collectionPath);
             }
 
             template <class T>
