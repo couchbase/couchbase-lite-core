@@ -9,6 +9,15 @@ ReplParams::ReplParams(const std::vector<C4ReplicationCollection>& collections_)
     _collectionVector = { collections_ };
     collections = _collectionVector.data();
     collectionCount = _collectionVector.size();
+    _optionsDict = {};
+    optionsDictFleece = _optionsDict.data();
+    onStatusChanged = nullptr;
+    onDocumentsEnded = nullptr;
+    onBlobProgress = nullptr;
+    propertyDecryptor = nullptr;
+    propertyEncryptor = nullptr;
+    callbackContext = nullptr;
+    socketFactory = nullptr;
 }
 
 ReplParams::ReplParams(const ReplParams &other) {
