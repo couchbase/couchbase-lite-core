@@ -30,6 +30,7 @@
 #include <fstream>
 #include <cinttypes>
 #include <mutex>
+#include <condition_variable>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
