@@ -617,7 +617,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     constexpr size_t kDocBufSize = 60;
 
     // connection closing from SGW for 1000 docs => reduced to 50
-    constexpr int kNumDocs = 50, kNumProps = 50;
+    constexpr int kNumDocs = 1000, kNumProps = 50;
     string revID;
 
     const string docIDPref = idPrefix + "doc";
@@ -704,7 +704,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         encUpdate.endArray();
         encUpdate.endDict();
         for (size_t i = 0; i < collectionCount; ++i) {
-            _sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish());
+            REQUIRE(_sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish()));
         }
     }
 

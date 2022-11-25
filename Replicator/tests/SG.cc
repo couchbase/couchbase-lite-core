@@ -161,9 +161,66 @@ void SG::flushDatabase() const {
     runRequest("POST", { }, "_flush", nullslice, true);
 }
 
-bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict) const {
-    HTTPStatus status;
-    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, false);
+static constexpr size_t bulkDocsBatchSize = 200;
+// Splits bulk docs into batches of (above number) and sends to SGW
+bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict_) const {
+    HTTPStatus status = HTTPStatus::undefined;
+    C4Error error;
+    alloc_slice docsDict { docsDict_ };
+    fleece::Doc remainingDocs = FLDoc_FromJSON(docsDict, nullptr);
+
+    // If dict is not in correct format for bulk docs
+    if(!remainingDocs["docs"_sl] || remainingDocs.asDict().count() != 1) {
+        C4Log("ERROR: Incorrect format for bulk docs!");
+        return false;
+    }
+
+    C4Log("Bulk Docs: Sending %u docs to SGW", remainingDocs["docs"_sl].asArray().count());
+
+    size_t batchNum = 1;
+
+    // While there are docs remaining to send
+    for(fleece::Array remainingDocsArray = remainingDocs["docs"_sl].asArray();
+                      remainingDocsArray.count() > 0;
+                      remainingDocsArray = remainingDocs["docs"_sl].asArray())
+    {
+        const uint32_t remainingDocsCount = remainingDocsArray.count();
+        // batchSize is the smallest of remainingDocsCount and bulkDocsBatchSize
+        const uint32_t batchSize = remainingDocsCount < bulkDocsBatchSize ? remainingDocsCount : bulkDocsBatchSize;
+
+        C4Log("Bulk Docs: Batch #%zu - %u docs - %u remaining", batchNum++, batchSize, remainingDocsCount - batchSize);
+
+        JSONEncoder encSend;
+        JSONEncoder encRetain;
+        // Start current batch
+        encSend.beginDict();
+        encSend.writeKey("docs"_sl);
+        encSend.beginArray();
+        // Add (batchSize) docs to current batch
+        for(uint32_t i = 0; i < batchSize; ++i) {
+            encSend.writeValue(remainingDocsArray.get(i));
+        }
+        // Send current batch to SGW
+        encSend.endArray();
+        encSend.endDict();
+        runRequest("POST", collectionSpec, "_bulk_docs", encSend.finish(), false, WITH_ERROR(error), &status, false);
+        if (status != HTTPStatus::Created) {
+            C4Log("Bulk Docs: ERROR completing REST request: %s", error.description().c_str());
+            return false;
+        }
+
+        // Put all remaining docs back into `remainingDocs`
+        encRetain.beginDict();
+        encRetain.writeKey("docs"_sl);
+        encRetain.beginArray();
+        for(uint32_t i = (uint32_t)batchSize; i < remainingDocsCount; ++i) {
+            encRetain.writeValue(remainingDocsArray.get(i));
+        }
+        encRetain.endArray();
+        encRetain.endDict();
+        remainingDocs = FLDoc_FromJSON(encRetain.finish(), nullptr);
+    }
+    C4Log("Bulk Docs: Complete!");
     return status == HTTPStatus::Created;
 }
 
