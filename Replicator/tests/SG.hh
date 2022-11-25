@@ -19,6 +19,7 @@
 #include "c4Test.hh"
 #include "c4Certificate.hh"
 #include "c4CppUtils.hh"
+#include "c4Replicator.h"
 #include "Response.hh"
 #include <fleece/Fleece.hh>
 #include <fleece/Expert.hh>
