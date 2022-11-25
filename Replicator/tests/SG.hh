@@ -36,6 +36,10 @@ class SG {
 public:
     class TestUser;
 
+    SG() {
+        c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName);
+    }
+
     SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
 
     static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string> &channelIDs);

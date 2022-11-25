@@ -112,6 +112,7 @@ target_include_directories(
     ${TOP}REST/tests
     ${TOP}Networking
     ${TOP}Networking/WebSockets
+    ${TOP}Networking/HTTP
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include
