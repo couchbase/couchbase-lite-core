@@ -52,7 +52,9 @@ public:
         }
 
         _replLock = unique_lock(_replMutex);
+#ifdef LITECORE_PERF_TESTING_MODE
         C4RegisterBuiltInWebSocket();
+#endif
     }
 
     // Copies a Fleece dictionary key/value to an encoder
@@ -390,6 +392,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import Wikipedia", "[Perf][C][.slow]") {
     readRandomDocs(numDocs, 100000);
 }
 
+#ifdef LITECORE_PERF_TESTING_MODE
 // This test will be automated soon, and switched to [Perf]
 N_WAY_TEST_CASE_METHOD(PerfTest, "Push and pull names data", "[PerfManual][C][.slow]") {
     if (isEncrypted()) {
@@ -441,3 +444,4 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Push and pull names data", "[PerfManual][C][.s
         writeShowFastToFile(sf_title, sf);
     }
 }
+#endif

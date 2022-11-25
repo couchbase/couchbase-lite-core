@@ -78,6 +78,13 @@ target_compile_definitions(
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
+if(LITECORE_PERF_TESTING_MODE)
+    target_compile_definitions(
+        C4Tests PRIVATE
+        LITECORE_PERF_TESTING_MODE
+    )
+endif()
+
 if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
     message(STATUS "Skipping LiteCore build, using ${LITECORE_PREBUILT_LIB}")
     target_link_libraries(
