@@ -1,9 +1,15 @@
 {
   "bootstrap": {
-    "server": "couchbase://localhost",
+    "server": "couchbase://127.0.0.1",
     "username": "Administrator",
     "password": "password",
     "use_tls_server": false
+  },
+  "api": {
+    "https": {
+      "tls_cert_path": "cert/sg_cert.pem",
+      "tls_key_path": "cert/sg_key.pem"
+    }
   },
   "logging": {
     "console": {
