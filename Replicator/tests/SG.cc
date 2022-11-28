@@ -175,14 +175,14 @@ bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict_) const 
         return false;
     }
 
+    MutableArray remainingDocsArray = remainingDocs["docs"_sl].asArray().mutableCopy();
+
     C4Log("Bulk Docs: Sending %u docs to SGW", remainingDocs["docs"_sl].asArray().count());
 
     size_t batchNum = 1;
 
     // While there are docs remaining to send
-    for(fleece::Array remainingDocsArray = remainingDocs["docs"_sl].asArray();
-                      remainingDocsArray.count() > 0;
-                      remainingDocsArray = remainingDocs["docs"_sl].asArray())
+    while(remainingDocsArray.count() > 0)
     {
         const uint32_t remainingDocsCount = remainingDocsArray.count();
         // batchSize is the smallest of remainingDocsCount and bulkDocsBatchSize
@@ -191,7 +191,6 @@ bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict_) const 
         C4Log("Bulk Docs: Batch #%zu - %u docs - %u remaining", batchNum++, batchSize, remainingDocsCount - batchSize);
 
         JSONEncoder encSend;
-        JSONEncoder encRetain;
         // Start current batch
         encSend.beginDict();
         encSend.writeKey("docs"_sl);
@@ -208,17 +207,8 @@ bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict_) const 
             C4Log("Bulk Docs: ERROR completing REST request: %s", error.description().c_str());
             return false;
         }
-
-        // Put all remaining docs back into `remainingDocs`
-        encRetain.beginDict();
-        encRetain.writeKey("docs"_sl);
-        encRetain.beginArray();
-        for(uint32_t i = (uint32_t)batchSize; i < remainingDocsCount; ++i) {
-            encRetain.writeValue(remainingDocsArray.get(i));
-        }
-        encRetain.endArray();
-        encRetain.endDict();
-        remainingDocs = FLDoc_FromJSON(encRetain.finish(), nullptr);
+        // Remove the batch from remainingDocs
+        remainingDocsArray.remove(0, batchSize);
     }
     C4Log("Bulk Docs: Complete!");
     return status == HTTPStatus::Created;
