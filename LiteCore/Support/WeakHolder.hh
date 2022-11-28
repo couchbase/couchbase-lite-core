@@ -26,11 +26,13 @@ namespace litecore {
 template <typename T>
 class WeakHolder : public RefCounted {
 public:
-    WeakHolder(T* pointer)
+    template <typename U>
+    WeakHolder(U* pointer)
     : _pointer(pointer)
     {
         DebugAssert(_pointer != nullptr);
-        _holder = dynamic_cast<RefCounted*>(_pointer);
+        RefCounted* refCounted = dynamic_cast<RefCounted*>(pointer);
+        _holder = refCounted;
         Assert(_holder);
     }
 

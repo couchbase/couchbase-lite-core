@@ -39,6 +39,7 @@ namespace litecore { namespace repl {
     class Replicator final : public Worker,
                              private blip::ConnectionDelegate
     {
+        friend class WeakHolder<blip::ConnectionDelegate>;
     public:
 
         class Delegate;
@@ -181,7 +182,7 @@ namespace litecore { namespace repl {
         void updatePullStatus(CollectionIndex i, const Status& status);
         void prepareWorkers();
 
-        void handleConnectionMessage(Retained<blip::MessageIn>);
+        void delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn>);
     public:
         template<typename WORKER>
         void registerWorkerHandler(WORKER* worker,
@@ -232,6 +233,7 @@ namespace litecore { namespace repl {
         bool              _getCollectionsRequested {}; // True while "getCollections" request pending
         alloc_slice       _remoteURL;
         bool              _setMsgHandlerFor3_0_ClientDone {false};
+        Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
     };
 
 } }
