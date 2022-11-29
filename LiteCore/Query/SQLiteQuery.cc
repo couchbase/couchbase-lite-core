@@ -401,6 +401,18 @@ namespace litecore {
     };
 
 
+    // In-memory SharedKeys implementation that is used exactly once to encode keys in a
+    // query result set.
+    class QueryResultSetKeys final : public fleece::impl::PersistentSharedKeys {
+    protected:
+        virtual bool read() override {
+            return true; // No-op
+        }
+        virtual void write(slice encodedData) override {
+            assert(false); // Should never be called
+        }
+    };
+
 
     // Reads from 'live' SQLite statement and records the results into a Fleece array,
     // which is then used as the data source of a SQLiteQueryEnum.
@@ -522,9 +534,16 @@ namespace litecore {
             // Give this encoder its own SharedKeys instead of using the database's DocumentKeys,
             // because the query results might include dicts with new keys that aren't in the
             // DocumentKeys.
+            //
+            // SharedKeys are always mutable and in a transaction, so DictKeys will not cache contained
+            // shared keys. The keys of query results are only encoded once, so it is safe to cache
+            // them. To allow caching we use QueryResultSetKeys, a subclass of PersistentSharedKeys,
+            // which doesn't actually persist the keys anywhere, but allows us to begin and end
+            // a transaction.
             Encoder enc;
-            auto sk = retained(new SharedKeys);
+            auto sk = retained(new QueryResultSetKeys);
             enc.setSharedKeys(sk);
+            sk->transactionBegan();
             enc.beginArray();
 
             unicodesn_tokenizerRunningQuery(true);
@@ -551,6 +570,7 @@ namespace litecore {
             unicodesn_tokenizerRunningQuery(false);
 
             enc.endArray();
+            sk->transactionEnded();
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
                                              enc.finishDoc().get(), rowCount, st.elapsed());
         }
