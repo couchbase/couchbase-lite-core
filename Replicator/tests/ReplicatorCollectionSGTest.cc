@@ -704,7 +704,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         encUpdate.endArray();
         encUpdate.endDict();
         for (size_t i = 0; i < collectionCount; ++i) {
-            _sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish());
+            REQUIRE(_sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish()));
         }
     }
 

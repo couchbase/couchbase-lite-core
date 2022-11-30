@@ -82,7 +82,7 @@ alloc_slice SG::runRequest(
             bool logRequests
         ) const
 {
-    auto r = createRequest(method, collectionSpec, std::move(path), body, admin, logRequests);
+    auto r = createRequest(method, collectionSpec, path, body, admin, logRequests);
     if (r->run()) {
         if(outStatus)
             *outStatus = r->status();
@@ -95,6 +95,11 @@ alloc_slice SG::runRequest(
             *outStatus = HTTPStatus::undefined;
         if(outError)
             *outError = r->error();
+
+        if (r->error() == C4Error{NetworkDomain, kC4NetErrTimeout}) {
+            C4Warn("REST request %s timed out. Current timeout is %f seconds", path.c_str(), r->getTimeout());
+        }
+
         return nullslice;
     }
 }
