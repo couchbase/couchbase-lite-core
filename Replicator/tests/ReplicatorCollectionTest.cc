@@ -866,7 +866,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
                 // Assign pushFilter to Roses
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                if (o.collectionSpec == Roses) {
                     o.pushFilter = pushFilter;
                     o.callbackContext = (void*)"db-roses-1";
                 }
@@ -907,7 +907,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
                 // Assign pullFilter to Tulips
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                if (o.collectionSpec == Tulips) {
                     o.pullFilter = pullFilter;
                     o.callbackContext = (void*)"db-tulips-1";
                 }
@@ -945,7 +945,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [&](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                if (o.collectionSpec == Tulips) {
                     o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
                 }
             }
@@ -988,7 +988,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [&](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Tulips) {
+                if (o.collectionSpec == Tulips) {
                     o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
                     o.pullFilter = pullFilter;
                 }
@@ -1025,7 +1025,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [=](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                if (o.collectionSpec == Roses) {
                     o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
                 }
             }
@@ -1067,7 +1067,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Colle
         _updateClientOptions = [=](const repl::Options& opts) {
             repl::Options ret = opts;
             for (repl::Options::CollectionOptions& o : ret.collectionOpts) {
-                if (repl::Options::collectionPathToSpec(o.collectionPath) == Roses) {
+                if (o.collectionSpec == Roses) {
                     o.setProperty(slice(kC4ReplicatorOptionDocIDs), docIDs.root());
                     o.pushFilter = pushFilter;
                 }

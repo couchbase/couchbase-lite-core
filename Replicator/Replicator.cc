@@ -1234,8 +1234,7 @@ namespace litecore { namespace repl {
         // and this is expected.
         _db->useLocked([this](Retained<C4Database>& db) {
             for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
-                C4Collection* c = db->getCollection(Options::collectionPathToSpec(
-                                                    _options->collectionPath(i)));
+                C4Collection* c = db->getCollection(_options->collectionSpec(i));
                 if (c == nullptr) {
                     _subRepls.clear();
                     error::_throw(error::NotFound, "collection %s is not found in the database.",
