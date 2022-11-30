@@ -576,12 +576,24 @@ namespace litecore {
                 DebugAssert(isValidScopeNameOrDefault(scope));
                 name.setStart(slash + 1);
             }
+            // CBL-3824: This is necessary for determining if the keystore is an index, which may occur in
+            // the case of a Full-Text Index. The keystore name for an FTI looks like: <scope>.<collection>::<index>
+            slice idxName = nullslice;
+            // Find the index separator "::"
+            if (auto idxSep = name.find(KeyStore::kIndexSeparator)) {
+                idxName = slice(idxSep.offset(2), name.end());
+                // Assert that index name is > 0
+                DebugAssert(idxName.size > 0);
+                name.setEnd(idxSep.buf);
+            }
+
             DebugAssert((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
                         || KeyStore::isValidCollectionName(name));
-            return {name, scope};
-        } else {
-            return {nullslice, nullslice};
+            // If keystore name was not an index name
+            if(!idxName)
+                return {name, scope};
         }
+        return {nullslice, nullslice};
     }
 
 
@@ -1014,6 +1026,13 @@ namespace litecore {
 
     C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
         bool inTransaction = false;
+        bool commit = false;
+        DEFER {
+            if (inTransaction) {
+                endTransaction(commit);
+            }
+        };
+
         C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
@@ -1040,10 +1059,8 @@ namespace litecore {
                 }
             }
 
-            if (remoteID > 0) {
-                // Found the remote ID!
-                return remoteID;
-            } else if (!canCreate) {
+            if (remoteID > 0 // Found the remote ID!
+                || !canCreate) {
                 break;
             } else if (creating) {
                 // Update or create the document, adding the identifier:
@@ -1065,13 +1082,10 @@ namespace litecore {
 
                 // Save the doc:
                 setInfo(kRemoteDBURLsDoc, body);
-                endTransaction(true);
-                inTransaction = false;
+                commit = true;
                 break;
             }
         }
-        if (inTransaction)
-            endTransaction(false);
         return remoteID;
     }
 

@@ -494,7 +494,7 @@ string C4Test::createFleeceRev(C4Collection *coll, C4Slice docID, C4Slice revID,
         createRev(coll, docID, revID, fleeceBody, flags);
         return string(slice(revID));
     } else {
-        return createNewRev(db, docID, fleeceBody, flags);
+        return createNewRev(coll, docID, fleeceBody, flags);
     }
 }
 
@@ -627,22 +627,20 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 
 #pragma mark - FILE IMPORT:
 
-
-// Reads a file into memory.
-fleece::alloc_slice C4Test::readFile(std::string path) {
-    INFO("Opening file " << path);
-    FILE *fd = fopen(path.c_str(), "rb");
-    REQUIRE(fd != nullptr);
-    fseeko(fd, 0, SEEK_END);
-    auto size = (size_t)ftello(fd);
-    fseeko(fd, 0, SEEK_SET);
-    fleece::alloc_slice result(size);
-    ssize_t bytesRead = fread((void*)result.buf, 1, size, fd);
-    REQUIRE(bytesRead == size);
-    fclose(fd);
+// Parameter is relative filepath for cert from project root
+fleece::alloc_slice C4Test::readFile(std::string filepath) {
+    std::ifstream inFile(filepath);
+    REQUIRE(inFile.is_open());
+    std::stringstream outData;
+    try { // The << operator can throw if an I/O error occured
+        inFile.exceptions(std::ifstream::failbit);
+        outData << inFile.rdbuf();
+    } catch(const std::ios_base::failure& f) {
+        REQUIRE(false);
+    }
+    alloc_slice result { outData.str() };
     return result;
 }
-
 
 bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
     INFO("Reading lines from " << path);

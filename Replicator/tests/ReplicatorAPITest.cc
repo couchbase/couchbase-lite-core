@@ -22,6 +22,7 @@
 #include "c4Socket.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
+#include "c4ReplicatorImpl.hh"
 
 using namespace fleece;
 using namespace std;
@@ -149,9 +150,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    _remoteDBName = "something"_sl;
+    _sg.remoteDBName = "something"_sl;
 
-    _repl = c4repl_new(db, _address, _remoteDBName, params, ERROR_INFO(err));
+    _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, ERROR_INFO(err));
     CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
@@ -161,9 +162,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
 // Test invalid URL scheme:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _address.scheme = "http"_sl;
+    _sg.address.scheme = "http"_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -173,16 +174,16 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") 
 // Test missing or invalid database name:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _remoteDBName = ""_sl;
+    _sg.remoteDBName = ""_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
 
-    _remoteDBName = "Invalid Name"_sl;
+    _sg.remoteDBName = "Invalid Name"_sl;
     err = {};
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -192,8 +193,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("localhost");
-    _address.port = 1;  // wrong port!
+    _sg.address.hostname = C4STR("localhost");
+    _sg.address.port = 1;  // wrong port!
     _mayGoOffline = true;
 
     {
@@ -221,7 +222,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    _sg.address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrUnknownHost);
@@ -408,7 +409,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
-    _address.hostname = C4STR("localhost");
+    _sg.address.hostname = C4STR("localhost");
     struct Context {
         int factoryCalls = 0;
         C4Socket* socket = nullptr;
@@ -1085,3 +1086,53 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     _socketFactory = nullptr;
 }
 
+// CBL-3747: createFleeceRev was creating rev in the default collection if revID
+// is null.
+TEST_CASE_METHOD(ReplicatorAPITest, "createFleeceRev - null revID", "[C]") {
+    C4CollectionSpec collSpec { "nullRevID"_sl, "fleeceRev"_sl };
+    auto coll = c4db_createCollection(db, collSpec, ERROR_INFO());
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(coll);
+    REQUIRE(defaultColl);
+    
+    constexpr size_t bufSize = 10;
+    for(int i = 0; i < 10; ++i) {
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%i", i);
+        createFleeceRev(coll, slice(docID), nullslice, slice(json5("{revID:'null',create:'fleece'}")));
+    }
+    
+    CHECK(c4coll_getDocumentCount(coll) == 10);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
+}
+
+class ReplicatorAPITestRemoteReplicator : public C4ReplicatorImpl {
+public:
+    ReplicatorAPITestRemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params)
+        : C4ReplicatorImpl(db, params) {}
+
+    unsigned maxRetryCount() const {
+        return getIntProperty(kC4ReplicatorOptionMaxRetries, 0);
+    }
+
+    void createReplicator() override {
+
+    }
+
+    alloc_slice URL() const override {
+        return nullslice;
+    }
+};
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not turn to zero", "[Replicator][CBL-3872]") {
+    Encoder e;
+    e.beginDict(1);
+    e.writeKey(kC4ReplicatorOptionMaxRetries);
+    e.writeUInt(ULLONG_MAX);
+    e.endDict();
+    auto fleece = e.finish();
+
+    C4ReplicatorParameters parameters{fleece};
+    ReplicatorAPITestRemoteReplicator replicator(db, parameters);
+    CHECK(replicator.maxRetryCount() == UINT_MAX); // 32-bit capped
+}

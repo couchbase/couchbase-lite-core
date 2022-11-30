@@ -279,10 +279,18 @@ namespace litecore {
 
 
         unsigned getIntProperty(slice key, unsigned defaultValue) const noexcept {
-            if (auto val = _options->properties[key]; val.type() == kFLNumber)
-                return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
-            else
-                return defaultValue;
+            if (auto val = _options->properties[key]; val.type() == kFLNumber) {
+                // CBL-3872: Large unsigned values (higher than max int64) will become
+                // negative, and thus get clamped to zero with the old logic, so add
+                // special handling for an unsigned fleece value
+                if (val.isUnsigned()) {
+                    return unsigned(std::min(val.asUnsigned(), uint64_t(UINT_MAX)));
+                }
+
+                return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())));
+            }
+            
+            return defaultValue;
         }
 
 
