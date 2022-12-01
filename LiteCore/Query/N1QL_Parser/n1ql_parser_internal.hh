@@ -146,7 +146,7 @@ static MutableArray op(const Any &oper, const Any &op1) {
         return appendAny(op(oper), op1);
     }
 
-    std::array<const char*, 7> postOps = {
+    std::array<const char*, 7> postOps = {{
         "NOT NULL",
         "IS NULL",
         "IS MISSING",
@@ -154,7 +154,7 @@ static MutableArray op(const Any &oper, const Any &op1) {
         "IS NOT NULL",
         "IS NOT MISSING",
         "IS NOT VALUED"
-    };
+    }};
     auto i = std::find(postOps.begin(), postOps.end(), postOp);
     if (i == postOps.end()) {
         return appendAny(op(oper), op1);
