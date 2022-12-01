@@ -577,7 +577,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
                     addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
                     addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
                     std::unique_lock<std::mutex> lk(mutex);
-                    if (cv.wait_for(lk, 5s) == std::cv_status::timeout) {
+                    if (cv.wait_for(lk, 10s) == std::cv_status::timeout) {
                         // timed out. Stop the replicator to avoid hanging.
                         _replClient->stop();
                     }
