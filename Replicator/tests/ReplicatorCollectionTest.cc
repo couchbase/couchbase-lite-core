@@ -586,9 +586,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
             if (_statusReceived.progress.documentCount < _expectedDocumentCount) {
                 return;
             }
-            _callbackWhenIdle = nullptr;
-            _stopOnIdle = true;
-            _checkStopWhenIdle();
+            // It seems that windows will delete the lambda object  after
+            // _callbackWhenIdle = nullptr. Therefore, capture it beforehand.
+            auto self = this;
+            self->_callbackWhenIdle = nullptr;
+            self->_stopOnIdle = true;
+            self->_checkStopWhenIdle();
         };
 
         // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
