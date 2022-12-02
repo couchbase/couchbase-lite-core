@@ -22,3 +22,6 @@ HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(S
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 
 LLVM_LTO                    = NO    // LTO makes tests very slow to link
+
+CODE_SIGN_IDENTITY = Apple Development
+DEVELOPMENT_TEAM = N2Q372V7W2
