@@ -18,6 +18,8 @@
 #include "fleece/Mutable.hh"
 #include "Any.hh"
 #include "PlatformIO.hh"
+#include <algorithm>
+#include <array>
 #include <sstream>
 #include <typeinfo>
 #include "betterassert.hh"
@@ -126,6 +128,8 @@ MutableDict dictWith(slice key, Any item) {
     return d;
 }
 
+static MutableArray op(const Any &oper, const Any &op1, const Any &op2);
+static MutableArray binaryOp(const Any &left, const Any &oper, const Any &right);
 
 // Constructing JSON operations:
 
@@ -135,7 +139,44 @@ static inline MutableArray op(const Any &oper) {
 }
 
 static MutableArray op(const Any &oper, const Any &op1) {
-    return appendAny(op(oper), op1);
+    string postOp;
+    if (!oper.with<string>([&postOp](const string& s) {
+        postOp = s;
+    })) {
+        return appendAny(op(oper), op1);
+    }
+
+    std::array<const char*, 7> postOps = {{
+        "NOT NULL",
+        "IS NULL",
+        "IS MISSING",
+        "IS VALUED",
+        "IS NOT NULL",
+        "IS NOT MISSING",
+        "IS NOT VALUED"
+    }};
+    auto i = std::find(postOps.begin(), postOps.end(), postOp);
+    if (i == postOps.end()) {
+        return appendAny(op(oper), op1);
+    }
+    size_t at = i - postOps.begin();
+    switch (at) {
+        case 0:
+            return op("IS NOT", op1, nullValue);
+        case 1:
+            return binaryOp(op1, "IS", nullValue);
+        case 2:
+            return binaryOp(op1, "IS", op("MISSING"));
+        case 4:
+            return binaryOp(op1, "IS NOT", nullValue);
+        case 5:
+            return binaryOp(op1, "IS NOT", op("MISSING"));
+        case 6:
+            return op("NOT", op("IS VALUED", op1));
+        case 3:
+        default:
+            return appendAny(op(oper), op1);
+    }
 }
 
 static MutableArray op(const Any &oper, const Any &op1, const Any &op2) {

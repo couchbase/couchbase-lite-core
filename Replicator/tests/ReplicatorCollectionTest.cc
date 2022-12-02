@@ -566,16 +566,32 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         addDocs(db2, Roses, 2, "db2-Roses-");
         addDocs(db2, Tulips, 2, "db2-Tulips-");
 
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread = thread(std::thread{[=]() {
-                addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
-                addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
-                addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
-                addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
-                sleepFor(1s);
-                stopWhenIdle();
-            }});
-            _callbackWhenIdle = nullptr;
+        std::mutex mutex;
+        std::condition_variable cv;
+
+        _callbackWhenIdle = [=, &jthread, &mutex, &cv]() {
+            if (jthread.thread.get_id() == std::thread::id()) {
+                jthread.thread = thread(std::thread{[=, &mutex, &cv]() {
+                    addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
+                    addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
+                    addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
+                    addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
+                    std::unique_lock<std::mutex> lk(mutex);
+                    if (cv.wait_for(lk, 10s) == std::cv_status::timeout) {
+                        // timed out. Stop the replicator to avoid hanging.
+                        _replClient->stop();
+                    }
+                }});
+            }
+            if (_statusReceived.progress.documentCount < _expectedDocumentCount) {
+                return;
+            }
+            // It seems that windows will delete the lambda object  after
+            // _callbackWhenIdle = nullptr. Therefore, capture it beforehand.
+            auto self = this;
+            self->_callbackWhenIdle = nullptr;
+            self->_stopOnIdle = true;
+            self->_checkStopWhenIdle();
         };
 
         // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
@@ -583,6 +599,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         // 4 docs for push, 4docs for pull,                         total 8
         _expectedDocumentCount = 20;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
+        cv.notify_all();
+
         CHECK(c4coll_getDocumentCount(roses) == 6);
         CHECK(c4coll_getDocumentCount(tulips) == 6);
         CHECK(c4coll_getDocumentCount(roses2) == 6);
