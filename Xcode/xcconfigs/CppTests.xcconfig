@@ -23,3 +23,5 @@ GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 
 LLVM_LTO                    = NO    // LTO makes tests very slow to link and confuses Instruments
+
+CODE_SIGNING_ALLOWED = NO
