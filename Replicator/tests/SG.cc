@@ -14,6 +14,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
         std::string path,
         slice body,
         bool admin,
+        double timeout,
         bool logRequests
 ) const {
     auto port = uint16_t(address.port + !!admin);
@@ -57,7 +58,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
                                               (std::string)(slice)(address.hostname),
                                               port,
                                               path);
-    r->setHeaders(headers).setBody(body).setTimeout(5);
+    r->setHeaders(headers).setBody(body).setTimeout(timeout);
     if (pinnedCert)
         r->allowOnlyCert(pinnedCert);
     if (authHeader_)
@@ -79,10 +80,11 @@ alloc_slice SG::runRequest(
             bool admin,
             C4Error *outError,
             HTTPStatus *outStatus,
+            double timeout,
             bool logRequests
         ) const
 {
-    auto r = createRequest(method, collectionSpec, path, body, admin, logRequests);
+    auto r = createRequest(method, collectionSpec, path, body, admin, timeout, logRequests);
     if (r->run()) {
         if(outStatus)
             *outStatus = r->status();
@@ -166,9 +168,9 @@ void SG::flushDatabase() const {
     runRequest("POST", { }, "_flush", nullslice, true);
 }
 
-bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict) const {
+bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, double timeout) const {
     HTTPStatus status;
-    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, false);
+    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, timeout, false);
     return status == HTTPStatus::Created;
 }
 
