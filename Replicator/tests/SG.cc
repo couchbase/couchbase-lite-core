@@ -145,11 +145,29 @@ bool SG::assignUserChannel(const std::string& username, const std::vector<std::s
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                    slice body, const std::vector<std::string> &channelIDs, C4Error *err) const {
     // Only add the "channels" field if channelIDs is not empty
-    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+    alloc_slice bodyWithChannel;
+    if(!channelIDs.empty()) {
+        bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+        if(!bodyWithChannel) { // body had invalid JSON
+            return false;
+        }
+    }
+
     HTTPStatus status;
     runRequest("PUT", collectionSpec, docID,
                channelIDs.empty() ? body : bodyWithChannel, false,
                err, &status);
+    return status == HTTPStatus::OK || status == HTTPStatus::Created;
+}
+
+bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body, C4Error *err) const {
+    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, { });
+    if(!bodyWithChannel) { // body had invalid JSON
+        return false;
+    }
+    HTTPStatus status;
+    runRequest("PUT", collectionSpec, docID,
+               bodyWithChannel, false, err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 

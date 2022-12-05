@@ -37,7 +37,7 @@ public:
     class TestUser;
 
     SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
-
+    // Will return nullslice if your json was invalid
     static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string> &channelIDs);
     slice getServerName() const;
     // Flush should only be used with Walrus
@@ -47,7 +47,11 @@ public:
     bool deleteUser(const std::string& username) const;
     bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
-                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+                          slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
+    // Use this in the case that you want a doc which belongs to no channels
+    // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels
+    bool upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID,
+                                    slice body, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict) const;
     alloc_slice getDoc(std::string docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
 
