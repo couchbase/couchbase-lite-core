@@ -83,8 +83,9 @@ namespace litecore { namespace websocket {
         kNetErrHostUnreachable,
         kNetErrAddressNotAvailableAIL,
         kNetErrBrokenPipe,
+        kNetErrUnknownInterface,
         // Add new codes here. You MUST add messages to kLiteCoreMessages!
-        // You MUST add corresponding kC4NetErr codes to the enum in C4Base.h!
+        // You MUST add corresponding kC4NetErr codes to the enum in c4Error.h!
 
         kNetErrorMaxPlus1
     };

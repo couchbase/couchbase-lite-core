@@ -337,7 +337,8 @@ namespace litecore {
             "host reported not available",
             "host not reachable",
             "address not available",
-            "broken pipe"
+            "broken pipe",
+            "unknown interface"
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
