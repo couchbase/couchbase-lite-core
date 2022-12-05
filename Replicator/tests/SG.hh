@@ -47,7 +47,7 @@ public:
     bool deleteUser(const std::string& username) const;
     bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
-                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+                          slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
     // Use this in the case that you want a doc which belongs to no channels
     // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels

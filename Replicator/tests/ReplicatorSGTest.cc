@@ -490,7 +490,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
 TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]") {
     static constexpr int kNumDocs = 1000, kNumProps = 1000;
     flushScratchDatabase();
-    bool logRemoteRequests = false;
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
@@ -596,7 +595,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][Delta]") {
     flushScratchDatabase();
-    bool logRemoteRequests = false;
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
