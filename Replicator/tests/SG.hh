@@ -47,12 +47,12 @@ public:
     bool deleteUser(const std::string& username) const;
     bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
-                          slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
+                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+    bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
     // Use this in the case that you want a doc which belongs to no channels
     // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels
     bool upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID,
                                     slice body, C4Error* err = nullptr) const;
-    bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict) const;
     alloc_slice getDoc(std::string docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
 
     void setAdminCredentials(std::string username, std::string password) { adminUsername = username;
@@ -126,6 +126,7 @@ private:
             std::string path,
             slice body = nullslice,
             bool admin = false,
+            double timeout = 5.0,
             bool logRequests = true
     ) const;
     alloc_slice runRequest(
@@ -136,6 +137,7 @@ private:
             bool admin = false,
             C4Error *outError = nullptr,
             HTTPStatus *outStatus = nullptr,
+            double timeout = 5.0,
             bool logRequests = true
     ) const;
 };
