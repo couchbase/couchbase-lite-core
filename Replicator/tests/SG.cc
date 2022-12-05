@@ -168,14 +168,7 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
 
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string &docID, const string &revID, slice body,
                    const std::vector<std::string> &channelIDs, C4Error *err) const {
-    alloc_slice bodyWithRev = addRevToJSON(body, revID);
-    alloc_slice bodyWithChannel = bodyWithRev;
-    if(!channelIDs.empty()) {
-        bodyWithChannel = addChannelToJSON(bodyWithRev, "channels"_sl, channelIDs);
-    }
-    HTTPStatus status;
-    runRequest("PUT", collectionSpec, docID, bodyWithChannel, false, err, &status);
-    return status == HTTPStatus::OK || status == HTTPStatus::Created;
+    return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
 }
 
 slice SG::getServerName() const {

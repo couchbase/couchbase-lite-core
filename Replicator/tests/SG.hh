@@ -49,6 +49,8 @@ public:
     bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                           slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+    bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID,
+                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
     alloc_slice getDoc(std::string docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
 
