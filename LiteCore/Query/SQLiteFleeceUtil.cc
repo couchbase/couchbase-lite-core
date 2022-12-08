@@ -133,7 +133,7 @@ namespace litecore {
             root = Value::fromTrustedData(data());
             if (_usuallyFalse(!root)) {
                 Warn("Invalid Fleece data in SQLite table");
-                error::_throw(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData, "QueryFleeceScope getting invalid Fleece data");
             }
         } else {
             root = Dict::kEmpty;             // No current revision body; may be deleted rev

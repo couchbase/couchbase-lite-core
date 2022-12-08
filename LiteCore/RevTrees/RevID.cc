@@ -38,7 +38,7 @@ namespace litecore {
             error::_throw(error::InvalidParameter);
         slice_istream digest = *this;
         if (auto gen = digest.readUVarInt(); !gen || *gen == 0 || *gen > UINT_MAX)
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "revid digest error");
         else
             return {unsigned(*gen), digest};
     }
@@ -56,7 +56,7 @@ namespace litecore {
         if (isVersion())
             return VersionVector::readCurrentVersionFromBinary(*this);
         else if (size == 0)
-            error::_throw(error::CorruptRevisionData);  // buffer too short!
+            error::_throw(error::CorruptRevisionData, "revid reading version error");  // buffer too short!
         else
             error::_throw(error::InvalidParameter);     // it's a digest, not a version
     }
@@ -65,7 +65,7 @@ namespace litecore {
         if (isVersion())
             return VersionVector::fromBinary(*this);
         else if (size == 0)
-            error::_throw(error::CorruptRevisionData);  // buffer too short!
+            error::_throw(error::CorruptRevisionData, "revid reading version vector error");  // buffer too short!
         else
             error::_throw(error::InvalidParameter);     // it's a digest, not a version
     }

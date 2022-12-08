@@ -2038,7 +2038,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "
     Options serverOpts = Options::passive(_collSpec);
 
     Retained<C4Collection> coll = createCollection(db, { "foo"_sl, "bar"_sl });
-    Options::CollectionOptions tmp(Options::collectionSpecToPath({ "foo"_sl, "bar"_sl }));
+    Options::CollectionOptions tmp{{ "foo"_sl, "bar"_sl }};
     tmp.pull = opts.pull(0);
     tmp.push = opts.push(0);
     opts.collectionOpts.push_back(tmp);
@@ -2048,7 +2048,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "
     }
 
     SECTION("Same count but mismatched names should return NotFound") {
-        tmp = Options::CollectionOptions(Options::collectionSpecToPath({ "foo"_sl, "baz"_sl }));
+        tmp = Options::CollectionOptions({ "foo"_sl, "baz"_sl });
         tmp.pull = kC4Passive;
         tmp.push = kC4Passive;
         serverOpts.collectionOpts.insert(serverOpts.collectionOpts.begin(), tmp);

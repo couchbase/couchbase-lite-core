@@ -456,6 +456,7 @@ bool C4Error::mayBeNetworkDependent() const noexcept {
         kC4NetErrHostUnreachable,
         kC4NetErrAddressNotAvailable,
         kC4NetErrBrokenPipe,
+        kC4NetErrUnknownInterface,
         0};
     static ErrorSet kUnreachable = { // indexed by C4ErrorDomain
         nullptr,
