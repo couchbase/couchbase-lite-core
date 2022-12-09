@@ -128,7 +128,11 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
         ExpectingExceptions x;
         REQUIRE(!c4db_deleteCollection(db, kC4DefaultCollectionSpec, &err));
     }
-    CHECK((err.code == kC4ErrorInvalidParameter && err.message() == "Default collection cannot be deleted."));
+    CHECK((err.domain == LiteCoreDomain && err.code == kC4ErrorInvalidParameter));
+    C4SliceResult errMsg = c4error_getMessage(err);
+    constexpr const char* expectedErrMsg = "Default collection cannot be deleted.";
+    CHECK(std::string((char*)errMsg.buf, errMsg.size) == expectedErrMsg);
+    c4slice_free(errMsg);
 }
 
 
