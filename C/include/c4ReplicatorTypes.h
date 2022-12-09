@@ -248,10 +248,11 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionOnlySelfSignedServerCert "onlySelfSignedServer" ///< Only accept self signed server certs (for P2P, bool)
 
     // HTTP options:
-    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
-    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
-    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see [1]
-    #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see [3]]
+    #define kC4ReplicatorOptionExtraHeaders     "headers"   ///< Extra HTTP headers (string[])
+    #define kC4ReplicatorOptionUserAgent        "userAgent" ///< User Agent found in headers
+    #define kC4ReplicatorOptionCookies          "cookies"   ///< HTTP Cookie header value (string)
+    #define kC4ReplicatorOptionAuthentication   "auth"      ///< Auth settings (Dict); see [1]
+    #define kC4ReplicatorOptionProxyServer      "proxy"     ///< Proxy settings (Dict); see [3]]
 
     // WebSocket options:
     #define kC4ReplicatorHeartbeatInterval      "heartbeat"         ///< Interval in secs to send a keepalive ping
