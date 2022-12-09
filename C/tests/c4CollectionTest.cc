@@ -122,32 +122,13 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 
-    // It is, surprisingly, legal to delete the default collection:
-    REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+    // It is illegal to delete the default collection:
     C4Error err {};
-    CHECK(c4db_getDefaultCollection(db, &err) == nullptr);
-    CHECK(err.domain == 0);
-    CHECK(err.code == 0);
-    CHECK(c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()) == nullptr);
-    CHECK(getCollectionNames(kC4DefaultScopeID) == "");
-    
-    // But you can't recreate it:
-    c4log_warnOnErrors(false);
-    ++gC4ExpectExceptions;
-    CHECK(!c4db_createCollection(db, kC4DefaultCollectionSpec, &err));
-    --gC4ExpectExceptions;
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorInvalidParameter);
-    c4log_warnOnErrors(true);
-
-    // However, the default scope still exists,
-    CHECK(c4db_hasScope(db, kC4DefaultScopeID));
-    // and scopeNames should include the default scope as well.
-    FLMutableArray names = c4db_scopeNames(db, ERROR_INFO());
-    CHECK(FLArray_Count(names) == 1);
-    FLValue name = FLArray_Get(names, 0);
-    CHECK(FLSlice_Compare(FLValue_AsString(name), kC4DefaultScopeID) == 0);
-    FLMutableArray_Release(names);
+    {
+        ExpectingExceptions x;
+        REQUIRE(!c4db_deleteCollection(db, kC4DefaultCollectionSpec, &err));
+    }
+    CHECK((err.code == kC4ErrorInvalidParameter && err.message() == "Default collection cannot be deleted."));
 }
 
 
