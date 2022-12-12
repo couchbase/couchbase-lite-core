@@ -699,7 +699,7 @@ namespace litecore {
         if (isDefaultCollection(spec)) {
             error::_throw(error::InvalidParameter, "Default collection cannot be deleted.");
         }
-        
+
         checkOpen();
 
         // Use the spec _before_ deleting the collection, in case the collection owned the slices,

@@ -97,6 +97,9 @@ public:
 static constexpr slice GuitarsName = "guitars"_sl;
 static constexpr C4CollectionSpec Guitars = { GuitarsName, kC4DefaultScopeID };
 
+// CBL-3979: due to the technicality of SGW, we temporarily disallow deletion of the default
+// collection
+#define NOT_DELETE_DEFAULT_COLLECTION
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
     CHECK(getScopeNames() == "_default");
@@ -122,8 +125,40 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 
-    // It is illegal to delete the default collection:
     C4Error err {};
+
+#ifndef NOT_DELETE_DEFAULT_COLLECTION
+
+    // It is, surprisingly, legal to delete the default collection:
+    REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+
+    CHECK(c4db_getDefaultCollection(db, &err) == nullptr);
+    CHECK(err.domain == 0);
+    CHECK(err.code == 0);
+    CHECK(c4db_getCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()) == nullptr);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "");
+
+    // But you can't recreate it:
+    c4log_warnOnErrors(false);
+    ++gC4ExpectExceptions;
+    CHECK(!c4db_createCollection(db, kC4DefaultCollectionSpec, &err));
+    --gC4ExpectExceptions;
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
+    c4log_warnOnErrors(true);
+
+    // However, the default scope still exists,
+    CHECK(c4db_hasScope(db, kC4DefaultScopeID));
+    // and scopeNames should include the default scope as well.
+    FLMutableArray names = c4db_scopeNames(db, ERROR_INFO());
+    CHECK(FLArray_Count(names) == 1);
+    FLValue name = FLArray_Get(names, 0);
+    CHECK(FLSlice_Compare(FLValue_AsString(name), kC4DefaultScopeID) == 0);
+    FLMutableArray_Release(names);
+
+#else
+
+    // It is illegal to delete the default collection:
     {
         ExpectingExceptions x;
         REQUIRE(!c4db_deleteCollection(db, kC4DefaultCollectionSpec, &err));
@@ -133,6 +168,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     constexpr const char* expectedErrMsg = "Default collection cannot be deleted.";
     CHECK(std::string((char*)errMsg.buf, errMsg.size) == expectedErrMsg);
     c4slice_free(errMsg);
+#endif
 }
 
 
