@@ -1773,3 +1773,118 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     REQUIRE(doc);
     CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
 }
+// This test takes ~3 mins, so I have given it "SyncCollSlow" tag
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection SG", "[.SyncCollSlow]") {
+    string idPrefix = timePrefix() + "pidfsg";
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "pidfsgc", { "*" } };
+    _sg.authHeader = testUser.authHeader();
+
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+            Roses
+    };
+    std::array<C4Collection*, collectionCount> collections
+            = collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+    }
+
+    ReplParams replParams { replCollections };
+
+    C4Log("-------- Populating local db --------");
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", collections[0], 0, false, 0, idPrefix);
+    };
+    populateDB();
+    auto numDocs = c4coll_getDocumentCount(collections[0]);
+
+    // Filter replication by docID
+    std::array<std::unordered_map<alloc_slice, unsigned>, collectionCount> docIDs { };
+    docIDs[0] = getDocIDs(collections[0]);
+    replParams.setDocIDs( docIDs );
+
+    C4Log("-------- Pushing to SG --------");
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
+    replicate(replParams);
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    {
+        constexpr size_t docBufSize = 50;
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for (int docNo = 0; docNo < numDocs; ++docNo) {
+            char docID[docBufSize];
+            snprintf(docID, docBufSize, "%s%07u", idPrefix.c_str(), docNo+1);
+            C4Error error;
+            c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            REQUIRE(doc);
+            Dict props = c4doc_getProperties(doc);
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(doc->revID);
+            for (Dict::iterator i(props); i; ++i) {
+                enc.writeKey(i.keyString());
+                auto value = i.value();
+                if (i.keyString() == "Play Count"_sl)
+                    enc.writeInt(value.asInt() + 1);
+                else
+                    enc.writeValue(value);
+            }
+            enc.endDict();
+        }
+        enc.endArray();
+        enc.endDict();
+        _sg.insertBulkDocs(Roses, enc.finish(), 300);
+    }
+
+    double timeWithDelta = 0, timeWithoutDelta = 0;
+    for (int pass = 1; pass <= 3; ++pass) {
+        if (pass == 3) {
+            C4Log("-------- DISABLING DELTA SYNC --------");
+            replParams.setOption(kC4ReplicatorOptionDisableDeltas, true);
+        }
+
+        C4Log("-------- PASS #%d: Repopulating local db --------", pass);
+        deleteAndRecreateDB();
+        collections = collectionPreamble(collectionSpecs, testUser);
+        populateDB();
+        C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
+        replParams.setPushPull(kC4Disabled, kC4OneShot);
+        Stopwatch st;
+        replicate(replParams);
+        double time = st.elapsed();
+        C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, numDocs/time);
+        if (pass == 2)
+            timeWithDelta = time;
+        else if (pass == 3)
+            timeWithoutDelta = time;
+
+        int n = 0;
+        C4Error error;
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[0], nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            auto revID = slice(info.revID);
+            CHECK(revID.hasPrefix("2-"_sl));
+            ++n;
+        }
+        CHECK(error.code == 0);
+        CHECK(n == numDocs);
+    }
+
+    C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
+          timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
+}
