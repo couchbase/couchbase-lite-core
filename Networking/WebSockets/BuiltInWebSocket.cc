@@ -192,6 +192,14 @@ namespace litecore { namespace websocket {
                                         "Invalid/unsupported proxy settings"_sl));
             return nullptr;
         }
+        
+        if (authType == slice(kC4AuthTypeBasic)) {
+            bool enableChallengeAuth = authDict[kC4ReplicatorAuthEnableChallengeAuth].asBool();
+            logic.enableChallengeAuth(enableChallengeAuth);
+            if (!enableChallengeAuth) {
+                configureAuthHeader(logic, authDict); // Preemptive Basic Auth
+            }
+        }
 
         // Now send the HTTP request(s):
         bool usedAuth = false;
@@ -221,12 +229,10 @@ namespace litecore { namespace websocket {
                     break; // Will continue with the same socket (after connecting to a proxy)
                 case HTTPLogic::kAuthenticate: {
                     if (!usedAuth && authType == slice(kC4AuthTypeBasic)
+                                  && logic.isChallengeAuthEnabled()
                                   && !logic.authChallenge()->forProxy
                                   && logic.authChallenge()->type == "Basic") {
-                        slice username = authDict[kC4ReplicatorAuthUserName].asString();
-                        slice password = authDict[kC4ReplicatorAuthPassword].asString();
-                        if (username && password) {
-                            logic.setAuthHeader(HTTPLogic::basicAuth(username, password));
+                        if (configureAuthHeader(logic, authDict)) {
                             usedAuth = true;
                             break; // retry with credentials
                         }
@@ -289,6 +295,17 @@ namespace litecore { namespace websocket {
             closeWithException(x, "configuring TLS client certificate");
             return false;
         }
+    }
+
+
+    bool BuiltInWebSocket::configureAuthHeader(HTTPLogic &logic, Dict auth) {
+        slice username = auth[kC4ReplicatorAuthUserName].asString();
+        slice password = auth[kC4ReplicatorAuthPassword].asString();
+        if (username && password) {
+            logic.setAuthHeader(HTTPLogic::basicAuth(username, password));
+            return true;
+        }
+        return false;
     }
 
 
