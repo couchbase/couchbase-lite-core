@@ -209,6 +209,8 @@ namespace litecore { namespace repl {
         onError(C4Error::make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what())));
     }
 
+    
+    // Update my error.This will also lead to a call to C4ReplicatorImpl::notifyStateChanged()
     void Worker::onError(C4Error err) {
         _status.error = err;
         _statusChanged = true;

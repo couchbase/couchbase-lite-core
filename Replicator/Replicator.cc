@@ -37,20 +37,6 @@ using namespace litecore::blip;
 
 
 namespace litecore { namespace repl {
-
-    struct StoppingErrorEntry {
-        C4Error err;
-        bool isFatal;
-        slice msg;
-    };
-
-    // Errors treated specially by onError()
-    static constexpr StoppingErrorEntry StoppingErrors[] = {
-        {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
-        {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
-        {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
-    };
-
                              
     std::string Replicator::ProtocolName() {
         stringstream result;
@@ -231,6 +217,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Closes the BLIP Connection, which will in turn stop the Replicator
     void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
         if (connected()) {
             connection().close(closeCode, message);
@@ -459,6 +446,9 @@ namespace litecore { namespace repl {
     }
 
 
+    // Handle errors, will stop Replicator apart from if first conditional is met.
+    // c4RemoteReplicator::handleStopped() will decide if we should stay kC4Stopped, or retry connection (and
+    // therefore go to kC4Offline)
     void Replicator::onError(C4Error error) {
         if(status().error.code != 0 && error.domain == WebSocketDomain &&
            (error.code == kWebSocketCloseAppPermanent || error.code == kWebSocketCloseAppTransient)) {
@@ -467,21 +457,14 @@ namespace litecore { namespace repl {
             logVerbose("kWebSocketCloseAppPermanent or kWebSocketCloseAppTransient received, ignoring (only relevant for underlying connection...)");
             return;
         }
-        
+        // Let worker update the error we're holding
         Worker::onError(error);
-        for (const StoppingErrorEntry& stoppingErr : StoppingErrors) {
-            if (stoppingErr.err == error) {
-                string message = error.description().c_str();
-                if (stoppingErr.isFatal) {
-                    logError("Stopping due to fatal error: %s", message.c_str());
-                    _disconnect(websocket::kCloseAppPermanent, stoppingErr.msg);
-                } else {
-                    logError("Stopping due to error: %s", message.c_str());
-                    _disconnect(websocket::kCloseAppTransient, stoppingErr.msg);
-                }
-                return;
-            }
-        }
+
+        // Log error and stop replicator
+        // The logic in c4RemoteReplicator::handleStopped() will decide if we should retry connection
+        string message = error.description();
+        logError("Stopping due to error: %s", message.c_str());
+        _disconnect(websocket::kCloseAppTransient, message);
     }
 
 
@@ -825,14 +808,16 @@ namespace litecore { namespace repl {
                 if (!root) {
                     auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
                                                  "Unparseable checkpoints: %.*s", SPLAT(json));
-                    return gotError(error);
+                    onError(error);
+                    return;
                 }
 
                 Array checkpointArray = root.asArray();
                 if (checkpointArray.count() != _subRepls.size()) {
                     auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
                                                  "Invalid number of checkpoints: %.*s", SPLAT(json));
-                    return gotError(error);
+                    onError(error);
+                    return;
                 }
                 
                 // Validate and read each checkpoints:
@@ -846,8 +831,7 @@ namespace litecore { namespace repl {
                         auto error = C4Error::printf(WebSocketDomain, 404,
                                                      "Collection '%.*s' is not found on the remote server",
                                                      SPLAT(collPath));
-                        gotError(error);
-                        _stop();
+                        onError(error);
                         return;
                     }
                     
