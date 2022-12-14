@@ -1792,7 +1792,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
 
     replicate(replParams);
     for(auto& coll : collections) {
-        c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetCurrentRev, nullptr);
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc);
         CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
     }
@@ -1859,10 +1859,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             enc.writeString(docID);
             enc.writeKey("_rev"_sl);
             enc.writeString(doc->revID);
-            for (Dict::iterator i(props); i; ++i) {
-                enc.writeKey(i.keyString());
-                auto value = i.value();
-                if (i.keyString() == "Play Count"_sl)
+            for (Dict::iterator it(props); it; ++it) {
+                enc.writeKey(it.keyString());
+                auto value = it.value();
+                if (it.keyString() == "Play Count"_sl)
                     enc.writeInt(value.asInt() + 1);
                 else
                     enc.writeValue(value);
@@ -1904,7 +1904,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
         for(auto& coll : collections) {
             int n = 0;
             C4Error error;
-            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[0], nullptr, ERROR_INFO(error));
+            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(coll, nullptr, ERROR_INFO(error));
             REQUIRE(e);
             while (c4enum_next(e, ERROR_INFO(error))) {
                 C4DocumentInfo info;
