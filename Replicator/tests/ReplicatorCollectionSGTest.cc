@@ -807,24 +807,31 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    const string docID = idPrefix + "ppd-doc1";
+    
+    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-    string revID;
+    
+    // Set up replication
+    vector<string> chIDs { idPrefix + "ppdsg" };
+    SG::TestUser testUser { _sg, "ppdsg", chIDs };
+    _sg.authHeader = testUser.authHeader();
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
-    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+    const string docID = idPrefix + "ppd-doc1";
 
-    collectionSpecs = {
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses
     };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    replCollections = {
-        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
-    };
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+    }
 
     ReplParams replParams { replCollections };
-
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
+    
     createRev(collections[0], slice(docID), kRevID, kFleeceBody);
     createRev(collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
     replicate(replParams);
@@ -832,7 +839,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     C4Log("-------- Deleting and re-creating database --------");
     deleteAndRecreateDB();
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    collections = collectionPreamble(collectionSpecs, testUser);
     replParams.setPushPull(kC4Disabled, kC4OneShot);
 
     createRev(collections[0], slice(docID), kRevID, kFleeceBody);
