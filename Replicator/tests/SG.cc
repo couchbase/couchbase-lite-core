@@ -138,9 +138,37 @@ bool SG::deleteUser(const string &username) const {
 }
 
 bool SG::assignUserChannel(const std::string& username, const std::vector<std::string> &channelIDs) const {
-    alloc_slice bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("collection_access"_sl);
+    {
+        enc.beginDict();
+        enc.writeKey("flowers"_sl);
+        {
+            enc.beginDict();
+            enc.writeKey("roses"_sl);
+            {
+                enc.beginDict();
+                enc.writeKey("admin_channels"_sl);
+                {
+                    enc.beginArray();
+                    for (const auto& chID : channelIDs) {
+                        FLEncoder_WriteString(enc, slice(chID));
+                    }
+                    enc.endArray();
+                }
+                enc.endDict();
+            }
+            enc.endDict();
+        }
+        enc.endDict();
+    }
+    enc.endDict();
+    Doc doc {enc.finish()};
+    Value v = doc.root();
+
     HTTPStatus status;
-    runRequest("PUT", { }, "_user/"s+username, bodyWithChannel, true, nullptr, &status);
+    runRequest("PUT", { }, "_user/"s+username, v.toJSON(), true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
