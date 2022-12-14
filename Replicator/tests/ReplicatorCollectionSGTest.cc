@@ -628,9 +628,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collections = collectionPreamble(collectionSpecs, testUser);
-
-    for(int i = 0; i < collectionCount; ++i) {
+    for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
     }
 
@@ -774,7 +772,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
     std::array<vector<C4BlobKey>, collectionCount> blobKeys; // blobKeys1a, blobKeys1b;
 
-    for(int i = 0; i < collectionCount; ++i) {
+    for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
     }
     ReplParams replParams { replCollections };
