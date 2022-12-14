@@ -971,10 +971,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
-    const string docID = idPrefix + "uocd-doc";
-    const string channelID = idPrefix + "a";
 
+    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
+
+    // Set up replication
+    vector<string> chIDs { idPrefix + "uocd" };
+    SG::TestUser testUser { _sg, "uocd", chIDs };
+    _sg.authHeader = testUser.authHeader();
+    
+    const string docID = idPrefix + "uocd-doc";
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
@@ -991,19 +997,20 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     };
 
     for(const auto& b : bodies) {
-        _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false", b, {channelID });
+        _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false", b, chIDs);
     }
 
     // Set up pull replication
     std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
+        collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    for(int i = 0; i < collectionCount; ++i) {
-        replCollections[i] = { collectionSpecs[i], kC4Disabled, kC4OneShot };
+    for(size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
     }
 
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4Disabled, kC4OneShot);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -1019,7 +1026,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
 
     // Update doc:
-    auto body = SG::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, {channelID });
+    auto body = SG::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, chIDs);
     {
         TransactionHelper t { db };
         body = c4db_encodeJSON(db, body, ERROR_INFO());
