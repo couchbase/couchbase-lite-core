@@ -812,8 +812,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     constexpr size_t collectionCount = 1;
     
     // Set up replication
-    vector<string> chIDs { idPrefix + "ppdsg" };
-    SG::TestUser testUser { _sg, "ppdsg", chIDs };
+    SG::TestUser testUser { _sg, "ppdsg", { "*" } }; // Doesn't use channels
     _sg.authHeader = testUser.authHeader();
 
     const string docID = idPrefix + "ppd-doc1";
@@ -825,15 +824,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    for(int i = 0; i < collectionCount; ++i) {
+    for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
+        createRev(collections[i], slice(docID), kRevID, kFleeceBody);
+        createRev(collections[i], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
     }
 
     ReplParams replParams { replCollections };
     replParams.setPushPull(kC4OneShot, kC4Disabled);
     
-    createRev(collections[0], slice(docID), kRevID, kFleeceBody);
-    createRev(collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
+    
     replicate(replParams);
 
     C4Log("-------- Deleting and re-creating database --------");
@@ -846,13 +846,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
 
     replicate(replParams);
 
-    c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
-    REQUIRE(remoteDoc);
-    CHECK(remoteDoc->revID == kRev2ID);
-    CHECK((remoteDoc->flags & kDocDeleted) != 0);
-    CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
-    REQUIRE(c4doc_selectParentRevision(remoteDoc));
-    CHECK(remoteDoc->selectedRev.revID == kRevID);
+    for(size_t i = 0; i < collectionCount; ++i){
+        c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[i], slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(remoteDoc);
+        CHECK(remoteDoc->revID == kRev2ID);
+        CHECK((remoteDoc->flags & kDocDeleted) != 0);
+        CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
+        REQUIRE(c4doc_selectParentRevision(remoteDoc));
+        CHECK(remoteDoc->selectedRev.revID == kRevID);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
