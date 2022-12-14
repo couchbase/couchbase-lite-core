@@ -756,22 +756,34 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    //    constexpr size_t collectionCount = 2;
+    
+    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
-    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
-    std::vector<C4ReplicationCollection> replCollections {collectionCount};
-    std::array<vector<C4BlobKey>, collectionCount> blobKeys; // blobKeys1a, blobKeys1b;
+    // Set up replication
+    SG::TestUser testUser { _sg, "papasg", { "*" } }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
 
-    collectionSpecs = {
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses
         //, Tulips
     };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+    std::array<vector<C4BlobKey>, collectionCount> blobKeys; // blobKeys1a, blobKeys1b;
 
-    vector<string> attachments1 = {idPrefix+"Attachment A", idPrefix+"Attachment B", idPrefix+"Attachment Z"};
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+    }
+    ReplParams replParams { replCollections };
+    
+    vector<string> attachments1 = {
+            idPrefix + "Attachment A",
+            idPrefix + "Attachment B",
+            idPrefix + "Attachment Z"
+        };
     {
         string doc1 = idPrefix + "doc1";
         string doc2 = idPrefix + "doc2";
@@ -779,12 +791,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         for (size_t i = 0; i < collectionCount; ++i) {
             blobKeys[i] = addDocWithAttachments(db, collectionSpecs[i],  slice(doc1), attachments1, "text/plain");
             docIDs[i] = getDocIDs(collections[i]);
-            replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
         }
     }
 
-    ReplParams replParams { replCollections };
+    C4Log("-------- Pushing to SG --------");
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
+
+    C4Log("-------- Checking docs and attachments --------");
     verifyDocs(collectionSpecs, docIDs);
     for (size_t i = 0; i < collectionCount; ++i) {
         checkAttachments(verifyDb, blobKeys[i], attachments1);
