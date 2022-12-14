@@ -485,9 +485,11 @@ namespace litecore {
                 }
             }
 
-            auto onStatusChanged = _onStatusChanged.load();
-            if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
-                onStatusChanged(this, status, _options->callbackContext);
+            if( !(status.error.code && status.level > kC4Offline) ) {
+                auto onStatusChanged = _onStatusChanged.load();
+                if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
+                    onStatusChanged(this, status, _options->callbackContext);
+            }
         }
 
 
