@@ -857,19 +857,25 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+
+    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    // Set up replication
+    SG::TestUser testUser { _sg, "rcsg", { "*" } }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
+    
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
     std::array<string, collectionCount> collNames;
     std::vector<AllocedDict> allocedDicts;
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
     collNames = {"rose"};
 
     for (size_t i = 0; i < collectionCount; ++i) {
@@ -877,11 +883,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
         createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-12121212", "1@cafe"),
                         "{\"db\":\"remote\"}"_sl);
         docIDs[i] = getDocIDs(collections[i]);
-        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+        replCollections[i] = { collectionSpecs[i] };
     }
 
     // Send the docs to remote
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
     verifyDocs(collectionSpecs, docIDs, true);
 
@@ -892,6 +899,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
         createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-13131313", "1@babe"),
                         "{\"db\":\"local\"}"_sl);
     }
+    collections = collectionPreamble(collectionSpecs, testUser);
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setDocIDs(docIDs);
 
@@ -945,7 +953,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     };
     replicate(replParams);
 
-    for (int i = 0; i < collectionCount; ++i) {
+    for (size_t i = 0; i < collectionCount; ++i) {
         switch (i) {
             case 0: {
                 c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(idPrefix+collNames[i]),
