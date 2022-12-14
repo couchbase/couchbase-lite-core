@@ -1089,15 +1089,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    // Set up replication
+    SG::TestUser testUser { _sg, "pdfcsg",  { "*" } }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-
-    collectionSpecs = {
-        Roses};
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-
+    
     encContextMap.reset(new CipherContextMap);
     decContextMap.reset(new CipherContextMap);
     string docs[] = {idPrefix + "hiddenRose", idPrefix + "invisibleTulip"};
@@ -1107,7 +1110,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
         for (size_t i = 0; i < collectionCount; ++i) {
             createFleeceRev(collections[i], slice(docs[i]), kRevID, originalJSON);
             docIDs[i] = getDocIDs(collections[i]);
-            replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+            replCollections[i] = { collectionSpecs[i] };
             encContextMap->emplace(std::piecewise_construct,
                                    std::forward_as_tuple(collectionSpecs[i]),
                                    std::forward_as_tuple(collections[i], docs[i].c_str(), "xNum", false));
@@ -1118,6 +1121,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     }
 
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
 
     replicate(replParams);
