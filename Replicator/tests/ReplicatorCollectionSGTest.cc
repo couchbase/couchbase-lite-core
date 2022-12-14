@@ -686,13 +686,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             encUpdate.writeString(docID);
             encUpdate.writeKey("_rev"_sl);
             encUpdate.writeString(doc->revID);
-            for (Dict::iterator i(props); i; ++i) {
-                encUpdate.writeKey(i.keyString());
-                if(i.keyString() == kC4ReplicatorOptionChannels){
-                    encUpdate.writeString(i.value().asString());
+            for (Dict::iterator j(props); j; ++j) {
+                encUpdate.writeKey(j.keyString());
+                if(j.keyString() == kC4ReplicatorOptionChannels){
+                    encUpdate.writeString(j.value().asString());
                     continue;
                 }
-                auto value = i.value().asInt();
+                auto value = j.value().asInt();
                 if (RandomNumber() % 8 == 0)
                     value = RandomNumber();
                 encUpdate.writeInt(value);
