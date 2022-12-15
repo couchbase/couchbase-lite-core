@@ -53,10 +53,16 @@ public:
 
     void compile(const std::string &whereExpr,
                  const std::string &sortExpr ="",
-                 bool addOffsetLimit =false)
+                 bool addOffsetLimit =false,
+                 const std::string &whatExpr ="",
+                 const std::string &fromExpr ="")
     {
         std::stringstream json;
-        json << "[\"SELECT\", {\"WHAT\": [[\"._id\"]], \"WHERE\": " << whereExpr;
+        json << "[\"SELECT\", {\"WHAT\": ";
+        json << (whatExpr.empty() ? "[[\"._id\"]]" : whatExpr) << ", \"WHERE\": " << whereExpr;
+        if (!fromExpr.empty()) {
+            json << ", \"FROM\": " << fromExpr;
+        }
         if (!sortExpr.empty())
             json << ", \"ORDER_BY\": " << sortExpr;
         if (addOffsetLimit)

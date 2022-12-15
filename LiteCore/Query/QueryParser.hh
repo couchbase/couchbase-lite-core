@@ -238,7 +238,7 @@ namespace litecore {
         bool writeIndexedPrediction(const Array *node);
 
         void writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
-        AliasMap::const_iterator verifyDbAlias(Path &property) const;
+        AliasMap::const_iterator verifyDbAlias(Path &property, string* error =nullptr) const;
         bool optimizeMetaKeyExtraction(ArrayIterator&);
 
         const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
