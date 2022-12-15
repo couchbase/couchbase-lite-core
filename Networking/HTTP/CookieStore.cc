@@ -32,16 +32,31 @@ using namespace date;
 using namespace fleece;
 using namespace litecore::net;
 
-namespace litecore { namespace net {
+namespace litecore::net {
+    // Date formats we can parse, refer to std::chrono::parse for format specifiers
+    static constexpr std::string_view dateFormats[] = {
+            "%a, %d %b %Y %T GMT" // RFC 822
+          , "%a, %d-%b-%Y %T GMT" // Google Cloud Load Balancer format (CBL-3949)
+          , "%a %b %d %T %Y"      // ANSI C asctime() format
+    };
+
 
     static time_t parse_gmt_time(const char* timeStr)
     {
-        istringstream s(timeStr);
         sys_seconds tp;
-        s >> parse("%a, %d %b %Y %T GMT", tp);
-        if (s.fail()) {
-            Warn("Couldn't parse Expires in cookie");
-            return 0;
+        // Go through each of the `dateFormats` and attempt to parse the date given
+        for(int i = 0; i < size(dateFormats); ++i) {
+            istringstream s(timeStr);
+            s >> parse(dateFormats[i].data(), tp);
+            if(s.fail()) {
+                // If we've failed to parse, and this is the last format in the list
+                if(i == size(dateFormats) - 1) {
+                    Warn("Couldn't parse Expires in cookie");
+                    return 0;
+                }
+            } else {
+                break;
+            }
         }
 
         // The limit of 32-bit time_t is approaching...
@@ -316,4 +331,4 @@ namespace litecore { namespace net {
         _changed = false;
     }
 
-} }
+}
