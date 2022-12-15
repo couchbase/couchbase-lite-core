@@ -240,9 +240,11 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorCompressionLevel       "BLIPCompressionLevel" ///< Data compression level, 0..9
 
     // [1]: Auth dictionary keys:
-    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)
-    #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
-    #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
+    #define kC4ReplicatorAuthType                   "type"           ///< Auth type; see [2] (string)
+    #define kC4ReplicatorAuthUserName               "username"       ///< User name for basic auth (string)
+    #define kC4ReplicatorAuthPassword               "password"       ///< Password for basic auth (string)
+    #define kC4ReplicatorAuthEnableChallengeAuth    "challengeAuth"  ///< Use challenge auth instead of preemptive auth for basic auth, default is false (bool); Implemented by BuiltInWebSocket.
+///<
     #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
     #define kC4ReplicatorAuthClientCertKey "clientCertKey" ///< Client cert's private key (data)
     #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)
