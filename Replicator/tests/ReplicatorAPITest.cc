@@ -851,11 +851,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
-    
+
+    _numCallbacksWithLevel[kC4Offline] = 0;
     waitForStatus(kC4Offline);
-    
-    _numCallbacksWithLevel[kC4Connecting] = 0;
-    waitForStatus(kC4Connecting);
     c4repl_stop(_repl);
     
     waitForStatus(kC4Stopped);
@@ -887,10 +885,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
 
+    _numCallbacksWithLevel[kC4Offline] = 0;
     waitForStatus(kC4Offline);
-
-    _numCallbacksWithLevel[kC4Connecting] = 0;
-    waitForStatus(kC4Connecting);
     c4repl_stop(_repl);
 
     waitForStatus(kC4Stopped);
