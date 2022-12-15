@@ -117,6 +117,7 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrHostUnreachable,           // There is no network path to the host [EHOSTUNREACH, retryable]
     kC4NetErrAddressNotAvailable,       // The address in question is already being used [EADDRNOTAVAIL, retryable]
     kC4NetErrBrokenPipe,                // Broken pipe [EPIPE, retryable]
+    kC4NetErrUnknownInterface,          // The specified network interface is not valid or unknown.
     kC4NumNetErrorCodesPlus1
 };
 

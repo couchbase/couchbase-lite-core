@@ -23,6 +23,9 @@
 #include <vector>
 
 extern "C" {
+#ifdef LITECORE_PERF_TESTING_MODE
+    CBL_CORE_API
+#endif
     /** Call this to use BuiltInWebSocket as the WebSocket implementation. */
     void C4RegisterBuiltInWebSocket();
 }

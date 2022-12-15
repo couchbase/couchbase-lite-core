@@ -14,6 +14,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
         std::string path,
         slice body,
         bool admin,
+        double timeout,
         bool logRequests
 ) const {
     auto port = uint16_t(address.port + !!admin);
@@ -57,7 +58,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
                                               (std::string)(slice)(address.hostname),
                                               port,
                                               path);
-    r->setHeaders(headers).setBody(body).setTimeout(5);
+    r->setHeaders(headers).setBody(body).setTimeout(timeout);
     if (pinnedCert)
         r->allowOnlyCert(pinnedCert);
     if (authHeader_)
@@ -79,10 +80,11 @@ alloc_slice SG::runRequest(
             bool admin,
             C4Error *outError,
             HTTPStatus *outStatus,
+            double timeout,
             bool logRequests
         ) const
 {
-    auto r = createRequest(method, collectionSpec, std::move(path), body, admin, logRequests);
+    auto r = createRequest(method, collectionSpec, path, body, admin, timeout, logRequests);
     if (r->run()) {
         if(outStatus)
             *outStatus = r->status();
@@ -95,6 +97,11 @@ alloc_slice SG::runRequest(
             *outStatus = HTTPStatus::undefined;
         if(outError)
             *outError = r->error();
+
+        if (r->error() == C4Error{NetworkDomain, kC4NetErrTimeout}) {
+            C4Warn("REST request %s timed out. Current timeout is %f seconds", path.c_str(), r->getTimeout());
+        }
+
         return nullslice;
     }
 }
@@ -140,11 +147,29 @@ bool SG::assignUserChannel(const std::string& username, const std::vector<std::s
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                    slice body, const std::vector<std::string> &channelIDs, C4Error *err) const {
     // Only add the "channels" field if channelIDs is not empty
-    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+    alloc_slice bodyWithChannel;
+    if(!channelIDs.empty()) {
+        bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+        if(!bodyWithChannel) { // body had invalid JSON
+            return false;
+        }
+    }
+
     HTTPStatus status;
     runRequest("PUT", collectionSpec, docID,
                channelIDs.empty() ? body : bodyWithChannel, false,
                err, &status);
+    return status == HTTPStatus::OK || status == HTTPStatus::Created;
+}
+
+bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body, C4Error *err) const {
+    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, { });
+    if(!bodyWithChannel) { // body had invalid JSON
+        return false;
+    }
+    HTTPStatus status;
+    runRequest("PUT", collectionSpec, docID,
+               bodyWithChannel, false, err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
@@ -161,9 +186,9 @@ void SG::flushDatabase() const {
     runRequest("POST", { }, "_flush", nullslice, true);
 }
 
-bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict) const {
+bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, double timeout) const {
     HTTPStatus status;
-    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, false);
+    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, timeout, false);
     return status == HTTPStatus::Created;
 }
 

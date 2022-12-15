@@ -127,7 +127,7 @@ indexName       = IDENTIFIER
 
 
 expression =
-    expr8
+    expr9
 
 
 caseExpression =
@@ -167,6 +167,30 @@ variableName    = IDENTIFIER
 # are grouped correctly. The precedence levels here are taken from the SQLite documentation.
 # Level 8 is the lowest, level 0 the highest.
 
+POST_OP_PREC_6 =
+    NOT NULL            { $$ = string("NOT NULL");}
+  | IS NULL             { $$ = string("IS NULL");}
+  | IS MISSING          { $$ = string("IS MISSING");}
+  | IS VALUED           { $$ = string("IS VALUED");}
+  | IS NOT NULL         { $$ = string("IS NOT NULL");}
+  | IS NOT MISSING      { $$ = string("IS NOT MISSING");}
+  | IS NOT VALUED       { $$ = string("IS NOT VALUED");}
+
+expr9 =
+    x:expr8 (
+       _ co:collateSuffix       { MutableArray coArray = co;
+                                          bool did_collateOp = false;
+                                          for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
+                                            if (did_collateOp) {
+                                               extendCollate(x, iter->asstring());
+                                            } else {
+                                               x = collateOp(x, iter->asstring());
+                                               did_collateOp = true;
+                                            }
+                                          }
+                                }
+       )?                       { $$ = x; }
+
 expr8 =
     x:expr7 (_ op:OP_PREC_8 _ r:expr7   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
@@ -174,17 +198,7 @@ expr7 =
     x:expr6 (_ op:OP_PREC_7 _ r:expr6   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 expr6 =
-    x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
-  | x:expr5 IS (
-        NULL                            { $$ = binaryOp(x, "IS", nullValue); }
-      | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
-      | VALUED                          { $$ = op("IS VALUED", x); }
-    )
-  | x:expr5 IS NOT (
-        NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
-      | MISSING                         { $$ = binaryOp(x, "IS NOT", op("MISSING")); }
-      | VALUED                          { $$ = op("NOT", op("IS VALUED", x)); }
-    )
+    x:expr5 o:POST_OP_PREC_6            { $$ = op(o, x); }
   | inExpression
   | likeExpression
   | betweenExpression
@@ -253,17 +267,6 @@ selectExpr =
 
 expr0 =
     x:baseExpr '.' p:propertyPath       { $$ = op("_.", x, p);}
-  | x:baseExpr _ co:collateSuffix       { MutableArray coArray = co;
-                                          bool did_collateOp = false;
-                                          for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
-                                            if (did_collateOp) {
-                                               extendCollate(x, iter->asstring());
-                                            } else {
-                                               x = collateOp(x, iter->asstring());
-                                               did_collateOp = true;
-                                            }
-                                          }
-                                          $$ = x; }
   | x:baseExpr                          { $$ = x; }
 
 collateSuffix =

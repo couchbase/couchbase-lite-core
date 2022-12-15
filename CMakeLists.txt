@@ -84,6 +84,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 )
 
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(LITECORE_PERF_TESTING_MODE "Build LiteCore with more things public than in production to facilitate perf testing" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
@@ -354,6 +355,13 @@ target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
 )
+
+if(LITECORE_PERF_TESTING_MODE)
+    target_compile_definitions(
+        LiteCoreWebSocket PUBLIC
+        LITECORE_PERF_TESTING_MODE
+    )
+endif()
 
 ### TESTS:
 

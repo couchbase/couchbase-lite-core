@@ -12,6 +12,7 @@
 
 #include "QueryParserTest.hh"
 #include "n1ql_parser.hh"
+#include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>
@@ -377,4 +378,40 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
           == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
              "{'AS':'b','COLLECTION':'coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']],'SCOPE':'scope'}],"
              "'WHAT':[['.a.x'],['.b.y']]}");
+}
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
+    const char* n1ql = nullptr;
+    string buf;
+    double checkBound = std::numeric_limits<double>::max();
+
+    SECTION("N1QL benchmark") {
+        // 4 nested parenthesis takes 7 seconds to parse in 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd
+        constexpr size_t nparens = 4;
+        string left(nparens, '('), right(nparens, ')');
+        buf = "SELECT "s + left + "1" + right;
+        // buf == "SELECT ((((1))))"
+        n1ql = buf.c_str();
+        checkBound = 0.5;
+    }
+
+    SECTION("Very Long Query") {
+        // 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd, this query takes 4 seconds
+        n1ql = "SELECT facture.* FROM _ facture WHERE "
+                 "facture.type = 'FactureModel' AND "
+                 "facture.statut NOT IN ('Annulee', 'Brouillon', 'Valide') AND "
+                 "((facture.facture.totalFacture.totalParticipationAssure "
+                    "- ifnull(facture.facture.totalFacture.totalRemboursablePartComplementaire, 0)) "
+                    "> 0 OR facture.tpAmo = false) AND "
+                 "(facture.liquidation IS NULL OR "
+                    "ifnull(facture.liquidation.etatPaiementPartAssure, 'enAttente') = 'enAttente' AND "
+                    "ifnull(facture.liquidation.montantPayeAssure, 0) == 0)";
+        checkBound = 0.5;
+    }
+
+    Stopwatch sw;
+    string json = translate(n1ql);
+    double elapsed = sw.elapsed();
+    cerr << "\t\tElapsed time/check time = " << elapsed << "/" << checkBound << endl;
+    CHECK(elapsed < checkBound);
 }
