@@ -89,6 +89,13 @@ namespace litecore { namespace net {
 
 
     string HTTPLogic::requestToSend() {
+        // This logic prevents calling requestToSend() more than once to respond to the
+        // auth challenge after the the authentication from the first challenge failed
+        // (when failed the dispostion will still be kAuthenticate).
+        //
+        // In handleResponse(), after it handles the challenge first time, it will reset
+        // the _proxy's credentials for proxy authentication or _authHeader for server
+        // authentication.
         if (_lastDisposition == kAuthenticate) {
             if (_httpStatus == HTTPStatus::ProxyAuthRequired)
                 Assert(_proxy && _proxy->username);
@@ -194,6 +201,8 @@ namespace litecore { namespace net {
             case HTTPStatus::UseProxy:
                 return handleRedirect();
             case HTTPStatus::Unauthorized:
+                // When challenge auth is not enabled (preemptive auth), fail right away
+                // as the authentication has been done and the result was unauthorized.
                 if (_enableChallengeAuth) {
                     if (_authChallenged)
                         _authHeader = nullslice;

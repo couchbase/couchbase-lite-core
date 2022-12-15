@@ -228,6 +228,9 @@ namespace litecore { namespace websocket {
                 case HTTPLogic::kContinue:
                     break; // Will continue with the same socket (after connecting to a proxy)
                 case HTTPLogic::kAuthenticate: {
+                    // If there is no credentials aet OR the authentication failed after responding
+                    // to the first challenge, the socket will be closed with an error (401) right
+                    // away without (re)responding.
                     if (!usedAuth && authType == slice(kC4AuthTypeBasic)
                                   && logic.isChallengeAuthEnabled()
                                   && !logic.authChallenge()->forProxy
