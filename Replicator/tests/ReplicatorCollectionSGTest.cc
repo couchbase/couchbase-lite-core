@@ -58,17 +58,17 @@
  */
 //  config db:
 /*
- curl --location --request PUT "localhost:4985/scratch/" \
+ curl -k --location --request PUT "https://localhost:4985/scratch/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw '{"num_index_replicas": 0, "bucket": "your_bucket_name", "scopes": {"flowers": {"collections":{"roses":{}}}}}'
+ --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": {\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, \"lavenders\":{}}}}}"
  */
 //  config SG user:
 /*
- curl --location --request POST "localhost:4985/scratch/_user/" \
+ curl -k --location --request POST "https://localhost:4985/scratch/_user/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw '{"name": "sguser", "password": "password", "admin_channels": ["*"]}'
+ --data-raw '{"name": "sguser", "password": "password", "collection_access": {"flowers": {"roses": {"admin_channels": ["*"]}, "tulips": {"admin_channels": ["*"]}, "lavenders": {"admin_channels": ["*"]}}}}'
  */
 //
 // command argument:
