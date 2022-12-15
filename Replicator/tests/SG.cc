@@ -4,6 +4,7 @@
 
 #include "SG.hh"
 #include <utility>
+#include <map>
 #include "c4Test.hh"
 #include "Response.hh"
 #include "StringUtil.hh"
@@ -123,11 +124,10 @@ alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::
 bool SG::createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
-    alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
     HTTPStatus status;
     // Delete the user incase they already exist
     deleteUser(username);
-    runRequest("POST", {}, "_user", bodyWithChannel, true, nullptr, &status);
+    runRequest("POST", {}, "_user", body, true, nullptr, &status);
     return status == HTTPStatus::Created;
 }
 
@@ -137,31 +137,39 @@ bool SG::deleteUser(const string &username) const {
     return status == HTTPStatus::OK;
 }
 
-bool SG::assignUserChannel(const std::string& username, const std::vector<std::string> &channelIDs) const {
+bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string> &channelIDs) const {
+    std::multimap<slice, slice> specsMap;
+    for(const auto& spec : collectionSpecs) {
+        specsMap.insert({spec.scope, spec.name });
+    }
+
     Encoder enc;
     enc.beginDict();
     enc.writeKey("collection_access"_sl);
     {
-        enc.beginDict();
-        enc.writeKey("flowers"_sl);
-        {
-            enc.beginDict();
-            enc.writeKey("roses"_sl);
-            {
-                enc.beginDict();
+        enc.beginDict(); // collection access
+        // For each unique key (scope)
+        for(auto it = specsMap.begin(), end = specsMap.end(); it != end; it = specsMap.upper_bound(it->first)) {
+            enc.writeKey(it->first); // scope name
+            enc.beginDict(); // scope
+            // For each value belonging to that key (spec name belonging to that scope)
+            auto collsInThisScope = specsMap.equal_range(it->first);
+            for(auto i = collsInThisScope.first; i != collsInThisScope.second; ++i) {
+                enc.writeKey(i->second); // collection name
+                enc.beginDict(); // collection
                 enc.writeKey("admin_channels"_sl);
                 {
                     enc.beginArray();
                     for (const auto& chID : channelIDs) {
-                        FLEncoder_WriteString(enc, slice(chID));
+                        enc.writeString(chID);
                     }
                     enc.endArray();
                 }
-                enc.endDict();
+                enc.endDict(); // collection
             }
-            enc.endDict();
+            enc.endDict(); // scope
         }
-        enc.endDict();
+        enc.endDict(); // collection access
     }
     enc.endDict();
     Doc doc {enc.finish()};

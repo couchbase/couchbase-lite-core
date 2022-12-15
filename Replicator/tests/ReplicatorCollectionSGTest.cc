@@ -111,7 +111,7 @@ public:
         _sg.address = {kC4Replicator2TLSScheme,
                        C4STR("localhost"),
                        4984};
-        _sg.assignUserChannel("sguser", {"*"});
+        _sg.assignUserChannel("sguser", { Roses, Tulips, Lavenders }, {"*"});
     }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
@@ -494,7 +494,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-   
+
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 20, idPrefix+"remote-");
         docIDs[i] = getDocIDs(collections[i]);
@@ -544,7 +544,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
+
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 10, idPrefix);
         docIDs[i] = getDocIDs(collections[i]);
@@ -581,7 +581,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
+
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 2, idPrefix + "db-" + string(collectionSpecs[i].name));
         docIDs[i] = getDocIDs(collections[i]);
@@ -622,17 +622,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     const string docIDPref = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
-    SG::TestUser testUser { _sg, "pdfcsg", chIDs };
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+
+    SG::TestUser testUser { _sg, "pdfcsg", chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
     std::array<C4Collection *, collectionCount> collections;
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses
-    };
     collections = collectionPreamble(collectionSpecs, testUser);
 
     C4Log("-------- Populating local db --------");
@@ -947,13 +947,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     const string docID = idPrefix + "uocd-doc";
     const string channelID = idPrefix + "a";
 
-    _sg.assignUserChannel("sguser", {channelID });
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
-
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
+
+    _sg.assignUserChannel("sguser", { collectionSpecs.begin(), collectionSpecs.end() }, { channelID });
+    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 
     // Create a conflicted doc on SG, and resolve the conflict
     std::array<std::string, 4> bodies {
@@ -1267,13 +1267,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     string        doc1ID {idPrefix + "doc1"};
     vector<string> chIDs {idPrefix+"a", idPrefix+"b"};
 
-    SG::TestUser testUser { _sg, "rdfcsg", chIDs };
-
-    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-        Roses
+            Roses
     };
+
+    SG::TestUser testUser { _sg, "rdfcsg", chIDs, collectionSpecs };
+
     std::array<C4Collection*, collectionCount> collections =
         collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -1421,7 +1421,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
 
-    SG::TestUser testUser {_sg, kTestUserName, chIDs };
+    SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
 
     _sg.authHeader = testUser.authHeader();
     std::array<C4Collection*, collectionCount> collections =
@@ -1509,7 +1509,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
         _sg.upsertDoc(collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
     }
 
-
     C4Log("-------- Pull the removed");
     cbContext.reset();
     replicate(replParams);
@@ -1530,12 +1529,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     string docID = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
-    SG::TestUser testUser {_sg, kTestUserName, chIDs };
-    _sg.authHeader = testUser.authHeader();
-
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
             Roses
     };
+
+    SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+
     std::array<C4Collection *, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -1640,12 +1641,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     const string idPrefix = timePrefix();
     const string doc13ID = idPrefix + "0000013";
 
-    SG::TestUser testUser { _sg, "apipcsg", { "*" } };
-
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
+            Roses
     };
+
+    SG::TestUser testUser { _sg, "apipcsg", { "*" }, collectionSpecs };
+
     std::array<C4Collection *, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
@@ -1745,17 +1747,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     const string idPrefix = timePrefix();
     const string docID = idPrefix + "doc";
 
-    SG::TestUser testUser { _sg, "pmusg", { "*" } };
-    _sg.authHeader = testUser.authHeader();
-
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
+            Roses
     };
+
+    SG::TestUser testUser { _sg, "pmusg", { "*" }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-
     for(int i = 0; i < collectionCount; ++i) {
         replCollections[i] = {collectionSpecs[i], kC4Disabled, kC4OneShot};
         _sg.upsertDoc(collectionSpecs[i], docID + "?new_edits=false",
@@ -1801,14 +1803,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection SG", "[.SyncCollSlow]") {
     string idPrefix = timePrefix() + "pidfsg";
 
-    // Set up replication
-    SG::TestUser testUser { _sg, "pidfsgc", { "*" } };
-    _sg.authHeader = testUser.authHeader();
-
     constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
             Roses
     };
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "pidfsgc", { "*" }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
             = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
