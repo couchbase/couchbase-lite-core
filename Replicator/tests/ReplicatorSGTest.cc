@@ -849,7 +849,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     };
 
     // Create docs on SG:
-    SG::TestUser testUser { _sg, "apera", channelIDs };
+    SG::TestUser testUser {_sg, "apera", channelIDs };
     _sg.authHeader = testUser.authHeader();
 
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", channelIDs);
@@ -946,7 +946,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     const string channelID = "a";
 
     // Create temp user for test
-    SG::TestUser testUser { _sg, "apefrr", { channelID } };
+    SG::TestUser testUser {_sg, "apefrr", { channelID } };
     _sg.authHeader = testUser.authHeader();
     // Create doc on SG
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
@@ -1026,7 +1026,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     const string channelID = "a";
 
     // Create temp user for test
-    SG::TestUser testUser { _sg, "apdra", { channelID } };
+    SG::TestUser testUser {_sg, "apdra", { channelID } };
     _sg.authHeader = testUser.authHeader();
     // Create doc on SG
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
@@ -1108,7 +1108,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     };
 
     // Create temp user for test
-    SG::TestUser testUser { _sg, "aperdfc", channelIDs };
+    SG::TestUser testUser {_sg, "aperdfc", channelIDs };
     _sg.authHeader = testUser.authHeader();
     // Create doc on SG
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", channelIDs);
@@ -1201,7 +1201,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     const string channelID = "a";
 
     // Create temp user for test
-    SG::TestUser testUser { _sg, "apefrr", { channelID } };
+    SG::TestUser testUser {_sg, "apefrr", { channelID } };
     _sg.authHeader = testUser.authHeader();
     // Create docs on SG:
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
@@ -1280,7 +1280,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     const string channelID = "a";
 
     // Create temp user for test
-    SG::TestUser testUser { _sg, "apdrdfc", { channelID } };
+    SG::TestUser testUser {_sg, "apdrdfc", { channelID } };
     _sg.authHeader = testUser.authHeader();
 
     // Create docs on SG:

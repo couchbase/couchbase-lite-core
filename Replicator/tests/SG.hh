@@ -50,7 +50,13 @@ public:
     bool createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const;
     bool deleteUser(const std::string& username) const;
-    bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
+    // Assign given channels to the user with given username, in the given collections
+    bool assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string>& channelIDs) const;
+    // Same as above, but accepts an array parameter
+    template <size_t N>
+    bool assignUserChannel(const std::string& username, const std::array<C4CollectionSpec, N>& collectionSpecs, const std::vector<std::string>& channelIDs) const {
+        return assignUserChannel(username, std::vector(collectionSpecs.begin(), collectionSpecs.end()), channelIDs);
+    }
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                           slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
