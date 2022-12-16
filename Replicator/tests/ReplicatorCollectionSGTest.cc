@@ -1267,9 +1267,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     string        doc1ID {idPrefix + "doc1"};
     vector<string> chIDs {idPrefix+"a", idPrefix+"b"};
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     SG::TestUser testUser { _sg, "rdfcsg", chIDs, collectionSpecs };
@@ -1414,9 +1416,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     // one collection for now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-        Roses
+        Roses,
+        Tulips,
+        Lavenders
     };
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
@@ -1525,12 +1529,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc or Delete then Create Doc SG",
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     string docID = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
@@ -1641,9 +1647,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     const string idPrefix = timePrefix();
     const string doc13ID = idPrefix + "0000013";
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     SG::TestUser testUser { _sg, "apipcsg", { "*" }, collectionSpecs };
@@ -1747,9 +1755,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     const string idPrefix = timePrefix();
     const string docID = idPrefix + "doc";
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     SG::TestUser testUser { _sg, "pmusg", { "*" }, collectionSpecs };
@@ -1803,9 +1813,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection SG", "[.SyncCollSlow]") {
     string idPrefix = timePrefix() + "pidfsg";
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     // Set up replication
