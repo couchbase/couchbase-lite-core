@@ -28,14 +28,24 @@ class SG::TestUser {
 public:
     explicit TestUser(SG& sg,
                       const std::string& username,
-                      const std::vector<std::string>& channels = {},
+                      const std::vector<std::string>& channels = { "*" },
+                      const std::vector<C4CollectionSpec>& collectionSpecs = { kC4DefaultCollectionSpec },
                       const std::string& password = "password")
-            : _sg(sg), _username(username), _password(password), _channels(channels)
+            : _sg(sg), _username(username), _password(password), _channels(channels), _collectionSpecs{ collectionSpecs }
     {
         REQUIRE(_sg.createUser(_username, _password, _channels));
-        REQUIRE(_sg.assignUserChannel(_username, _channels));
+        REQUIRE(_sg.assignUserChannel(_username, _collectionSpecs, _channels));
         _authHeader = HTTPLogic::basicAuth(_username, _password);
     }
+    // Same as above constructor, but accepts an array parameter
+    template <size_t N>
+    explicit TestUser(SG& sg,
+             const std::string& username,
+             const std::vector<std::string>& channels = { "*" },
+             const std::array<C4CollectionSpec, N>& collectionSpecs = { kC4DefaultCollectionSpec },
+             const std::string& password = "password")
+         : TestUser(sg, username, channels, std::vector(collectionSpecs.begin(), collectionSpecs.end()), password)
+    {}
 
     ~TestUser() {
         _sg.deleteUser(_username);
@@ -54,6 +64,7 @@ private:
     SG& _sg;
     alloc_slice _authHeader;
     std::vector<std::string> _channels;
+    std::vector<C4CollectionSpec> _collectionSpecs;
 };
 
 #endif //LITECORE_SGTESTUSER_HH
