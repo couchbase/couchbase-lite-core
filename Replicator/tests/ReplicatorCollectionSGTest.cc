@@ -617,6 +617,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     const string docIDPref = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
+    constexpr size_t collectionCount = 1;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
@@ -757,16 +758,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-
-    // Set up replication
-    SG::TestUser testUser { _sg, "papasg", { "*" } }; // Doesn't use channels
-    _sg.authHeader = testUser.authHeader();
-
-    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses
         //, Tulips
     };
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "papasg", { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -808,16 +809,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses
+    };
     
     // Set up replication
-    SG::TestUser testUser { _sg, "ppdsg", { "*" } }; // Doesn't use channels
+    SG::TestUser testUser { _sg, "ppdsg", { "*" }, collectionSpecs }; // Doesn't use channels
     _sg.authHeader = testUser.authHeader();
 
     const string docID = idPrefix + "ppd-doc1";
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
-    };
+    
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -860,15 +862,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-
-    // Set up replication
-    SG::TestUser testUser { _sg, "rcsg", { "*" } }; // Doesn't use channels
-    _sg.authHeader = testUser.authHeader();
-
-    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses
     };
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "rcsg", { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     
@@ -971,22 +973,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
+    const string docID = idPrefix + "uocd-doc";
 
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-
-    // Set up replication
-    vector<string> chIDs { idPrefix + "uocd" };
-    SG::TestUser testUser { _sg, "uocd", chIDs };
-    _sg.authHeader = testUser.authHeader();
-    
-    const string docID = idPrefix + "uocd-doc";
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
     };
 
-    _sg.assignUserChannel("sguser", { collectionSpecs.begin(), collectionSpecs.end() }, { channelID });
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    // Set up replication
+    vector<string> chIDs { idPrefix + "uocd" };
+    SG::TestUser testUser { _sg, "uocd", chIDs, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
 
     // Create a conflicted doc on SG, and resolve the conflict
     std::array<std::string, 4> bodies {
@@ -1088,15 +1086,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 1;
-
-    // Set up replication
-    SG::TestUser testUser { _sg, "pdfcsg",  { "*" } }; // Doesn't use channels
-    _sg.authHeader = testUser.authHeader();
-
-    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses
     };
+    std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "pdfcsg",  { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
