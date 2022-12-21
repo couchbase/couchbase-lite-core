@@ -229,20 +229,18 @@ public:
 
         for (size_t i = 0; i < N; ++i) {
             if (checkRev) {
-                unsigned count = 0;
                 c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[i],
                                                                      nullptr, ERROR_INFO());
-                {
+                unsigned count = 0;
+                while (c4enum_next(e, ERROR_INFO())) {
                     ++count;
-                    while (c4enum_next(e, ERROR_INFO())) {
-                        C4DocumentInfo info;
-                        c4enum_getDocumentInfo(e, &info);
-                        auto it = docIDs[i].find(info.docID);
-                        CHECK(it != docIDs[i].end());
-                        CHECK(it->second == c4rev_getGeneration(info.revID));
-                    }
+                    C4DocumentInfo info;
+                    c4enum_getDocumentInfo(e, &info);
+                    auto it = docIDs[i].find(info.docID);
+                    CHECK(it != docIDs[i].end());
+                    CHECK(it->second == c4rev_getGeneration(info.revID));
                 }
-                CHECK(count == docIDs.size());
+                CHECK(count == docIDs[i].size());
             } else {
                 auto count = c4coll_getDocumentCount(collections[i]);
                 REQUIRE(count == docIDs[i].size());
@@ -800,7 +798,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     replicate(replParams);
 
     C4Log("-------- Checking docs and attachments --------");
-    verifyDocs(collectionSpecs, docIDs);
+    verifyDocs(collectionSpecs, docIDs, true);
     for (size_t i = 0; i < collectionCount; ++i) {
         checkAttachments(verifyDb, blobKeys[i], attachments1);
     }
@@ -900,7 +898,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     ReplParams replParams { replCollections };
     replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
-    verifyDocs(collectionSpecs, docIDs);
+    verifyDocs(collectionSpecs, docIDs, true);
 
     deleteAndRecreateDB();
     for (size_t i = 0; i < collectionCount; ++i) {
@@ -1040,7 +1038,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
             { getDocIDs(collections[0]) }
     };
 
-    verifyDocs(collectionSpecs, docIDs);
+    verifyDocs(collectionSpecs, docIDs, true);
 }
 
 
@@ -1128,7 +1126,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
 
     replicate(replParams);
-    verifyDocs(collectionSpecs, docIDs, false, TestDecryption ? 2 : 1);
+    verifyDocs(collectionSpecs, docIDs, true, TestDecryption ? 2 : 1);
 
     // Check encryption on active replicator:
     for (auto i = encContextMap->begin(); i != encContextMap->end(); i++) {
