@@ -599,6 +599,10 @@ namespace litecore {
             auto &table = ftsTable.first;
             auto &alias = ftsTable.second;
             auto idxAt = table.find(KeyStore::kIndexSeparator);
+            // Encoded in the name of the index table is collection against which the index
+            // is created. "docID" of this table is to match the "rowid" of the collection table.
+            // The left-side of the separator is the original collection.
+            // The Prediction method also uses a separate table; only the separator is different.
             if (idxAt == string::npos) {
                 idxAt = table.find(KeyStore::kPredictSeparator);
             }
