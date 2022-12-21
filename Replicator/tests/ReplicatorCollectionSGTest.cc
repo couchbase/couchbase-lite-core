@@ -1101,11 +1101,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 
     std::array<string, collectionCount> docs;
     for(size_t i = 0; i < collectionCount; ++i) {
-        docs[i] = "a" + Options::collectionSpecToPath(collectionSpecs[i]).asString();
+        docs[i] = idPrefix + Options::collectionSpecToPath(collectionSpecs[i]).asString();
     }
-
-    string docsX[] = {idPrefix + "hiddenRose", idPrefix + "invisibleTulip", idPrefix + "perfLavender"};
     slice originalJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+
     {
         TransactionHelper t(db);
         for (size_t i = 0; i < collectionCount; ++i) {
