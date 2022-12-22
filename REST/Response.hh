@@ -87,6 +87,7 @@ namespace litecore { namespace REST {
         Response& setBody(fleece::slice body);
         Response& setTLSContext(net::TLSContext*);
         Response& setProxy(const net::ProxySpec&);
+        double    getTimeout() const                    { return _timeout; }
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 
         Response& allowOnlyCert(fleece::slice certData);

@@ -372,16 +372,19 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Create Observer On Deleted Collection", 
     REQUIRE(c4db_deleteCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
     REQUIRE(!c4db_getCollection(db, { "wrong"_sl, "oops"_sl }, ERROR_INFO()));
 
-    C4Error err{};
+    {
+        ExpectingExceptions x;
 
-    CHECK(!c4dbobs_createOnCollection(deleted, dbObserverCallback, nullptr, &err));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorNotOpen);
+        C4Error err{};
+        CHECK(!c4dbobs_createOnCollection(deleted, dbObserverCallback, nullptr, &err));
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorNotOpen);
 
-    err = {};
-    CHECK(!c4docobs_createWithCollection(deleted, C4STR("doc1"), docObserverCallback, nullptr, &err));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorNotOpen);
+        err = {};
+        CHECK(!c4docobs_createWithCollection(deleted, C4STR("doc1"), docObserverCallback, nullptr, &err));
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorNotOpen);
+    }
 }
                                                                                             
                                                                                             

@@ -598,8 +598,34 @@ namespace litecore {
         for (auto &ftsTable : _indexJoinTables) {
             auto &table = ftsTable.first;
             auto &alias = ftsTable.second;
+            auto idxAt = table.find(KeyStore::kIndexSeparator);
+            // Encoded in the name of the index table is collection against which the index
+            // is created. "docID" of this table is to match the "rowid" of the collection table.
+            // The left-side of the separator is the original collection.
+            // The Prediction method also uses a separate table; only the separator is different.
+            if (idxAt == string::npos) {
+                idxAt = table.find(KeyStore::kPredictSeparator);
+            }
+            string coAlias;
+            if (idxAt != string::npos) {
+                string collTable = table.substr(0, idxAt);
+                for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
+                    if (iter->second.type == kResultAlias) {
+                        continue;
+                    }
+                    if (iter->second.tableName == collTable) {
+                        coAlias = iter->first;
+                    }
+                }
+            }
+            DebugAssert(!coAlias.empty());
+            if (coAlias.empty()) {
+                // Hack, to be fixed!
+                Warn("The collecion is not specified. Hacked it to default.");
+                coAlias = _dbAlias;
+            }
             _sql << " JOIN " << sqlIdentifier(table) << " AS " << alias
-                 << " ON " << alias << ".docid = " << sqlIdentifier(_dbAlias) << ".rowid";
+                 << " ON " << alias << ".docid = " << sqlIdentifier(coAlias) << ".rowid";
         }
     }
 
@@ -1660,7 +1686,7 @@ namespace litecore {
     // Post-condition:
     //     return_iterator != _aliases.end() && return_iterator->second.type != kResultAlias
     QueryParser::AliasMap::const_iterator
-    QueryParser::verifyDbAlias(fleece::impl::Path &property) const {
+    QueryParser::verifyDbAlias(fleece::impl::Path &property, string* error) const {
         string alias;
         auto iType = _aliases.end();
         if(!property.empty()) {
@@ -1685,6 +1711,7 @@ namespace litecore {
                 }
             }
         }
+        bool dropAliasIfSuccess = false;
         if (_propertiesUseSourcePrefix && !property.empty()) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
@@ -1692,7 +1719,7 @@ namespace litecore {
                 // With join (size > 1), properties must start with a keyspace alias to avoid ambiguity.
                 // Otherwise, we assume property[0] to be the alias if it coincides with the unique one.
                 // Otherwise, we consider that the property path starts in the document and, hence, do not drop.
-                property.drop(1);
+                dropAliasIfSuccess = true;
             } else {
                 alias = _dbAlias;
             }
@@ -1708,10 +1735,19 @@ namespace litecore {
             }
         }
 
-        require(iType != _aliases.end(),
-                "property '%s.%s' does not begin with a declared 'AS' alias",
-                alias.c_str(), string(property).c_str());
-
+        bool postCondition = (iType != _aliases.end());
+        if (!postCondition) {
+            string message = format("property '%s' does not begin with a declared 'AS' alias",
+                                    string(property).c_str());
+            if (error == nullptr) {
+                fail("%s", message.c_str());
+                // no-return
+            } else {
+                *error = message;
+            }
+        } else if (dropAliasIfSuccess) {
+            property.drop(1);
+        }
         return iType;
     }
 
@@ -1927,7 +1963,37 @@ namespace litecore {
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
-        auto iAlias = verifyDbAlias(keyPath);
+        // Path to FTS table has at most two components: [collectionAlias .] IndexName
+        size_t compCount = keyPath.size();
+        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        Path keyPathBeforeVerifyDbAlias = keyPath;
+        QueryParser::AliasMap::const_iterator iAlias = _aliases.end();
+
+        string outError;
+        iAlias = verifyDbAlias(keyPath, &outError);
+        if (iAlias == _aliases.end()) {
+            bool uniq = true;
+            string uniqAlias;
+            for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
+                if (iter->second.type != kResultAlias) {
+                    if (iter->second.type == kDBAlias) {
+                        iAlias = iter;
+                    }
+                    if (uniqAlias.empty()) {
+                        uniqAlias = iter->second.tableName;
+                    } else if (uniqAlias != iter->second.tableName) {
+                        uniq = false;
+                        break;
+                    }
+                }
+            }
+            if (!uniq) {
+                Assert(!outError.empty());
+                fail("%s", outError.c_str());
+            }
+        }
+        Assert(iAlias != _aliases.end());
+
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");

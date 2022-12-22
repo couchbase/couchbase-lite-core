@@ -337,7 +337,8 @@ namespace litecore {
             "host reported not available",
             "host not reachable",
             "address not available",
-            "broken pipe"
+            "broken pipe",
+            "unknown interface"
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
@@ -668,14 +669,16 @@ namespace litecore {
         } else {
             messageStr += expr;
         }
-        if (sNotableExceptionHook)
+        if (sWarnOnError && sNotableExceptionHook)
             sNotableExceptionHook();
         if (!WillLog(LogLevel::Error))
             fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
         auto err = error(LiteCore, AssertionFailed, messageStr);
         err.captureBacktrace(1);     // always get backtrace of assertion failure
-        WarnError("%s (%s:%u, in %s)\n%s",
-                  messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
+        if (sWarnOnError) {
+            WarnError("%s (%s:%u, in %s)\n%s",
+                      messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
+        }
         throw err;
     }
 

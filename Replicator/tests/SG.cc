@@ -4,6 +4,7 @@
 
 #include "SG.hh"
 #include <utility>
+#include <map>
 #include "c4Test.hh"
 #include "Response.hh"
 #include "StringUtil.hh"
@@ -14,6 +15,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
         std::string path,
         slice body,
         bool admin,
+        double timeout,
         bool logRequests
 ) const {
     auto port = uint16_t(address.port + !!admin);
@@ -57,7 +59,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
                                               (std::string)(slice)(address.hostname),
                                               port,
                                               path);
-    r->setHeaders(headers).setBody(body).setTimeout(5);
+    r->setHeaders(headers).setBody(body).setTimeout(timeout);
     if (pinnedCert)
         r->allowOnlyCert(pinnedCert);
     if (authHeader_)
@@ -79,10 +81,11 @@ alloc_slice SG::runRequest(
             bool admin,
             C4Error *outError,
             HTTPStatus *outStatus,
+            double timeout,
             bool logRequests
         ) const
 {
-    auto r = createRequest(method, collectionSpec, std::move(path), body, admin, logRequests);
+    auto r = createRequest(method, collectionSpec, path, body, admin, timeout, logRequests);
     if (r->run()) {
         if(outStatus)
             *outStatus = r->status();
@@ -95,6 +98,11 @@ alloc_slice SG::runRequest(
             *outStatus = HTTPStatus::undefined;
         if(outError)
             *outError = r->error();
+
+        if (r->error() == C4Error{NetworkDomain, kC4NetErrTimeout}) {
+            C4Warn("REST request %s timed out. Current timeout is %f seconds", path.c_str(), r->getTimeout());
+        }
+
         return nullslice;
     }
 }
@@ -116,11 +124,10 @@ alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::
 bool SG::createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
-    alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
     HTTPStatus status;
     // Delete the user incase they already exist
     deleteUser(username);
-    runRequest("POST", {}, "_user", bodyWithChannel, true, nullptr, &status);
+    runRequest("POST", {}, "_user", body, true, nullptr, &status);
     return status == HTTPStatus::Created;
 }
 
@@ -130,21 +137,75 @@ bool SG::deleteUser(const string &username) const {
     return status == HTTPStatus::OK;
 }
 
-bool SG::assignUserChannel(const std::string& username, const std::vector<std::string> &channelIDs) const {
-    alloc_slice bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
+bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string> &channelIDs) const {
+    std::multimap<slice, slice> specsMap;
+    for(const auto& spec : collectionSpecs) {
+        specsMap.insert({spec.scope, spec.name });
+    }
+
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("collection_access"_sl);
+    {
+        enc.beginDict(); // collection access
+        // For each unique key (scope)
+        for(auto it = specsMap.begin(), end = specsMap.end(); it != end; it = specsMap.upper_bound(it->first)) {
+            enc.writeKey(it->first); // scope name
+            enc.beginDict(); // scope
+            // For each value belonging to that key (spec name belonging to that scope)
+            auto collsInThisScope = specsMap.equal_range(it->first);
+            for(auto i = collsInThisScope.first; i != collsInThisScope.second; ++i) {
+                enc.writeKey(i->second); // collection name
+                enc.beginDict(); // collection
+                enc.writeKey("admin_channels"_sl);
+                {
+                    enc.beginArray();
+                    for (const auto& chID : channelIDs) {
+                        enc.writeString(chID);
+                    }
+                    enc.endArray();
+                }
+                enc.endDict(); // collection
+            }
+            enc.endDict(); // scope
+        }
+        enc.endDict(); // collection access
+    }
+    enc.endDict();
+    Doc doc {enc.finish()};
+    Value v = doc.root();
+
     HTTPStatus status;
-    runRequest("PUT", { }, "_user/"s+username, bodyWithChannel, true, nullptr, &status);
+    runRequest("PUT", { }, "_user/"s+username, v.toJSON(), true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                    slice body, const std::vector<std::string> &channelIDs, C4Error *err) const {
     // Only add the "channels" field if channelIDs is not empty
-    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+    alloc_slice bodyWithChannel;
+    if(!channelIDs.empty()) {
+        bodyWithChannel = addChannelToJSON(body, "channels"_sl, channelIDs);
+        if(!bodyWithChannel) { // body had invalid JSON
+            return false;
+        }
+    }
+
     HTTPStatus status;
     runRequest("PUT", collectionSpec, docID,
                channelIDs.empty() ? body : bodyWithChannel, false,
                err, &status);
+    return status == HTTPStatus::OK || status == HTTPStatus::Created;
+}
+
+bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body, C4Error *err) const {
+    alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, { });
+    if(!bodyWithChannel) { // body had invalid JSON
+        return false;
+    }
+    HTTPStatus status;
+    runRequest("PUT", collectionSpec, docID,
+               bodyWithChannel, false, err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
@@ -161,9 +222,9 @@ void SG::flushDatabase() const {
     runRequest("POST", { }, "_flush", nullslice, true);
 }
 
-bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict) const {
+bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, double timeout) const {
     HTTPStatus status;
-    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, false);
+    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, timeout, false);
     return status == HTTPStatus::Created;
 }
 

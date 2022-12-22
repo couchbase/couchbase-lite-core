@@ -90,6 +90,9 @@ namespace litecore { namespace net {
         /// Sets the "Authorization:" header to send in the request.
         void setAuthHeader(slice authHeader)        {_authHeader = authHeader;}
         slice authHeader()                          {return _authHeader;}
+        
+        void enableChallengeAuth(bool enabled)      {_enableChallengeAuth = enabled;}
+        bool isChallengeAuthEnabled()               {return _enableChallengeAuth;}
 
         /// Generates a Basic auth header to pass to \ref setAuthHeader.
         static alloc_slice basicAuth(slice username, slice password);
@@ -180,6 +183,7 @@ namespace litecore { namespace net {
         int64_t _contentLength {-1};                    // Value of Content-Length header to send
         alloc_slice _userAgent;                         // Value of User-Agent header to send
         alloc_slice _authHeader;                        // Value of Authorization header to send
+        bool _enableChallengeAuth {false};              // Use challenge auth instead of the default preemptive auth
         CookieProvider* _cookieProvider {nullptr};      // HTTP cookie storage
         std::optional<ProxySpec> _proxy;                // Proxy settings
         std::optional<Address> _proxyAddress;           // Proxy converted to Address
