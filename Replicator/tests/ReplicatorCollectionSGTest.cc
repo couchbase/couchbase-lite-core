@@ -369,7 +369,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
     // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
     // is not found on the remote server"
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
-    CHECK(_callbackStatus.error.code == 404); 
+    CHECK(_callbackStatus.error.code == 404);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "[.SyncServerCollection]") {
@@ -387,13 +387,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     SECTION("Named Collection") {
         collectionSpecs = {Roses};
     }
-    
+
     SECTION("Default Collection") {
         collectionSpecs = {Default};
         // Not ready:
         return;
     }
-    
+
     SECTION("Another Named Collection") {
         collectionSpecs = {Lavenders};
         // Not ready:
@@ -432,7 +432,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
     std::array<C4Collection*, collectionCount> collections;
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docInfos;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-    
+
     // Three collections:
     // 1. Guitars - in the default scope
     // 2. Roses   - in scope "flowers"
@@ -581,7 +581,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
         Roses
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-
+    
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 2, idPrefix + "db-" + string(collectionSpecs[i].name));
         docIDs[i] = getDocIDs(collections[i]);
@@ -772,7 +772,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         //, Tulips
     };
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
+
     vector<string> attachments1 = {idPrefix+"Attachment A", idPrefix+"Attachment B", idPrefix+"Attachment Z"};
     {
         string doc1 = idPrefix + "doc1";
@@ -812,7 +812,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     };
 
     ReplParams replParams { replCollections };
-    
+
     createRev(collections[0], slice(docID), kRevID, kFleeceBody);
     createRev(collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
     replicate(replParams);
@@ -865,7 +865,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     ReplParams replParams { replCollections };
     replicate(replParams);
     verifyDocs(collectionSpecs, docIDs, true);
-    
+
     deleteAndRecreateDB();
     for (size_t i = 0; i < collectionCount; ++i) {
         collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
@@ -1063,7 +1063,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     collectionSpecs = {
         Roses};
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
+
     encContextMap.reset(new CipherContextMap);
     decContextMap.reset(new CipherContextMap);
     string docs[] = {idPrefix + "hiddenRose", idPrefix + "invisibleTulip"};
@@ -1538,7 +1538,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
             Tulips,
             Lavenders
     };
-
     SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
