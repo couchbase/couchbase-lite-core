@@ -1020,8 +1020,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     const string channelIDa = idPrefix + "a";
     const string channelIDb = idPrefix + "b";
 
+    constexpr size_t collectionCount = 1;
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+
     // Create a temporary user for this test
-    SG::TestUser testUser { _sg, "aperasg", { channelIDa, channelIDb } };
+    SG::TestUser testUser { _sg, "aperasg", { channelIDa, channelIDb }, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
     // Setup pull filter:
@@ -1036,17 +1041,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     };
 
     // One-shot pull setup
-    constexpr size_t collectionCount = 1;
-    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
-    };
-
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
     for(int i = 0; i < collectionCount; ++i) {
-        replCollections[i] = { // three sets of braces? because Xcode
+        replCollections[i] = {
                 collectionSpecs[i], kC4Disabled, kC4OneShot,
                 nullslice, nullptr, _pullFilter, this
         };
@@ -1069,40 +1069,43 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         }
     };
 
-    auto collRoses = collections[0];
-
     // Put doc in remote DB, in channels a and b
-    REQUIRE(_sg.upsertDoc(Roses, docIDstr, "{}", { channelIDa, channelIDb }));
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc( spec, docIDstr, "{}", { channelIDa, channelIDb } ));
+    }
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(replParams);
 
-    // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
-    REQUIRE(doc1);
-    CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
-    CHECK(_docsEnded == 0);
-    CHECK(_counter == 0);
-
-    // Revoked access to channel 'a':
+    // Revoke access to channel 'a':
     REQUIRE(testUser.setChannels({ channelIDb }));
 
-    // Check if update to doc1 is still pullable:
-    auto oRevID = slice(doc1->revID).asString();
-    REQUIRE(_sg.upsertDoc(Roses, docIDstr, oRevID, "{}", { channelIDb }));
+
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+
+        // Update doc to only channel 'b'
+        auto oRevID = slice(doc1->revID).asString();
+        REQUIRE(_sg.upsertDoc(collectionSpecs[i], docIDstr, oRevID, "{}", { channelIDb }));
+    }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
 
     C4Log("-------- Pull update");
     replicate(replParams);
 
     // Verify the update:
-    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
-    REQUIRE(doc1);
-    CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
-    CHECK(_docsEnded == 0);
-    CHECK(_counter == 0);
-
-    auto curRevID = slice(doc1->revID).asString();
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+        CHECK(_docsEnded == 0);
+        CHECK(_counter == 0);
+    }
 
     // Revoke access to all channels:
     REQUIRE(testUser.revokeAllChannels());
@@ -1111,10 +1114,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     replicate(replParams);
 
     // Verify that doc1 is purged:
-    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
-    REQUIRE(!doc1);
-    CHECK(_docsEnded == 1);
-    CHECK(_counter == 1);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(!doc1);
+    }
+
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
 }
 
 #ifdef COUCHBASE_ENTERPRISE
