@@ -641,6 +641,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             TransactionHelper t(db);
             std::srand(123456); // start random() sequence at a known place
             for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+                constexpr size_t kDocBufSize = 60;
                 char docID[kDocBufSize];
                 snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
                 Encoder encPopulate(c4db_createFleeceEncoder(db));
