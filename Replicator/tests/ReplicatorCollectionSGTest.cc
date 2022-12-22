@@ -884,11 +884,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     std::array<string, collectionCount> collNames;
     std::vector<AllocedDict> allocedDicts;
 
-    collNames = {"rose"};
+    for(size_t i = 0; i < collectionCount; ++i) {
+        collNames[i] = idPrefix + Options::collectionSpecToPath(collectionSpecs[i]).asString();
+    }
 
     for (size_t i = 0; i < collectionCount; ++i) {
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-12121212", "1@cafe"),
+        createFleeceRev(collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(collNames[i]), revOrVersID("2-12121212", "1@cafe"),
                         "{\"db\":\"remote\"}"_sl);
         docIDs[i] = getDocIDs(collections[i]);
         replCollections[i] = { collectionSpecs[i] };
@@ -903,8 +905,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     deleteAndRecreateDB();
     for (size_t i = 0; i < collectionCount; ++i) {
         collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-13131313", "1@babe"),
+        createFleeceRev(collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(collNames[i]), revOrVersID("2-13131313", "1@babe"),
                         "{\"db\":\"local\"}"_sl);
     }
     collections = collectionPreamble(collectionSpecs, testUser);
@@ -956,7 +958,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     replicate(replParams);
 
     for (size_t i = 0; i < collectionCount; ++i) {
-        c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(idPrefix+collNames[i]),
+        c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(collNames[i]),
                                                         true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK(fleece2json(c4doc_getRevisionBody(doc)) == "{db:\"remote\"}"); // Remote Wins
