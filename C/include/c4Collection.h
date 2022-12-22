@@ -186,9 +186,9 @@ CBL_CORE_API C4Document* C4NULLABLE c4coll_getDoc(C4Collection *collection,
 
 /** Gets a document from the collection given its sequence number.
     @note  You must call `c4doc_release()` when finished with the document.  */
-C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection *collection,
-                                               C4SequenceNumber,
-                                               C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection *collection,
+                                     C4SequenceNumber,
+                                     C4Error* C4NULLABLE outError) C4API;
 
 /** A high-level Put operation, to insert a new or downloaded revision.
     - If `request->existingRevision` is true, then request->history must contain the revision's

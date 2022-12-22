@@ -673,20 +673,23 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while in batch", "[Data
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while deleting collection", "[Database][C][Expiration]") {
-    createRev("expire_me"_sl, kRevID, kFleeceBody);
+    C4CollectionSpec darthSpec { "vader"_sl, "darth"_sl };
+    auto darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
+    createRev(darthColl, "expire_me"_sl, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 10000 * ms;
 
     SECTION("Deleting before setting expiration should set an error") {
-        REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+        REQUIRE(c4db_deleteCollection(db, darthSpec, ERROR_INFO()));
         C4Error err;
-        CHECK(!c4doc_setExpiration(db, "expire_me"_sl, expire, &err));
+        CHECK(!c4coll_setDocExpiration(darthColl, "expire_me"_sl, expire, &err));
         CHECK(err.domain == LiteCoreDomain);
         CHECK(err.code == kC4ErrorNotOpen);
     }
 
     SECTION("Deleting after setting expiration won't set an error, but also won't crash") {
-        CHECK(c4doc_setExpiration(db, "expire_me"_sl, expire, ERROR_INFO()));
-        REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, ERROR_INFO()));
+        CHECK(c4coll_setDocExpiration(darthColl, "expire_me"_sl, expire, ERROR_INFO()));
+        REQUIRE(c4db_deleteCollection(db, darthSpec, ERROR_INFO()));
     }
 }
 
@@ -1236,30 +1239,33 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
 //  Xcode to break into debugger due to "Invalid null argument".
 // Not testing for errors here as they are covered by other tests, simply testing to make sure
 //  that no crashes occur, and the return value is as expected.
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted default collection") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted collection") {
+    C4CollectionSpec darthSpec { "vader"_sl, "darth"_sl };
+    auto darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
     C4Error err;
-    createRev("doc1"_sl, kRevID, kFleeceBody);
-    auto doc = c4db_getDoc(db, "doc1"_sl, true, kDocGetAll, &err);
+    createRev(darthColl, "doc1"_sl, kRevID, kFleeceBody);
+    auto doc = c4coll_getDoc(darthColl, "doc1"_sl, true, kDocGetAll, &err);
     auto seq = doc->sequence;
     
-    REQUIRE(c4db_deleteCollection(db, kC4DefaultCollectionSpec, &err));
+    REQUIRE(c4db_deleteCollection(db, darthSpec, &err));
     
     SECTION("Expire Documents") {
         C4Timestamp expire = c4_now() + 10000 * ms;
-        CHECK(!c4doc_setExpiration(db, "doc1"_sl, expire, &err));
-        CHECK(c4doc_getExpiration(db, "doc1"_sl, &err) == -1);
-        CHECK(c4db_nextDocExpiration(db) == -1);
-        CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+        CHECK(!c4coll_setDocExpiration(darthColl, "doc1"_sl, expire, &err));
+        CHECK(c4coll_getDocExpiration(darthColl, "doc1"_sl, &err) == -1);
+        CHECK(c4coll_nextDocExpiration(darthColl) == -1);
+        CHECK(c4coll_purgeExpiredDocs(darthColl, &err) == 0);
     }
     SECTION("Document Access") {
-        CHECK(c4db_getDocumentCount(db) == 0);
-        CHECK(!c4doc_get(db, "doc1"_sl, false, &err));
-        CHECK(!c4doc_getBySequence(db, seq, &err));
-        CHECK(c4db_getLastSequence(db) == 0);
-        CHECK(!c4db_purgeDoc(db, "doc1"_sl, &err));
-        CHECK(!c4doc_create(db, "doc2"_sl, kFleeceBody, kRevKeepBody, &err));
-        CHECK(!c4db_enumerateChanges(db, 0, nullptr, &err));
-        CHECK(!c4db_enumerateAllDocs(db, nullptr, &err));
+        CHECK(c4coll_getDocumentCount(darthColl) == 0);
+        CHECK(!c4coll_getDoc(darthColl, "doc1"_sl, false, kDocGetCurrentRev, &err));
+        CHECK(!c4coll_getDocBySequence(darthColl, seq, &err));
+        CHECK(c4coll_getLastSequence(darthColl) == 0);
+        CHECK(!c4coll_purgeDoc(darthColl, "doc1"_sl, &err));
+        CHECK(!c4coll_createDoc(darthColl, "doc2"_sl, kFleeceBody, kRevKeepBody, &err));
+        CHECK(!c4coll_enumerateChanges(darthColl, 0, nullptr, &err));
+        CHECK(!c4coll_enumerateAllDocs(darthColl, nullptr, &err));
     }
     SECTION("Document Put Request") {
         TransactionHelper t(db);
@@ -1271,14 +1277,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted default
         rq.historyCount = 1;
         rq.body = kFleeceBody;
         rq.save = true;
-        CHECK(!c4doc_put(db, &rq, nullptr, &err));
+        CHECK(!c4coll_putDoc(darthColl, &rq, nullptr, &err));
     }
     SECTION("Indexes") {
-        REQUIRE(!c4db_createIndex(db, C4STR("byAnswer"),
-                                  R"([[".answer"]])"_sl,
+        REQUIRE(!c4coll_createIndex(darthColl, C4STR("byAnswer"),
+                                  R"([[".answer"]])"_sl, kC4N1QLQuery,
                                   kC4ValueIndex, nullptr, &err));
-        REQUIRE(!c4db_deleteIndex(db, C4STR("byAnswer"), &err));
-        REQUIRE(!c4db_getIndexesInfo(db, &err));
+        REQUIRE(!c4coll_deleteIndex(darthColl, C4STR("byAnswer"), &err));
+        REQUIRE(!c4coll_getIndexesInfo(darthColl, &err));
     }
     c4doc_release(doc);
 }

@@ -19,6 +19,7 @@
 #include "c4Test.hh"
 #include "c4Certificate.hh"
 #include "c4CppUtils.hh"
+#include "c4Replicator.h"
 #include "Response.hh"
 #include <fleece/Fleece.hh>
 #include <fleece/Expert.hh>
@@ -36,22 +37,33 @@ class SG {
 public:
     class TestUser;
 
-    SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
+    SG() {
+        c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName);
+    }
 
+    SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
+    // Will return nullslice if your json was invalid
     static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string> &channelIDs);
-    static alloc_slice addRevToJSON(slice json, const std::string& revID);
     slice getServerName() const;
     // Flush should only be used with Walrus
     void flushDatabase() const;
     bool createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const;
     bool deleteUser(const std::string& username) const;
-    bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
+    // Assign given channels to the user with given username, in the given collections
+    bool assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string>& channelIDs) const;
+    // Same as above, but accepts an array parameter
+    template <size_t N>
+    bool assignUserChannel(const std::string& username, const std::array<C4CollectionSpec, N>& collectionSpecs, const std::vector<std::string>& channelIDs) const {
+        return assignUserChannel(username, std::vector(collectionSpecs.begin(), collectionSpecs.end()), channelIDs);
+    }
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
-                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
-    bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID,
-                          slice body, const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+                          slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
+    // Use this in the case that you want a doc which belongs to no channels
+    // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels
+    bool upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID,
+                                    slice body, C4Error* err = nullptr) const;
     alloc_slice getDoc(std::string docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
 
     void setAdminCredentials(std::string username, std::string password) { adminUsername = username;
