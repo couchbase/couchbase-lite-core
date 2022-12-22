@@ -609,7 +609,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
     constexpr size_t kDocBufSize = 60;
-    constexpr int kNumDocs = 1000, kNumProps = 1000;
+    // CBG-2643 blocking 1000 docs with 1000 props due to replication taking more than ~1sec
+    constexpr int kNumDocs = 800, kNumProps = 800;
     const string idPrefix = timePrefix();
 
     const string docIDPref = idPrefix + "doc";
@@ -637,7 +638,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         for (size_t i = 0; i < collectionCount; ++i){
-            constexpr size_t kDocBufSize = 60;
             TransactionHelper t(db);
             std::srand(123456); // start random() sequence at a known place
             for (int docNo = 0; docNo < kNumDocs; ++docNo) {
@@ -716,11 +716,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
+
         collections = collectionPreamble(collectionSpecs, testUser);
+        replParams.setPushPull(kC4Disabled, kC4OneShot);
+
         populateDB();
 
         C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
-        replParams.setPushPull(kC4Disabled, kC4OneShot);
         Stopwatch st;
         replicate(replParams);
         double time = st.elapsed();
