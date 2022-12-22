@@ -1019,7 +1019,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     const string docIDstr = idPrefix + "apefrr-doc1";
     const string channelID = idPrefix + "a";
 
-    SG::TestUser testUser { _sg, "apefrrsg", { channelID } };
+    constexpr size_t collectionCount = 1;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses
+    };
+
+    SG::TestUser testUser { _sg, "apefrrsg", { channelID }, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
     // Setup pull filter to filter the removed rev:
@@ -1034,10 +1039,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         return true;
     };
 
-    constexpr size_t collectionCount = 1;
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
-    };
     std::array<C4Collection*, collectionCount> collections =
             collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections { collectionCount };
@@ -1066,19 +1067,21 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         }
     };
 
-    REQUIRE(_sg.upsertDoc(Roses, docIDstr, "{}", { channelID }));
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(spec, docIDstr, "{}", { channelID }));
+    }
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(replParams);
 
-    auto collRoses = collections[0];
-
     // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
-    REQUIRE(doc1);
-    CHECK(_docsEnded == 0);
-    CHECK(_counter == 0);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(_docsEnded == 0);
+        CHECK(_counter == 0);
+    }
 
     // Revoke access to all channels:
     REQUIRE(testUser.revokeAllChannels());
@@ -1087,10 +1090,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     replicate(replParams);
 
     // Verify if doc1 is not purged as the revoked rev is filtered:
-    doc1 = c4coll_getDoc(collRoses, slice(docIDstr), true, kDocGetAll, nullptr);
-    REQUIRE(doc1);
-    CHECK(_docsEnded == 1);
-    CHECK(_counter == 1);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(_docsEnded == 1);
+        CHECK(_counter == 1);
+    }
 }
 
 
