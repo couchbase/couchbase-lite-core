@@ -121,7 +121,7 @@ public:
             verifyDb = nullptr;
         }
     }
-
+    
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {
@@ -1066,6 +1066,93 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     };
 
     verifyDocs(collectionSpecs, docIDs, true);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apefrr-doc1";
+    const string channelID = idPrefix + "a";
+
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
+
+    SG::TestUser testUser { _sg, "apefrrsg", { channelID }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+    // Setup pull filter to filter the removed rev:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections { collectionCount };
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = {
+                collectionSpecs[i], kC4Disabled, kC4OneShot,
+                nullslice, nullptr, _pullFilter, this
+        };
+    }
+
+    ReplParams replParams { replCollections };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(spec, docIDstr, "{}", { channelID }));
+    }
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(replParams);
+
+    // Verify:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+    }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    REQUIRE(testUser.revokeAllChannels());
+
+    C4Log("-------- Pull the revoked");
+    replicate(replParams);
+
+    // Verify if doc1 is not purged as the revoked rev is filtered:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+    }
+    // The two below checks are failing, because of CBG-2487
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
 }
 
 
