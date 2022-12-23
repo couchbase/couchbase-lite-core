@@ -1175,6 +1175,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     // Verify that doc1 is purged:
     for(auto& coll : collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        // This check is currently failing because of CBG-2487
         REQUIRE(!doc1);
     }
 
