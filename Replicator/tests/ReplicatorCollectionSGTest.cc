@@ -1019,9 +1019,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     const string docIDstr = idPrefix + "apefrr-doc1";
     const string channelID = idPrefix + "a";
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     SG::TestUser testUser { _sg, "apefrrsg", { channelID }, collectionSpecs };
@@ -1079,9 +1081,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     for(auto& coll : collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
-        CHECK(_docsEnded == 0);
-        CHECK(_counter == 0);
     }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
 
     // Revoke access to all channels:
     REQUIRE(testUser.revokeAllChannels());
@@ -1093,9 +1095,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     for(auto& coll : collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
-        CHECK(_docsEnded == 1);
-        CHECK(_counter == 1);
     }
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
 }
 
 
