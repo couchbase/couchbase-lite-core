@@ -1008,7 +1008,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     SG::TestUser testUser { _sg, "uocd", chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
-    _sg.assignUserChannel("sguser", { collectionSpecs.begin(), collectionSpecs.end() }, { channelID });
+    _sg.assignUserChannel("sguser", { collectionSpecs.begin(), collectionSpecs.end() }, { chIDs });
     _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 
     // Create a conflicted doc on SG, and resolve the conflict
