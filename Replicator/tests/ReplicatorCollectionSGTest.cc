@@ -1008,9 +1008,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     SG::TestUser testUser { _sg, "uocd", chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
-    _sg.assignUserChannel("sguser", { collectionSpecs.begin(), collectionSpecs.end() }, { chIDs });
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
-
     // Create a conflicted doc on SG, and resolve the conflict
     std::array<std::string, 4> bodies {
             R"({"_rev":"1-aaaa","foo":1})",
@@ -1137,9 +1134,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     C4Log("-------- Pulling");
     replicate(replParams);
 
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
     // Revoke access to channel 'a':
     REQUIRE(testUser.setChannels({ channelIDb }));
-
 
     for(int i = 0; i < collectionCount; ++i) {
         // Verify
@@ -1151,8 +1150,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         auto oRevID = slice(doc1->revID).asString();
         REQUIRE(_sg.upsertDoc(collectionSpecs[i], docIDstr, oRevID, "{}", { channelIDb }));
     }
-    CHECK(_docsEnded == 0);
-    CHECK(_counter == 0);
 
     C4Log("-------- Pull update");
     replicate(replParams);
