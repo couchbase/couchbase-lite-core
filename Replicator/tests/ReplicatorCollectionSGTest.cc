@@ -1509,16 +1509,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     replicate(replParams);
 
+    CHECK(context.docsEndedTotal == collectionCount);
+    CHECK(context.docsEndedPurge == 0);
+    CHECK(context.pullFilterTotal == collectionCount);
+    CHECK(context.pullFilterPurge == 0);
+
     for(int i = 0; i < collectionCount; ++i) {
         // Verify doc
         c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
         CHECK(c4rev_getGeneration(doc1->revID) == 1);
-        CHECK(context.docsEndedTotal == 3);
-        CHECK(context.docsEndedPurge == 0);
-        CHECK(context.pullFilterTotal == 3);
-        CHECK(context.pullFilterPurge == 0);
 
         // Once verified, remove it from channel 'a' in that collection
         auto oRevID = slice(doc1->revID).asString();
@@ -1529,15 +1530,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     context.reset();
     replicate(replParams);
 
+    CHECK(context.docsEndedTotal == collectionCount);
+    CHECK(context.docsEndedPurge == 0);
+    CHECK(context.pullFilterTotal == collectionCount);
+    CHECK(context.pullFilterPurge == 0);
+
     for(int i = 0; i < collectionCount; ++i) {
         // Verify the update:
         c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
         CHECK(c4rev_getGeneration(doc1->revID) == 2);
-        CHECK(context.docsEndedTotal == 3);
-        CHECK(context.docsEndedPurge == 0);
-        CHECK(context.pullFilterTotal == 3);
-        CHECK(context.pullFilterPurge == 0);
 
         // Remove doc from all channels:
         auto oRevID = slice(doc1->revID).asString();
@@ -1550,17 +1552,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     for(auto& coll : collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-        CHECK(context.docsEndedPurge == 3);
+
         if (autoPurgeEnabled) {
             // Verify if doc1 is purged:
             REQUIRE(!doc1);
-            CHECK(context.pullFilterPurge == 3);
         } else {
             REQUIRE(doc1);
-            // No pull filter called
-            CHECK(context.pullFilterTotal == 0);
         }
     }
+
+    CHECK(context.docsEndedPurge == collectionCount);
+    CHECK(context.pullFilterPurge == collectionCount);
+    // No pull filter called
+    CHECK(context.pullFilterTotal == 0);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Removed Revision SG",
@@ -1649,15 +1653,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     ReplParams replParams { replCollections };
     replicate(replParams);
 
+    CHECK(cbContext.docsEndedTotal == collectionCount);
+    CHECK(cbContext.docsEndedPurge == 0);
+    CHECK(cbContext.pullFilterTotal == collectionCount);
+    CHECK(cbContext.pullFilterPurge == 0);
+
     for(int i = 0; i < collectionCount; ++i) {
         // Verify
         c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(cbContext.docsEndedTotal == 3);
-        CHECK(cbContext.docsEndedPurge == 0);
-        CHECK(cbContext.pullFilterTotal == 3);
-        CHECK(cbContext.pullFilterPurge == 0);
 
         // Remove doc from all channels
         auto oRevID = slice(doc1->revID).asString();
@@ -1672,9 +1677,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     for(auto& coll : collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(cbContext.docsEndedPurge == 3);
-        CHECK(cbContext.pullFilterPurge == 3);
     }
+    CHECK(cbContext.docsEndedPurge == collectionCount);
+    CHECK(cbContext.pullFilterPurge == collectionCount);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc or Delete then Create Doc SG",
@@ -1691,7 +1696,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     };
     SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
-
 
     std::array<C4Collection *, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
@@ -1716,7 +1720,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
             REQUIRE(docs[i]);
         }
     }
-    for (auto coll : collections) {
+    for (auto& coll : collections) {
         REQUIRE(c4coll_getDocumentCount(coll) == 1);
     }
 
