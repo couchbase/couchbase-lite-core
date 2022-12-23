@@ -1014,7 +1014,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     verifyDocs(collectionSpecs, docIDs);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollectionTEMP]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
     const string docIDstr = idPrefix + "apefrr-doc1";
     const string channelID = idPrefix + "a";
@@ -1096,6 +1096,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
     }
+    // The two below checks are failing, because of CBG-2487
     CHECK(_docsEnded == collectionCount);
     CHECK(_counter == collectionCount);
 }
