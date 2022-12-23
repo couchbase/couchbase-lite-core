@@ -1562,9 +1562,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     }
 
     CHECK(context.docsEndedPurge == collectionCount);
-    CHECK(context.pullFilterPurge == collectionCount);
-    // No pull filter called
-    CHECK(context.pullFilterTotal == 0);
+    if(autoPurgeEnabled) {
+        CHECK(context.pullFilterPurge == collectionCount);
+    } else {
+        // No pull filter called
+        CHECK(context.pullFilterTotal == 0);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Removed Revision SG",
