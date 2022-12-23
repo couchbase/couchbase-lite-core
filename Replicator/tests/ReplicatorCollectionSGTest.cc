@@ -1077,9 +1077,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     const string channelIDa = idPrefix + "a";
     const string channelIDb = idPrefix + "b";
 
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
 
     // Create a temporary user for this test
@@ -1160,9 +1162,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
         CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
-        CHECK(_docsEnded == 0);
-        CHECK(_counter == 0);
     }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
 
     // Revoke access to all channels:
     REQUIRE(testUser.revokeAllChannels());
