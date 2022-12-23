@@ -122,7 +122,7 @@ namespace litecore::repl {
                 response.compressed = true;
                 if (!_db->usingVersionVectors()) {
 #if 1
-                    response["maxHistory"_sl] = 20;
+                    response["maxHistory"_sl] = 100;
 #else
                     response["maxHistory"_sl] = _db->useLocked()->getMaxRevTreeDepth();
 #endif

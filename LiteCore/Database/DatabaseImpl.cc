@@ -51,7 +51,7 @@ namespace litecore {
 
 
     static constexpr slice kMaxRevTreeDepthKey = "maxRevTreeDepth";
-    static constexpr uint32_t kDefaultMaxRevTreeDepth = 20;
+    static constexpr uint32_t kDefaultMaxRevTreeDepth = 100;
 
 
     static string collectionNameToKeyStoreName(C4Database::CollectionSpec);

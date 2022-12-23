@@ -1895,7 +1895,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
     // randomly generated revID history from TreeDocument::getRevisionHistory.
     // As well as just testing that this doesn't break anything, this test tries to emulate a client that
     // has conflicts within the "gaps" that the other client filled with random revIDs.
-    constexpr int numRevs = 40;
+    constexpr int numRevs = 130;
 
     const string docID = timePrefix() + "doc1";
 
@@ -1941,9 +1941,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
     // Mutate the doc `numRevs` times (in each coll)
     for(auto& coll : collections) {
         for(int i = 0; i < numRevs; ++i) {
-            body = R"({"a":)" + to_string(i+3) + "}";
+            body = R"({"b":)" + to_string(i+3) + "}";
             createFleeceRev(coll, slice(docID), nullslice, slice(body));
         }
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
+        alloc_slice hist = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+        C4Log("Rev history 1: %s", hist.asString().c_str());
     }
 
     // Push all the new changes
@@ -1978,12 +1981,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
 
     // Make some mutations that would be in the rev gap from the "other" client (causing conflict)
     for(auto& coll : collections) {
-        for(int i = 0; i < 10; ++i) {
-            body = R"({"b":)" + to_string(i+3) + "}";
+        for(int i = 0; i < (numRevs-10); ++i) {
+            if(i < 110) {
+                body = R"({"a":)" + to_string(i+3) + "}";
+            } else {
+                body = R"({"b":)" + to_string(i+3) + "}";
+            }
             createFleeceRev(coll, slice(docID), nullslice, slice(body));
         }
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
+        alloc_slice hist = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+        C4Log("Rev history 2: %s", hist.asString().c_str());
     }
-
+    // We expect a conflict
     _expectedDocPullErrors = {docID};
 
     // Push and pull with remote
