@@ -399,7 +399,7 @@ public:
         _repl = nullptr;
 
     }
-    
+
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
         std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
         replicate(varParams, expectSuccess);
