@@ -55,7 +55,7 @@ public:
     // Same as above, but accepts an array parameter
     template <size_t N>
     bool assignUserChannel(const std::string& username, const std::array<C4CollectionSpec, N>& collectionSpecs, const std::vector<std::string>& channelIDs) const {
-        return assignUserChannel(username, std::vector(collectionSpecs.begin(), collectionSpecs.end()), channelIDs);
+        return assignUserChannel(username, std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), channelIDs);
     }
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                           slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
