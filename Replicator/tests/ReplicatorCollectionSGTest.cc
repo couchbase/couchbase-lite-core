@@ -834,7 +834,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     string idPrefix = timePrefix();
     const string channelID = idPrefix;
     
-    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses,
@@ -843,7 +842,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     };
     
     // Set up replication
-    SG::TestUser testUser { _sg, "ppdsg", { channelID }, collectionSpecs }; // Doesn't use channels
+    SG::TestUser testUser { _sg, "ppdsg", { channelID }, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
     const string docID = idPrefix + "ppd-doc1";
