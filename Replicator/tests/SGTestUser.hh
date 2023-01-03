@@ -44,7 +44,7 @@ public:
              const std::vector<std::string>& channels = { "*" },
              const std::array<C4CollectionSpec, N>& collectionSpecs = { kC4DefaultCollectionSpec },
              const std::string& password = "password")
-         : TestUser(sg, username, channels, std::vector(collectionSpecs.begin(), collectionSpecs.end()), password)
+         : TestUser(sg, username, channels, std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), password)
     {}
 
     ~TestUser() {
