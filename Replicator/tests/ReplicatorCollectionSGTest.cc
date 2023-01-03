@@ -121,7 +121,7 @@ public:
             verifyDb = nullptr;
         }
     }
-    
+
     // Database verifyDb:
     C4Database* verifyDb {nullptr};
     void resetVerifyDb() {
@@ -647,7 +647,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     };
     SG::TestUser testUser { _sg, "pdfcsg", chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
-    std::array<C4Collection *, collectionCount> collections 
+    std::array<C4Collection *, collectionCount> collections
             = collectionPreamble(collectionSpecs, testUser);
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -655,7 +655,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
     }
-    
+
     ReplParams replParams { replCollections };
 
     C4Log("-------- Populating local db --------");
@@ -723,7 +723,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
         encUpdate.endArray();
         encUpdate.endDict();
-    
+
         REQUIRE(_sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish(), 30.0));
     }
 
@@ -780,7 +780,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    
+
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
@@ -803,7 +803,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         replCollections[i] = { collectionSpecs[i] };
     }
     ReplParams replParams { replCollections };
-    
+
     vector<string> attachments1 = {
             idPrefix + "Attachment A",
             idPrefix + "Attachment B",
@@ -832,7 +832,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    
+
     // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
@@ -840,14 +840,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
         Tulips,
         Lavenders
     };
-    
+
     // Set up replication
     SG::TestUser testUser { _sg, "ppdsg", { "*" }, collectionSpecs }; // Doesn't use channels
     _sg.authHeader = testUser.authHeader();
 
     const string docID = idPrefix + "ppd-doc1";
 
-    
+
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -860,8 +860,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
 
     ReplParams replParams { replCollections };
     replParams.setPushPull(kC4OneShot, kC4Disabled);
-    
-    
+
+
     replicate(replParams);
 
     C4Log("-------- Deleting and re-creating database --------");
@@ -905,7 +905,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
 
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
-    
+
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
     std::array<string, collectionCount> collNames;
 
@@ -1155,6 +1155,117 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
     CHECK(_counter == collectionCount);
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apera-doc1";
+    const string channelIDa = idPrefix + "a";
+    const string channelIDb = idPrefix + "b";
+
+    constexpr size_t collectionCount = 3;
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
+
+    // Create a temporary user for this test
+    SG::TestUser testUser { _sg, "aperasg", { channelIDa, channelIDb }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+    // Setup pull filter:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+
+    // One-shot pull setup
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = {
+                collectionSpecs[i], kC4Disabled, kC4OneShot,
+                nullslice, nullptr, _pullFilter, this
+        };
+    }
+
+    ReplParams replParams { replCollections };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    // Put doc in remote DB, in channels a and b
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc( spec, docIDstr, "{}", { channelIDa, channelIDb } ));
+    }
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(replParams);
+
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to channel 'a':
+    REQUIRE(testUser.setChannels({ channelIDb }));
+
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+
+        // Update doc to only channel 'b'
+        auto oRevID = slice(doc1->revID).asString();
+        REQUIRE(_sg.upsertDoc(collectionSpecs[i], docIDstr, oRevID, "{}", { channelIDb }));
+    }
+
+    C4Log("-------- Pull update");
+    replicate(replParams);
+
+    // Verify the update:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+    }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    REQUIRE(testUser.revokeAllChannels());
+
+    C4Log("-------- Pull the revoked");
+    replicate(replParams);
+
+    // Verify that doc1 is purged:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        // This check is currently failing because of CBG-2487
+        REQUIRE(!doc1);
+    }
+
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
+}
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -1209,7 +1320,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     std::array<C4Collection*, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-    
+
     encContextMap.reset(new CipherContextMap);
     decContextMap.reset(new CipherContextMap);
 
