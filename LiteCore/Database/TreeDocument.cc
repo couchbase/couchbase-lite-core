@@ -190,6 +190,7 @@ namespace litecore {
             // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
             // If sending these, make up random revIDs for them since they don't matter.
             unsigned lastGen = getRevIDGeneration(_selectedRevID) + 1;
+            uint32_t historyGap = 0;
             do {
                 slice revID = _selected.revID;
                 unsigned gen = getRevIDGeneration(revID);
@@ -197,6 +198,7 @@ namespace litecore {
                     // We don't have this revision (the history got deeper than the local db's
                     // maxRevTreeDepth), so make up a random revID. The server probably won't care.
                     append(format("%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber()));
+                    historyGap++;
                 }
                 lastGen = gen;
 
@@ -216,6 +218,12 @@ namespace litecore {
                 }
             } while (selectParentRevision());
             selectRevision(selRev);
+
+            // Warn the client if there was a gap in the rev history
+            if( historyGap > 0 ) {
+                LogTo(DBLog, "There was a %u revisions gap in the revision history of document %.*s. This could be indicative of a problem with replication or document mutation.", historyGap, SPLAT(_docID));
+            }
+
             return alloc_slice(historyStream.str());
         }
 
