@@ -121,6 +121,16 @@ alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::
     return dict.toJSON();
 }
 
+alloc_slice SG::addRevToJSON(slice json, const string &revID) {
+    MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
+    if(!dict) {
+        C4Log("ERROR: MutableDict is null, likely your JSON is bad.");
+        return nullslice;
+    }
+    dict.set("_rev", revID);
+    return dict.toJSON();
+}
+
 bool SG::createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
@@ -196,6 +206,11 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                channelIDs.empty() ? body : bodyWithChannel, false,
                err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
+}
+
+bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string &docID, const string &revID, slice body,
+                   const std::vector<std::string> &channelIDs, C4Error *err) const {
+    return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
 }
 
 bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body, C4Error *err) const {
