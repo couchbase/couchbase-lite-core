@@ -2175,12 +2175,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     }
 
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
-        unordered_map<alloc_slice, unsigned> {
-            { alloc_slice(docID), 0 },
-            { alloc_slice(docID), 0 },
-            { alloc_slice(docID), 0 }
-        }
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }},
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }},
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }}
     };
+    
     ReplParams replParams { replCollections };
     replParams.setDocIDs(docIDs);
     replicate(replParams);
