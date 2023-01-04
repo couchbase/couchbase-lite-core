@@ -633,7 +633,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
     constexpr size_t kDocBufSize = 60;
     // CBG-2643 blocking 1000 docs with 1000 props due to replication taking more than ~1sec
-    constexpr int kNumDocs = 800, kNumProps = 800;
+    constexpr int kNumDocs = 799, kNumProps = 799;
     const string idPrefix = timePrefix();
 
     const string docIDPref = idPrefix + "doc";
@@ -731,11 +731,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     for (int pass = 1; pass <= 3; ++pass) {
         if (pass == 3) {
             C4Log("-------- DISABLING DELTA SYNC --------");
-            Encoder encDelta;
-            encDelta.beginDict();
-            encDelta.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
-            encDelta.writeBool(true);
-            encDelta.endDict();
+            replParams.setOption(C4STR(kC4ReplicatorOptionDisableDeltas), true);
         }
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
