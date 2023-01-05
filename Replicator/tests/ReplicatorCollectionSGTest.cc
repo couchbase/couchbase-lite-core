@@ -832,8 +832,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+    const string channelID = idPrefix;
 
-    // one collection now. Will use multiple collection when SG is ready.
     constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
         Roses,
@@ -842,7 +842,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     };
 
     // Set up replication
-    SG::TestUser testUser { _sg, "ppdsg", { "*" }, collectionSpecs }; // Doesn't use channels
+    SG::TestUser testUser { _sg, "ppdsg", { channelID }, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
     const string docID = idPrefix + "ppd-doc1";
@@ -852,15 +852,16 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
+    alloc_slice channelJSON = SG::addChannelToJSON("{}", "channels", { channelID });
+
     for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
-        createRev(collections[i], slice(docID), kRevID, kFleeceBody);
-        createRev(collections[i], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
+        createRev(collections[i], slice(docID), kRevID, json2fleece(channelJSON.asString().c_str()));
+        createRev(collections[i], slice(docID), kRev2ID, json2fleece(channelJSON.asString().c_str()), kRevDeleted);
     }
 
     ReplParams replParams { replCollections };
     replParams.setPushPull(kC4OneShot, kC4Disabled);
-
 
     replicate(replParams);
 
@@ -2179,7 +2180,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
         unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }},
         unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }}
     };
-    
+
     ReplParams replParams { replCollections };
     replParams.setDocIDs(docIDs);
     replicate(replParams);
