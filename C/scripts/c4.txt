@@ -318,6 +318,8 @@ c4db_collectionNames
 c4db_scopeNames
 c4dbobs_createOnCollection
 c4docobs_createWithCollection
+c4coll_enumerateAllDocs
+c4coll_enumerateChanges
 c4coll_getSpec
 c4coll_getDatabase
 c4coll_getDocumentCount

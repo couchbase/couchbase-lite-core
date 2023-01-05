@@ -1231,6 +1231,7 @@ C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
                                          const C4EnumeratorOptions* C4NULLABLE c4options,
                                          C4Error* C4NULLABLE outError) noexcept
 {
+    returnIfCollectionInvalid(collection, outError, nullptr);
     return tryCatch<C4DocEnumerator*>(outError, [&]{
         return new C4DocEnumerator(collection, since,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
@@ -1244,9 +1245,7 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        const C4EnumeratorOptions *c4options,
                                        C4Error *outError) noexcept
 {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_enumerateChanges(coll, since, c4options, outError);
+    return c4coll_enumerateChanges(database->getDefaultCollection(), since, c4options, outError);
 }
 
 
@@ -1254,6 +1253,7 @@ C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection *collection,
                                          const C4EnumeratorOptions* C4NULLABLE c4options,
                                          C4Error* C4NULLABLE outError) noexcept
 {
+    returnIfCollectionInvalid(collection, outError, nullptr);
     return tryCatch<C4DocEnumerator*>(outError, [&]{
         return new C4DocEnumerator(collection,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
@@ -1266,9 +1266,7 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        const C4EnumeratorOptions *c4options,
                                        C4Error *outError) noexcept
 {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_enumerateAllDocs(coll, c4options, outError);
+    return c4coll_enumerateAllDocs(database->getDefaultCollection(), c4options, outError);
 }
 
 

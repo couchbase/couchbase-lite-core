@@ -120,6 +120,31 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c.persistent());
         CHECK(!c.expired());        // This check will fail starting in 2099...
     }
+    // CBL-3949
+    SECTION("GCLB Cookie") {
+        Cookie c("GCLB=COWjp4rwlqauaQ; path=/; HttpOnly; lang=en-US; EXPIRES=Tue, 09-Jun-2099 10:18:14 GMT", "example.com", "/");
+        CHECK(c);
+        CHECK(c.name == "gclb");
+        CHECK(c.value == "COWjp4rwlqauaQ");
+        if(sizeof(time_t) == 4) {
+            CHECK(c.expires == 2147483647);
+        } else {
+            CHECK(c.expires == 4084683494);
+        }
+        CHECK(c.domain == "example.com");
+        CHECK(c.path == "/");
+        CHECK(c.persistent());
+        CHECK(!c.expired());
+    }
+    SECTION("Expires - ANSI C format") {
+        Cookie c("x=y; lang=en-US; expires=Tue Jun  9 10:18:14 2099", "example.com", "/");
+        CHECK(c);
+        if(sizeof(time_t) == 4) {
+            CHECK(c.expires == 2147483647);
+        } else {
+            CHECK(c.expires == 4084683494);
+        }
+    }
     SECTION("Expired") {
         Cookie c("x=y; lang=en-US; expires=Wed, 09 Jun 1999 10:18:14 GMT", "example.com", "/");
         CHECK(c);
