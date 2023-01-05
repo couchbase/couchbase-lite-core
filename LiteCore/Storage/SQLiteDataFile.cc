@@ -849,16 +849,17 @@ namespace litecore {
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
-        return onTable + "::" + SQLiteKeyStore::transformCollectionName(property, true);
+        return onTable + string(KeyStore::kIndexSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
     string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
-        return onTable + ":unnest:" + SQLiteKeyStore::transformCollectionName(property, true);
+        return onTable + string(KeyStore::kUnnestSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
-        return onTable + ":predict:" + SQLiteKeyStore::transformCollectionName(property, true);
+        return onTable + string(KeyStore::kPredictSeparator) +
+            SQLiteKeyStore::transformCollectionName(property, true);
     }
 #endif
 

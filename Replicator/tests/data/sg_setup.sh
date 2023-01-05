@@ -18,12 +18,16 @@ sleep 10
 curl -k --location --request PUT "https://localhost:4985/scratch/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": {\"flowers\": {\"collections\":{\"roses\":{}}}}}"
+ --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": 
+{\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, 
+\"lavenders\":{}}}}}"
 
 curl -k --location --request POST "https://localhost:4985/scratch/_user/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw '{"name": "sguser", "password": "password", "admin_channels": ["*"]}'
+ --data-raw '{"name": "sguser", "password": "password", "collection_access": 
+{"flowers": {"roses": {"admin_channels": ["*"]}, "tulips": 
+{"admin_channels": ["*"]}, "lavenders": {"admin_channels": ["*"]}}}}'
 
 echo '---------- Sync Gateway setup complete! ----------'
 fg # Bring SG back to the foreground

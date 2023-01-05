@@ -43,7 +43,7 @@ protected:
 
         string sql = parse(dict);
         UNSCOPED_INFO("-->  " << sql);
-        
+
         FLValue_Release(dict);
         return jsonResult;
     }
@@ -136,7 +136,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
         ExpectingExceptions x;
         CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM _default AS orders JOIN _default as other "
                                     "ON orders.test_id = other.test_id ORDER BY custId"),
-                          "property 'custId.' does not begin with a declared 'AS' alias");
+                          "property 'custId' does not begin with a declared 'AS' alias");
     }
 }
 
@@ -378,6 +378,31 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
           == "{'FROM':[{'AS':'a','COLLECTION':'coll'},"
              "{'AS':'b','COLLECTION':'coll','JOIN':'INNER','ON':['=',['.a.name'],['.b.name']],'SCOPE':'scope'}],"
              "'WHAT':[['.a.x'],['.b.y']]}");
+    CHECK(translate("SELECT a.x FROM coll a JOIN scope.coll b ON a.name = b.name "
+                    "WHERE MATCH(a.ftsIndex, b.y)")
+          == "{'FROM':[{'AS':'a','COLLECTION':'coll'},{'AS':'b','COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.a.name'],['.b.name']],'SCOPE':'scope'}],'WHAT':[['.a.x']],"
+             "'WHERE':['MATCH()','a.ftsIndex',['.b.y']]}");
+    CHECK(translate("SELECT a.x FROM coll a JOIN scope.coll b ON a.name = b.name "
+                    "WHERE MATCH(b.ftsIndex, a.y)")
+          == "{'FROM':[{'AS':'a','COLLECTION':'coll'},{'AS':'b','COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.a.name'],['.b.name']],'SCOPE':'scope'}],'WHAT':[['.a.x']],"
+             "'WHERE':['MATCH()','b.ftsIndex',['.a.y']]}");
+    // ftsIndex does not have to be qualified by collection alias if all aliases refer to
+    // the same collection.
+    CHECK(translate("SELECT a.x FROM coll a JOIN coll b ON a.name = b.y WHERE MATCH(ftsIndex, b.y)")
+          == "{'FROM':[{'AS':'a','COLLECTION':'coll'},{'AS':'b','COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.a.name'],['.b.y']]}],'WHAT':[['.a.x']],'WHERE':['MATCH()','ftsIndex',['.b.y']]}");
+    {
+        ExpectingExceptions x;
+        // a and b refer to different collections, and, hence, ftsIndex must preceded by an alias.
+        CHECK_THROWS_WITH(translate("SELECT a.x FROM coll a JOIN scope.coll b ON "
+                                    "a.name = b.y WHERE MATCH(ftsIndex, b.y)"),
+                          "property 'ftsIndex' does not begin with a declared 'AS' alias");
+        CHECK_THROWS_WITH(translate("SELECT a.x FROM coll a JOIN scope.coll b ON "
+                                    "a.name = b.y WHERE MATCH(c.ftsIndex, b.y)"),
+                          "property 'c.ftsIndex' does not begin with a declared 'AS' alias");
+    }
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
