@@ -325,7 +325,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]")
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
     _sg.address.port = c4listener_getPort(listener());
-    REQUIRE(_startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
     waitForStatus(kC4Idle);
     stop();
     waitForStatus(kC4Stopped);

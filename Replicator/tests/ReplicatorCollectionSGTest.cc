@@ -370,6 +370,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
         = collectionPreamble(collectionSpecs, "sguser", "password");
 
     std::vector<C4ReplicationCollection> replCollections(collectionCount);
+    C4Error expectedError;
+
     SECTION("Collection does not exist at remote") {
         replCollections[0] =
             C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled};
@@ -379,19 +381,21 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
             C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4OneShot};
         replCollections[3] =
             C4ReplicationCollection{collectionSpecs[3], kC4OneShot, kC4Disabled};
+        // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
+        // is not found on the remote server"
+        expectedError = {WebSocketDomain, 404};
     }
 
     SECTION("Inconsistent Config") {
-        // Hits DebugAssert, CBL-4051
-        return;
-//        replCollections[0] =
-//            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled};
-//        replCollections[1] =
-//            C4ReplicationCollection{collectionSpecs[1], kC4Disabled, kC4OneShot};
-//        replCollections[2] =
-//            C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4OneShot};
-//        replCollections[3] =
-//            C4ReplicationCollection{collectionSpecs[3], kC4Continuous, kC4Disabled};
+        replCollections[0] =
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled};
+        replCollections[1] =
+            C4ReplicationCollection{collectionSpecs[1], kC4Disabled, kC4OneShot};
+        replCollections[2] =
+            C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4OneShot};
+        replCollections[3] =
+            C4ReplicationCollection{collectionSpecs[3], kC4Continuous, kC4Disabled};
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
     }
 
     for (auto coll : collections) {
@@ -399,12 +403,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "
     }
 
     ReplParams replParams { replCollections };
-
     replicate(replParams, false);
-    // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
-    // is not found on the remote server"
-    CHECK(_callbackStatus.error.domain == WebSocketDomain);
-    CHECK(_callbackStatus.error.code == 404);
+
+    CHECK(_callbackStatus.error.domain == expectedError.domain);
+    CHECK(_callbackStatus.error.code == expectedError.code);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "[.SyncServerCollection]") {

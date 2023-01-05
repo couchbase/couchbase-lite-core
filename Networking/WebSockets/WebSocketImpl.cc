@@ -511,6 +511,8 @@ namespace litecore { namespace websocket {
                     callRequestClose(status, message);
                 }
                 return;
+            case SOCKET_UNINIT:
+                return;
             default:
                 DebugAssert(false);
         }
