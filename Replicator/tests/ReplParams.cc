@@ -202,7 +202,6 @@ ReplParams &ReplParams::setPropertyDecryptor(DecryptionCallback decryptionCallba
 }
 
 ReplParams &ReplParams::setCallbackContext(void *callbackContext_) {
-//    callbackContext = callbackContext_;
     for(auto& c : _collectionVector) {
         c.callbackContext = callbackContext_;
     }

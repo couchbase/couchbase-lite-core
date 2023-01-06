@@ -1093,7 +1093,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
             pullFilterTotal = 0;
             pullFilterPurge = 0;
         }
-    } cbContext[_collectionCount];
+    } cbContext;
 
     // Setup pull filter:
     C4ReplicatorValidationFunction pullFilter = [](
@@ -1127,43 +1127,40 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
     // Replication parameters setup
     ReplParams replParams { _collectionSpecs, kC4Disabled, kC4OneShot };
     replParams.setOption(kC4ReplicatorOptionAutoPurge, false).setPullFilter(pullFilter);
-    for(int i = 0; i < _collectionCount; ++i) {
-        replParams.setCollectionContext(i, &cbContext[i]);
-    }
+    replParams.setCallbackContext(&cbContext);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(replParams);
 
-    for (size_t i = 0; i < _collectionCount; ++i) {
-        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID),
+    for (auto& coll : _collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(cbContext[i].docsEndedTotal == 1);
-        CHECK(cbContext[i].docsEndedPurge == 0);
-        CHECK(cbContext[i].pullFilterTotal == 1);
-        CHECK(cbContext[i].pullFilterPurge == 0);
     }
+
+    CHECK(cbContext.docsEndedTotal == _collectionCount);
+    CHECK(cbContext.docsEndedPurge == 0);
+    CHECK(cbContext.pullFilterTotal == _collectionCount);
+    CHECK(cbContext.pullFilterPurge == 0);
 
     // Revoke access to all channels:
     REQUIRE(_testUser.revokeAllChannels());
 
     C4Log("-------- Pulling the revoked");
-    for (auto& c: cbContext) {
-        c.reset();
-    }
+    cbContext.reset();
 
     replicate(replParams);
 
     // Verify if the doc1 is not purged as the auto purge is disabled:
-    for (size_t i = 0; i < _collectionCount; ++i) {
-        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID),
+    for (auto& coll : _collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(cbContext[i].docsEndedPurge == 1);
-        // No pull filter called
-        CHECK(cbContext[i].pullFilterTotal == 0);
     }
+
+    CHECK(cbContext.docsEndedPurge == _collectionCount);
+    CHECK(cbContext.pullFilterTotal == 0);
 }
 
 

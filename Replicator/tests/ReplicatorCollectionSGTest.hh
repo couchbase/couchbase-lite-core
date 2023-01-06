@@ -110,7 +110,7 @@ public:
     // propertyEncryption: 0, no encryption; 1, encryption only; 2, encryption and decryption
     void verifyDocs(const std::vector<std::unordered_map<alloc_slice, unsigned>>& docIDs,
                     bool checkRev =false, int propertyEncryption =0) {
-        REQUIRE((!_collectionSpecs.empty() and !_collections.empty()));
+        REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         resetVerifyDb();
         std::vector<C4Collection*> collections { _collectionCount };
         for (size_t i = 0; i < _collectionCount; ++i) {
@@ -199,7 +199,7 @@ public:
 
     // Delete and recreate DB, also recreate the collections in the clean DB
     void deleteAndRecreateDBAndCollections() {
-        REQUIRE((!_collectionSpecs.empty() and !_collections.empty()));
+        REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         deleteAndRecreateDB();
         _collections = collectionPreamble(_collectionSpecs);
     }
@@ -235,7 +235,7 @@ public:
      */
     void updateDocIDs() {
         // Check the initTest
-        REQUIRE((!_collectionSpecs.empty() and !_collections.empty()));
+        REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         for(int i = 0; i < _collectionCount; ++i) {
             _docIDs[i] = getDocIDs(_collections[i]);
         }
