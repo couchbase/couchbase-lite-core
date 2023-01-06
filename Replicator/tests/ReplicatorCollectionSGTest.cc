@@ -1895,10 +1895,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
     // randomly generated revID history from TreeDocument::getRevisionHistory.
     // As well as just testing that this doesn't break anything, this test tries to emulate a client that
     // has conflicts within the "gaps" that the other client filled with random revIDs.
-    constexpr int numRevs = 130;
+    constexpr uint32_t maxHistory = tuning::kDefaultMaxHistory;
+    constexpr uint32_t numRevs1 = maxHistory - 10;
+    constexpr uint32_t numRevs2 = numRevs1 - 10;
+    constexpr const char * saveDBName = "randhist";
 
     const string docID = timePrefix() + "doc1";
 
+    // Replication setup
     constexpr size_t collectionCount = 1;
     const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
             Roses
@@ -1915,15 +1919,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
     for(size_t i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i] };
     }
-    // Create doc, 1 in each coll, and mutate each once
+
+    C4Log("--- 'Client 1' mutations ---");
+    // Create doc, 1 in each coll, with 2 revs
     for(auto& coll : collections) {
         createFleeceRev(coll, slice(docID), nullslice, R"({"a":1})"_sl);
         createFleeceRev(coll, slice(docID), nullslice, R"({"a":2})"_sl);
     }
+
     // Update docIDs
     for(size_t i = 0; i < collectionCount; ++i) {
         docIDs[i] = getDocIDs(collections[i]);
     }
+
     // Replication parameters
     ReplParams replParams { replCollections };
     replParams.setPushPull(kC4OneShot, kC4Disabled);
@@ -1932,15 +1940,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
     replicate(replParams);
 
     // Save current db state for later
-    C4Error error;
     alloc_slice path(c4db_getPath(db));
-    const string saveDBName = timePrefix() + "scratch";
-    REQUIRE(c4db_copyNamed(path, slice(saveDBName), &dbConfig(), WITH_ERROR(&error)));
+    REQUIRE(c4db_copyNamed(path, slice(saveDBName), &dbConfig(), ERROR_INFO()));
 
-    string body;
-    // Mutate the doc `numRevs` times (in each coll)
+    std::string body;
+    // Mutate the doc `numRevs1` times (in each coll)
     for(auto& coll : collections) {
-        for(int i = 0; i < numRevs; ++i) {
+        for(int i = 0; i < numRevs1; ++i) {
             body = R"({"b":)" + to_string(i+3) + "}";
             createFleeceRev(coll, slice(docID), nullslice, slice(body));
         }
@@ -1948,73 +1954,63 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
         alloc_slice hist = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
         C4Log("Rev history 1: %s", hist.asString().c_str());
     }
+    const std::string body1 = body;
 
-    // Push all the new changes
+    // Sync mutations with remote
+    replParams.setPushPull(kC4OneShot, kC4OneShot);
     replicate(replParams);
 
-    // Clear local
-    deleteAndRecreateDB();
-    collections = collectionPreamble(collectionSpecs, testUser);
+    C4Log("--- 'Client 2' mutations ---");
 
-    // Pull
-    replParams.setPushPull(kC4Disabled, kC4OneShot);
-    replicate(replParams);
-
-    // Verify that doc's body is the same as the final rev we created
-    for(auto& coll : collections) {
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
-        REQUIRE(doc);
-        auto docBody = c4doc_getRevisionBody(doc);
-        REQUIRE(json2fleece(body.c_str()) == docBody);
-    }
-    // Save this body
-    const string body1 = body;
-
-    // This "Section" aims to act like a separate client who will have conflicts in the rev gap
-
-    // Discard the changes locally, reload "old" database
+    // Revert mutations by reloading saved db
     c4db_release(db);
-    db = c4db_openNamed(slice(saveDBName), &dbConfig(), ERROR_INFO(error));
+    db = c4db_openNamed(slice(saveDBName), &dbConfig(), ERROR_INFO());
     REQUIRE(db);
-
     collections = collectionPreamble(collectionSpecs, testUser);
 
-    // Make some mutations that would be in the rev gap from the "other" client (causing conflict)
+    // Mutate the doc `numRevs2` times (in each coll)
     for(auto& coll : collections) {
-        for(int i = 0; i < (numRevs-10); ++i) {
-            if(i < 110) {
+        for(int i = 0; i < numRevs2; ++i) {
+            if(i < numRevs2 - 10) {
                 body = R"({"a":)" + to_string(i+3) + "}";
             } else {
                 body = R"({"b":)" + to_string(i+3) + "}";
             }
             createFleeceRev(coll, slice(docID), nullslice, slice(body));
         }
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
-        alloc_slice hist = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        C4Log("Rev history 2: %s", hist.asString().c_str());
     }
-    // We expect a conflict
+
     _expectedDocPullErrors = {docID};
 
-    // Push and pull with remote
+    // Sync with remote
     replParams.setPushPull(kC4OneShot, kC4OneShot);
     replicate(replParams);
 
-    _expectedDocPullErrors = {};
+    // Verify 'client 2' kept their own latest rev
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(doc);
+        auto revID = slice(doc->revID);
+        REQUIRE(revID.hasPrefix(to_string(numRevs2 + 2) + "-"));
+    }
 
     // Clear local
     deleteAndRecreateDB();
     collections = collectionPreamble(collectionSpecs, testUser);
 
+    _expectedDocPullErrors = {};
+    
     // Pull
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replicate(replParams);
 
-    // Verify now
+    // Verify SG still has the rev with highest generation
     for(auto& coll : collections) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
         REQUIRE(doc);
-        auto docBody = c4doc_getRevisionBody(doc);
+        auto revID = slice(doc->revID);
+        REQUIRE(revID.hasPrefix(to_string(numRevs1 + 2) + "-"));
+        auto docBody = slice(c4doc_getRevisionBody(doc));
         // Verify that the conflict we made hasn't lost what should still be the latest revision
         REQUIRE(json2fleece(body1.c_str()) == docBody);
     }
