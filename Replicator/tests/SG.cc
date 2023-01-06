@@ -131,8 +131,7 @@ alloc_slice SG::addRevToJSON(slice json, const string &revID) {
     return dict.toJSON();
 }
 
-bool SG::createUser(const std::string& username, const std::string& password,
-                    const std::vector<std::string> &channelIDs) const {
+bool SG::createUser(const std::string& username, const std::string& password) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
     HTTPStatus status;
     // Delete the user incase they already exist

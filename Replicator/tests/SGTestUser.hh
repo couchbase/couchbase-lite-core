@@ -26,15 +26,19 @@
 
 class SG::TestUser {
 public:
+    explicit TestUser()
+        : _sg { nullptr }, _authHeader { nullslice }
+    {}
+
     explicit TestUser(SG& sg,
                       const std::string& username,
                       const std::vector<std::string>& channels = { "*" },
                       const std::vector<C4CollectionSpec>& collectionSpecs = { kC4DefaultCollectionSpec },
                       const std::string& password = "password")
-            : _sg(sg), _username(username), _password(password), _channels(channels), _collectionSpecs{ collectionSpecs }
+            : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{ collectionSpecs }
     {
-        REQUIRE(_sg.createUser(_username, _password, _channels));
-        REQUIRE(_sg.assignUserChannel(_username, _collectionSpecs, _channels));
+        REQUIRE(_sg->createUser(_username, _password));
+        REQUIRE(_sg->assignUserChannel(_username, _collectionSpecs, _channels));
         _authHeader = HTTPLogic::basicAuth(_username, _password);
     }
     // Same as above constructor, but accepts an array parameter
@@ -47,9 +51,15 @@ public:
          : TestUser(sg, username, channels, std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), password)
     {}
 
+    TestUser(TestUser& other)
+        : TestUser(*(other._sg), other._username, other._channels, other._collectionSpecs, other._password)
+    {}
+
     ~TestUser() {
-        _sg.deleteUser(_username);
+        _sg->deleteUser(_username);
     }
+
+    TestUser& operator= (const TestUser& other);
 
     alloc_slice authHeader() const { return _authHeader; }
 
@@ -57,11 +67,11 @@ public:
     bool setChannels(const std::vector<std::string>& channels);
     bool revokeAllChannels();
 
-    const std::string _username;
-    const std::string _password;
+    std::string _username;
+    std::string _password;
 
 private:
-    SG& _sg;
+    SG* _sg;
     alloc_slice _authHeader;
     std::vector<std::string> _channels;
     std::vector<C4CollectionSpec> _collectionSpecs;

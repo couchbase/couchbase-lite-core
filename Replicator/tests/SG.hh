@@ -37,7 +37,7 @@ class SG {
 public:
     class TestUser;
 
-    SG() {
+    SG(): address(), remoteDBName() {
         c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName);
     }
 
@@ -48,8 +48,7 @@ public:
     slice getServerName() const;
     // Flush should only be used with Walrus
     void flushDatabase() const;
-    bool createUser(const std::string& username, const std::string& password,
-                    const std::vector<std::string> &channelIDs) const;
+    bool createUser(const std::string& username, const std::string& password) const;
     bool deleteUser(const std::string& username) const;
     // Assign given channels to the user with given username, in the given collections
     bool assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string>& channelIDs) const;
