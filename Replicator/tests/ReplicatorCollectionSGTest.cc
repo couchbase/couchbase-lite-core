@@ -15,7 +15,7 @@
 #include "Base64.hh"
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
-// Jenkins/GitHub CI. They can be run in locally with the following environment.
+// Jenkins/GitHub CI. They can be run locally with the following environment.
 // Couchbase DB server, with docker, for example,
 //   docker run -d --name cbserver -p 8091-8096:8091-8096 -p 11210-11211:11210-11211 couchbase:7.1.1
 //   bucket configuration:
@@ -23,7 +23,7 @@
 //     password: password
 //     name    : any
 //     scope   : flowers
-//     collection: roses
+//          collections: roses, tulips, lavenders
 // Once the DB has been set up, you can run sg_setup.sh, or set up SG manually with the configs below.
 // sg_setup.sh should be run with the bucket name as the argument (i.e. './sg_setup.sh couch').
 // Sync-gateway:
