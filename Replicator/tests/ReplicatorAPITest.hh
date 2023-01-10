@@ -282,12 +282,23 @@ public:
     using PushPull = std::pair<C4ReplicatorMode, C4ReplicatorMode>;
     using C4ParamsSetter = std::function<void(C4ReplicatorParameters&)>;
 
-    bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        return _startReplicator(push, pull, err);
+    bool startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error *err) {
+        if (!_prepareReplicator(varParams, err)) {
+            return false;
+        }
+        c4repl_start(_repl, false);
+        return true;
     }
 
-    bool _startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error *err) {
+    bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
+        std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
+        return startReplicator(varParams, err);
+    }
+
+    bool _prepareReplicator(const std::variant<PushPull, C4ParamsSetter>& varParams,
+                            C4Error *err) {
+        std::scoped_lock<std::mutex> lock(_mutex);
+
         _callbackStatus = { };
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
@@ -341,18 +352,11 @@ public:
         if (!_repl)
             return false;
 
-       if (_enableDocProgressNotifications) {
+        if (_enableDocProgressNotifications) {
             REQUIRE(c4repl_setProgressLevel(_repl, kC4ReplProgressPerDocument, err));
-       }
+        }
 
-        c4repl_start(_repl, false);
         return true;
-    }
-
-
-    bool _startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
-        std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
-        return _startReplicator(varParams, err);
     }
 
     static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + 2s;
@@ -376,10 +380,10 @@ public:
     }
 
     void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess =true) {
-        std::unique_lock<std::mutex> lock(_mutex);
-
         C4Error err;
-        REQUIRE(_startReplicator(params, WITH_ERROR(&err)));
+        REQUIRE(startReplicator(params, WITH_ERROR(&err)));
+
+        std::unique_lock<std::mutex> lock(_mutex);
         _waitForStatus(lock, kC4Stopped, std::chrono::minutes(5));
 
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
@@ -399,7 +403,7 @@ public:
         _repl = nullptr;
 
     }
-    
+
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
         std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
         replicate(varParams, expectSuccess);
