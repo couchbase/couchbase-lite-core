@@ -535,7 +535,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
         REQUIRE(coll);
         dbPath = "/db.coll";
     } else {
-        coll = c4db_getDefaultCollection(db);
+        coll = c4db_getDefaultCollection(db, nullptr);
         dbPath = "/db";
     }
 
