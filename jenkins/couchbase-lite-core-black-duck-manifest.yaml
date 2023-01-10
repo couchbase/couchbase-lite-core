@@ -28,7 +28,7 @@ components:
   # sockpp has no KB entry
   sqlite:
     bd-id: 302ca56c-2cf6-4cfd-9173-94c1ee2a44f7
-    versions: [ 3.39.3 ]
+    versions: [ 3.40.1 ]
     src-path: vendor/SQLiteCpp/sqlite3
     parent-repo: vendor/SQLiteCpp
   sqlitecpp:
