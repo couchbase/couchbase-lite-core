@@ -20,7 +20,6 @@
 
 namespace litecore {
     class CollectionChangeNotifier;
-    class DatabaseImpl;
     class DocChangeNotifier;
 
     
@@ -148,10 +147,10 @@ namespace litecore {
     public:
         using Callback = std::function<void(DocChangeNotifier&, slice docID, sequence_t)>;
 
-        DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb);
+        DocChangeNotifier(SequenceTracker *t, slice docID, Callback cb);
         ~DocChangeNotifier();
 
-        SequenceTracker &tracker;
+        SequenceTracker *tracker;
         Callback const callback;
 
         slice docID() const;
@@ -176,16 +175,16 @@ namespace litecore {
             \ref readChanges will reset the state so the callback can be called again. */
         using Callback = std::function<void(CollectionChangeNotifier&)>;
 
-        CollectionChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =sequence_t::Max);
+        CollectionChangeNotifier(SequenceTracker*, Callback, sequence_t afterSeq =sequence_t::Max);
 
         ~CollectionChangeNotifier();
 
-        SequenceTracker &tracker;
+        SequenceTracker *tracker;
         Callback const callback;
 
         /** Returns true if there are new changes, i.e. if `readChanges` would return nonzero. */
         bool hasChanges() const {
-            return tracker.hasChangesAfterPlaceholder(_placeholder);
+            return tracker->hasChangesAfterPlaceholder(_placeholder);
         }
 
         /** Returns changes that have occurred since the last call to `readChanges` (or since

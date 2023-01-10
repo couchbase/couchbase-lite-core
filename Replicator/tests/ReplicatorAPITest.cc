@@ -14,15 +14,19 @@
 
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
+#include "c4Collection.h"
+#include "c4ReplicatorHelpers.hh"
 #include "StringUtil.hh"
 #include "c4Socket.h"
 //#include "c4Socket+Internal.hh"
 #include "c4Socket.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
+#include "c4ReplicatorImpl.hh"
 
 using namespace fleece;
 using namespace std;
+using namespace litecore;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
@@ -141,14 +145,14 @@ TEST_CASE("URL Generation", "[C]][Replicator]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    _remoteDBName = "something"_sl;
+    _sg.remoteDBName = "something"_sl;
 
-    _repl = c4repl_new(db, _address, _remoteDBName, params, ERROR_INFO(err));
+    _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, ERROR_INFO(err));
     CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
@@ -158,9 +162,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
 // Test invalid URL scheme:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _address.scheme = "http"_sl;
+    _sg.address.scheme = "http"_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -170,16 +174,16 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") 
 // Test missing or invalid database name:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _remoteDBName = ""_sl;
+    _sg.remoteDBName = ""_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
 
-    _remoteDBName = "Invalid Name"_sl;
+    _sg.remoteDBName = "Invalid Name"_sl;
     err = {};
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -189,8 +193,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("localhost");
-    _address.port = 1;  // wrong port!
+    _sg.address.hostname = C4STR("localhost");
+    _sg.address.port = 1;  // wrong port!
     _mayGoOffline = true;
 
     {
@@ -218,7 +222,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    _sg.address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrUnknownHost);
@@ -238,7 +242,7 @@ __attribute__((no_sanitize("nullability-arg"))) // suppress breakpoint passing n
 {
     C4Error err;
     C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
-    C4ReplicatorParameters params {};
+    repl::C4ReplParamsDefaultCollection params;
     params.pull = kC4OneShot;
     c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, ERROR_INFO(err));
     REQUIRE(repl);
@@ -287,11 +291,125 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == kRevID);
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[Pull][Sync]") {
+    createDB2();
+    createRev(db2, "doc"_sl, kRevID, kFleeceBody);
+
+    C4Error err;
+    repl::C4ReplParamsDefaultCollection params;
+    std::vector<std::string> docIDs;
+    params.pull = kC4OneShot;
+    int overall = 0;
+    int perCollection = 0;
+    params.callbackContext = &overall;
+    params.onDocumentsEnded = [](C4Replicator* repl,
+        bool pushing,
+        size_t numDocs,
+        const C4DocumentEnded* docs[],
+        void* context) {
+            *((int*)context) = 42;
+            if (docs[0]->collectionContext) {
+                *((int*)docs[0]->collectionContext) = 24;
+            }
+    };
+
+    int expectedOverall = 0;
+    int expectedPerCollection = 0;
+
+    C4ReplicationCollection coll;
+    SECTION("When using a collection, but not setting a per collection context, only overall is used") {
+        coll = {
+            kC4DefaultCollectionSpec,
+            kC4Disabled,
+            kC4OneShot
+        };
+
+        params.collectionCount = 1;
+        params.collections = &coll;
+        expectedOverall = 42;
+        // perCollection is untouched
+    }
+
+    SECTION("When using a collection, and setting a per collection context, both contexts are available") {
+        coll = {
+            kC4DefaultCollectionSpec,
+            kC4Disabled,
+            kC4OneShot
+        };
+
+        coll.callbackContext = &perCollection;
+        params.collectionCount = 1;
+        params.collections = &coll;
+        expectedOverall = 42;
+        expectedPerCollection = 24;
+    }
+
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    REQUIRE(repl);
+    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, ERROR_INFO(err)));
+
+    c4repl_start(repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+    CHECK(overall == expectedOverall);
+    CHECK(perCollection == expectedPerCollection);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][Sync]") {
+    createDB2();
+    
+    C4CollectionSpec Roses = { "roses"_sl, "flowers"_sl };
+    auto collRose1 = createCollection(db, Roses);
+    auto collRose2 = createCollection(db2, Roses);
+    
+    addDocs(db, Roses, 10);
+    addDocs(db2, Roses, 10);
+    
+    int expectDocCountInDB = 0;
+    int expectDocCountInDB2 = 0;
+    
+    C4ReplicationCollection coll;
+    SECTION("Push") {
+        coll = {
+            Roses,
+            kC4OneShot,
+            kC4Disabled,
+        };
+        expectDocCountInDB = 10;
+        expectDocCountInDB2 = 20;
+    }
+    
+    SECTION("Pull") {
+        coll = {
+            Roses,
+            kC4Disabled,
+            kC4OneShot
+        };
+        expectDocCountInDB = 20;
+        expectDocCountInDB2 = 10;
+    }
+    
+    C4ReplicatorParameters params{};
+    params.collections = &coll;
+    params.collectionCount = 1;
+    
+    C4Error err;
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    REQUIRE(repl);
+
+    c4repl_start(repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    
+    CHECK(c4coll_getDocumentCount(collRose1) == expectDocCountInDB);
+    CHECK(c4coll_getDocumentCount(collRose2) == expectDocCountInDB2);
+}
+
 #endif
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
-    _address.hostname = C4STR("localhost");
+    _sg.address.hostname = C4STR("localhost");
     struct Context {
         int factoryCalls = 0;
         C4Socket* socket = nullptr;
@@ -382,7 +500,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     FLSliceResult options {};
 
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -412,7 +530,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
@@ -421,7 +539,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     FLSliceResult_Release(options);
 
-    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, ERROR_INFO(err));
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, kC4DefaultCollectionSpec, ERROR_INFO(err));
     REQUIRE(encodedDocIDs != nullslice);
     FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
     CHECK(FLArray_Count(docIDs) == expectedPending);
@@ -429,7 +547,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
-    encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, kC4DefaultCollectionSpec, &err);
+    CHECK(err.code == 0);
     CHECK(encodedDocIDs == nullslice);
 }
 #endif
@@ -442,7 +561,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     FLSliceResult options {};
 
     C4Error err;
-    C4ReplicatorParameters params = {};
+    repl::C4ReplParamsDefaultCollection params;
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
@@ -455,7 +574,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.callbackContext = this;
+        params.replCollection.callbackContext = this;
         params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                                C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
@@ -475,22 +594,124 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
         options = FLEncoder_Finish(e, nullptr);
-        params.optionsDictFleece = C4Slice(options);
+        params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
 
     _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
+    CHECK(err.code == 0);
     CHECK(isPending == expectedIsPending);
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
 
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push]") {
+    ExpectingExceptions x;
+    // Create collection in the db and import documents
+    C4CollectionSpec Kyber = {"kyber"_sl, "crystal"_sl};
+    auto collKyber = createCollection(db, Kyber);
+    importJSONLines(sFixturesDir + "names_100.json", collKyber);
+
+    // Create the collection in the database to be replicated to
+    createDB2();
+    createCollection(db2, Kyber);
+
+    // Create collection spec but do not create collection in db
+    C4CollectionSpec Republic = {"republic"_sl, "galactic"_sl};
+
+    // Set options for the replication
+    C4Error err;
+    repl::C4ReplParamsOneCollection params{Kyber};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
+    CHECK(err.code == kC4ErrorNotOpen);
+    c4slice_free(encodedDocIDs);
+
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
+    CHECK(err.code == kC4ErrorNotOpen);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push]") {
+    // Create collections and import documents to them
+    C4CollectionSpec Council = { "council"_sl, "jedi"_sl };
+    C4CollectionSpec Federation = { "federation"_sl, "trade"_sl };
+    auto collCouncil = createCollection(db, Council);
+    auto collFederation = createCollection(db, Federation);
+    importJSONLines(sFixturesDir + "names_100.json", collCouncil);
+    importJSONLines(sFixturesDir + "wikipedia_100.json", collFederation);
+
+    // Create the collections in the database to be replicated to
+    createDB2();
+    createCollection(db2, Council);
+    createCollection(db2, Federation);
+
+    // Set options for the replication
+    // Replicating only the Council collection
+    C4Error err;
+    repl::C4ReplParamsOneCollection paramsCouncil {Council };
+    paramsCouncil.push = kC4OneShot;
+    paramsCouncil.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    // Create replicator config for Federation collection
+    // This won't actually be replicated, but is needed to call c4repl_getPendingDocIDs for the collection
+    repl::C4ReplParamsOneCollection paramsFederation {Federation };
+    paramsFederation.push = kC4OneShot;
+    paramsFederation.pull = kC4Disabled;
+    paramsCouncil.callbackContext = this;
+    paramsCouncil.socketFactory = _socketFactory;
+
+    _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
+    REQUIRE(_repl);
+
+    // Not actually used for replication
+    auto replFed = c4::ref{ c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err)) };
+    REQUIRE(replFed);
+
+    // Check that collection 1 has the right amount of pending documents
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, &err);
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == 100);
+    c4slice_free(encodedDocIDs);
+
+    // Replicate collection 1
+    c4repl_start(_repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+
+    // Now collection 1 shouldn't have any pending documents
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Council, &err);
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs == nullslice);
+
+    // Check that collection 2 still has all the documents pending
+    encodedDocIDs = c4repl_getPendingDocIDs(replFed, Federation, ERROR_INFO(err));
+    CHECK(err.code == 0);
+    REQUIRE(encodedDocIDs != nullslice);
+    docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == 100);
 }
 #endif
 
@@ -604,7 +825,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
     CHECK_BEFORE(2s, c4repl_getStatus(_repl).level == kC4Connecting);
     
     c4repl_stop(_repl);
@@ -629,12 +850,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
-    
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
+
+    _numCallbacksWithLevel[kC4Offline] = 0;
     waitForStatus(kC4Offline);
-    
-    _numCallbacksWithLevel[kC4Connecting] = 0;
-    waitForStatus(kC4Connecting);
     c4repl_stop(_repl);
     
     waitForStatus(kC4Stopped);
@@ -664,12 +883,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
+    REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
 
+    _numCallbacksWithLevel[kC4Offline] = 0;
     waitForStatus(kC4Offline);
-
-    _numCallbacksWithLevel[kC4Connecting] = 0;
-    waitForStatus(kC4Connecting);
     c4repl_stop(_repl);
 
     waitForStatus(kC4Stopped);
@@ -687,7 +904,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     createDB2();
 
     C4Error err;
-    C4ReplicatorParameters params {};
+    repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string> docIDs;
     params.pull = kC4OneShot;
     params.onDocumentsEnded = [](C4Replicator* repl,
@@ -707,10 +924,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        constexpr size_t docBufSize = 20;
+        constexpr size_t jsonBufSize = 100;
+        char docID[docBufSize], json[jsonBufSize];
         for (unsigned i = 1; i <= 50; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, docBufSize, "doc-%03u", i);
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -726,10 +945,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        constexpr size_t docBufSize = 20;
+        constexpr size_t jsonBufSize = 100;
+        char docID[docBufSize], json[jsonBufSize];
         for (unsigned i = 51; i <= 100; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, docBufSize, "doc-%03u", i);
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             C4Test::createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -749,7 +970,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     createDB2();
 
     C4Error err;
-    C4ReplicatorParameters params {};std::vector<std::string> docIDs;
+    repl::C4ReplParamsDefaultCollection params;
+    std::vector<std::string> docIDs;
     params.pull = kC4OneShot;
     params.onDocumentsEnded = [](C4Replicator* repl,
                       bool pushing,
@@ -780,10 +1002,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     c4repl_setOptions(repl, _options.data());
     {
         TransactionHelper t(db2);
-        char docID[20], json[100];
+        constexpr size_t docBufSize = 20;
+        constexpr size_t jsonBufSize = 100;
+        char docID[docBufSize], json[jsonBufSize];
         for (unsigned i = 1; i <= 50; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, docBufSize, "doc-%03u", i);
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -849,7 +1073,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4OneShot, &err));
+    REQUIRE(startReplicator(kC4Disabled, kC4OneShot, &err));
     
     // Before the fix, offline would never be reached
     waitForStatus(kC4Offline, 16s);
@@ -858,3 +1082,53 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     _socketFactory = nullptr;
 }
 
+// CBL-3747: createFleeceRev was creating rev in the default collection if revID
+// is null.
+TEST_CASE_METHOD(ReplicatorAPITest, "createFleeceRev - null revID", "[C]") {
+    C4CollectionSpec collSpec { "nullRevID"_sl, "fleeceRev"_sl };
+    auto coll = c4db_createCollection(db, collSpec, ERROR_INFO());
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(coll);
+    REQUIRE(defaultColl);
+    
+    constexpr size_t bufSize = 10;
+    for(int i = 0; i < 10; ++i) {
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%i", i);
+        createFleeceRev(coll, slice(docID), nullslice, slice(json5("{revID:'null',create:'fleece'}")));
+    }
+    
+    CHECK(c4coll_getDocumentCount(coll) == 10);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
+}
+
+class ReplicatorAPITestRemoteReplicator : public C4ReplicatorImpl {
+public:
+    ReplicatorAPITestRemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params)
+        : C4ReplicatorImpl(db, params) {}
+
+    unsigned maxRetryCount() const {
+        return getIntProperty(kC4ReplicatorOptionMaxRetries, 0);
+    }
+
+    void createReplicator() override {
+
+    }
+
+    alloc_slice URL() const override {
+        return nullslice;
+    }
+};
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not turn to zero", "[Replicator][CBL-3872]") {
+    Encoder e;
+    e.beginDict(1);
+    e.writeKey(kC4ReplicatorOptionMaxRetries);
+    e.writeUInt(ULLONG_MAX);
+    e.endDict();
+    auto fleece = e.finish();
+
+    C4ReplicatorParameters parameters{fleece};
+    ReplicatorAPITestRemoteReplicator replicator(db, parameters);
+    CHECK(replicator.maxRetryCount() == UINT_MAX); // 32-bit capped
+}

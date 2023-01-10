@@ -16,18 +16,21 @@
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Index.h"
-#include "c4Query.h"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "fleece/Fleece.hh"
+#include "SGTestUser.hh"
 #include <cstdlib>
+#include <array>
 
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
 using namespace fleece;
+
+constexpr size_t kDocBufSize = 20;
 
 
 /* REAL-REPLICATOR (SYNC GATEWAY) TESTS
@@ -61,7 +64,7 @@ public:
     ReplicatorSGTest() {
         if (getenv("USE_CLIENT_CERT")) {
 #ifdef COUCHBASE_ENTERPRISE
-            REQUIRE(Address::isSecure(_address));
+            REQUIRE(Address::isSecure(_sg.address));
             Identity ca = CertHelper::readIdentity(sReplicatorFixturesDir + "ca_cert.pem",
                                                    sReplicatorFixturesDir + "ca_key.pem",
                                                    "Couchbase");
@@ -69,8 +72,8 @@ public:
             // in Sync Gateway, or you only get guest access.
             Identity id = CertHelper::createIdentity(false, kC4CertUsage_TLSClient,
                                                      "Pupshaw", "pupshaw@couchbase.org", &ca);
-            identityCert = id.cert;
-            identityKey  = id.key;
+            _sg.identityCert = id.cert;
+            _sg.identityKey  = id.key;
 #else
             FAIL("USE_CLIENT_CERT only works with EE builds");
 #endif
@@ -81,7 +84,35 @@ public:
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Failure", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
+    
+    SECTION("No Credentials") { }
+    
+    SECTION("Wrong Credentials") {
+        Encoder enc;
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+            enc.beginDict();
+                enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                enc.writeString("Basic"_sl);
+                enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                enc.writeString("brown");
+                enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                enc.writeString("sugar");
+                enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+        
+            SECTION("Preemptive Auth") {
+                enc.writeBool(false);
+            }
+        
+            SECTION("Challenge Auth") {
+                enc.writeBool(true);
+            }
+            enc.endDict();
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
     CHECK(_callbackStatus.error.code == 401);
@@ -90,7 +121,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Failure", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
 
     Encoder enc;
     enc.beginDict();
@@ -102,6 +133,15 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
             enc.writeString("pupshaw");
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
             enc.writeString("frank");
+            enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+    
+        SECTION("Preemptive Auth") {
+            enc.writeBool(false);
+        }
+
+        SECTION("Challenge Auth") {
+            enc.writeBool(true);
+        }
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
@@ -111,7 +151,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API ExtraHeaders", "[.SyncServer]") {
-    _remoteDBName = kProtectedDBName;
+    _sg.remoteDBName = kProtectedDBName;
 
     // Use the extra-headers option to add HTTP Basic auth:
     Encoder enc;
@@ -185,7 +225,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push 5000 Changes", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Pull", "[.SyncServer]") {
-    _remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
@@ -196,7 +236,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull With Indexes", "[.SyncServer]") {
     REQUIRE(c4db_createIndex(db, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4ValueIndex, nullptr, nullptr));
     REQUIRE(c4db_createIndex(db, C4STR("Year"),   C4STR("[[\".Year\"]]"), kC4ValueIndex, nullptr, nullptr));
 
-    _remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
@@ -209,14 +249,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Push", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull", "[.SyncServer]") {
-    _remoteDBName = kITunesDBName;
+    _sg.remoteDBName = kITunesDBName;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull Forever", "[.SyncServer_Special]") {
-    _remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     _stopWhenIdle = false;  // This test will NOT STOP ON ITS OWN
     _mayGoOffline = true;
     replicate(kC4Disabled, kC4Continuous);
@@ -231,7 +271,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Stop after Idle with Error", "[.SyncServer]"
     // CloseStatus { kWebSocketClose, kCodeAbnormal }
     // Before the fix: continuous retry after Stopping;
     // after the fix: stop with the error regardless of it being transient.
-    _remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     _mayGoOffline = true;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous, false);
@@ -324,7 +364,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") {
-    _remoteDBName = kImagesDBName;
+    _sg.remoteDBName = kImagesDBName;
     replicate(kC4Disabled, kC4OneShot);
 
     C4Error error;
@@ -342,7 +382,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     CHECK(size == 15198281);
 
     C4Log("-------- Pushing --------");
-    _remoteDBName = kScratchDBName;
+    _sg.remoteDBName = kScratchDBName;
     replicate(kC4OneShot, kC4Disabled);
 }
 
@@ -352,8 +392,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 
-    sendRemoteRequest("PUT", "0000013", "{\"_rev\":\"" + originalRevID + "\","
-                                          "\"serverSideUpdate\":true}");
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "0000013", R"({"_rev":")" + originalRevID + R"(","serverSideUpdate":true})");
 
     createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
 
@@ -406,12 +445,19 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]") {
     // For issue #448.
     // Create a conflicted doc on SG, and resolve the conflict:
-    _remoteDBName = "scratch_allows_conflicts"_sl;
+    _sg.remoteDBName = "scratch_allows_conflicts"_sl;
     flushScratchDatabase();
-    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl);
-    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl);
-    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl);
-    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl);
+
+    const std::array<string, 4> bodies = {
+            R"({"_rev":"1-aaaa","foo":1})",
+            R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
+            R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
+            R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})"
+    };
+
+    for(const string& body : bodies) {
+        _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", slice(body));
+    }
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -434,7 +480,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     replicate(kC4OneShot, kC4OneShot);
 
     // Verify doc is updated on SG:
-    auto body = sendRemoteRequest("GET", "doc");
+    auto body = _sg.getDoc("doc", kC4DefaultCollectionSpec);
 	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
     CHECK(C4Slice(body) == bodySlice);
 }
@@ -454,16 +500,22 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     // 7. run replication between SG -> db.cblite2 again
 
     flushScratchDatabase();
-    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", R"({"count":1, "_rev":"1-1111"})");
 
     replicate(kC4Disabled, kC4OneShot);
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    sendRemoteRequest("PUT", "doc", "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
-    sendRemoteRequest("PUT", "doc", "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
-    sendRemoteRequest("PUT", "doc", "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
+    const std::array<string, 3> bodies = {
+            R"({"count":2, "_rev":"1-1111"})",
+            R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
+            R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"
+    };
+
+    for(const string& body : bodies) {
+        _sg.upsertDoc(kC4DefaultCollectionSpec, "doc", slice(body));
+    }
 
     replicate(kC4Disabled, kC4OneShot);
     doc = c4doc_get(db, "doc"_sl, true, nullptr);
@@ -475,15 +527,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
 TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]") {
     static constexpr int kNumDocs = 1000, kNumProps = 1000;
     flushScratchDatabase();
-    _logRemoteRequests = false;
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         TransactionHelper t(db);
         std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
@@ -508,8 +559,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "doc-%03d", docNo);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -531,7 +582,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
+        _sg.insertBulkDocs(kC4DefaultCollectionSpec, enc.finish());
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -581,7 +632,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][Delta]") {
     flushScratchDatabase();
-    _logRemoteRequests = false;
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
@@ -602,8 +652,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         enc.writeKey("docs"_sl);
         enc.beginArray();
         for (int docNo = 0; docNo < numDocs; ++docNo) {
-            char docID[20];
-            sprintf(docID, "%07u", docNo + 1);
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%07u", docNo + 1);
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
@@ -626,7 +676,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
+        _sg.insertBulkDocs(kC4DefaultCollectionSpec, enc.finish());
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -676,7 +726,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") {
     flushScratchDatabase();
-    _logRemoteRequests = false;
+    bool logRemoteRequests = false;
 
 //    c4log_setCallbackLevel(kC4LogInfo);
 
@@ -696,8 +746,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     std::vector<std::string> docIDs;
     revIDs.emplace_back();
     for (int docNo = 0; docNo < numDocs; ++docNo) {
-        char buf[20];
-        sprintf(buf, "%07u", docNo + 1);
+        char buf[kDocBufSize];
+        snprintf(buf, kDocBufSize, "%07u", docNo + 1);
         docIDs.emplace_back(buf);
         c4::ref<C4Document> doc = c4doc_get(db, slice(buf), true, ERROR_INFO());
         REQUIRE(doc);
@@ -734,7 +784,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
                 enc.endDict();
 
                 FLError flError;
-                alloc_slice res = sendRemoteRequest("PUT", docID, enc.finish());
+                alloc_slice res = _sg.sendRemoteRequest("PUT", docID, enc.finish(), false, HTTPStatus::OK, logRemoteRequests);
                 fleece::Doc fdoc = Doc::fromJSON(res, &flError);
                 REQUIRE(flError == kFLNoError);
                 Dict resDict = fdoc.root().asDict();
@@ -787,14 +837,22 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
+    const string channelIDa = "a";
+    const string channelIDb = "b";
+    const std::vector<string> channelIDs = {
+            channelIDa, channelIDb
+    };
+
     // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    SG::TestUser testUser {_sg, "apera", channelIDs };
+    _sg.authHeader = testUser.authHeader();
+
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", channelIDs);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -804,13 +862,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -825,7 +883,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
             }
         }
     };
-    
+
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -836,7 +894,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -847,34 +905,30 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Revoked access to channel 'a':
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[\"b\"]}"_sl, true);
-    REQUIRE(status == HTTPStatus::OK);
-    
+    testUser.setChannels( { channelIDb } );
+
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
-    
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", R"({"_rev":")" + oRevID + "\"}", { channelIDb });
+
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify the update:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Revoke access to all channels:
-    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
-    REQUIRE(status == HTTPStatus::OK);
-    
+    REQUIRE(testUser.revokeAllChannels());
+
     C4Log("-------- Pull the revoked");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify if doc1 is purged:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(!doc1);
@@ -884,14 +938,18 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
-    // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    const string channelID = "a";
+
+    // Create temp user for test
+    SG::TestUser testUser {_sg, "apefrr", { channelID } };
+    _sg.authHeader = testUser.authHeader();
+    // Create doc on SG
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
 
     // Setup Replicator Options:
     Encoder enc;
@@ -901,13 +959,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -922,7 +980,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
             }
         }
     };
-    
+
     // Setup pull filter to filter the _removed rev:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -934,7 +992,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -944,16 +1002,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Revoke access to all channels:
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
-    REQUIRE(status == HTTPStatus::OK);
-    
+    REQUIRE(testUser.revokeAllChannels());
+
     C4Log("-------- Pull the revoked");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify if doc1 is not purged as the revoked rev is filtered:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(doc1);
@@ -963,14 +1018,18 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
 
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     if (!requireSG3())
         return; // skip test unless SG is ≥ 3.0
 
-    // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    const string channelID = "a";
+
+    // Create temp user for test
+    SG::TestUser testUser {_sg, "apdra", { channelID } };
+    _sg.authHeader = testUser.authHeader();
+    // Create doc on SG
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
 
     // Setup Replicator Options:
     Encoder enc;
@@ -982,13 +1041,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -1003,7 +1062,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
             }
         }
     };
-    
+
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -1012,7 +1071,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -1022,16 +1081,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Revoke access to all channels:
-    HTTPStatus status;
-    C4Error error;
-    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
-    REQUIRE(status == HTTPStatus::OK);
-    
+    REQUIRE(testUser.revokeAllChannels());
+
     C4Log("-------- Pulling the revoked");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify if the doc1 is not purged as the auto purge is disabled:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(doc1);
@@ -1042,12 +1098,20 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
-    // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+
+    const string channelIDa = "a";
+    const string channelIDb = "b";
+    const std::vector<string> channelIDs = {
+            channelIDa, channelIDb
+    };
+
+    // Create temp user for test
+    SG::TestUser testUser {_sg, "aperdfc", channelIDs };
+    _sg.authHeader = testUser.authHeader();
+    // Create doc on SG
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", channelIDs);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1057,13 +1121,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -1078,7 +1142,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
             }
         }
     };
-    
+
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -1089,7 +1153,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -1100,28 +1164,28 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
-    
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", R"({"_rev":")" + oRevID + "\"}", { channelIDb });
+
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify the update:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
-    
+    _sg.upsertDocWithEmptyChannels(kC4DefaultCollectionSpec, "doc1", R"({"_rev":")" + oRevID + "\"}");
+
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify if doc1 is purged:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(!doc1);
@@ -1131,12 +1195,16 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+
+    const string channelID = "a";
+
+    // Create temp user for test
+    SG::TestUser testUser {_sg, "apefrr", { channelID } };
+    _sg.authHeader = testUser.authHeader();
     // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1146,13 +1214,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -1167,7 +1235,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
             }
         }
     };
-    
+
     // Setup pull filter to filter the _removed rev:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -1179,7 +1247,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -1189,14 +1257,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
-    
+    _sg.upsertDocWithEmptyChannels(kC4DefaultCollectionSpec, "doc1", R"({"_rev":")" + oRevID + "\"}");
+
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
-    
+
     // Verify if doc1 is not purged as the removed rev is filtered:
     doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
     REQUIRE(doc1);
@@ -1206,12 +1274,17 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channel", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+
+    const string channelID = "a";
+
+    // Create temp user for test
+    SG::TestUser testUser {_sg, "apdrdfc", { channelID } };
+    _sg.authHeader = testUser.authHeader();
+
     // Create docs on SG:
-    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.upsertDoc(kC4DefaultCollectionSpec, "doc1", "{}", { channelID });
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1223,13 +1296,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
             enc.writeKey(C4STR(kC4ReplicatorAuthType));
             enc.writeString("Basic"_sl);
             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-            enc.writeString("pupshaw");
+            enc.writeString(testUser._username);
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-            enc.writeString("frank");
+            enc.writeString(testUser._password);
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
-    
+
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl,
@@ -1244,7 +1317,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
             }
         }
     };
-    
+
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
                      C4RevisionFlags flags, FLDict flbody, void *context) {
@@ -1253,7 +1326,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
         }
         return true;
     };
-    
+
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(kC4Disabled, kC4OneShot);
@@ -1263,11 +1336,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
-    
+
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
-    
+    _sg.upsertDocWithEmptyChannels(kC4DefaultCollectionSpec, "doc1", R"({"_rev":")" + oRevID + "\"}");
+
     C4Log("-------- Pulling the removed");
     replicate(kC4Disabled, kC4OneShot);
     
@@ -1281,7 +1354,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Setup Replicator Options:
@@ -1336,7 +1409,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Create Doc", "[.SyncServer]") {
-    _remoteDBName = "scratch_revocation"_sl;
+    _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
     // Setup Replicator Options:
@@ -1400,13 +1473,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Cr
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]") {
-    if (!Address::isSecure(_address)) {
+    if (!Address::isSecure(_sg.address)) {
         return;
     }
     flushScratchDatabase();
     
     // Using an unmatched pinned cert:
-    pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIICpDCCAYwCCQCskbhc/nbA5jANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\r\n" \
         "b2NhbGhvc3QwHhcNMjIwNDA4MDEwNDE1WhcNMzIwNDA1MDEwNDE1WjAUMRIwEAYD\r\n" \
@@ -1432,13 +1505,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Failure", "[.SyncServer]"
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]") {
-    if (!Address::isSecure(_address)) {
+    if (!Address::isSecure(_sg.address)) {
         return;
     }
     flushScratchDatabase();
     
     // Leaf:
-    pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIICoDCCAYgCCQDOqeOThcl0DTANBgkqhkiG9w0BAQsFADAQMQ4wDAYDVQQDDAVJ\r\n" \
         "bnRlcjAeFw0yMjA0MDgwNDE2MjNaFw0zMjA0MDUwNDE2MjNaMBQxEjAQBgNVBAMM\r\n" \
@@ -1459,7 +1532,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
     replicate(kC4OneShot, kC4Disabled, true);
     
     // Intermediate:
-    pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIIDFTCCAf2gAwIBAgIJANZ8gSANI5jNMA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
         "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAQMQ4wDAYD\r\n" \
@@ -1482,7 +1555,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
     replicate(kC4OneShot, kC4Disabled, true);
     
     // Root:
-    pinnedCert =                                                               \
+    _sg.pinnedCert =                                                               \
         "-----BEGIN CERTIFICATE-----\r\n"                                      \
         "MIIDFDCCAfygAwIBAgIJAPW07OznM9D/MA0GCSqGSIb3DQEBCwUAMA8xDTALBgNV\r\n" \
         "BAMMBFJvb3QwHhcNMjIwNDA4MDQxNjIzWhcNMzIwNDA1MDQxNjIzWjAPMQ0wCwYD\r\n" \
@@ -1506,7 +1579,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
-    if (slice(_address.hostname) != "localhost")
+    if (slice(_sg.address.hostname) != "localhost")
         return;
     
     // Disable Retries:
@@ -1525,40 +1598,40 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
 #endif
     
     C4ErrorDomain domain = POSIXDomain;
-    _networkInterface = nullslice;
+    _sg.networkInterface = nullslice;
     
     SECTION("Reachable - Name") {
         // Use loopback interface connecting to localhost:
     #if defined(__APPLE__)
-        _networkInterface = "lo0"_sl;
+        _sg.networkInterface = "lo0"_sl;
     #elif defined(__linux__)
-        _networkInterface = "lo"_sl;
+        _sg.networkInterface = "lo"_sl;
     #elif defined(_WIN32)
-        _networkInterface = "Loopback Pseudo-Interface 1"_sl;
+        _sg.networkInterface = "Loopback Pseudo-Interface 1"_sl;
     #else
-        _networkInterface = "lo0"_sl;
+        _sg.networkInterface = "lo0"_sl;
     #endif
     }
     
     SECTION("Reachable - IP Address") {
         // Use loopback interface connecting to localhost:
-        _networkInterface = "127.0.0.1"_sl;
+        _sg.networkInterface = "127.0.0.1"_sl;
     }
 
     SECTION("Unreachable") {
         // Use ethernet interface connecting to localhost:
     #if defined(__APPLE__)
-        _networkInterface = "en0"_sl;
+        _sg.networkInterface = "en0"_sl;
         code = EADDRNOTAVAIL;
     #elif defined(__linux__)
-        _networkInterface = "eth0"_sl;
+        _sg.networkInterface = "eth0"_sl;
         code = ETIMEDOUT;
     #elif defined(_WIN32)
         // Note: Required Wi-Fi interface on the test machine.
-        _networkInterface = "Wi-Fi"_sl;
+        _sg.networkInterface = "Wi-Fi"_sl;
         code = EADDRNOTAVAIL;
     #else
-        _networkInterface = "eth0"_sl;
+        _sg.networkInterface = "eth0"_sl;
     #endif
     }
     
@@ -1571,7 +1644,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Set Invalid Network Interface", "[.SyncServer]") {
-    _networkInterface = "x0"_sl;
+    _sg.networkInterface = "x0"_sl;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ENXIO);

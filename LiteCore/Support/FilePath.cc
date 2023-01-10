@@ -48,6 +48,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore;
 
 #ifdef __linux__
 static int copyfile(const char* from, const char* to)
@@ -74,15 +75,33 @@ static int copyfile(const char* from, const char* to)
         errno = e;
         return write_fd;
     }
-    
-    if(sendfile(write_fd, read_fd, &offset, stat_buf.st_size) < 0) {
-        int e = errno;
-        close(read_fd);
-        close(write_fd);
-        errno = e;
-        return -1;
+
+    size_t expected = stat_buf.st_size;
+    ssize_t bytes = 0;
+    while (bytes < expected) {
+        expected -= bytes;
+        bytes = sendfile(write_fd, read_fd, &offset, expected);
+        if (bytes < 0) {
+            int e = errno;
+            close(read_fd);
+            close(write_fd);
+            errno = e;
+            return -1;
+        } else if (bytes == 0) {
+            // zero bytes are read. Do we want to try again? Well, let's consider it as an error
+            Warn("sys/sendfile makes no progress copying %s to %s and we bail out as failure.", from, to);
+            if (close(read_fd) < 0) {
+                // take the first errno due to close.
+                int e = errno;
+                close(write_fd);
+                errno = e;
+            } else {
+                close(write_fd);
+            }
+            return -1;
+        }
     }
-    
+
     if(close(read_fd) < 0) {
         int e = errno;
         close(write_fd);
@@ -484,7 +503,7 @@ namespace litecore {
         string path = fp->path();
         const char *basePath = path.c_str();
         Assert(strlen(basePath) + 6 < kPathBufSize - 1);
-        sprintf(pathBuf, "%sXXXXXX", basePath);
+        snprintf(pathBuf, kPathBufSize, "%sXXXXXX", basePath);
     }
 
 

@@ -81,12 +81,12 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga27bfddfe497f7b5babe182633e2e9232"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___predictive_query.html#ga27bfddfe497f7b5babe182633e2e9232">c4pred_registerModel</a> (const char *name, <a class="el" href="struct_c4_predictive_model.html">C4PredictiveModel</a>)</td></tr>
-<tr class="memdesc:ga27bfddfe497f7b5babe182633e2e9232"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers a predictive model, under a name.  <a href="group___predictive_query.html#ga27bfddfe497f7b5babe182633e2e9232">More...</a><br /></td></tr>
-<tr class="separator:ga27bfddfe497f7b5babe182633e2e9232"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaab44d11fb3f29b9a12c956b9cd331777"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___predictive_query.html#gaab44d11fb3f29b9a12c956b9cd331777">c4pred_unregisterModel</a> (const char *name)</td></tr>
-<tr class="memdesc:gaab44d11fb3f29b9a12c956b9cd331777"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unregisters whatever model was last registered with this name.  <a href="group___predictive_query.html#gaab44d11fb3f29b9a12c956b9cd331777">More...</a><br /></td></tr>
-<tr class="separator:gaab44d11fb3f29b9a12c956b9cd331777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13b1df0370356d4fb1336728c1c13283"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___predictive_query.html#ga13b1df0370356d4fb1336728c1c13283">c4pred_registerModel</a> (const char *name, <a class="el" href="struct_c4_predictive_model.html">C4PredictiveModel</a>)</td></tr>
+<tr class="memdesc:ga13b1df0370356d4fb1336728c1c13283"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers a predictive model, under a name.  <a href="group___predictive_query.html#ga13b1df0370356d4fb1336728c1c13283">More...</a><br /></td></tr>
+<tr class="separator:ga13b1df0370356d4fb1336728c1c13283"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf93399045cd8cadf0db2e1237da19161"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___predictive_query.html#gaf93399045cd8cadf0db2e1237da19161">c4pred_unregisterModel</a> (const char *name)</td></tr>
+<tr class="memdesc:gaf93399045cd8cadf0db2e1237da19161"><td class="mdescLeft">&#160;</td><td class="mdescRight">Unregisters whatever model was last registered with this name.  <a href="group___predictive_query.html#gaf93399045cd8cadf0db2e1237da19161">More...</a><br /></td></tr>
+<tr class="separator:gaf93399045cd8cadf0db2e1237da19161"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>This API allows you to register a machine-learning model with LiteCore. </p>
@@ -96,14 +96,14 @@ Functions</h2></td></tr>
 <p>The most common use of a multi-dimensional array is as an image pixmap; in this case the natural Fleece input is a blob containing encoded image data in a common format like JPEG or PNG. Again, you're responsible for decoding the image data and rendering it into the appropriate binary array. (Your ML library may assist you here; for example, CoreML works with the Vision framework, so all you have to do is pass in the encoded image data and the frameworks do the rest.)</p>
 <p>You must be vigilant about invalid data, since the prediction query may well be run on documents that don't have the expected schema. Obviously the callback should not crash nor corrupt memory. It should also probably not return an error if input parameters are missing or of the wrong type; instead it should return null without storing an error value in the <code>error</code> parameter. The reason is that, if it returns an error, this will propagate all the way up the query and cause the entire query to fail. Usually it's more appropriate to return a null slice, which equates to a result of MISSING, which will just cause this document to fail the query condition. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga27bfddfe497f7b5babe182633e2e9232"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga27bfddfe497f7b5babe182633e2e9232">&#9670;&nbsp;</a></span>c4pred_registerModel()</h2>
+<a id="ga13b1df0370356d4fb1336728c1c13283"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga13b1df0370356d4fb1336728c1c13283">&#9670;&nbsp;</a></span>c4pred_registerModel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4pred_registerModel </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4pred_registerModel </td>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>name</em>, </td>
@@ -127,14 +127,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaab44d11fb3f29b9a12c956b9cd331777"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaab44d11fb3f29b9a12c956b9cd331777">&#9670;&nbsp;</a></span>c4pred_unregisterModel()</h2>
+<a id="gaf93399045cd8cadf0db2e1237da19161"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf93399045cd8cadf0db2e1237da19161">&#9670;&nbsp;</a></span>c4pred_unregisterModel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4pred_unregisterModel </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4pred_unregisterModel </td>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>name</em></td><td>)</td>

@@ -115,6 +115,7 @@ C4API_BEGIN_DECLS
         C4SequenceNumber sequence;
         C4Error error;
         bool errorIsTransient;
+        void* collectionContext;
     } C4DocumentEnded;
 
 
@@ -206,16 +207,7 @@ C4API_BEGIN_DECLS
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
     typedef struct C4ReplicatorParameters {
-        // Begin to be deprecated
-        C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
-        C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
-        // End to be deprecated
-
         C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
-        // Begin to be deprecated
-        C4ReplicatorValidationFunction C4NULLABLE      pushFilter;        ///< Callback that can reject outgoing revisions
-        C4ReplicatorValidationFunction C4NULLABLE      validationFunc;    ///< Callback that can reject incoming revisions
-        // End to be deprecated
         C4ReplicatorStatusChangedCallback C4NULLABLE   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentsEndedCallback C4NULLABLE onDocumentsEnded;  ///< Callback notifying status of individual documents
         C4ReplicatorBlobProgressCallback C4NULLABLE    onBlobProgress;    ///< Callback notifying blob progress
@@ -223,12 +215,9 @@ C4API_BEGIN_DECLS
         C4ReplicatorPropertyDecryptionCallback C4NULLABLE propertyDecryptor;
         void* C4NULLABLE                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory* C4NULLABLE              socketFactory;     ///< Custom C4SocketFactory, if not NULL
-        // If collections == nullptr, we will use the deprecated fields to build
-        // the internal config for one collection being the default collection.
         C4ReplicationCollection             *collections;
-        unsigned                            collectionCount;
+        size_t                               collectionCount;
     } C4ReplicatorParameters;
-
 
 #pragma mark - CONSTANTS:
 
@@ -243,9 +232,9 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionFilterParams     "filterParams"  ///< Pull filter params (Dict[string])
     #define kC4ReplicatorOptionSkipDeleted      "skipDeleted" ///< Don't push/pull tombstones (bool)
     #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
-    #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     // end of collection specific properties.
 
+    #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionDisablePropertyDecryption "noDecryption" ///< Disables property decryption (bool)
@@ -273,9 +262,11 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorCompressionLevel       "BLIPCompressionLevel" ///< Data compression level, 0..9
 
     // [1]: Auth dictionary keys:
-    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)
-    #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
-    #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
+    #define kC4ReplicatorAuthType                   "type"           ///< Auth type; see [2] (string)
+    #define kC4ReplicatorAuthUserName               "username"       ///< User name for basic auth (string)
+    #define kC4ReplicatorAuthPassword               "password"       ///< Password for basic auth (string)
+    #define kC4ReplicatorAuthEnableChallengeAuth    "challengeAuth"  ///< Use challenge auth instead of preemptive auth for basic auth, default is false (bool); Implemented by BuiltInWebSocket.
+///<
     #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
     #define kC4ReplicatorAuthClientCertKey "clientCertKey" ///< Client cert's private key (data)
     #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)

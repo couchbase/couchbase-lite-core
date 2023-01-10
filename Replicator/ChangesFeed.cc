@@ -44,11 +44,14 @@ namespace litecore { namespace repl {
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
-    ,_continuous(_options->push == kC4Continuous)
-    ,_passive(_options->push <= kC4Passive)
     ,_skipDeleted(_options->skipDeleted())
     {
-        filterByDocIDs(_options->docIDs());
+        DebugAssert(_checkpointer);
+
+        // JIM: This breaks tons of encapsulation, and should be reworked
+        _collectionIndex = (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
+        _continuous = _options->push(_collectionIndex) == kC4Continuous;
+        filterByDocIDs(_options->docIDs(_collectionIndex));
     }
 
 
@@ -57,7 +60,7 @@ namespace litecore { namespace repl {
 
     string ChangesFeed::loggingClassName() const  {
         string className = Logging::loggingClassName();
-        if (_passive)
+        if (!_options->isActive())
             toLowercase(className);
         return className;
     }
@@ -74,7 +77,7 @@ namespace litecore { namespace repl {
                 combined->insert(move(docID));
         }
         _docIDs = move(combined);
-        if (_passive)
+        if (!_options->isActive())
             logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
     }
 
@@ -87,7 +90,7 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _changeObserver = C4DatabaseObserver::create(_db.useLocked()->getDefaultCollection(),
+            _changeObserver = C4DatabaseObserver::create(_checkpointer->collection(),
                                                          [this](C4DatabaseObserver*) {
                                                              this->_dbChanged();
                                                          });
@@ -101,7 +104,7 @@ namespace litecore { namespace repl {
             getHistoricalChanges(changes, limit);
         changes.lastSequence = _maxSequence;
 
-        if (!_passive && _checkpointer && changes.lastSequence >= changes.firstSequence) {
+        if (_options->isActive() && changes.lastSequence >= changes.firstSequence) {
             _checkpointer->addPendingSequences(changes.revs,
                                                changes.firstSequence, changes.lastSequence);
         }
@@ -114,7 +117,8 @@ namespace litecore { namespace repl {
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        if (!_getForeignAncestors && !_options->pushFilter)
+        // TBD: pushFilter should be collection-aware.
+        if (!_getForeignAncestors && !_options->pushFilter(_collectionIndex))
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
@@ -123,7 +127,8 @@ namespace litecore { namespace repl {
 
         try {
             _db.useLocked([&](C4Database* db) {
-                C4DocEnumerator e(db, _maxSequence, options);
+                Assert(db == _checkpointer->collection()->getDatabase());
+                C4DocEnumerator e(_checkpointer->collection(), _maxSequence, options);
                 changes.revs.reserve(limit);
                 while (e.next() && limit > 0) {
                     C4DocumentInfo info = e.documentInfo();
@@ -151,18 +156,18 @@ namespace litecore { namespace repl {
                    limit, (uint64_t)_maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseObserver::Change c4changes[kMaxChanges];
-        bool ext;
-        uint32_t nChanges;
+        C4CollectionObservation nextObservation;
         auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
 
         while (limit > 0) {
-            nChanges = _changeObserver->getChanges(c4changes, min(limit,kMaxChanges), &ext);
+            nextObservation = _changeObserver->getChanges(c4changes, min(limit,kMaxChanges));
+            uint32_t nChanges = nextObservation.numChanges;
             if (nChanges == 0)
                 break;
 
-            if (!ext && !_echoLocalChanges) {
+            if (!nextObservation.external && !_echoLocalChanges) {
                 logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64
                          " (ignoring)",
                          nChanges, static_cast<uint64_t>(c4changes[0].sequence),
@@ -237,13 +242,14 @@ namespace litecore { namespace repl {
         if (info.expiration > C4Timestamp::None && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
-        } else if (!_passive && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {
+        } else if (_options->isActive() && _checkpointer->isSequenceCompleted(info.sequence)) {
             return nullptr;             // skip rev: checkpoint says we already pushed it before
         } else if (_docIDs != nullptr
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = make_retained<RevToSend>(info);
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
+                _options->collectionCallbackContext(_collectionIndex));
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }
@@ -258,7 +264,7 @@ namespace litecore { namespace repl {
     bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
                                                     && _isCheckpointValid;
-        if (needRemoteRevID || _options->pushFilter) {
+        if (needRemoteRevID || _options->pushFilter(_collectionIndex)) {
             C4Error error;
             Retained<C4Document> doc;
             try {
@@ -266,8 +272,8 @@ namespace litecore { namespace repl {
                     if (e)
                         doc = e->getDocument();
                     else
-                        doc = db->getDocument(rev->docID, true,
-                                              (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                        doc = _checkpointer->collection()->getDocument(
+                            rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
                     if (!doc)
                         error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
                 });
@@ -287,14 +293,15 @@ namespace litecore { namespace repl {
                 if (!getRemoteRevID(rev, doc))
                     return false;     // skip or fail rev: it's already on the peer
             }
-            if (_options->pushFilter) {
+            if (_options->pushFilter(_collectionIndex)) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options->pushFilter({nullslice, nullslice},     // TODO: Collection support
-                                         doc->docID(),
-                                         doc->selectedRev().revID,
-                                         doc->selectedRev().flags,
-                                         doc->getProperties(),
-                                         _options->callbackContext)) {
+                if (!_options->pushFilter(_collectionIndex)(
+                                _checkpointer->collection()->getSpec(),
+                                doc->docID(),
+                                doc->selectedRev().revID,
+                                doc->selectedRev().flags,
+                                doc->getProperties(),
+                                _options->collectionCallbackContext(_collectionIndex))) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID()));
                     return false;     // skip rev: rejected by push filter
                 }
@@ -333,7 +340,7 @@ namespace litecore { namespace repl {
         if (foreignAncestor && !_usingVersionVectors
                     && C4Document::getRevIDGeneration(foreignAncestor)
                         >= C4Document::getRevIDGeneration(doc->revID())) {
-            if (_options->pull <= kC4Passive) {
+            if (!_options->isActive()) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);

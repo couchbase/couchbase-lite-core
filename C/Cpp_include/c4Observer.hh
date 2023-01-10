@@ -33,10 +33,6 @@ struct C4CollectionObserver : public fleece::InstanceCounted, C4Base {
     using Callback = C4Collection::CollectionObserverCallback;
 
     static std::unique_ptr<C4CollectionObserver> create(C4Collection*, Callback);
-
-#ifndef C4_STRICT_COLLECTION_API
-    static std::unique_ptr<C4CollectionObserver> create(C4Database*, Callback);
-#endif
     
     virtual ~C4CollectionObserver() =default;
 
@@ -55,9 +51,8 @@ struct C4CollectionObserver : public fleece::InstanceCounted, C4Base {
         \note The usual way to use this method is to allocate a reasonably sized buffer, maybe
                 100 changes, and keep calling getChanges passing in the entire buffer, until
                 it returns 0 to indicate no more changes. */
-    virtual uint32_t getChanges(Change outChanges[C4NONNULL],
-                                uint32_t maxChanges,
-                                bool *outExternal) =0;
+    virtual C4CollectionObservation getChanges(Change outChanges[C4NONNULL],
+                                               uint32_t maxChanges) =0;
 };
 
 

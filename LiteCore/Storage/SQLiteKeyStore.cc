@@ -37,7 +37,7 @@ namespace litecore {
         LogStatement(allStores);
         while (allStores.executeStep()) {
             string storeName = allStores.getColumn(0).getString();
-            names.push_back(storeName);
+            names.push_back(SQLiteKeyStore::transformCollectionName(storeName, false));
         }
         
         return names;
@@ -45,14 +45,16 @@ namespace litecore {
 
 
     void SQLiteDataFile::deleteKeyStore(const std::string &name) {
-        exec("DROP TABLE IF EXISTS \"kv_" + name + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_del_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
         // TODO: Do I need to drop indexes, triggers?
     }
 
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
         Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
-        return getKeyStore(tableName.from(3));
+        auto tableName_ = string(tableName.from(3));
+        return getKeyStore(SQLiteKeyStore::transformCollectionName(tableName_, false));
     }
 
 
@@ -63,13 +65,10 @@ namespace litecore {
 
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
-    ,_tableName("kv_" + name)
+    ,_tableName("kv_" + transformCollectionName(name, true))
     ,_quotedTableName("\"" + _tableName + "\"")
     {
-        if (db.keyStoreExists(name))
-            _existence = kCommitted;
-        else
-            createTable();
+        reopen();
     }
 
 
@@ -85,7 +84,7 @@ namespace litecore {
                                 "  version BLOB,"
                                 "  body BLOB,"
                                 "  extra BLOB)"));
-        _existence = db().inTransaction() ? kUncommitted : kCommitted;
+        _uncommitedTable = db().inTransaction();
     }
 
 
@@ -97,7 +96,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::reopen() {
-        if (_existence == kNonexistent)
+        if (!db().keyStoreExists(_name))
             createTable();
     }
 
@@ -206,19 +205,16 @@ namespace litecore {
         _lastSequence = nullopt;
         _purgeCountValid = false;
 
-        if (!commit && _uncommittedExpirationColumn)
-            _hasExpirationColumn = false;
-        _uncommittedExpirationColumn = false;
-
-        if (_existence == kUncommitted) {
-            if (commit) {
-                _existence = kCommitted;
-            } else {
-                _existence = kNonexistent;
+        if (!commit) {
+            if(_uncommittedExpirationColumn)
+                _hasExpirationColumn = false;
+            if(_uncommitedTable) {
                 close();
-                return;
             }
         }
+
+        _uncommittedExpirationColumn = false;
+        _uncommitedTable = false;
     }
 
 
@@ -258,6 +254,27 @@ namespace litecore {
             rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
         else
             rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(RecordColumn::ExtraOrSize));
+    }
+
+
+    string SQLiteKeyStore::transformCollectionName(const string& name, bool mangle) {
+        ostringstream ss;
+        const char* name_cstr = name.c_str();
+        while(char c = *name_cstr++) {
+            if (c == '\\') {
+                continue;
+            } 
+            
+            if (mangle) {
+                if (c >= 'A' && c <= 'Z') {
+                    ss << '\\';
+                }
+            }
+
+            ss << c;
+        }
+
+        return ss.str();
     }
     
 
@@ -314,52 +331,105 @@ namespace litecore {
 
         enum { VersionParam = 1, BodyParam, ExtraParam, FlagsParam, SequenceParam, KeyParam,
                OldSequenceParam, OldSubsequenceParam };
-        const char *opName;
-        SQLite::Statement *stmt;
-        if (rec.sequence == 0_seq) {
-            // Insert only:
-            stmt = &compileCached(
-                    "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
-                    " VALUES (?, ?, ?, ?, ?, ?)");
-            opName = "insert";
-        } else {
-            // Replace only:
-            stmt = &compileCached(
-                    "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
-                    " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
-            stmt->bind(OldSequenceParam,    (long long)rec.sequence);
-            stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
-            opName = "update";
-        }
 
-        sequence_t seq;
-        int64_t rawFlags = int(rec.flags);
-        if (updateSequence) {
-            seq = lastSequence() + 1;
-        } else {
-            Assert(rec.sequence > 0_seq);
-            seq = rec.sequence;
-            // If we don't update the sequence, update the subsequence so MVCC can work:
-            rawFlags |= (rec.subsequence + 1) << 16;
-        }
+        bool tryAgain = false;
+        sequence_t ret;
+        std::tuple<std::string, int, int> lastExcArgs;
 
-        stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
-        stmt->bindNoCopy(BodyParam,    rec.body.buf, (int)rec.body.size);
-        stmt->bindNoCopy(ExtraParam,   rec.extra.buf, (int)rec.extra.size);
-        stmt->bind      (FlagsParam,   (long long)rawFlags);
-        stmt->bindNoCopy(KeyParam,     (const char*)rec.key.buf, (int)rec.key.size);
-        stmt->bind      (SequenceParam,(long long)seq);
+        do {
+            // This is a band-aid for an undiagnosed bug, that lastSeq stored in the meta
+            // table may be short of the largest sequence used in the kv table. c.f. cbl-3612
+            if (tryAgain) {
+                SQLite::Statement& stmt = compileCached("SELECT MAX(sequence) FROM kv_@");
+                UsingStatement u(stmt);
+                int64_t maxSeq = -1;
+                if (stmt.executeStep())
+                    maxSeq = int64_t(stmt.getColumn(0));
 
-        if (db().willLog(LogLevel::Verbose) && name() != "default")
-            db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
+                if (maxSeq < 0 || (uint64_t)lastSequence() >= maxSeq) {
+                    // rethrow the original exception that gets us here.
+                    // The re-try is to fix the situation when lastSequence() lags behind maxSeq
+                    throw SQLite::Exception(std::get<0>(lastExcArgs), std::get<1>(lastExcArgs), std::get<2>(lastExcArgs));
+                }
 
-        UsingStatement u(*stmt);
-        if (stmt->exec() == 0)
-            return 0_seq;               // condition wasn't met, i.e. conflict
+                setLastSequence((sequence_t)maxSeq);
+            }
 
-        if (updateSequence)
-            setLastSequence(seq);
-        return seq;
+            const char *opName;
+            SQLite::Statement *stmt;
+            if (rec.sequence == 0_seq) {
+                // Insert only:
+                stmt = &compileCached(
+                        "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
+                        " VALUES (?, ?, ?, ?, ?, ?)");
+                opName = "insert";
+            } else {
+                // Replace only:
+                stmt = &compileCached(
+                        "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
+                        " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
+                stmt->bind(OldSequenceParam,    (long long)rec.sequence);
+                stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
+                opName = "update";
+            }
+
+            sequence_t seq;
+            int64_t rawFlags = int(rec.flags);
+            if (updateSequence) {
+                seq = lastSequence() + 1;
+            } else {
+                Assert(rec.sequence > 0_seq);
+                seq = rec.sequence;
+                // If we don't update the sequence, update the subsequence so MVCC can work:
+                rawFlags |= (rec.subsequence + 1) << 16;
+            }
+
+            stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
+            stmt->bindNoCopy(BodyParam,    rec.body.buf, (int)rec.body.size);
+            stmt->bindNoCopy(ExtraParam,   rec.extra.buf, (int)rec.extra.size);
+            stmt->bind      (FlagsParam,   (long long)rawFlags);
+            stmt->bindNoCopy(KeyParam,     (const char*)rec.key.buf, (int)rec.key.size);
+            stmt->bind      (SequenceParam,(long long)seq);
+
+            if (db().willLog(LogLevel::Verbose) && name() != "default")
+                db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
+
+            UsingStatement u(*stmt);
+            int status;
+            try {
+                status = stmt->exec();
+                // We are good, don't try again.
+                tryAgain = false;
+            } catch (const SQLite::Exception& exc) {
+                // We won't try again twice.
+                tryAgain = !tryAgain;
+                int sqliteErrorCode = exc.getErrorCode();
+                int sqliteExtErrorCode = exc.getExtendedErrorCode();
+                if (tryAgain && sqliteErrorCode == SQLITE_CONSTRAINT &&
+                    sqliteExtErrorCode == SQLITE_CONSTRAINT_UNIQUE) {
+                    // We only handle this error,
+                    // Log: Database | UNIQUE constraint failed: kv_default.sequence (19/2067)
+                    // Jot down the exception that makes us to try again.
+                    lastExcArgs = std::make_tuple(exc.what(), sqliteErrorCode, sqliteExtErrorCode);
+                    continue;
+                } else {
+                    // Otherwise, rethrow.
+                    throw;
+                }
+            }
+
+            // Assertion: tryAgain == false
+
+            if (status == 0) {
+                ret = 0_seq;               // condition wasn't met, i.e. conflict
+                break;
+            }
+            if (updateSequence)
+                setLastSequence(seq);
+
+            ret = seq;
+        } while (tryAgain);
+        return ret;
     }
 
 
@@ -391,9 +461,9 @@ namespace litecore {
 
 
     void SQLiteKeyStore::moveTo(slice key, KeyStore &dst, ExclusiveTransaction &t, slice newKey) {
-        if (&dst == this || &dst.dataFile() != &dataFile())
+        SQLiteKeyStore* dstStore = SQLiteDataFile::asSQLiteKeyStore(&dst);
+        if (dstStore == this || &dstStore->dataFile() != &dataFile())
             error::_throw(error::InvalidParameter);
-        auto dstStore = dynamic_cast<SQLiteKeyStore*>(&dst);
 
         if (newKey == nullslice)
             newKey = key;
@@ -595,8 +665,8 @@ namespace litecore {
             }
         }
         if (!none) {
-            expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %" PRId64,
-                                       name().c_str(), (int64_t)t));
+            expired = db().exec(format("DELETE FROM %s WHERE expiration <= %" PRId64,
+                                       _quotedTableName.c_str(), (int64_t)t));
         }
         db()._logInfo("Purged %u expired documents", expired);
         return expired;

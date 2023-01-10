@@ -35,16 +35,34 @@ namespace litecore {
     }
 
     RevTree::RevTree(const RevTree &other)
-    :_insertedData(other._insertedData)
-    ,_sorted(other._sorted)
+    :_sorted(other._sorted)
     ,_changed(other._changed)
     ,_unknown(other._unknown)
+    ,_pruneDepth(other._pruneDepth)
     {
         // It's important to have _revs in the same order as other._revs.
         // That means we can't just copy other._revsStorage to _revsStorage;
         // we have to copy _revs in order:
         _revs.reserve(other._revs.size());
         for (const Rev *otherRev : other._revs) {
+            // We need to keep the data in _insertedData alive that is referenced
+            // by Rev.revID and Rev._body of the Revs we copy.
+            // Because Revs can be purged and bodies can be removed from parent Revs,
+            // not all of the data in other._insertedData will be referenced from other._revs.
+            // That is why we don't just copy other._insertedData. Instead we keep track
+            // of which data of a Rev is owned by _insertedData and only add that data
+            // to the new _insertedData.
+            // Otherwise, when a document is repeatedly updated, data would accumulate,
+            // occupying memory and requiring copying + reference counting.
+            if (otherRev->_hasInsertedRevID) {
+                auto revID = (alloc_slice*)&(otherRev->revID);
+                _insertedData.push_back(*revID);
+            }
+            if (otherRev->_hasInsertedBody) {
+                auto body = (alloc_slice*)&otherRev->_body;
+                _insertedData.push_back(*body);
+            }
+
             _revsStorage.emplace_back(*otherRev);
             _revs.push_back(&_revsStorage.back());
         }
@@ -180,6 +198,7 @@ namespace litecore {
             // Fleece data must be 2-byte-aligned, so we have to copy body to the heap:
             auto xthis = const_cast<Rev*>(this);
             auto xowner = const_cast<RevTree*>(owner);
+            xthis->_hasInsertedBody = true;
             body = xthis->_body = (slice)xowner->copyBody(_body);
         }
         return body;
@@ -301,6 +320,8 @@ namespace litecore {
 
         _revsStorage.emplace_back();
         Rev *newRev = &_revsStorage.back();
+        newRev->_hasInsertedRevID = true;
+        newRev->_hasInsertedBody = true;
         newRev->owner = this;
         newRev->revID = revID;
         newRev->_body = (slice)copyBody(body);

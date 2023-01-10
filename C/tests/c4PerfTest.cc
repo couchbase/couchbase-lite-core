@@ -16,10 +16,12 @@
 #include "c4Document+Fleece.h"
 #include "c4Query.h"
 #include "c4Index.h"
+#include "c4Replicator.h"
 #include "Base.hh"
 #include "Benchmark.hh"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
+#include "SG.hh"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <iostream>
@@ -27,6 +29,8 @@
 #include <thread>
 #include <fstream>
 #include <cinttypes>
+#include <mutex>
+#include <condition_variable>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -34,7 +38,7 @@
 using namespace fleece;
 using namespace std;
 
-
+// These tests are run via the perf runner in https://github.com/couchbaselabs/cbl_perf_runner
 class PerfTest : public C4Test {
 public:
     PerfTest(int variation) :C4Test(variation)
@@ -46,6 +50,11 @@ public:
                 _showFastDir = showFastDir;
             }
         }
+
+        _replLock = unique_lock(_replMutex);
+#ifdef LITECORE_PERF_TESTING_MODE
+        C4RegisterBuiltInWebSocket();
+#endif
     }
 
     // Copies a Fleece dictionary key/value to an encoder
@@ -146,9 +155,10 @@ public:
     void readRandomDocs(size_t numDocs, size_t numDocsToRead, const char* sf_title = nullptr) {
         std::cerr << "Reading " <<numDocsToRead<< " random docs...\n";
         Benchmark b;
+        constexpr size_t bufSize = 30;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
-            char docID[30];
-            sprintf(docID, "%07zu", ((unsigned)litecore::RandomNumber() % numDocs) + 1);
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%07zu", ((unsigned)litecore::RandomNumber() % numDocs) + 1);
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;
@@ -264,9 +274,43 @@ public:
         fout << contents;
         fout.close();
     }
+
+    static void onTimedReplicatorStatusChanged(C4Replicator* r, C4ReplicatorStatus sts, void* ctx) {
+        if (sts.level == kC4Stopped) {
+            ((PerfTest *)ctx)->_replConditional.notify_one();
+        }
+    }
+
+    C4Replicator* createTimeableReplication(C4ReplicatorParameters& parameters) {
+        parameters.callbackContext = this;
+        parameters.onStatusChanged = onTimedReplicatorStatusChanged;
+        auto repl = c4repl_new(db, _sg.address, _sg.remoteDBName, parameters, ERROR_INFO());
+        REQUIRE(repl);
+        return repl;
+    }
+
+    bool waitForReplicator(C4Replicator* repl, std::chrono::seconds limit) {
+        auto expire = std::chrono::system_clock::now() + limit;
+        auto status = c4repl_getStatus(repl);
+        while (status.level != kC4Stopped) {
+            auto waitResult = _replConditional.wait_until(_replLock, expire);
+            if (waitResult == cv_status::timeout) {
+                return false;
+            }
+
+            status = c4repl_getStatus(repl);
+        }
+
+        return true;
+    }
     
 private:
     const char* _showFastDir {nullptr};
+    SG _sg;
+
+    std::mutex _replMutex;
+    std::unique_lock<mutex> _replLock;
+    std::condition_variable _replConditional;
 };
 
 
@@ -347,3 +391,57 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import Wikipedia", "[Perf][C][.slow]") {
     reopenDB();
     readRandomDocs(numDocs, 100000);
 }
+
+#ifdef LITECORE_PERF_TESTING_MODE
+// This test will be automated soon, and switched to [Perf]
+N_WAY_TEST_CASE_METHOD(PerfTest, "Push and pull names data", "[PerfManual][C][.slow]") {
+    if (isEncrypted()) {
+        std::cerr << "Skipping second round of testing since it will not be valid" << std::endl;
+        return;
+    }
+
+    auto numDocs = importJSONLines(sFixturesDir + "names_300000.json", 60.0, true);
+    REQUIRE(numDocs == 300000);
+
+    C4ReplicationCollection defaultColl{
+        kC4DefaultCollectionSpec,
+        kC4OneShot,
+        kC4Disabled
+    };
+
+    C4ReplicatorParameters replParam{};
+    replParam.collectionCount = 1;
+    replParam.collections = &defaultColl;
+
+    {
+        c4::ref<C4Replicator> repl = createTimeableReplication(replParam);
+
+        Stopwatch st;
+        c4repl_start(repl, false);
+        CHECK(waitForReplicator(repl, 5min));
+        st.stop();
+        st.printReport("Push names to remote", 300000, "doc");
+
+        const char* sf_title = "push_names_data";
+        string sf = generateShowfast(round(st.elapsed() * 100.0) / 100.0, sf_title);
+        writeShowFastToFile(sf_title, sf);
+    }
+
+    defaultColl.pull = kC4OneShot;
+    defaultColl.push = kC4Disabled;
+    deleteAndRecreateDB();
+    {
+        c4::ref<C4Replicator> repl = createTimeableReplication(replParam);
+
+        Stopwatch st;
+        c4repl_start(repl, false);
+        CHECK(waitForReplicator(repl, 5min));
+        st.stop();
+        st.printReport("Pull names from remote", 300000, "doc");
+
+        const char* sf_title = "pull_names_data";
+        string sf = generateShowfast(round(st.elapsed() * 100.0) / 100.0, sf_title);
+        writeShowFastToFile(sf_title, sf);
+    }
+}
+#endif

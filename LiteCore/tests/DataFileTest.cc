@@ -11,6 +11,7 @@
 //
 
 #include "DataFile.hh"
+#include "SQLiteKeyStore.hh"
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -899,4 +900,119 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]")
 
     // Before the fix, this would throw
     reopenDatabase();
+}
+
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[DataFile]") {
+    auto& lower = db->getKeyStore("keystore");
+    CHECK(db->keyStoreExists("keystore"));
+    CHECK(!db->keyStoreExists("KEYSTORE"));
+    auto names = db->allKeyStoreNames();
+    CHECK(find(names.begin(), names.end(), "keystore") != names.end());
+    CHECK(find(names.begin(), names.end(), "KEYSTORE") == names.end());
+
+    auto& upper = db->getKeyStore("KEYSTORE");
+    CHECK(db->keyStoreExists("keystore"));
+    CHECK(db->keyStoreExists("KEYSTORE"));
+    names = db->allKeyStoreNames();
+    CHECK(find(names.begin(), names.end(), "keystore") != names.end());
+    CHECK(find(names.begin(), names.end(), "KEYSTORE") != names.end());
+
+    {
+        ExclusiveTransaction t(db);
+        createDoc(lower, "A1"_sl, "foo"_sl, t);
+        createDoc(upper, "A2"_sl, "bar"_sl, t);
+        t.commit();
+    }
+
+    auto a1 = upper.get("A1"_sl);
+    CHECK(a1.sequence() == 0_seq);
+    a1 = lower.get("A1"_sl);
+    CHECK(a1.body() == "foo"_sl);
+
+    auto a2 = lower.get("A2");
+    CHECK(a2.sequence() == 0_seq);
+    a2 = upper.get("A2"_sl);
+    CHECK(a2.body() == "bar"_sl);
+
+    CHECK(lower.recordCount() == 1);
+    CHECK(upper.recordCount() == 1);
+     
+    {
+        ExclusiveTransaction t(db);
+        REQUIRE(upper.del(a2, t));
+        t.commit();
+    }
+
+    CHECK(upper.recordCount() == 0);
+    CHECK(lower.recordCount() == 1);
+
+    {
+        ExclusiveTransaction t(db);
+        REQUIRE(lower.del(a1, t));
+        t.commit();
+    }
+
+    CHECK(upper.recordCount() == 0);
+    CHECK(lower.recordCount() == 0);
+
+    {
+        ExclusiveTransaction t(db);
+        db->deleteKeyStore("KEYSTORE");
+        t.commit();
+    }
+    CHECK(db->keyStoreExists("keystore"));
+    CHECK(!db->keyStoreExists("KEYSTORE"));
+
+    // Should be no-op
+    {
+        ExclusiveTransaction t(db);
+        db->deleteKeyStore("KEYSTORE");
+        t.commit();
+    }
+    CHECK(db->keyStoreExists("keystore"));
+    CHECK(!db->keyStoreExists("KEYSTORE"));
+
+    {
+        ExclusiveTransaction t(db);
+        db->deleteKeyStore("keystore");
+        t.commit();
+    }
+    CHECK(!db->keyStoreExists("keystore"));
+    CHECK(!db->keyStoreExists("KEYSTORE"));
+}
+
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Check name mangling", "[DataFile]") {
+    string input, expectedOutput, expectedFinal;
+
+    SECTION("All lower case is unchanged") {
+        input = "input";
+        expectedOutput = expectedFinal = input;
+    }
+
+    SECTION("Upper case is mangled with a backslash") {
+        input = "InpuT";
+        expectedOutput = "\\Inpu\\T";
+        expectedFinal = input;
+    }
+
+    SECTION("Already mangled names are not remangled") {
+        input = "\\Inpu\\T";
+        expectedOutput = "\\Inpu\\T";
+        expectedFinal = "InpuT";
+    }
+
+    SECTION("Numeric characters are not mangled") {
+        input = "12345";
+        expectedOutput = expectedFinal = input;
+    }
+
+    SECTION("Invalid characters are not mangled") {
+        input = "!!!$$$";
+        expectedOutput = expectedFinal = input;
+    }
+
+    string output = SQLiteKeyStore::transformCollectionName(input, true);
+    REQUIRE(output == expectedOutput);
+    output = SQLiteKeyStore::transformCollectionName(output, false);
+    CHECK(output == expectedFinal);
 }

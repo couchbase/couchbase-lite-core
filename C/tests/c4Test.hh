@@ -18,7 +18,9 @@
 #include "c4Private.h"
 #include "fleece/function_ref.hh"
 #include "fleece/Expert.hh"
+#include <thread>
 #include <vector>
+#include <fstream>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
 // in the `c4` namespace. Check it out!
@@ -224,6 +226,7 @@ public:
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
+    static C4Collection* requireCollection(C4Database* db, C4CollectionSpec spec = kC4DefaultCollectionSpec);
 
     void closeDB();
     void reopenDB();
@@ -233,15 +236,35 @@ public:
 
     static void deleteAndRecreateDB(C4Database*&);
     static alloc_slice copyFixtureDB(const std::string &name);
+    
+    static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
+    static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist =true);
+    int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "");
+    int addDocs(C4Collection* collection, int total, std::string idprefix ="");
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
+    static void createRev(C4Collection *collection, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static std::string createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
+    static std::string createFleeceRev(C4Collection *collection, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
+    
     static std::string createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID,
                                     C4Slice body, C4RevisionFlags flags =0);
     static std::string createNewRev(C4Database *db, C4Slice docID,
                                     C4Slice body, C4RevisionFlags flags =0);
+    
+    static std::string createNewRev(C4Collection *collection, C4Slice docID, C4Slice curRevID,
+                                    C4Slice body, C4RevisionFlags flags =0);
+    static std::string createNewRev(C4Collection *collection, C4Slice docID,
+                                    C4Slice body, C4RevisionFlags flags =0);
+
+    static void createConflictingRev(C4Collection *collection,
+                                     C4Slice docID,
+                                     C4Slice parentRevID,
+                                     C4Slice newRevID,
+                                     C4Slice body =kFleeceBody,
+                                     C4RevisionFlags flags =0);
 
     static void createConflictingRev(C4Database *db,
                                      C4Slice docID,
@@ -250,9 +273,28 @@ public:
                                      C4Slice body =kFleeceBody,
                                      C4RevisionFlags flags =0);
 
+    // Makeshift of c++20 jthread, automatically rejoins on destruction
+    struct Jthread {
+        std::thread thread;
+        Jthread(std::thread&& thread_)
+        : thread(move(thread_))
+        {}
+        Jthread() = default;
+        ~Jthread() {
+            thread.join();
+        }
+    };
+
     void createNumberedDocs(unsigned numberOfDocs);
 
     std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID,
+                                                 std::vector<std::string> attachments,
+                                                 const char *contentType,
+                                                 std::vector<std::string>* legacyNames =nullptr,
+                                                 C4RevisionFlags flags =0);
+    std::vector<C4BlobKey> addDocWithAttachments(C4Database* database,
+                                                 C4CollectionSpec collectionSpec,
+                                                 C4Slice docID,
                                                  std::vector<std::string> attachments,
                                                  const char *contentType,
                                                  std::vector<std::string>* legacyNames =nullptr,
@@ -262,6 +304,7 @@ public:
                           std::vector<std::string> expectedData);
 
     static std::string getDocJSON(C4Database* inDB, C4Slice docID);
+    static std::string getDocJSON(C4Collection* collection, C4Slice docID);
 
     std::string listSharedKeys(std::string delimiter =", ");
 
@@ -271,10 +314,11 @@ public:
                             double timeout =0.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
-    unsigned importJSONLines(std::string path, C4Collection*, 
-                             double timeout =0.0, bool verbose =false, size_t maxLines =0);
+    unsigned importJSONLines(std::string path, C4Collection*, double timeout =0.0, bool verbose =false,
+                             size_t maxLines =0, const std::string& idPrefix ="");
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
-                             C4Database* database = nullptr, size_t maxLines =0);
+                             C4Database* database = nullptr, size_t maxLines =0,
+                             const std::string& idPrefix ="");
 
 
     bool docBodyEquals(C4Document *doc NONNULL, slice fleece);

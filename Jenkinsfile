@@ -52,9 +52,10 @@ pipeline {
                     agent { label 'mobile-mac-mini'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
+                        GH_PAT = credentials("cbl-bot-github-pat")
                     }
                     steps {
-                        sh 'jenkins/jenkins_unix.sh'
+                        sh 'build_cmake/scripts/cover_macos.sh --export-results --push'
                     }
                 }
                 stage("Linux") {

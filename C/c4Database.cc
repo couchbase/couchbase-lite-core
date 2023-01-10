@@ -179,6 +179,27 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 }
 
 
+C4Collection* C4Database::getDefaultCollection() const {
+    // Make a distinction: If the DB is open and the default collection is deleted
+    // then simply return null.  If the DB is closed, an error should occur.
+    checkOpen();
+    return (_defaultCollection && !_defaultCollection->isValid())
+        ? nullptr
+        : _defaultCollection;
+}
+
+
+C4Collection* C4Database::getDefaultCollectionSafe() const {
+    Retained<C4Collection> dc = getDefaultCollection();
+    if(!dc) {        
+        error::_throw(error::NotOpen);
+    }
+
+    return dc;
+
+}
+
+
 C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig &inConfig)
 :_name(move(name))
 ,_parentDirectory(move(dir))
@@ -191,7 +212,7 @@ C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig
 
 
 Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int *errPos) const {
-    return C4Query::newQuery(_defaultCollection, language, expr, errPos);
+    return C4Query::newQuery(getDefaultCollectionSafe(), language, expr, errPos);
 }
 
 
@@ -204,23 +225,23 @@ void C4Database::createIndex(slice indexName,
                              C4IndexType indexType,
                              const C4IndexOptions *indexOptions)
 {
-    _defaultCollection->createIndex(indexName, indexSpec, indexSpecLanguage, indexType,
+    getDefaultCollectionSafe()->createIndex(indexName, indexSpec, indexSpecLanguage, indexType,
                                     indexOptions);
 }
 
 
 void C4Database::deleteIndex(slice indexName) {
-    _defaultCollection->deleteIndex(indexName);
+    getDefaultCollectionSafe()->deleteIndex(indexName);
 }
 
 
 alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
-    return _defaultCollection->getIndexesInfo(fullInfo);
+    return getDefaultCollectionSafe()->getIndexesInfo(fullInfo);
 }
 
 
 alloc_slice C4Database::getIndexRows(slice indexName) const {
-    return _defaultCollection->getIndexRows(indexName);
+    return getDefaultCollectionSafe()->getIndexRows(indexName);
 }
 
 
@@ -228,6 +249,8 @@ alloc_slice C4Database::getIndexRows(slice indexName) const {
 
 
 alloc_slice C4Database::getCookies(const C4Address &request) {
+    checkOpen();
+
     litecore::repl::DatabaseCookies cookies(this);
     string result = cookies.cookiesForRequest(request);
     if (result.empty())
@@ -240,6 +263,8 @@ bool C4Database::setCookie(slice setCookieHeader,
                            slice fromHost,
                            slice fromPath)
 {
+    checkOpen();
+
     litecore::repl::DatabaseCookies cookies(this);
     bool ok = cookies.setCookie(setCookieHeader.asString(),
                                 fromHost.asString(),
@@ -251,6 +276,8 @@ bool C4Database::setCookie(slice setCookieHeader,
 
 
 void C4Database::clearCookies() {
+    checkOpen();
+
     litecore::repl::DatabaseCookies cookies(this);
     cookies.clearCookies();
     cookies.saveChanges();
@@ -277,39 +304,39 @@ void C4Database::forEachCollection(slice inScope, const CollectionSpecCallback &
 // Shims to ease the pain of converting to collections. These delegate to the default collection.
 
 uint64_t C4Database::getDocumentCount() const {
-    return getDefaultCollection()->getDocumentCount();
+    return getDefaultCollectionSafe()->getDocumentCount();
 }
 
 C4SequenceNumber C4Database::getLastSequence() const {
-    return getDefaultCollection()->getLastSequence();
+    return getDefaultCollectionSafe()->getLastSequence();
 }
 
 Retained<C4Document> C4Database::getDocument(slice docID,
                                  bool mustExist,
                                  C4DocContentLevel content) const {
-    return getDefaultCollection()->getDocument(docID, mustExist, content);
+    return getDefaultCollectionSafe()->getDocument(docID, mustExist, content);
 }
 
 Retained<C4Document> C4Database::getDocumentBySequence(C4SequenceNumber sequence) const {
-    return getDefaultCollection()->getDocumentBySequence(sequence);
+    return getDefaultCollectionSafe()->getDocumentBySequence(sequence);
 }
 
 Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq,
                                  size_t* C4NULLABLE outCommonAncestorIndex,
                                  C4Error *outError) {
-    return getDefaultCollection()->putDocument(rq, outCommonAncestorIndex, outError);
+    return getDefaultCollectionSafe()->putDocument(rq, outCommonAncestorIndex, outError);
 }
 
 bool C4Database::purgeDocument(slice docID) {
-    return getDefaultCollection()->purgeDocument(docID);
+    return getDefaultCollectionSafe()->purgeDocument(docID);
 }
 
 C4Timestamp C4Database::getExpiration(slice docID) const {
-    return getDefaultCollection()->getExpiration(docID);
+    return getDefaultCollectionSafe()->getExpiration(docID);
 }
 
 bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {
-    return getDefaultCollection()->setExpiration(docID, timestamp);
+    return getDefaultCollectionSafe()->setExpiration(docID, timestamp);
 }
 
 #endif // C4_STRICT_COLLECTION_API

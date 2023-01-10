@@ -13,6 +13,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
+#include "Defer.hh"
 #include "Logging.hh"
 #include "Query.hh"
 #include "QueryParser.hh"
@@ -77,6 +78,10 @@ namespace litecore {
                 case QueryLanguage::kN1QL: {
                     unsigned errPos;
                     FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
+                    DEFER {
+                        FLMutableDict_Release(result);
+                    };
+                    
                     if (!result) {
                         throw Query::parseError("N1QL syntax error", errPos);
                     } else if (!hasKeyCaseEquivalent((MutableDict*)result, "from")) {
@@ -85,7 +90,6 @@ namespace litecore {
                     }
                     _json = ((MutableDict*)result)->toJSON(true);
                     logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
-                    FLMutableDict_Release(result);
                     break;
                 }
             }
@@ -496,7 +500,7 @@ namespace litecore {
                         Scope fleeceScope(fleeceData, _sk);
                         const Value *value = Value::fromTrustedData(fleeceData);
                         if (!value)
-                            error::_throw(error::CorruptRevisionData);
+                            error::_throw(error::CorruptRevisionData, "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
                         enc.writeValue(value);
                         break;
                     }

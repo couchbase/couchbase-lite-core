@@ -83,7 +83,7 @@ $(function() {
 <div class="line"><a name="l00011"></a><span class="lineno">   11</span>&#160;<span class="comment">//</span></div>
 <div class="line"><a name="l00012"></a><span class="lineno">   12</span>&#160; </div>
 <div class="line"><a name="l00013"></a><span class="lineno">   13</span>&#160;<span class="preprocessor">#pragma once</span></div>
-<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;fleece/CompilerSupport.h&quot;</span></div>
+<div class="line"><a name="l00014"></a><span class="lineno">   14</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="_compiler_support_8h.html">fleece/CompilerSupport.h</a>&quot;</span></div>
 <div class="line"><a name="l00015"></a><span class="lineno">   15</span>&#160; </div>
 <div class="line"><a name="l00016"></a><span class="lineno">   16</span>&#160;<span class="preprocessor">#ifdef _MSC_VER</span></div>
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="preprocessor">#  define C4INLINE __forceinline</span></div>
@@ -182,7 +182,7 @@ $(function() {
 <div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="preprocessor">        #define CBL_CORE_API __declspec(dllimport)</span></div>
 <div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="preprocessor">    #endif</span></div>
 <div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="preprocessor">#else</span></div>
-<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">  113</a></span>&#160;<span class="preprocessor">    #define CBL_CORE_API</span></div>
+<div class="line"><a name="l00113"></a><span class="lineno"><a class="line" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">  113</a></span>&#160;<span class="preprocessor">    #define CBL_CORE_API __attribute__((visibility(&quot;default&quot;</span>)))</div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
@@ -194,6 +194,7 @@ $(function() {
 <div class="line"><a name="l00122"></a><span class="lineno"><a class="line" href="c4_compat_8h.html#ab302334d9a77a6925be4e5b45397e4a3">  122</a></span>&#160;<span class="preprocessor">        #define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))</span></div>
 <div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;<span class="preprocessor">    #endif</span></div>
 <div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="a_compiler_support_8h_html"><div class="ttname"><a href="_compiler_support_8h.html">CompilerSupport.h</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

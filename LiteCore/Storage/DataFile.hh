@@ -53,7 +53,6 @@ namespace litecore {
         This is an abstract class, with concrete subclasses for different database engines. */
     class DataFile : public Logging, public fleece::InstanceCountedIn<DataFile> {
     public:
-
         class Delegate {
         public:
             virtual ~Delegate() =default;
@@ -63,6 +62,8 @@ namespace litecore {
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
+            // Notifies that another DataFile on the same physical file has deleted a collection
+            virtual void collectionRemoved(const std::string& keyStoreName) { };
         };
 
         struct Options {
@@ -214,6 +215,15 @@ namespace litecore {
         static Factory* factoryNamed(const std::string &name);
         static Factory* factoryNamed(const char *name);
         static Factory* factoryForFile(const FilePath&);
+
+        // kScopeCollectionSeparator must not be escaped as it separates the scope from the
+        // generalized collection name, a.k.a. collection path.
+        // This function returns the position of unescaped separator starting from pos.
+        // It returns string::npos if not found.
+        static size_t findCollectionPathSeparator(const string& collectionPath, size_t pos =0);
+        // After separating out the scope from collection path by kScopeCollectionSeparator ('.'),
+        // the following function can be used to unescape the escaped separator.
+        static string unescapeCollectionName(const string& unescaped);
 
     protected:
         virtual std::string loggingIdentifier() const override;

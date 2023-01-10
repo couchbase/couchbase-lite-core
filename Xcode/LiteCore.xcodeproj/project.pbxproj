@@ -508,6 +508,13 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
+		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
+		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
+		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1639,6 +1646,13 @@
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
+		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
+		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA00E6F02915C2F900606365 /* SGRest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGRest.cc; path = ../Replicator/tests/SGRest.cc; sourceTree = "<group>"; };
+		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGTestUser.cc; path = ../Replicator/tests/SGTestUser.cc; sourceTree = "<group>"; };
+		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SG.cc; path = ../Replicator/tests/SG.cc; sourceTree = "<group>"; };
+		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ReplParams.cc; path = ../Replicator/tests/ReplParams.cc; sourceTree = "<group>"; };
+		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2174,6 +2188,10 @@
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
+				EA8E8AE1291D597C002106A3 /* SG.cc */,
+				EA8E8AE0291D597C002106A3 /* SGTestUser.cc */,
+				EA00E6F02915C2F900606365 /* SGRest.cc */,
+				EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */,
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* API */,
@@ -2418,10 +2436,12 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */,
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
+				FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
@@ -2804,6 +2824,7 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				275E98FF238360B200EA516B /* Checkpointer.cc */,
 				275E9904238360B200EA516B /* Checkpointer.hh */,
+				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				277B9567224597E1005B7E79 /* Support */,
@@ -3924,6 +3945,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
+				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
+				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
@@ -3935,6 +3959,7 @@
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
+				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
@@ -3951,6 +3976,7 @@
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
+				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
@@ -4070,6 +4096,7 @@
 				278F477724C9138300E1CA7A /* ReplicatorLoopbackTest.cc in Sources */,
 				278F477824C9138300E1CA7A /* ReplicatorAPITest.cc in Sources */,
 				278F477924C9138300E1CA7A /* ReplicatorSGTest.cc in Sources */,
+				D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				278F475B24C9131000E1CA7A /* main.mm in Sources */,
 				278F475924C9131000E1CA7A /* ViewController.m in Sources */,
 				278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */,
@@ -4108,6 +4135,7 @@
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */,
+				D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
@@ -4592,6 +4620,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug;
 		};
@@ -4606,6 +4635,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release;
 		};
@@ -4977,6 +5007,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug_EE;
 		};
@@ -5143,6 +5174,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release_EE;
 		};

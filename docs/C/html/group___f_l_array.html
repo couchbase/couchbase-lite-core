@@ -82,201 +82,68 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga23aa34dde7a4905c452a51ac25f83057"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga23aa34dde7a4905c452a51ac25f83057">FLArray_Count</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga23aa34dde7a4905c452a51ac25f83057"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items in an array, or 0 if the pointer is NULL.  <a href="group___f_l_array.html#ga23aa34dde7a4905c452a51ac25f83057">More...</a><br /></td></tr>
-<tr class="separator:ga23aa34dde7a4905c452a51ac25f83057"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga85f7c95890f26b7dec895520563977dc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga85f7c95890f26b7dec895520563977dc">FLArray_IsEmpty</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga85f7c95890f26b7dec895520563977dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if an array is empty (or NULL).  <a href="group___f_l_array.html#ga85f7c95890f26b7dec895520563977dc">More...</a><br /></td></tr>
-<tr class="separator:ga85f7c95890f26b7dec895520563977dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3bb4d26928e6a26a7438ba9d3e806c36"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga3bb4d26928e6a26a7438ba9d3e806c36">FLArray_AsMutable</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga3bb4d26928e6a26a7438ba9d3e806c36"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the array is mutable, returns it cast to FLMutableArray, else NULL.  <a href="group___f_l_array.html#ga3bb4d26928e6a26a7438ba9d3e806c36">More...</a><br /></td></tr>
-<tr class="separator:ga3bb4d26928e6a26a7438ba9d3e806c36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6d672fdd4d197c2f9055be6bccb2cbc0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga6d672fdd4d197c2f9055be6bccb2cbc0">FLArray_Get</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, uint32_t index) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga6d672fdd4d197c2f9055be6bccb2cbc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an value at an array index, or NULL if the index is out of range.  <a href="group___f_l_array.html#ga6d672fdd4d197c2f9055be6bccb2cbc0">More...</a><br /></td></tr>
-<tr class="separator:ga6d672fdd4d197c2f9055be6bccb2cbc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaebb32228a5de2e90ea26da24d7b60cdc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaebb32228a5de2e90ea26da24d7b60cdc">FLArray_Count</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gaebb32228a5de2e90ea26da24d7b60cdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items in an array, or 0 if the pointer is NULL.  <a href="group___f_l_array.html#gaebb32228a5de2e90ea26da24d7b60cdc">More...</a><br /></td></tr>
+<tr class="separator:gaebb32228a5de2e90ea26da24d7b60cdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga955faafff75c3f4e46dc0bb4f6dd90d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga955faafff75c3f4e46dc0bb4f6dd90d7">FLArray_IsEmpty</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga955faafff75c3f4e46dc0bb4f6dd90d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if an array is empty (or NULL).  <a href="group___f_l_array.html#ga955faafff75c3f4e46dc0bb4f6dd90d7">More...</a><br /></td></tr>
+<tr class="separator:ga955faafff75c3f4e46dc0bb4f6dd90d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad0bbc79d97c407cfda0d08043bfc1dd9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gad0bbc79d97c407cfda0d08043bfc1dd9">FLArray_AsMutable</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gad0bbc79d97c407cfda0d08043bfc1dd9"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the array is mutable, returns it cast to FLMutableArray, else NULL.  <a href="group___f_l_array.html#gad0bbc79d97c407cfda0d08043bfc1dd9">More...</a><br /></td></tr>
+<tr class="separator:gad0bbc79d97c407cfda0d08043bfc1dd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8035f5f2373f6fb25d82f4a817bcfbe2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga8035f5f2373f6fb25d82f4a817bcfbe2">FLArray_Get</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, uint32_t index) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga8035f5f2373f6fb25d82f4a817bcfbe2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an value at an array index, or NULL if the index is out of range.  <a href="group___f_l_array.html#ga8035f5f2373f6fb25d82f4a817bcfbe2">More...</a><br /></td></tr>
+<tr class="separator:ga8035f5f2373f6fb25d82f4a817bcfbe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:gaa8f81e9b5d0801302532a09a1aa51465"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaa8f81e9b5d0801302532a09a1aa51465">kFLEmptyArray</a></td></tr>
+<tr class="memitem:gaa8f81e9b5d0801302532a09a1aa51465"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaa8f81e9b5d0801302532a09a1aa51465">kFLEmptyArray</a></td></tr>
+<tr class="memdesc:gaa8f81e9b5d0801302532a09a1aa51465"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constant empty array value.  <a href="group___f_l_array.html#gaa8f81e9b5d0801302532a09a1aa51465">More...</a><br /></td></tr>
 <tr class="separator:gaa8f81e9b5d0801302532a09a1aa51465"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader">Mutable Arrays</h2></td></tr>
-<tr class="memitem:ga1999c11ef3de128bc4448e84ff124150"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga1999c11ef3de128bc4448e84ff124150">FLCopyFlags</a> { <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a586de20e5e5d9d9ed05858f0c72b1527">kFLDefaultCopy</a> = 0
-, <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a28c92428cf6729f0460672e0f6ff8fea">kFLDeepCopy</a> = 1
-, <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a4ac4e7b78499cd0fbab93af7d1269a68">kFLCopyImmutables</a> = 2
-, <a class="el" href="group___f_l_array.html#gga1999c11ef3de128bc4448e84ff124150a5c653513f911bba81deb09ac21583632">kFLDeepCopyImmutables</a> = (kFLDeepCopy | kFLCopyImmutables)
- }</td></tr>
-<tr class="separator:ga1999c11ef3de128bc4448e84ff124150"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad5d517d5459a7324306702d4427b8782"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gad5d517d5459a7324306702d4427b8782">FLArray_MutableCopy</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, <a class="el" href="group___f_l_array.html#ga1999c11ef3de128bc4448e84ff124150">FLCopyFlags</a>)</td></tr>
-<tr class="memdesc:gad5d517d5459a7324306702d4427b8782"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new mutable Array that's a copy of the source Array.  <a href="group___f_l_array.html#gad5d517d5459a7324306702d4427b8782">More...</a><br /></td></tr>
-<tr class="separator:gad5d517d5459a7324306702d4427b8782"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga11c652f8b3a13492c810ad353c522c83"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga11c652f8b3a13492c810ad353c522c83">FLMutableArray_New</a> (void)</td></tr>
-<tr class="memdesc:ga11c652f8b3a13492c810ad353c522c83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new empty mutable Array.  <a href="group___f_l_array.html#ga11c652f8b3a13492c810ad353c522c83">More...</a><br /></td></tr>
-<tr class="separator:ga11c652f8b3a13492c810ad353c522c83"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga31131eaacf06e232ce194c97fc9b72d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga31131eaacf06e232ce194c97fc9b72d9">FLMutableArray_NewFromJSON</a> (<a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> json, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> outError)</td></tr>
-<tr class="memdesc:ga31131eaacf06e232ce194c97fc9b72d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new mutable Array from JSON.  <a href="group___f_l_array.html#ga31131eaacf06e232ce194c97fc9b72d9">More...</a><br /></td></tr>
-<tr class="separator:ga31131eaacf06e232ce194c97fc9b72d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac5d02a67a275df962cd0e63a2fd49a6c"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gac5d02a67a275df962cd0e63a2fd49a6c">FLMutableArray_Retain</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> d)</td></tr>
-<tr class="memdesc:gac5d02a67a275df962cd0e63a2fd49a6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increments the ref-count of a mutable Array.  <a href="group___f_l_array.html#gac5d02a67a275df962cd0e63a2fd49a6c">More...</a><br /></td></tr>
-<tr class="separator:gac5d02a67a275df962cd0e63a2fd49a6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa7faaa0556df5cb0c0c9664451fc6068"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaa7faaa0556df5cb0c0c9664451fc6068">FLMutableArray_Release</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> d)</td></tr>
-<tr class="memdesc:gaa7faaa0556df5cb0c0c9664451fc6068"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrements the refcount of (and possibly frees) a mutable Array.  <a href="group___f_l_array.html#gaa7faaa0556df5cb0c0c9664451fc6068">More...</a><br /></td></tr>
-<tr class="separator:gaa7faaa0556df5cb0c0c9664451fc6068"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga51207bcb126c71468cb4767760db7fde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga51207bcb126c71468cb4767760db7fde">FLMutableArray_GetSource</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
-<tr class="memdesc:ga51207bcb126c71468cb4767760db7fde"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the Array was created by FLArray_MutableCopy, returns the original source Array.  <a href="group___f_l_array.html#ga51207bcb126c71468cb4767760db7fde">More...</a><br /></td></tr>
-<tr class="separator:ga51207bcb126c71468cb4767760db7fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5d51ed7c8e3be48a6ba6009bdb1c14dc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga5d51ed7c8e3be48a6ba6009bdb1c14dc">FLMutableArray_IsChanged</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
-<tr class="memdesc:ga5d51ed7c8e3be48a6ba6009bdb1c14dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the Array has been changed from the source it was copied from.  <a href="group___f_l_array.html#ga5d51ed7c8e3be48a6ba6009bdb1c14dc">More...</a><br /></td></tr>
-<tr class="separator:ga5d51ed7c8e3be48a6ba6009bdb1c14dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabba8febc21d21c75324a2a5bcfbb959a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gabba8febc21d21c75324a2a5bcfbb959a">FLMutableArray_SetChanged</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, bool)</td></tr>
-<tr class="memdesc:gabba8febc21d21c75324a2a5bcfbb959a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets or clears the mutable Array's "changed" flag.  <a href="group___f_l_array.html#gabba8febc21d21c75324a2a5bcfbb959a">More...</a><br /></td></tr>
-<tr class="separator:gabba8febc21d21c75324a2a5bcfbb959a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae62f339708ff40d9365f7948cc923db7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gae62f339708ff40d9365f7948cc923db7">FLMutableArray_Insert</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> array, uint32_t firstIndex, uint32_t count)</td></tr>
-<tr class="memdesc:gae62f339708ff40d9365f7948cc923db7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inserts a contiguous range of JSON <code>null</code> values into the array.  <a href="group___f_l_array.html#gae62f339708ff40d9365f7948cc923db7">More...</a><br /></td></tr>
-<tr class="separator:gae62f339708ff40d9365f7948cc923db7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac3d3f64770d93bf5201caa5a65feded"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaac3d3f64770d93bf5201caa5a65feded">FLMutableArray_Remove</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> array, uint32_t firstIndex, uint32_t count)</td></tr>
-<tr class="memdesc:gaac3d3f64770d93bf5201caa5a65feded"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes contiguous items from the array.  <a href="group___f_l_array.html#gaac3d3f64770d93bf5201caa5a65feded">More...</a><br /></td></tr>
-<tr class="separator:gaac3d3f64770d93bf5201caa5a65feded"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga65a1872f8a74a1aa393652ff84f71114"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga65a1872f8a74a1aa393652ff84f71114">FLMutableArray_Resize</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> array, uint32_t size)</td></tr>
-<tr class="memdesc:ga65a1872f8a74a1aa393652ff84f71114"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes the size of an array.  <a href="group___f_l_array.html#ga65a1872f8a74a1aa393652ff84f71114">More...</a><br /></td></tr>
-<tr class="separator:ga65a1872f8a74a1aa393652ff84f71114"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga027bbd437201191370a45a04b961bc05"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga027bbd437201191370a45a04b961bc05">FLMutableArray_GetMutableArray</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, uint32_t index)</td></tr>
-<tr class="memdesc:ga027bbd437201191370a45a04b961bc05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function for getting an array-valued property in mutable form.  <a href="group___f_l_array.html#ga027bbd437201191370a45a04b961bc05">More...</a><br /></td></tr>
-<tr class="separator:ga027bbd437201191370a45a04b961bc05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaabd8a2e8a761e7919ea4425c511f4556"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaabd8a2e8a761e7919ea4425c511f4556">FLMutableArray_GetMutableDict</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, uint32_t index)</td></tr>
-<tr class="memdesc:gaabd8a2e8a761e7919ea4425c511f4556"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function for getting an array-valued property in mutable form.  <a href="group___f_l_array.html#gaabd8a2e8a761e7919ea4425c511f4556">More...</a><br /></td></tr>
-<tr class="separator:gaabd8a2e8a761e7919ea4425c511f4556"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad54f7fbfa96fd480fb8f2ae709f2b92e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gad54f7fbfa96fd480fb8f2ae709f2b92e">FLMutableArray_SetNull</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index)</td></tr>
-<tr class="memdesc:gad54f7fbfa96fd480fb8f2ae709f2b92e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a JSON null value into an array.  <a href="group___f_l_array.html#gad54f7fbfa96fd480fb8f2ae709f2b92e">More...</a><br /></td></tr>
-<tr class="separator:gad54f7fbfa96fd480fb8f2ae709f2b92e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa9194d13e823f944ea726c4716e4efb4"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaa9194d13e823f944ea726c4716e4efb4">FLMutableArray_SetBool</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, bool)</td></tr>
-<tr class="memdesc:gaa9194d13e823f944ea726c4716e4efb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a boolean value into an array.  <a href="group___f_l_array.html#gaa9194d13e823f944ea726c4716e4efb4">More...</a><br /></td></tr>
-<tr class="separator:gaa9194d13e823f944ea726c4716e4efb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga04d32ac0ae51318deb9f2ddfcd411d7d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga04d32ac0ae51318deb9f2ddfcd411d7d">FLMutableArray_SetInt</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, int64_t)</td></tr>
-<tr class="memdesc:ga04d32ac0ae51318deb9f2ddfcd411d7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an integer into an array.  <a href="group___f_l_array.html#ga04d32ac0ae51318deb9f2ddfcd411d7d">More...</a><br /></td></tr>
-<tr class="separator:ga04d32ac0ae51318deb9f2ddfcd411d7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga31b6401fa13b165b415324e377c61279"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga31b6401fa13b165b415324e377c61279">FLMutableArray_SetUInt</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, uint64_t)</td></tr>
-<tr class="memdesc:ga31b6401fa13b165b415324e377c61279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an unsigned integer into an array.  <a href="group___f_l_array.html#ga31b6401fa13b165b415324e377c61279">More...</a><br /></td></tr>
-<tr class="separator:ga31b6401fa13b165b415324e377c61279"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga527af9cc6487dd2763df1b48207c8a42"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga527af9cc6487dd2763df1b48207c8a42">FLMutableArray_SetFloat</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, float)</td></tr>
-<tr class="memdesc:ga527af9cc6487dd2763df1b48207c8a42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a 32-bit floating-point number into an array.  <a href="group___f_l_array.html#ga527af9cc6487dd2763df1b48207c8a42">More...</a><br /></td></tr>
-<tr class="separator:ga527af9cc6487dd2763df1b48207c8a42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga78887e3c3223acd0a2c3932c2c7992b5"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga78887e3c3223acd0a2c3932c2c7992b5">FLMutableArray_SetDouble</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, double)</td></tr>
-<tr class="memdesc:ga78887e3c3223acd0a2c3932c2c7992b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a 64-bit floating point number into an array.  <a href="group___f_l_array.html#ga78887e3c3223acd0a2c3932c2c7992b5">More...</a><br /></td></tr>
-<tr class="separator:ga78887e3c3223acd0a2c3932c2c7992b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5c91c72fce587932890ddf253b65b036"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga5c91c72fce587932890ddf253b65b036">FLMutableArray_SetString</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
-<tr class="memdesc:ga5c91c72fce587932890ddf253b65b036"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a UTF-8-encoded string into an array.  <a href="group___f_l_array.html#ga5c91c72fce587932890ddf253b65b036">More...</a><br /></td></tr>
-<tr class="separator:ga5c91c72fce587932890ddf253b65b036"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9adbde7d6b7b88422957bcaa568d8098"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga9adbde7d6b7b88422957bcaa568d8098">FLMutableArray_SetData</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="memdesc:ga9adbde7d6b7b88422957bcaa568d8098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a binary data blob into an array.  <a href="group___f_l_array.html#ga9adbde7d6b7b88422957bcaa568d8098">More...</a><br /></td></tr>
-<tr class="separator:ga9adbde7d6b7b88422957bcaa568d8098"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf3f462dfaeab4a2877bf96dbdcf0f7f6"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaf3f462dfaeab4a2877bf96dbdcf0f7f6">FLMutableArray_SetValue</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:gaf3f462dfaeab4a2877bf96dbdcf0f7f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a Fleece value into an array.  <a href="group___f_l_array.html#gaf3f462dfaeab4a2877bf96dbdcf0f7f6">More...</a><br /></td></tr>
-<tr class="separator:gaf3f462dfaeab4a2877bf96dbdcf0f7f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2965c83b539391e01f51bbf1349a0426"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga2965c83b539391e01f51bbf1349a0426">FLMutableArray_SetArray</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>)</td></tr>
-<tr class="memdesc:ga2965c83b539391e01f51bbf1349a0426"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a Fleece array into an array.  <a href="group___f_l_array.html#ga2965c83b539391e01f51bbf1349a0426">More...</a><br /></td></tr>
-<tr class="separator:ga2965c83b539391e01f51bbf1349a0426"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga596434e72c9f41512e421191c6c9a71b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga596434e72c9f41512e421191c6c9a71b">FLMutableArray_SetDict</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>)</td></tr>
-<tr class="memdesc:ga596434e72c9f41512e421191c6c9a71b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a Fleece dictionary into an array.  <a href="group___f_l_array.html#ga596434e72c9f41512e421191c6c9a71b">More...</a><br /></td></tr>
-<tr class="separator:ga596434e72c9f41512e421191c6c9a71b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabc5eed94f641decdfcced5b466db0999"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gabc5eed94f641decdfcced5b466db0999">FLMutableArray_AppendNull</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>)</td></tr>
-<tr class="memdesc:gabc5eed94f641decdfcced5b466db0999"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a JSON null value to an array.  <a href="group___f_l_array.html#gabc5eed94f641decdfcced5b466db0999">More...</a><br /></td></tr>
-<tr class="separator:gabc5eed94f641decdfcced5b466db0999"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga638a0552ebb03f770c96deaf7dc8d520"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga638a0552ebb03f770c96deaf7dc8d520">FLMutableArray_AppendBool</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, bool)</td></tr>
-<tr class="memdesc:ga638a0552ebb03f770c96deaf7dc8d520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a boolean value to an array.  <a href="group___f_l_array.html#ga638a0552ebb03f770c96deaf7dc8d520">More...</a><br /></td></tr>
-<tr class="separator:ga638a0552ebb03f770c96deaf7dc8d520"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5a18d46c938672cf55b5c3e9fd3c2a29"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga5a18d46c938672cf55b5c3e9fd3c2a29">FLMutableArray_AppendInt</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, int64_t)</td></tr>
-<tr class="memdesc:ga5a18d46c938672cf55b5c3e9fd3c2a29"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends an integer to an array.  <a href="group___f_l_array.html#ga5a18d46c938672cf55b5c3e9fd3c2a29">More...</a><br /></td></tr>
-<tr class="separator:ga5a18d46c938672cf55b5c3e9fd3c2a29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4135b6ccaf342e48ac4b8651b6998e56"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga4135b6ccaf342e48ac4b8651b6998e56">FLMutableArray_AppendUInt</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint64_t)</td></tr>
-<tr class="memdesc:ga4135b6ccaf342e48ac4b8651b6998e56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends an unsigned integer to an array.  <a href="group___f_l_array.html#ga4135b6ccaf342e48ac4b8651b6998e56">More...</a><br /></td></tr>
-<tr class="separator:ga4135b6ccaf342e48ac4b8651b6998e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaedb48ba539dd7c9bf2ad3396ca842336"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaedb48ba539dd7c9bf2ad3396ca842336">FLMutableArray_AppendFloat</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, float)</td></tr>
-<tr class="memdesc:gaedb48ba539dd7c9bf2ad3396ca842336"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a 32-bit floating-point number to an array.  <a href="group___f_l_array.html#gaedb48ba539dd7c9bf2ad3396ca842336">More...</a><br /></td></tr>
-<tr class="separator:gaedb48ba539dd7c9bf2ad3396ca842336"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga317df9ae61ede22fb32784312fcdeb45"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga317df9ae61ede22fb32784312fcdeb45">FLMutableArray_AppendDouble</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, double)</td></tr>
-<tr class="memdesc:ga317df9ae61ede22fb32784312fcdeb45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a 64-bit floating point number to an array.  <a href="group___f_l_array.html#ga317df9ae61ede22fb32784312fcdeb45">More...</a><br /></td></tr>
-<tr class="separator:ga317df9ae61ede22fb32784312fcdeb45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga63dd8274a3a474c0220d42e9fcf8895a"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga63dd8274a3a474c0220d42e9fcf8895a">FLMutableArray_AppendString</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
-<tr class="memdesc:ga63dd8274a3a474c0220d42e9fcf8895a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a UTF-8-encoded string to an array.  <a href="group___f_l_array.html#ga63dd8274a3a474c0220d42e9fcf8895a">More...</a><br /></td></tr>
-<tr class="separator:ga63dd8274a3a474c0220d42e9fcf8895a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadbe20732d58a535b523824aececceeff"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gadbe20732d58a535b523824aececceeff">FLMutableArray_AppendData</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="memdesc:gadbe20732d58a535b523824aececceeff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a binary data blob to an array.  <a href="group___f_l_array.html#gadbe20732d58a535b523824aececceeff">More...</a><br /></td></tr>
-<tr class="separator:gadbe20732d58a535b523824aececceeff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8e692bf87bf5f8d9a43388dbd5b19c04"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga8e692bf87bf5f8d9a43388dbd5b19c04">FLMutableArray_AppendValue</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:ga8e692bf87bf5f8d9a43388dbd5b19c04"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a Fleece value to an array.  <a href="group___f_l_array.html#ga8e692bf87bf5f8d9a43388dbd5b19c04">More...</a><br /></td></tr>
-<tr class="separator:ga8e692bf87bf5f8d9a43388dbd5b19c04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafafb825ee2fc1a0b446db123c886a8d5"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gafafb825ee2fc1a0b446db123c886a8d5">FLMutableArray_AppendArray</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>)</td></tr>
-<tr class="memdesc:gafafb825ee2fc1a0b446db123c886a8d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a Fleece array to an array.  <a href="group___f_l_array.html#gafafb825ee2fc1a0b446db123c886a8d5">More...</a><br /></td></tr>
-<tr class="separator:gafafb825ee2fc1a0b446db123c886a8d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga24b1f19d7730bc6ee86c802ef641687b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga24b1f19d7730bc6ee86c802ef641687b">FLMutableArray_AppendDict</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>)</td></tr>
-<tr class="memdesc:ga24b1f19d7730bc6ee86c802ef641687b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a Fleece dictionary to an array.  <a href="group___f_l_array.html#ga24b1f19d7730bc6ee86c802ef641687b">More...</a><br /></td></tr>
-<tr class="separator:ga24b1f19d7730bc6ee86c802ef641687b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Array iteration</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p><a class="anchor" id="amgrp1d6d09348588481918e6cd1af81014b2"></a>Iterating an array typically looks like this:</p>
 <div class="fragment"><div class="line"><a class="code" href="struct_f_l_array_iterator.html">FLArrayIterator</a> iter;</div>
-<div class="line"><a class="code" href="group___f_l_array.html#gabcbb45727c59247dd3ada45237708c2b">FLArrayIterator_Begin</a>(theArray, &amp;iter);</div>
+<div class="line"><a class="code" href="group___f_l_array.html#gaa346bb0d5908310ac051a8edddb923ed">FLArrayIterator_Begin</a>(theArray, &amp;iter);</div>
 <div class="line"><a class="code" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> value;</div>
-<div class="line"><span class="keywordflow">while</span> (NULL != (value = <a class="code" href="group___f_l_array.html#gafbbc72a1d2fe2448f56ec28e760159e3">FLArrayIterator_GetValue</a>(&amp;iter))) {</div>
+<div class="line"><span class="keywordflow">while</span> (NULL != (value = <a class="code" href="group___f_l_array.html#gac65259c241c90690bc52d3d65a05ddc1">FLArrayIterator_GetValue</a>(&amp;iter))) {</div>
 <div class="line">  <span class="comment">// ...</span></div>
-<div class="line">  <a class="code" href="group___f_l_array.html#gac951dc4a25144dc319644a4f490a8dde">FLArrayIterator_Next</a>(&amp;iter);</div>
+<div class="line">  <a class="code" href="group___f_l_array.html#gaf6db754441f5629eeb9436bbb01a8671">FLArrayIterator_Next</a>(&amp;iter);</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup___f_l_array_html_gabcbb45727c59247dd3ada45237708c2b"><div class="ttname"><a href="group___f_l_array.html#gabcbb45727c59247dd3ada45237708c2b">FLArrayIterator_Begin</a></div><div class="ttdeci">void FLArrayIterator_Begin(FLArray FL_NULLABLE, FLArrayIterator *)</div><div class="ttdoc">Initializes a FLArrayIterator struct to iterate over an array.</div></div>
-<div class="ttc" id="agroup___f_l_array_html_gac951dc4a25144dc319644a4f490a8dde"><div class="ttname"><a href="group___f_l_array.html#gac951dc4a25144dc319644a4f490a8dde">FLArrayIterator_Next</a></div><div class="ttdeci">bool FLArrayIterator_Next(FLArrayIterator *)</div><div class="ttdoc">Advances the iterator to the next value, or returns false if at the end.</div></div>
-<div class="ttc" id="agroup___f_l_array_html_gafbbc72a1d2fe2448f56ec28e760159e3"><div class="ttname"><a href="group___f_l_array.html#gafbbc72a1d2fe2448f56ec28e760159e3">FLArrayIterator_GetValue</a></div><div class="ttdeci">FLValue FL_NULLABLE FLArrayIterator_GetValue(const FLArrayIterator *) FLPURE</div><div class="ttdoc">Returns the current value being iterated over.</div></div>
-<div class="ttc" id="agroup__types_html_gae0bde7a426f944395dbe59e3d52ba2c7"><div class="ttname"><a href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a></div><div class="ttdeci">const struct _FLValue * FLValue</div><div class="ttdoc">A reference to a value of any type.</div><div class="ttdef"><b>Definition:</b> Fleece.h:51</div></div>
-<div class="ttc" id="astruct_f_l_array_iterator_html"><div class="ttname"><a href="struct_f_l_array_iterator.html">FLArrayIterator</a></div><div class="ttdoc">Opaque array iterator.</div><div class="ttdef"><b>Definition:</b> Fleece.h:436</div></div>
+<div class="ttc" id="agroup___f_l_array_html_gaa346bb0d5908310ac051a8edddb923ed"><div class="ttname"><a href="group___f_l_array.html#gaa346bb0d5908310ac051a8edddb923ed">FLArrayIterator_Begin</a></div><div class="ttdeci">FLEECE_PUBLIC void FLArrayIterator_Begin(FLArray FL_NULLABLE, FLArrayIterator *)</div><div class="ttdoc">Initializes a FLArrayIterator struct to iterate over an array.</div></div>
+<div class="ttc" id="agroup___f_l_array_html_gac65259c241c90690bc52d3d65a05ddc1"><div class="ttname"><a href="group___f_l_array.html#gac65259c241c90690bc52d3d65a05ddc1">FLArrayIterator_GetValue</a></div><div class="ttdeci">FLEECE_PUBLIC FLValue FL_NULLABLE FLArrayIterator_GetValue(const FLArrayIterator *) FLPURE</div><div class="ttdoc">Returns the current value being iterated over.</div></div>
+<div class="ttc" id="agroup___f_l_array_html_gaf6db754441f5629eeb9436bbb01a8671"><div class="ttname"><a href="group___f_l_array.html#gaf6db754441f5629eeb9436bbb01a8671">FLArrayIterator_Next</a></div><div class="ttdeci">FLEECE_PUBLIC bool FLArrayIterator_Next(FLArrayIterator *)</div><div class="ttdoc">Advances the iterator to the next value, or returns false if at the end.</div></div>
+<div class="ttc" id="agroup__types_html_gae0bde7a426f944395dbe59e3d52ba2c7"><div class="ttname"><a href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a></div><div class="ttdeci">const struct _FLValue * FLValue</div><div class="ttdoc">A reference to a value of any type.</div><div class="ttdef"><b>Definition:</b> FLBase.h:35</div></div>
+<div class="ttc" id="astruct_f_l_array_iterator_html"><div class="ttname"><a href="struct_f_l_array_iterator.html">FLArrayIterator</a></div><div class="ttdoc">Opaque array iterator.</div><div class="ttdef"><b>Definition:</b> FLCollections.h:73</div></div>
 </div><!-- fragment --> </td></tr>
-<tr class="memitem:gabcbb45727c59247dd3ada45237708c2b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gabcbb45727c59247dd3ada45237708c2b">FLArrayIterator_Begin</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
-<tr class="memdesc:gabcbb45727c59247dd3ada45237708c2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes a <a class="el" href="struct_f_l_array_iterator.html" title="Opaque array iterator.">FLArrayIterator</a> struct to iterate over an array.  <a href="group___f_l_array.html#gabcbb45727c59247dd3ada45237708c2b">More...</a><br /></td></tr>
-<tr class="separator:gabcbb45727c59247dd3ada45237708c2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafbbc72a1d2fe2448f56ec28e760159e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gafbbc72a1d2fe2448f56ec28e760159e3">FLArrayIterator_GetValue</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gafbbc72a1d2fe2448f56ec28e760159e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current value being iterated over.  <a href="group___f_l_array.html#gafbbc72a1d2fe2448f56ec28e760159e3">More...</a><br /></td></tr>
-<tr class="separator:gafbbc72a1d2fe2448f56ec28e760159e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6517b2033b4d7bc826d56179bd4d5918"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga6517b2033b4d7bc826d56179bd4d5918">FLArrayIterator_GetValueAt</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *, uint32_t offset) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga6517b2033b4d7bc826d56179bd4d5918"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value in the array at the given offset from the current value.  <a href="group___f_l_array.html#ga6517b2033b4d7bc826d56179bd4d5918">More...</a><br /></td></tr>
-<tr class="separator:ga6517b2033b4d7bc826d56179bd4d5918"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga38bee27bb6e46043b5938903c9f68540"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga38bee27bb6e46043b5938903c9f68540">FLArrayIterator_GetCount</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:ga38bee27bb6e46043b5938903c9f68540"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items remaining to be iterated, including the current one.  <a href="group___f_l_array.html#ga38bee27bb6e46043b5938903c9f68540">More...</a><br /></td></tr>
-<tr class="separator:ga38bee27bb6e46043b5938903c9f68540"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac951dc4a25144dc319644a4f490a8dde"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gac951dc4a25144dc319644a4f490a8dde">FLArrayIterator_Next</a> (<a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
-<tr class="memdesc:gac951dc4a25144dc319644a4f490a8dde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the iterator to the next value, or returns false if at the end.  <a href="group___f_l_array.html#gac951dc4a25144dc319644a4f490a8dde">More...</a><br /></td></tr>
-<tr class="separator:gac951dc4a25144dc319644a4f490a8dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa346bb0d5908310ac051a8edddb923ed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaa346bb0d5908310ac051a8edddb923ed">FLArrayIterator_Begin</a> (<a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
+<tr class="memdesc:gaa346bb0d5908310ac051a8edddb923ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes a <a class="el" href="struct_f_l_array_iterator.html" title="Opaque array iterator.">FLArrayIterator</a> struct to iterate over an array.  <a href="group___f_l_array.html#gaa346bb0d5908310ac051a8edddb923ed">More...</a><br /></td></tr>
+<tr class="separator:gaa346bb0d5908310ac051a8edddb923ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac65259c241c90690bc52d3d65a05ddc1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gac65259c241c90690bc52d3d65a05ddc1">FLArrayIterator_GetValue</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gac65259c241c90690bc52d3d65a05ddc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current value being iterated over.  <a href="group___f_l_array.html#gac65259c241c90690bc52d3d65a05ddc1">More...</a><br /></td></tr>
+<tr class="separator:gac65259c241c90690bc52d3d65a05ddc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf7451a22fa190ab7af4f6a09320265e5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaf7451a22fa190ab7af4f6a09320265e5">FLArrayIterator_GetValueAt</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *, uint32_t offset) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gaf7451a22fa190ab7af4f6a09320265e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value in the array at the given offset from the current value.  <a href="group___f_l_array.html#gaf7451a22fa190ab7af4f6a09320265e5">More...</a><br /></td></tr>
+<tr class="separator:gaf7451a22fa190ab7af4f6a09320265e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadbc5fe54df47e97bbb9d9126fa04ca12"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gadbc5fe54df47e97bbb9d9126fa04ca12">FLArrayIterator_GetCount</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gadbc5fe54df47e97bbb9d9126fa04ca12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items remaining to be iterated, including the current one.  <a href="group___f_l_array.html#gadbc5fe54df47e97bbb9d9126fa04ca12">More...</a><br /></td></tr>
+<tr class="separator:gadbc5fe54df47e97bbb9d9126fa04ca12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf6db754441f5629eeb9436bbb01a8671"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#gaf6db754441f5629eeb9436bbb01a8671">FLArrayIterator_Next</a> (<a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
+<tr class="memdesc:gaf6db754441f5629eeb9436bbb01a8671"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the iterator to the next value, or returns false if at the end.  <a href="group___f_l_array.html#gaf6db754441f5629eeb9436bbb01a8671">More...</a><br /></td></tr>
+<tr class="separator:gaf6db754441f5629eeb9436bbb01a8671"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>FLArray is a "subclass" of FLValue, representing values that are arrays. </p>
 <p>It's always OK to pass an FLArray to a function parameter expecting an FLValue, even though the compiler makes you use an explicit type-cast. It's safe to type-cast the other direction, from FLValue to FLArray, <em>only</em> if you already know that the value is an array, e.g. by having called FLValue_GetType on it. But it's safer to call FLValue_AsArray instead, since it will return NULL if the value isn't an array. </p>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="ga1999c11ef3de128bc4448e84ff124150"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1999c11ef3de128bc4448e84ff124150">&#9670;&nbsp;</a></span>FLCopyFlags</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="group___f_l_array.html#ga1999c11ef3de128bc4448e84ff124150">FLCopyFlags</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga1999c11ef3de128bc4448e84ff124150a586de20e5e5d9d9ed05858f0c72b1527"></a>kFLDefaultCopy&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="gga1999c11ef3de128bc4448e84ff124150a28c92428cf6729f0460672e0f6ff8fea"></a>kFLDeepCopy&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="gga1999c11ef3de128bc4448e84ff124150a4ac4e7b78499cd0fbab93af7d1269a68"></a>kFLCopyImmutables&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="gga1999c11ef3de128bc4448e84ff124150a5c653513f911bba81deb09ac21583632"></a>kFLDeepCopyImmutables&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga3bb4d26928e6a26a7438ba9d3e806c36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3bb4d26928e6a26a7438ba9d3e806c36">&#9670;&nbsp;</a></span>FLArray_AsMutable()</h2>
+<a id="gad0bbc79d97c407cfda0d08043bfc1dd9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad0bbc79d97c407cfda0d08043bfc1dd9">&#9670;&nbsp;</a></span>FLArray_AsMutable()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_AsMutable </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_AsMutable </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
@@ -289,14 +156,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga23aa34dde7a4905c452a51ac25f83057"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga23aa34dde7a4905c452a51ac25f83057">&#9670;&nbsp;</a></span>FLArray_Count()</h2>
+<a id="gaebb32228a5de2e90ea26da24d7b60cdc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaebb32228a5de2e90ea26da24d7b60cdc">&#9670;&nbsp;</a></span>FLArray_Count()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t FLArray_Count </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> uint32_t FLArray_Count </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
@@ -309,14 +176,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6d672fdd4d197c2f9055be6bccb2cbc0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6d672fdd4d197c2f9055be6bccb2cbc0">&#9670;&nbsp;</a></span>FLArray_Get()</h2>
+<a id="ga8035f5f2373f6fb25d82f4a817bcfbe2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8035f5f2373f6fb25d82f4a817bcfbe2">&#9670;&nbsp;</a></span>FLArray_Get()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_Get </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_Get </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em>, </td>
@@ -339,14 +206,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga85f7c95890f26b7dec895520563977dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga85f7c95890f26b7dec895520563977dc">&#9670;&nbsp;</a></span>FLArray_IsEmpty()</h2>
+<a id="ga955faafff75c3f4e46dc0bb4f6dd90d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga955faafff75c3f4e46dc0bb4f6dd90d7">&#9670;&nbsp;</a></span>FLArray_IsEmpty()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool FLArray_IsEmpty </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool FLArray_IsEmpty </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
@@ -360,48 +227,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gad5d517d5459a7324306702d4427b8782"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad5d517d5459a7324306702d4427b8782">&#9670;&nbsp;</a></span>FLArray_MutableCopy()</h2>
+<a id="gaa346bb0d5908310ac051a8edddb923ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa346bb0d5908310ac051a8edddb923ed">&#9670;&nbsp;</a></span>FLArrayIterator_Begin()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArray_MutableCopy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group___f_l_array.html#ga1999c11ef3de128bc4448e84ff124150">FLCopyFlags</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Creates a new mutable Array that's a copy of the source Array. </p>
-<p>Its initial ref-count is 1, so a call to FLMutableArray_Release will free it.</p>
-<p>Copying an immutable Array is very cheap (only one small allocation) unless the flag kFLCopyImmutables is set.</p>
-<p>Copying a mutable Array is cheap if it's a shallow copy, but if <code>deepCopy</code> is true, nested mutable Arrays and Dicts are also copied, recursively; if kFLCopyImmutables is also set, immutable values are also copied.</p>
-<p>If the source Array is NULL, then NULL is returned. </p>
-
-</div>
-</div>
-<a id="gabcbb45727c59247dd3ada45237708c2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabcbb45727c59247dd3ada45237708c2b">&#9670;&nbsp;</a></span>FLArrayIterator_Begin()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLArrayIterator_Begin </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> void FLArrayIterator_Begin </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em>, </td>
@@ -425,14 +258,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga38bee27bb6e46043b5938903c9f68540"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga38bee27bb6e46043b5938903c9f68540">&#9670;&nbsp;</a></span>FLArrayIterator_GetCount()</h2>
+<a id="gadbc5fe54df47e97bbb9d9126fa04ca12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadbc5fe54df47e97bbb9d9126fa04ca12">&#9670;&nbsp;</a></span>FLArrayIterator_GetCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t FLArrayIterator_GetCount </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> uint32_t FLArrayIterator_GetCount </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -445,14 +278,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gafbbc72a1d2fe2448f56ec28e760159e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafbbc72a1d2fe2448f56ec28e760159e3">&#9670;&nbsp;</a></span>FLArrayIterator_GetValue()</h2>
+<a id="gac65259c241c90690bc52d3d65a05ddc1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac65259c241c90690bc52d3d65a05ddc1">&#9670;&nbsp;</a></span>FLArrayIterator_GetValue()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArrayIterator_GetValue </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArrayIterator_GetValue </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -465,14 +298,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6517b2033b4d7bc826d56179bd4d5918"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6517b2033b4d7bc826d56179bd4d5918">&#9670;&nbsp;</a></span>FLArrayIterator_GetValueAt()</h2>
+<a id="gaf7451a22fa190ab7af4f6a09320265e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf7451a22fa190ab7af4f6a09320265e5">&#9670;&nbsp;</a></span>FLArrayIterator_GetValueAt()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArrayIterator_GetValueAt </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLArrayIterator_GetValueAt </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *&#160;</td>
           <td class="paramname">, </td>
@@ -495,14 +328,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gac951dc4a25144dc319644a4f490a8dde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac951dc4a25144dc319644a4f490a8dde">&#9670;&nbsp;</a></span>FLArrayIterator_Next()</h2>
+<a id="gaf6db754441f5629eeb9436bbb01a8671"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf6db754441f5629eeb9436bbb01a8671">&#9670;&nbsp;</a></span>FLArrayIterator_Next()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool FLArrayIterator_Next </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool FLArrayIterator_Next </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -512,1263 +345,6 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Advances the iterator to the next value, or returns false if at the end. </p>
-
-</div>
-</div>
-<a id="gafafb825ee2fc1a0b446db123c886a8d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafafb825ee2fc1a0b446db123c886a8d5">&#9670;&nbsp;</a></span>FLMutableArray_AppendArray()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendArray </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a Fleece array to an array. </p>
-
-</div>
-</div>
-<a id="ga638a0552ebb03f770c96deaf7dc8d520"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga638a0552ebb03f770c96deaf7dc8d520">&#9670;&nbsp;</a></span>FLMutableArray_AppendBool()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendBool </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a boolean value to an array. </p>
-
-</div>
-</div>
-<a id="gadbe20732d58a535b523824aececceeff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadbe20732d58a535b523824aececceeff">&#9670;&nbsp;</a></span>FLMutableArray_AppendData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a binary data blob to an array. </p>
-
-</div>
-</div>
-<a id="ga24b1f19d7730bc6ee86c802ef641687b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga24b1f19d7730bc6ee86c802ef641687b">&#9670;&nbsp;</a></span>FLMutableArray_AppendDict()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendDict </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a Fleece dictionary to an array. </p>
-
-</div>
-</div>
-<a id="ga317df9ae61ede22fb32784312fcdeb45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga317df9ae61ede22fb32784312fcdeb45">&#9670;&nbsp;</a></span>FLMutableArray_AppendDouble()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendDouble </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a 64-bit floating point number to an array. </p>
-
-</div>
-</div>
-<a id="gaedb48ba539dd7c9bf2ad3396ca842336"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaedb48ba539dd7c9bf2ad3396ca842336">&#9670;&nbsp;</a></span>FLMutableArray_AppendFloat()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendFloat </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a 32-bit floating-point number to an array. </p>
-
-</div>
-</div>
-<a id="ga5a18d46c938672cf55b5c3e9fd3c2a29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5a18d46c938672cf55b5c3e9fd3c2a29">&#9670;&nbsp;</a></span>FLMutableArray_AppendInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends an integer to an array. </p>
-
-</div>
-</div>
-<a id="gabc5eed94f641decdfcced5b466db0999"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabc5eed94f641decdfcced5b466db0999">&#9670;&nbsp;</a></span>FLMutableArray_AppendNull()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendNull </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a JSON null value to an array. </p>
-
-</div>
-</div>
-<a id="ga63dd8274a3a474c0220d42e9fcf8895a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga63dd8274a3a474c0220d42e9fcf8895a">&#9670;&nbsp;</a></span>FLMutableArray_AppendString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendString </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a UTF-8-encoded string to an array. </p>
-
-</div>
-</div>
-<a id="ga4135b6ccaf342e48ac4b8651b6998e56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4135b6ccaf342e48ac4b8651b6998e56">&#9670;&nbsp;</a></span>FLMutableArray_AppendUInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendUInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends an unsigned integer to an array. </p>
-<dl class="section note"><dt>Note</dt><dd>: The only time this needs to be called, instead of <a class="el" href="group___f_l_array.html#ga5a18d46c938672cf55b5c3e9fd3c2a29">FLMutableArray_AppendInt</a>, is if the value is greater than or equal to 2^63 and won't fit in an <code>int64_t</code>. </dd></dl>
-
-</div>
-</div>
-<a id="ga8e692bf87bf5f8d9a43388dbd5b19c04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8e692bf87bf5f8d9a43388dbd5b19c04">&#9670;&nbsp;</a></span>FLMutableArray_AppendValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_AppendValue </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Appends a Fleece value to an array. </p>
-
-</div>
-</div>
-<a id="ga027bbd437201191370a45a04b961bc05"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga027bbd437201191370a45a04b961bc05">&#9670;&nbsp;</a></span>FLMutableArray_GetMutableArray()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_GetMutableArray </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Convenience function for getting an array-valued property in mutable form. </p>
-<ul>
-<li>If the value for the key is not an array, returns NULL.</li>
-<li>If the value is a mutable array, returns it.</li>
-<li>If the value is an immutable array, this function makes a mutable copy, assigns the copy as the property value, and returns the copy. </li>
-</ul>
-
-</div>
-</div>
-<a id="gaabd8a2e8a761e7919ea4425c511f4556"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaabd8a2e8a761e7919ea4425c511f4556">&#9670;&nbsp;</a></span>FLMutableArray_GetMutableDict()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_GetMutableDict </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Convenience function for getting an array-valued property in mutable form. </p>
-<ul>
-<li>If the value for the key is not an array, returns NULL.</li>
-<li>If the value is a mutable array, returns it.</li>
-<li>If the value is an immutable array, this function makes a mutable copy, assigns the copy as the property value, and returns the copy. </li>
-</ul>
-
-</div>
-</div>
-<a id="ga51207bcb126c71468cb4767760db7fde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga51207bcb126c71468cb4767760db7fde">&#9670;&nbsp;</a></span>FLMutableArray_GetSource()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_GetSource </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>If the Array was created by FLArray_MutableCopy, returns the original source Array. </p>
-
-</div>
-</div>
-<a id="gae62f339708ff40d9365f7948cc923db7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae62f339708ff40d9365f7948cc923db7">&#9670;&nbsp;</a></span>FLMutableArray_Insert()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLMutableArray_Insert </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>firstIndex</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>count</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Inserts a contiguous range of JSON <code>null</code> values into the array. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">array</td><td>The array to operate on. </td></tr>
-    <tr><td class="paramname">firstIndex</td><td>The zero-based index of the first value to be inserted. </td></tr>
-    <tr><td class="paramname">count</td><td>The number of items to insert. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ga5d51ed7c8e3be48a6ba6009bdb1c14dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5d51ed7c8e3be48a6ba6009bdb1c14dc">&#9670;&nbsp;</a></span>FLMutableArray_IsChanged()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool FLMutableArray_IsChanged </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns true if the Array has been changed from the source it was copied from. </p>
-
-</div>
-</div>
-<a id="ga11c652f8b3a13492c810ad353c522c83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga11c652f8b3a13492c810ad353c522c83">&#9670;&nbsp;</a></span>FLMutableArray_New()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_New </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Creates a new empty mutable Array. </p>
-<p>Its initial ref-count is 1, so a call to FLMutableArray_Release will free it. <br  />
- </p>
-
-</div>
-</div>
-<a id="ga31131eaacf06e232ce194c97fc9b72d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga31131eaacf06e232ce194c97fc9b72d9">&#9670;&nbsp;</a></span>FLMutableArray_NewFromJSON()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_NewFromJSON </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname"><em>json</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *<a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>outError</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Creates a new mutable Array from JSON. </p>
-<p>The input json must represent a JSON array or NULL will be returned. Its initial ref-count is 1, so a call to FLMutableArray_Release will free it. <br  />
- </p>
-
-</div>
-</div>
-<a id="gaa7faaa0556df5cb0c0c9664451fc6068"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa7faaa0556df5cb0c0c9664451fc6068">&#9670;&nbsp;</a></span>FLMutableArray_Release()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_Release </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>d</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Decrements the refcount of (and possibly frees) a mutable Array. </p>
-
-</div>
-</div>
-<a id="gaac3d3f64770d93bf5201caa5a65feded"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaac3d3f64770d93bf5201caa5a65feded">&#9670;&nbsp;</a></span>FLMutableArray_Remove()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLMutableArray_Remove </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>firstIndex</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>count</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Removes contiguous items from the array. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">array</td><td>The array to operate on. </td></tr>
-    <tr><td class="paramname">firstIndex</td><td>The zero-based index of the first item to remove. </td></tr>
-    <tr><td class="paramname">count</td><td>The number of items to remove. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ga65a1872f8a74a1aa393652ff84f71114"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga65a1872f8a74a1aa393652ff84f71114">&#9670;&nbsp;</a></span>FLMutableArray_Resize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLMutableArray_Resize </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>array</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Changes the size of an array. </p>
-<p>If the new size is larger, the array is padded with JSON <code>null</code> values. If it's smaller, values are removed from the end. </p>
-
-</div>
-</div>
-<a id="gac5d02a67a275df962cd0e63a2fd49a6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac5d02a67a275df962cd0e63a2fd49a6c">&#9670;&nbsp;</a></span>FLMutableArray_Retain()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLMutableArray_Retain </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> <a class="el" href="_base_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td>
-          <td class="paramname"><em>d</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Increments the ref-count of a mutable Array. </p>
-
-</div>
-</div>
-<a id="ga2965c83b539391e01f51bbf1349a0426"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2965c83b539391e01f51bbf1349a0426">&#9670;&nbsp;</a></span>FLMutableArray_SetArray()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetArray </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a Fleece array into an array. </p>
-
-</div>
-</div>
-<a id="gaa9194d13e823f944ea726c4716e4efb4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa9194d13e823f944ea726c4716e4efb4">&#9670;&nbsp;</a></span>FLMutableArray_SetBool()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetBool </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a boolean value into an array. </p>
-
-</div>
-</div>
-<a id="gabba8febc21d21c75324a2a5bcfbb959a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabba8febc21d21c75324a2a5bcfbb959a">&#9670;&nbsp;</a></span>FLMutableArray_SetChanged()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLMutableArray_SetChanged </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>FL_NULLABLE</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Sets or clears the mutable Array's "changed" flag. </p>
-
-</div>
-</div>
-<a id="ga9adbde7d6b7b88422957bcaa568d8098"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9adbde7d6b7b88422957bcaa568d8098">&#9670;&nbsp;</a></span>FLMutableArray_SetData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a binary data blob into an array. </p>
-
-</div>
-</div>
-<a id="ga596434e72c9f41512e421191c6c9a71b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga596434e72c9f41512e421191c6c9a71b">&#9670;&nbsp;</a></span>FLMutableArray_SetDict()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetDict </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a Fleece dictionary into an array. </p>
-
-</div>
-</div>
-<a id="ga78887e3c3223acd0a2c3932c2c7992b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga78887e3c3223acd0a2c3932c2c7992b5">&#9670;&nbsp;</a></span>FLMutableArray_SetDouble()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetDouble </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a 64-bit floating point number into an array. </p>
-
-</div>
-</div>
-<a id="ga527af9cc6487dd2763df1b48207c8a42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga527af9cc6487dd2763df1b48207c8a42">&#9670;&nbsp;</a></span>FLMutableArray_SetFloat()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetFloat </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a 32-bit floating-point number into an array. </p>
-
-</div>
-</div>
-<a id="ga04d32ac0ae51318deb9f2ddfcd411d7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga04d32ac0ae51318deb9f2ddfcd411d7d">&#9670;&nbsp;</a></span>FLMutableArray_SetInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores an integer into an array. </p>
-
-</div>
-</div>
-<a id="gad54f7fbfa96fd480fb8f2ae709f2b92e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad54f7fbfa96fd480fb8f2ae709f2b92e">&#9670;&nbsp;</a></span>FLMutableArray_SetNull()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetNull </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a JSON null value into an array. </p>
-
-</div>
-</div>
-<a id="ga5c91c72fce587932890ddf253b65b036"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5c91c72fce587932890ddf253b65b036">&#9670;&nbsp;</a></span>FLMutableArray_SetString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetString </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a UTF-8-encoded string into an array. </p>
-
-</div>
-</div>
-<a id="ga31b6401fa13b165b415324e377c61279"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga31b6401fa13b165b415324e377c61279">&#9670;&nbsp;</a></span>FLMutableArray_SetUInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetUInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores an unsigned integer into an array. </p>
-<dl class="section note"><dt>Note</dt><dd>: The only time this needs to be called, instead of <a class="el" href="group___f_l_array.html#ga04d32ac0ae51318deb9f2ddfcd411d7d">FLMutableArray_SetInt</a>, is if the value is greater than or equal to 2^63 and won't fit in an <code>int64_t</code>. </dd></dl>
-
-</div>
-</div>
-<a id="gaf3f462dfaeab4a2877bf96dbdcf0f7f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf3f462dfaeab4a2877bf96dbdcf0f7f6">&#9670;&nbsp;</a></span>FLMutableArray_SetValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void FLMutableArray_SetValue </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
-          <td class="paramname"><em>a</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname"><em>val</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Stores a Fleece value into an array. </p>
 
 </div>
 </div>
@@ -1783,7 +359,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_fleece_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> kFLEmptyArray</td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const <a class="el" href="group__types.html#ga7ea954b03aea4f33ec0f55f13aba5f90">FLArray</a> kFLEmptyArray</td>
         </tr>
       </table>
   </td>
@@ -1792,6 +368,8 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>A constant empty array value. </p>
 
 </div>
 </div>

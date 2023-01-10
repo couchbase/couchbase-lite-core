@@ -10,6 +10,9 @@
 
 SCRIPT_DIR=`dirname $0`
 pushd $SCRIPT_DIR/..
+pushd ..
+git submodule update --recursive --init
+popd
 
 mkdir -p macos
 pushd macos
@@ -18,27 +21,38 @@ core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 
 pushd LiteCore/tests
-LiteCoreTestsQuiet=1 ./CppTests -r list
+./CppTests -r quiet
 popd
-
-lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -c -o CppTests.info
-find . -type f -name '*.gcda' -delete
 
 pushd C/tests
-LiteCoreTestsQuiet=1 ./C4Tests -r list
+./C4Tests -r quiet
 popd
 
-lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -c -o C4Tests.info
-find . -type f -name '*.gcda' -delete
-
-lcov -a CppTests.info -a C4Tests.info -o AllTests.info
-lcov --remove AllTests.info '/usr/include/*' '/System/*' '/Applications/*' '*/vendor/SQLiteCpp/*' '*/vendor/sockpp/*' '*/vendor/fleece/ObjC/*' '*/vendor/fleece/vendor/*' '*/Networking/WebSockets/*' '*/C/c4DocEnumerator.cc' '*/LiteCore/Query/N1QL_Parser/*' '*sqlite3*c' '*.leg' -o AllTests_Filtered.info
-
 mkdir -p coverage_reports
-genhtml AllTests_Filtered.info -o coverage_reports
+xcrun llvm-profdata merge -sparse LiteCore/tests/default.profraw C/tests/default.profraw -o AllTests.profdata
+xcrun llvm-cov show -instr-profile=AllTests.profdata -show-line-counts-or-regions -arch x86_64 -output-dir=$PWD/coverage_reports -format="html" \
+  -ignore-filename-regex="/vendor/SQLiteCpp/*" -ignore-filename-regex="vendor/sockpp/*" -ignore-filename-regex="vendor/fleece/ObjC/*" \
+  -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
+  -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \
+  -ignore-filename-regex="vendor/mbedtls/*" -ignore-filename-regex="vendor/sqlite3-unicodesn" -ignore-filename-regex="vendor/fleece/Fleece/Integration/ObjC/*" \
+  libLiteCore.dylib
 
 if [ "$1" == "--show-results" ]; then
   open coverage_reports/index.html
+elif [ "$1" == "--export-results" ]; then
+  xcrun llvm-cov export -instr-profile=AllTests.profdata -arch x86_64 \
+    -ignore-filename-regex="/vendor/SQLiteCpp/*" -ignore-filename-regex="vendor/sockpp/*" -ignore-filename-regex="vendor/fleece/ObjC/*" \
+    -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
+    -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \
+    -ignore-filename-regex="vendor/mbedtls/*" -ignore-filename-regex="vendor/sqlite3-unicodesn" -ignore-filename-regex="vendor/fleece/Fleece/Integration/ObjC/*" \
+    libLiteCore.dylib > output.json
+
+    if [[ "$2" == "--push" ]] && [[ -n "$CHANGE_ID" ]]; then
+      python3 -m venv venv
+      source venv/bin/activate 
+      pip install -r ../scripts/push_coverage_results_requirements.txt
+      python ../scripts/push_coverage_results.py -r ./output.json -n $CHANGE_ID
+    fi
 fi
 
 popd

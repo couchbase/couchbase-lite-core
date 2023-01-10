@@ -82,13 +82,17 @@ namespace litecore {
 
 
         std::string loggingIdentifier() const override {  // Logging API
+            if (_usuallyFalse(!isValid())) {
+                return format("Closed collection %.*s", SPLAT(_name));
+            }
+
             auto dbName = _database->getName();
             return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
 
         KeyStore& keyStore() const {
-            if (_usuallyFalse(!_keyStore))
+            if (_usuallyFalse(!isValid()))
                 failClosed();
             return *_keyStore;
         }
@@ -166,7 +170,7 @@ namespace litecore {
 
 
         DocumentFactory* documentFactory() const {
-            if (_usuallyFalse(!_documentFactory))
+            if (_usuallyFalse(!isValid()))
                 failClosed();
             return _documentFactory.get();
         }

@@ -15,7 +15,10 @@
 #include "ReplicatorOptions.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "MessageBuilder.hh"
+#include "NumConversion.hh"
 #include "Error.hh"
+#include "ReplicatorTypes.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
 #include <functional>
@@ -45,6 +48,11 @@ namespace litecore { namespace repl {
         using alloc_slice = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
 
+        /** A key to set the collection that a worker is sending BLIP messages for
+                    Omitted if the default collection is being used, otherwise an index into
+                    the original list of collections received via getCollections.
+        */
+        static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
             Status(ActivityLevel lvl =kC4Stopped) {
@@ -64,7 +72,7 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        bool passive() const                                {return _passive;}
+        virtual bool passive() const {return false;}
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
         void connectionClosed() {
@@ -73,12 +81,14 @@ namespace litecore { namespace repl {
 
         /// Child workers call this on their parent when their status changes.
         void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
         }
 
         C4ReplicatorProgressLevel progressNotificationLevel() const {
             return _options->progressLevel;
         }
+
+        CollectionIndex collectionIndex() const         {return _collectionIndex;}
 
 #if !DEBUG
     protected:
@@ -100,10 +110,11 @@ namespace litecore { namespace repl {
                Worker *parent,
                const Options* options NONNULL,
                std::shared_ptr<DBAccess> db,
-               const char *namePrefix NONNULL);
+               const char *namePrefix NONNULL,
+               CollectionIndex);
 
         /// Simplified constructor. Gets the other parameters from the parent object.
-        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
+        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL, CollectionIndex);
 
         virtual ~Worker();
 
@@ -128,8 +139,21 @@ namespace litecore { namespace repl {
         bool isOpenServer() const               {return _connection &&
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
-        bool isContinuous() const               {return _options->push == kC4Continuous
-                                                     || _options->pull == kC4Continuous;}
+        bool isContinuous() const               {
+            auto collIndex = collectionIndex();
+            if (collIndex == kNotCollectionIndex) {
+                for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
+                    if (_options->push(i) == kC4Continuous
+                        || _options->pull(i) == kC4Continuous) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return _options->push(collIndex) == kC4Continuous
+                        || _options->pull(collIndex) == kC4Continuous;
+            }
+        }
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
         virtual void _connectionClosed() {
@@ -187,7 +211,8 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Worker *task, Status) { }
+        virtual void _childChangedStatus(Retained<Worker> task, Status) { 
+        }
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);
@@ -202,17 +227,43 @@ namespace litecore { namespace repl {
 
 #pragma mark - INSTANCE DATA:
     protected:
+        // Basic type checking: CollectionIndex (alias of unsigned) vs. long.
+        // We store an unsigned in intProperty and this method is to enure the integrity.
+        static CollectionIndex getCollectionIndex(const blip::MessageIn&  msgIn) {
+            return fleece::narrow_cast<CollectionIndex>(
+                msgIn.intProperty(kCollectionProperty, kNotCollectionIndex)
+            );
+        }
+
+        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
+            if (_options->collectionAware()) {
+                msg[kCollectionProperty] = i;
+            }
+        }
+
+        // This method does two things. First it fetches the collectino index from 'msg';
+        // then, it returns a pair of {collectionIndex, errorSlice} with the post-conditions:
+        //   errorSlice != nullslice || (0 <= collectionIndex < _options->workingCollectionCount()
+        // 'errorSlice' describes the nature of the violation.
+        std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
+
+        C4Collection* getCollection() {
+            return const_cast<C4Collection*>(((const Worker*)this)->getCollection());
+        }
+
+        const C4Collection* getCollection() const;
+
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me
         std::shared_ptr<DBAccess>   _db;                        // Database
         std::string                 _loggingID;                 // My name in the log
         uint8_t                     _importance {1};            // Higher values log more
-        bool                        _passive {false};           // Part of a server-side replicator?
     private:
         Retained<blip::Connection>  _connection;                // BLIP connection
         int                         _pendingResponseCount {0};  // # of responses I'm awaiting
         Status                      _status {kC4Idle};          // My status
         bool                        _statusChanged {false};     // Status changed during this event
+        const CollectionIndex       _collectionIndex;
     };
 
 } }

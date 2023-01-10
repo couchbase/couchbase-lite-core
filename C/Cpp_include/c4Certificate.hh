@@ -91,6 +91,8 @@ struct C4Cert final : public fleece::RefCounted,
 
     static Retained<C4Cert> load(slice name);
 
+    static bool exists(slice name);
+
     // Internal:
 
     litecore::crypto::Cert* assertSignedCert();

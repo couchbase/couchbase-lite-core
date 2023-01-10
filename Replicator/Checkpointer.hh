@@ -15,7 +15,10 @@
 #include "Error.hh"
 #include "Timer.hh"
 #include "c4Base.hh"
+#include "c4Collection.hh"
 #include "fleece/slice.hh"
+#include "NumConversion.hh"
+#include "ReplicatorOptions.hh"
 #include "URLTransformer.hh"
 #include <chrono>
 #include <functional>
@@ -44,7 +47,7 @@ namespace litecore { namespace repl {
               Replicator, Pusher and Puller. */
     class Checkpointer {
     public:
-        Checkpointer(const Options* NONNULL, fleece::slice remoteURL);
+        Checkpointer(const Options* NONNULL, fleece::slice remoteURL, C4Collection*);
 
         ~Checkpointer();
 
@@ -160,6 +163,9 @@ namespace litecore { namespace repl {
                                        slice body,
                                        slice revID,
                                        alloc_slice &newRevID);
+        
+        /// The collection used internally during the operation of Replicator.
+        C4Collection* collection() const { return _collection; }
 
     private:
         void checkpointIsInvalid();
@@ -168,6 +174,10 @@ namespace litecore { namespace repl {
         alloc_slice _read(C4Database *db NONNULL, slice);
         void initializeDocIDs();
         void saveSoon();
+        CollectionIndex collectionIndex() const {
+            return fleece::narrow_cast<CollectionIndex>(
+                _options->collectionSpecToIndex().at(_collection->getSpec()));
+        }
 
         Logging*                        _logger;
         RetainedConst<Options>          _options;
@@ -190,6 +200,7 @@ namespace litecore { namespace repl {
         std::unique_ptr<actor::Timer>   _timer;
         SaveCallback                    _saveCallback;
         duration                        _saveTime;
+        C4Collection* const             _collection;
     };
 
 } }

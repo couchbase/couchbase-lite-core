@@ -243,7 +243,8 @@ namespace litecore {
                          "PRAGMA mmap_size=%d; "             // Memory-mapped reads
                          "PRAGMA synchronous=normal; "       // Speeds up commits
                          "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
-                         "PRAGMA case_sensitive_like=true",  // Case sensitive LIKE, for N1QL compat
+                         "PRAGMA case_sensitive_like=true; "   // Case sensitive LIKE, for N1QL compat
+                         "PRAGMA fullfsync=ON",              // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
                          -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount,
@@ -546,7 +547,11 @@ namespace litecore {
             
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
-            const char *cname = name.c_str();
+            // Invarient: keyStore->tablaName()     == kv_<tableName>
+            //            deletedStore->tableName() == kv_del_<tableName>
+            //            all_<cname>               == all_<tableName>
+            string tableName = keyStore->tableName().substr(3); // remove prefix "kv_"
+            const char* cname = tableName.c_str();
             _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
                          "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
                          "SELECT " COLUMNS " from \"kv_del_%s\"",
@@ -561,7 +566,7 @@ namespace litecore {
     }
 
 
-    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) const {
+    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) {
         if (auto both = dynamic_cast<BothKeyStore*>(ks))
             ks = both->liveStore();
         auto sqlks = dynamic_cast<SQLiteKeyStore*>(ks);
@@ -684,8 +689,9 @@ namespace litecore {
             deletedTableName += name.substr(4);
             checkName = &deletedTableName;
         }
+        string finalName = SQLiteKeyStore::transformCollectionName(*checkName, true);
         string sql;
-        return getSchema(*checkName, "table", *checkName, sql);
+        return getSchema(finalName, "table", finalName, sql);
     }
 
 
@@ -772,6 +778,24 @@ namespace litecore {
     }
 
 
+    namespace {
+        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
+            auto dot = DataFile::findCollectionPathSeparator(collectionPath);
+            alloc_slice scope;
+            alloc_slice collection;
+            if (dot == string::npos) {
+                collection = DataFile::unescapeCollectionName(collectionPath);
+            } else {
+                scope = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
+                collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
+            }
+            return std::make_pair(scope, collection);
+        }
+
+        inline bool isDefaultCollection(slice id) {return id == KeyStore::kDefaultCollectionName;}
+        inline bool isDefaultScope(slice id) {return !id || isDefaultCollection(id); }
+    }
+
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // (The name might be of the form "scope.collection", which is fine because that's the same
     // encoding as used in table names.)
@@ -792,36 +816,50 @@ namespace litecore {
             if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
-        if (collection == "_" || slice(collection) == KeyStore::kDefaultCollectionName || slice(collection) == KeyStore::kDefaultFullCollectionName)
+
+        auto [scope, coll] = splitCollectionPath(collection);
+
+        if (collection == "_" || (isDefaultScope(scope) && isDefaultCollection(coll))) {
             name += kDefaultKeyStoreName;
-        else {
-            string candidate = name + string(KeyStore::kCollectionPrefix) + collection;
-            if (collection == delegate()->databaseName() && !tableExists(candidate)) {
-                // The name of this database represents the default collection,
-                // _unless_ there is a collection with that name.
-                name += kDefaultKeyStoreName;
-            } else {
-                // Validate the collection name, which might be of the form "scope.collection":
-                if (!KeyStore::isValidCollectionNameWithScope(collection))
-                    error::_throw(error::InvalidQuery,
-                                  "\"%s\" is not a valid collection name", collection.c_str());
-                name = candidate;
+        } else if (!scope && coll == delegate()->databaseName() &&
+                   !tableExists(name + string(KeyStore::kCollectionPrefix) + coll.asString())) {
+            // The name of this database represents the default collection,
+            // _unless_ there is a collection with that name.
+            name += kDefaultKeyStoreName;
+        } else {
+            string candidate = name + string(KeyStore::kCollectionPrefix);
+            bool isValid = true;
+            if (!isDefaultScope(scope)) {
+                if (!KeyStore::isValidCollectionName(scope)) {
+                    isValid = false;
+                } else {
+                    candidate += SQLiteKeyStore::transformCollectionName(scope.asString(), true)
+                        + KeyStore::kScopeCollectionSeparator;
+                }
             }
+            if (isValid && KeyStore::isValidCollectionName(coll)) {
+                candidate += SQLiteKeyStore::transformCollectionName(coll.asString(), true);
+            } else {
+                error::_throw(error::InvalidQuery,
+                                  "\"%s\" is not a valid collection name", collection.c_str());
+            }
+            name = candidate;
         }
         return name;
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
-        return onTable + "::" + property;
+        return onTable + string(KeyStore::kIndexSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
     string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
-        return onTable + ":unnest:" + property;
+        return onTable + string(KeyStore::kUnnestSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
-        return onTable + ":predict:" + property;
+        return onTable + string(KeyStore::kPredictSeparator) +
+            SQLiteKeyStore::transformCollectionName(property, true);
     }
 #endif
 

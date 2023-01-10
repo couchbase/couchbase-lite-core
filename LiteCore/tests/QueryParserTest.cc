@@ -265,6 +265,26 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][QueryParser
                          FROM: [{collection: 'employees'}],\
                          WHERE: ['MATCH()', 'employees.bio', 'mobile']}]")
           == "SELECT employees.rowid, offsets(fts1.\"kv_.employees::bio\"), employees.key, employees.sequence FROM \"kv_.employees\" AS employees JOIN \"kv_.employees::bio\" AS fts1 ON fts1.docid = employees.rowid WHERE fts1.\"kv_.employees::bio\" MATCH 'mobile'");
+    // Index name, "bio", does not have to be qualified by the collection if there is only collection in the query
+    CHECK(parseWhere("['SELECT', {\
+                         FROM: [{collection: 'employees'}],\
+                         WHERE: ['MATCH()', 'bio', 'mobile']}]")
+          == "SELECT employees.rowid, offsets(fts1.\"kv_.employees::bio\"), employees.key, employees.sequence FROM \"kv_.employees\" AS employees JOIN \"kv_.employees::bio\" AS fts1 ON fts1.docid = employees.rowid WHERE fts1.\"kv_.employees::bio\" MATCH 'mobile'");
+
+    tableNames.insert("kv_.departments");
+    CHECK(parseWhere("['SELECT', {\
+                FROM: [{collection: 'employees'},\
+                       {collection: 'departments', ON: ['=', ['.employees.dept'], ['.departments.name']]}],\
+                WHERE: ['AND', ['MATCH()', 'employees.bio', 'mobile'], \
+                               ['MATCH()', 'departments.cate', 'engineering']]}]")
+          == "SELECT employees.rowid, offsets(fts1.\"kv_.employees::bio\"), "
+             "offsets(fts2.\"kv_.departments::cate\"), employees.key, employees.sequence "
+             "FROM \"kv_.employees\" AS employees INNER JOIN \"kv_.departments\" AS departments "
+             "ON (fl_value(employees.body, 'dept') = fl_value(departments.body, 'name')) "
+             "JOIN \"kv_.departments::cate\" AS fts2 ON fts2.docid = departments.rowid "
+             "JOIN \"kv_.employees::bio\" AS fts1 ON fts1.docid = employees.rowid "
+             "WHERE fts1.\"kv_.employees::bio\" MATCH 'mobile' "
+             "AND fts2.\"kv_.departments::cate\" MATCH 'engineering'");
 }
 
 
@@ -296,13 +316,11 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction non-default col
     CHECK(parseWhere(query2)
           == "SELECT fl_result(prediction('bias', dict_of('text', fl_value(stuff.body, 'text')), '.bias')) FROM \"kv_.stuff\" AS stuff WHERE prediction('bias', dict_of('text', fl_value(stuff.body, 'text')), '.bias') > 0");
 
-#if 0 // FIX: Not working yet
-    tableNames.insert("kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=");
+    tableNames.insert("kv_.stuff:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=");
     CHECK(parseWhere(query1)
-          == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE fl_unnested_value(pred1.body, 'bias') > 0");
+          == "SELECT stuff.key, stuff.sequence FROM \"kv_.stuff\" AS stuff JOIN \"kv_.stuff:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = stuff.rowid WHERE fl_unnested_value(pred1.body, 'bias') > 0");
     CHECK(parseWhere(query2)
-          == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE fl_unnested_value(pred1.body, 'bias') > 0");
-#endif
+          == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM \"kv_.stuff\" AS stuff JOIN \"kv_.stuff:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = stuff.rowid WHERE fl_unnested_value(pred1.body, 'bias') > 0");
 }
 #endif
 
@@ -382,6 +400,20 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
                 " FROM: [{AS: 'main'}, {AS: 'secondary', JOIN: 'CROSS'}]}")
           == "SELECT fl_result(fl_value(main.body, 'number1')), fl_result(fl_value(secondary.body, 'number2')) FROM kv_default AS "
              "main CROSS JOIN kv_default AS secondary");
+
+    // Result alias and property name are used in different scopes.
+    CHECK(parse("{'FROM':[{'AS':'coll','COLLECTION':'_'}],'WHAT':[['AS',['.x'],'label'],['.coll.label']]}")
+        == "SELECT fl_result(fl_value(coll.body, 'x')) AS label, fl_result(fl_value(coll.body, 'label')) "
+        "FROM kv_default AS coll");
+    // CBL-3040:
+    CHECK(parse(R"r({"WHERE":["AND",["=",[".machines.Type"],"machine"],["OR",["=",[".machines.Disabled"],false],[".machines.Disabled"]]],)r"
+        R"r("WHAT":[[".machines.Id"],["AS",[".machines.Label"],"Label2"],[".machines.ModelId"],["AS",[".models.Label2"],"ModelLabel"]],)r"
+        R"r("FROM":[{"AS":"machines"},{"AS":"models","ON":["=",[".models.Id"],[".machines.ModelId"]],"JOIN":"LEFT OUTER"}]})r")
+        == "SELECT fl_result(fl_value(machines.body, 'Id')), fl_result(fl_value(machines.body, 'Label')) AS Label2, "
+        "fl_result(fl_value(machines.body, 'ModelId')), fl_result(fl_value(models.body, 'Label2')) AS ModelLabel FROM kv_default AS machines "
+        "LEFT OUTER JOIN kv_default AS models ON (fl_value(models.body, 'Id') = fl_value(machines.body, 'ModelId')) "
+        "WHERE fl_value(machines.body, 'Type') = 'machine' AND (fl_value(machines.body, 'Disabled') = fl_bool(0) "
+        "OR fl_value(machines.body, 'Disabled'))");
 }
 
 

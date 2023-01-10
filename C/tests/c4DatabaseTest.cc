@@ -17,6 +17,7 @@
 #include "c4Index.h"
 #include "c4IndexTypes.h"
 #include "c4Query.h"
+#include "c4Collection.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
@@ -301,12 +302,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Docume
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
     e = REQUIRED(c4db_enumerateAllDocs(db, &options, WITH_ERROR()));
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     int i = 1;
     while (c4enum_next(e, &error)) {
         auto doc = c4enum_getDocument(e, ERROR_INFO());
         REQUIRE(doc);
-        sprintf(docID, "doc-%03d", i);
+        snprintf(docID, bufSize, "doc-%03d", i);
         CHECK(doc->docID == c4str(docID));
         CHECK(doc->revID == kRevID);
         CHECK(doc->selectedRev.revID == kRevID);
@@ -341,11 +343,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Databa
     e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
     CHECK(e);
     int i = 1;
+    constexpr size_t bufSize = 20;
     while(c4enum_next(e, &error)) {
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
-        char docID[20];
-        sprintf(docID, "doc-%03d", i);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03d", i);
         CHECK(info.docID == c4str(docID));
         CHECK(info.revID == kRevID);
         CHECK(info.sequence == (C4SequenceNumber)i);
@@ -404,10 +407,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO());
     REQUIRE(e);
     C4SequenceNumber seq = 1;
+    constexpr size_t bufSize = 30;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq++;
@@ -421,8 +425,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     seq = 7;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq++;
@@ -438,8 +442,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     seq = 99;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
-        char docID[30];
-        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
         c4doc_release(doc);
         seq--;
@@ -654,6 +658,39 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
     } while (c4_now() < stopAt);
 
     c4log_setLevel(kC4DatabaseLog, oldLevel);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while in batch", "[Database][C][Expiration][CBL-3626]") {
+    createRev("expire_me"_sl, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 10000 * ms;
+   
+    {
+        // Prior to fix, this would cause a hang
+        TransactionHelper t(db);
+        REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, WITH_ERROR()));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while deleting collection", "[Database][C][Expiration]") {
+    C4CollectionSpec darthSpec { "vader"_sl, "darth"_sl };
+    auto darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
+    createRev(darthColl, "expire_me"_sl, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 10000 * ms;
+
+    SECTION("Deleting before setting expiration should set an error") {
+        REQUIRE(c4db_deleteCollection(db, darthSpec, ERROR_INFO()));
+        C4Error err;
+        CHECK(!c4coll_setDocExpiration(darthColl, "expire_me"_sl, expire, &err));
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorNotOpen);
+    }
+
+    SECTION("Deleting after setting expiration won't set an error, but also won't crash") {
+        CHECK(c4coll_setDocExpiration(darthColl, "expire_me"_sl, expire, ERROR_INFO()));
+        REQUIRE(c4db_deleteCollection(db, darthSpec, ERROR_INFO()));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]")
@@ -885,10 +922,11 @@ static const string kVersionedFixturesSubDir = "db_versions/";
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Maintenance]") {
     {
         TransactionHelper t(db);
-        char docID[20], json[100];
+        constexpr size_t docBufSize = 20, jsonBufSize = 100;
+        char docID[docBufSize], json[jsonBufSize];
         for (unsigned i = 1; i <= 100; i++) {
-            sprintf(docID, "doc-%03u", i);
-            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(docID, docBufSize, "doc-%03u", i);
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
             createFleeceRev(db, slice(docID), kRevID, slice(json), (i <= 50 ? 0 : kRevDeleted));
         }
         // TODO: Create some blobs too
@@ -934,9 +972,10 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     // Documents 51-100 are deleted (but still have those properties, which is unusual.)
 
     // Verify getting documents by ID:
-    char docID[20];
+    constexpr size_t bufSize = 20;
+    char docID[bufSize];
     for (unsigned i = 1; i <= 100; i++) {
-        sprintf(docID, "doc-%03u", i);
+        snprintf(docID, bufSize, "doc-%03u", i);
         INFO("Checking docID " << docID);
         C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
@@ -955,7 +994,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         unsigned i = 1;
         while (c4enum_next(e, ERROR_INFO(&error))) {
             INFO("Checking enumeration #" << i);
-            sprintf(docID, "doc-%03u", i);
+            snprintf(docID, bufSize, "doc-%03u", i);
             C4DocumentInfo info;
             REQUIRE(c4enum_getDocumentInfo(e, &info));
             CHECK(slice(info.docID) == slice(docID));
@@ -1196,3 +1235,74 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     c4doc_release(doc);
 }
 
+// CBL-3706: Previously, calling these functions after deleting the default collection causes
+//  Xcode to break into debugger due to "Invalid null argument".
+// Not testing for errors here as they are covered by other tests, simply testing to make sure
+//  that no crashes occur, and the return value is as expected.
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Call CAPI functions with deleted collection") {
+    C4CollectionSpec darthSpec { "vader"_sl, "darth"_sl };
+    auto darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
+    C4Error err;
+    createRev(darthColl, "doc1"_sl, kRevID, kFleeceBody);
+    auto doc = c4coll_getDoc(darthColl, "doc1"_sl, true, kDocGetAll, &err);
+    auto seq = doc->sequence;
+    
+    REQUIRE(c4db_deleteCollection(db, darthSpec, &err));
+    
+    SECTION("Expire Documents") {
+        C4Timestamp expire = c4_now() + 10000 * ms;
+        CHECK(!c4coll_setDocExpiration(darthColl, "doc1"_sl, expire, &err));
+        CHECK(c4coll_getDocExpiration(darthColl, "doc1"_sl, &err) == -1);
+        CHECK(c4coll_nextDocExpiration(darthColl) == -1);
+        CHECK(c4coll_purgeExpiredDocs(darthColl, &err) == 0);
+    }
+    SECTION("Document Access") {
+        CHECK(c4coll_getDocumentCount(darthColl) == 0);
+        CHECK(!c4coll_getDoc(darthColl, "doc1"_sl, false, kDocGetCurrentRev, &err));
+        CHECK(!c4coll_getDocBySequence(darthColl, seq, &err));
+        CHECK(c4coll_getLastSequence(darthColl) == 0);
+        CHECK(!c4coll_purgeDoc(darthColl, "doc1"_sl, &err));
+        CHECK(!c4coll_createDoc(darthColl, "doc2"_sl, kFleeceBody, kRevKeepBody, &err));
+        CHECK(!c4coll_enumerateChanges(darthColl, 0, nullptr, &err));
+        CHECK(!c4coll_enumerateAllDocs(darthColl, nullptr, &err));
+    }
+    SECTION("Document Put Request") {
+        TransactionHelper t(db);
+        C4DocPutRequest rq = {};
+        rq.revFlags = kRevKeepBody;
+        rq.existingRevision = true;
+        rq.docID = "doc1"_sl;
+        rq.history = &kRevID;
+        rq.historyCount = 1;
+        rq.body = kFleeceBody;
+        rq.save = true;
+        CHECK(!c4coll_putDoc(darthColl, &rq, nullptr, &err));
+    }
+    SECTION("Indexes") {
+        REQUIRE(!c4coll_createIndex(darthColl, C4STR("byAnswer"),
+                                  R"([[".answer"]])"_sl, kC4N1QLQuery,
+                                  kC4ValueIndex, nullptr, &err));
+        REQUIRE(!c4coll_deleteIndex(darthColl, C4STR("byAnswer"), &err));
+        REQUIRE(!c4coll_getIndexesInfo(darthColl, &err));
+    }
+    c4doc_release(doc);
+}
+
+// CBL-3824
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Re-open database with an index", "[Database][C]") {
+    C4CollectionSpec darthSpec { "vader"_sl, "darth"_sl };
+    auto darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
+    REQUIRE(c4coll_createIndex(darthColl, C4STR("byAnswer"),
+                               R"([[".answer"]])"_sl, kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, ERROR_INFO()));
+    REQUIRE(c4coll_createIndex(darthColl, C4STR("byResult"),
+                               R"([[".result"]])"_sl, kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, ERROR_INFO()));
+
+    reopenDB();
+    darthColl = REQUIRED(c4db_getCollection(db, darthSpec, ERROR_INFO()));
+    REQUIRE(c4coll_deleteIndex(darthColl, "byAnswer"_sl, ERROR_INFO()));
+    REQUIRE(c4coll_deleteIndex(darthColl, "byResult"_sl, ERROR_INFO()));
+}

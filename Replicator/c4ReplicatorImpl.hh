@@ -187,12 +187,12 @@ namespace litecore {
             _onBlobProgress   = nullptr;
         }
 
-        bool isDocumentPending(C4Slice docID) const {
-            return PendingDocuments(this).isDocumentPending(docID);
+        bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) const {
+            return PendingDocuments(this, spec).isDocumentPending(docID);
         }
 
-        alloc_slice pendingDocumentIDs() const {
-            return PendingDocuments(this).pendingDocumentIDs();
+        alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const {
+            return PendingDocuments(this, spec).pendingDocumentIDs();
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
@@ -243,8 +243,9 @@ namespace litecore {
         }
 
 
-        bool continuous() const noexcept {
-            return _options->push == kC4Continuous || _options->pull == kC4Continuous;
+        bool continuous(unsigned collectionIndex =0) const noexcept {
+            return _options->push(collectionIndex) == kC4Continuous
+                || _options->pull(collectionIndex) == kC4Continuous;
         }
 
         inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept {
@@ -278,10 +279,18 @@ namespace litecore {
 
 
         unsigned getIntProperty(slice key, unsigned defaultValue) const noexcept {
-            if (auto val = _options->properties[key]; val.type() == kFLNumber)
-                return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
-            else
-                return defaultValue;
+            if (auto val = _options->properties[key]; val.type() == kFLNumber) {
+                // CBL-3872: Large unsigned values (higher than max int64) will become
+                // negative, and thus get clamped to zero with the old logic, so add
+                // special handling for an unsigned fleece value
+                if (val.isUnsigned()) {
+                    return unsigned(std::min(val.asUnsigned(), uint64_t(UINT_MAX)));
+                }
+
+                return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())));
+            }
+            
+            return defaultValue;
         }
 
 
@@ -476,43 +485,59 @@ namespace litecore {
                 }
             }
 
-            auto onStatusChanged = _onStatusChanged.load();
-            if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
-                onStatusChanged(this, status, _options->callbackContext);
+            if( !(status.error.code && status.level > kC4Offline) ) {
+                auto onStatusChanged = _onStatusChanged.load();
+                if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
+                    onStatusChanged(this, status, _options->callbackContext);
+            }
         }
 
 
         class PendingDocuments {
         public:
-            PendingDocuments(const C4ReplicatorImpl *repl) {
+            PendingDocuments(const C4ReplicatorImpl *repl, C4CollectionSpec spec)
+            : collectionSpec(spec)
+            {
                 // Lock the replicator and copy the necessary state now, so I don't have to lock while
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
                 replicator = repl->_replicator;
-                
+
                 // CBL-2448: Also make my own checkpointer and database in case a call comes in
                 // after Replicator::terminate() is called.  The fix includes the replicator
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                checkpointer.emplace(repl->_options, repl->URL());
+                C4Collection* collection = nullptr;
+                // The collection must be included in the replicator's config options.
+                auto it = repl->_options->collectionSpecToIndex().find(collectionSpec);
+                if (it != repl->_options->collectionSpecToIndex().end()) {
+                    if (it->second < repl->_options->workingCollectionCount()) {
+                        collection = repl->_database->getCollection(collectionSpec);
+                    }
+                }
+
+                if (collection == nullptr) {
+                    error::_throw(error::NotOpen, "collection not in the Replicator's config");
+                }
+
+                checkpointer = new Checkpointer{repl->_options, repl->URL(), collection};
                 database = repl->_database;
             }
 
             alloc_slice pendingDocumentIDs() {
                 Encoder enc;
                 enc.beginArray();
-
                 bool any = false;
                 auto callback = [&](const C4DocumentInfo &info) {
                     enc.writeString(info.docID);
                     any = true;
                 };
                 
-                if (!replicator || !replicator->pendingDocumentIDs(callback)) {
+                if (!replicator || !replicator->pendingDocumentIDs(collectionSpec, callback)) {
                     checkpointer->pendingDocumentIDs(database, callback);
                 }
-                
+
                 if (!any)
                     return {};
                 enc.endArray();
@@ -521,19 +546,19 @@ namespace litecore {
 
             bool isDocumentPending(C4Slice docID) {
                 if(replicator) {
-                    auto result = replicator->isDocumentPending(docID);
+                    auto result = replicator->isDocumentPending(docID, collectionSpec);
                     if(result.has_value()) {
                         return *result;
                     }
                 }
-                
                 return checkpointer->isDocumentPending(database, docID);
             }
 
         private:
             Retained<Replicator> replicator;
-            std::optional<Checkpointer> checkpointer;
+            Checkpointer*        checkpointer {nullptr}; // assigned in the constructor
             Retained<C4Database> database;
+            C4CollectionSpec     collectionSpec;
         };
 
 

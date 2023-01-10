@@ -252,7 +252,7 @@ namespace litecore {
         // Create a new BlobStore and copy/rekey the blobs into it:
         filePath().subdirectoryNamed("Attachments_temp").delRecursive();
         auto &blobStore = getBlobStore();
-        auto newStore = createBlobStore("Attachments_temp", *newKey);
+        auto newStore = createBlobStore("Attachments_temp", *newKey, true);
         try {
             blobStore.copyBlobsTo(*newStore);
 
@@ -351,11 +351,17 @@ namespace litecore {
 
 
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
-                                                          C4EncryptionKey encryptionKey) const
+                                                          C4EncryptionKey encryptionKey,
+                                                          bool force) const
     {
-	// Split path into a separate variable to workaround GCC 8 constructor resolution issue
-	alloc_slice path = filePath().subdirectoryNamed(dirname);
-        return make_unique<C4BlobStore>(path,_config.flags, encryptionKey);
+        // Split path into a separate variable to workaround GCC 8 constructor resolution issue
+        alloc_slice path = filePath().subdirectoryNamed(dirname);
+        auto flags = _config.flags;
+        if(force) {
+            flags |= kC4DB_Create;
+        }
+
+        return make_unique<C4BlobStore>(path, flags, encryptionKey);
     }
 
 
@@ -508,8 +514,9 @@ namespace litecore {
 
 
     alloc_slice DatabaseImpl::getPeerID() const {
-        char buf[32];
-        sprintf(buf, "%" PRIx64, myPeerID());
+        constexpr size_t bufSize = 32;
+        char buf[bufSize];
+        snprintf(buf, bufSize, "%" PRIx64, myPeerID());
         return alloc_slice(buf);
     }
 
@@ -569,12 +576,24 @@ namespace litecore {
                 DebugAssert(isValidScopeNameOrDefault(scope));
                 name.setStart(slash + 1);
             }
+            // CBL-3824: This is necessary for determining if the keystore is an index, which may occur in
+            // the case of a Full-Text Index. The keystore name for an FTI looks like: <scope>.<collection>::<index>
+            slice idxName = nullslice;
+            // Find the index separator "::"
+            if (auto idxSep = name.find(KeyStore::kIndexSeparator)) {
+                idxName = slice(idxSep.offset(2), name.end());
+                // Assert that index name is > 0
+                DebugAssert(idxName.size > 0);
+                name.setEnd(idxSep.buf);
+            }
+
             DebugAssert((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
                         || KeyStore::isValidCollectionName(name));
-            return {name, scope};
-        } else {
-            return {nullslice, nullslice};
+            // If keystore name was not an index name
+            if(!idxName)
+                return {name, scope};
         }
+        return {nullslice, nullslice};
     }
 
 
@@ -587,8 +606,12 @@ namespace litecore {
     bool DatabaseImpl::hasCollection(CollectionSpec spec) const {
         string keyStoreName = collectionNameToKeyStoreName(spec);
         LOCK(_collectionsMutex);
-        return _collections.find(spec) != _collections.end()
-                    || _dataFile->keyStoreExists(keyStoreName);
+        auto found = _collections.find(spec);
+        if(found != _collections.end() && found->second->isValid()) {
+            return true;
+        }
+
+        return _dataFile->keyStoreExists(keyStoreName);
     }
 
 
@@ -610,6 +633,15 @@ namespace litecore {
             }
         }
 
+        // CBL-3298: Final fallback to detect scopes added in another handle
+        auto allStores = _dataFile->allKeyStoreNames();
+        for (const auto& store : allStores) {
+            auto spec = keyStoreNameToCollectionSpec(slice(store));
+            if (spec.scope == name) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -624,13 +656,22 @@ namespace litecore {
 
     // This implements both the public getCollection() and createCollection()
     C4Collection* DatabaseImpl::getOrCreateCollection(CollectionSpec spec, bool canCreate) {
+        checkOpen();
+
         // Is there already a C4Collection object for it in _collections?
         LOCK(_collectionsMutex);
-        if (auto i = _collections.find(spec); i != _collections.end())
-            return i->second;                                         // -> Existing object
-
         // Validate the name (throws if invalid):
         string keyStoreName = collectionNameToKeyStoreName(spec);
+        if (auto i = _collections.find(spec); i != _collections.end()) { 
+            if(!i->second->isValid()) {
+                // It is time to remove the old invalid entry now that 
+                // it is reasonably safe to do so.
+                asInternal(i->second)->close();
+                _collections.erase(i);
+            } else {
+                return i->second; // -> Existing object
+            }                                     
+        }
 
         // Validate its existence, if canCreate is false:
         if ((!canCreate || isDefaultCollection(spec)) && !_dataFile->keyStoreExists(keyStoreName)) {
@@ -647,6 +688,7 @@ namespace litecore {
         auto collectionPtr = collection.get();
         _collections.insert({CollectionSpec(collection->getSpec()),
                              move(collection)});
+
         if (isInTransaction())
             collectionPtr->transactionBegan();
         return collectionPtr;                                               //-> New object
@@ -654,27 +696,40 @@ namespace litecore {
 
 
     void DatabaseImpl::deleteCollection(CollectionSpec spec) {
+        if (isDefaultCollection(spec)) {
+            error::_throw(error::InvalidParameter, "Default collection cannot be deleted.");
+        }
+
+        checkOpen();
+
         // Use the spec _before_ deleting the collection, in case the collection owned the slices,
         // as happens if you call `deleteCollection(coll->spec())`:
         string keyStoreName = collectionNameToKeyStoreName(spec);
         bool isDefault = isDefaultCollection(spec);
-
         Transaction t(this);
+
+        _dataFile->forOtherDataFiles([&keyStoreName](DataFile* df) {
+            df->delegate()->collectionRemoved(keyStoreName);
+        });
 
         LOCK(_collectionsMutex);
         if (auto i = _collections.find(spec); i != _collections.end()) {
-            asInternal(i->second.get())->close();
-            _collections.erase(i);
+            // Don't close and remove it now, which makes the eventual crash from
+            // using this as a dangling pointer delayed a little longer.
+            asInternal(i->second.get())->invalidate();
         }
         _dataFile->deleteKeyStore(keyStoreName);
         if (isDefault)
-            _defaultCollection = nullptr;
+            // Don't null this because outstanding queries might still be using it
+            // in an unretained manner.
+            _defaultCollection->invalidate();
 
-        t.commit();
+        t.commit();         
     }
 
 
     void DatabaseImpl::forEachCollection(const CollectionSpecCallback &callback) const {
+        // allKeyStoreNames does checkOpen
         for (const string &name : _dataFile->allKeyStoreNames()) {
             if (CollectionSpec spec = keyStoreNameToCollectionSpec(name); spec.name)
                 callback(spec);
@@ -690,6 +745,8 @@ namespace litecore {
 
 
     void DatabaseImpl::forAllOpenCollections(const function_ref<void(C4Collection*)> &callback) const {
+        checkOpen();
+
         LOCK(_collectionsMutex);
         for (auto &entry : _collections)
             callback(entry.second);
@@ -698,6 +755,10 @@ namespace litecore {
 
     void DatabaseImpl::forEachScope(const ScopeCallback &callback) const {
         unordered_set<slice> seenScopes;
+        // Always include the default scope.
+        seenScopes.insert(kC4DefaultScopeID);
+        callback(kC4DefaultScopeID);
+
         forEachCollection([&](CollectionSpec spec) {
             if (seenScopes.insert(spec.scope).second)
                 callback(spec.scope);
@@ -709,6 +770,10 @@ namespace litecore {
 
 
     void DatabaseImpl::beginTransaction() {
+        // Extra check open here to avoid the hairiness of having to undo
+        // ++transactionLevel later
+        checkOpen();
+
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
             forAllOpenCollections([&](C4Collection *coll) {
@@ -729,6 +794,8 @@ namespace litecore {
 
 
     void DatabaseImpl::endTransaction(bool commit) {
+        checkOpen();
+
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
         if (--_transactionLevel == 0) {
@@ -749,6 +816,7 @@ namespace litecore {
 
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
+        // checkOpen performed inside forAllOpenCollections
         forAllOpenCollections([&](C4Collection *coll) {
             asInternal(coll)->transactionEnding(_transaction, committed);
         });
@@ -760,10 +828,32 @@ namespace litecore {
     void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &srcTracker) {
         // CAREFUL: This may be called on an arbitrary thread
         LOCK(_collectionsMutex);
+         if(_usuallyFalse(!_dataFile || !_dataFile->isOpen())) {
+            return; // Don't throw exception that will trickle up into another object
+        }
+
         forAllOpenCollections([&](C4Collection *coll) {
             if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
                 asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
+    }
+
+
+    void DatabaseImpl::collectionRemoved(const string& keyStoreName) {
+        // Same as other external callbacks, this may be on an arbitrary thread
+        // so don't do anything to affect to collection memory, just make sure
+        // any new requests for this collection don't continue to use this object
+        LOCK(_collectionsMutex);
+        auto spec = keyStoreNameToCollectionSpec(keyStoreName);
+        auto c = _collections.find(spec);
+        if(c != _collections.end()) {
+            auto* coll = asInternal(c->second.get());
+            coll->invalidate();
+        }
+
+        if(isDefaultCollection(spec)) {
+            _defaultCollection->invalidate();
+        }
     }
 
 
@@ -940,6 +1030,13 @@ namespace litecore {
 
     C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
         bool inTransaction = false;
+        bool commit = false;
+        DEFER {
+            if (inTransaction) {
+                endTransaction(commit);
+            }
+        };
+
         C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
@@ -966,10 +1063,8 @@ namespace litecore {
                 }
             }
 
-            if (remoteID > 0) {
-                // Found the remote ID!
-                return remoteID;
-            } else if (!canCreate) {
+            if (remoteID > 0 // Found the remote ID!
+                || !canCreate) {
                 break;
             } else if (creating) {
                 // Update or create the document, adding the identifier:
@@ -991,13 +1086,10 @@ namespace litecore {
 
                 // Save the doc:
                 setInfo(kRemoteDBURLsDoc, body);
-                endTransaction(true);
-                inTransaction = false;
+                commit = true;
                 break;
             }
         }
-        if (inTransaction)
-            endTransaction(false);
         return remoteID;
     }
 

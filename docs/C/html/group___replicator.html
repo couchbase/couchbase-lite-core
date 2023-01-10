@@ -88,6 +88,8 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_document_ended.html">C4DocumentEnded</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Information about a document that's been pushed or pulled.  <a href="struct_c4_document_ended.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_replication_collection.html">C4ReplicationCollection</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parameters describing a replication, used when creating a C4Replicator.  <a href="struct_c4_replicator_parameters.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -164,6 +166,9 @@ Macros</h2></td></tr>
 <tr class="memitem:gaca9c3e8564dbe28e19caf23209f4f48c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaca9c3e8564dbe28e19caf23209f4f48c">kC4SocketOptionWSProtocols</a>&#160;&#160;&#160;&quot;WS-Protocols&quot;</td></tr>
 <tr class="memdesc:gaca9c3e8564dbe28e19caf23209f4f48c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sec-WebSocket-Protocol header value.  <a href="group___replicator.html#gaca9c3e8564dbe28e19caf23209f4f48c">More...</a><br /></td></tr>
 <tr class="separator:gaca9c3e8564dbe28e19caf23209f4f48c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadd2fe4f0a5cd4d6eb7959346f95ab370"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gadd2fe4f0a5cd4d6eb7959346f95ab370">kC4SocketOptionNetworkInterface</a>&#160;&#160;&#160;&quot;networkInterface&quot;</td></tr>
+<tr class="memdesc:gadd2fe4f0a5cd4d6eb7959346f95ab370"><td class="mdescLeft">&#160;</td><td class="mdescRight">Specific network interface (name or IP address) used for connecting to the remote server.  <a href="group___replicator.html#gadd2fe4f0a5cd4d6eb7959346f95ab370">More...</a><br /></td></tr>
+<tr class="separator:gadd2fe4f0a5cd4d6eb7959346f95ab370"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae5750eb2de8aa268dfbd28d0352a849b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gae5750eb2de8aa268dfbd28d0352a849b">kC4ReplicatorCompressionLevel</a>&#160;&#160;&#160;&quot;BLIPCompressionLevel&quot;</td></tr>
 <tr class="memdesc:gae5750eb2de8aa268dfbd28d0352a849b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data compression level, 0..9.  <a href="group___replicator.html#gae5750eb2de8aa268dfbd28d0352a849b">More...</a><br /></td></tr>
 <tr class="separator:gae5750eb2de8aa268dfbd28d0352a849b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -233,12 +238,12 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga0591676de70d5d3de29e894129aa30ae"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga0591676de70d5d3de29e894129aa30ae">C4ReplicatorDocumentsEndedCallback</a>) (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *, bool pushing, size_t numDocs, const <a class="el" href="struct_c4_document_ended.html">C4DocumentEnded</a> *docs[], void *context)</td></tr>
 <tr class="memdesc:ga0591676de70d5d3de29e894129aa30ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback a client can register, to hear about the replication status of documents.  <a href="group___replicator.html#ga0591676de70d5d3de29e894129aa30ae">More...</a><br /></td></tr>
 <tr class="separator:ga0591676de70d5d3de29e894129aa30ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf08dc5fddff8762945b2b74935265c9d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaf08dc5fddff8762945b2b74935265c9d">C4ReplicatorBlobProgressCallback</a>) (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *, bool pushing, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> collectionName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docProperty, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> blobKey, uint64_t bytesComplete, uint64_t bytesTotal, <a class="el" href="struct_c4_error.html">C4Error</a> error, void *context)</td></tr>
-<tr class="memdesc:gaf08dc5fddff8762945b2b74935265c9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback a client can register, to hear about the status of blobs.  <a href="group___replicator.html#gaf08dc5fddff8762945b2b74935265c9d">More...</a><br /></td></tr>
-<tr class="separator:gaf08dc5fddff8762945b2b74935265c9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab72ef8d000cfc3f34faf4116f8e1e4d9"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gab72ef8d000cfc3f34faf4116f8e1e4d9">C4ReplicatorValidationFunction</a>) (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> collectionName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a>, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> body, void *context)</td></tr>
-<tr class="memdesc:gab72ef8d000cfc3f34faf4116f8e1e4d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback that can choose to reject an incoming pulled revision, or stop a local revision from being pushed, by returning false.  <a href="group___replicator.html#gab72ef8d000cfc3f34faf4116f8e1e4d9">More...</a><br /></td></tr>
-<tr class="separator:gab72ef8d000cfc3f34faf4116f8e1e4d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8cb120a46d2c1e4d92026c42b52292c1"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga8cb120a46d2c1e4d92026c42b52292c1">C4ReplicatorBlobProgressCallback</a>) (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *, bool pushing, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> collectionSpec, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docProperty, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> blobKey, uint64_t bytesComplete, uint64_t bytesTotal, <a class="el" href="struct_c4_error.html">C4Error</a> error, void *context)</td></tr>
+<tr class="memdesc:ga8cb120a46d2c1e4d92026c42b52292c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback a client can register, to hear about the status of blobs.  <a href="group___replicator.html#ga8cb120a46d2c1e4d92026c42b52292c1">More...</a><br /></td></tr>
+<tr class="separator:ga8cb120a46d2c1e4d92026c42b52292c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf0759f0a043b891adddf5f47c097a712"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaf0759f0a043b891adddf5f47c097a712">C4ReplicatorValidationFunction</a>) (<a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> collectionSpec, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a>, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> body, void *context)</td></tr>
+<tr class="memdesc:gaf0759f0a043b891adddf5f47c097a712"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback that can choose to reject an incoming pulled revision, or stop a local revision from being pushed, by returning false.  <a href="group___replicator.html#gaf0759f0a043b891adddf5f47c097a712">More...</a><br /></td></tr>
+<tr class="separator:gaf0759f0a043b891adddf5f47c097a712"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf06c67a610e8f6c1f742d0046266f165"><td class="memItemLeft" align="right" valign="top">typedef void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaf06c67a610e8f6c1f742d0046266f165">C4ReplicatorPropertyEncryptionCallback</a></td></tr>
 <tr class="separator:gaf06c67a610e8f6c1f742d0046266f165"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a5ae2d9eee3cf8bbe676b55c07be010"><td class="memItemLeft" align="right" valign="top">typedef void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga4a5ae2d9eee3cf8bbe676b55c07be010">C4ReplicatorPropertyDecryptionCallback</a></td></tr>
@@ -280,72 +285,72 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga11cee8ef8da969e6b6d1f57de1f12f17"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga11cee8ef8da969e6b6d1f57de1f12f17">c4repl_isValidDatabaseName</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> dbName)</td></tr>
-<tr class="memdesc:ga11cee8ef8da969e6b6d1f57de1f12f17"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether a database name is valid, for purposes of appearing in a replication URL.  <a href="group___replicator.html#ga11cee8ef8da969e6b6d1f57de1f12f17">More...</a><br /></td></tr>
-<tr class="separator:ga11cee8ef8da969e6b6d1f57de1f12f17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaef268a73ceda02c8dca567b88e7f61f7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaef268a73ceda02c8dca567b88e7f61f7">c4repl_isValidRemote</a> (<a class="el" href="struct_c4_address.html">C4Address</a> remoteAddress, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> remoteDatabaseName, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gaef268a73ceda02c8dca567b88e7f61f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether the destination of a replication is valid.  <a href="group___replicator.html#gaef268a73ceda02c8dca567b88e7f61f7">More...</a><br /></td></tr>
-<tr class="separator:gaef268a73ceda02c8dca567b88e7f61f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad70ff5d011935985191418dbaebaf41d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gad70ff5d011935985191418dbaebaf41d">c4address_fromURL</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> url, <a class="el" href="struct_c4_address.html">C4Address</a> *address, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> *dbName)</td></tr>
-<tr class="memdesc:gad70ff5d011935985191418dbaebaf41d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A simple URL parser that populates a <a class="el" href="struct_c4_address.html" title="A simple parsed-URL type.">C4Address</a> from a URL string.  <a href="group___replicator.html#gad70ff5d011935985191418dbaebaf41d">More...</a><br /></td></tr>
-<tr class="separator:gad70ff5d011935985191418dbaebaf41d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa7cb7283b3dc71abdda487bbd2d0d16d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaa7cb7283b3dc71abdda487bbd2d0d16d">c4address_toURL</a> (<a class="el" href="struct_c4_address.html">C4Address</a> address)</td></tr>
-<tr class="memdesc:gaa7cb7283b3dc71abdda487bbd2d0d16d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="struct_c4_address.html" title="A simple parsed-URL type.">C4Address</a> to a URL.  <a href="group___replicator.html#gaa7cb7283b3dc71abdda487bbd2d0d16d">More...</a><br /></td></tr>
-<tr class="separator:gaa7cb7283b3dc71abdda487bbd2d0d16d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaee627071896221b393a54f441f4f5def"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaee627071896221b393a54f441f4f5def">c4repl_new</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_address.html">C4Address</a> remoteAddress, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> remoteDatabaseName, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gaee627071896221b393a54f441f4f5def"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new networked replicator.  <a href="group___replicator.html#gaee627071896221b393a54f441f4f5def">More...</a><br /></td></tr>
-<tr class="separator:gaee627071896221b393a54f441f4f5def"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gad8e26ddef72ceb7e3a45cfeec2410c31">c4repl_newWithSocket</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a> *openSocket, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new replicator from an already-open C4Socket.  <a href="group___replicator.html#gad8e26ddef72ceb7e3a45cfeec2410c31">More...</a><br /></td></tr>
-<tr class="separator:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gade69de3543d564b24abfedb2360ac1b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gade69de3543d564b24abfedb2360ac1b4">c4repl_free</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
-<tr class="memdesc:gade69de3543d564b24abfedb2360ac1b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a replicator reference.  <a href="group___replicator.html#gade69de3543d564b24abfedb2360ac1b4">More...</a><br /></td></tr>
-<tr class="separator:gade69de3543d564b24abfedb2360ac1b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa035eb5fa7bbd3b8f7e18bdfb34c54d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaa035eb5fa7bbd3b8f7e18bdfb34c54d4">c4repl_start</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool reset)</td></tr>
-<tr class="memdesc:gaa035eb5fa7bbd3b8f7e18bdfb34c54d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator to start.  <a href="group___replicator.html#gaa035eb5fa7bbd3b8f7e18bdfb34c54d4">More...</a><br /></td></tr>
-<tr class="separator:gaa035eb5fa7bbd3b8f7e18bdfb34c54d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad091a226a7603501dd9126d57ce919bd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gad091a226a7603501dd9126d57ce919bd">c4repl_stop</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
-<tr class="memdesc:gad091a226a7603501dd9126d57ce919bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator to stop.  <a href="group___replicator.html#gad091a226a7603501dd9126d57ce919bd">More...</a><br /></td></tr>
-<tr class="separator:gad091a226a7603501dd9126d57ce919bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6bb03ef73a5585bff565a5473b5c3d37"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga6bb03ef73a5585bff565a5473b5c3d37">c4repl_retry</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga6bb03ef73a5585bff565a5473b5c3d37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator that's in the offline state to reconnect immediately.  <a href="group___replicator.html#ga6bb03ef73a5585bff565a5473b5c3d37">More...</a><br /></td></tr>
-<tr class="separator:ga6bb03ef73a5585bff565a5473b5c3d37"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae1940285e43ed9864aa1edb9c9149ff5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gae1940285e43ed9864aa1edb9c9149ff5">c4repl_setHostReachable</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool reachable)</td></tr>
-<tr class="memdesc:gae1940285e43ed9864aa1edb9c9149ff5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Informs the replicator whether it's considered possible to reach the remote host with the current network configuration.  <a href="group___replicator.html#gae1940285e43ed9864aa1edb9c9149ff5">More...</a><br /></td></tr>
-<tr class="separator:gae1940285e43ed9864aa1edb9c9149ff5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1dae839e96ed4b7af77da05f9d4ce8ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga1dae839e96ed4b7af77da05f9d4ce8ce">c4repl_setSuspended</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool suspended)</td></tr>
-<tr class="memdesc:ga1dae839e96ed4b7af77da05f9d4ce8ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Puts the replicator in or out of "suspended" state.  <a href="group___replicator.html#ga1dae839e96ed4b7af77da05f9d4ce8ce">More...</a><br /></td></tr>
-<tr class="separator:ga1dae839e96ed4b7af77da05f9d4ce8ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga13405a32ecfa12c44b213ef3e91cc4b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga13405a32ecfa12c44b213ef3e91cc4b8">c4repl_setOptions</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> optionsDictFleece)</td></tr>
-<tr class="memdesc:ga13405a32ecfa12c44b213ef3e91cc4b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the replicator's options dictionary.  <a href="group___replicator.html#ga13405a32ecfa12c44b213ef3e91cc4b8">More...</a><br /></td></tr>
-<tr class="separator:ga13405a32ecfa12c44b213ef3e91cc4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6332db5d0a4a2437360a5b639ce36282"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_replicator_status.html">C4ReplicatorStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga6332db5d0a4a2437360a5b639ce36282">c4repl_getStatus</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
-<tr class="memdesc:ga6332db5d0a4a2437360a5b639ce36282"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current state of a replicator.  <a href="group___replicator.html#ga6332db5d0a4a2437360a5b639ce36282">More...</a><br /></td></tr>
-<tr class="separator:ga6332db5d0a4a2437360a5b639ce36282"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2e4d6d0dfa73ae28c7caacfc7594cf7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga2e4d6d0dfa73ae28c7caacfc7594cf7b">c4repl_getResponseHeaders</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
-<tr class="memdesc:ga2e4d6d0dfa73ae28c7caacfc7594cf7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the HTTP response headers as a Fleece-encoded dictionary.  <a href="group___replicator.html#ga2e4d6d0dfa73ae28c7caacfc7594cf7b">More...</a><br /></td></tr>
-<tr class="separator:ga2e4d6d0dfa73ae28c7caacfc7594cf7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga602ee10aa85d08b4e5b6b5affe69325b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga602ee10aa85d08b4e5b6b5affe69325b">c4repl_getPendingDocIDs</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:ga602ee10aa85d08b4e5b6b5affe69325b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a fleece encoded list of IDs of documents who have revisions pending push.  <a href="group___replicator.html#ga602ee10aa85d08b4e5b6b5affe69325b">More...</a><br /></td></tr>
-<tr class="separator:ga602ee10aa85d08b4e5b6b5affe69325b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga36b8b5b201437ef7a1689a9d3096b07e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga36b8b5b201437ef7a1689a9d3096b07e">c4repl_isDocumentPending</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:ga36b8b5b201437ef7a1689a9d3096b07e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if the document with the given ID has revisions pending push.  <a href="group___replicator.html#ga36b8b5b201437ef7a1689a9d3096b07e">More...</a><br /></td></tr>
-<tr class="separator:ga36b8b5b201437ef7a1689a9d3096b07e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2952f802ea88438eab7e3875a46a5b3d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga2952f802ea88438eab7e3875a46a5b3d">c4repl_getPeerTLSCertificate</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:ga2952f802ea88438eab7e3875a46a5b3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket)  <a href="group___replicator.html#ga2952f802ea88438eab7e3875a46a5b3d">More...</a><br /></td></tr>
-<tr class="separator:ga2952f802ea88438eab7e3875a46a5b3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga06e7d85ad0435a86159ba1126b1c4ece"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga06e7d85ad0435a86159ba1126b1c4ece">c4repl_setProgressLevel</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___replicator.html#ga2b625cd3bf1b8d1c3a2546693a823bd5">C4ReplicatorProgressLevel</a> level, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
-<tr class="memdesc:ga06e7d85ad0435a86159ba1126b1c4ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the progress level of the replicator, indicating what information should be provided via callback.  <a href="group___replicator.html#ga06e7d85ad0435a86159ba1126b1c4ece">More...</a><br /></td></tr>
-<tr class="separator:ga06e7d85ad0435a86159ba1126b1c4ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab2172730999b95328958ff240a37cffe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gab2172730999b95328958ff240a37cffe">c4db_setCookie</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> setCookieHeader, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> fromHost, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> fromPath, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gab2172730999b95328958ff240a37cffe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Takes the value of a "Set-Cookie:" header, received from the given host, from an HTTP request with the given path, and saves the cookie into the database's cookie store.  <a href="group___replicator.html#gab2172730999b95328958ff240a37cffe">More...</a><br /></td></tr>
-<tr class="separator:gab2172730999b95328958ff240a37cffe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaae9903dfff8d36e4b7935ac024de2a32"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaae9903dfff8d36e4b7935ac024de2a32">c4db_getCookies</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_address.html">C4Address</a> request, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:gaae9903dfff8d36e4b7935ac024de2a32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Locates any saved HTTP cookies relevant to the given request, and returns them as a string that can be used as the value of a "Cookie:" header.  <a href="group___replicator.html#gaae9903dfff8d36e4b7935ac024de2a32">More...</a><br /></td></tr>
-<tr class="separator:gaae9903dfff8d36e4b7935ac024de2a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaea5904088a5c2b586e9a098ba5e63cee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaea5904088a5c2b586e9a098ba5e63cee">c4db_clearCookies</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
-<tr class="memdesc:gaea5904088a5c2b586e9a098ba5e63cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all cookies from the database's cookie store.  <a href="group___replicator.html#gaea5904088a5c2b586e9a098ba5e63cee">More...</a><br /></td></tr>
-<tr class="separator:gaea5904088a5c2b586e9a098ba5e63cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a06cf5970b9e5937f3f0bf25964c604"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga2a06cf5970b9e5937f3f0bf25964c604">c4repl_isValidDatabaseName</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> dbName)</td></tr>
+<tr class="memdesc:ga2a06cf5970b9e5937f3f0bf25964c604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether a database name is valid, for purposes of appearing in a replication URL.  <a href="group___replicator.html#ga2a06cf5970b9e5937f3f0bf25964c604">More...</a><br /></td></tr>
+<tr class="separator:ga2a06cf5970b9e5937f3f0bf25964c604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadbdbd9768ff83478f954809e9b69f440"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gadbdbd9768ff83478f954809e9b69f440">c4repl_isValidRemote</a> (<a class="el" href="struct_c4_address.html">C4Address</a> remoteAddress, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> remoteDatabaseName, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gadbdbd9768ff83478f954809e9b69f440"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether the destination of a replication is valid.  <a href="group___replicator.html#gadbdbd9768ff83478f954809e9b69f440">More...</a><br /></td></tr>
+<tr class="separator:gadbdbd9768ff83478f954809e9b69f440"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaebc05716a62c4da309a05a04f270efa4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaebc05716a62c4da309a05a04f270efa4">c4address_fromURL</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> url, <a class="el" href="struct_c4_address.html">C4Address</a> *address, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> *dbName)</td></tr>
+<tr class="memdesc:gaebc05716a62c4da309a05a04f270efa4"><td class="mdescLeft">&#160;</td><td class="mdescRight">A simple URL parser that populates a <a class="el" href="struct_c4_address.html" title="A simple parsed-URL type.">C4Address</a> from a URL string.  <a href="group___replicator.html#gaebc05716a62c4da309a05a04f270efa4">More...</a><br /></td></tr>
+<tr class="separator:gaebc05716a62c4da309a05a04f270efa4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8817e1ab2940362ac0d4f24c3d4c16f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga8817e1ab2940362ac0d4f24c3d4c16f8">c4address_toURL</a> (<a class="el" href="struct_c4_address.html">C4Address</a> address)</td></tr>
+<tr class="memdesc:ga8817e1ab2940362ac0d4f24c3d4c16f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts a <a class="el" href="struct_c4_address.html" title="A simple parsed-URL type.">C4Address</a> to a URL.  <a href="group___replicator.html#ga8817e1ab2940362ac0d4f24c3d4c16f8">More...</a><br /></td></tr>
+<tr class="separator:ga8817e1ab2940362ac0d4f24c3d4c16f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0c7dafaf2976aa8e14c18fd76978d85f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga0c7dafaf2976aa8e14c18fd76978d85f">c4repl_new</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_address.html">C4Address</a> remoteAddress, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> remoteDatabaseName, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga0c7dafaf2976aa8e14c18fd76978d85f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new networked replicator.  <a href="group___replicator.html#ga0c7dafaf2976aa8e14c18fd76978d85f">More...</a><br /></td></tr>
+<tr class="separator:ga0c7dafaf2976aa8e14c18fd76978d85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2643ea18088ab5cded98b5cc6baca8b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga2643ea18088ab5cded98b5cc6baca8b0">c4repl_newWithSocket</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a> *openSocket, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga2643ea18088ab5cded98b5cc6baca8b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new replicator from an already-open C4Socket.  <a href="group___replicator.html#ga2643ea18088ab5cded98b5cc6baca8b0">More...</a><br /></td></tr>
+<tr class="separator:ga2643ea18088ab5cded98b5cc6baca8b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1e28a3daeb57d7eb555b9180d593266b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga1e28a3daeb57d7eb555b9180d593266b">c4repl_free</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
+<tr class="memdesc:ga1e28a3daeb57d7eb555b9180d593266b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a replicator reference.  <a href="group___replicator.html#ga1e28a3daeb57d7eb555b9180d593266b">More...</a><br /></td></tr>
+<tr class="separator:ga1e28a3daeb57d7eb555b9180d593266b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0cc0ea089a2db29989d440105d0c6ce4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga0cc0ea089a2db29989d440105d0c6ce4">c4repl_start</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool reset)</td></tr>
+<tr class="memdesc:ga0cc0ea089a2db29989d440105d0c6ce4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator to start.  <a href="group___replicator.html#ga0cc0ea089a2db29989d440105d0c6ce4">More...</a><br /></td></tr>
+<tr class="separator:ga0cc0ea089a2db29989d440105d0c6ce4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga53df9c4f40e43200dd1f98b276b27eeb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga53df9c4f40e43200dd1f98b276b27eeb">c4repl_stop</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
+<tr class="memdesc:ga53df9c4f40e43200dd1f98b276b27eeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator to stop.  <a href="group___replicator.html#ga53df9c4f40e43200dd1f98b276b27eeb">More...</a><br /></td></tr>
+<tr class="separator:ga53df9c4f40e43200dd1f98b276b27eeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf558062f30144fc4bd849a68ca0bae16"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaf558062f30144fc4bd849a68ca0bae16">c4repl_retry</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaf558062f30144fc4bd849a68ca0bae16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tells a replicator that's in the offline state to reconnect immediately.  <a href="group___replicator.html#gaf558062f30144fc4bd849a68ca0bae16">More...</a><br /></td></tr>
+<tr class="separator:gaf558062f30144fc4bd849a68ca0bae16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadea8c58052d7393d6d63e3bcb07c84e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gadea8c58052d7393d6d63e3bcb07c84e1">c4repl_setHostReachable</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool reachable)</td></tr>
+<tr class="memdesc:gadea8c58052d7393d6d63e3bcb07c84e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Informs the replicator whether it's considered possible to reach the remote host with the current network configuration.  <a href="group___replicator.html#gadea8c58052d7393d6d63e3bcb07c84e1">More...</a><br /></td></tr>
+<tr class="separator:gadea8c58052d7393d6d63e3bcb07c84e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7d9cab898f43bca3ec3fa12f627e0e9c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7d9cab898f43bca3ec3fa12f627e0e9c">c4repl_setSuspended</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, bool suspended)</td></tr>
+<tr class="memdesc:ga7d9cab898f43bca3ec3fa12f627e0e9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Puts the replicator in or out of "suspended" state.  <a href="group___replicator.html#ga7d9cab898f43bca3ec3fa12f627e0e9c">More...</a><br /></td></tr>
+<tr class="separator:ga7d9cab898f43bca3ec3fa12f627e0e9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga55a3ff1ef00e793971b547943844025b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga55a3ff1ef00e793971b547943844025b">c4repl_setOptions</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> optionsDictFleece)</td></tr>
+<tr class="memdesc:ga55a3ff1ef00e793971b547943844025b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the replicator's options dictionary.  <a href="group___replicator.html#ga55a3ff1ef00e793971b547943844025b">More...</a><br /></td></tr>
+<tr class="separator:ga55a3ff1ef00e793971b547943844025b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga002e10433ef14ed4eae163de6afe0c7d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_replicator_status.html">C4ReplicatorStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga002e10433ef14ed4eae163de6afe0c7d">c4repl_getStatus</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
+<tr class="memdesc:ga002e10433ef14ed4eae163de6afe0c7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current state of a replicator.  <a href="group___replicator.html#ga002e10433ef14ed4eae163de6afe0c7d">More...</a><br /></td></tr>
+<tr class="separator:ga002e10433ef14ed4eae163de6afe0c7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7b8bfc1886f4cd7870e8a73eaae50078">c4repl_getResponseHeaders</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
+<tr class="memdesc:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the HTTP response headers as a Fleece-encoded dictionary.  <a href="group___replicator.html#ga7b8bfc1886f4cd7870e8a73eaae50078">More...</a><br /></td></tr>
+<tr class="separator:ga7b8bfc1886f4cd7870e8a73eaae50078"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39aad33c5038dae3b90292461c56c932"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga39aad33c5038dae3b90292461c56c932">c4repl_getPendingDocIDs</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:ga39aad33c5038dae3b90292461c56c932"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a fleece encoded list of IDs of documents who have revisions pending push.  <a href="group___replicator.html#ga39aad33c5038dae3b90292461c56c932">More...</a><br /></td></tr>
+<tr class="separator:ga39aad33c5038dae3b90292461c56c932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaab4d62ac12203d46ad18d7abbe8881ad">c4repl_isDocumentPending</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if the document with the given ID has revisions pending push.  <a href="group___replicator.html#gaab4d62ac12203d46ad18d7abbe8881ad">More...</a><br /></td></tr>
+<tr class="separator:gaab4d62ac12203d46ad18d7abbe8881ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7bdb28e1b51e7d3dd741830804331530"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga7bdb28e1b51e7d3dd741830804331530">c4repl_getPeerTLSCertificate</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:ga7bdb28e1b51e7d3dd741830804331530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket)  <a href="group___replicator.html#ga7bdb28e1b51e7d3dd741830804331530">More...</a><br /></td></tr>
+<tr class="separator:ga7bdb28e1b51e7d3dd741830804331530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24c3e7bc3f92875bb6a2af0d457e6f4f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga24c3e7bc3f92875bb6a2af0d457e6f4f">c4repl_setProgressLevel</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl, <a class="el" href="group___replicator.html#ga2b625cd3bf1b8d1c3a2546693a823bd5">C4ReplicatorProgressLevel</a> level, <a class="el" href="struct_c4_error.html">C4Error</a> *outErr)</td></tr>
+<tr class="memdesc:ga24c3e7bc3f92875bb6a2af0d457e6f4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the progress level of the replicator, indicating what information should be provided via callback.  <a href="group___replicator.html#ga24c3e7bc3f92875bb6a2af0d457e6f4f">More...</a><br /></td></tr>
+<tr class="separator:ga24c3e7bc3f92875bb6a2af0d457e6f4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadd66c624f4d5b869578578bca21a4afb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gadd66c624f4d5b869578578bca21a4afb">c4db_setCookie</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> setCookieHeader, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> fromHost, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> fromPath, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gadd66c624f4d5b869578578bca21a4afb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Takes the value of a "Set-Cookie:" header, received from the given host, from an HTTP request with the given path, and saves the cookie into the database's cookie store.  <a href="group___replicator.html#gadd66c624f4d5b869578578bca21a4afb">More...</a><br /></td></tr>
+<tr class="separator:gadd66c624f4d5b869578578bca21a4afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga86ba82a27e48f1b7413db6f64752a06c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga86ba82a27e48f1b7413db6f64752a06c">c4db_getCookies</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_address.html">C4Address</a> request, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:ga86ba82a27e48f1b7413db6f64752a06c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Locates any saved HTTP cookies relevant to the given request, and returns them as a string that can be used as the value of a "Cookie:" header.  <a href="group___replicator.html#ga86ba82a27e48f1b7413db6f64752a06c">More...</a><br /></td></tr>
+<tr class="separator:ga86ba82a27e48f1b7413db6f64752a06c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9a12748e542fc9c66eff8beed6db8765"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#ga9a12748e542fc9c66eff8beed6db8765">c4db_clearCookies</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db)</td></tr>
+<tr class="memdesc:ga9a12748e542fc9c66eff8beed6db8765"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all cookies from the database's cookie store.  <a href="group___replicator.html#ga9a12748e542fc9c66eff8beed6db8765">More...</a><br /></td></tr>
+<tr class="separator:ga9a12748e542fc9c66eff8beed6db8765"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -1039,6 +1044,22 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="gadd2fe4f0a5cd4d6eb7959346f95ab370"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadd2fe4f0a5cd4d6eb7959346f95ab370">&#9670;&nbsp;</a></span>kC4SocketOptionNetworkInterface</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4SocketOptionNetworkInterface&#160;&#160;&#160;&quot;networkInterface&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Specific network interface (name or IP address) used for connecting to the remote server. </p>
+
+</div>
+</div>
 <a id="gaca9c3e8564dbe28e19caf23209f4f48c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaca9c3e8564dbe28e19caf23209f4f48c">&#9670;&nbsp;</a></span>kC4SocketOptionWSProtocols</h2>
 
@@ -1056,14 +1077,14 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="gaf08dc5fddff8762945b2b74935265c9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf08dc5fddff8762945b2b74935265c9d">&#9670;&nbsp;</a></span>C4ReplicatorBlobProgressCallback</h2>
+<a id="ga8cb120a46d2c1e4d92026c42b52292c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8cb120a46d2c1e4d92026c42b52292c1">&#9670;&nbsp;</a></span>C4ReplicatorBlobProgressCallback</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* C4ReplicatorBlobProgressCallback) (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *, bool pushing, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> collectionName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docProperty, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> blobKey, uint64_t bytesComplete, uint64_t bytesTotal, <a class="el" href="struct_c4_error.html">C4Error</a> error, void *context)</td>
+          <td class="memname">typedef void(* C4ReplicatorBlobProgressCallback) (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *, bool pushing, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> collectionSpec, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docProperty, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> blobKey, uint64_t bytesComplete, uint64_t bytesTotal, <a class="el" href="struct_c4_error.html">C4Error</a> error, void *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1134,14 +1155,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gab72ef8d000cfc3f34faf4116f8e1e4d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab72ef8d000cfc3f34faf4116f8e1e4d9">&#9670;&nbsp;</a></span>C4ReplicatorValidationFunction</h2>
+<a id="gaf0759f0a043b891adddf5f47c097a712"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf0759f0a043b891adddf5f47c097a712">&#9670;&nbsp;</a></span>C4ReplicatorValidationFunction</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef bool(* C4ReplicatorValidationFunction) (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> collectionName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a>, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> body, void *context)</td>
+          <td class="memname">typedef bool(* C4ReplicatorValidationFunction) (<a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> collectionSpec, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a>, <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> body, void *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1254,14 +1275,14 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gad70ff5d011935985191418dbaebaf41d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad70ff5d011935985191418dbaebaf41d">&#9670;&nbsp;</a></span>c4address_fromURL()</h2>
+<a id="gaebc05716a62c4da309a05a04f270efa4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaebc05716a62c4da309a05a04f270efa4">&#9670;&nbsp;</a></span>c4address_fromURL()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4address_fromURL </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4address_fromURL </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>url</em>, </td>
@@ -1299,14 +1320,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa7cb7283b3dc71abdda487bbd2d0d16d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa7cb7283b3dc71abdda487bbd2d0d16d">&#9670;&nbsp;</a></span>c4address_toURL()</h2>
+<a id="ga8817e1ab2940362ac0d4f24c3d4c16f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8817e1ab2940362ac0d4f24c3d4c16f8">&#9670;&nbsp;</a></span>c4address_toURL()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4address_toURL </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4address_toURL </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="struct_c4_address.html">C4Address</a>&#160;</td>
           <td class="paramname"><em>address</em></td><td>)</td>
@@ -1319,14 +1340,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaea5904088a5c2b586e9a098ba5e63cee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaea5904088a5c2b586e9a098ba5e63cee">&#9670;&nbsp;</a></span>c4db_clearCookies()</h2>
+<a id="ga9a12748e542fc9c66eff8beed6db8765"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9a12748e542fc9c66eff8beed6db8765">&#9670;&nbsp;</a></span>c4db_clearCookies()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4db_clearCookies </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4db_clearCookies </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em></td><td>)</td>
@@ -1339,14 +1360,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaae9903dfff8d36e4b7935ac024de2a32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaae9903dfff8d36e4b7935ac024de2a32">&#9670;&nbsp;</a></span>c4db_getCookies()</h2>
+<a id="ga86ba82a27e48f1b7413db6f64752a06c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga86ba82a27e48f1b7413db6f64752a06c">&#9670;&nbsp;</a></span>c4db_getCookies()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4db_getCookies </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4db_getCookies </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -1375,14 +1396,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gab2172730999b95328958ff240a37cffe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab2172730999b95328958ff240a37cffe">&#9670;&nbsp;</a></span>c4db_setCookie()</h2>
+<a id="gadd66c624f4d5b869578578bca21a4afb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadd66c624f4d5b869578578bca21a4afb">&#9670;&nbsp;</a></span>c4db_setCookie()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4db_setCookie </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_setCookie </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -1424,14 +1445,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gade69de3543d564b24abfedb2360ac1b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gade69de3543d564b24abfedb2360ac1b4">&#9670;&nbsp;</a></span>c4repl_free()</h2>
+<a id="ga1e28a3daeb57d7eb555b9180d593266b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1e28a3daeb57d7eb555b9180d593266b">&#9670;&nbsp;</a></span>c4repl_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_free </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_free </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em></td><td>)</td>
@@ -1441,18 +1462,18 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Frees a replicator reference. </p>
-<p>Does not stop the replicator &ndash; if the replicator still has other internal references, it will keep going. If you need the replicator to stop, call <a class="el" href="group___replicator.html#gad091a226a7603501dd9126d57ce919bd">c4repl_stop</a> first. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
+<p>Does not stop the replicator &ndash; if the replicator still has other internal references, it will keep going. If you need the replicator to stop, call <a class="el" href="group___replicator.html#ga53df9c4f40e43200dd1f98b276b27eeb">c4repl_stop</a> first. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
-<a id="ga2952f802ea88438eab7e3875a46a5b3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2952f802ea88438eab7e3875a46a5b3d">&#9670;&nbsp;</a></span>c4repl_getPeerTLSCertificate()</h2>
+<a id="ga7bdb28e1b51e7d3dd741830804331530"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7bdb28e1b51e7d3dd741830804331530">&#9670;&nbsp;</a></span>c4repl_getPeerTLSCertificate()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a>* c4repl_getPeerTLSCertificate </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a>* c4repl_getPeerTLSCertificate </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1475,17 +1496,23 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga602ee10aa85d08b4e5b6b5affe69325b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga602ee10aa85d08b4e5b6b5affe69325b">&#9670;&nbsp;</a></span>c4repl_getPendingDocIDs()</h2>
+<a id="ga39aad33c5038dae3b90292461c56c932"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39aad33c5038dae3b90292461c56c932">&#9670;&nbsp;</a></span>c4repl_getPendingDocIDs()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a> c4repl_getPendingDocIDs </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a> c4repl_getPendingDocIDs </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1506,6 +1533,7 @@ Variables</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">repl</td><td>The C4Replicator instance. </td></tr>
+    <tr><td class="paramname">spec</td><td>The collection spec </td></tr>
     <tr><td class="paramname">outErr</td><td>On failure, error information will be written here if non-NULL. </td></tr>
   </table>
   </dd>
@@ -1514,14 +1542,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga2e4d6d0dfa73ae28c7caacfc7594cf7b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2e4d6d0dfa73ae28c7caacfc7594cf7b">&#9670;&nbsp;</a></span>c4repl_getResponseHeaders()</h2>
+<a id="ga7b8bfc1886f4cd7870e8a73eaae50078"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7b8bfc1886f4cd7870e8a73eaae50078">&#9670;&nbsp;</a></span>c4repl_getResponseHeaders()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> c4repl_getResponseHeaders </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> c4repl_getResponseHeaders </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em></td><td>)</td>
@@ -1536,14 +1564,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6332db5d0a4a2437360a5b639ce36282"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6332db5d0a4a2437360a5b639ce36282">&#9670;&nbsp;</a></span>c4repl_getStatus()</h2>
+<a id="ga002e10433ef14ed4eae163de6afe0c7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga002e10433ef14ed4eae163de6afe0c7d">&#9670;&nbsp;</a></span>c4repl_getStatus()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="struct_c4_replicator_status.html">C4ReplicatorStatus</a> c4repl_getStatus </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_replicator_status.html">C4ReplicatorStatus</a> c4repl_getStatus </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em></td><td>)</td>
@@ -1558,14 +1586,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga36b8b5b201437ef7a1689a9d3096b07e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga36b8b5b201437ef7a1689a9d3096b07e">&#9670;&nbsp;</a></span>c4repl_isDocumentPending()</h2>
+<a id="gaab4d62ac12203d46ad18d7abbe8881ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab4d62ac12203d46ad18d7abbe8881ad">&#9670;&nbsp;</a></span>c4repl_isDocumentPending()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4repl_isDocumentPending </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4repl_isDocumentPending </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1575,6 +1603,12 @@ Variables</h2></td></tr>
           <td></td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>docID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a>&#160;</td>
+          <td class="paramname"><em>spec</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1596,6 +1630,7 @@ Variables</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">repl</td><td>The C4Replicator instance. </td></tr>
     <tr><td class="paramname">docID</td><td>The ID of the document to check </td></tr>
+    <tr><td class="paramname">spec</td><td>The collection the docID belongs to. </td></tr>
     <tr><td class="paramname">outErr</td><td>On failure, error information will be written here if non-NULL. </td></tr>
   </table>
   </dd>
@@ -1604,14 +1639,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga11cee8ef8da969e6b6d1f57de1f12f17"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga11cee8ef8da969e6b6d1f57de1f12f17">&#9670;&nbsp;</a></span>c4repl_isValidDatabaseName()</h2>
+<a id="ga2a06cf5970b9e5937f3f0bf25964c604"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2a06cf5970b9e5937f3f0bf25964c604">&#9670;&nbsp;</a></span>c4repl_isValidDatabaseName()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4repl_isValidDatabaseName </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4repl_isValidDatabaseName </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>dbName</em></td><td>)</td>
@@ -1624,14 +1659,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaef268a73ceda02c8dca567b88e7f61f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaef268a73ceda02c8dca567b88e7f61f7">&#9670;&nbsp;</a></span>c4repl_isValidRemote()</h2>
+<a id="gadbdbd9768ff83478f954809e9b69f440"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadbdbd9768ff83478f954809e9b69f440">&#9670;&nbsp;</a></span>c4repl_isValidRemote()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4repl_isValidRemote </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4repl_isValidRemote </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="struct_c4_address.html">C4Address</a>&#160;</td>
           <td class="paramname"><em>remoteAddress</em>, </td>
@@ -1661,14 +1696,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaee627071896221b393a54f441f4f5def"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaee627071896221b393a54f441f4f5def">&#9670;&nbsp;</a></span>c4repl_new()</h2>
+<a id="ga0c7dafaf2976aa8e14c18fd76978d85f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0c7dafaf2976aa8e14c18fd76978d85f">&#9670;&nbsp;</a></span>c4repl_new()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>* c4repl_new </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>* c4repl_new </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -1720,14 +1755,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gad8e26ddef72ceb7e3a45cfeec2410c31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad8e26ddef72ceb7e3a45cfeec2410c31">&#9670;&nbsp;</a></span>c4repl_newWithSocket()</h2>
+<a id="ga2643ea18088ab5cded98b5cc6baca8b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2643ea18088ab5cded98b5cc6baca8b0">&#9670;&nbsp;</a></span>c4repl_newWithSocket()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>* c4repl_newWithSocket </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>* c4repl_newWithSocket </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -1759,7 +1794,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates a new replicator from an already-open C4Socket. </p>
-<p>This is for use by listeners that accept incoming connections, wrap them by calling <code><a class="el" href="group___socket.html#ga42632bdac8ee35b6c7c8890c5ac7da8f" title="Constructs a C4Socket from a &quot;native handle&quot;, whose interpretation is up to the C4SocketFactory.">c4socket_fromNative()</a></code>, then start a passive replication to service them. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>This is for use by listeners that accept incoming connections, wrap them by calling <code><a class="el" href="group___socket.html#ga2713c7c9ab08da6bd6e8e5c48779f4af" title="Constructs a C4Socket from a &quot;native handle&quot;, whose interpretation is up to the C4SocketFactory.">c4socket_fromNative()</a></code>, then start a passive replication to service them. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">db</td><td>The local database. </td></tr>
     <tr><td class="paramname">openSocket</td><td>An already-created C4Socket. </td></tr>
@@ -1772,14 +1807,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6bb03ef73a5585bff565a5473b5c3d37"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6bb03ef73a5585bff565a5473b5c3d37">&#9670;&nbsp;</a></span>c4repl_retry()</h2>
+<a id="gaf558062f30144fc4bd849a68ca0bae16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf558062f30144fc4bd849a68ca0bae16">&#9670;&nbsp;</a></span>c4repl_retry()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4repl_retry </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4repl_retry </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1811,14 +1846,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gae1940285e43ed9864aa1edb9c9149ff5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae1940285e43ed9864aa1edb9c9149ff5">&#9670;&nbsp;</a></span>c4repl_setHostReachable()</h2>
+<a id="gadea8c58052d7393d6d63e3bcb07c84e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadea8c58052d7393d6d63e3bcb07c84e1">&#9670;&nbsp;</a></span>c4repl_setHostReachable()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_setHostReachable </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_setHostReachable </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1842,14 +1877,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga13405a32ecfa12c44b213ef3e91cc4b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga13405a32ecfa12c44b213ef3e91cc4b8">&#9670;&nbsp;</a></span>c4repl_setOptions()</h2>
+<a id="ga55a3ff1ef00e793971b547943844025b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga55a3ff1ef00e793971b547943844025b">&#9670;&nbsp;</a></span>c4repl_setOptions()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_setOptions </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_setOptions </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1874,14 +1909,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga06e7d85ad0435a86159ba1126b1c4ece"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga06e7d85ad0435a86159ba1126b1c4ece">&#9670;&nbsp;</a></span>c4repl_setProgressLevel()</h2>
+<a id="ga24c3e7bc3f92875bb6a2af0d457e6f4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga24c3e7bc3f92875bb6a2af0d457e6f4f">&#9670;&nbsp;</a></span>c4repl_setProgressLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool c4repl_setProgressLevel </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4repl_setProgressLevel </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1919,14 +1954,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga1dae839e96ed4b7af77da05f9d4ce8ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1dae839e96ed4b7af77da05f9d4ce8ce">&#9670;&nbsp;</a></span>c4repl_setSuspended()</h2>
+<a id="ga7d9cab898f43bca3ec3fa12f627e0e9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7d9cab898f43bca3ec3fa12f627e0e9c">&#9670;&nbsp;</a></span>c4repl_setSuspended()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_setSuspended </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_setSuspended </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1950,14 +1985,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa035eb5fa7bbd3b8f7e18bdfb34c54d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa035eb5fa7bbd3b8f7e18bdfb34c54d4">&#9670;&nbsp;</a></span>c4repl_start()</h2>
+<a id="ga0cc0ea089a2db29989d440105d0c6ce4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0cc0ea089a2db29989d440105d0c6ce4">&#9670;&nbsp;</a></span>c4repl_start()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_start </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_start </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em>, </td>
@@ -1988,14 +2023,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gad091a226a7603501dd9126d57ce919bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad091a226a7603501dd9126d57ce919bd">&#9670;&nbsp;</a></span>c4repl_stop()</h2>
+<a id="ga53df9c4f40e43200dd1f98b276b27eeb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga53df9c4f40e43200dd1f98b276b27eeb">&#9670;&nbsp;</a></span>c4repl_stop()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void c4repl_stop </td>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4repl_stop </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td>
           <td class="paramname"><em>repl</em></td><td>)</td>

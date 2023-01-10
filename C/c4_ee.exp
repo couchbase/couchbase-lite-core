@@ -124,11 +124,9 @@ _c4stream_computeBlobKey
 _c4stream_install
 _c4stream_closeWriter
 
-_c4dbobs_create
 _c4dbobs_getChanges
 _c4dbobs_releaseChanges
 _c4dbobs_free
-_c4docobs_create
 _c4docobs_free
 
 _c4repl_new
@@ -353,6 +351,8 @@ _c4db_collectionNames
 _c4db_scopeNames
 _c4dbobs_createOnCollection
 _c4docobs_createWithCollection
+_c4coll_enumerateAllDocs
+_c4coll_enumerateChanges
 _c4coll_getSpec
 _c4coll_getDatabase
 _c4coll_getDocumentCount

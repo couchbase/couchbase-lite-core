@@ -139,7 +139,7 @@ namespace litecore {
         Assert(!inTransaction());
 
         logInfo("begin transaction at #%" PRIu64, (uint64_t)_lastSequence);
-        _transaction = make_unique<CollectionChangeNotifier>(*this, nullptr);
+        _transaction = make_unique<CollectionChangeNotifier>(this, nullptr);
         _preTransactionLastSequence = _lastSequence;
     }
 
@@ -475,17 +475,19 @@ namespace litecore {
 #pragma mark - DOC CHANGE NOTIFIER:
 
 
-    DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
+    DocChangeNotifier::DocChangeNotifier(SequenceTracker *t, slice docID, Callback cb)
     :tracker(t),
-    _docEntry(tracker.addDocChangeNotifier(docID, this))
+    _docEntry(tracker->addDocChangeNotifier(docID, this))
     ,callback(move(cb))
     {
-        t._logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
+        t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
 
     DocChangeNotifier::~DocChangeNotifier() {
-        tracker._logVerbose("Removing doc change notifier %p from '%.*s'", this, SPLAT(_docEntry->docID));
-        tracker.removeDocChangeNotifier(_docEntry, this);
+        if (tracker) {
+            tracker->_logVerbose("Removing doc change notifier %p from '%.*s'", this, SPLAT(_docEntry->docID));
+            tracker->removeDocChangeNotifier(_docEntry, this);
+        }
     }
 
 
@@ -508,11 +510,11 @@ namespace litecore {
 #pragma mark - DATABASE CHANGE NOTIFIER:
 
 
-    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
+    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker *t, Callback cb, sequence_t afterSeq)
     :Logging(ChangesLog)
     ,tracker(t)
     ,callback(move(cb))
-    ,_placeholder(tracker.addPlaceholderAfter(this, afterSeq))
+    ,_placeholder(tracker->addPlaceholderAfter(this, afterSeq))
     {
         if (callback)
             logInfo("Created, starting after #%" PRIu64, (uint64_t)afterSeq);
@@ -522,7 +524,10 @@ namespace litecore {
     CollectionChangeNotifier::~CollectionChangeNotifier() {
         if (callback)
             logInfo("Deleting");
-        tracker.removePlaceholder(_placeholder);
+
+        if (tracker) {
+            tracker->removePlaceholder(_placeholder);
+        }
     }
 
 
@@ -537,7 +542,7 @@ namespace litecore {
     size_t CollectionChangeNotifier::readChanges(SequenceTracker::Change changes[],
                                                size_t maxChanges,
                                                bool &external) {
-        size_t n = tracker.readChanges(_placeholder, changes, maxChanges, external);
+        size_t n = tracker->readChanges(_placeholder, changes, maxChanges, external);
         logInfo("readChanges(%zu) -> %zu changes", maxChanges, n);
         return n;
     }

@@ -54,10 +54,10 @@ namespace litecore {
     {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         if (fleece::endian::dec32(rawRev->size_BE) > raw_tree.size)
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary error");
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "RawRevision decodeTree reading count error");
         deque<Rev> revs(count);
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
@@ -73,13 +73,13 @@ namespace litecore {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto revIndex = endian::dec16(entry->revIndex_BE);
             if (remoteID == 0 || revIndex >= count)
-                error::_throw(error::CorruptRevisionData);
+                error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error");
             remoteMap[remoteID] = &revs[revIndex];
             ++entry;
         }
 
         if ((uint8_t*)entry != (uint8_t*)raw_tree.end()) {
-            error::_throw(error::CorruptRevisionData);
+            error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary layout error");
         }
         return revs;
     }
@@ -143,6 +143,8 @@ namespace litecore {
 
     void RawRevision::copyTo(Rev &dst, const deque<Rev> &revs) const {
         const void* end = this->next();
+        dst._hasInsertedRevID = false;
+        dst._hasInsertedBody = false;
         dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & ~kPersistentOnlyFlags);
         auto parentIndex = endian::dec16(this->parentIndex_BE);

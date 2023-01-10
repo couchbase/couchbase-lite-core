@@ -56,7 +56,9 @@ namespace litecore::repl {
         // Get the document & revision:
         C4Error c4err = {};
         Dict root;
-        Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
+        auto collection = getCollection();
+        Retained<C4Document> doc = _db->useCollection(collection)
+                                ->getDocument(request->docID, true, kDocGetAll);
         if (doc) {
             if (doc->selectRevision(request->revID, true))
                 root = doc->getProperties();
@@ -90,6 +92,7 @@ namespace litecore::repl {
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
+        assignCollectionToMsg(msg, collectionIndex());
         msg.compressed = true;
         msg["id"_sl] = request->docID;
         msg["rev"_sl] = fullRevID;

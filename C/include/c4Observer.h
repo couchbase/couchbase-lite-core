@@ -41,16 +41,6 @@ C4API_BEGIN_DECLS
     typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer,
                                                void* C4NULLABLE context);
 
-#ifndef C4_STRICT_COLLECTION_API
-
-    typedef C4CollectionObserverCallback C4DatabaseObserverCallback;
-
-    /** Creates a collection observer on the database's default collection. */
-    CBL_CORE_API C4DatabaseObserver* c4dbobs_create(C4Database* database,
-                                       C4DatabaseObserverCallback callback,
-                                       void* C4NULLABLE context) C4API;
-
-#endif
 
     /** Creates a new collection observer, with a callback that will be invoked after one or more
         documents in the collection have changed.
@@ -61,7 +51,8 @@ C4API_BEGIN_DECLS
         @return  The new observer reference. */
     CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collection* collection,
                                                      C4CollectionObserverCallback callback,
-                                                     void* C4NULLABLE context) C4API;
+                                                     void* C4NULLABLE context,
+                                                     C4Error* C4NULLABLE error) C4API;
 
     /** Identifies which documents have changed in the collection since the last time this function
         was called, or since the observer was created. This function effectively "reads" changes
@@ -80,13 +71,11 @@ C4API_BEGIN_DECLS
                             written.
         @param maxChanges  The maximum number of changes to return, i.e. the size of the caller's
                             outChanges buffer.
-        @param outExternal  Will be set to true if the changes were made by a different C4Database.
-        @return  The number of changes written to `outChanges`. If this is less than `maxChanges`,
-                            the end has been reached and the observer is reset. */
-    CBL_CORE_API uint32_t c4dbobs_getChanges(C4CollectionObserver *observer,
-                                C4CollectionChange outChanges[C4NONNULL],
-                                uint32_t maxChanges,
-                                bool *outExternal) C4API;
+        @return  Common information about the changes contained in outChanges (number of changes, 
+                 external vs non-external, and the relevant collection) */
+    CBL_CORE_API C4CollectionObservation c4dbobs_getChanges(C4CollectionObserver *observer,
+                                         C4CollectionChange outChanges[C4NONNULL],
+                                         uint32_t maxChanges) C4API;
 
     /** Releases the memory used by the `C4CollectionChange` structs (to hold the docID and revID
         strings.) This must be called after \ref c4dbobs_getChanges().
@@ -108,19 +97,11 @@ C4API_BEGIN_DECLS
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
     typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
+                                               C4Collection* collection,
                                                C4String docID,
                                                C4SequenceNumber sequence,
                                                void * C4NULLABLE context);
 
-#ifndef C4_STRICT_COLLECTION_API
-
-/** Creates a new document observer, on a document in the database's default collection. */
-    CBL_CORE_API C4DocumentObserver* c4docobs_create(C4Database* database,
-                                        C4String docID,
-                                        C4DocumentObserverCallback callback,
-                                        void* C4NULLABLE context) C4API;
-
-#endif
 
     /** Creates a new document observer, with a callback that will be invoked when the document
         changes.
@@ -133,7 +114,8 @@ C4API_BEGIN_DECLS
     CBL_CORE_API C4DocumentObserver* c4docobs_createWithCollection(C4Collection *collection,
                                                       C4String docID,
                                                       C4DocumentObserverCallback callback,
-                                                      void* C4NULLABLE context) C4API;
+                                                      void* C4NULLABLE context,
+                                                      C4Error* C4NULLABLE error) C4API;
 
     /** @} */
 

@@ -1156,10 +1156,10 @@ public:
 
 TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
-    populate({"widgets"_sl}, "wikipedia_100.json");
+    populate({"Widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
 
-    compileSelect(json5("{WHAT: ['.widgets.title'], FROM: [{COLLECTION:'widgets'}]}"));
+    compileSelect(json5("{WHAT: ['.Widgets.title'], FROM: [{COLLECTION:'Widgets'}]}"));
     CHECK(run().size() == 100);
 
     compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'nested', SCOPE:'small'}],"
@@ -1169,6 +1169,36 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'small.nested'}],"
                         "WHERE: ['=', ['.nested.shapes[0].color'], 'red']}"));
     CHECK(run().size() == 2);
+}
+
+
+TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C][FTS]") {
+    {
+        TransactionHelper t(db);
+        populate({"wiki"_sl}, "wikipedia_100.json");
+        populate({"names"_sl, "namedscope"_sl}, "names_100.json");
+    }
+    C4Collection *wiki  = c4db_createCollection(db, {"wiki"_sl}, ERROR_INFO());
+    C4Collection *names = c4db_createCollection(db, {"names"_sl, "namedscope"_sl}, ERROR_INFO());
+    REQUIRE(wiki);
+    REQUIRE(names);
+
+    C4Error err;
+    REQUIRE(c4coll_createIndex(names, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                               kC4JSONQuery, kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+    REQUIRE(c4coll_createIndex(wiki, C4STR("byText"), C4STR("[[\".text\"]]"),
+                               kC4JSONQuery, kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+
+    compile(json5("['AND', ['MATCH()', 'names.byStreet', 'Hwy'],\
+                           ['MATCH()', 'wiki.byText',    'fictional']]"),
+            "",
+            false,
+            "[[\".names._id\"], [\".wiki._id\"]]",
+            json5("[{COLLECTION: 'names', SCOPE: 'namedscope'},{COLLECTION:'wiki',\
+                          ON: ['!=', ['.names.birthday'], ['.wiki.title']]}]"));
+
+    CHECK(run().size() == 50);
+    CHECK(runFTS().size() == 50);
 }
 
 

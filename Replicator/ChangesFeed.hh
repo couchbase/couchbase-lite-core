@@ -103,12 +103,12 @@ namespace litecore::repl {
         std::unique_ptr<C4DatabaseObserver> _changeObserver;// Used in continuous push mode
         C4SequenceNumber _maxSequence {0};                  // Latest sequence I've read
         bool _continuous;                                   // Continuous mode
-        bool _passive;                                      // True if replicator is passive
         bool _echoLocalChanges {false};                     // True if including changes made by _db
         bool _skipDeleted {false};                          // True if skipping tombstones
         bool _isCheckpointValid {true};
         bool _caughtUp {false};                             // Delivered all historical changes
         std::atomic<bool> _notifyOnChanges {false};         // True if expecting change notification
+        CollectionIndex _collectionIndex;                   // Identifies the collection index (in the replicator) of the collection being used
     };
 
 

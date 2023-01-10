@@ -17,6 +17,7 @@
 #include "c4Private.h"
 #include "c4Replicator.hh"
 #include "c4ListenerInternal.hh"
+#include "c4ReplicatorHelpers.hh"
 #include "Server.hh"
 #include "fleece/RefCounted.hh"
 #include "StringUtil.hh"
@@ -65,7 +66,7 @@ namespace litecore { namespace REST {
                       SPLAT(remoteDbName),
                       _bidi, _continuous);
 
-                C4ReplicatorParameters params = {};
+                repl::C4ReplParamsDefaultCollection params;
                 AllocedDict optionsDict;
                 params.push = pushMode;
                 params.pull = pullMode;

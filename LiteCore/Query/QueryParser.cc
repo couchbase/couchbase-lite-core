@@ -17,6 +17,7 @@
 #include "QueryParserTables.hh"
 #include "Record.hh"
 #include "Base64.hh"
+#include "DataFile.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
 #include "MutableDict.hh"
@@ -457,9 +458,12 @@ namespace litecore {
         }
         if (from.alias.empty()) {
             if (collection) {
-                if (auto dot = collection.findByte('.'))
-                    collection.setStart(dot + 1);   // skip scope name: a dot in an alias is bad
-                from.alias = string(collection);
+                auto dot = DataFile::findCollectionPathSeparator(collection.asString());
+                if (dot != string::npos) {
+                    from.alias = DataFile::unescapeCollectionName(collection.asString().substr(dot+1));
+                } else {
+                    from.alias = DataFile::unescapeCollectionName(collection.asString());
+                }
             } else {
                 from.alias = _defaultCollectionName;
             }
@@ -507,7 +511,6 @@ namespace litecore {
     }
 
 
-
     static string aliasOfFromEntry(const Value *value, const string& defaultAlias) {
         auto dict = requiredDict(value, "FROM item");
         string ret {optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
@@ -516,8 +519,10 @@ namespace litecore {
                                          "COLLECTION in FROM item")};
             if (ret.empty()) {
                 ret = defaultAlias;
-            } else if (auto pos = ret.find('.'); pos != string::npos) {
-                ret = ret.substr(pos + 1);
+            } else if (auto pos = DataFile::findCollectionPathSeparator(ret); pos != string::npos) {
+                ret = DataFile::unescapeCollectionName(ret.substr(pos + 1));
+            } else {
+                ret = DataFile::unescapeCollectionName(ret);
             }
         }
         return ret;
@@ -593,8 +598,34 @@ namespace litecore {
         for (auto &ftsTable : _indexJoinTables) {
             auto &table = ftsTable.first;
             auto &alias = ftsTable.second;
+            auto idxAt = table.find(KeyStore::kIndexSeparator);
+            // Encoded in the name of the index table is collection against which the index
+            // is created. "docID" of this table is to match the "rowid" of the collection table.
+            // The left-side of the separator is the original collection.
+            // The Prediction method also uses a separate table; only the separator is different.
+            if (idxAt == string::npos) {
+                idxAt = table.find(KeyStore::kPredictSeparator);
+            }
+            string coAlias;
+            if (idxAt != string::npos) {
+                string collTable = table.substr(0, idxAt);
+                for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
+                    if (iter->second.type == kResultAlias) {
+                        continue;
+                    }
+                    if (iter->second.tableName == collTable) {
+                        coAlias = iter->first;
+                    }
+                }
+            }
+            DebugAssert(!coAlias.empty());
+            if (coAlias.empty()) {
+                // Hack, to be fixed!
+                Warn("The collecion is not specified. Hacked it to default.");
+                coAlias = _dbAlias;
+            }
             _sql << " JOIN " << sqlIdentifier(table) << " AS " << alias
-                 << " ON " << alias << ".docid = " << sqlIdentifier(_dbAlias) << ".rowid";
+                 << " ON " << alias << ".docid = " << sqlIdentifier(coAlias) << ".rowid";
         }
     }
 
@@ -1655,7 +1686,7 @@ namespace litecore {
     // Post-condition:
     //     return_iterator != _aliases.end() && return_iterator->second.type != kResultAlias
     QueryParser::AliasMap::const_iterator
-    QueryParser::verifyDbAlias(fleece::impl::Path &property) const {
+    QueryParser::verifyDbAlias(fleece::impl::Path &property, string* error) const {
         string alias;
         auto iType = _aliases.end();
         if(!property.empty()) {
@@ -1680,6 +1711,7 @@ namespace litecore {
                 }
             }
         }
+        bool dropAliasIfSuccess = false;
         if (_propertiesUseSourcePrefix && !property.empty()) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
@@ -1687,7 +1719,7 @@ namespace litecore {
                 // With join (size > 1), properties must start with a keyspace alias to avoid ambiguity.
                 // Otherwise, we assume property[0] to be the alias if it coincides with the unique one.
                 // Otherwise, we consider that the property path starts in the document and, hence, do not drop.
-                property.drop(1);
+                dropAliasIfSuccess = true;
             } else {
                 alias = _dbAlias;
             }
@@ -1703,16 +1735,32 @@ namespace litecore {
             }
         }
 
-        require(iType != _aliases.end(),
-                "property '%s.%s' does not begin with a declared 'AS' alias",
-                alias.c_str(), string(property).c_str());
-
+        bool postCondition = (iType != _aliases.end());
+        if (!postCondition) {
+            string message = format("property '%s' does not begin with a declared 'AS' alias",
+                                    string(property).c_str());
+            if (error == nullptr) {
+                fail("%s", message.c_str());
+                // no-return
+            } else {
+                *error = message;
+            }
+        } else if (dropAliasIfSuccess) {
+            property.drop(1);
+        }
         return iType;
     }
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
+        size_t propertySizeIn = property.size();
+        // We send "property" to verifyDbAlias(). This function ensure that, after return,
+        // property is a path to the property in the doc. If the original property starts
+        // with database alias, such as db.name.firstname, the function will strip
+        // the leading database alias, db, and hence, property as a path will have its size
+        // reduced by 1.
         auto &&iType = verifyDbAlias(property);
+        bool propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
         const string &alias = iType->first;
         aliasType type = iType->second.type;
         string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
@@ -1723,33 +1771,39 @@ namespace litecore {
             return;
         }
 
-        // Check out the case the property starts with the result alias.
-        auto resultAliasIter = _aliases.end();
-        if (!property.empty()) {
-            resultAliasIter = _aliases.find(property[0].keyStr().asString());
-            if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
-                resultAliasIter = _aliases.end();
-            }
-        }
-        if (resultAliasIter != _aliases.end()) {
-            const string& resultAlias = resultAliasIter->first;
-            // If the property in question is identified as an alias, emit that instead of
-            // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
-            // vs alias -> doc["path"]["to"]["value"])
-            if(property.size() == 1) {
-                // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(resultAlias);
-                return;
+        // CBL-3040. We should not apply the following rule of result alias if the
+        // property starts with a database collection alias explicitly. In this case,
+        // the following name is the proerty name in the collection.
+        if (!propertyStartsWithExplicitAlias) {
+            // Check out the case the property starts with the result alias.
+            auto resultAliasIter = _aliases.end();
+            if (!property.empty()) {
+                resultAliasIter = _aliases.find(property[0].keyStr().asString());
+                if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
+                    resultAliasIter = _aliases.end();
+                }
             }
 
-            // More complicated case.  A subpath of an alias that points to
-            // a collection type (e.g. alias = {"foo": "bar"}, and want to
-            // ORDER BY alias.foo
-            property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
-                 << ", " << sqlString(string(property)) << ")";
-            return;
-        } 
+            if (resultAliasIter != _aliases.end()) {
+                const string& resultAlias = resultAliasIter->first;
+                // If the property in question is identified as an alias, emit that instead of
+                // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
+                // vs alias -> doc["path"]["to"]["value"])
+                if (property.size() == 1) {
+                    // Simple case, the alias is being used as-is
+                    _sql << sqlIdentifier(resultAlias);
+                    return;
+                }
+
+                // More complicated case.  A subpath of an alias that points to
+                // a collection type (e.g. alias = {"foo": "bar"}, and want to
+                // ORDER BY alias.foo
+                property.drop(1);
+                _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
+                    << ", " << sqlString(string(property)) << ")";
+                return;
+            }
+        }
         
         if (property.size() == 1) {
             // Check if this is a document metadata property:
@@ -1909,7 +1963,37 @@ namespace litecore {
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
-        auto iAlias = verifyDbAlias(keyPath);
+        // Path to FTS table has at most two components: [collectionAlias .] IndexName
+        size_t compCount = keyPath.size();
+        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        Path keyPathBeforeVerifyDbAlias = keyPath;
+        QueryParser::AliasMap::const_iterator iAlias = _aliases.end();
+
+        string outError;
+        iAlias = verifyDbAlias(keyPath, &outError);
+        if (iAlias == _aliases.end()) {
+            bool uniq = true;
+            string uniqAlias;
+            for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
+                if (iter->second.type != kResultAlias) {
+                    if (iter->second.type == kDBAlias) {
+                        iAlias = iter;
+                    }
+                    if (uniqAlias.empty()) {
+                        uniqAlias = iter->second.tableName;
+                    } else if (uniqAlias != iter->second.tableName) {
+                        uniq = false;
+                        break;
+                    }
+                }
+            }
+            if (!uniq) {
+                Assert(!outError.empty());
+                fail("%s", outError.c_str());
+            }
+        }
+        Assert(iAlias != _aliases.end());
+
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");

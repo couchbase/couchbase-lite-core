@@ -44,10 +44,8 @@ namespace litecore {
         void _doExpiration();
 
         alloc_slice   _keyStoreName;
-        BackgroundDB* _bgdb;
+        BackgroundDB* _bgdb{ nullptr };
         actor::Timer  _expiryTimer;
+        fleece::Retained<C4Collection> _collection; // Used for initialization only
     };
-
-
-
 }

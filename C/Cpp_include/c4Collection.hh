@@ -34,10 +34,14 @@ C4_ASSUME_NONNULL_BEGIN
 struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCountedIn<C4Collection> {
     // Accessors:
 
-    bool isValid() const                                    {return _database != nullptr;}
-    slice getName() const                                   {return _name;}
-    slice getScope() const                                  {return _scope;}
-    C4CollectionSpec getSpec() const                        {return {_name, _scope};}
+    bool isValid() const noexcept                           {return _database != nullptr;}
+
+    // Use this to invalidate an otherwise valid collection so that the pointers
+    // it owns are kept alive to avoid invalid memory usage.
+    void invalidate() noexcept                              {_database = nullptr;}
+    slice getName() const noexcept                          {return _name;}
+    slice getScope() const noexcept                         {return _scope;}
+    C4CollectionSpec getSpec() const noexcept               {return {_name, _scope};}
 
     C4Database* getDatabase();
     const C4Database* getDatabase() const;
@@ -46,8 +50,8 @@ struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCounted
 
     virtual C4SequenceNumber getLastSequence() const =0;
 
-    C4ExtraInfo& extraInfo()                                {return _extraInfo;}
-    const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
+    C4ExtraInfo& extraInfo() noexcept                       {return _extraInfo;}
+    const C4ExtraInfo& extraInfo() const noexcept           {return _extraInfo;}
 
     // Documents:
 
@@ -104,6 +108,7 @@ struct C4Collection : public fleece::RefCounted, C4Base, fleece::InstanceCounted
 
     using CollectionObserverCallback = std::function<void(C4CollectionObserver*)>;
     using DocumentObserverCallback = std::function<void(C4DocumentObserver*,
+                                                        C4Collection*,
                                                         slice docID,
                                                         C4SequenceNumber)>;
 

@@ -32,7 +32,7 @@ namespace litecore {
         ,_callback(move(callback))
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(st,
+                _notifier.emplace(&st,
                                   [this](CollectionChangeNotifier&) {_callback(this);},
                                   since);
             });
@@ -40,6 +40,13 @@ namespace litecore {
 
 
         ~C4CollectionObserverImpl() {
+            if (!_collection->isValid()) {
+                // HACK: If the collection is not valid anymore, the notifier tracker is probably
+                // also bad, so null it out so the destructor doesn't try to use it
+                _notifier->tracker = nullptr;
+                return;
+            }
+
             _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
@@ -48,22 +55,24 @@ namespace litecore {
         }
 
 
-        uint32_t getChanges(Change outChanges[],
-                            uint32_t maxChanges,
-                            bool *outExternal) override
+        C4CollectionObservation getChanges(Change outChanges[],
+                                           uint32_t maxChanges) override
         {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
                           "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
-            return _collection->sequenceTracker().useLocked<uint32_t>([&](SequenceTracker &st) {
-                return (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
+            return _collection->sequenceTracker().useLocked<C4CollectionObservation>([&](SequenceTracker &st) {
+                bool outExternal;
+                auto retVal = (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
                                                           maxChanges,
-                                                          *outExternal);
+                                                          outExternal);
+
+                return C4CollectionObservation{retVal, outExternal, _collection};
             });
         }
 
     private:
         Retained<C4Database> _retainDatabase;
-        CollectionImpl* _collection;
+        Retained<CollectionImpl> _collection;
         optional<CollectionChangeNotifier> _notifier;
         Callback _callback;
         bool _inCallback {false};
@@ -78,14 +87,6 @@ C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback 
 }
 
 
-#ifndef C4_STRICT_COLLECTION_API
-unique_ptr<C4CollectionObserver>
-C4CollectionObserver::create(C4Database *db, Callback callback) {
-    return create(db->getDefaultCollection(), callback);
-}
-#endif
-
-
 #pragma mark - DOCUMENT OBSERVER:
 
 
@@ -96,19 +97,27 @@ namespace litecore {
         C4DocumentObserverImpl(C4Collection *collection,
                                slice docID,
                                Callback callback)
-        :_collection(asInternal(collection))
+        :_retainedDatabase(collection->getDatabase())
+        ,_collection(asInternal(collection))
         ,_callback(callback)
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(st,
+                _notifier.emplace(&st,
                                   docID,
                                   [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
-                                        _callback(this, docID, sequence);
+                                        _callback(this, _collection, docID, sequence);
                                   });
             });
         }
 
         ~C4DocumentObserverImpl() {
+            if (!_collection->isValid()) {
+                // HACK: If the collection is not valid anymore, the notifier tracker is probably
+                // also bad, so null it out so the destructor doesn't try to use it
+                _notifier->tracker = nullptr;
+                return;
+            }
+
             _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
@@ -117,7 +126,8 @@ namespace litecore {
         }
         
     private:
-        CollectionImpl* _collection;
+        Retained<C4Database> _retainedDatabase;
+        Retained<CollectionImpl> _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
     };

@@ -26,7 +26,7 @@ namespace litecore { namespace repl {
     public:
         static constexpr const char* kConflictIncludesRevProperty = "conflictIncludesRev";
 
-        Pusher(Replicator *replicator NONNULL, Checkpointer&);
+        Pusher(Replicator *replicator NONNULL, Checkpointer&, CollectionIndex);
 
         // Starts an active push
         void start()  {enqueue(FUNCTION_TO_QUEUE(Pusher::_start));}
@@ -40,6 +40,11 @@ namespace litecore { namespace repl {
         }
 
         void onError(C4Error err) override;
+
+        // Passive replicator always sends "changes"
+        bool passive() const override {
+            return _options->push(collectionIndex()) <= kC4Passive;
+        }
 
     protected:
         friend class BlobDataSource;

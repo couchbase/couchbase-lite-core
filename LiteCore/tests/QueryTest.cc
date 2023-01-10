@@ -28,6 +28,9 @@ using namespace std;
 using namespace std::chrono;
 using namespace date;
 
+unsigned QueryTest::alter2 = 0;
+unsigned QueryTest::alter3 = 0;
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
@@ -242,6 +245,32 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     auto n = col1->get("n"_sl);
     REQUIRE(n);
     CHECK(n->type() == kNull);
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array_count null value", "[Query][CBL-3087]") {
+    {
+        ExclusiveTransaction t(store->dataFile());
+        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("n");
+            enc.beginArray();
+            enc.writeNull();
+            enc.writeString("abc");
+            enc.writeString("def");
+            enc.writeNull();
+            enc.writeString("ghi");
+            enc.endArray();
+            });
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['ARRAY_COUNT()', ['.n']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    auto cols = e->columns();
+    REQUIRE(cols.count() == 1);
+    CHECK(cols[0]->type() == kNumber);
+    CHECK(cols[0]->asInt() == 3);
 }
 
 
@@ -1129,10 +1158,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-
-        char docID[6];
+        
+        constexpr size_t bufSize = 6;
+        char docID[bufSize];
         for(int i = 0; i < 20; i++) {
-            sprintf(docID, "doc%02d", i);
+            snprintf(docID, bufSize, "doc%02d", i);
             writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
                 enc.writeKey("identifier");
                 enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);
@@ -1984,6 +2014,16 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc2"_sl);
     }
 
+    SECTION("WHERE explict db alias precludes result alias") {
+        // Here the alias is the same as the property used to define it...
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'dict']], \
+            FROM: [{AS: 'db', COLLECTION: '_'}], \
+            WHERE: ['=', ['.db.dict'], 1]}"));
+        // expect empty result
+    }
+
     SECTION("WHERE alias with special name") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
@@ -2226,7 +2266,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     string collectionAlias = collectionName;
     if (auto dot = collectionAlias.find('.'); dot != string::npos)
         collectionAlias = collectionAlias.substr(dot + 1);
-    
+
     query = store->compileQuery("SELECT meta(" + collectionAlias + ") from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
@@ -2418,18 +2458,26 @@ TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
             CHECK(e->columns()[0]->asString() == "number"_sl);
         }
     };
-    
+
     checkType(json5("{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}"));
     checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"));
     checkType(json5("{'WHAT': ['.foo.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}"));
-    
+
     checkTypeN1QL("SELECT type FROM _");
     checkTypeN1QL("SELECT type FROM _default");
     checkTypeN1QL("SELECT type FROM _default._default");
     checkTypeN1QL("SELECT foo.type FROM _ AS foo");
     checkTypeN1QL("SELECT `foo.bar`.type FROM _ AS `foo.bar`");
+
+    // For database names that include dot, we must properly quote it.
+    // In JSON, we escape dot inside the JSON string value.
+    // In N1QL expression, we back-quote quote it.
+
+    _databaseName = "cbl.core.temp";
+    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\\\.core\\\\.temp'}]}"));
+    checkTypeN1QL("SELECT type FROM `cbl.core.temp`");
 }
 
 
@@ -2458,7 +2506,7 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
         "%xx", "_xx", "x y",
         ".", "xx.", ".xx", "_b.c", "b._c",
         "in.val.id", "in..val",
-        "_default.foo", "foo._default",
+        "foo._default",
         tooLong.c_str(), tooLong2.c_str(), tooLong3.c_str()
     };
     for (auto badName : kBadCollectionNames) {

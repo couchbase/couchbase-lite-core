@@ -21,11 +21,17 @@ namespace litecore { namespace repl {
     /** Inserts revisions into the database in batches. */
     class Inserter : public Worker {
     public:
-        Inserter(Replicator*);
+        Inserter(Replicator*, CollectionIndex);
 
         void insertRevision(RevToInsert* NONNULL);
+        
+        bool passive() const override {
+            return _options->pull(collectionIndex()) <= kC4Passive;
+        }
 
     private:
+        C4Collection* insertionCollection(); // Get the collection from the insertionDB
+        
         void _insertRevisionsNow(int gen);
         bool insertRevisionNow(RevToInsert* NONNULL, C4Error*);
         C4SliceResult applyDeltaCallback(C4Document *doc NONNULL,
@@ -33,6 +39,7 @@ namespace litecore { namespace repl {
                                          C4Error *outError);
 
         actor::ActorBatcher<Inserter,RevToInsert> _revsToInsert; // Pending revs to be added to db
+        C4Collection* _insertionCollection {nullptr};
     };
 
 } }

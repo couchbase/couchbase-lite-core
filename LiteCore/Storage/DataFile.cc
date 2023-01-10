@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <algorithm>
+#include <iomanip>
 #include <thread>
 
 #include "SQLiteDataFile.hh"
@@ -87,6 +88,37 @@ namespace litecore {
             if (ext == factory->filenameExtension())
                 return factory;
         return nullptr;
+    }
+
+    // collection utilities:
+
+    size_t DataFile::findCollectionPathSeparator(const string& collectionPath, size_t pos) {
+        for (auto i = pos; i < collectionPath.length(); ++i) {
+            if (collectionPath.at(i) == '\\') {
+                ++i;
+            } else if (collectionPath.at(i) == KeyStore::kScopeCollectionSeparator) {
+                return i;
+            }
+        }
+        return string::npos;
+    }
+
+    string DataFile::unescapeCollectionName(const string& unescaped) {
+        stringstream ss {string{KeyStore::kScopeCollectionSeparator} + unescaped +
+            KeyStore::kScopeCollectionSeparator};
+        string ret;
+        while (true) {
+            string res;
+            ss >> std::quoted(res, KeyStore::kScopeCollectionSeparator, '\\');
+            ret += res;
+            if (ss.rdbuf()->in_avail() > 0) {
+                ret += '.';
+                ss.unget();
+            } else {
+                break;
+            }
+        }
+        return ret;
     }
 
     
@@ -172,7 +204,6 @@ namespace litecore {
     DataFile* DataFile::openAnother(Delegate *delegate) {
         return factory().openFile(_path, delegate, &_options);
     }
-
 
 
     void DataFile::rekey(EncryptionAlgorithm alg, slice newKey) {

@@ -24,10 +24,9 @@ using namespace std;
 
 #ifdef COUCHBASE_ENTERPRISE
 
-static constexpr const char* kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US";
+static constexpr const char* kCAName = "TrustMe Root CA";
 
-static constexpr const char* kSubjectName = "localhost, O=ExampleCorp, C=US, "
-"pseudonym=3Jane";
+static constexpr const char* kSubjectName = "localhost";
 
 class C4SyncListenerTest : public ReplicatorAPITest, public ListenerHarness {
 public:
@@ -38,9 +37,9 @@ public:
     {
         createDB2();
 
-        _address.scheme = kC4Replicator2Scheme;
-        _address.hostname = C4STR("localhost");
-        _remoteDBName = C4STR("db2");
+        _sg.address.scheme = kC4Replicator2Scheme;
+        _sg.address.hostname = C4STR("localhost");
+        _sg.remoteDBName = C4STR("db2");
     }
 
     static constexpr C4ListenerConfig kConfig = [] {
@@ -53,9 +52,9 @@ public:
     void run(bool expectSuccess = true) {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
         share(db2, "db2"_sl);
-        _address.port = c4listener_getPort(listener());
-        if (pinnedCert)
-            _address.scheme = kC4Replicator2TLSScheme;
+        _sg.address.port = c4listener_getPort(listener());
+        if (_sg.pinnedCert)
+            _sg.address.scheme = kC4Replicator2TLSScheme;
         replicate(kC4OneShot, kC4Disabled, expectSuccess);
         if(expectSuccess) {
             CHECK(c4db_getDocumentCount(db2) == 100);
@@ -76,29 +75,29 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Li
     // Pinned shouldn't differ betwen modes
     SECTION("Pinned, self-signed mode") {
         _onlySelfSigned = true;
-        pinnedCert = useServerTLSWithTemporaryKey();
+        _sg.pinnedCert = useServerTLSWithTemporaryKey();
     }
     
     SECTION("Pinned, normal mode") {
-        pinnedCert = useServerTLSWithTemporaryKey();
+        _sg.pinnedCert = useServerTLSWithTemporaryKey();
     }
     
     SECTION("Non-pinned, self-signed mode") {
-        _address.scheme = kC4Replicator2TLSScheme;
+        _sg.address.scheme = kC4Replicator2TLSScheme;
         _onlySelfSigned = true;
         useServerTLSWithTemporaryKey();
     }
     
     SECTION("Non-pinned, normal mode") {
-        _address.scheme = kC4Replicator2TLSScheme;
+        _sg.address.scheme = kC4Replicator2TLSScheme;
         expectedError = kC4NetErrTLSCertUnknownRoot;
         useServerTLSWithTemporaryKey();
     }
     
     run((int)expectedError == 0);
     CHECK(_callbackStatus.error.code == expectedError);
-    REQUIRE(_remoteCert);
-    alloc_slice receivedCert = c4cert_copyData(_remoteCert, false);
+    REQUIRE(_sg.remoteCert);
+    alloc_slice receivedCert = c4cert_copyData(_sg.remoteCert, false);
     alloc_slice expectedCert = c4cert_copyData(serverIdentity.cert, false);
     CHECK(receivedCert == expectedCert);
 }
@@ -114,16 +113,16 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
     SECTION("Pinned, self-signed mode") {
         _onlySelfSigned = true;
         useServerIdentity(endIdentity);
-        pinnedCert = c4cert_copyData(endIdentity.cert, false);
+        _sg.pinnedCert = c4cert_copyData(endIdentity.cert, false);
     }
     
     SECTION("Pinned, normal mode") {
         useServerIdentity(endIdentity);
-        pinnedCert = c4cert_copyData(endIdentity.cert, false);
+        _sg.pinnedCert = c4cert_copyData(endIdentity.cert, false);
     }
     
     SECTION("Non-pinned, self-signed mode") {
-        _address.scheme = kC4Replicator2TLSScheme;
+        _sg.address.scheme = kC4Replicator2TLSScheme;
         _onlySelfSigned = true;
         useServerIdentity(endIdentity);
         expectedError = kC4NetErrTLSCertUntrusted;
@@ -131,15 +130,15 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
     }
     
     SECTION("Non-pinned, normal mode") {
-        _address.scheme = kC4Replicator2TLSScheme;
+        _sg.address.scheme = kC4Replicator2TLSScheme;
         _customCaCert = c4cert_copyData(caIdentity.cert, false);
         useServerIdentity(endIdentity);
     }
     
     run((int)expectedError == 0);
     CHECK(_callbackStatus.error.code == expectedError);
-    REQUIRE(_remoteCert);
-    alloc_slice receivedCert = c4cert_copyData(_remoteCert, false);
+    REQUIRE(_sg.remoteCert);
+    alloc_slice receivedCert = c4cert_copyData(_sg.remoteCert, false);
     alloc_slice expectedCert = c4cert_copyData(endIdentity.cert, false);
     CHECK(receivedCert == expectedCert);
     if(expectedMessage.buf) {
@@ -152,8 +151,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener
     // CA without the CA-bits sit
     Identity caIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kCAName, nullptr, nullptr, true);
     Identity endIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
-    
-    _address.scheme = kC4Replicator2TLSScheme;
+
+    _sg.address.scheme = kC4Replicator2TLSScheme;
     useServerIdentity(endIdentity);
     run(false);
     CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUnknownRoot);
@@ -161,10 +160,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener
 
 
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithTemporaryKey();
+    _sg.pinnedCert = useServerTLSWithTemporaryKey();
     useClientTLSWithTemporaryKey();
-    identityCert = clientIdentity.cert;
-    identityKey  = clientIdentity.key;
+    _sg.identityCert = clientIdentity.cert;
+    _sg.identityKey  = clientIdentity.key;
     run();
 }
 
@@ -192,7 +191,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listen
     
     useServerIdentity(id);
     _onlySelfSigned = true;
-    _address.scheme = kC4Replicator2TLSScheme;
+    _sg.address.scheme = kC4Replicator2TLSScheme;
     run(false);
     CHECK(_callbackStatus.error.code == kC4NetErrTLSCertExpired);
 }
@@ -200,7 +199,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listen
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithPersistentKey();
+    _sg.pinnedCert = useServerTLSWithPersistentKey();
     run();
 }
 #endif
@@ -209,10 +208,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", 
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]") {
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
-    _address.port = c4listener_getPort(listener());
-    REQUIRE(_address.port != 0);
-    if (pinnedCert)
-        _address.scheme = kC4Replicator2TLSScheme;
+    _sg.address.port = c4listener_getPort(listener());
+    REQUIRE(_sg.address.port != 0);
+    if (_sg.pinnedCert)
+        _sg.address.scheme = kC4Replicator2TLSScheme;
 
     unsigned connections, activeConns;
     c4listener_getConnectionStatus(listener(), &connections, &activeConns);
@@ -271,9 +270,9 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener
     
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
-    _address.port = c4listener_getPort(listener());
-    if (pinnedCert)
-        _address.scheme = kC4Replicator2TLSScheme;
+    _sg.address.port = c4listener_getPort(listener());
+    if (_sg.pinnedCert)
+        _sg.address.scheme = kC4Replicator2TLSScheme;
     
     replicate(pushMode, pullMode, false);
     CHECK(c4db_getDocumentCount(db2) == 0);
@@ -327,12 +326,11 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
 TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]") {
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
-    _address.port = c4listener_getPort(listener());
-    REQUIRE(_startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
+    _sg.address.port = c4listener_getPort(listener());
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
     waitForStatus(kC4Idle);
     stop();
     waitForStatus(kC4Stopped);
 }
-
-
 #endif
+

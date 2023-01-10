@@ -98,8 +98,9 @@ namespace litecore { namespace actor {
 
     void Scheduler::task(unsigned taskID) {
         LogVerbose(ActorLog, "   task %d starting", taskID);
-        char name[100];
-        sprintf(name, "CBL Scheduler#%u", taskID);
+        constexpr size_t bufSize = 100;
+        char name[bufSize];
+        snprintf(name, bufSize, "CBL Scheduler#%u", taskID);
         SetThreadName(name);
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {

@@ -40,13 +40,16 @@ namespace litecore { namespace repl {
         void revisionProvisionallyInserted();
         void revisionInserted();
 
+        bool passive() const override {
+            return _options->pull(collectionIndex()) <= kC4Passive;
+        }
+
     protected:
         ActivityLevel computeActivityLevel() const override;
 
     private:
         void reinitialize();
         void parseAndInsert(alloc_slice jsonBody);
-        bool nonPassive() const                 {return _options->pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);

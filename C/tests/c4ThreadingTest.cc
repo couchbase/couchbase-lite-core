@@ -79,10 +79,11 @@ public:
     void addDocsTask() {
         // This implicitly uses the 'db' connection created (but not used) by the main thread
         if (kLog) fprintf(stderr, "Adding documents...\n");
+        constexpr size_t bufSize = 20;
         for (int i = 1; i <= kNumDocs; i++) {
             if (kLog) fprintf(stderr, "(%d) ", i); else if (i%10 == 0) fprintf(stderr, ":");
-            char docID[20];
-            sprintf(docID, "doc-%05d", i);
+            char docID[bufSize];
+            snprintf(docID, bufSize, "doc-%05d", i);
             createRev(c4str(docID), kRevID, kFleeceBody);
             //std::this_thread::sleep_for(100us);
         }
@@ -138,7 +139,9 @@ public:
 
     void observerTask() {
         C4Database* database = openDB();
-        auto observer = c4dbobs_create(database, obsCallback, this);
+        C4Collection* defaultColl = requireCollection(database);
+        auto observer = c4dbobs_createOnCollection(defaultColl, obsCallback, this, ERROR_INFO());
+        REQUIRE(observer);
         C4SequenceNumber lastSequence = 0;
         do {
             {
@@ -149,15 +152,14 @@ public:
             }
 
             C4DatabaseChange changes[10];
-            uint32_t nDocs;
-            bool external;
-            while (0 < (nDocs = c4dbobs_getChanges(observer, changes, 10, &external))) {
-                REQUIRE(external);
-                for (auto i = 0; i < nDocs; ++i) {
+            C4CollectionObservation observation;
+            while (0 < (observation = c4dbobs_getChanges(observer, changes, 10)).numChanges) {
+                REQUIRE(observation.external);
+                for (auto i = 0; i < observation.numChanges; ++i) {
                     REQUIRE(memcmp(changes[i].docID.buf, "doc-", 4) == 0);
                     lastSequence = changes[i].sequence;
                 }
-                c4dbobs_releaseChanges(changes, nDocs);
+                c4dbobs_releaseChanges(changes, observation.numChanges);
             }
 
             std::this_thread::sleep_for(100ms);

@@ -98,6 +98,7 @@ public:
     /// You can pass a `CollectionSpec` parameter as simply a collection name slice, implying the
     /// default scope; or as `{collectionname, scopename}`.
     struct CollectionSpec : public C4CollectionSpec {
+        CollectionSpec()                             :C4CollectionSpec{kC4DefaultCollectionName, kC4DefaultScopeID} { }
         CollectionSpec(const C4CollectionSpec &spec) :C4CollectionSpec(spec) { }
         CollectionSpec(FLString name, FLString scope):C4CollectionSpec{name, scope} { }
         CollectionSpec(FLString name)                :C4CollectionSpec{name, kC4DefaultScopeID} { }
@@ -106,7 +107,7 @@ public:
     };
 
     /// Returns the default collection, whose name is "_default" (`kC4DefaultCollectionName`).
-    C4Collection* C4NULLABLE getDefaultCollection() const              {return _defaultCollection;}
+    C4Collection* C4NULLABLE getDefaultCollection() const;
 
     /// Returns true if a collection exists with the given name & scope.
     virtual bool hasCollection(CollectionSpec) const =0;
@@ -257,6 +258,8 @@ public:
 protected:
     C4Database(std::string name, std::string dir, const C4DatabaseConfig&);
     static bool deleteDatabaseFileAtPath(const std::string &dbPath, C4StorageEngine);
+    C4Collection* getDefaultCollectionSafe() const;     // Same as getDefaultCollection except throws an error when null
+    virtual void checkOpen() const = 0;
 
     std::string const           _name;                  // Database filename (w/o extension)
     std::string const           _parentDirectory;
@@ -268,16 +271,25 @@ protected:
 
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
-static inline bool operator== (const C4Database::CollectionSpec &a,
-                               const C4Database::CollectionSpec &b)
+static inline bool operator== (const C4CollectionSpec &a,
+                               const C4CollectionSpec &b)
 {
     return a.name == b.name && a.scope == b.scope;
 }
-template<> struct std::hash<C4Database::CollectionSpec> {
-    std::size_t operator() (C4Database::CollectionSpec const& spec) const {
+
+static inline bool operator!= (const C4CollectionSpec& a,
+    const C4CollectionSpec& b)
+{
+    return !(a == b);
+}
+
+template<> struct std::hash<C4CollectionSpec> {
+    std::size_t operator() (C4CollectionSpec const& spec) const {
         return fleece::slice(spec.name).hash() ^ fleece::slice(spec.scope).hash();
     }
 };
+template<> struct std::hash<C4Database::CollectionSpec>
+: public std::hash<C4CollectionSpec> {};
 
 
 C4_ASSUME_NONNULL_END

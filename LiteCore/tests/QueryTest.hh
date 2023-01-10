@@ -40,6 +40,9 @@ protected:
 
     QueryTest() :QueryTest(0) { }
 
+    static unsigned alter2;
+    static unsigned alter3;
+
     QueryTest(int option) {
         static const char* kSectionNames[3] = {
             "default collection",
@@ -47,13 +50,16 @@ protected:
             "collection in other scope"
         };
         logSection(kSectionNames[option]);
+        unsigned jump;
         switch (option) {
             case 0:
-                collectionName = KeyStore::kDefaultCollectionName;
+                jump = alter3++ % 3;
+                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName
+                    : (jump == 1) ? "_" : "cbl_core_temp";
                 break;
             case 1:
-                collectionName = "secondary";
-                store = &db->getKeyStore(".secondary");
+                collectionName = (alter2++ % 2 == 0) ? "Secondary" : "_default.Secondary";
+                store = &db->getKeyStore(".Secondary");
                 break;
             case 2:
                 collectionName = "scopey.subsidiary";

@@ -39,6 +39,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 
 cmake_minimum_required (VERSION 3.9)
 cmake_policy(VERSION 3.9)
+cmake_policy(SET CMP0057 NEW)
 
 # Mac/apple setup -- must appear before the first "project()" line"
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12")
@@ -48,10 +49,26 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
-project (LiteCore)
+if(DEFINED ENV{VERSION})
+    message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
+    set(CBL_VERSION_STRING $ENV{VERSION})
+else()
+    message(WARNING "No VERSION set, defaulting to 0.0.0")
+    set(CBL_VERSION_STRING "0.0.0")
+endif()
+
+project (
+    LiteCore
+    VERSION ${CBL_VERSION_STRING}
+)
 include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
+
+set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
+file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+include(cmake/generate_edition.cmake)
+generate_edition()
 
 set(LITECORE_TARGETS "")
 
@@ -67,6 +84,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 )
 
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(LITECORE_PERF_TESTING_MODE "Build LiteCore with more things public than in production to facilitate perf testing" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
@@ -87,8 +105,8 @@ cmake_dependent_option(
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")
    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
    elseif(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
      message(WARN " Code coverage not supported for non-debug builds")
    else()
@@ -138,19 +156,7 @@ set(ENABLE_PROGRAMS OFF CACHE INTERNAL "Build mbed TLS programs.")
 set(ENABLE_TESTING OFF CACHE INTERNAL "Build mbed TLS tests.")
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
-# Generate file repo_version.h containing Git repo information, and add it to #include path:
-set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
-file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
 configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
-if (UNIX)
-    execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-else()
-    execute_process(COMMAND powershell "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.ps1"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
@@ -349,6 +355,13 @@ target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
 )
+
+if(LITECORE_PERF_TESTING_MODE)
+    target_compile_definitions(
+        LiteCoreWebSocket PUBLIC
+        LITECORE_PERF_TESTING_MODE
+    )
+endif()
 
 ### TESTS:
 

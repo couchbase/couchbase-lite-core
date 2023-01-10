@@ -39,6 +39,7 @@ namespace litecore { namespace repl {
     class Replicator final : public Worker,
                              private blip::ConnectionDelegate
     {
+        friend class WeakHolder<blip::ConnectionDelegate>;
     public:
 
         class Delegate;
@@ -96,28 +97,33 @@ namespace litecore { namespace repl {
 
         /** Invokes the callback for each document which has revisions pending push.
             Returns false if unable to do so.  */
-        bool pendingDocumentIDs(Checkpointer::PendingDocCallback);
+        bool pendingDocumentIDs(C4CollectionSpec, Checkpointer::PendingDocCallback);
 
         /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
-        std::optional<bool> isDocumentPending(slice docID);
+        std::optional<bool> isDocumentPending(slice docID, C4CollectionSpec);
 
-        Checkpointer& checkpointer()            {return _checkpointer;}
+        Checkpointer& checkpointer(CollectionIndex coll)  {return *_subRepls[coll].checkpointer;}
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
             enqueue(FUNCTION_TO_QUEUE(Replicator::_onBlobProgress), progress);
         }
         
-        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
+        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex);
 
         Retained<Replicator> replicatorIfAny() override         {return this;}
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
+        
+        C4Collection* collection(CollectionIndex i) const {
+            Assert(i < _subRepls.size());
+            return _subRepls[i].collection;
+        }
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options->pull >= kC4OneShot || _options->push >= kC4OneShot ? "Repl" : "repl";
+            return _options->isActive() ? "Repl" : "repl";
         }
 
         // BLIP ConnectionDelegate API:
@@ -135,7 +141,7 @@ namespace litecore { namespace repl {
 
         // Worker method overrides:
         virtual ActivityLevel computeActivityLevel() const override;
-        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
+        virtual void _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
     private:
         void _onHTTPResponse(int status, websocket::Headers headers);
@@ -148,15 +154,16 @@ namespace litecore { namespace repl {
         void _stop();
         void _disconnect(websocket::CloseCode closeCode, slice message);
         void _findExistingConflicts();        
-        bool getLocalCheckpoint(bool reset);
-        void getRemoteCheckpoint(bool refresh);
-        void startReplicating();
+        bool getLocalCheckpoint(bool reset, CollectionIndex);
+        void getRemoteCheckpoint(bool refresh, CollectionIndex);
+        void getCollections();
+        void startReplicating(CollectionIndex);
         void reportStatus();
 
         void updateCheckpoint();
-        void saveCheckpoint(alloc_slice json)       {enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), json);}
-        void _saveCheckpoint(alloc_slice json);
-        void saveCheckpointNow();
+        void saveCheckpoint(CollectionIndex coll, alloc_slice json)       {enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), coll, json);}
+        void _saveCheckpoint(CollectionIndex, alloc_slice json);
+        void saveCheckpointNow(CollectionIndex);
 
         void notifyEndedDocuments(int gen =actor::AnyGen);
         void _onBlobProgress(BlobProgress);
@@ -166,16 +173,54 @@ namespace litecore { namespace repl {
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
+        void handleGetCollections(Retained<blip::MessageIn>);
         void returnForbidden(Retained<blip::MessageIn>);
         slice getPeerCheckpointDocID(blip::MessageIn* request, const char *whatFor) const;
 
+        string statusVString() const;
+        void updatePushStatus(CollectionIndex i, const Status& status);
+        void updatePullStatus(CollectionIndex i, const Status& status);
+        void prepareWorkers();
+
+        void delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn>);
+    public:
+        template<typename WORKER>
+        void registerWorkerHandler(WORKER* worker,
+                                   const char *profile NONNULL,
+                                   void (WORKER::*method)(Retained<blip::MessageIn>)) {
+            std::function<void(Retained<blip::MessageIn>)> fn(
+                                        std::bind(method, worker, std::placeholders::_1));
+            pair<string, CollectionIndex> key {profile, worker->collectionIndex()};
+            _workerHandlers.emplace(key, worker->asynchronize(profile, fn));
+        }
+
+    private:
+        using WorkerHandler  = std::function<void(Retained<blip::MessageIn>)>;
+        using WorkerHandlers = std::map<pair<string, CollectionIndex>,
+                                        blip::Connection::RequestHandler>;
+        WorkerHandlers _workerHandlers;
+
         // Member variables:
 
+        struct SubReplicator {
+            Retained<Pusher>         pusher;
+            Retained<Puller>         puller;
+            Status                   pushStatus;   // Current status of Pusher
+            Status                   pullStatus;   // Current status of Puller
+            unique_ptr<Checkpointer> checkpointer; // Object that manages checkpoints
+            bool                     hadLocalCheckpoint {false}; // True if local checkpoint pre-existed
+            bool                     remoteCheckpointRequested {false}; // True while "getCheckpoint" request pending
+            bool                     remoteCheckpointReceived {false}; // True if I got a "getCheckpoint" response
+            alloc_slice              checkpointJSONToSave;  // JSON waiting to be saved to the checkpts
+            alloc_slice              remoteCheckpointDocID; // Checkpoint docID to use with peer
+            alloc_slice              remoteCheckpointRevID; // Latest revID of remote checkpoint
+            Retained<C4Collection>   collection;
+        };
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
+
+        void              setMsgHandlerFor3_0_Client(Retained<blip::MessageIn>);
         
         Delegate*         _delegate;                   // Delegate whom I report progress/errors to
-        Retained<Pusher>  _pusher;                     // Object that manages outgoing revs
-        Retained<Puller>  _puller;                     // Object that manages incoming revs
         blip::Connection::State _connectionState;      // Current BLIP connection state
 
         Status            _pushStatus {};              // Current status of Pusher
@@ -184,14 +229,11 @@ namespace litecore { namespace repl {
         ActivityLevel     _lastDelegateCallLevel {};   // Activity level I last reported to delegate
         bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
         ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
-
-        Checkpointer      _checkpointer;               // Object that manages checkpoints
-        bool              _hadLocalCheckpoint {};      // True if local checkpoint pre-existed
-        bool              _remoteCheckpointRequested{};// True while "getCheckpoint" request pending
-        bool              _remoteCheckpointReceived {};// True if I got a "getCheckpoint" response
-        alloc_slice       _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
-        alloc_slice       _remoteCheckpointDocID;      // Checkpoint docID to use with peer
-        alloc_slice       _remoteCheckpointRevID;      // Latest revID of remote checkpoint
+        vector<SubReplicator> _subRepls;
+        bool              _getCollectionsRequested {}; // True while "getCollections" request pending
+        alloc_slice       _remoteURL;
+        bool              _setMsgHandlerFor3_0_ClientDone {false};
+        Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
     };
 
 } }

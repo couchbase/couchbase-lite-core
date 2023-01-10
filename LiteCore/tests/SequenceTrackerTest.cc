@@ -111,10 +111,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
     tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333, Flag3);
 
     int count1=0, count2=0, count3=0;
-    CollectionChangeNotifier cn1(tracker, [&](CollectionChangeNotifier&) {++count1;});
-    CollectionChangeNotifier cn2(tracker, [&](CollectionChangeNotifier&) {++count2;});
+    CollectionChangeNotifier cn1(&tracker, [&](CollectionChangeNotifier&) {++count1;});
+    CollectionChangeNotifier cn2(&tracker, [&](CollectionChangeNotifier&) {++count2;});
     {
-        CollectionChangeNotifier cn3(tracker, [&](CollectionChangeNotifier&) {++count3;}, 1_seq);
+        CollectionChangeNotifier cn3(&tracker, [&](CollectionChangeNotifier&) {++count3;}, 1_seq);
         REQUIRE_IF_DEBUG(dump() == "[(A@1, *, B@2, C@3, *, *)]");
 
         SequenceTracker::Change changes[5];
@@ -169,7 +169,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     std::unique_ptr<CollectionChangeNotifier> cn;
 
     SECTION("With db change notifier") {
-        cn = make_unique<CollectionChangeNotifier>(tracker, nullptr);
+        cn = make_unique<CollectionChangeNotifier>(&tracker, nullptr);
     }
     SECTION("Without db change notifier") {
         // don't initialize cn. Now the tracker isn't recording document changes...
@@ -181,18 +181,18 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
 
     int countA=0, countB=0, countB2=0, countD=0;
 
-    DocChangeNotifier cnA(tracker, "A"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
+    DocChangeNotifier cnA(&tracker, "A"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
         CHECK(docID == "A"_sl);
         CHECK(s == seq);
         ++countA;
     });
-    DocChangeNotifier cnB(tracker, "B"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
+    DocChangeNotifier cnB(&tracker, "B"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
         CHECK(docID == "B"_sl);
         CHECK(s == seq);
         ++countB;
     });
     // Create one for a doc that doesn't exist yet:
-    DocChangeNotifier cnD(tracker, "D"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
+    DocChangeNotifier cnD(&tracker, "D"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
         CHECK(docID == "D"_sl);
         CHECK(s == seq);
         ++countD;
@@ -207,7 +207,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     CHECK(countB==1);
 
     {
-        DocChangeNotifier cnB2(tracker,"B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {++countB2;});
+        DocChangeNotifier cnB2(&tracker, "B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {++countB2;});
         tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, 6666, Flag6);
         CHECK(countA==1);
         CHECK(countB==2);
@@ -238,7 +238,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     SequenceTracker::Change changes[10];
     size_t numChanges;
     bool external;
-    CollectionChangeNotifier cn(tracker, nullptr);
+    CollectionChangeNotifier cn(&tracker, nullptr);
 
     // First create some docs:
     sequence_t seq = 0_seq;
@@ -260,13 +260,13 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
     // Start tracking individual document notifications:
     int countA=0, countB=0, countD=0;
-    DocChangeNotifier cnA(tracker, "A"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
+    DocChangeNotifier cnA(&tracker, "A"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
         ++countA;
     });
-    DocChangeNotifier cnB(tracker, "B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
+    DocChangeNotifier cnB(&tracker, "B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
         ++countB;
     });
-    DocChangeNotifier cnD(tracker, "D"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
+    DocChangeNotifier cnD(&tracker, "D"_sl, [&](DocChangeNotifier&,slice,sequence_t) {
         ++countD;
     });
 
@@ -368,7 +368,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores Externa
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
     // Add a change notifier:
     int count1 = 0;
-    CollectionChangeNotifier cn(tracker, [&](CollectionChangeNotifier&) {++count1;}, 0_seq);
+    CollectionChangeNotifier cn(&tracker, [&](CollectionChangeNotifier&) {++count1;}, 0_seq);
 
     // Add some docs:
     tracker.beginTransaction();
@@ -412,7 +412,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Purge", "[notification]") {
     int count1=0;
-    CollectionChangeNotifier cn1(tracker, [&](CollectionChangeNotifier&) {++count1;});
+    CollectionChangeNotifier cn1(&tracker, [&](CollectionChangeNotifier&) {++count1;});
 
     tracker.beginTransaction();
     tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111, Flag1);

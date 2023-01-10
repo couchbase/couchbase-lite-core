@@ -38,8 +38,12 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
                                                  slice remoteDatabaseName,
                                                  const C4ReplicatorParameters &params)
 {
-    AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
-                "Either push or pull must be enabled");
+    std::for_each(params.collections, params.collections + params.collectionCount,
+                      [](const C4ReplicationCollection& coll) {
+        AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
+                    "Either push or pull must be enabled");
+    });
+
     if (!params.socketFactory) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
         if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
@@ -56,8 +60,11 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
 Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB,
                                                       const C4ReplicatorParameters &params)
 {
-    AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
-                "Either push or pull must be enabled");
+    std::for_each(params.collections, params.collections + params.collectionCount,
+                  [](const C4ReplicationCollection& coll) {
+        AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
+                    "Either push or pull must be enabled");
+    });
     AssertParam(otherLocalDB != this, "Can't replicate a database to itself");
     return new C4LocalReplicator(this, params, otherLocalDB);
 }
@@ -86,12 +93,12 @@ void C4Replicator::setOptions(slice optionsDictFleece) {
     asInternal(this)->setProperties(AllocedDict(optionsDictFleece));
 }
 
-alloc_slice C4Replicator::pendingDocIDs() const {
-    return asInternal(this)->pendingDocumentIDs();
+alloc_slice C4Replicator::pendingDocIDs(C4CollectionSpec spec) const {
+    return asInternal(this)->pendingDocumentIDs(spec);
 }
 
-bool C4Replicator::isDocumentPending(slice docID) const {
-    return asInternal(this)->isDocumentPending(docID);
+bool C4Replicator::isDocumentPending(slice docID, C4CollectionSpec spec) const {
+    return asInternal(this)->isDocumentPending(docID, spec);
 }
 
 #ifdef COUCHBASE_ENTERPRISE

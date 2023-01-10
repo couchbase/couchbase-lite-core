@@ -42,9 +42,10 @@ using error = litecore::error;
 
 TEST_CASE("C4Error messages") {
     C4Error errors[200];
+    constexpr size_t messageBufSize = 100, expectedBufSize = 100;
     for (int i = 0; i < 200; i++) {
-        char message[100];
-        sprintf(message, "Error number %d", 1000+i);
+        char message[messageBufSize];
+        snprintf(message, messageBufSize, "Error number %d", 1000+i);
         c4error_return(LiteCoreDomain, 1000+i, slice(message), &errors[i]);
     }
     for (int i = 0; i < 200; i++) {
@@ -54,8 +55,8 @@ TEST_CASE("C4Error messages") {
         string messageStr = string(message);
         if (i >= (200 - litecore::kMaxErrorMessagesToSave)) {
             // The latest C4Errors generated will have their custom messages:
-            char expected[100];
-            sprintf(expected, "Error number %d", 1000+i);
+            char expected[expectedBufSize];
+            snprintf(expected, expectedBufSize, "Error number %d", 1000+i);
             CHECK(messageStr == string(expected));
         } else {
             // The earlier C4Errors will have default messages for their code:

@@ -56,6 +56,10 @@ namespace litecore {
         const std::string& tableName() const                            {return _tableName;}
         const std::string& quotedTableName() const                      {return _quotedTableName;}
 
+        /// Modifies a collection name to either add or remove mangling necessary for
+        /// case sensitive collection names in a case insensitive environment
+        MUST_USE_RESULT static std::string transformCollectionName(const std::string& name, bool mangle);
+
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
@@ -146,8 +150,6 @@ namespace litecore {
 
         using StatementCache = std::unordered_map<std::string,std::unique_ptr<SQLite::Statement>>;
 
-        enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
-
         string _tableName, _quotedTableName;
         mutable std::mutex _stmtMutex;
         mutable StatementCache _stmtCache;
@@ -159,8 +161,8 @@ namespace litecore {
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
+        bool _uncommitedTable {false};
         SQLiteKeyStore* _sequencesOwner {nullptr};
-        Existence _existence;
     };
 
 }
