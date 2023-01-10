@@ -1890,6 +1890,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
 
+// This test may be used in future, if kDefaultMaxHistory > kDefaultMaxRevTreeDepth, and we wish to test
+// the conflict resolution behaviour for randomly generated rev history.
+#if 0
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and conflicts", "[.CBL-2694]") {
     // The idea of this test is to exceed the RevTree history limit, so we can see what happens when we use the
     // randomly generated revID history from TreeDocument::getRevisionHistory.
@@ -2015,3 +2018,4 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and co
         REQUIRE(json2fleece(body1.c_str()) == docBody);
     }
 }
+#endif // CBL-2694
