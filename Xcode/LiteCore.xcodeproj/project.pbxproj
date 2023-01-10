@@ -511,9 +511,9 @@
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
 		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
-		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
@@ -1648,10 +1648,13 @@
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
-		EA00E6F02915C2F900606365 /* SGRest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGRest.cc; path = ../Replicator/tests/SGRest.cc; sourceTree = "<group>"; };
-		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SGTestUser.cc; path = ../Replicator/tests/SGTestUser.cc; sourceTree = "<group>"; };
-		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SG.cc; path = ../Replicator/tests/SG.cc; sourceTree = "<group>"; };
-		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ReplParams.cc; path = ../Replicator/tests/ReplParams.cc; sourceTree = "<group>"; };
+		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
+		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SGTestUser.cc; sourceTree = "<group>"; };
+		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SG.cc; sourceTree = "<group>"; };
+		EAA0126E29687CBD001B04E0 /* ReplParams.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplParams.hh; sourceTree = "<group>"; };
+		EAA0126F29687CBD001B04E0 /* SG.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SG.hh; sourceTree = "<group>"; };
+		EAA0127029687CBD001B04E0 /* SGTestUser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SGTestUser.hh; sourceTree = "<group>"; };
+		EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorCollectionSGTest.hh; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2188,10 +2191,6 @@
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
-				EA8E8AE1291D597C002106A3 /* SG.cc */,
-				EA8E8AE0291D597C002106A3 /* SGTestUser.cc */,
-				EA00E6F02915C2F900606365 /* SGRest.cc */,
-				EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */,
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* API */,
@@ -2436,6 +2435,13 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */,
+				EAA0126E29687CBD001B04E0 /* ReplParams.hh */,
+				EAA0126F29687CBD001B04E0 /* SG.hh */,
+				EAA0127029687CBD001B04E0 /* SGTestUser.hh */,
+				EA8E8AE1291D597C002106A3 /* SG.cc */,
+				EA8E8AE0291D597C002106A3 /* SGTestUser.cc */,
+				EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */,
 				D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */,
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
