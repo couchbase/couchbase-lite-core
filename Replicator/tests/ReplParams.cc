@@ -5,22 +5,18 @@
 #include "ReplParams.hh"
 
 ReplParams::ReplParams(const std::vector<C4ReplicationCollection>& collections_)
+    : C4ReplicatorParameters()
 {
     _collectionVector = { collections_ };
     collections = _collectionVector.data();
     collectionCount = _collectionVector.size();
     _optionsDict = {};
     optionsDictFleece = _optionsDict.data();
-    onStatusChanged = nullptr;
-    onDocumentsEnded = nullptr;
-    onBlobProgress = nullptr;
-    propertyDecryptor = nullptr;
-    propertyEncryptor = nullptr;
-    callbackContext = nullptr;
-    socketFactory = nullptr;
 }
 
-ReplParams::ReplParams(const std::vector<C4CollectionSpec> &collSpecs, C4ReplicatorMode push, C4ReplicatorMode pull) {
+ReplParams::ReplParams(const std::vector<C4CollectionSpec> &collSpecs, C4ReplicatorMode push, C4ReplicatorMode pull)
+    : C4ReplicatorParameters()
+{
     _collectionVector = std::vector<C4ReplicationCollection>{ collSpecs.size() };
     for(int i = 0; i < collSpecs.size(); ++i) {
         _collectionVector[i] = { collSpecs[i], push, pull };
@@ -29,20 +25,13 @@ ReplParams::ReplParams(const std::vector<C4CollectionSpec> &collSpecs, C4Replica
     collectionCount = _collectionVector.size();
     _optionsDict = {};
     optionsDictFleece = _optionsDict.data();
-    onStatusChanged = nullptr;
-    onDocumentsEnded = nullptr;
-    onBlobProgress = nullptr;
-    propertyDecryptor = nullptr;
-    propertyEncryptor = nullptr;
-    callbackContext = nullptr;
-    socketFactory = nullptr;
 }
 
-ReplParams::ReplParams(const ReplParams &other) {
-    _collectionVector = { other._collectionVector };
-    _collectionsOptionsDict = { other._collectionsOptionsDict };
-    _paramSetterOptions = { other._paramSetterOptions };
-    _optionsDict = { other._optionsDict };
+ReplParams::ReplParams(const ReplParams &other)
+    : C4ReplicatorParameters(), _collectionVector(other._collectionVector)
+    , _collectionsOptionsDict(other._collectionsOptionsDict), _paramSetterOptions(other._paramSetterOptions)
+    , _optionsDict(other._optionsDict)
+{
     collections = _collectionVector.data();
     collectionCount = other.collectionCount;
     optionsDictFleece = _optionsDict.data();
@@ -55,7 +44,7 @@ ReplParams::ReplParams(const ReplParams &other) {
     socketFactory = other.socketFactory;
 }
 
-void ReplParams::addCollections(std::vector<C4ReplicationCollection> collectionsToAdd) {
+void ReplParams::addCollections(const std::vector<C4ReplicationCollection>& collectionsToAdd) {
     for(const auto& c : collectionsToAdd) {
         _collectionVector.push_back(c);
     }
@@ -71,8 +60,8 @@ AllocedDict ReplParams::setOptions(const AllocedDict& params, const AllocedDict&
     return result;
 }
 
-ReplParams& ReplParams::setOptions(AllocedDict options) {
-    _optionsDict = setOptions(AllocedDict(optionsDictFleece), options);
+ReplParams& ReplParams::setOptions(const AllocedDict& options) {
+    _optionsDict = setOptions(_optionsDict, options);
     optionsDictFleece = _optionsDict.data();
     return *this;
 }

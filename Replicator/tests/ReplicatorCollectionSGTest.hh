@@ -41,7 +41,7 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
                                    C4String keyID, C4Error* outError);
 #endif
 
-static constexpr const char* kTestUserName = "test_user";
+static constexpr const char* kTestUserName = "sguser";
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 public:
@@ -215,7 +215,9 @@ public:
      * _testUser and _docIDs.
      * If you're using a channel filter, you can do i.e. `initTest({ Roses, Tulips, Lavenders }, { channel1, channel2 })`
      */
-    void initTest(const std::vector<C4CollectionSpec>& collSpecs, const std::vector<std::string>& channelIDs = {"*"}, const std::string& username = "sguser") {
+    void initTest(const std::vector<C4CollectionSpec>& collSpecs,
+                  const std::vector<std::string>& channelIDs = {"*"},
+                  const std::string& username = kTestUserName) {
         _collectionSpecs = collSpecs;
         _collections = collectionPreamble(collSpecs);
         _collectionCount = _collectionSpecs.size();

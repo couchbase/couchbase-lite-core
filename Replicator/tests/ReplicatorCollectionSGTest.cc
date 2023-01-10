@@ -10,6 +10,8 @@
 //  the file licenses/APL2.txt.
 //
 
+#include <memory>
+
 #include "ReplicatorCollectionSGTest.hh"
 #include "ReplicatorLoopbackTest.hh"
 #include "Base64.hh"
@@ -309,7 +311,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Revisions SG", "[.SyncServerCollection]") {
-    string idPrefix = timePrefix();
+    const string idPrefix = timePrefix();
 
     initTest({ Lavenders, Roses, Tulips });
 
@@ -322,8 +324,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     _callbackWhenIdle = [=, &jthread]() {
         jthread.thread = std::thread(std::thread{[=]() mutable {
             for (size_t i = 0; i < _collectionCount; ++i) {
-                string collName = string(_collectionSpecs[i].name);
-                string docID = idPrefix + "-" + collName + "-docko";
+                const string collName = string(_collectionSpecs[i].name);
+                const string docID = idPrefix + "-" + collName + "-docko";
                 ReplicatorLoopbackTest::addRevs(_collections[i], 500ms, alloc_slice(docID), 1, 10, true, ("db-"s + collName).c_str());
             }
             _stopWhenIdle.store(true);
@@ -353,7 +355,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
     auto populateDB = [&]() {
         for (size_t i = 0; i < _collectionCount; ++i){
             TransactionHelper t(db);
-            std::srand(123456); // start random() sequence at a known place
+            std::srand(123456); // start random() sequence at a known place NOLINT(cert-msc51-cpp)
             for (int docNo = 0; docNo < kNumDocs; ++docNo) {
                 constexpr size_t kDocBufSize = 60;
                 char docID[kDocBufSize];
@@ -884,8 +886,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 
     initTest({ Roses, Tulips, Lavenders });
 
-    encContextMap.reset(new CipherContextMap);
-    decContextMap.reset(new CipherContextMap);
+    encContextMap = std::make_unique<CipherContextMap>();
+    decContextMap = std::make_unique<CipherContextMap>();
 
     std::vector<string> docs { _collectionCount };
     for(size_t i = 0; i < _collectionCount; ++i) {
@@ -915,14 +917,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     verifyDocs(_docIDs, true, TestDecryption ? 2 : 1);
 
     // Check encryption on active replicator:
-    for (auto i = encContextMap->begin(); i != encContextMap->end(); i++) {
-        CipherContext& context = i->second;
+    for (auto& i : *encContextMap) {
+        CipherContext& context = i.second;
         CHECK(context.called);
     }
 
     // Check decryption on verifyDb:
-    for (auto i = decContextMap->begin(); i != decContextMap->end(); i++) {
-        auto& context = i->second;
+    for (auto& i : *decContextMap) {
+        auto& context = i.second;
         c4::ref<C4Document> doc = c4coll_getDoc(context.collection, context.docID, true,
                                                 kDocGetAll, ERROR_INFO());
         REQUIRE(doc);
@@ -1099,7 +1101,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
     C4ReplicatorValidationFunction pullFilter = [](
         C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict, void *context)
     {
-        CBContext* ctx = (CBContext*)context;
+        auto ctx = (CBContext*)context;
         ctx->pullFilterTotal++;
         if ((flags & kRevPurged) == kRevPurged) {
             ctx->pullFilterPurge++;
@@ -1198,7 +1200,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
                       void*) {
         for (size_t i = 0; i < numDocs; ++i) {
             auto doc = docs[i];
-            CBContext* ctx = (CBContext*)doc->collectionContext;
+            auto ctx = (CBContext*)doc->collectionContext;
             ctx->docsEndedTotal++;
             if ((doc->flags & kRevPurged) == kRevPurged) {
                 ctx->docsEndedPurge++;
@@ -1329,7 +1331,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     C4ReplicatorValidationFunction pullFilter = [](
         C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void *context)
     {
-        CBContext* ctx = (CBContext*)context;
+        auto ctx = (CBContext*)context;
         ctx->pullFilterTotal++;
         if ((flags & kRevPurged) == kRevPurged) {
             ctx->pullFilterPurge++;
@@ -1349,7 +1351,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
                       void*) {
         for (size_t i = 0; i < numDocs; ++i) {
             auto doc = docs[i];
-            CBContext* ctx = (CBContext*)doc->collectionContext;
+            auto ctx = (CBContext*)doc->collectionContext;
             ctx->docsEndedTotal++;
             if ((doc->flags & kRevPurged) == kRevPurged) {
                 ctx->docsEndedPurge++;

@@ -28,18 +28,13 @@ using ValidationFunction = C4ReplicatorValidationFunction;
 class ReplParams : public C4ReplicatorParameters {
 public:
     // Constructor allows for passing all the same objects as C4ReplicatorParameters,
-    ReplParams(const std::vector<C4ReplicationCollection>& collections);
+    explicit ReplParams(const std::vector<C4ReplicationCollection>& collections);
 
-    ReplParams(const std::vector<C4CollectionSpec>& collSpecs, C4ReplicatorMode push = kC4Disabled, C4ReplicatorMode pull = kC4Disabled);
-
-//    template <size_t N>
-//    ReplParams(const std::array<C4CollectionSpec, N>& collSpecs, C4ReplicatorMode push = kC4Disabled, C4ReplicatorMode pull = kC4Disabled)
-//        : ReplParams({ collSpecs.begin(), collSpecs.end() }, push, pull)
-//    {}
+    explicit ReplParams(const std::vector<C4CollectionSpec>& collSpecs, C4ReplicatorMode push = kC4Disabled, C4ReplicatorMode pull = kC4Disabled);
 
     ReplParams(const ReplParams& other);
     // Add collections to the params
-    void addCollections(std::vector<C4ReplicationCollection> collections);
+    void addCollections(const std::vector<C4ReplicationCollection>& collections);
     // Get the value of an option in the dict
     fleece::Value getOption(slice key) { return AllocedDict(optionsDictFleece).get(key); }
 #pragma mark - SETTERS
@@ -51,7 +46,7 @@ public:
         return *this;
     }
     // Set the value of multiple options in the dict
-    ReplParams& setOptions(AllocedDict options);
+    ReplParams& setOptions(const AllocedDict& options);
     // Set an option for a single collection
     ReplParams& setCollectionOptions(C4CollectionSpec collectionSpec, const AllocedDict& options);
     // Set an option for all collections

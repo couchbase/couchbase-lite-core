@@ -3,9 +3,10 @@
 //
 
 #include "SGTestUser.hh"
+#include "Error.hh"
 
 bool SG::TestUser::addChannels(const std::vector<std::string>& channels) {
-    REQUIRE(_sg);
+    Assert(_sg);
     for(const auto& c : channels) {
         _channels.push_back(c);
     }
@@ -13,13 +14,13 @@ bool SG::TestUser::addChannels(const std::vector<std::string>& channels) {
 }
 
 bool SG::TestUser::setChannels(const std::vector<std::string>& channels) {
-    REQUIRE(_sg);
+    Assert(_sg);
     _channels = channels;
     return _sg->assignUserChannel(_username, _collectionSpecs, _channels);
 }
 
 bool SG::TestUser::revokeAllChannels() {
-    REQUIRE(_sg);
+    Assert(_sg);
     _channels.clear();
     return _sg->assignUserChannel(_username, _collectionSpecs, _channels);
 }

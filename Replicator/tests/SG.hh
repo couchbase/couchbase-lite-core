@@ -12,11 +12,8 @@
  * The TestUser class's definition can be found in SGTestUser.hh/.cc
  */
 
-#ifndef LITECORE_SG_HH
-#define LITECORE_SG_HH
+#pragma once
 
-#include "HTTPLogic.hh"
-#include "c4Test.hh"
 #include "c4Certificate.hh"
 #include "c4CppUtils.hh"
 #include "c4Replicator.h"
@@ -52,11 +49,7 @@ public:
     bool deleteUser(const std::string& username) const;
     // Assign given channels to the user with given username, in the given collections
     bool assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string>& channelIDs) const;
-    // Same as above, but accepts an array parameter
-    template <size_t N>
-    bool assignUserChannel(const std::string& username, const std::array<C4CollectionSpec, N>& collectionSpecs, const std::vector<std::string>& channelIDs) const {
-        return assignUserChannel(username, std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), channelIDs);
-    }
+
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                           slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID,
@@ -66,9 +59,9 @@ public:
     // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels
     bool upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID,
                                     slice body, C4Error* err = nullptr) const;
-    alloc_slice getDoc(std::string docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
+    alloc_slice getDoc(const std::string& docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
 
-    void setAdminCredentials(std::string username, std::string password) { adminUsername = username;
+    void setAdminCredentials(const std::string& username, const std::string& password) { adminUsername = username;
         adminPassword = password; }
 
     // sendRemoteRequest functions
@@ -145,7 +138,7 @@ private:
     alloc_slice runRequest(
             const std::string &method,
             C4CollectionSpec collectionSpec,
-            std::string path,
+            const std::string& path,
             slice body = nullslice,
             bool admin = false,
             C4Error *outError = nullptr,
@@ -154,6 +147,3 @@ private:
             bool logRequests = true
     ) const;
 };
-
-
-#endif //LITECORE_SG_HH

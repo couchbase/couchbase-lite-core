@@ -19,10 +19,11 @@
  * In any test suite inheriting from ReplicatorAPITest, there is already an _sg object set up for you.
  */
 
-#ifndef LITECORE_SGTESTUSER_HH
-#define LITECORE_SGTESTUSER_HH
+#pragma once
 
 #include "SG.hh"
+#include "Error.hh"
+#include "HTTPLogic.hh"
 
 class SG::TestUser {
 public:
@@ -37,8 +38,8 @@ public:
                       const std::string& password = "password")
             : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{ collectionSpecs }
     {
-        REQUIRE(_sg->createUser(_username, _password));
-        REQUIRE(_sg->assignUserChannel(_username, _collectionSpecs, _channels));
+        Assert(_sg->createUser(_username, _password));
+        Assert(_sg->assignUserChannel(_username, _collectionSpecs, _channels));
         _authHeader = HTTPLogic::basicAuth(_username, _password);
     }
     // Same as above constructor, but accepts an array parameter
@@ -76,5 +77,3 @@ private:
     std::vector<std::string> _channels;
     std::vector<C4CollectionSpec> _collectionSpecs;
 };
-
-#endif //LITECORE_SGTESTUSER_HH
