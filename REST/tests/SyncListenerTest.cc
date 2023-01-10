@@ -33,12 +33,7 @@ public:
 
     C4SyncListenerTest()
     :ReplicatorAPITest()
-    ,ListenerHarness({0, nullslice,
-                      kC4SyncAPI,
-                       nullptr,
-                       nullptr, nullptr,
-                       {}, false, false,    // REST-only stuff
-                       true, true})
+    ,ListenerHarness(kConfig)
     {
         createDB2();
 
@@ -46,6 +41,13 @@ public:
         _sg.address.hostname = C4STR("localhost");
         _sg.remoteDBName = C4STR("db2");
     }
+
+    static constexpr C4ListenerConfig kConfig = [] {
+        C4ListenerConfig config = {};
+        config.apis = kC4SyncAPI;
+        config.allowPush = config.allowPull = true;
+        return config;
+    }();
 
     void run(bool expectSuccess = true) {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");

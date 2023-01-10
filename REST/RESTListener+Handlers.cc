@@ -77,56 +77,117 @@ namespace litecore { namespace REST {
 
     
     void RESTListener::handleGetDatabase(RequestResponse &rq, C4Collection *coll) {
+        C4Database* db = coll->getDatabase();
+        optional<string> dbName = nameOfDatabase(db);
+        if (!dbName)
+            return rq.respondWithStatus(HTTPStatus::NotFound);
         auto docCount = coll->getDocumentCount();
         auto lastSequence = coll->getLastSequence();
-        C4UUID uuid = coll->getDatabase()->getPublicUUID();
+        C4UUID uuid = db->getPublicUUID();
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
+        slice scope = coll->getScope();
+        if (!scope)
+            scope = kC4DefaultScopeID;
 
         auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("db_name"_sl);
-        json.writeString(rq.path(0));
+        json.writeString(*dbName);
         json.writeKey("db_uuid"_sl);
         json.writeString(uuidStr);
+        json.writeKey("scope_name"_sl);
+        json.writeString(scope);
+        json.writeKey("collection_name"_sl);
+        json.writeString(coll->getName());
         json.writeKey("doc_count"_sl);
         json.writeUInt(docCount);
         json.writeKey("update_seq"_sl);
         json.writeUInt(uint64_t(lastSequence));
         json.writeKey("committed_update_seq"_sl);
         json.writeUInt(uint64_t(lastSequence));
+
+        if (!collectionGiven(rq)) {
+            // List all the scope and collections:
+            json.writeKey("scopes");
+            json.beginDict();
+            db->forEachScope([&](slice scope) {
+                json.writeKey(scope);
+                json.beginDict();
+                db->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
+                    C4Collection* coll = db->getCollection(spec);
+                    json.writeKey(spec.name);
+                    json.beginDict();
+                    json.writeKey("doc_count"_sl);
+                    json.writeUInt(coll->getDocumentCount());
+                    json.writeKey("update_seq"_sl);
+                    json.writeUInt(uint64_t(coll->getLastSequence()));
+                    json.endDict();
+                });
+                json.endDict();
+            });
+            json.endDict();
+        }
         json.endDict();
     }
 
 
     void RESTListener::handleCreateDatabase(RequestResponse &rq) {
-        if (!_allowCreateDB)
-            return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
-        string dbName = rq.path(0);
-        if (databaseNamed(dbName))
-            return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
-        FilePath path;
-        if (!pathFromDatabaseName(dbName, path))
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
+        string keySpace = rq.path(0);
+        auto [dbName, spec] = parseKeySpace(keySpace);
+        auto db = databaseNamed(dbName);
+        if (!collectionGiven(rq)) {
+            // No collection given: create database:
+            if (!_allowCreateDB)
+                return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
+            if (db)
+                return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
+            FilePath path;
+            if (!pathFromDatabaseName(dbName, path))
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
-        auto db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
-        _c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
-        registerDatabase(db, dbName);
+            db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
+            _c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
+            registerDatabase(db, dbName);
 
-        rq.respondWithStatus(HTTPStatus::Created, "Created");
+            rq.respondWithStatus(HTTPStatus::Created, "Created");
+
+        } else {
+            // Create collection in database:
+            if (!_allowCreateCollection)
+                return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create collections");
+            if (!db)
+                return rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
+            if (db->getCollection(spec))
+                return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Collection exists");
+            (void)db->createCollection(spec);   // This will throw on error
+            rq.respondWithStatus(HTTPStatus::Created, "Created");
+        }
     }
 
 
-    void RESTListener::handleDeleteDatabase(RequestResponse &rq, C4Database *db) {
-        if (!_allowDeleteDB)
-            return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
-        string name = rq.path(0);
-        if (!unregisterDatabase(name))
-            return rq.respondWithStatus(HTTPStatus::NotFound);
-        try {
-            db->closeAndDeleteFile();
-        } catch (...) {
-            registerDatabase(db, name);
-            rq.respondWithError(C4Error::fromCurrentException());
+    void RESTListener::handleDeleteDatabase(RequestResponse &rq, C4Collection *coll) {
+        auto db = coll->getDatabase();
+        if (!collectionGiven(rq)) {
+            // No collection given; delete database:
+            if (!_allowDeleteDB)
+                return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
+            optional<string> dbName = nameOfDatabase(db);
+            if (!dbName)
+                return rq.respondWithStatus(HTTPStatus::NotFound);
+            if (!unregisterDatabase(*dbName))
+                return rq.respondWithStatus(HTTPStatus::NotFound);
+            try {
+                db->closeAndDeleteFile();
+            } catch (...) {
+                registerDatabase(db, *dbName);
+                rq.respondWithError(C4Error::fromCurrentException());
+            }
+
+        } else {
+            // Delete scope/collection:
+            if (!_allowDeleteCollection)
+                return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete collections");
+            db->deleteCollection(coll->getSpec());
         }
     }
 
