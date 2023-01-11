@@ -1731,110 +1731,93 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
 
-// This test may be used in future, if kDefaultMaxHistory > kDefaultMaxRevTreeDepth, and we wish to test
-// the conflict resolution behaviour for randomly generated rev history.
-#if 0
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SGW random rev history and conflicts", "[.CBL-2694]") {
-    // The idea of this test is to exceed the RevTree history limit, so we can see what happens when we use the
-    // randomly generated revID history from TreeDocument::getRevisionHistory.
-    // As well as just testing that this doesn't break anything, this test tries to emulate a client that
-    // has conflicts within the "gaps" that the other client filled with random revIDs.
-    constexpr uint32_t maxHistory = tuning::kDefaultMaxHistory;
-    constexpr uint32_t numRevs1 = maxHistory - 10;
-    constexpr uint32_t numRevs2 = numRevs1 - 10;
-    constexpr const char * saveDBName = "randhist";
-
+// Test replication and conflict resolution behaviour when we send SG a rev history with a gap (number of new
+// revs between syncs > repl::tuning::kDefaultMaxHistory).
+// This test attempts to emulate two separate clients with the same doc, where one client's rev history lands
+// in the gap of the other client's rev history.
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
+    constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
+    constexpr size_t numRevs1 = maxHistory + 50;
+    // num revs of the second 'client' land within the gap of the first 'client' history
+    constexpr size_t numRevs2 = numRevs1 - (maxHistory + 10);
+    constexpr size_t numInitialRevs = 2;
+    constexpr const char * saveDBName = "revsgap";
     const string docID = timePrefix() + "doc1";
 
-    initTest({ Roses });
+    initTest({ Roses, Tulips, Lavenders });
 
-    C4Log("--- 'Client 1' mutations ---");
-    // Create doc, 1 in each coll, with 2 revs
+    // Initial doc
     for(auto& coll : _collections) {
-        createFleeceRev(coll, slice(docID), nullslice, R"({"a":1})"_sl);
-        createFleeceRev(coll, slice(docID), nullslice, R"({"a":2})"_sl);
+        for(size_t i = 0; i < numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
+        }
     }
 
+    // Replication parameters and docID filter
     updateDocIDs();
-
-    // Replication parameters
     ReplParams replParams { _collectionSpecs, kC4OneShot, kC4Disabled };
     replParams.setDocIDs(_docIDs);
-    // Push replication (one-shot)
+    // Push doc to remote
     replicate(replParams);
 
     // Save current db state for later
     alloc_slice path(c4db_getPath(db));
     REQUIRE(c4db_copyNamed(path, slice(saveDBName), &dbConfig(), ERROR_INFO()));
 
-    std::string body;
-    // Mutate the doc `numRevs1` times (in each coll)
+    // Create 'client 1' mutations
     for(auto& coll : _collections) {
-        for(int i = 0; i < numRevs1; ++i) {
-            body = R"({"b":)" + to_string(i+3) + "}";
-            createFleeceRev(coll, slice(docID), nullslice, slice(body));
+        for(size_t i = numInitialRevs; i < numRevs1 + numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
         }
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
-        alloc_slice hist = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        C4Log("Rev history 1: %s", hist.asString().c_str());
     }
-    const std::string body1 = body;
 
-    // Sync mutations with remote
+    // Sync with remote
     replParams.setPushPull(kC4OneShot, kC4OneShot);
     replicate(replParams);
 
-    C4Log("--- 'Client 2' mutations ---");
-
-    // Revert mutations by reloading saved db
+    // Reload db from save (back to initial doc with `numInitialRevs` revs)
     c4db_release(db);
     db = c4db_openNamed(slice(saveDBName), &dbConfig(), ERROR_INFO());
     REQUIRE(db);
     _collections = collectionPreamble(_collectionSpecs);
 
-    // Mutate the doc `numRevs2` times (in each coll)
+    // 'client 2' mutations
     for(auto& coll : _collections) {
-        for(int i = 0; i < numRevs2; ++i) {
-            if(i < numRevs2 - 10) {
-                body = R"({"a":)" + to_string(i+3) + "}";
-            } else {
-                body = R"({"b":)" + to_string(i+3) + "}";
-            }
-            createFleeceRev(coll, slice(docID), nullslice, slice(body));
+        for(int i = numInitialRevs; i < numRevs2 + numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
         }
     }
 
+    // There will be a conflict in the push because different sets of mutations from each 'client'
+    // We need to make sure the test suite knows we expect this, otherwise an assertion fails
     _expectedDocPullErrors = {docID};
 
     // Sync with remote
     replicate(replParams);
 
-    // Verify 'client 2' kept their own latest rev
+    // Verify 'client 2' still has their own latest rev
     for(auto& coll : _collections) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
         REQUIRE(doc);
         auto revID = slice(doc->revID);
-        REQUIRE(revID.hasPrefix(to_string(numRevs2 + 2) + "-"));
+        REQUIRE(revID.hasPrefix(to_string(numRevs2 + numInitialRevs) + "-"));
     }
 
-    // Clear local
+    // Clear local db
     deleteAndRecreateDBAndCollections();
 
+    // No pull errors as local db is clear
     _expectedDocPullErrors = {};
-    
-    // Pull
+
+    // One shot pull
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replicate(replParams);
 
-    // Verify SG still has the rev with highest generation
+    // Verify latest rev is from 'client 1' (they have the highest generation)
     for(auto& coll : _collections) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
         REQUIRE(doc);
         auto revID = slice(doc->revID);
-        REQUIRE(revID.hasPrefix(to_string(numRevs1 + 2) + "-"));
-        auto docBody = slice(c4doc_getRevisionBody(doc));
-        // Verify that the conflict we made hasn't lost what should still be the latest revision
-        REQUIRE(json2fleece(body1.c_str()) == docBody);
+        REQUIRE(revID.hasPrefix(to_string(numRevs1 + numInitialRevs) + "-"));
     }
 }
-#endif // CBL-2694

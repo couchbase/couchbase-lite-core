@@ -121,6 +121,7 @@ namespace litecore::repl {
                 MessageBuilder response(req);
                 response.compressed = true;
                 if (!_db->usingVersionVectors()) {
+                    // Depth of rev history SG should send to us
                     response["maxHistory"_sl] = tuning::kDefaultMaxHistory;
                 }
                 if (!_db->disableBlobSupport())
