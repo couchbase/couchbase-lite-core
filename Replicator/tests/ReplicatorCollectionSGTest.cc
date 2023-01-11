@@ -64,6 +64,8 @@
 // command argument:
 //   [.SyncServerCollection]
 //
+// You can use the environment variable "NOTLS" and the sg_setup.sh option "-notls" to disable TLS communication
+// between CBL and SG. This will enable something like packet analysis with Wireshark.
 
 using namespace std;
 using namespace litecore::repl;

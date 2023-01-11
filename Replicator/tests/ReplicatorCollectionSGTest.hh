@@ -48,9 +48,16 @@ public:
     ReplicatorCollectionSGTest()
             : ReplicatorAPITest() {
         _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
-        _sg.address = {kC4Replicator2TLSScheme,
-                       C4STR("localhost"),
-                       4984};
+        if(getenv("NOTLS")) {
+            _sg.address = {kC4Replicator2Scheme,
+                           C4STR("localhost"),
+                           4984};
+        } else {
+            _sg.address = {kC4Replicator2TLSScheme,
+                           C4STR("localhost"),
+                           4984};
+        }
+
         _flushedScratch = true;
     }
     ~ReplicatorCollectionSGTest() {
