@@ -70,6 +70,7 @@
 using namespace std;
 using namespace litecore::repl;
 
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections SG",
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
@@ -114,51 +115,123 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
     verifyDocs(_docIDs, true);
 }
 
-// The collection does not exist in the remote.
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "[.SyncServerCollection]") {
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Nonexistent Collection SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+    initTest({ Roses,
+               Tulips,
+               C4CollectionSpec{"dummy"_sl, FlowersScopeName}
+            });
 
-    initTest({ Roses, Tulips, C4CollectionSpec{"dummy1"_sl, kC4DefaultScopeID}, Lavenders });
+    for (auto coll : _collections) {
+        importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 2, idPrefix);
+    }
 
-    std::vector<C4ReplicationCollection> replCollections { _collectionCount };
+    ReplParams replParams { _collectionSpecs };
+    replParams.collections[0].push = kC4OneShot;
+    replParams.collections[1].pull = kC4OneShot;
+    replParams.collections[2].push = kC4OneShot;
+    replParams.collections[2].pull = kC4OneShot;
+
+    slice expectedErrorMsg;
     C4Error expectedError;
 
-    SECTION("Collection does not exist at remote") {
-        replCollections[0] =
-            C4ReplicationCollection{_collectionSpecs[0], kC4OneShot, kC4Disabled};
-        replCollections[1] =
-            C4ReplicationCollection{_collectionSpecs[1], kC4Disabled, kC4OneShot};
-        replCollections[2] =
-            C4ReplicationCollection{_collectionSpecs[2], kC4OneShot, kC4OneShot};
-        replCollections[3] =
-            C4ReplicationCollection{_collectionSpecs[3], kC4OneShot, kC4Disabled};
-            // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
-            // is not found on the remote server"
-            expectedError = {WebSocketDomain, 404};
+    SECTION("Collection absent at the remote") {
+        expectedErrorMsg = "Collection 'flowers.dummy' is not found on the remote server"_sl;
+        expectedError = { WebSocketDomain, 404 };
     }
 
-    SECTION("Inconsistent Config") {
-        replCollections[0] =
-            C4ReplicationCollection{_collectionSpecs[0], kC4OneShot, kC4Disabled};
-        replCollections[1] =
-            C4ReplicationCollection{_collectionSpecs[1], kC4Disabled, kC4OneShot};
-        replCollections[2] =
-            C4ReplicationCollection{_collectionSpecs[2], kC4OneShot, kC4OneShot};
-        replCollections[3] =
-            C4ReplicationCollection{_collectionSpecs[3], kC4Continuous, kC4Disabled};
-        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+    SECTION("Collection absent at the local") {
+        replParams.collections[2].collection = Lavenders;
+        expectedErrorMsg = "collection flowers.lavenders is not found in the database."_sl;
+        expectedError = { LiteCoreDomain, error::NotFound };
     }
+
+    replicate(replParams, false);
+
+    FLStringResult emsg = c4error_getMessage(_callbackStatus.error);
+    CHECK(_callbackStatus.error.domain == expectedError.domain);
+    CHECK(_callbackStatus.error.code == expectedError.code);
+    CHECK(expectedErrorMsg.compare(slice(emsg)) == 0);
+    FLSliceResult_Release(emsg);
+}
+
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Bad Configurations SG", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    initTest({ Roses,
+               Tulips,
+               Lavenders
+            });
 
     for (auto& coll : _collections) {
         importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 2, idPrefix);
     }
+    ReplParams replParams { _collectionSpecs };
 
-    ReplParams replParams { replCollections };
+    C4Error expectedError;
+    slice expectedErrorMsg;
+
+    SECTION("Mixed OneShot and Continuous Modes") {
+        replParams.collections[0].push = kC4OneShot;
+        replParams.collections[1].pull = kC4OneShot;
+        replParams.collections[2].push = kC4Continuous;
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+        expectedErrorMsg = "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed in one replicator."_sl;
+    }
+
+    SECTION("Both Sync Directions Disabled") {
+        replParams.collections[0].push = kC4OneShot;
+        replParams.collections[1].pull = kC4OneShot;
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+        expectedErrorMsg = "Invalid replicator configuration: a collection with both push and pull disabled"_sl;
+    }
+
+    SECTION("Mixed Active and Passive Modes") {
+        replParams.collections[0].push = kC4Passive;
+        replParams.collections[1].push = kC4OneShot;
+        replParams.collections[2].pull = kC4OneShot;
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+        expectedErrorMsg = "Invalid replicator configuration: the collection list includes both passive and active ReplicatorMode"_sl;
+    }
+
+    SECTION("Duplicated CollectionSpecs") {
+        replParams.collections[0].push = kC4Continuous;
+        replParams.collections[1].pull = kC4Continuous;
+        replParams.collections[2].push = kC4Continuous;
+        replParams.collections[2].pull = kC4Continuous;
+        replParams.collections[1].collection = Roses;
+
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+        expectedErrorMsg = "Invalid replicator configuration: the collection list contains duplicated collections."_sl;
+    }
+
+    SECTION("Empty CollectionSpecs") {
+        replParams.collections[0].push = kC4Continuous;
+        replParams.collections[1].pull = kC4Continuous;
+        replParams.collections[2].push = kC4Continuous;
+        replParams.collections[2].pull = kC4Continuous;
+        replParams.collections[1].collection = {nullslice, nullslice};
+
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+        expectedErrorMsg = "Invalid replicator configuration: a collection without name"_sl;
+    }
+
     replicate(replParams, false);
 
-    CHECK(_callbackStatus.error.domain == expectedError.domain);
-    CHECK(_callbackStatus.error.code == expectedError.code);
+    C4Error* error = nullptr;
+    if (_errorBeforeStart.code) {
+        error = &_errorBeforeStart;
+    } else {
+        error = &_callbackStatus.error;
+    }
+    FLStringResult emsg = c4error_getMessage(*error);
+    CHECK(error->domain == expectedError.domain);
+    CHECK(error->code == expectedError.code);
+    CHECK(expectedErrorMsg.compare(slice(emsg)) == 0);
+    FLSliceResult_Release(emsg);
 }
+
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
@@ -168,15 +241,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     std::vector<C4CollectionSpec> collectionSpecs { collectionCount };
 
     bool continuous = false;
+    C4Error expectedError;
 
     SECTION("Named Collection") {
         collectionSpecs = {Roses};
     }
 
-    // SG does not currently support multiple scopes
-//    SECTION("Default Collection") {
-//        collectionSpecs = {Default};
-//    }
+    // The default scope is not in our SG config. It should be rejected by SG
+    SECTION("Default Collection") {
+        collectionSpecs = {Default};
+        expectedError = { WebSocketDomain, 404 };
+    }
 
     SECTION("Another Named Collection") {
         collectionSpecs = {Lavenders};
@@ -198,8 +273,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     if (continuous) {
         _stopWhenIdle.store(true);
     }
-    replicate(replParams);
-    verifyDocs(_docIDs);
+    if (expectedError.code != 0) {
+        replicate(replParams, false);
+        // Not pass due to CBG-2675
+//        FLStringResult emsg = c4error_getMessage(_callbackStatus.error);
+//        CHECK(_callbackStatus.error.domain == expectedError.domain);
+//        CHECK(_callbackStatus.error.code == expectedError.code);
+//        FLSliceResult_Release(emsg);
+    } else {
+        replicate(replParams);
+        verifyDocs(_docIDs);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG", "[.SyncServerCollection]") {
@@ -283,6 +367,123 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
     CHECK(_callbackStatus.progress.documentCount == 30 * _collectionCount);
 }
 
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push + Pull + (Push & Pull) SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    const string channelID = idPrefix;
+    initTest({ Lavenders,
+               Roses,
+               Tulips },
+             { channelID }
+            );
+    enum {
+        iPush,
+        iPull,
+        iPushPull
+    };
+
+    constexpr slice body = "{\"ans*wer\":42}"_sl;
+    alloc_slice bodyWithChannel = SG::addChannelToJSON(body, "channels", {channelID});
+    alloc_slice localPrefix {idPrefix + "local-"};
+    alloc_slice remotePrefix {idPrefix + "remote-"};
+    unsigned docCount = 20;
+
+    // push documents to the pull and push/pull collections
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        if (i == iPush) {
+            continue;
+        }
+        for (int d = 1; d <= docCount; ++d) {
+            constexpr size_t bufSize = 80;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%.*s%d", SPLAT(remotePrefix), d);
+            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
+        }
+    }
+
+    {
+        // Send the docs to remote
+        ReplParams replParams { _collectionSpecs };
+        replParams.setPushPull(kC4OneShot, kC4Disabled);
+        replicate(replParams);
+    }
+
+    deleteAndRecreateDBAndCollections();
+
+    // add local docs to Push and Push/Pull collections
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        if (i == iPull) {
+            continue;
+        }
+        for (int d = 1; d <= docCount; ++d) {
+            constexpr size_t bufSize = 80;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%.*s%d", SPLAT(localPrefix), d);
+            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
+        }
+    }
+
+    {
+        ReplParams replParams { _collectionSpecs };
+        replParams.collections[iPush].push = kC4OneShot;
+        replParams.collections[iPull].pull = kC4OneShot;
+        replParams.collections[iPushPull].push = kC4OneShot;
+        replParams.collections[iPushPull].pull = kC4OneShot;
+        replicate(replParams);
+    }
+
+    auto check = [&]() {
+        for (size_t i = 0; i < _collectionCount; ++i) {
+            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(_collections[i],
+                                                                 nullptr, ERROR_INFO());
+            unsigned total = 0;
+            unsigned local = 0;
+            unsigned remote = 0;
+            while (c4enum_next(e, ERROR_INFO())) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                slice docID_sl {info.docID};
+                total++;
+                if (docID_sl.hasPrefix(localPrefix)) {
+                    local++;
+                }
+                if (docID_sl.hasPrefix(remotePrefix)) {
+                    remote++;
+                }
+            }
+            switch (i) {
+                case iPush:
+                    CHECK(total == docCount);
+                    CHECK(local == docCount);
+                    break;
+                case iPull:
+                    CHECK(total == docCount);
+                    CHECK(remote == docCount);
+                    break;
+                case iPushPull:
+                    CHECK(total == 2 * docCount);
+                    CHECK(local == docCount);
+                    CHECK(remote == docCount);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+    check();
+
+    // Clear the local database and check again.
+    deleteAndRecreateDBAndCollections();
+    {
+        ReplParams replParams { _collectionSpecs };
+        replParams.setPushPull(kC4Disabled, kC4OneShot);
+        replicate(replParams);
+    }
+    check();
+}
+
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Push SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
 
@@ -343,7 +544,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     verifyDocs(_docIDs, true);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncCollSlow]") {
     constexpr size_t kDocBufSize = 60;
     // CBG-2643 blocking 1000 docs with 1000 props due to replication taking more than ~1sec
     constexpr int kNumDocs = 799, kNumProps = 799;
@@ -753,10 +954,126 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoke
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
     }
+
     // 1 doc per collection
     CHECK(_docsEnded == _collectionCount);
     CHECK(_counter == _collectionCount);
 }
+
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apefrr-doc1";
+    const string channelID = idPrefix + "a";
+
+    initTest({ Roses,
+               Tulips },
+             { channelID }
+            );
+
+    // Push one doc to the remote.
+    for(auto& spec : _collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(spec, docIDstr, "{}", { channelID }));
+    }
+
+    struct CBContext {
+        int docsEndedTotal = 0;
+        int docsEndedPurge = 0;
+        int pullFilterTotal = 0;
+        int pullFilterPurge = 0;
+        void reset() {
+            docsEndedTotal = 0;
+            docsEndedPurge = 0;
+            pullFilterTotal = 0;
+            pullFilterPurge = 0;
+        }
+        unsigned collIndex;
+    } cbContexts[2];
+    Assert( 2 == _collectionCount );
+    for (unsigned i = 0; i < _collectionCount; ++i) {
+        cbContexts[i].collIndex = i;
+    }
+
+    // Setup pull filter to filter the removed rev:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            if (ctx->collIndex == 0) {
+                return false;
+            } else if (ctx->collIndex == 1) {
+                return true;
+            }
+        }
+        return true;
+    };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    ReplParams replParams { _collectionSpecs, kC4Disabled, kC4OneShot };
+    for (unsigned i = 0; i < _collectionCount; ++i) {
+        replParams.collections[i].pullFilter = _pullFilter;
+        replParams.collections[i].callbackContext = cbContexts+i;
+    }
+    replicate(replParams);
+
+    // Verify:
+    for (unsigned i = 0; i < _collectionCount; ++i) {
+        // No docs are purged
+        CHECK(cbContexts[i].pullFilterTotal == 1);
+        CHECK(cbContexts[i].docsEndedTotal == 1);
+        CHECK(cbContexts[i].pullFilterPurge == 0);
+        CHECK(cbContexts[i].docsEndedPurge == 0);
+
+        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(docIDstr), true,
+                                                 kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        cbContexts[i].reset();
+    }
+
+    // Revoke access to all channels:
+    REQUIRE(_testUser.revokeAllChannels());
+
+    C4Log("-------- Pull the revoked");
+    replicate(replParams);
+
+    // Verify if doc1 if not not purged in collection 0, but purged in collection 1.
+    for(unsigned i = 0; i < _collectionCount; ++i) {
+        CHECK(cbContexts[i].pullFilterPurge == 1);
+        CHECK(cbContexts[i].docsEndedPurge == 1);
+        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(docIDstr),
+                                                 true, kDocGetAll, nullptr);
+        // Purged flags are set with each collection, but for collection 0, it is filtered out,
+        // hence, the auto-purge logic is not applied.
+        if (i == 0) {
+            REQUIRE(doc1);
+        } else if (i == 1) {
+            REQUIRE(!doc1);
+        }
+    }
+}
+
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
@@ -841,7 +1158,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     // Verify that doc1 is purged:
     for(auto& coll : _collections) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
-        // This check is currently failing because of CBG-2487
         REQUIRE(!doc1);
     }
     // One doc per collection
@@ -1072,7 +1388,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGCol
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
-// !Note! Not passing, pending CBG-2487
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Access SG",
                  "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
@@ -1097,7 +1412,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
             pullFilterTotal = 0;
             pullFilterPurge = 0;
         }
-    } cbContext;
+    } cbContext[3];
+    Assert( 3 == _collectionCount);
 
     // Setup pull filter:
     C4ReplicatorValidationFunction pullFilter = [](
@@ -1131,40 +1447,43 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
     // Replication parameters setup
     ReplParams replParams { _collectionSpecs, kC4Disabled, kC4OneShot };
     replParams.setOption(kC4ReplicatorOptionAutoPurge, false).setPullFilter(pullFilter);
-    replParams.setCallbackContext(&cbContext);
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        replParams.setCollectionContext((int)i, cbContext+i);
+    }
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
     replicate(replParams);
 
-    for (auto& coll : _collections) {
-        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID),
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
+        CHECK(cbContext[i].docsEndedTotal == 1);
+        CHECK(cbContext[i].docsEndedPurge == 0);
+        CHECK(cbContext[i].pullFilterTotal == 1);
+        CHECK(cbContext[i].pullFilterPurge == 0);
     }
-
-    CHECK(cbContext.docsEndedTotal == _collectionCount);
-    CHECK(cbContext.docsEndedPurge == 0);
-    CHECK(cbContext.pullFilterTotal == _collectionCount);
-    CHECK(cbContext.pullFilterPurge == 0);
 
     // Revoke access to all channels:
     REQUIRE(_testUser.revokeAllChannels());
 
     C4Log("-------- Pulling the revoked");
-    cbContext.reset();
+    std::for_each(cbContext, cbContext + _collectionCount, [](CBContext& ctx) {
+        ctx.reset();
+    });
 
     replicate(replParams);
 
     // Verify if the doc1 is not purged as the auto purge is disabled:
-    for (auto& coll : _collections) {
-        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID),
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID),
                                                  true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
+        CHECK(cbContext[i].docsEndedPurge == 1);
+        // No pull filter called
+        CHECK(cbContext[i].pullFilterTotal == 0);
     }
-
-    CHECK(cbContext.docsEndedPurge == _collectionCount);
-    CHECK(cbContext.pullFilterTotal == 0);
 }
 
 

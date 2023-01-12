@@ -1128,7 +1128,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not
     e.endDict();
     auto fleece = e.finish();
 
-    C4ReplicatorParameters parameters{fleece};
+    repl::C4ReplParamsDefaultCollection parameters;
+    parameters.push = kC4OneShot;
+    parameters.optionsDictFleece = fleece;
     ReplicatorAPITestRemoteReplicator replicator(db, parameters);
     CHECK(replicator.maxRetryCount() == UINT_MAX); // 32-bit capped
 }

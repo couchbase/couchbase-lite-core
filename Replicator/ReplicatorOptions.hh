@@ -405,6 +405,10 @@ namespace litecore { namespace repl {
         }
 
         for (size_t i = collectionOpts.size(); i-- > 0; ) {
+            if (collectionOpts[i].collectionSpec.name.size == 0) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: a collection without name");
+            }
             if (collectionOpts[i].push == kC4Disabled
                 && collectionOpts[i].pull == kC4Disabled) {
                 throw error(error::LiteCore, error::InvalidParameter,

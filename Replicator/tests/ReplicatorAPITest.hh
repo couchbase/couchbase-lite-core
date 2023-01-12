@@ -380,8 +380,13 @@ public:
     }
 
     void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess =true) {
-        C4Error err;
-        REQUIRE(startReplicator(params, WITH_ERROR(&err)));
+        if (!startReplicator(params, &_errorBeforeStart)) {
+            DebugAssert(_repl == nullptr);
+            if (expectSuccess) {
+                CHECK(_errorBeforeStart.code == 0);
+            }
+            return;
+        }
 
         std::unique_lock<std::mutex> lock(_mutex);
         _waitForStatus(lock, kC4Stopped, std::chrono::minutes(5));
@@ -450,6 +455,7 @@ public:
     std::mutex _mutex;
     std::condition_variable _stateChangedCondition;
     C4ReplicatorStatus _callbackStatus {};
+    C4Error _errorBeforeStart {LiteCoreDomain, 0};
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
