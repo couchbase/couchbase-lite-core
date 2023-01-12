@@ -38,12 +38,6 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
                                                  slice remoteDatabaseName,
                                                  const C4ReplicatorParameters &params)
 {
-    std::for_each(params.collections, params.collections + params.collectionCount,
-                      [](const C4ReplicationCollection& coll) {
-        AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
-                    "Either push or pull must be enabled");
-    });
-
     if (!params.socketFactory) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
         if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
