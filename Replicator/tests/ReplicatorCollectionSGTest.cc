@@ -409,8 +409,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push + Pull +
         replicate(replParams);
     }
 
-    deleteAndRecreateDB();
-    initTest({Lavenders, Roses, Tulips}, {channelID});
+    deleteAndRecreateDBAndCollections();
 
     // add local docs to Push and Push/Pull collections
     for (size_t i = 0; i < _collectionCount; ++i) {
@@ -475,8 +474,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push + Pull +
     check();
 
     // Clear the local database and check again.
-    deleteAndRecreateDB();
-    initTest({Lavenders, Roses, Tulips}, {channelID});
+    deleteAndRecreateDBAndCollections();
     {
         ReplParams replParams { _collectionSpecs };
         replParams.setPushPull(kC4Disabled, kC4OneShot);
@@ -546,7 +544,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     verifyDocs(_docIDs, true);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncCollSlow]") {
     constexpr size_t kDocBufSize = 60;
     // CBG-2643 blocking 1000 docs with 1000 props due to replication taking more than ~1sec
     constexpr int kNumDocs = 799, kNumProps = 799;
