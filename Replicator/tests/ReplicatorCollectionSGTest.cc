@@ -988,7 +988,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Fi
             pullFilterPurge = 0;
         }
         unsigned collIndex;
-    } cbContexts[_collectionCount];
+    } cbContexts[2];
+    Assert( 2 == _collectionCount );
     for (unsigned i = 0; i < _collectionCount; ++i) {
         cbContexts[i].collIndex = i;
     }
@@ -1411,7 +1412,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
             pullFilterTotal = 0;
             pullFilterPurge = 0;
         }
-    } cbContext[_collectionCount];
+    } cbContext[3];
+    Assert( 3 == _collectionCount);
 
     // Setup pull filter:
     C4ReplicatorValidationFunction pullFilter = [](
