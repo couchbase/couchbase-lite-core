@@ -50,6 +50,13 @@ namespace litecore {
         return result;
     }
 
+    std::string format(const std::string fmt, ...) {
+        va_list args;
+        va_start(args, fmt);
+        std::string result = vformat(fmt.c_str(), args);
+        va_end(args);
+        return result;
+    }
 
     std::string vformat(const char *fmt, va_list args) {
         char *cstr = nullptr;

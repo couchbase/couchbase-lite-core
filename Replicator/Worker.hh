@@ -19,6 +19,7 @@
 #include "NumConversion.hh"
 #include "Error.hh"
 #include "ReplicatorTypes.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
 #include <functional>
@@ -129,6 +130,48 @@ namespace litecore { namespace repl {
         virtual std::string loggingIdentifier() const override {return _loggingID;}
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception &x) override;
+
+        virtual inline std::string formatWithCollection(const char * fmt) const {
+            return format(string(kCollectionLogFormat), collectionID()) + " " + string(fmt);
+        }
+        // overrides for Logging functions which insert collection index to the format string
+        inline void logInfo(const char * fmt, ...) const override {
+            const std::string fmt_ = formatWithCollection(fmt);
+            va_list args;
+            va_start(args, fmt);
+            _logAt(Info, fmt_.c_str(), args);
+            va_end(args);
+        }
+        inline void logVerbose(const char * fmt, ...) const override {
+            const std::string fmt_ = formatWithCollection(fmt);
+            va_list args;
+            va_start(args, fmt);
+            _logAt(Verbose, fmt_.c_str(), args);
+            va_end(args);
+        }
+
+#if DEBUG
+        inline void logDebug(const char * fmt, ...) const override {
+            const std::string fmt_ = formatWithCollection(fmt);
+            va_list args;
+            va_start(args, fmt);
+            _logAt(Debug, fmt_.c_str(), args);
+            va_end(args);
+        }
+#else
+        virtual inline void logDebug(const char * fmt, ...) const override {}
+#endif
+
+        int32_t collectionID() const {
+            // DebugAssert that collection index is within range of int32_t (we expect so), so we can ignore narrowing conversion warning
+            DebugAssert(_collectionIndex == kNotCollectionIndex || _collectionIndex <= std::numeric_limits<int32_t>::max());
+            return _collectionIndex != kNotCollectionIndex ? _collectionIndex : -1; // NOLINT(cppcoreguidelines-narrowing-conversions)
+        }
+
+        // Uniform collection logging
+//        virtual void logWithCollection(LogLevel level, const std::string& fmt, ...) const;
+
+#define logInfoWithColl(FMT, ...) logInfo(CONCAT("{Coll#%i} " << FMT), this->collectionID(), ##__VA_ARGS__)
 
 #pragma mark - BLIP:
 

@@ -176,7 +176,7 @@ namespace litecore { namespace repl {
             SubReplicator& sub = _subRepls[i];
             try {
                 unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(sub.collection, false);
-                logInfo("Scanning for pre-existing conflicts (collection: %u)...", i);
+                cLogInfo(i, "Scanning for pre-existing conflicts...");
                 unsigned nConflicts = 0;
                 while (e->next()) {
                     C4DocumentInfo info = e->documentInfo();
@@ -192,8 +192,8 @@ namespace litecore { namespace repl {
                     _docsEnded.push(rev);
                     ++nConflicts;
                 }
-                logInfo("Found %u conflicted docs in %.3f sec (collection: %u)",
-                        nConflicts, st.elapsed(), i);
+                cLogInfo(i, "Found %u conflicted docs in %.3f sec",
+                        nConflicts, st.elapsed());
             } catch (...) {
                 C4Error err = C4Error::fromCurrentException();
                 warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
@@ -664,15 +664,14 @@ namespace litecore { namespace repl {
         try {
             if (sub.checkpointer->read(_db->useLocked(), reset)) {
                 auto remote = sub.checkpointer->remoteMinSequence();
-                logInfo("Read local checkpoint '%.*s': %.*s (collection: %u)",
+                cLogInfo(coll, "Read local checkpoint '%.*s': %.*s",
                         SPLAT(sub.checkpointer->initialCheckpointID()),
-                        SPLAT(sub.checkpointer->checkpointJSON()),
-                        coll);
+                        SPLAT(sub.checkpointer->checkpointJSON()));
                 sub.hadLocalCheckpoint = true;
             } else if (reset) {
-                logInfo("Ignoring local checkpoint ('reset' option is set) (collection: %u)", coll);
+                cLogInfo(coll, "Ignoring local checkpoint ('reset' option is set)");
             } else {
-                logInfo("No local checkpoint '%.*s' (collection: %u)", SPLAT(sub.checkpointer->initialCheckpointID()), coll);
+                cLogInfo(coll, "No local checkpoint '%.*s'", SPLAT(sub.checkpointer->initialCheckpointID()));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
                 if (_options->pull(coll) > kC4Passive && sub.puller
@@ -681,7 +680,7 @@ namespace litecore { namespace repl {
             }
             return true;
         } catch (...) {
-            logInfo("Fatal error getting local checkpoint (collection: %u)", coll);
+            cLogInfo(coll, "Fatal error getting local checkpoint");
             gotError(C4Error::fromCurrentException());
             stop();
             return false;
@@ -703,8 +702,8 @@ namespace litecore { namespace repl {
             logVerbose("Requesting remote checkpoint '%.*s' of the default collection",
                        SPLAT(sub.remoteCheckpointDocID));
         } else {
-            logVerbose("Requesting remote checkpoint '%.*s' (collection: %u)",
-                       SPLAT(sub.remoteCheckpointDocID), coll);
+            cLogVerbose(coll, "Requesting remote checkpoint '%.*s'",
+                       SPLAT(sub.remoteCheckpointDocID));
         }
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
@@ -726,8 +725,8 @@ namespace litecore { namespace repl {
                     logInfo("No remote checkpoint '%.*s' of the default collection",
                             SPLAT(sub.remoteCheckpointDocID));
                 } else {
-                    logInfo("No remote checkpoint '%.*s' (collection: %u)",
-                            SPLAT(sub.remoteCheckpointRevID), coll);
+                    cLogInfo(coll, "No remote checkpoint '%.*s'",
+                            SPLAT(sub.remoteCheckpointRevID));
                 }
                 sub.remoteCheckpointRevID.reset();
             } else {
@@ -737,8 +736,8 @@ namespace litecore { namespace repl {
                     logInfo("Received remote checkpoint (rev='%.*s'): %.*s of the default collection",
                             SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()));
                 } else {
-                    logInfo("Received remote checkpoint (rev='%.*s'): %.*s (collection: %u)",
-                            SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()), coll);
+                    cLogInfo(coll, "Received remote checkpoint (rev='%.*s'): %.*s",
+                            SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()));
                 }
             }
             sub.remoteCheckpointReceived = true;
@@ -852,14 +851,14 @@ namespace litecore { namespace repl {
                     }
                     
                     if (dict.empty()) {
-                        logInfo("No remote checkpoint '%.*s' for collection '%.*s'",
-                                SPLAT(sub.remoteCheckpointDocID), SPLAT(collPath));
+                        cLogInfo(i, "No remote checkpoint '%.*s'",
+                                SPLAT(sub.remoteCheckpointDocID));
                         sub.remoteCheckpointRevID.reset();
                     } else {
                         remoteCheckpoints[i].readDict(dict);
                         sub.remoteCheckpointRevID = dict["rev"].asString();
-                        logInfo("Received remote checkpoint (rev='%.*s') for collection '%.*s': %.*s",
-                                SPLAT(sub.remoteCheckpointRevID), SPLAT(collPath), SPLAT(dict.toString()));
+                        cLogInfo(i, "Received remote checkpoint (rev='%.*s'): %.*s",
+                                SPLAT(sub.remoteCheckpointRevID), SPLAT(dict.toString()));
                     }
                 }
                 
@@ -906,9 +905,9 @@ namespace litecore { namespace repl {
 
         alloc_slice json = move(sub.checkpointJSONToSave);
 
-        logVerbose("Saving remote checkpoint '%.*s' over rev='%.*s': %.*s (collection: %u) ...",
+        cLogVerbose(coll, "Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...",
                    SPLAT(sub.remoteCheckpointDocID), SPLAT(sub.remoteCheckpointRevID),
-                                                              SPLAT(json), coll);
+                                                              SPLAT(json));
         Assert(sub.remoteCheckpointReceived);
         Assert(json);
 
@@ -941,16 +940,16 @@ namespace litecore { namespace repl {
             } else {
                 // Remote checkpoint saved, so update local one:
                 sub.remoteCheckpointRevID = response->property("rev"_sl);
-                logInfo("Saved remote checkpoint '%.*s' as rev='%.*s' (collection: %u)",
-                    SPLAT(sub.remoteCheckpointDocID), SPLAT(sub.remoteCheckpointRevID), coll);
+                cLogInfo(coll, "Saved remote checkpoint '%.*s' as rev='%.*s'",
+                    SPLAT(sub.remoteCheckpointDocID), SPLAT(sub.remoteCheckpointRevID));
 
                 try {
                     _db->useLocked([&](C4Database *db) {
                         _db->markRevsSyncedNow();
                         sub.checkpointer->write(db, json);
                     });
-                    logInfo("Saved local checkpoint '%.*s': %.*s (collection: %u)",
-                            SPLAT(sub.remoteCheckpointDocID), SPLAT(json), coll);
+                    cLogInfo(coll, "Saved local checkpoint '%.*s': %.*s",
+                            SPLAT(sub.remoteCheckpointDocID), SPLAT(json));
                 } catch (...) {
                     gotError(C4Error::fromCurrentException());
                 }
@@ -1176,12 +1175,12 @@ namespace litecore { namespace repl {
         for (int i = 0; i < checkpointIDs.count(); i++) {
             auto checkpointID = checkpointIDs[i].asString();
 
-            logInfo("Request to get peer checkpoint '%.*s' for collection '%.*s'",
-                    SPLAT(checkpointID), SPLAT(collections[i].asString()));
+            cLogInfo(i, "Request to get peer checkpoint '%.*s' for collection",
+                    SPLAT(checkpointID));
 
             if (!_options->collectionPath(i)) {
-                logVerbose("Get peer checkpoint '%.*s' for collection '%.*s' : Collection Not Found in the Replicator's config",
-                        SPLAT(checkpointID), SPLAT(collections[i].asString()));
+                cLogVerbose(i, "Get peer checkpoint '%.*s' for collection: Collection Not Found in the Replicator's config",
+                        SPLAT(checkpointID));
                 enc.writeNull();
                 hasUnfoundCollection = true;
                 continue;

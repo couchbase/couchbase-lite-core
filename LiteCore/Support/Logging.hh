@@ -202,6 +202,10 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #endif
 #endif
 
+#define _logAt(LEVEL, FMT, VA_ARGS) do { \
+    if (_usuallyFalse(this->willLog(litecore::LogLevel::LEVEL))) \
+        this->_logv(litecore::LogLevel::LEVEL, FMT, VA_ARGS); \
+    } while(0)
 
 static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv);}
 
@@ -230,7 +234,6 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         void warn(const char *format, ...) const __printflike(2, 3)       {LOGBODY(Warning)}
         void logError(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Error)}
 
-        // For performance reasons, logInfo(), logVerbose(), logDebug() are macros (below)
         void _logInfo(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Info)}
         void _logVerbose(const char *format, ...) const __printflike(2, 3){LOGBODY(Verbose)}
         void _logDebug(const char *format, ...) const __printflike(2, 3)  {LOGBODY(Debug)}
@@ -239,6 +242,29 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
 
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const __printflike(3, 0);
+
+        virtual inline void logInfo(const char *format, ...) const {
+            va_list args;
+            va_start(args, format);
+            _logAt(Info, format, args);
+            va_end(args);
+        }
+        virtual inline void logVerbose(const char *format, ...) const {
+            va_list args;
+            va_start(args, format);
+            _logAt(Verbose, format, args);
+            va_end(args);
+        }
+#if DEBUG
+        virtual inline void logDebug(const char *format, ...) const {
+            va_list args;
+            va_start(args, format);
+            _logAt(Debug, format, args);
+            va_end(args);
+        }
+#else
+        virtual inline void logDebug(const char *format, ...) const {}
+#endif
 
         unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
@@ -249,18 +275,4 @@ private:
 
         mutable unsigned _objectRef {0};
     };
-
-#define _logAt(LEVEL, FMT, ...) do { \
-    if (_usuallyFalse(this->willLog(litecore::LogLevel::LEVEL))) \
-        this->_log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__); \
-    } while(0)
-#define logInfo(FMT, ...)    _logAt(Info,    FMT, ##__VA_ARGS__)
-#define logVerbose(FMT, ...) _logAt(Verbose, FMT, ##__VA_ARGS__)
-
-#if DEBUG
-#define logDebug(FMT, ...)   _logAt(Debug,   FMT, ##__VA_ARGS__)
-#else
-#define logDebug(FMT, ...)
-#endif
-
 }
