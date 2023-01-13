@@ -1741,8 +1741,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
     constexpr const char * saveDBName = "revsgap";
     const string docID = timePrefix() + "doc1";
 
-    size_t numRevs1;
-    size_t numRevs2;
+    size_t numRevs1 = 0;
+    size_t numRevs2 = 0;
 
     SECTION("No gap in history") {
         numRevs1 = maxHistory - 5;
