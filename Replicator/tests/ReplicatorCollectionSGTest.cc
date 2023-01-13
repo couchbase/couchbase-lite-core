@@ -1737,12 +1737,23 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
 // in the gap of the other client's rev history.
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
     constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
-    constexpr size_t numRevs1 = maxHistory + 50;
-    // num revs of the second 'client' land within the gap of the first 'client' history
-    constexpr size_t numRevs2 = numRevs1 - (maxHistory + 10);
     constexpr size_t numInitialRevs = 2;
     constexpr const char * saveDBName = "revsgap";
     const string docID = timePrefix() + "doc1";
+
+    size_t numRevs1;
+    size_t numRevs2;
+
+    SECTION("No gap in history") {
+        numRevs1 = maxHistory - 5;
+        numRevs2 = numRevs1 - 10;
+    }
+
+    SECTION("Gap in history") {
+        numRevs1 = maxHistory + 50;
+        // num revs of the second 'client' land within the gap of the first 'client' history
+        numRevs2 = numRevs1 - (maxHistory + 10);
+    }
 
     initTest({ Roses, Tulips, Lavenders });
 
@@ -1784,11 +1795,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
     // 'client 2' mutations
     for(auto& coll : _collections) {
         for(int i = numInitialRevs; i < numRevs2 + numInitialRevs; ++i) {
-            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"b":)" + to_string(i) + "}"));
         }
     }
 
-    // There will be a conflict in the push because different sets of mutations from each 'client'
+    // There will be a conflict in the push because different revIDs from separate 'clients'
     // We need to make sure the test suite knows we expect this, otherwise an assertion fails
     _expectedDocPullErrors = {docID};
 
