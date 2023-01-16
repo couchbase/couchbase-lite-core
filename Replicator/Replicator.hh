@@ -139,14 +139,14 @@ namespace litecore { namespace repl {
             const std::string fmt_ = formatWithCollection(fmt, idx);
             va_list args;
             va_start(args, fmt);
-            _logAt(Info, fmt_.c_str(), args);
+            _logAt(LogLevel::Info, fmt_.c_str(), args);
             va_end(args);
         }
         inline void cLogVerbose(CollectionIndex idx, const char * fmt, ...) const {
             const std::string fmt_ = formatWithCollection(fmt, idx);
             va_list args;
             va_start(args, fmt);
-            _logAt(Verbose, fmt_.c_str(), args);
+            _logAt(LogLevel::Verbose, fmt_.c_str(), args);
             va_end(args);
         }
 #if DEBUG
@@ -154,7 +154,7 @@ namespace litecore { namespace repl {
             const std::string fmt_ = formatWithCollection(fmt, idx);
             va_list args;
             va_start(args, fmt);
-            _logAt(Debug, fmt_.c_str(), args);
+            _logAt(LogLevel::Debug, fmt_.c_str(), args);
             va_end(args);
         }
 #else

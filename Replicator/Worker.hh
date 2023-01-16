@@ -35,6 +35,9 @@ namespace litecore { namespace repl {
 
     extern LogDomain SyncBusyLog;
 
+    // The log format string for logging a collection index
+    constexpr std::string_view kCollectionLogFormat = "{Coll#%i}";
+
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
         - Access to the replicator options, the database, and the BLIP connection.
@@ -139,14 +142,14 @@ namespace litecore { namespace repl {
             const std::string fmt_ = formatWithCollection(fmt);
             va_list args;
             va_start(args, fmt);
-            _logAt(Info, fmt_.c_str(), args);
+            _logAt(LogLevel::Info, fmt_.c_str(), args);
             va_end(args);
         }
         inline void logVerbose(const char * fmt, ...) const override {
             const std::string fmt_ = formatWithCollection(fmt);
             va_list args;
             va_start(args, fmt);
-            _logAt(Verbose, fmt_.c_str(), args);
+            _logAt(LogLevel::Verbose, fmt_.c_str(), args);
             va_end(args);
         }
 
@@ -155,7 +158,7 @@ namespace litecore { namespace repl {
             const std::string fmt_ = formatWithCollection(fmt);
             va_list args;
             va_start(args, fmt);
-            _logAt(Debug, fmt_.c_str(), args);
+            _logAt(LogLevel::Debug, fmt_.c_str(), args);
             va_end(args);
         }
 #else

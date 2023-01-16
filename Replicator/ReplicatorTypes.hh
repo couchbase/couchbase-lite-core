@@ -132,6 +132,4 @@ namespace litecore { namespace repl {
     using CollectionIndex = unsigned;
     constexpr const CollectionIndex kNotCollectionIndex
         = std::numeric_limits<CollectionIndex>::max();
-    // The log format string for logging a collection index
-    constexpr std::string_view kCollectionLogFormat = "{Coll#%i}";
 } }

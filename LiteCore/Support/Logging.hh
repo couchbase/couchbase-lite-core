@@ -202,11 +202,6 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #endif
 #endif
 
-#define _logAt(LEVEL, FMT, VA_ARGS) do { \
-    if (_usuallyFalse(this->willLog(litecore::LogLevel::LEVEL))) \
-        this->_logv(litecore::LogLevel::LEVEL, FMT, VA_ARGS); \
-    } while(0)
-
 static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv);}
 
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
@@ -243,23 +238,28 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
 
+        inline void _logAt(LogLevel level, const char *format, va_list args) const {
+            if(_usuallyFalse(this->willLog(level)))
+                this->_logv(level, format, args);
+        }
+
         virtual inline void logInfo(const char *format, ...) const {
             va_list args;
             va_start(args, format);
-            _logAt(Info, format, args);
+            _logAt(LogLevel::Info, format, args);
             va_end(args);
         }
         virtual inline void logVerbose(const char *format, ...) const {
             va_list args;
             va_start(args, format);
-            _logAt(Verbose, format, args);
+            _logAt(LogLevel::Verbose, format, args);
             va_end(args);
         }
 #if DEBUG
         virtual inline void logDebug(const char *format, ...) const {
             va_list args;
             va_start(args, format);
-            _logAt(Debug, format, args);
+            _logAt(LogLevel::Debug, format, args);
             va_end(args);
         }
 #else
