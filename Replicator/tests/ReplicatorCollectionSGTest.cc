@@ -2051,3 +2051,105 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
     C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
+
+// Test replication and conflict resolution behaviour when we send SG a rev history with a gap (number of new
+// revs between syncs > repl::tuning::kDefaultMaxHistory).
+// This test attempts to emulate two separate clients with the same doc, where one client's rev history lands
+// in the gap of the other client's rev history.
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
+    constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
+    constexpr size_t numInitialRevs = 2;
+    constexpr const char * saveDBName = "revsgap";
+    const string docID = timePrefix() + "doc1";
+
+    size_t numRevs1 = 0;
+    size_t numRevs2 = 0;
+
+    SECTION("No gap in history") {
+        numRevs1 = maxHistory - 5;
+        numRevs2 = numRevs1 - 10;
+    }
+
+    SECTION("Gap in history") {
+        numRevs1 = maxHistory + 50;
+        // num revs of the second 'client' land within the gap of the first 'client' history
+        numRevs2 = numRevs1 - (maxHistory + 10);
+    }
+
+    initTest({ Roses, Tulips, Lavenders });
+
+    // Initial doc
+    for(auto& coll : _collections) {
+        for(size_t i = 0; i < numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
+        }
+    }
+
+    // Replication parameters and docID filter
+    updateDocIDs();
+    ReplParams replParams { _collectionSpecs, kC4OneShot, kC4Disabled };
+    replParams.setDocIDs(_docIDs);
+    // Push doc to remote
+    replicate(replParams);
+
+    // Save current db state for later
+    alloc_slice path(c4db_getPath(db));
+    REQUIRE(c4db_copyNamed(path, slice(saveDBName), &dbConfig(), ERROR_INFO()));
+
+    // Create 'client 1' mutations
+    for(auto& coll : _collections) {
+        for(size_t i = numInitialRevs; i < numRevs1 + numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"a":)" + to_string(i) + "}"));
+        }
+    }
+
+    // Sync with remote
+    replParams.setPushPull(kC4OneShot, kC4OneShot);
+    replicate(replParams);
+
+    // Reload db from save (back to initial doc with `numInitialRevs` revs)
+    c4db_release(db);
+    db = c4db_openNamed(slice(saveDBName), &dbConfig(), ERROR_INFO());
+    REQUIRE(db);
+    _collections = collectionPreamble(_collectionSpecs);
+
+    // 'client 2' mutations
+    for(auto& coll : _collections) {
+        for(int i = numInitialRevs; i < numRevs2 + numInitialRevs; ++i) {
+            createFleeceRev(coll, slice(docID), nullslice, slice(R"({"b":)" + to_string(i) + "}"));
+        }
+    }
+
+    // There will be a conflict in the push because different revIDs from separate 'clients'
+    // We need to make sure the test suite knows we expect this, otherwise an assertion fails
+    _expectedDocPullErrors = {docID};
+
+    // Sync with remote
+    replicate(replParams);
+
+    // Verify 'client 2' still has their own latest rev
+    for(auto& coll : _collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(doc);
+        auto revID = slice(doc->revID);
+        REQUIRE(revID.hasPrefix(to_string(numRevs2 + numInitialRevs) + "-"));
+    }
+
+    // Clear local db
+    deleteAndRecreateDBAndCollections();
+
+    // No pull errors as local db is clear
+    _expectedDocPullErrors = {};
+
+    // One shot pull
+    replParams.setPushPull(kC4Disabled, kC4OneShot);
+    replicate(replParams);
+
+    // Verify latest rev is from 'client 1' (they have the highest generation)
+    for(auto& coll : _collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(doc);
+        auto revID = slice(doc->revID);
+        REQUIRE(revID.hasPrefix(to_string(numRevs1 + numInitialRevs) + "-"));
+    }
+}
