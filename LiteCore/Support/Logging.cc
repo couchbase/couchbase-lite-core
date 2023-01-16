@@ -654,10 +654,14 @@ namespace litecore {
         va_end(args);
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
         _domain.computeLevel();
         if (_domain.willLog(level))
             _domain.vlog(level, getObjectRef(), true, format, args);
     }
+
+#pragma GCC diagnostic pop
 }

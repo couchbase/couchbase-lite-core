@@ -65,13 +65,15 @@ namespace litecore { namespace repl {
         stringstream s;
         s << "{";
         bool firstline = true;
+        uint32_t i = 0; // Collection index
         for (auto& c : collectionOpts) {
             if (!firstline) {
                 s << ",\n";
             } else {
                 firstline = false;
             }
-            s << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
+            s << format(string(kCollectionLogFormat), i++) << " "
+            << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
             << "\"Push\": " << kModeNames[c.push] << ", "
             << "\"Pull\": " << kModeNames[c.pull] << "}";
         }
