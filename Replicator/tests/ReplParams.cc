@@ -5,26 +5,33 @@
 #include "ReplParams.hh"
 
 ReplParams::ReplParams(const std::vector<C4ReplicationCollection>& collections_)
+    : C4ReplicatorParameters()
 {
     _collectionVector = { collections_ };
     collections = _collectionVector.data();
     collectionCount = _collectionVector.size();
     _optionsDict = {};
     optionsDictFleece = _optionsDict.data();
-    onStatusChanged = nullptr;
-    onDocumentsEnded = nullptr;
-    onBlobProgress = nullptr;
-    propertyDecryptor = nullptr;
-    propertyEncryptor = nullptr;
-    callbackContext = nullptr;
-    socketFactory = nullptr;
 }
 
-ReplParams::ReplParams(const ReplParams &other) {
-    _collectionVector = { other._collectionVector };
-    _collectionsOptionsDict = { other._collectionsOptionsDict };
-    _paramSetterOptions = { other._paramSetterOptions };
-    _optionsDict = { other._optionsDict };
+ReplParams::ReplParams(const std::vector<C4CollectionSpec> &collSpecs, C4ReplicatorMode push, C4ReplicatorMode pull)
+    : C4ReplicatorParameters()
+{
+    _collectionVector = std::vector<C4ReplicationCollection>{ collSpecs.size() };
+    for(int i = 0; i < collSpecs.size(); ++i) {
+        _collectionVector[i] = { collSpecs[i], push, pull };
+    }
+    collections = _collectionVector.data();
+    collectionCount = _collectionVector.size();
+    _optionsDict = {};
+    optionsDictFleece = _optionsDict.data();
+}
+
+ReplParams::ReplParams(const ReplParams &other)
+    : C4ReplicatorParameters(), _collectionVector(other._collectionVector)
+    , _collectionsOptionsDict(other._collectionsOptionsDict), _paramSetterOptions(other._paramSetterOptions)
+    , _optionsDict(other._optionsDict)
+{
     collections = _collectionVector.data();
     collectionCount = other.collectionCount;
     optionsDictFleece = _optionsDict.data();
@@ -37,7 +44,7 @@ ReplParams::ReplParams(const ReplParams &other) {
     socketFactory = other.socketFactory;
 }
 
-void ReplParams::addCollections(std::vector<C4ReplicationCollection> collectionsToAdd) {
+void ReplParams::addCollections(const std::vector<C4ReplicationCollection>& collectionsToAdd) {
     for(const auto& c : collectionsToAdd) {
         _collectionVector.push_back(c);
     }
@@ -53,8 +60,8 @@ AllocedDict ReplParams::setOptions(const AllocedDict& params, const AllocedDict&
     return result;
 }
 
-ReplParams& ReplParams::setOptions(AllocedDict options) {
-    _optionsDict = setOptions(AllocedDict(optionsDictFleece), options);
+ReplParams& ReplParams::setOptions(const AllocedDict& options) {
+    _optionsDict = setOptions(_optionsDict, options);
     optionsDictFleece = _optionsDict.data();
     return *this;
 }
@@ -67,6 +74,27 @@ ReplParams& ReplParams::setCollectionOptions(C4CollectionSpec collectionSpec, co
             );
             c.optionsDictFleece = _collectionsOptionsDict.back().data();
         }
+    }
+    return *this;
+}
+
+ReplParams& ReplParams::setDocIDs(const std::vector<std::unordered_map<alloc_slice, unsigned>>& docIDs) {
+    for (size_t i = 0; i < docIDs.size(); ++i) {
+        fleece::Encoder enc;
+        enc.beginArray();
+
+        for (const auto& d : docIDs[i]) {
+            enc.writeString(d.first);
+        }
+        enc.endArray();
+        Doc doc {enc.finish()};
+        _collectionsOptionsDict.emplace_back(
+                repl::Options::updateProperties(
+                        AllocedDict(_collectionVector[i].optionsDictFleece),
+                        kC4ReplicatorOptionDocIDs,
+                        doc.root())
+        );
+        _collectionVector[i].optionsDictFleece = _collectionsOptionsDict.back().data();
     }
     return *this;
 }
@@ -120,24 +148,20 @@ std::function<void(C4ReplicatorParameters &)> ReplParams::paramSetter() {
 
 ReplParams& ReplParams::setPushFilter(ValidationFunction pushFilter) {
     for(auto& c : _collectionVector) {
-        if(c.callbackContext)
-            c.pushFilter = pushFilter;
+        c.pushFilter = pushFilter;
     }
     return *this;
 }
 
 ReplParams& ReplParams::setPullFilter(ValidationFunction pullFilter) {
     for(auto& c : _collectionVector) {
-        if(c.callbackContext)
-            c.pullFilter = pullFilter;
+        c.pullFilter = pullFilter;
     }
     return *this;
 }
 
-ReplParams& ReplParams::setCollectionContext(void *callbackContext_) {
-    for(auto& c : _collectionVector) {
-        c.callbackContext = callbackContext_;
-    }
+ReplParams& ReplParams::setCollectionContext(int collectionIndex, void *callbackContext_) {
+    _collectionVector[collectionIndex].callbackContext = callbackContext_;
     return *this;
 }
 
@@ -167,7 +191,9 @@ ReplParams &ReplParams::setPropertyDecryptor(DecryptionCallback decryptionCallba
 }
 
 ReplParams &ReplParams::setCallbackContext(void *callbackContext_) {
-    callbackContext = callbackContext_;
+    for(auto& c : _collectionVector) {
+        c.callbackContext = callbackContext_;
+    }
     return *this;
 }
 

@@ -3,11 +3,13 @@
 //
 
 #include "SG.hh"
+#include "c4Test.hh"
 #include <utility>
 #include <map>
-#include "c4Test.hh"
 #include "Response.hh"
 #include "StringUtil.hh"
+#include "Error.hh"
+#include "HTTPLogic.hh"
 
 std::unique_ptr<REST::Response> SG::createRequest(
         const std::string &method,
@@ -18,7 +20,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
         double timeout,
         bool logRequests
 ) const {
-    auto port = uint16_t(address.port + !!admin);
+    auto port = uint16_t(address.port + admin);
     if (!hasPrefix(path, "/")) {
         path = std::string("/") + path;
         if (remoteDBName.size > 0) {
@@ -76,7 +78,7 @@ std::unique_ptr<REST::Response> SG::createRequest(
 alloc_slice SG::runRequest(
             const std::string &method,
             C4CollectionSpec collectionSpec,
-            std::string path,
+            const std::string& path,
             slice body,
             bool admin,
             C4Error *outError,
@@ -93,7 +95,7 @@ alloc_slice SG::runRequest(
             *outError = {};
         return r->body();
     } else {
-        REQUIRE(r->error().code != 0);
+        Assert(r->error().code != 0);
         if(outStatus)
             *outStatus = HTTPStatus::undefined;
         if(outError)
@@ -131,8 +133,7 @@ alloc_slice SG::addRevToJSON(slice json, const string &revID) {
     return dict.toJSON();
 }
 
-bool SG::createUser(const std::string& username, const std::string& password,
-                    const std::vector<std::string> &channelIDs) const {
+bool SG::createUser(const std::string& username, const std::string& password) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
     HTTPStatus status;
     // Delete the user incase they already exist
@@ -227,7 +228,7 @@ bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const strin
 slice SG::getServerName() const {
     auto r = createRequest("GET", { }, "/");
     if(r->run()) {
-        REQUIRE(r->status() == HTTPStatus::OK);
+        Assert(r->status() == HTTPStatus::OK);
         return r->header("Server");
     }
     return nullslice;
@@ -243,10 +244,10 @@ bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, d
     return status == HTTPStatus::Created;
 }
 
-alloc_slice SG::getDoc(std::string docID, C4CollectionSpec collectionSpec) const {
+alloc_slice SG::getDoc(const std::string& docID, C4CollectionSpec collectionSpec) const {
     HTTPStatus status;
-    auto result = runRequest("GET", collectionSpec, std::move(docID), nullslice, false, nullptr, &status);
-    REQUIRE(status == HTTPStatus::OK);
+    auto result = runRequest("GET", collectionSpec, docID, nullslice, false, nullptr, &status);
+    Assert(status == HTTPStatus::OK);
     return result;
 }
 
@@ -262,7 +263,7 @@ alloc_slice SG::sendRemoteRequest(
                             bool logRequests)
 {
     if (method != "GET")
-        REQUIRE(slice(remoteDBName).hasPrefix("scratch"_sl));
+        Assert(slice(remoteDBName).hasPrefix("scratch"_sl));
 
     auto r = createRequest(method, collectionSpec, std::move(path), body, admin, logRequests);
 
@@ -271,7 +272,7 @@ alloc_slice SG::sendRemoteRequest(
         *outError = {};
         return r->body();
     } else {
-        REQUIRE(r->error().code != 0);
+        Assert(r->error().code != 0);
         *outStatus = HTTPStatus::undefined;
         *outError = r->error();
         return nullslice;
@@ -296,6 +297,6 @@ alloc_slice SG::sendRemoteRequest(
     if (error.code)
         FAIL("Error: " << c4error_descriptionStr(error));
     INFO("Status: " << (int)status);
-    REQUIRE(status == expectedStatus);
+    Assert(status == expectedStatus);
     return response;
 }

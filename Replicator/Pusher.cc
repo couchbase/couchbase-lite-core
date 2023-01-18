@@ -332,6 +332,7 @@ namespace litecore { namespace repl {
         }
 
         // OK, now look at the successful response:
+        // Depth of rev history we should send to SG
         int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl,
                                                          tuning::kDefaultMaxHistory));
         bool legacyAttachments = !reply->boolProperty("blobs"_sl);

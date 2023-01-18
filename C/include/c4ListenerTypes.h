@@ -79,6 +79,8 @@ typedef struct C4ListenerConfig {
     C4String directory;                     ///< Directory where newly-PUT databases will be created
     bool allowCreateDBs;                    ///< If true, "PUT /db" is allowed
     bool allowDeleteDBs;                    ///< If true, "DELETE /db" is allowed
+    bool allowCreateCollections;            ///< If true, "PUT /db.scope.coll" is allowed
+    bool allowDeleteCollections;            ///< If true, "DELETE /db.scope.coll" is allowed
 
     // For sync listeners only:
     bool allowPush;                         ///< Allow peers to push changes to local db

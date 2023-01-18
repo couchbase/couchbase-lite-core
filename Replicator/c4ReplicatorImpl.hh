@@ -225,6 +225,7 @@ namespace litecore {
         ,_onBlobProgress(params.onBlobProgress)
         {
             _status.flags |= kC4HostReachable;
+            _options->verify();
         }
 
 
