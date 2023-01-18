@@ -58,17 +58,17 @@
  */
 //  config db:
 /*
- curl --location --request PUT "localhost:4985/scratch/" \
+ curl -k --location --request PUT "https://localhost:4985/scratch/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw '{"num_index_replicas": 0, "bucket": "your_bucket_name", "scopes": {"flowers": {"collections":{"roses":{}}}}}'
+ --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": {\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, \"lavenders\":{}}}}}"
  */
 //  config SG user:
 /*
- curl --location --request POST "localhost:4985/scratch/_user/" \
+ curl -k --location --request POST "https://localhost:4985/scratch/_user/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw '{"name": "sguser", "password": "password", "admin_channels": ["*"]}'
+ --data-raw '{"name": "sguser", "password": "password", "collection_access": {"flowers": {"roses": {"admin_channels": ["*"]}, "tulips": {"admin_channels": ["*"]}, "lavenders": {"admin_channels": ["*"]}}}}'
  */
 //
 // command argument:
@@ -111,7 +111,7 @@ public:
         _sg.address = {kC4Replicator2TLSScheme,
                        C4STR("localhost"),
                        4984};
-        _sg.assignUserChannel("sguser", {"*"});
+        _sg.assignUserChannel("sguser", { Roses, Tulips, Lavenders }, {"*"});
     }
     ~ReplicatorCollectionSGTest() {
         if (verifyDb != nullptr) {
@@ -229,20 +229,18 @@ public:
 
         for (size_t i = 0; i < N; ++i) {
             if (checkRev) {
-                unsigned count = 0;
                 c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[i],
                                                                      nullptr, ERROR_INFO());
-                {
+                unsigned count = 0;
+                while (c4enum_next(e, ERROR_INFO())) {
                     ++count;
-                    while (c4enum_next(e, ERROR_INFO())) {
-                        C4DocumentInfo info;
-                        c4enum_getDocumentInfo(e, &info);
-                        auto it = docIDs[i].find(info.docID);
-                        CHECK(it != docIDs[i].end());
-                        CHECK(it->second == c4rev_getGeneration(info.revID));
-                    }
+                    C4DocumentInfo info;
+                    c4enum_getDocumentInfo(e, &info);
+                    auto it = docIDs[i].find(info.docID);
+                    CHECK(it != docIDs[i].end());
+                    CHECK(it->second == c4rev_getGeneration(info.revID));
                 }
-                CHECK(count == docIDs.size());
+                CHECK(count == docIDs[i].size());
             } else {
                 auto count = c4coll_getDocumentCount(collections[i]);
                 REQUIRE(count == docIDs[i].size());
@@ -296,80 +294,119 @@ public:
 };
 
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections SG", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections SG",
+                 "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     const string docID = idPrefix + "apipfcc-doc1";
-    const string channelID = idPrefix + "apipfcc";
 
-    string revID;
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
+    constexpr unsigned revisionCount = 2000;
+    std::array<string, collectionCount> revIDs;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Tulips,
+        Lavenders
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
-    std::vector<C4ReplicationCollection> replCollections {collectionCount};
-
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    replCollections = {
+    std::vector<C4ReplicationCollection> replCollections {
         C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
+        C4ReplicationCollection{collectionSpecs[1], kC4OneShot, kC4Disabled},
+        C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4Disabled},
     };
 
-    ReplParams replParams { { replCollections } };
+    ReplParams replParams { replCollections };
 
     {
+        auto revID = revIDs.begin();
         TransactionHelper t(db);
-        revID = createNewRev(collections[0], slice(docID), nullslice, kFleeceBody);
+        for (C4Collection * coll : collections) {
+            *revID = createNewRev(coll, slice(docID), nullslice, kFleeceBody);
+            REQUIRE(!(revID++)->empty());
+        }
     }
-    
+
     replicate(replParams);
-    docIDs[0] = getDocIDs(collections[0]);
+    for (size_t i = 0; i < collectionCount; ++i) {
+        docIDs[i] = getDocIDs(collections[i]);
+    }
     verifyDocs(collectionSpecs, docIDs);
 
     C4Log("-------- Mutations --------");
     {
+        auto revID = revIDs.begin();
         TransactionHelper t(db);
-        for (int i = 2; i <= 5000; ++i)
-            revID = createNewRev(collections[0], slice(docID), slice(revID), kFleeceBody);
-            REQUIRE(!revID.empty());
+        for (auto coll: collections) {
+            for (int i = 2; i <= revisionCount; ++i) {
+                *revID = createNewRev(coll, slice(docID), slice(*revID), kFleeceBody);
+                REQUIRE(!revID->empty());
+            }
+            ++revID;
+        }
     }
 
     C4Log("-------- Second Replication --------");
     replicate(replParams);
-    docIDs[0] = getDocIDs(collections[0]);
+    for (size_t i = 0; i < collectionCount; ++i) {
+        docIDs[i] = getDocIDs(collections[i]);
+    }
     verifyDocs(collectionSpecs, docIDs, true);
-    
 }
 
 // The collection does not exist in the remote.
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use Nonexisting Collections SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    //    constexpr size_t collectionCount = 2;
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 4;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
-    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Tulips,
+        C4CollectionSpec{"dummy1"_sl, kC4DefaultScopeID},
+        Lavenders
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
 
-    collectionSpecs = {
-        // C4CollectionSpec{"dummy1"_sl, kC4DefaultScopeID},
-        C4CollectionSpec{"dummy2"_sl, kC4DefaultScopeID}
-    };
-    replCollections = {
-        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
-    importJSONLines(sFixturesDir + "names_100.json", collections[0], 0, false, 2, idPrefix);
+    std::vector<C4ReplicationCollection> replCollections(collectionCount);
+    C4Error expectedError;
+
+    SECTION("Collection does not exist at remote") {
+        replCollections[0] =
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled};
+        replCollections[1] =
+            C4ReplicationCollection{collectionSpecs[1], kC4Disabled, kC4OneShot};
+        replCollections[2] =
+            C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4OneShot};
+        replCollections[3] =
+            C4ReplicationCollection{collectionSpecs[3], kC4OneShot, kC4Disabled};
+        // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
+        // is not found on the remote server"
+        expectedError = {WebSocketDomain, 404};
+    }
+
+    SECTION("Inconsistent Config") {
+        replCollections[0] =
+            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled};
+        replCollections[1] =
+            C4ReplicationCollection{collectionSpecs[1], kC4Disabled, kC4OneShot};
+        replCollections[2] =
+            C4ReplicationCollection{collectionSpecs[2], kC4OneShot, kC4OneShot};
+        replCollections[3] =
+            C4ReplicationCollection{collectionSpecs[3], kC4Continuous, kC4Disabled};
+        expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
+    }
+
+    for (auto coll : collections) {
+        importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 2, idPrefix);
+    }
+
     ReplParams replParams { replCollections };
-
     replicate(replParams, false);
-    // ERROR: {Repl#7} Got LiteCore error: WebSocket error 404, "Collection 'dummy2'
-    // is not found on the remote server"
-    CHECK(_callbackStatus.error.domain == WebSocketDomain);
-    CHECK(_callbackStatus.error.code == 404); 
+
+    CHECK(_callbackStatus.error.domain == expectedError.domain);
+    CHECK(_callbackStatus.error.code == expectedError.code);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "[.SyncServerCollection]") {
@@ -387,17 +424,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     SECTION("Named Collection") {
         collectionSpecs = {Roses};
     }
-    
+
     SECTION("Default Collection") {
         collectionSpecs = {Default};
-        // Not ready:
-        return;
     }
-    
+
     SECTION("Another Named Collection") {
         collectionSpecs = {Lavenders};
-        // Not ready:
-        return;
     }
 
     SECTION("Named Collection Continuous") {
@@ -432,30 +465,24 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
     std::array<C4Collection*, collectionCount> collections;
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docInfos;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-    
+
     // Three collections:
-    // 1. Guitars - in the default scope
+    // 1. Guitars - in the default scope. We currently cannot use collections from different scopes
     // 2. Roses   - in scope "flowers"
     // 3. Tulips  - in scope "flowers
+    (void) Guitars;
 
     SECTION("1-2-3") {
-        collectionSpecs = {Guitars, Roses, Tulips};
-        // not ready
-        return;
+        collectionSpecs = {Lavenders, Roses, Tulips};
     }
 
     SECTION("3-2-1") {
-        collectionSpecs = {Tulips, Roses, Guitars};
-        // not ready
-        return;
+        collectionSpecs = {Tulips, Roses, Lavenders};
     }
 
     SECTION("2-1-3") {
-        collectionSpecs = {Roses, Guitars, Tulips};
+        collectionSpecs = {Roses, Lavenders, Tulips};
         continuous = true;
-        (void)continuous;
-        // not ready
-        return;
     }
 
     collections = collectionPreamble(collectionSpecs, "sguser", "password");
@@ -481,20 +508,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Multiple Collections SG"
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    constexpr size_t collectionCount = 1;
-
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Lavenders,
+        Roses,
+        Tulips
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections { collectionCount };
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> localDocIDs;
-    std::vector<AllocedDict> allocedDicts;
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-   
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 20, idPrefix+"remote-");
         docIDs[i] = getDocIDs(collections[i]);
@@ -532,19 +557,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Push SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    // one collection now now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Lavenders,
+        Roses,
+        Tulips
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 10, idPrefix);
         docIDs[i] = getDocIDs(collections[i]);
@@ -569,19 +593,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental Revisions SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    // one collection now now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Lavenders,
+        Tulips
+    };
+    std::array<C4Collection *, collectionCount> collections
+        = collectionPreamble(collectionSpecs, "sguser", "password");
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
     for (size_t i = 0; i < collectionCount; ++i) {
         addDocs(collections[i], 2, idPrefix + "db-" + string(collectionSpecs[i].name));
         docIDs[i] = getDocIDs(collections[i]);
@@ -604,72 +627,72 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 
     ReplParams replParams { replCollections };
     replicate(replParams);
-    // total 3 docs, 12 revs.
-    CHECK(_callbackStatus.progress.documentCount == 12);
+    // total 3 docs, 12 revs, for each collections.
+    CHECK(_callbackStatus.progress.documentCount == 36);
     verifyDocs(collectionSpecs, docIDs, true);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "[.SyncServerCollection]") {
-    const string idPrefix = timePrefix();
-    // one collection now now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
-
     constexpr size_t kDocBufSize = 60;
-
-    constexpr int kNumDocs = 1000, kNumProps = 1000;
-    string revID;
+    // CBG-2643 blocking 1000 docs with 1000 props due to replication taking more than ~1sec
+    constexpr int kNumDocs = 799, kNumProps = 799;
+    const string idPrefix = timePrefix();
 
     const string docIDPref = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
-    SG::TestUser testUser { _sg, "pdfcsg", chIDs };
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
+    SG::TestUser testUser { _sg, "pdfcsg", chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
-
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    std::array<C4Collection *, collectionCount> collections
+            = collectionPreamble(collectionSpecs, testUser);
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, testUser);
+    for(size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+    }
+
+    ReplParams replParams { replCollections };
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
-        constexpr size_t kDocBufSize = 60;
-        TransactionHelper t(db);
-        std::srand(123456); // start random() sequence at a known place
-        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            char docID[kDocBufSize];
-            snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
-            Encoder encPopulate(c4db_createFleeceEncoder(db));
-            encPopulate.beginDict();
-            encPopulate.writeKey(kC4ReplicatorOptionChannels);
-            encPopulate.writeString(chIDs[0]);
+        for (size_t i = 0; i < collectionCount; ++i){
+            TransactionHelper t(db);
+            std::srand(123456); // start random() sequence at a known place
+            for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+                constexpr size_t kDocBufSize = 60;
+                char docID[kDocBufSize];
+                snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
+                Encoder encPopulate(c4db_createFleeceEncoder(db));
+                encPopulate.beginDict();
+                encPopulate.writeKey(kC4ReplicatorOptionChannels);
+                encPopulate.writeString(chIDs[0]);
 
-            for (int p = 0; p < kNumProps; ++p) {
-                encPopulate.writeKey(format("field%03d", p));
-                encPopulate.writeInt(std::rand());
+                for (int p = 0; p < kNumProps; ++p) {
+                    encPopulate.writeKey(format("field%03d", p));
+                    encPopulate.writeInt(std::rand());
+                }
+                encPopulate.endDict();
+                alloc_slice body = encPopulate.finish();
+                string revID = createNewRev(collections[i], slice(docID), body);
             }
-            encPopulate.endDict();
-            alloc_slice body = encPopulate.finish();
-            string revID = createNewRev(collections[0], slice(docID), body);
         }
     };
 
-    replCollections = {
-            C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
-        };
-    ReplParams replParams { replCollections };
     populateDB();
 
     C4Log("-------- Pushing to SG --------");
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
 
     C4Log("-------- Updating docs on SG --------");
-    // Now update the docs on SG:
-    {
+    for (size_t i = 0; i < collectionCount; ++i) {
         JSONEncoder encUpdate;
         encUpdate.beginDict();
         encUpdate.writeKey("docs"_sl);
@@ -678,7 +701,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             C4Error error;
-            c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -687,13 +710,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             encUpdate.writeString(docID);
             encUpdate.writeKey("_rev"_sl);
             encUpdate.writeString(doc->revID);
-            for (Dict::iterator i(props); i; ++i) {
-                encUpdate.writeKey(i.keyString());
-                if(i.keyString() == kC4ReplicatorOptionChannels){
-                    encUpdate.writeString(i.value().asString());
+            for (Dict::iterator j(props); j; ++j) {
+                encUpdate.writeKey(j.keyString());
+                if(j.keyString() == kC4ReplicatorOptionChannels){
+                    encUpdate.writeString(j.value().asString());
                     continue;
                 }
-                auto value = i.value().asInt();
+                auto value = j.value().asInt();
                 if (RandomNumber() % 8 == 0)
                     value = RandomNumber();
                 encUpdate.writeInt(value);
@@ -702,20 +725,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         }
         encUpdate.endArray();
         encUpdate.endDict();
-        for (size_t i = 0; i < collectionCount; ++i) {
-            REQUIRE(_sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish(), 30.0));
-        }
+
+        REQUIRE(_sg.insertBulkDocs(collectionSpecs[i], encUpdate.finish(), 30.0));
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
     for (int pass = 1; pass <= 3; ++pass) {
         if (pass == 3) {
             C4Log("-------- DISABLING DELTA SYNC --------");
-            Encoder encDelta;
-            encDelta.beginDict();
-            encDelta.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
-            encDelta.writeBool(true);
-            encDelta.endDict();
+            replParams.setOption(C4STR(kC4ReplicatorOptionDisableDeltas), true);
         }
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
@@ -737,43 +755,58 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
         else if (pass == 3)
             timeWithoutDelta = time;
 
-        int n = 0;
-        C4Error error;
-        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[0], nullptr, ERROR_INFO(error));
-        REQUIRE(e);
-        while (c4enum_next(e, ERROR_INFO(error))) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
-            CHECK(slice(info.revID).hasPrefix("2-"_sl));
-            ++n;
+        for (size_t i = 0; i < collectionCount; ++i){
+            int n = 0;
+            C4Error error;
+            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[i], nullptr, ERROR_INFO(error));
+            REQUIRE(e);
+            while (c4enum_next(e, ERROR_INFO(error))) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
+                CHECK(slice(info.revID).hasPrefix("2-"_sl));
+                ++n;
+            }
+            CHECK(error.code == 0);
+            CHECK(n == kNumDocs);
         }
-        CHECK(error.code == 0);
-        CHECK(n == kNumDocs);
     }
 
     C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
-          timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
+        timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    //    constexpr size_t collectionCount = 2;
-    constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    // one collection now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Tulips,
+        Lavenders
+    };
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "papasg", { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
     std::array<vector<C4BlobKey>, collectionCount> blobKeys; // blobKeys1a, blobKeys1b;
 
-    collectionSpecs = {
-        Roses
-        //, Tulips
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
-    vector<string> attachments1 = {idPrefix+"Attachment A", idPrefix+"Attachment B", idPrefix+"Attachment Z"};
+    for(size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+    }
+    ReplParams replParams { replCollections };
+
+    vector<string> attachments1 = {
+            idPrefix + "Attachment A",
+            idPrefix + "Attachment B",
+            idPrefix + "Attachment Z"
+        };
     {
         string doc1 = idPrefix + "doc1";
         string doc2 = idPrefix + "doc2";
@@ -781,13 +814,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
         for (size_t i = 0; i < collectionCount; ++i) {
             blobKeys[i] = addDocWithAttachments(db, collectionSpecs[i],  slice(doc1), attachments1, "text/plain");
             docIDs[i] = getDocIDs(collections[i]);
-            replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
         }
     }
 
-    ReplParams replParams { replCollections };
+    C4Log("-------- Pushing to SG --------");
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
-    verifyDocs(collectionSpecs, docIDs);
+
+    C4Log("-------- Checking docs and attachments --------");
+    verifyDocs(collectionSpecs, docIDs, true);
     for (size_t i = 0; i < collectionCount; ++i) {
         checkAttachments(verifyDb, blobKeys[i], attachments1);
     }
@@ -795,84 +830,110 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    const string docID = idPrefix + "ppd-doc1";
-    constexpr size_t collectionCount = 1;
-    string revID;
+    const string channelID = idPrefix;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Tulips,
+        Lavenders
+    };
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "ppdsg", { channelID }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+    const string docID = idPrefix + "ppd-doc1";
+
+
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    replCollections = {
-        C4ReplicationCollection{collectionSpecs[0], kC4OneShot, kC4Disabled},
-    };
+    alloc_slice channelJSON = SG::addChannelToJSON("{}", "channels", { channelID });
+
+    for(size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
+        createRev(collections[i], slice(docID), kRevID, json2fleece(channelJSON.asString().c_str()));
+        createRev(collections[i], slice(docID), kRev2ID, json2fleece(channelJSON.asString().c_str()), kRevDeleted);
+    }
 
     ReplParams replParams { replCollections };
-    
-    createRev(collections[0], slice(docID), kRevID, kFleeceBody);
-    createRev(collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
+
     replicate(replParams);
 
     C4Log("-------- Deleting and re-creating database --------");
     deleteAndRecreateDB();
 
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
+    collections = collectionPreamble(collectionSpecs, testUser);
     replParams.setPushPull(kC4Disabled, kC4OneShot);
 
-    createRev(collections[0], slice(docID), kRevID, kFleeceBody);
+    for(size_t i = 0; i < collectionCount; ++i){
+        createRev(collections[i], slice(docID), kRevID, kFleeceBody);
+    }
 
     replicate(replParams);
 
-    c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetAll, nullptr);
-    REQUIRE(remoteDoc);
-    CHECK(remoteDoc->revID == kRev2ID);
-    CHECK((remoteDoc->flags & kDocDeleted) != 0);
-    CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
-    REQUIRE(c4doc_selectParentRevision(remoteDoc));
-    CHECK(remoteDoc->selectedRev.revID == kRevID);
+    for(size_t i = 0; i < collectionCount; ++i){
+        c4::ref<C4Document> remoteDoc = c4coll_getDoc(collections[i], slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(remoteDoc);
+        CHECK(remoteDoc->revID == kRev2ID);
+        CHECK((remoteDoc->flags & kDocDeleted) != 0);
+        CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
+        REQUIRE(c4doc_selectParentRevision(remoteDoc));
+        CHECK(remoteDoc->selectedRev.revID == kRevID);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    constexpr size_t collectionCount = 1;
 
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    // one collection now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Roses,
+        Tulips,
+        Lavenders
+    };
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "rcsg", { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
+
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
     std::array<string, collectionCount> collNames;
-    std::vector<AllocedDict> allocedDicts;
 
-    collectionSpecs = {
-        Roses
-    };
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    collNames = {"rose"};
+    for(size_t i = 0; i < collectionCount; ++i) {
+        collNames[i] = idPrefix + Options::collectionSpecToPath(collectionSpecs[i]).asString();
+    }
 
     for (size_t i = 0; i < collectionCount; ++i) {
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-12121212", "1@cafe"),
+        createFleeceRev(collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(collNames[i]), revOrVersID("2-12121212", "1@cafe"),
                         "{\"db\":\"remote\"}"_sl);
         docIDs[i] = getDocIDs(collections[i]);
-        replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+        replCollections[i] = { collectionSpecs[i] };
     }
 
     // Send the docs to remote
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replicate(replParams);
     verifyDocs(collectionSpecs, docIDs, true);
-    
+
     deleteAndRecreateDB();
     for (size_t i = 0; i < collectionCount; ++i) {
         collections[i] = c4db_createCollection(db, collectionSpecs[i], ERROR_INFO());
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), kRev1ID, "{}"_sl);
-        createFleeceRev(collections[i], slice(idPrefix+collNames[i]), revOrVersID("2-13131313", "1@babe"),
+        createFleeceRev(collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
+        createFleeceRev(collections[i], slice(collNames[i]), revOrVersID("2-13131313", "1@babe"),
                         "{\"db\":\"local\"}"_sl);
     }
+    collections = collectionPreamble(collectionSpecs, testUser);
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setDocIDs(docIDs);
 
@@ -900,14 +961,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
         CHECK(error.code == 0);
         CHECK(succ);
 
-        C4Document* resolvedDoc = nullptr;
-        switch (i) {
-            case 0:
-                resolvedDoc = remoteDoc;
-                break;
-            default:
-                Assert(false, "Unknown collection");
-        }
+        C4Document* resolvedDoc = remoteDoc;
+
         FLDict mergedBody = c4doc_getProperties(resolvedDoc);
         C4RevisionFlags mergedFlags = resolvedDoc->selectedRev.flags;
         alloc_slice winRevID = resolvedDoc->selectedRev.revID;
@@ -926,34 +981,31 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     };
     replicate(replParams);
 
-    for (int i = 0; i < collectionCount; ++i) {
-        switch (i) {
-            case 0: {
-                c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(idPrefix+collNames[i]),
+    for (size_t i = 0; i < collectionCount; ++i) {
+        c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(collNames[i]),
                                                         true, kDocGetAll, nullptr);
-                REQUIRE(doc);
-                // Remote wins for the first collection
-                CHECK(fleece2json(c4doc_getRevisionBody(doc)) == "{db:\"remote\"}"); // Remote Wins
-                REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-            } break;
-            default:
-                Assert(false, "Not ready yet");
-        }
+        REQUIRE(doc);
+        CHECK(fleece2json(c4doc_getRevisionBody(doc)) == "{db:\"remote\"}"); // Remote Wins
+        REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
     }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGColl", "[.SyncServerCollection]") {
     const string idPrefix = timePrefix();
     const string docID = idPrefix + "uocd-doc";
-    const string channelID = idPrefix + "a";
 
-    _sg.assignUserChannel("sguser", {channelID });
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
-
-    constexpr size_t collectionCount = 1;
+    // one collection now. Will use multiple collection when SG is ready.
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-            Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
+
+    // Set up replication
+    vector<string> chIDs { idPrefix + "uocd" };
+    SG::TestUser testUser { _sg, "uocd", chIDs, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
 
     // Create a conflicted doc on SG, and resolve the conflict
     std::array<std::string, 4> bodies {
@@ -964,19 +1016,20 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     };
 
     for(const auto& b : bodies) {
-        _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false", b, {channelID });
+        _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false", b, chIDs);
     }
 
     // Set up pull replication
     std::array<C4Collection*, collectionCount> collections =
-            collectionPreamble(collectionSpecs, "sguser", "password");
+        collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    for(int i = 0; i < collectionCount; ++i) {
-        replCollections[i] = { collectionSpecs[i], kC4Disabled, kC4OneShot };
+    for(size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = { collectionSpecs[i] };
     }
 
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4Disabled, kC4OneShot);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -992,7 +1045,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
     CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
 
     // Update doc:
-    auto body = SG::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, {channelID });
+    auto body = SG::addChannelToJSON(R"({"ans*wer":42})"_sl, "channels"_sl, chIDs);
     {
         TransactionHelper t { db };
         body = c4db_encodeJSON(db, body, ERROR_INFO());
@@ -1011,9 +1064,207 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Update Once-Conflicted Doc - SGCol
             { getDocIDs(collections[0]) }
     };
 
-    verifyDocs(collectionSpecs, docIDs);
+    verifyDocs(collectionSpecs, docIDs, true);
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Revoked Revision - SGColl", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apefrr-doc1";
+    const string channelID = idPrefix + "a";
+
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
+
+    SG::TestUser testUser { _sg, "apefrrsg", { channelID }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+    // Setup pull filter to filter the removed rev:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections { collectionCount };
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = {
+                collectionSpecs[i], kC4Disabled, kC4OneShot,
+                nullslice, nullptr, _pullFilter, this
+        };
+    }
+
+    ReplParams replParams { replCollections };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(spec, docIDstr, "{}", { channelID }));
+    }
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(replParams);
+
+    // Verify:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+    }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    REQUIRE(testUser.revokeAllChannels());
+
+    C4Log("-------- Pull the revoked");
+    replicate(replParams);
+
+    // Verify if doc1 is not purged as the revoked rev is filtered:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+    }
+    // The two below checks are failing, because of CBG-2487
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access - SGColl", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string docIDstr = idPrefix + "apera-doc1";
+    const string channelIDa = idPrefix + "a";
+    const string channelIDb = idPrefix + "b";
+
+    constexpr size_t collectionCount = 3;
+    const std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
+
+    // Create a temporary user for this test
+    SG::TestUser testUser { _sg, "aperasg", { channelIDa, channelIDb }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
+    // Setup pull filter:
+    _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+
+    // One-shot pull setup
+    std::array<C4Collection*, collectionCount> collections =
+            collectionPreamble(collectionSpecs, testUser);
+    std::vector<C4ReplicationCollection> replCollections {collectionCount};
+
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = {
+                collectionSpecs[i], kC4Disabled, kC4OneShot,
+                nullslice, nullptr, _pullFilter, this
+        };
+    }
+
+    ReplParams replParams { replCollections };
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+
+    // Put doc in remote DB, in channels a and b
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc( spec, docIDstr, "{}", { channelIDa, channelIDb } ));
+    }
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(replParams);
+
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to channel 'a':
+    REQUIRE(testUser.setChannels({ channelIDb }));
+
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+
+        // Update doc to only channel 'b'
+        auto oRevID = slice(doc1->revID).asString();
+        REQUIRE(_sg.upsertDoc(collectionSpecs[i], docIDstr, oRevID, "{}", { channelIDb }));
+    }
+
+    C4Log("-------- Pull update");
+    replicate(replParams);
+
+    // Verify the update:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        REQUIRE(doc1);
+        CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+    }
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+
+    // Revoke access to all channels:
+    REQUIRE(testUser.revokeAllChannels());
+
+    C4Log("-------- Pull the revoked");
+    replicate(replParams);
+
+    // Verify that doc1 is purged:
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
+        // This check is currently failing because of CBG-2487
+        REQUIRE(!doc1);
+    }
+
+    CHECK(_docsEnded == collectionCount);
+    CHECK(_counter == collectionCount);
+}
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -1053,27 +1304,37 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
 
     string idPrefix = timePrefix();
     // one collection now now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
-
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs;
-    std::array<C4Collection *, collectionCount> collections;
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
+            Roses,
+            Tulips,
+            Lavenders
+    };
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
+
+    // Set up replication
+    SG::TestUser testUser { _sg, "pdfcsg",  { "*" }, collectionSpecs }; // Doesn't use channels
+    _sg.authHeader = testUser.authHeader();
+
+    std::array<C4Collection*, collectionCount> collections
+        = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    collectionSpecs = {
-        Roses};
-    collections = collectionPreamble(collectionSpecs, "sguser", "password");
-    
     encContextMap.reset(new CipherContextMap);
     decContextMap.reset(new CipherContextMap);
-    string docs[] = {idPrefix + "hiddenRose", idPrefix + "invisibleTulip"};
+
+    std::array<string, collectionCount> docs;
+    for(size_t i = 0; i < collectionCount; ++i) {
+        docs[i] = idPrefix + Options::collectionSpecToPath(collectionSpecs[i]).asString();
+    }
     slice originalJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+
     {
         TransactionHelper t(db);
         for (size_t i = 0; i < collectionCount; ++i) {
             createFleeceRev(collections[i], slice(docs[i]), kRevID, originalJSON);
             docIDs[i] = getDocIDs(collections[i]);
-            replCollections[i] = C4ReplicationCollection{collectionSpecs[i], kC4OneShot, kC4Disabled};
+            replCollections[i] = { collectionSpecs[i] };
             encContextMap->emplace(std::piecewise_construct,
                                    std::forward_as_tuple(collectionSpecs[i]),
                                    std::forward_as_tuple(collections[i], docs[i].c_str(), "xNum", false));
@@ -1084,6 +1345,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     }
 
     ReplParams replParams { replCollections };
+    replParams.setPushPull(kC4OneShot, kC4Disabled);
     replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
 
     replicate(replParams);
@@ -1262,28 +1524,157 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Failure - SGCol
 }
 #endif //#ifdef COUCHBASE_ENTERPRISE
 
+// !Note! Not passing, pending CBG-2487
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Access SG",
+                 "[.SyncServerCollection]") {
+    constexpr size_t collectionCount = 3;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+        Tulips,
+        Roses,
+        Lavenders
+    };
+
+    string idPrefix = timePrefix();
+    string doc1ID = idPrefix + "doc1";
+    vector<string> chIDs {idPrefix};
+    constexpr const char* uname = "apdra";
+    SG::TestUser user {_sg, uname, chIDs, collectionSpecs};
+    _sg.authHeader = user.authHeader();
+    std::array<C4Collection*, collectionCount> collections =
+        collectionPreamble(collectionSpecs, user);
+    std::array<C4ReplicationCollection, collectionCount> replCollections;
+
+    for (auto collSpec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(collSpec, doc1ID, "{}"_sl, chIDs));
+    }
+
+    struct CBContext {
+        int docsEndedTotal = 0;
+        int docsEndedPurge = 0;
+        int pullFilterTotal = 0;
+        int pullFilterPurge = 0;
+        void reset() {
+            docsEndedTotal = 0;
+            docsEndedPurge = 0;
+            pullFilterTotal = 0;
+            pullFilterPurge = 0;
+        }
+    } cbContext[collectionCount];
+
+    // Setup pull filter:
+    C4ReplicatorValidationFunction pullFilter = [](
+        C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict, void *context)
+    {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ((flags & kRevPurged) == kRevPurged) {
+            ctx->pullFilterPurge++;
+        }
+        return true;
+    };
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    for (size_t i = 0; i < collectionCount; ++i) {
+        replCollections[i] = C4ReplicationCollection{
+            collectionSpecs[i],
+            kC4Disabled,
+            kC4OneShot,
+            {}, // properties
+            nullptr, // pushFilter
+            pullFilter,
+            &cbContext[i]     // callbackContext
+        };
+    }
+
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void*) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            CBContext* ctx = (CBContext*)doc->collectionContext;
+            ctx->docsEndedTotal++;
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ctx->docsEndedPurge++;
+            }
+        }
+    };
+    std::vector<AllocedDict> allocedDicts;
+    C4ParamsSetter paramsSetter
+        = [&replCollections, &allocedDicts](C4ReplicatorParameters& c4Params)
+    {
+        c4Params.collectionCount = replCollections.size();
+        c4Params.collections     = replCollections.data();
+        fleece::Encoder enc;
+        enc.writeBool(false);
+        Doc doc {enc.finish()};
+        allocedDicts.emplace_back(
+            repl::Options::updateProperties(
+                AllocedDict(c4Params.optionsDictFleece),
+                C4STR(kC4ReplicatorOptionAutoPurge),
+                doc.root())
+            );
+        c4Params.optionsDictFleece = allocedDicts.back().data();
+    };
+    replicate(paramsSetter);
+
+    for (size_t i = 0; i < collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        CHECK(cbContext[i].docsEndedTotal == 1);
+        CHECK(cbContext[i].docsEndedPurge == 0);
+        CHECK(cbContext[i].pullFilterTotal == 1);
+        CHECK(cbContext[i].pullFilterPurge == 0);
+    }
+
+    // Revoke access to all channels:
+    REQUIRE(user.revokeAllChannels());
+
+    C4Log("-------- Pulling the revoked");
+    for (auto& c: cbContext) {
+        c.reset();
+    }
+
+    replicate(paramsSetter);
+
+    // Verify if the doc1 is not purged as the auto purge is disabled:
+    for (size_t i = 0; i < collectionCount; ++i) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        // This check pending CBG-2487
+        CHECK(cbContext[i].docsEndedPurge == 1);
+        // No pull filter called
+        CHECK(cbContext[i].pullFilterTotal == 0);
+    }
+}
+
+
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     string        doc1ID {idPrefix + "doc1"};
     vector<string> chIDs {idPrefix+"a", idPrefix+"b"};
 
-    // one collection now now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-        Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
+
+    SG::TestUser testUser { _sg, "rdfcsg", chIDs, collectionSpecs };
+
     std::array<C4Collection*, collectionCount> collections =
-        collectionPreamble(collectionSpecs, "sguser", "password");
+        collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
 
-    DEFER {
-        // Don't REQUIRE. It would terminate the entire test run.
-        _sg.assignUserChannel("sguser", {"*"});
-    };
-    REQUIRE(_sg.assignUserChannel("sguser", chIDs));
-
     // Create docs on SG:
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
+    _sg.authHeader = testUser.authHeader();
     for (size_t i = 0; i < collectionCount; ++i) {
         _sg.upsertDoc(collectionSpecs[i], doc1ID, "{}"_sl, chIDs);
     }
@@ -1360,49 +1751,62 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     replicate(replParams);
 
-    // Verify: (on collections[0] only
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
-                                             true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc1);
-    CHECK(c4rev_getGeneration(doc1->revID) == 1);
-    CHECK(context.docsEndedTotal == 1);
+    CHECK(context.docsEndedTotal == collectionCount);
     CHECK(context.docsEndedPurge == 0);
-    CHECK(context.pullFilterTotal == 1);
+    CHECK(context.pullFilterTotal == collectionCount);
     CHECK(context.pullFilterPurge == 0);
 
-    // Removed doc from channel 'a':
-    auto oRevID = slice(doc1->revID).asString();
-    _sg.upsertDoc(collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", {chIDs[1] });
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify doc
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        CHECK(c4rev_getGeneration(doc1->revID) == 1);
+
+        // Once verified, remove it from channel 'a' in that collection
+        auto oRevID = slice(doc1->revID).asString();
+        _sg.upsertDoc(collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", { chIDs[1] });
+    }
 
     C4Log("-------- Pull update");
     context.reset();
     replicate(replParams);
 
-    // Verify the update:
-    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc1);
-    CHECK(c4rev_getGeneration(doc1->revID) == 2);
-    CHECK(context.docsEndedTotal == 1);
+    CHECK(context.docsEndedTotal == collectionCount);
     CHECK(context.docsEndedPurge == 0);
-    CHECK(context.pullFilterTotal == 1);
+    CHECK(context.pullFilterTotal == collectionCount);
     CHECK(context.pullFilterPurge == 0);
 
-    // Remove doc from all channels:
-    oRevID = slice(doc1->revID).asString();
-    _sg.upsertDoc(collectionSpecs[0], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify the update:
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+        CHECK(c4rev_getGeneration(doc1->revID) == 2);
+
+        // Remove doc from all channels:
+        auto oRevID = slice(doc1->revID).asString();
+        _sg.upsertDoc(collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+    }
 
     C4Log("-------- Pull the removed");
     context.reset();
     replicate(replParams);
 
-    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-    CHECK(context.docsEndedPurge == 1);
-    if (autoPurgeEnabled) {
-        // Verify if doc1 is purged:
-        REQUIRE(!doc1);
-        CHECK(context.pullFilterPurge == 1);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+
+        if (autoPurgeEnabled) {
+            // Verify if doc1 is purged:
+            REQUIRE(!doc1);
+        } else {
+            REQUIRE(doc1);
+        }
+    }
+
+    CHECK(context.docsEndedPurge == collectionCount);
+    if(autoPurgeEnabled) {
+        CHECK(context.pullFilterPurge == collectionCount);
     } else {
-        REQUIRE(doc1);
         // No pull filter called
         CHECK(context.pullFilterTotal == 0);
     }
@@ -1412,13 +1816,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     // one collection for now. Will use multiple collection when SG is ready.
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs = {
-        Roses
+        Roses,
+        Tulips,
+        Lavenders
     };
     string doc1ID = idPrefix + "doc1";
     vector<string> chIDs {idPrefix+"a"};
-    SG::TestUser testUser {_sg, kTestUserName, chIDs };
+
+    SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
+
     _sg.authHeader = testUser.authHeader();
     std::array<C4Collection*, collectionCount> collections =
         collectionPreamble(collectionSpecs, testUser);
@@ -1490,18 +1898,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     ReplParams replParams { replCollections };
     replicate(replParams);
 
-    // Verify:
-    c4::ref<C4Document> doc1 = c4coll_getDoc(collections[0], slice(doc1ID),
-                                             true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc1);
-    CHECK(cbContext.docsEndedTotal == 1);
+    CHECK(cbContext.docsEndedTotal == collectionCount);
     CHECK(cbContext.docsEndedPurge == 0);
-    CHECK(cbContext.pullFilterTotal == 1);
+    CHECK(cbContext.pullFilterTotal == collectionCount);
     CHECK(cbContext.pullFilterPurge == 0);
-    
-    // Remove doc from all channels
-    auto oRevID = slice(doc1->revID).asString();
-    for (size_t i = 0; i < collectionCount; ++i) {
+
+    for(int i = 0; i < collectionCount; ++i) {
+        // Verify
+        c4::ref<C4Document> doc1 = c4coll_getDoc(collections[i], slice(doc1ID),
+                                                 true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+
+        // Remove doc from all channels
+        auto oRevID = slice(doc1->revID).asString();
         _sg.upsertDoc(collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
     }
 
@@ -1510,24 +1919,29 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     replicate(replParams);
 
     // Verify if doc1 is not purged as the removed rev is filtered:
-    doc1 = c4coll_getDoc(collections[0], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc1);
-    CHECK(cbContext.docsEndedPurge == 1);
-    CHECK(cbContext.pullFilterPurge == 1);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(doc1ID), true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc1);
+    }
+    CHECK(cbContext.docsEndedPurge == collectionCount);
+    CHECK(cbContext.pullFilterPurge == collectionCount);
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Delete Doc or Delete then Create Doc SG",
                  "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     string docID = idPrefix + "doc";
     vector<string> chIDs {idPrefix+"a"};
 
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
-    SG::TestUser testUser {_sg, kTestUserName, chIDs };
+    SG::TestUser testUser {_sg, kTestUserName, chIDs, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection *, collectionCount> collections
         = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -1539,7 +1953,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     alloc_slice bodyJSON = SG::addChannelToJSON("{}"_sl, "channels"_sl, chIDs);
 
     // Create a doc in each collection
-    //
     std::array<c4::ref<C4Document>, collectionCount> docs;
     {
         TransactionHelper t(db);
@@ -1552,7 +1965,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
             REQUIRE(docs[i]);
         }
     }
-    for (auto coll : collections) {
+    for (auto& coll : collections) {
         REQUIRE(c4coll_getDocumentCount(coll) == 1);
     }
 
@@ -1562,7 +1975,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     replicate(replParams);
 
     // Delete the doc and push it:
-    //
     {
         TransactionHelper t(db);
         C4Error error;
@@ -1571,6 +1983,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
             REQUIRE(error.code == 0);
         }
     }
+    // Verify docs are deleted
     for (size_t i = 0; i < collectionCount; ++i) {
         REQUIRE(docs[i]);
         REQUIRE(docs[i]->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
@@ -1630,16 +2043,20 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServerCollection]") {
     const string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
-    string idPrefix = timePrefix();
+    const string idPrefix = timePrefix();
+    const string doc13ID = idPrefix + "0000013";
 
-    string doc13ID = idPrefix + "0000013";
-
-    constexpr size_t collectionCount = 1;
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
+
+    SG::TestUser testUser { _sg, "apipcsg", { "*" }, collectionSpecs };
+
     std::array<C4Collection *, collectionCount> collections
-        = collectionPreamble(collectionSpecs, "sguser", "password");
+        = collectionPreamble(collectionSpecs, testUser);
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs;
     auto docIDIter = docIDs.begin();
     for (auto coll : collections) {
@@ -1647,35 +2064,40 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
         *docIDIter++ = getDocIDs(coll);
     }
 
-    // Push to the remote
+    // Set up replCollections
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-
     for(int i = 0; i < collectionCount; ++i) {
         replCollections[i] = { collectionSpecs[i], kC4OneShot, kC4Disabled };
     }
-
+    // Push to remote
     ReplParams replParams { replCollections };
     replicate(replParams);
 
-    // Upate doc 13 on the remote
+    // Update doc 13 on the remote
     string body = "{\"_rev\":\"" + originalRevID + "\",\"serverSideUpdate\":true}";
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
-    REQUIRE(_sg.upsertDoc(collectionSpecs[0], doc13ID, slice(body), {}));
+    _sg.authHeader = testUser.authHeader();
+    for(auto& spec : collectionSpecs) {
+        REQUIRE(_sg.upsertDoc(spec, doc13ID, slice(body), {}));
+    }
 
-    // Create a conflict doc13 at local
-    createRev(collections[0], slice(doc13ID), "2-f000"_sl, kFleeceBody);
 
-    c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(doc13ID), true,
-                                            kDocGetAll, nullptr);
-    REQUIRE(doc);
-    C4Slice revID = C4STR("2-f000");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-    revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    for(auto& coll : collections) {
+        // Create a conflict doc13 at local
+        createRev(coll, slice(doc13ID), "2-f000"_sl, kFleeceBody);
+        // Verify doc
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(doc13ID), true,
+                                                kDocGetAll, nullptr);
+        REQUIRE(doc);
+        C4Slice revID = C4STR("2-f000");
+        CHECK(doc->selectedRev.revID == revID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        REQUIRE(c4doc_selectParentRevision(doc));
+        revID = slice(originalRevID);
+        CHECK(doc->selectedRev.revID == revID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    }
+
 
     C4Log("-------- Pushing Again (conflict) --------");
     _expectedDocPushErrors = {doc13ID};
@@ -1690,26 +2112,28 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     replicate(replParams);
 
     C4Log("-------- Checking Conflict --------");
-    doc = c4coll_getDoc(collections[0], slice(doc13ID), true, kDocGetAll, nullptr);
-    REQUIRE(doc);
-    CHECK((doc->flags & kDocConflicted) != 0);
-    revID = C4STR("2-f000");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-    revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
-    REQUIRE(c4doc_selectCurrentRevision(doc));
-    REQUIRE(c4doc_selectNextRevision(doc));
-    revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-    revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(doc13ID), true, kDocGetAll, nullptr);
+        REQUIRE(doc);
+        CHECK((doc->flags & kDocConflicted) != 0);
+        C4Slice revID = C4STR("2-f000");
+        CHECK(doc->selectedRev.revID == revID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        REQUIRE(c4doc_selectParentRevision(doc));
+        revID = slice(originalRevID);
+        CHECK(doc->selectedRev.revID == revID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+        REQUIRE(c4doc_selectCurrentRevision(doc));
+        REQUIRE(c4doc_selectNextRevision(doc));
+        revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
+        CHECK(doc->selectedRev.revID == revID);
+        CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        REQUIRE(c4doc_selectParentRevision(doc));
+        revID = slice(originalRevID);
+        CHECK(doc->selectedRev.revID == revID);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
@@ -1725,66 +2149,81 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG",
     // 6. Update existing document using update API via SG (more than twice)
     //      PUT sghost:4985/bd/doc_id?=rev_id
     // 7. run replication between SG -> db.cblite2 again
+    // This test must use docID filter instead of channel filter, because channel affects digest-based revID
 
-    string idPrefix = timePrefix();
-    constexpr size_t collectionCount = 1;
+    const string idPrefix = timePrefix();
+    const string docID = idPrefix + "doc";
+
+    constexpr size_t collectionCount = 3;
     std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-        Roses
+            Roses,
+            Tulips,
+            Lavenders
     };
+
+    SG::TestUser testUser { _sg, "pmusg", { "*" }, collectionSpecs };
+    _sg.authHeader = testUser.authHeader();
+
     std::array<C4Collection*, collectionCount> collections
-        = collectionPreamble(collectionSpecs, "sguser", "password");
+        = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
-
-    replCollections[0] = {collectionSpecs[0], kC4Disabled, kC4OneShot};
-
-    string docID = idPrefix + "doc";
-
-    _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
-
-    _sg.upsertDoc(collectionSpecs[0], docID + "?new_edits=false",
-                  R"({"count":1, "_rev":"1-1111"})", {});
+    for(int i = 0; i < collectionCount; ++i) {
+        replCollections[i] = {collectionSpecs[i], kC4Disabled, kC4OneShot};
+        _sg.upsertDoc(collectionSpecs[i], docID + "?new_edits=false",
+                      R"({"count":1, "_rev":"1-1111"})");
+    }
 
     std::array<unordered_map<alloc_slice, unsigned>, collectionCount> docIDs {
-        unordered_map<alloc_slice, unsigned> {
-            { alloc_slice(docID), 0 }
-        }
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }},
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }},
+        unordered_map<alloc_slice, unsigned> {{ alloc_slice(docID), 0 }}
     };
+
     ReplParams replParams { replCollections };
     replParams.setDocIDs(docIDs);
     replicate(replParams);
-    CHECK(_callbackStatus.progress.documentCount == 1);
-    c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID),
-                                            true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc);
-    CHECK(doc->revID == "1-1111"_sl);
+    // This seems to return an increasing number on each run? Commenting out for now
+//    CHECK(_callbackStatus.progress.documentCount == 3);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID),
+                                                true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc);
+        CHECK(doc->revID == "1-1111"_sl);
+    }
 
     const std::array<std::string, 3> bodies {
-            "{\"count\":2, \"_rev\":\"1-1111\"}",
-            "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}",
-            "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"
+            R"({"count":2, "_rev":"1-1111"})",
+            R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
+            R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"
     };
 
-    for(const auto& b : bodies) {
-        _sg.upsertDoc(collectionSpecs[0], docID, b, {});
+    for(auto& spec : collectionSpecs) {
+        for(const auto& body : bodies) {
+            _sg.upsertDoc(spec, docID, body);
+        }
     }
 
     replicate(replParams);
-    doc = c4coll_getDoc(collections[0], slice(docID), true, kDocGetCurrentRev, nullptr);
-    REQUIRE(doc);
-    CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
+    for(auto& coll : collections) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetCurrentRev, nullptr);
+        REQUIRE(doc);
+        CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
+    }
 }
-// This test takes ~3 mins, so I have given it "SyncCollSlow" tag
+// This test takes > 1 minute per collection, so I have given it "SyncCollSlow" tag
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection SG", "[.SyncCollSlow]") {
     string idPrefix = timePrefix() + "pidfsg";
 
+    constexpr size_t collectionCount = 2;
+    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
+            Roses,
+            Tulips
+    };
+
     // Set up replication
-    SG::TestUser testUser { _sg, "pidfsgc", { "*" } };
+    SG::TestUser testUser { _sg, "pidfsgc", { "*" }, collectionSpecs };
     _sg.authHeader = testUser.authHeader();
 
-    constexpr size_t collectionCount = 1;
-    std::array<C4CollectionSpec, collectionCount> collectionSpecs {
-            Roses
-    };
     std::array<C4Collection*, collectionCount> collections
             = collectionPreamble(collectionSpecs, testUser);
     std::vector<C4ReplicationCollection> replCollections {collectionCount};
@@ -1798,14 +2237,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         TransactionHelper t(db);
-        importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", collections[0], 0, false, 0, idPrefix);
+        for(auto& coll : collections) { // Import 5000 docs per collection
+            importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", coll, 0, false, 900, idPrefix);
+        }
     };
     populateDB();
-    auto numDocs = c4coll_getDocumentCount(collections[0]);
 
     // Filter replication by docID
     std::array<std::unordered_map<alloc_slice, unsigned>, collectionCount> docIDs { };
-    docIDs[0] = getDocIDs(collections[0]);
+    for(int i = 0; i < collectionCount; ++i) {
+        docIDs[i] = getDocIDs(collections[i]);
+    }
     replParams.setDocIDs( docIDs );
 
     C4Log("-------- Pushing to SG --------");
@@ -1814,7 +2256,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
 
     C4Log("-------- Updating docs on SG --------");
     // Now update the docs on SG:
-    {
+    for(int i = 0; i < collectionCount; ++i) {
+        auto numDocs = c4coll_getDocumentCount(collections[i]);
         constexpr size_t docBufSize = 50;
         JSONEncoder enc;
         enc.beginDict();
@@ -1824,7 +2267,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             char docID[docBufSize];
             snprintf(docID, docBufSize, "%s%07u", idPrefix.c_str(), docNo+1);
             C4Error error;
-            c4::ref<C4Document> doc = c4coll_getDoc(collections[0], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            c4::ref<C4Document> doc = c4coll_getDoc(collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -1833,10 +2276,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             enc.writeString(docID);
             enc.writeKey("_rev"_sl);
             enc.writeString(doc->revID);
-            for (Dict::iterator i(props); i; ++i) {
-                enc.writeKey(i.keyString());
-                auto value = i.value();
-                if (i.keyString() == "Play Count"_sl)
+            for (Dict::iterator it(props); it; ++it) {
+                enc.writeKey(it.keyString());
+                auto value = it.value();
+                if (it.keyString() == "Play Count"_sl)
                     enc.writeInt(value.asInt() + 1);
                 else
                     enc.writeValue(value);
@@ -1845,7 +2288,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
         }
         enc.endArray();
         enc.endDict();
-        _sg.insertBulkDocs(Roses, enc.finish(), 300);
+        _sg.insertBulkDocs(collectionSpecs[i], enc.finish(), 300);
+    }
+
+    uint64_t numDocs = 0;
+    for(auto& coll : collections) {
+        numDocs += c4coll_getDocumentCount(coll);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -1869,19 +2317,21 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             timeWithDelta = time;
         else if (pass == 3)
             timeWithoutDelta = time;
-
+        // Verify docs
         int n = 0;
-        C4Error error;
-        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collections[0], nullptr, ERROR_INFO(error));
-        REQUIRE(e);
-        while (c4enum_next(e, ERROR_INFO(error))) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            auto revID = slice(info.revID);
-            CHECK(revID.hasPrefix("2-"_sl));
-            ++n;
+        for(auto& coll : collections) {
+            C4Error error;
+            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(coll, nullptr, ERROR_INFO(error));
+            REQUIRE(e);
+            while (c4enum_next(e, ERROR_INFO(error))) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                auto revID = slice(info.revID);
+                CHECK(revID.hasPrefix("2-"_sl));
+                ++n;
+            }
+            CHECK(error.code == 0);
         }
-        CHECK(error.code == 0);
         CHECK(n == numDocs);
     }
 

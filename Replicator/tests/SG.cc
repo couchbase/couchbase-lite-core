@@ -4,6 +4,7 @@
 
 #include "SG.hh"
 #include <utility>
+#include <map>
 #include "c4Test.hh"
 #include "Response.hh"
 #include "StringUtil.hh"
@@ -120,14 +121,23 @@ alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::
     return dict.toJSON();
 }
 
+alloc_slice SG::addRevToJSON(slice json, const string &revID) {
+    MutableDict dict {FLMutableDict_NewFromJSON(json, nullptr)};
+    if(!dict) {
+        C4Log("ERROR: MutableDict is null, likely your JSON is bad.");
+        return nullslice;
+    }
+    dict.set("_rev", revID);
+    return dict.toJSON();
+}
+
 bool SG::createUser(const std::string& username, const std::string& password,
                     const std::vector<std::string> &channelIDs) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
-    alloc_slice bodyWithChannel = addChannelToJSON(slice(body), "admin_channels"_sl, channelIDs);
     HTTPStatus status;
     // Delete the user incase they already exist
     deleteUser(username);
-    runRequest("POST", {}, "_user", bodyWithChannel, true, nullptr, &status);
+    runRequest("POST", {}, "_user", body, true, nullptr, &status);
     return status == HTTPStatus::Created;
 }
 
@@ -137,10 +147,46 @@ bool SG::deleteUser(const string &username) const {
     return status == HTTPStatus::OK;
 }
 
-bool SG::assignUserChannel(const std::string& username, const std::vector<std::string> &channelIDs) const {
-    alloc_slice bodyWithChannel = addChannelToJSON("{}"_sl, "admin_channels"_sl, channelIDs);
+bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string> &channelIDs) const {
+    std::multimap<slice, slice> specsMap;
+    for(const auto& spec : collectionSpecs) {
+        specsMap.insert({spec.scope, spec.name });
+    }
+
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("collection_access"_sl);
+    {
+        enc.beginDict(); // collection access
+        // For each unique key (scope)
+        for(auto it = specsMap.begin(), end = specsMap.end(); it != end; it = specsMap.upper_bound(it->first)) {
+            enc.writeKey(it->first); // scope name
+            enc.beginDict(); // scope
+            // For each value belonging to that key (spec name belonging to that scope)
+            auto collsInThisScope = specsMap.equal_range(it->first);
+            for(auto i = collsInThisScope.first; i != collsInThisScope.second; ++i) {
+                enc.writeKey(i->second); // collection name
+                enc.beginDict(); // collection
+                enc.writeKey("admin_channels"_sl);
+                {
+                    enc.beginArray();
+                    for (const auto& chID : channelIDs) {
+                        enc.writeString(chID);
+                    }
+                    enc.endArray();
+                }
+                enc.endDict(); // collection
+            }
+            enc.endDict(); // scope
+        }
+        enc.endDict(); // collection access
+    }
+    enc.endDict();
+    Doc doc {enc.finish()};
+    Value v = doc.root();
+
     HTTPStatus status;
-    runRequest("PUT", { }, "_user/"s+username, bodyWithChannel, true, nullptr, &status);
+    runRequest("PUT", { }, "_user/"s+username, v.toJSON(), true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
@@ -160,6 +206,11 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID,
                channelIDs.empty() ? body : bodyWithChannel, false,
                err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
+}
+
+bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string &docID, const string &revID, slice body,
+                   const std::vector<std::string> &channelIDs, C4Error *err) const {
+    return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
 }
 
 bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body, C4Error *err) const {

@@ -322,6 +322,11 @@ propertyPath =
 propertyName
     = IDENTIFIER
 
+indexTable =                            { a = string(""); }
+    (a:collectionAlias _ '.' _ )?
+    i:indexName                         { string c = a.as<string>();
+                                          $$ = c.empty() ? i.as<string>() : c + "." + i.as<string>();
+                                        }
 
 ######## FUNCTIONS:
 
@@ -331,11 +336,11 @@ function =
     (c:IDENTIFIER _                    { appendAny(f, c.as<string>());}
     )? ')' _                           { $$ = f;}
   | "match"i _ '(' _                   { f = op("MATCH()");}
-    ind:indexName _ ',' _              { appendAny(f, ind.as<string>());}
+    ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
   | "rank"i _ '(' _                    { f = op("RANK()");}
-    ind:indexName _                    { appendAny(f, ind.as<string>());}
+    ind:indexTable _                   { appendAny(f, ind.as<string>());}
     ')' _                              { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
