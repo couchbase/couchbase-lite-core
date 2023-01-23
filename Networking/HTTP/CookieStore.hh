@@ -31,7 +31,8 @@ namespace litecore { namespace net {
         // will return false from valid().
 
         Cookie() =default;
-        Cookie(const std::string &header, const std::string &fromHost, const std::string &fromPath);
+        Cookie(const std::string &header, const std::string &fromHost, const std::string &fromPath,
+               bool acceptParentDomain =false);
         Cookie(fleece::Dict);
 
         explicit operator bool() const  {return valid();}
@@ -73,7 +74,8 @@ namespace litecore { namespace net {
         // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
         bool setCookie(const std::string &headerValue,
                        const std::string &fromHost,
-                       const std::string &fromPath);
+                       const std::string &fromPath,
+                       bool  acceptParentDomain =false);
         
         void clearCookies();
 

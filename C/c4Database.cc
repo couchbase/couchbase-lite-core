@@ -229,12 +229,14 @@ alloc_slice C4Database::getCookies(const C4Address &request) {
 
 bool C4Database::setCookie(slice setCookieHeader,
                            slice fromHost,
-                           slice fromPath)
+                           slice fromPath,
+                           bool  acceptParentDomain)
 {
     litecore::repl::DatabaseCookies cookies(this);
     bool ok = cookies.setCookie(setCookieHeader.asString(),
                                 fromHost.asString(),
-                                fromPath.asString());
+                                fromPath.asString(),
+                                acceptParentDomain);
     if (ok)
         cookies.saveChanges();
     return ok;

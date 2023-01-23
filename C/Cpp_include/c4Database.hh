@@ -209,7 +209,8 @@ public:
 
     bool setCookie(slice setCookieHeader,
                    slice fromHost,
-                   slice fromPath);
+                   slice fromPath,
+                   bool  acceptParentDomain);
 
     void clearCookies();
 

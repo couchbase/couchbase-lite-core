@@ -184,14 +184,24 @@ C4API_BEGIN_DECLS
 
 
     /** Takes the value of a "Set-Cookie:" header, received from the given host, from an HTTP
-        request with the given path, and saves the cookie into the database's cookie store.
-        (Persistent cookies are saved as metadata in the database file until they expire.
-        Session cookies are kept in memory, until the last C4Database handle to the given database
-        is closed.) */
-    bool c4db_setCookie(C4Database *db,
+     *  request with the given path, and saves the cookie into the database's cookie store.
+     *  (Persistent cookies are saved as metadata in the database file until they expire.
+     *  Session cookies are kept in memory, until the last C4Database handle to the given database
+     *  is closed.)
+     *
+     *  @param db  The C4Databaser instance.
+     *  @param setCookieHeader The "Set-Cookie" header.
+     *  @param fromHost The host address of the request.
+     *  @param fromPath The path of the request.
+     *  @param acceptParentDomain Whether to allow the "Domain" property of the cookie to be a parent domain of the host address. It should match the option, kC4ReplicatorOptionAcceptParentDomainCookies, in C4ReplicatorParameters.
+     *  @param outError Records error information, if any.
+     *  @return true if the cookie is successfully saved..
+     */
+    CBL_CORE_API bool c4db_setCookie(C4Database *db,
                         C4String setCookieHeader,
                         C4String fromHost,
                         C4String fromPath,
+                        bool     acceptParentDomain,
                         C4Error* C4NULLABLE outError) C4API;
 
     /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string

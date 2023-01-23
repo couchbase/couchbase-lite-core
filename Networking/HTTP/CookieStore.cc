@@ -61,7 +61,8 @@ namespace litecore { namespace net {
 #pragma mark - COOKIE:
 
 
-    Cookie::Cookie(const string &header, const string &fromHost, const string &fromPath)
+    Cookie::Cookie(const string &header, const string &fromHost, const string &fromPath,
+                   bool acceptParentDomain)
     :domain(fromHost)
     ,created(time(nullptr))
     {
@@ -88,8 +89,13 @@ namespace litecore { namespace net {
                 while (!val.empty() && val[0] == '.')
                     val.erase(0, 1);
                 if (!Address::domainContains(fromHost, val)) {
-                    Warn("Cookie Domain isn't legal");
-                    return;
+                    if (!acceptParentDomain) {
+                        Warn("Cookie Domain isn't legal because it is not a subdomain of the host");
+                        return;
+                    } else if (!Address::domainContains(val, fromHost)) {
+                        Warn("Cookie Domain isn't legal");
+                        return;
+                    }
                 }
                 domain = val;
             } else if (key == "path") {
@@ -246,11 +252,14 @@ namespace litecore { namespace net {
 
     bool CookieStore::setCookie(const string &headerValue,
                                 const string &fromHost,
-                                const string &path)
+                                const string &path,
+                                bool  acceptParentDomain)
     {
-        auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path);
-        if (!newCookie->valid())
+        auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path, acceptParentDomain);
+        if (!newCookie->valid()) {
+            Warn("Rejecting invalid cookie in setCookie!");
             return false;
+        }
         lock_guard<mutex> lock(_mutex);
         _addCookie(move(newCookie));
         return true;
