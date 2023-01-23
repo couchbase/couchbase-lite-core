@@ -348,8 +348,10 @@ namespace litecore { namespace websocket {
         slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
         if (cookiesOption) {
             Address dstAddr(url());
+            bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
             Cookie ck(string(cookiesOption),
-                      string(slice(dstAddr.hostname)), string(slice(dstAddr.path)));
+                      string(slice(dstAddr.hostname)), string(slice(dstAddr.path)),
+                      acceptParentDomain);
             if (ck.valid() && ck.matches(addr) && !ck.expired()) {
                 if (cookies)
                     cookies.append("; "_sl);
@@ -361,7 +363,8 @@ namespace litecore { namespace websocket {
 
 
     void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
-        _database->setCookie(cookieHeader, addr.hostname, addr.path);
+        bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
+        _database->setCookie(cookieHeader, addr.hostname, addr.path, acceptParentDomain);
     }
 
 
