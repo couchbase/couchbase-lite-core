@@ -30,6 +30,8 @@
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"
 
+#include <iostream>
+
 using namespace std;
 using namespace std::placeholders;
 using namespace fleece;
@@ -48,7 +50,8 @@ namespace litecore { namespace repl {
     static constexpr StoppingErrorEntry StoppingErrors[] = {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
         {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
-        {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
+        {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl},
+        {{ LiteCoreDomain, 26, 1 }, true, "No handler for BLIP request 'getCollections'"_sl }
     };
 
                              
@@ -817,6 +820,11 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             if (response->isError()) {
+                if (response->getError().message == "No handler for BLIP request") {
+                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
+                                                 "No handler for BLIP request 'getCollections'");
+                    return onError(error);
+                }
                 return gotError(response);
             } else {
                 alloc_slice json = response->body();
