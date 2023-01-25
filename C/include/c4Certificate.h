@@ -67,6 +67,8 @@ CBL_CORE_API bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
                                C4CertNameInfo *outInfo) C4API;
 
+#endif // COUCHBASE_ENTERPRISE
+
 /** Returns the time range during which a (signed) certificate is valid.
     @param cert  The signed certificate.
     @param outCreated  On return, the date/time the cert became valid (was signed).
@@ -74,6 +76,8 @@ CBL_CORE_API bool c4cert_subjectNameAtIndex(C4Cert* cert,
 CBL_CORE_API void c4cert_getValidTimespan(C4Cert* cert,
                              C4Timestamp* C4NULLABLE outCreated,
                              C4Timestamp* C4NULLABLE outExpires);
+
+#ifdef COUCHBASE_ENTERPRISE
 
 /** Returns the usage flags of a cert. */
 CBL_CORE_API C4CertUsage c4cert_usages(C4Cert*) C4API;

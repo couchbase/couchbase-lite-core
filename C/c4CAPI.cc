@@ -1596,7 +1596,9 @@ C4StringResult c4cert_summary(C4Cert* cert) noexcept {
     });
 }
 
+#endif // COUCHBASE_ENTERPRISE
 
+// c4cert_getValidTimespan is available in CE
 void c4cert_getValidTimespan(C4Cert* cert,
                              C4Timestamp *outCreated,
                              C4Timestamp *outExpires)
@@ -1613,6 +1615,7 @@ void c4cert_getValidTimespan(C4Cert* cert,
         *outExpires = ts.second;
 }
 
+#ifdef COUCHBASE_ENTERPRISE
 
 bool c4cert_isSigned(C4Cert* cert) noexcept {
     return cert->isSigned();
