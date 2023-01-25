@@ -44,20 +44,56 @@ fi
 echo VERSION=${VERSION}
 # Global define end
 
+BIN_NAME="LiteCore"
+FRAMEWORK_LOC=${BIN_NAME}.xcarchive/Products/Library/Frameworks/${BIN_NAME}.framework
+
+# this will be used to collect all destination framework path with `-framework`
+# to include them in `-create-xcframework`
+FRAMEWORK_PATH_ARGS=()
+
+# arg1 = target destination for which the archive is built for. E.g., "generic/platform=iOS"
+# arg2 = Configuration for building (Release, Debug_EE, etc)
+function xcarchive
+{
+  DESTINATION=${1}
+  CONFIGURATION=${2}
+  echo "Archiving for ${DESTINATION}..."
+  ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
+  xcodebuild archive \
+    -project "$WORKSPACE/$ios_xcode_proj" \
+    -scheme "LiteCore framework" \
+    -configuration "${CONFIGURATION}" \
+    -destination "${DESTINATION}" \
+    -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
+    "ONLY_ACTIVE_ARCH=NO" "BITCODE_GENERATION_MODE=bitcode" \
+    "CODE_SIGNING_ALLOWED=NO" \
+    "SKIP_INSTALL=NO"
+  
+  if [ -f "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive/dSYMs/${BIN_NAME}.framework.dSYM" ]; then
+    FRAMEWORK_PATH_ARGS+=("-framework "${ARCHIVE_PATH}/${FRAMEWORK_LOC}" \
+        -debug-symbols "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive/dSYMs/${BIN_NAME}.framework.dSYM"")
+  else
+    # Not present when making debug build for some reason (included inline?)
+    FRAMEWORK_PATH_ARGS+=("-framework "${ARCHIVE_PATH}/${FRAMEWORK_LOC})
+  fi
+  echo "Finished archiving ${DESTINATION}."
+}
+
 echo "====  Building ios Release binary  ==="
 cd ${WORKSPACE}/${BUILD_IOS_REL_TARGET}
-xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${release_config} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphoneos BITCODE_GENERATION_MODE=bitcode CODE_SIGNING_ALLOWED=NO
-xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${release_config} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
-cp -R ios/Build/Products/${release_config}-iphoneos/LiteCore.framework ${WORKSPACE}/${BUILD_IOS_REL_TARGET}/
-lipo -create ios/Build/Products/${release_config}-iphoneos/LiteCore.framework/LiteCore ios/Build/Products/${release_config}-iphonesimulator/LiteCore.framework/LiteCore -output ${WORKSPACE}/${BUILD_IOS_REL_TARGET}/LiteCore.framework/LiteCore
+xcarchive "generic/platform=iOS Simulator" ${release_config}
+xcarchive "generic/platform=iOS" ${release_config}
+xcarchive "generic/platform=macOS,variant=Mac Catalyst" ${release_config}
+xcodebuild -create-xcframework -output "${WORKSPACE}/${BUILD_IOS_REL_TARGET}/${BIN_NAME}.xcframework" ${FRAMEWORK_PATH_ARGS[*]}
 cd ${WORKSPACE}
 
+FRAMEWORK_PATH_ARGS=()
 echo "====  Building ios Debug binary  ==="
 cd ${WORKSPACE}/${BUILD_IOS_DEBUG_TARGET}
-xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${debug_config} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphoneos BITCODE_GENERATION_MODE=bitcode CODE_SIGNING_ALLOWED=NO
-xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${debug_config} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
-cp -R ios/Build/Products/${debug_config}-iphoneos/LiteCore.framework ${WORKSPACE}/${BUILD_IOS_DEBUG_TARGET}/
-lipo -create ios/Build/Products/${debug_config}-iphoneos/LiteCore.framework/LiteCore ios/Build/Products/${debug_config}-iphonesimulator/LiteCore.framework/LiteCore -output ${WORKSPACE}/${BUILD_IOS_DEBUG_TARGET}/LiteCore.framework/LiteCore
+xcarchive "generic/platform=iOS Simulator" ${debug_config}
+xcarchive "generic/platform=iOS" ${debug_config}
+xcarchive "generic/platform=macOS,variant=Mac Catalyst" ${debug_config}
+xcodebuild -create-xcframework -output "${WORKSPACE}/${BUILD_IOS_DEBUG_TARGET}/${BIN_NAME}.xcframework" ${FRAMEWORK_PATH_ARGS[*]}
 cd ${WORKSPACE}
 
 # Create zip package
@@ -71,12 +107,12 @@ do
     if [[ "${FLAVOR}" == 'debug' ]]
     then
         cd ${WORKSPACE}/${BUILD_IOS_DEBUG_TARGET}
-        ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.framework
+        ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.xcframework
         cd ${WORKSPACE}
         DEBUG_IOS_PKG_NAME=${PACKAGE_NAME}
     else
         cd ${WORKSPACE}/${BUILD_IOS_REL_TARGET}
-        ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.framework
+        ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.xcframework
         cd ${WORKSPACE}
         RELEASE_IOS_PKG_NAME=${PACKAGE_NAME}
     fi
