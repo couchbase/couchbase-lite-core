@@ -100,8 +100,7 @@ namespace litecore { namespace repl {
             for (Array::iterator i(pending); i; ++i) {
                 auto first = C4SequenceNumber(i->asUnsigned());
                 auto last = C4SequenceNumber((++i)->asUnsigned());
-                if (last >= first)
-                    _completed.add(first, last + 1);
+                _completed.add(first, first + (uint64_t)last);
             }
         } else
 #endif
