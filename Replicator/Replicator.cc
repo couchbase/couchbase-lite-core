@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
         {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl},
-        {{ LiteCoreDomain, 26, 1 }, true, "No handler for BLIP request 'getCollections'"_sl }
+        {{ LiteCoreDomain, kC4ErrorRemoteError, 1 }, true, "No handler for BLIP request 'getCollections'"_sl }
     };
 
                              
