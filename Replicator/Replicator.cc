@@ -820,11 +820,13 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             if (response->isError()) {
-                if (response->getError().message == "No handler for BLIP request") {
-                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
-                                                 "No handler for BLIP request 'getCollections'");
-                    return onError(error);
-                }
+//                if (response->getError().message == "No handler for BLIP request") {
+//                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
+//                                                 "No handler for BLIP request 'getCollections'");
+//                    return onError(error);
+//                }
+                if (response->getError().code == 404 && response->getError().domain == "BLIPDomain")
+                    logError("Error from remote for request 'getCollections'");
                 return gotError(response);
             } else {
                 alloc_slice json = response->body();
