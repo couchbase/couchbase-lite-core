@@ -345,6 +345,10 @@ namespace litecore { namespace repl {
     void Puller::_childChangedStatus(Retained<Worker> task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
+        if (status.error.domain == WebSocketDomain && status.error.code == 503) {
+            if (_parent)
+                _parent->childChangedStatus(this, status);
+        }
     }
 
     

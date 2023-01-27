@@ -230,6 +230,10 @@ namespace litecore { namespace repl {
                 root = decryptedRoot;
             } else if (error) {
                 failWithError(error);
+                if (error.domain == WebSocketDomain && error.code == 503) {
+                    onError(error);
+                }
+                return;
             }
         }
 
