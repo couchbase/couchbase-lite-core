@@ -176,6 +176,9 @@ namespace litecore { namespace repl {
         if (err.domain == "HTTP"_sl) {
             domain = WebSocketDomain;
             code = err.code;
+        } else if (err.domain == "BLIP"_sl && err.code == 404) {
+            domain = LiteCoreDomain;
+            code = kC4ErrorRemoteError;
         } else {
             for (error::Domain d = error::LiteCore; d < error::NumDomainsPlus1; d = (error::Domain)(d+1)) {
                 if (err.domain == slice(error::nameOfDomain(d))) {

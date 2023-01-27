@@ -825,7 +825,7 @@ namespace litecore { namespace repl {
 //                                                 "No handler for BLIP request 'getCollections'");
 //                    return onError(error);
 //                }
-                if (response->getError().code == 404 && response->getError().domain == "BLIPDomain")
+                if (response->getError().code == 404 && response->getError().domain == "BLIP")
                     logError("Error from remote for request 'getCollections'");
                 return gotError(response);
             } else {
