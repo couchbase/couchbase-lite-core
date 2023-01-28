@@ -726,10 +726,11 @@ bool c4db_setCookie(C4Database *db,
                     C4String setCookieHeader,
                     C4String fromHost,
                     C4String fromPath,
+                    bool     acceptParentDomain,
                     C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [=]() {
-        if (db->setCookie(setCookieHeader, fromHost, fromPath))
+        if (db->setCookie(setCookieHeader, fromHost, fromPath, acceptParentDomain))
             return true;
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("Invalid cookie"), outError);
         return false;

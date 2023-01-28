@@ -273,23 +273,44 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
         alloc_slice cookies = c4db_getCookies(db, request, &error);
         CHECK(!cookies);
         CHECK(error.code == 0);
-        CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname, request.path, WITH_ERROR(&error)));
-        CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, request.path, WITH_ERROR(&error)));
-        CHECK(c4db_setCookie(db, "foo=bar; Path=/db"_sl, request.hostname, request.path, WITH_ERROR(&error)));
-        CHECK(c4db_setCookie(db, "frob=baz; Path=/db/"_sl, request.hostname, request.path, WITH_ERROR(&error)));
-        CHECK(c4db_setCookie(db, "eenie=meenie; Path=/db/xox"_sl, request.hostname, request.path, WITH_ERROR(&error)));
-        CHECK(c4db_setCookie(db, "minie=moe; Path=/someotherdb"_sl, request.hostname, request.path, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname,
+                             request.path, false, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "dest=Example; Domain=Example.Com; Max-Age=30"_sl, request.hostname,
+                             request.path, true, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "dest=entireWorld; Domain=.Com; Max-Age=30"_sl, request.hostname,
+                             request.path, true, WITH_ERROR(&error)));
+        {
+            ExpectingExceptions x;
+            c4db_setCookie(db, "dest=Example; Domain=Example.Com; Max-Age=30"_sl,
+                           request.hostname, request.path, false, &error);
+            CHECK(error.domain == LiteCoreDomain);
+            CHECK(error.code == kC4ErrorInvalidParameter);
+            c4db_setCookie(db, "dest=entireWorld; Domain=.Com; Max-Age=30"_sl,
+                           request.hostname, request.path, false, &error);
+            CHECK(error.domain == LiteCoreDomain);
+            CHECK(error.code == kC4ErrorInvalidParameter);
+        }
+        CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, request.path,
+                             false, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "foo=bar; Path=/db"_sl, request.hostname, request.path,
+                             false, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "frob=baz; Path=/db/"_sl, request.hostname, request.path,
+                             false, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "eenie=meenie; Path=/db/xox"_sl, request.hostname, request.path,
+                             false, WITH_ERROR(&error)));
+        CHECK(c4db_setCookie(db, "minie=moe; Path=/someotherdb"_sl, request.hostname, request.path,
+                             false, WITH_ERROR(&error)));
     }
     {
         // Get the cookies, in the same C4Database instance:
         alloc_slice cookies = c4db_getCookies(db, request, ERROR_INFO(error));
-        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
+        CHECK(cookies == "e=mc^2; dest=Example; dest=entireWorld; name=value; foo=bar; frob=baz"_sl);
     }
     {
         // Get the cookies, in a different C4Database instance while the 1st one is open:
         c4::ref<C4Database> db2 = c4db_openAgain(db, nullptr);
         alloc_slice cookies = c4db_getCookies(db2, request, ERROR_INFO(error));
-        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
+        CHECK(cookies == "e=mc^2; dest=Example; dest=entireWorld; name=value; foo=bar; frob=baz"_sl);
     }
 
     reopenDB();
@@ -297,8 +318,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
     {
         // Make sure the cookies are reloaded from storage:
         alloc_slice cookies = c4db_getCookies(db, request, ERROR_INFO(error));
-        CHECK(cookies == "e=mc^2"_sl);
-        
+        CHECK(cookies == "e=mc^2; dest=Example; dest=entireWorld"_sl);
+
         // Clear the cookies:
         c4db_clearCookies(db);
         CHECK(c4db_getCookies(db, request, WITH_ERROR(&error)) == nullslice);

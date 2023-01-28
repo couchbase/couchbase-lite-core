@@ -91,6 +91,12 @@ namespace litecore { namespace repl {
             return boolProperty(kC4ReplicatorOptionAutoPurge);
         }
 
+        bool acceptParentDomainCookies() const {
+            if (!properties[kC4ReplicatorOptionAcceptParentDomainCookies])
+                return false;
+            return boolProperty(kC4ReplicatorOptionAcceptParentDomainCookies);
+        }
+
         /** Returns a string that uniquely identifies the remote database; by default its URL,
             or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
         fleece::slice remoteDBIDString(fleece::slice remoteURL) const {
