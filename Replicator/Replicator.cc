@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
         {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl},
-        {{ LiteCoreDomain, kC4ErrorRemoteError, 1 }, true, "No handler for BLIP request 'getCollections'"_sl }
+        {{ LiteCoreDomain, kC4ErrorRemoteError, 1 }, true, "No handler for BLIP request"_sl }
     };
 
                              
@@ -820,13 +820,9 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
 
             if (response->isError()) {
-//                if (response->getError().message == "No handler for BLIP request") {
-//                    auto error = C4Error::printf(LiteCoreDomain, kC4ErrorRemoteError,
-//                                                 "No handler for BLIP request 'getCollections'");
-//                    return onError(error);
-//                }
-                if (response->getError().code == 404 && response->getError().domain == "BLIP")
-                    logError("Error from remote for request 'getCollections'");
+                blip::Error responseErr = response->getError();
+                if (responseErr.code == 404 && responseErr.domain == "BLIP")
+                    logError(R"(Error from remote for request 'getCollections': )" << responseErr.message);
                 return gotError(response);
             } else {
                 alloc_slice json = response->body();
