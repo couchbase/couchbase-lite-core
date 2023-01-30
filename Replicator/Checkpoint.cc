@@ -91,7 +91,7 @@ namespace litecore { namespace repl {
                     C4SequenceNumber first = i->asInt();
                     C4SequenceNumber last = (++i)->asInt();
                     if (last >= first)
-                        _completed.add(first, last + 1);
+                        _completed.add(first, first + last);
                 }
             } else
 #endif

@@ -196,6 +196,8 @@ public:
         if (s.level == kC4Offline) {
             C4Assert(_mayGoOffline);
             _wentOffline = true;
+            _docPullErrors.clear();
+            _docPushErrors.clear();
         }
         
 #ifdef COUCHBASE_ENTERPRISE
@@ -285,7 +287,7 @@ public:
             flushScratchDatabase();
         }
 
-        C4ReplicatorParameters params = {};
+        C4ReplicatorParameters params = _initParams;
         params.push = push;
         params.pull = pull;
         _options = options();
@@ -484,5 +486,8 @@ public:
     bool _wentOffline {false};
     bool _onlySelfSigned {false};
     alloc_slice _customCaCert {};
+    C4ReplicatorParameters _initParams {};
+    void* _encCBContext {NULL};
+    void* _decCBContext {NULL};
 };
 
