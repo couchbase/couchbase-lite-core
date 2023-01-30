@@ -11,9 +11,10 @@
 //
 
 #pragma once
-#ifdef COUCHBASE_ENTERPRISE
 
 #include "c4Base.h"
+
+#ifdef COUCHBASE_ENTERPRISE
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
