@@ -822,7 +822,7 @@ namespace litecore { namespace repl {
             if (response->isError()) {
                 blip::Error responseErr = response->getError();
                 if (responseErr.code == 404 && responseErr.domain == "BLIP")
-                    logError(R"(Error from remote for request 'getCollections': )" << responseErr.message);
+                    logError("Error response from remote for request 'getCollections'");
                 return gotError(response);
             } else {
                 alloc_slice json = response->body();
