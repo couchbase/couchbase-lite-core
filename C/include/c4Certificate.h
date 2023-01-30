@@ -14,10 +14,10 @@
 
 #include "c4CertificateTypes.h"
 
-#ifdef COUCHBASE_ENTERPRISE
-
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
+
+#ifdef COUCHBASE_ENTERPRISE
 
 /** \defgroup certificates Certificates
     @{ */
@@ -315,7 +315,7 @@ CBL_CORE_API C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm,
 
 /** @} */
 
+#endif // COUCHBASE_ENTERPRISE
+
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
-
-#endif // COUCHBASE_ENTERPRISE

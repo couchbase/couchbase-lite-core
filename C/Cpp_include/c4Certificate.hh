@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#ifdef COUCHBASE_ENTERPRISE
 
 #include "c4Base.hh"
 #include "c4CertificateTypes.h"
@@ -27,11 +26,11 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
-
 struct C4Cert final : public fleece::RefCounted,
                       public fleece::InstanceCountedIn<C4Cert>,
                       C4Base
 {
+#ifdef COUCHBASE_ENTERPRISE
     static Retained<C4Cert> fromData(slice certData);
 
     alloc_slice getData(bool pemEncoded);
@@ -50,9 +49,9 @@ struct C4Cert final : public fleece::RefCounted,
     };
 
     NameInfo getSubjectNameAtIndex(unsigned index);
-
+#endif // COUCHBASE_ENTERPRISE
     std::pair<C4Timestamp,C4Timestamp> getValidTimespan();
-
+#ifdef COUCHBASE_ENTERPRISE
     C4CertUsage getUsages();
 
     bool isSelfSigned();
@@ -100,12 +99,14 @@ struct C4Cert final : public fleece::RefCounted,
 private:
     explicit C4Cert(litecore::crypto::CertBase*);
     ~C4Cert();
-    litecore::crypto::Cert* C4NULLABLE asSignedCert();
     litecore::crypto::CertSigningRequest* assertUnsignedCert();
 
+#endif // COUCHBASE_ENTERPRISE
+    litecore::crypto::Cert* C4NULLABLE asSignedCert();
     Retained<litecore::crypto::CertBase> _impl;
 };
 
+#ifdef COUCHBASE_ENTERPRISE
 
 #pragma mark - KEY PAIRS:
 
@@ -158,6 +159,6 @@ private:
     Retained<litecore::crypto::Key> _impl;
 };
 
-C4_ASSUME_NONNULL_END
-
 #endif // COUCHBASE_ENTERPRISE
+
+C4_ASSUME_NONNULL_END
