@@ -1,0 +1,181 @@
+#!/bin/bash -ex
+
+# Copyright 2020-Present Couchbase, Inc.
+#
+# Use of this software is governed by the Business Source License included in
+# the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+# file, in accordance with the Business Source License, use of this software
+# will be governed by the Apache License, Version 2.0, included in the file
+# licenses/APL2.txt.
+
+set -x
+# Global define
+PRODUCT=${1}
+VERSION=${2}
+BLD_NUM=${3}
+EDITION=${4}
+SHA_VERSION=${5}
+
+if [[ -z "${WORKSPACE}" ]]; then
+    WORKSPACE=`pwd`
+fi
+
+case "${OSTYPE}" in
+    darwin*)  OS="macosx"
+              PKG_CMD='zip -r'
+              PKG_TYPE='zip'
+              PROP_FILE=${WORKSPACE}/publish.prop;;
+    linux*)   OS="linux"
+              PKG_CMD='tar czf'
+              PKG_TYPE='tar.gz'
+              PROP_FILE=${WORKSPACE}/publish.prop
+              OS_NAME=`lsb_release -is`
+              if [[ "$OS_NAME" != "CentOS" ]]; then
+                  echo "Error: Unsupported Linux distro $OS_NAME"
+                  exit 2
+              fi
+
+              OS_VERSION=`lsb_release -rs`
+              if [[ $OS_VERSION =~ ^6.* ]]; then
+                  OS="centos6"
+              elif [[ ! $OS_VERSION =~ ^7.* ]]; then
+                  echo "Error: Unsupported CentOS version $OS_VERSION"
+                  exit 3
+              fi;;
+    *)        echo "unknown: $OSTYPE"
+              exit 1;;
+esac
+
+project_dir=couchbase-lite-core
+strip_dir=${project_dir}
+macosx_lib="libLiteCore.dylib"
+
+#create artifacts dir for publishing to latestbuild
+ARTIFACTS_SHA_DIR=${WORKSPACE}/artifacts/${PRODUCT}/sha/${SHA_VERSION:0:2}/${SHA_VERSION}
+ARTIFACTS_BUILD_DIR=${WORKSPACE}/artifacts/${PRODUCT}/${VERSION}/${BLD_NUM}
+mkdir -p ${ARTIFACTS_SHA_DIR}
+mkdir -p ${ARTIFACTS_BUILD_DIR}
+
+echo SHA_VERSION=${SHA_VERSION}
+
+build_binaries () {
+    CMAKE_BUILD_TYPE_NAME="cmake_build_type_${FLAVOR}"
+    mkdir -p ${WORKSPACE}/build_${FLAVOR}
+    pushd ${WORKSPACE}/build_${FLAVOR}
+    cmake -DEDITION=${EDITION} -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} ..
+    make -j8
+    if [[ ${OS} == 'linux'  ]] || [[ ${OS} == 'centos6' ]]; then
+        ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh ${strip_dir}
+    else
+        pushd ${project_dir}
+        dsymutil ${macosx_lib} -o libLiteCore.dylib.dSYM
+        strip -x ${macosx_lib}
+        popd
+    fi
+    make install
+    if [[ ${OS} == 'macosx' ]]; then
+        # package up the strip symbols
+        cp -rp ${project_dir}/libLiteCore.dylib.dSYM  ./install/lib
+    else
+        # copy C++ stdlib, etc to output
+        libstdcpp=`g++ --print-file-name=libstdc++.so`
+        libstdcppname=`basename "$libstdcpp"`
+        libgcc_s=`gcc --print-file-name=libgcc_s.so`
+        libgcc_sname=`basename "$libgcc_s"`
+
+        cp -p "$libstdcpp" "./install/lib/$libstdcppname"
+        ln -s "$libstdcppname" "./install/lib/${libstdcppname}.6"
+        cp -p "${libgcc_s}" "./install/lib"
+    fi
+    if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
+        chmod 777 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
+        cd ${WORKSPACE}/build_${FLAVOR}/${project_dir} && ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
+    fi
+    popd
+}
+
+create_pkgs () {
+    # Create zip package
+    for FLAVOR in release debug
+    do
+        PACKAGE_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-${FLAVOR}.${PKG_TYPE}
+        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
+        echo
+        echo  "=== Creating ${WORKSPACE}/${PACKAGE_NAME} package ==="
+        echo
+
+        if [[ ${OS} == 'ios' ]]; then
+            pushd ${WORKSPACE}/build_ios_${FLAVOR}
+            ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.xcframework
+            popd
+        else
+            pushd ${WORKSPACE}/build_${FLAVOR}/install
+            # Create separate symbols pkg
+            if [[ ${OS} == 'macosx' ]]; then
+                ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} lib/libLiteCore*.dylib include
+                ${PKG_CMD} ${WORKSPACE}/${SYMBOLS_PKG_NAME}  lib/libLiteCore.dylib.dSYM
+            else # linux
+                ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} *
+                cd ${WORKSPACE}/build_${FLAVOR}/${strip_dir}
+                ${PKG_CMD} ${WORKSPACE}/${SYMBOLS_PKG_NAME} libLiteCore*.sym
+            fi
+            popd
+        fi
+    done
+}
+
+create_prop () {
+    # Create publishing prop file
+    pushd ${WORKSPACE}
+    echo "PRODUCT=${PRODUCT}"  >> ${PROP_FILE}
+    echo "BLD_NUM=${BLD_NUM}"  >> ${PROP_FILE}
+    echo "VERSION=${SHA_VERSION}" >> ${PROP_FILE}
+    echo "PKG_TYPE=${PKG_TYPE}" >> ${PROP_FILE}
+    if [[ ${OS} == 'ios' ]]; then
+        echo "DEBUG_IOS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "RELEASE_IOS_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
+    else
+        echo "DEBUG_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "RELEASE_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_DEBUG_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-debug-symbols.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_RELEASE_PKG_NAME=${PRODUCT}-${OS}-${SHA_VERSION}-release-symbols.${PKG_TYPE}" >> ${PROP_FILE}
+    fi
+
+    echo
+    echo  "=== Created ${WORKSPACE}/${PROP_FILE} ==="
+    echo
+
+    cat ${PROP_FILE}
+
+    popd
+}
+
+prep_artifacts () {
+    # Prepare artifact directory for latestbuild publishing
+
+    # Nexus strips "release" from ${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE}.  It also transforms
+    # ${PRODUCT}-${OS}-${SHA_VERSION}-<debug|release>-symbols.${PKG_TYPE} to
+    # ${PRODUCT}-${OS}-${SHA_VERSION}-symbols-<release|debug>.${PKG_TYPE}.  In order to minic this on
+    # latestbuild, these pkgs are renamed accordingly during copy
+
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE} ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}-debug.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE} ${ARTIFACTS_SHA_DIR}/${PRODUCT}-${OS}.${PKG_TYPE}
+
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-debug.${PKG_TYPE} ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}-debug.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${SHA_VERSION}-release.${PKG_TYPE} ${ARTIFACTS_BUILD_DIR}/${PRODUCT}-${EDITION}-${VERSION}-${BLD_NUM}-${OS}.${PKG_TYPE}
+}
+
+
+#Main 
+echo "====  Building macosx/linux Release binary  ==="
+cmake_build_type_release=MinSizeRel
+cmake_build_type_debug=Debug
+for FLAVOR in release debug; do
+    build_binaries
+done
+
+create_pkgs
+
+create_prop
+
+prep_artifacts
