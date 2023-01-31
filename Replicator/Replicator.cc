@@ -30,8 +30,6 @@
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"
 
-#include <iostream>
-
 using namespace std;
 using namespace std::placeholders;
 using namespace fleece;
@@ -49,9 +47,9 @@ namespace litecore { namespace repl {
     // Errors treated specially by onError()
     static constexpr StoppingErrorEntry StoppingErrors[] = {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
-        {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
+        {{ WebSocketDomain, 403, 0 }, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl},
-        {{ LiteCoreDomain, kC4ErrorRemoteError, 1 }, true, "Unexpected error from remote"_sl }
+        {{ LiteCoreDomain, kC4ErrorRemoteError, 0 }, true, "Unexpected error from remote"_sl }
     };
 
                              

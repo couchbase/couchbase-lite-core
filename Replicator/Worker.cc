@@ -176,9 +176,6 @@ namespace litecore { namespace repl {
         if (err.domain == "HTTP"_sl) {
             domain = WebSocketDomain;
             code = err.code;
-        } else if (err.domain == "BLIP"_sl && err.code == 404) {
-            domain = LiteCoreDomain;
-            code = kC4ErrorRemoteError;
         } else {
             for (error::Domain d = error::LiteCore; d < error::NumDomainsPlus1; d = (error::Domain)(d+1)) {
                 if (err.domain == slice(error::nameOfDomain(d))) {
@@ -189,8 +186,10 @@ namespace litecore { namespace repl {
             }
         }
         if (code == 0) {
-            LogWarn(SyncLog, "Received unknown error {'%.*s' %d \"%.*s\"} from server",
-                    SPLAT(err.domain), err.code, SPLAT(err.message));
+            // Do not log "unknown error" for (BLIP, 404) as we know of that error
+            if (!(err.domain == "BLIP"_sl && err.code == 404))
+                LogWarn(SyncLog, "Received unknown error {'%.*s' %d \"%.*s\"} from server",
+                        SPLAT(err.domain), err.code, SPLAT(err.message));
             code = kC4ErrorRemoteError;
         }
         return C4Error::make(domain, code, err.message);
