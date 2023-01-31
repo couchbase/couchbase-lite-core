@@ -12,6 +12,7 @@
 
 #include "QueryParserTest.hh"
 #include "n1ql_parser.hh"
+#include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>
@@ -359,3 +360,40 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
           == "{'WHAT':[['to_array()',['.x']],['to_atom()',['.x']],['to_boolean()',['.x']],['to_number()',['.x']],"
              "['to_object()',['.x']],['to_string()',['.x']]]}");
 }
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
+    const char* n1ql = nullptr;
+    string buf;
+    double checkBound = std::numeric_limits<double>::max();
+
+    SECTION("N1QL benchmark") {
+        // 4 nested parenthesis takes 7 seconds to parse in 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd
+        constexpr size_t nparens = 4;
+        string left(nparens, '('), right(nparens, ')');
+        buf = "SELECT "s + left + "1" + right;
+        // buf == "SELECT ((((1))))"
+        n1ql = buf.c_str();
+        checkBound = 0.5;
+    }
+
+    SECTION("Very Long Query") {
+        // 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd, this query takes 4 seconds
+        n1ql = "SELECT doc.* FROM _ doc WHERE "
+                 "doc.type = 'Model' AND "
+                 "doc.s NOT IN ('A', 'B', 'V') AND "
+                 "((doc.model.total.totalA "
+                    "- ifnull(doc.model.totalA.totalB, 0)) "
+                    "> 0 OR doc.t = false) AND "
+                 "(doc.q IS NULL OR "
+                    "ifnull(doc.q.e, 'e') = 'e' AND "
+                    "ifnull(doc.q.m, 0) == 0)";
+        checkBound = 0.5;
+    }
+
+    Stopwatch sw;
+    string json = translate(n1ql);
+    double elapsed = sw.elapsed();
+    cerr << "\t\tElapsed time/check time = " << elapsed << "/" << checkBound << endl;
+    CHECK(elapsed < checkBound);
+}
+
