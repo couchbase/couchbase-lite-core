@@ -17,13 +17,21 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
-#ifdef COUCHBASE_ENTERPRISE
-
 /** \defgroup certificates Certificates
     @{ */
 
 /** \name Certificate and CSR Functions
  @{ */
+
+/** Returns the time range during which a (signed) certificate is valid.
+    @param cert  The signed certificate.
+    @param outCreated  On return, the date/time the cert became valid (was signed).
+    @param outExpires  On return, the date/time at which the certificate expires. */
+CBL_CORE_API void c4cert_getValidTimespan(C4Cert* cert,
+                                          C4Timestamp* C4NULLABLE outCreated,
+                                          C4Timestamp* C4NULLABLE outExpires);
+
+#ifdef COUCHBASE_ENTERPRISE
 
 /** Instantiates a C4Cert from X.509 certificate data in DER or PEM form.
     \note PEM data might consist of a series of certificates. If so, the returned C4Cert
@@ -67,17 +75,6 @@ CBL_CORE_API bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
                                C4CertNameInfo *outInfo) C4API;
 
-#endif // COUCHBASE_ENTERPRISE
-
-/** Returns the time range during which a (signed) certificate is valid.
-    @param cert  The signed certificate.
-    @param outCreated  On return, the date/time the cert became valid (was signed).
-    @param outExpires  On return, the date/time at which the certificate expires. */
-CBL_CORE_API void c4cert_getValidTimespan(C4Cert* cert,
-                             C4Timestamp* C4NULLABLE outCreated,
-                             C4Timestamp* C4NULLABLE outExpires);
-
-#ifdef COUCHBASE_ENTERPRISE
 
 /** Returns the usage flags of a cert. */
 CBL_CORE_API C4CertUsage c4cert_usages(C4Cert*) C4API;
