@@ -1,14 +1,11 @@
 # This is the top level CMake project for the Couchbase build server
 # which uses internal tooling in order to download binary deps
 
-if(ANDROID)
-  # HACK: Instead of updating the toolchain for now, just require a lower version
-  CMAKE_MINIMUM_REQUIRED (VERSION 3.10)
-  CMAKE_POLICY (VERSION 3.10)
-else()
-  CMAKE_MINIMUM_REQUIRED (VERSION 3.19)
-  CMAKE_POLICY (VERSION 3.19)
-endif()
+# HACK: For linux desktop only this is actually 3.19, so beware.  There doesn't
+# appear to be a way to dynamically require a version per platform, though,
+# and Android is still using 3.10 from its toolchain
+CMAKE_MINIMUM_REQUIRED (VERSION 3.10)
+CMAKE_POLICY (VERSION 3.10)
 
 # Tell CMake to use headers / frameworks from SDK inside XCode instead of
 # the ones found on the system (for weak linking).  Ignored on non-Apple
