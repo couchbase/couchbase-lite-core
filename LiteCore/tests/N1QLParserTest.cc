@@ -257,6 +257,14 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
           == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE) FRED")
           == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE:se")
+          == "{'WHAT':[['COLLATE',{'LOCALE':'se','UNICODE':true},['=',['.name'],'fred']]]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE NOUNICODE")
+          == "{'WHAT':[['COLLATE',{'UNICODE':false},['=',['.name'],'fred']]]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOUNICODE:se NOCASE DIAC)") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE unicode:se DIAC)")
+          == "{'WHAT':[['COLLATE',{'CASE':false,'DIAC':true,'LOCALE':'se','UNICODE':true}"
+             ",['=',['.name'],'fred']]]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
