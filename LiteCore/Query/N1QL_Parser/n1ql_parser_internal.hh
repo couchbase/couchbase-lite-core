@@ -365,11 +365,19 @@ static inline bool isFunction(const char *fn) {
 static void extendCollate(MutableArray expr, string collation) {
     auto coll = expr[1].asDict().asMutable();
     precondition(coll);
+    string colonSuffix; // language code for UNICODE
+    if (auto p = collation.find(':'); p != string::npos) {
+        colonSuffix = collation.substr(p+1);
+        collation = collation.substr(0, p);
+    }
     uppercase(collation);
     bool value = (collation.substr(0,2) != "NO");
     if (!value)
         collation = collation.substr(2);
     coll[slice(collation)] = value;
+    if (colonSuffix.length() > 0) {
+        coll["LOCALE"_sl] = colonSuffix;
+    }
 }
 
 static MutableArray collateOp(MutableArray expr, string collation) {
