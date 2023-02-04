@@ -200,6 +200,8 @@ public:
         if (s.level == kC4Offline) {
             C4Assert(_mayGoOffline);
             _wentOffline = true;
+            _docPullErrors.clear();
+            _docPushErrors.clear();
         }
         
 #ifdef COUCHBASE_ENTERPRISE

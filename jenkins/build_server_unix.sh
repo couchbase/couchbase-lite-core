@@ -69,17 +69,51 @@ mkdir -p ${ARTIFACTS_SHA_DIR}
 mkdir -p ${ARTIFACTS_BUILD_DIR}
 
 echo SHA_VERSION=${SHA_VERSION}
+BIN_NAME="LiteCore"
+FRAMEWORK_LOC=${BIN_NAME}.xcarchive/Products/Library/Frameworks/${BIN_NAME}.framework
 # Global define end
+
+# this will be used to collect all destination framework path with `-framework`
+# to include them in `-create-xcframework`
+FRAMEWORK_PATH_ARGS=()
+
+# arg1 = target destination for which the archive is built for. E.g., "generic/platform=iOS"
+# arg2 = Configuration for building (Release, Debug_EE, etc)
+xcarchive()
+{
+  DESTINATION=${1}
+  CONFIGURATION=${2}
+  echo "Archiving for ${DESTINATION}..."
+  ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
+  xcodebuild archive \
+    -project "$WORKSPACE/$ios_xcode_proj" \
+    -scheme "LiteCore framework" \
+    -configuration "${CONFIGURATION}" \
+    -destination "${DESTINATION}" \
+    -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
+    "ONLY_ACTIVE_ARCH=NO" "BITCODE_GENERATION_MODE=bitcode" \
+    "CODE_SIGNING_ALLOWED=NO" \
+    "SKIP_INSTALL=NO"
+  
+  if [[ ${CONFIGURATION} == Release* ]]; then
+    FRAMEWORK_PATH_ARGS+=("-framework "${ARCHIVE_PATH}/${FRAMEWORK_LOC}" \
+        -debug-symbols "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive/dSYMs/${BIN_NAME}.framework.dSYM"")
+  else
+    FRAMEWORK_PATH_ARGS+=("-framework "${ARCHIVE_PATH}/${FRAMEWORK_LOC})
+  fi
+  echo "Finished archiving ${DESTINATION}."
+}
 
 build_xcode_binaries () {
     echo "====  Building ios ${FLAVOR} binary  ==="
     config_name="${FLAVOR}_config"
     mkdir ${WORKSPACE}/build_ios_${FLAVOR}
     pushd ${WORKSPACE}/build_ios_${FLAVOR}
-    xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${!config_name} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphoneos BITCODE_GENERATION_MODE=bitcode CODE_SIGNING_ALLOWED=NO
-    xcodebuild -project "${WORKSPACE}/${ios_xcode_proj}" -configuration ${!config_name} -derivedDataPath ios -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
-    cp -R ios/Build/Products/${!config_name}-iphoneos/LiteCore.framework ${WORKSPACE}/build_ios_${FLAVOR}/
-    lipo -create ios/Build/Products/${!config_name}-iphoneos/LiteCore.framework/LiteCore ios/Build/Products/${!config_name}-iphonesimulator/LiteCore.framework/LiteCore -output ${WORKSPACE}/build_ios_${FLAVOR}/LiteCore.framework/LiteCore
+    FRAMEWORK_PATH_ARGS=()
+    xcarchive "generic/platform=iOS Simulator" ${!config_name}
+    xcarchive "generic/platform=iOS" ${!config_name}
+    xcarchive "generic/platform=macOS,variant=Mac Catalyst" ${!config_name}
+    xcodebuild -create-xcframework -output "${WORKSPACE}/build_ios_${FLAVOR}/${BIN_NAME}.xcframework" ${FRAMEWORK_PATH_ARGS[*]}
     popd
 }
 
@@ -131,7 +165,7 @@ create_pkgs () {
 
         if [[ ${OS} == 'ios' ]]; then
             pushd ${WORKSPACE}/build_ios_${FLAVOR}
-            ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.framework
+            ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.xcframework
             popd
         else
             pushd ${WORKSPACE}/build_${FLAVOR}/install
