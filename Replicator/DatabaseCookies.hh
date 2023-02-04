@@ -30,9 +30,10 @@ namespace litecore { namespace repl {
         // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
         bool setCookie(const std::string &headerValue,
                        const std::string &fromHost,
-                       const std::string &fromPath)
+                       const std::string &fromPath,
+                       bool  acceptParentDomain =false)
         {
-            return _store->setCookie(headerValue, fromHost, fromPath);
+            return _store->setCookie(headerValue, fromHost, fromPath, acceptParentDomain);
         }
 
         void clearCookies() {

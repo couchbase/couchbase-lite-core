@@ -64,8 +64,10 @@ namespace {
         << "directory: " << (!config.directory ? "NULL" : config.directory.size == 0
                              ? "\"\"" : std::string(config.directory)) << ", ";
         if (config.apis == kC4RESTAPI) {
-            ss << "allowCreateDBs: " << config.allowCreateDBs << ", "
-            << "allowDeleteDBs: " << config.allowDeleteDBs;
+            ss << "allowCreateDBs: " << config.allowCreateDBs
+            << ", allowDeleteDBs: " << config.allowDeleteDBs
+            << ", allowCreateCollections: " << config.allowCreateCollections
+            << ", allowDeleteCollections: " << config.allowDeleteCollections;
         } else {
             ss << "allowPush: " << config.allowPush << ", "
             << "allowPull: " << config.allowPull << ", "

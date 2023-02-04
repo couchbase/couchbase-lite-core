@@ -241,6 +241,7 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
     #define kC4ReplicatorOptionMaxRetryInterval "maxRetryInterval" ///< Max delay betw retries (secs)
     #define kC4ReplicatorOptionAutoPurge        "autoPurge" ///< Enables auto purge; default is true (bool)
+    #define kC4ReplicatorOptionAcceptParentDomainCookies "acceptParentDomainCookies"
 
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)

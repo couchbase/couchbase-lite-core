@@ -88,7 +88,7 @@ namespace litecore { namespace repl {
         constexpr unsigned kDefaultChangeBatchSize = 200;
 
         /* Max history length to use, if "changes" response doesn't have one */
-        constexpr unsigned kDefaultMaxHistory = 20;
+        constexpr unsigned kDefaultMaxHistory = 50;
 
 
         //// Replicator:

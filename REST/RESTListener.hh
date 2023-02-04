@@ -86,11 +86,12 @@ namespace litecore { namespace REST {
         
         Server* server() const              {return _server.get();}
 
+        Retained<C4Database> getDatabase(RequestResponse &rq, const string &dbName);
+
         /** Returns the database for this request, or null on error. */
         Retained<C4Database> databaseFor(RequestResponse&);
-        
         /** Returns the collection for this request, or null on error */
-        Retained<C4Collection> collectionFor(RequestResponse&);
+        std::pair<Retained<C4Database>,C4Collection*> collectionFor(RequestResponse&);
         unsigned registerTask(Task*);
         void unregisterTask(Task*);
 
@@ -111,6 +112,9 @@ namespace litecore { namespace REST {
         static std::string kServerName;
 
     private:
+        pair<string,C4CollectionSpec> parseKeySpace(slice keySpace);
+        bool collectionGiven(RequestResponse&);
+
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
         void handleReplicate(RequestResponse&);
@@ -118,7 +122,7 @@ namespace litecore { namespace REST {
 
         void handleGetDatabase(RequestResponse&, C4Collection*);
         void handleCreateDatabase(RequestResponse&);
-        void handleDeleteDatabase(RequestResponse&, C4Database*);
+        void handleDeleteDatabase(RequestResponse&, C4Collection*);
 
         void handleGetAllDocs(RequestResponse&, C4Collection*);
         void handleGetDoc(RequestResponse&, C4Collection*);
@@ -135,7 +139,7 @@ namespace litecore { namespace REST {
                        C4Error *outError) noexcept;
 
         std::unique_ptr<FilePath> _directory;
-        const bool _allowCreateDB, _allowDeleteDB;
+        const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
         Retained<crypto::Identity> _identity;
         Retained<Server> _server;
         std::set<Retained<Task>> _tasks;

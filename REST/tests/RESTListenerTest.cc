@@ -12,6 +12,8 @@
 
 #include "c4Test.hh"
 #include "Error.hh"
+#include "c4Collection.h"
+#include "c4Database.h"
 #include "c4Replicator.h"
 #include "ListenerHarness.hh"
 #include "FilePath.hh"
@@ -356,6 +358,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][Listener][C]") {
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
     CHECK(to_str(body["db_name"]) == "db");
+    CHECK(to_str(body["collection_name"]) == "_default");
+    CHECK(to_str(body["scope_name"]) == "_default");
     CHECK(body["db_uuid"].type() == kFLString);
     CHECK(body["db_uuid"].asString().size >= 32);
     CHECK(body["doc_count"].type() == kFLNumber);
@@ -410,6 +414,110 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][Listener][C]") {
 }
 
 
+#pragma mark - COLLECTIONS:
+
+
+TEST_CASE_METHOD(C4RESTTest, "REST GET database with collections", "[REST][Listener][C]") {
+    REQUIRE(c4db_createCollection(db, {"guitars"_sl, "stuff"_sl}, ERROR_INFO()));
+    REQUIRE(c4db_createCollection(db, {"synths"_sl, "stuff"_sl}, ERROR_INFO()));
+
+    unique_ptr<Response> r;
+    r = request("GET", "/db", HTTPStatus::OK);
+    auto body = r->bodyAsJSON().asDict();
+    REQUIRE(body);
+    Log("%.*s", SPLAT(r->body()));
+    Dict scopes = body["scopes"].asDict();
+    REQUIRE(scopes);
+    CHECK(scopes.count() == 2);
+    Dict stuff = scopes["stuff"].asDict();
+    REQUIRE(stuff);
+    Dict guitars = stuff["guitars"].asDict();
+    REQUIRE(guitars);
+    CHECK(guitars["doc_count"].type() == kFLNumber);
+    CHECK(guitars["doc_count"].asInt() == 0);
+    CHECK(guitars["update_seq"].type() == kFLNumber);
+    CHECK(guitars["update_seq"].asInt() == 0);
+    CHECK(stuff["synths"].asDict());
+
+    Dict dflt = scopes["_default"].asDict();
+    REQUIRE(dflt);
+    CHECK(dflt.count() == 1);
+    Dict dfltColl = dflt["_default"].asDict();
+    REQUIRE(dfltColl);
+    CHECK(dfltColl["doc_count"].type() == kFLNumber);
+    CHECK(dfltColl["doc_count"].asInt() == 0);
+    CHECK(dfltColl["update_seq"].type() == kFLNumber);
+    CHECK(dfltColl["update_seq"].asInt() == 0);
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "REST GET collection", "[REST][Listener][C]") {
+    REQUIRE(c4db_createCollection(db, {"guitars"_sl, "stuff"_sl}, ERROR_INFO()));
+
+    unique_ptr<Response> r;
+    r = request("GET", "/db.guitars/", HTTPStatus::NotFound);
+
+    {
+        ExpectingExceptions x;
+        r = request("GET", "/./",    HTTPStatus::BadRequest);
+        r = request("GET", "/db./",  HTTPStatus::BadRequest);
+        r = request("GET", "/.db./", HTTPStatus::BadRequest);
+        r = request("GET", "/db../", HTTPStatus::BadRequest);
+        r = request("GET", "/db.stuff.guitars./", HTTPStatus::BadRequest);
+    }
+
+    r = request("GET", "/db.foo/",    HTTPStatus::NotFound);
+    r = request("GET", "/db.foo.bar/",    HTTPStatus::NotFound);
+
+    r = request("GET", "/db.stuff.guitars/", HTTPStatus::OK);
+    auto body = r->bodyAsJSON().asDict();
+    REQUIRE(body);
+    CHECK(to_str(body["db_name"]) == "db");
+    CHECK(to_str(body["collection_name"]) == "guitars");
+    CHECK(to_str(body["scope_name"]) == "stuff");
+    CHECK(body["db_uuid"].type() == kFLString);
+    CHECK(body["db_uuid"].asString().size >= 32);
+    CHECK(body["doc_count"].type() == kFLNumber);
+    CHECK(body["doc_count"].asInt() == 0);
+    CHECK(body["update_seq"].type() == kFLNumber);
+    CHECK(body["update_seq"].asInt() == 0);
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "REST DELETE collection", "[REST][Listener][C]") {
+    REQUIRE(c4db_createCollection(db, {"guitars"_sl, "stuff"_sl}, ERROR_INFO()));
+
+    unique_ptr<Response> r;
+    SECTION("Disallowed") {
+        r = request("DELETE", "/db.stuff.guitars", HTTPStatus::Forbidden);
+    }
+    SECTION("Allowed") {
+        config.allowDeleteCollections = true;
+        r = request("DELETE", "/db.stuff.guitars", HTTPStatus::OK);
+        r = request("GET", "/db.stuff.guitars", HTTPStatus::NotFound);
+    }
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "REST PUT collection", "[REST][Listener][C]") {
+    unique_ptr<Response> r;
+    SECTION("Disallowed") {
+        r = request("PUT", "/db.foo", HTTPStatus::Forbidden);
+        r = request("PUT", "/db.foo.bar", HTTPStatus::Forbidden);
+    }
+    SECTION("Allowed") {
+        config.allowCreateCollections = true;
+        SECTION("Duplicate") {
+            r = request("PUT", "/db._default._default", HTTPStatus::PreconditionFailed);
+        }
+        SECTION("New Collection") {
+            r = request("PUT", "/db.guitars", HTTPStatus::Created);
+            r = request("GET", "/db.guitars", HTTPStatus::OK);
+        }
+    }
+}
+
+
 #pragma mark - DOCUMENTS:
 
 
@@ -418,8 +526,21 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     Dict body;
     alloc_slice docID;
 
+    string dbPath;
+    C4Collection *coll;
+    bool inCollection = GENERATE(false, true);
+    if (inCollection) {
+        Log("---- Using collection 'coll'");
+        coll = c4db_createCollection(db, {"coll"_sl}, ERROR_INFO());
+        REQUIRE(coll);
+        dbPath = "/db.coll";
+    } else {
+        coll = c4db_getDefaultCollection(db, nullptr);
+        dbPath = "/db";
+    }
+
     SECTION("POST") {
-        r = request("POST", "/db",
+        r = request("POST", dbPath,
                     {{"Content-Type", "application/json"}},
                     "{\"year\": 1964}"_sl, HTTPStatus::Created);
         body = r->bodyAsJSON().asDict();
@@ -428,17 +549,17 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     }
 
     SECTION("PUT") {
-        r = request("PUT", "/db/mydocument",
+        r = request("PUT", dbPath + "/mydocument",
                     {{"Content-Type", "application/json"}},
                     "{\"year\": 1964}"_sl, HTTPStatus::Created);
         body = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID == "mydocument"_sl);
 
-        request("PUT", "/db/mydocument",
+        request("PUT", dbPath + "/mydocument",
                 {{"Content-Type", "application/json"}},
                 "{\"year\": 1977}"_sl, HTTPStatus::Conflict);
-        request("PUT", "/db/mydocument",
+        request("PUT", dbPath + "/mydocument",
                 {{"Content-Type", "application/json"}},
                 "{\"year\": 1977, \"_rev\":\"1-ffff\"}"_sl, HTTPStatus::Conflict);
     }
@@ -448,7 +569,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     CHECK(revID.size > 0);
 
     {
-        c4::ref<C4Document> doc = c4doc_get(db, docID, true, ERROR_INFO());
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, docID, true, kDocGetAll, ERROR_INFO());
         REQUIRE(doc);
         CHECK(doc->revID == revID);
         body = c4doc_getProperties(doc);
@@ -456,19 +577,19 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
         CHECK(body.count() == 1);       // i.e. no _id or _rev properties
     }
 
-    r = request("GET", "/db/" + docID.asString(), HTTPStatus::OK);
+    r = request("GET", dbPath + "/" + docID.asString(), HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
     CHECK(body["_id"].asString() == docID);
     CHECK(body["_rev"].asString() == revID);
     CHECK(body["year"].asInt() == 1964);
 
-    r = request("DELETE", "/db/" + docID.asString() + "?rev=" + revID.asString(), HTTPStatus::OK);
+    r = request("DELETE", dbPath + "/" + docID.asString() + "?rev=" + revID.asString(), HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
     CHECK(body["ok"].asBool() == true);
     revID = body["rev"].asString();
 
     {
-        c4::ref<C4Document> doc = c4doc_get(db, docID, true, ERROR_INFO());
+        c4::ref<C4Document> doc = c4coll_getDoc(coll, docID, true, kDocGetAll, ERROR_INFO());
         REQUIRE(doc);
         CHECK((doc->flags & kDocDeleted) != 0);
         CHECK(doc->revID == revID);
@@ -476,7 +597,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
         CHECK(body.count() == 0);
     }
 
-    r = request("GET", "/db/" + docID.asString(), HTTPStatus::NotFound);
+    r = request("GET", dbPath + "/" + docID.asString(), HTTPStatus::NotFound);
 }
 
 

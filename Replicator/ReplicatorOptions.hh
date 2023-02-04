@@ -114,6 +114,12 @@ namespace litecore { namespace repl {
             return boolProperty(kC4ReplicatorOptionAutoPurge);
         }
 
+        bool acceptParentDomainCookies() const {
+            if (!properties[kC4ReplicatorOptionAcceptParentDomainCookies])
+                return false;
+            return boolProperty(kC4ReplicatorOptionAcceptParentDomainCookies);
+        }
+
         /** Returns a string that uniquely identifies the remote database; by default its URL,
             or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
         fleece::slice remoteDBIDString(fleece::slice remoteURL) const {
@@ -405,6 +411,10 @@ namespace litecore { namespace repl {
         }
 
         for (size_t i = collectionOpts.size(); i-- > 0; ) {
+            if (collectionOpts[i].collectionSpec.name.size == 0) {
+                throw error(error::LiteCore, error::InvalidParameter,
+                            "Invalid replicator configuration: a collection without name");
+            }
             if (collectionOpts[i].push == kC4Disabled
                 && collectionOpts[i].pull == kC4Disabled) {
                 throw error(error::LiteCore, error::InvalidParameter,
