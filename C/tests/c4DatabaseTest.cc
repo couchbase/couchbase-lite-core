@@ -777,6 +777,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     string srcPathStr = toString(c4db_getPath(db));
 
     C4DatabaseConfig2 config = *c4db_getConfig2(db);
+    INFO("Dir: " << slice(config.parentDirectory));
+    INFO("Src: " << slice(srcPathStr));
+    CHECK(false);
+    
     string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
     C4Error error;
     if(!c4db_deleteNamed(kNuName, config.parentDirectory, &error)) {
