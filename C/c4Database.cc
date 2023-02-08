@@ -154,12 +154,6 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 /*static*/ void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config &config) {
     ensureConfigDirExists(config);
     FilePath from(sourcePath, "");
-    // std::string sourcePathString = sourcePath.asString();
-    //     if (sourcePathString.back() != '/')
-    //     {
-    //         sourcePathString.append("/");
-    //     }
-    // FilePath from((slice(sourcePathString)));
     FilePath to = dbPath(destinationName, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
     CopyPrebuiltDB(from, to, &oldConfig);
