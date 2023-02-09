@@ -1505,9 +1505,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Encryptor Error", "[.SyncServer]")
         _initParams.propertyEncryptor = &testEncryptor;
         _expectedDocPushErrors = {};
         replicate(kC4OneShot, kC4Disabled);
-        // This is the encrypted doc that we failed to push with the preceding push
-        CHECK(_callbackStatus.progress.documentCount == 1);
-        CHECK(encryptContext.called == 2);
+        // Crypto error will mark the rev as already synced.
+        CHECK(_callbackStatus.progress.documentCount == 0);
+        CHECK(encryptContext.called == 1);
     }
 
     SECTION("WebSocketDomain/503") {

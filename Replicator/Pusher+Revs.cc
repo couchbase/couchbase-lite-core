@@ -68,6 +68,13 @@ namespace litecore::repl {
             c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
 
+        // In general, this method won't call doneWithRev(), unless we do not have the
+        // body of the rev to send (when root is null). In this case, we send an error
+        // to the remote and call doneWithRev() with argument 'completed' set to false.
+        // The one exception is when the Encyptor callback returns an error, when we will
+        // mark the rev is "permanently" completed and set 'completed' to true.
+        bool completed = false;
+
         // Encrypt any encryptable properties
         MutableDict encryptedRoot;
         if (root && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
@@ -76,15 +83,25 @@ namespace litecore::repl {
                                                       _options.propertyEncryptor,
                                                       _options.callbackContext,
                                                       &c4err);
-            if (encryptedRoot)
+            if (encryptedRoot) {
                 root = encryptedRoot;
-            else if (c4err) {
+            } else if (c4err.domain == WebSocketDomain && c4err.code == 503) {
+                // This is treated as a transient network glitch, we lift it to the replicator
+                // to handle. The replicator will be taken to offline and restarted after a certain
+                // wait time.
+                onError(c4err);
+                return;
+            } else {
                 root = nullptr;
-                finishedDocumentWithError(request, c4err, false);
-                if (c4err.domain == WebSocketDomain && c4err.code == 503) {
-                    onError(c4err);
-                    return;
+                // The encryptor fails to yield the result. We won't have the content to
+                // send to the remote. If the encryptor does not specify an error, we assign
+                // the following error and sends it to the remote.
+                if (!c4err) {
+                    c4err = {LiteCoreDomain, kC4ErrorCrypto};
                 }
+                finishedDocumentWithError(request, c4err, false);
+                // Encyptor error is permanent.
+                completed = true;
             }
         }
 
@@ -157,7 +174,7 @@ namespace litecore::repl {
             msg.noreply = true;
             sendRequest(msg);
 
-            doneWithRev(request, false, false);
+            doneWithRev(request, completed, false);
             enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
         }
     }
