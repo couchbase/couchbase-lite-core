@@ -196,10 +196,12 @@ public:
         if (s.level == kC4Offline) {
             C4Assert(_mayGoOffline);
             _wentOffline = true;
+            CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrorsAfterOffline));
+            CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrorsAfterOffline));
             _docPullErrors.clear();
             _docPushErrors.clear();
         }
-        
+
 #ifdef COUCHBASE_ENTERPRISE
         if(!_remoteCert) {
             C4Error err;
@@ -489,5 +491,7 @@ public:
     C4ReplicatorParameters _initParams {};
     void* _encCBContext {NULL};
     void* _decCBContext {NULL};
+    std::set<std::string> _expectedDocPushErrorsAfterOffline;
+    std::set<std::string> _expectedDocPullErrorsAfterOffline;
 };
 

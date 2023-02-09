@@ -1501,11 +1501,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Encryptor Error", "[.SyncServer]")
         CHECK(_callbackStatus.progress.documentCount == 2);
         CHECK(encryptContext.called == 1);
 
-        // Try again with good encryptor and we get the encrypted doc.
+        // Try it again with good encryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
         _initParams.propertyEncryptor = &testEncryptor;
         _expectedDocPushErrors = {};
         replicate(kC4OneShot, kC4Disabled);
-        // Crypto error will mark the rev as already synced.
         CHECK(_callbackStatus.progress.documentCount == 0);
         CHECK(encryptContext.called == 1);
     }
@@ -1513,6 +1513,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Encryptor Error", "[.SyncServer]")
     SECTION("WebSocketDomain/503") {
         encryptContext.simulateError = C4Error {WebSocketDomain, 503};
         _mayGoOffline = true;
+        _expectedDocPushErrorsAfterOffline = { "seekrit" };
         replicate(kC4OneShot, kC4Disabled);
         CHECK(_wentOffline);
         CHECK(encryptContext.called == 2);
@@ -1563,12 +1564,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Decryptor Error", "[.SyncServer]")
         CHECK(_callbackStatus.progress.documentCount == 2);
         CHECK(decryptContext.called == 1);
 
-        // Try again with good decryptor and we get the encrypted doc.
+        // Try it again with good decryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
         _initParams.propertyDecryptor = &testDecryptor;
         _expectedDocPullErrors = {};
         decryptContext.called = 0;
         replicate( kC4Disabled, kC4OneShot);
-        // For Pull, the checkpoint will pass the errored document. Second attempt won't help.
         CHECK(_callbackStatus.progress.documentCount == 0);
         CHECK(decryptContext.called == 0);
     }
@@ -1576,6 +1577,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Decryptor Error", "[.SyncServer]")
     SECTION("WebSocketDomain/503") {
         decryptContext.simulateError = C4Error {WebSocketDomain, 503};
         _mayGoOffline = true;
+        _expectedDocPullErrorsAfterOffline = { "seekrit" };
         CHECK(decryptContext.called == 0);
         replicate(kC4Disabled, kC4OneShot);
         CHECK(_wentOffline);

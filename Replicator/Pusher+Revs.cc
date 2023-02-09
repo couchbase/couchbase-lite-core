@@ -85,13 +85,23 @@ namespace litecore::repl {
                                                       &c4err);
             if (encryptedRoot) {
                 root = encryptedRoot;
-            } else if (c4err.domain == WebSocketDomain && c4err.code == 503) {
-                // This is treated as a transient network glitch, we lift it to the replicator
-                // to handle. The replicator will be taken to offline and restarted after a certain
-                // wait time.
-                onError(c4err);
-                return;
             } else {
+                // Error: we don't get the encrypted body.
+                // If the encryptor has not specified an error, we assign
+                // the following error.
+                if (!c4err) {
+                    c4err = {LiteCoreDomain, kC4ErrorCrypto};
+                }
+                finishedDocumentWithError(request, c4err, false);
+
+                if (c4err.domain == WebSocketDomain && c4err.code == 503) {
+                    // This is treated as a transient network glitch, we lift it to the replicator
+                    // to handle. The replicator will be taken to offline and restarted after a certain
+                    // wait time.
+                    onError(c4err);
+                    return;
+                }
+
                 root = nullptr;
                 // The encryptor fails to yield the result. We won't have the content to
                 // send to the remote. If the encryptor does not specify an error, we assign
@@ -99,7 +109,6 @@ namespace litecore::repl {
                 if (!c4err) {
                     c4err = {LiteCoreDomain, kC4ErrorCrypto};
                 }
-                finishedDocumentWithError(request, c4err, false);
                 // Encyptor error is permanent.
                 completed = true;
             }
