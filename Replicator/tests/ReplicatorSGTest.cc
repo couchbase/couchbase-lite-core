@@ -1388,3 +1388,202 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pinned Certificate Success", "[.SyncServer]"
         "-----END CERTIFICATE-----\r\n";
     replicate(kC4OneShot, kC4Disabled, true);
 }
+
+#ifdef COUCHBASE_ENTERPRISE
+
+static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
+    alloc_slice ciphertext(cleartext);
+    for (size_t i = 0; i < ciphertext.size; ++i)
+        (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
+    return ciphertext;
+}
+
+struct TestEncryptorContext {
+    slice docID;
+    slice keyPath;
+    int called {0};
+    std::optional<C4Error> simulateError;
+};
+
+static C4SliceResult testEncryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4StringResult* outAlgorithm,
+                                   C4StringResult* outKeyID,
+                                   C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)((ReplicatorAPITest*)rawCtx)->_encCBContext;
+    context->called++;
+    CHECK(documentID == context->docID);
+    CHECK(keyPath == context->keyPath);
+    return C4SliceResult(UnbreakableEncryption(input, 1));
+}
+
+static C4SliceResult testEncryptorError(void* rawCtx,
+                                        C4String documentID,
+                                        FLDict properties,
+                                        C4String keyPath,
+                                        C4Slice input,
+                                        C4StringResult* outAlgorithm,
+                                        C4StringResult* outKeyID,
+                                        C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)((ReplicatorAPITest*)rawCtx)->_encCBContext;
+    if (context->called++ == 0) {
+        *outError = *context->simulateError;
+        return C4SliceResult(nullslice);
+    } else {
+        CHECK(documentID == context->docID);
+        CHECK(keyPath == context->keyPath);
+        return C4SliceResult(UnbreakableEncryption(input, 1));
+    }
+}
+
+static C4SliceResult testDecryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4String algorithm,
+                                   C4String keyID,
+                                   C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)rawCtx;
+    context->called++;
+    CHECK(documentID == context->docID);
+    CHECK(keyPath == context->keyPath);
+    return C4SliceResult(UnbreakableEncryption(input, -1));
+}
+
+static C4SliceResult testDecryptorError(void* rawCtx,
+                                        C4String documentID,
+                                        FLDict properties,
+                                        C4String keyPath,
+                                        C4Slice input,
+                                        C4String algorithm,
+                                        C4String keyID,
+                                        C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)((ReplicatorAPITest*)rawCtx)->_decCBContext;
+    if (context->called++ == 0) {
+        *outError = *context->simulateError;
+        return C4SliceResult(nullslice);
+    } else {
+        CHECK(documentID == context->docID);
+        CHECK(keyPath == context->keyPath);
+        return C4SliceResult(UnbreakableEncryption(input, -1));
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Encryptor Error", "[.SyncServer]") {
+    _remoteDBName = kScratchDBName;
+    flushScratchDatabase();
+
+    slice originalJSON = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+    slice unencryptedJSON = R"({"ans*wer": 42})"_sl;
+    {
+        TransactionHelper t(db);
+        createFleeceRev(db, "doc01"_sl, kRevID, unencryptedJSON);
+        createFleeceRev(db, "seekrit"_sl, kRevID, originalJSON);
+        createFleeceRev(db, "doc03"_sl, kRevID, unencryptedJSON);
+    }
+
+    TestEncryptorContext encryptContext = {"seekrit", "SSN"};
+    _initParams.propertyEncryptor = &testEncryptorError;
+    _encCBContext = &encryptContext;
+
+    SECTION("LiteCoreDomain, kC4ErrorCrypto") {
+        encryptContext.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
+        _expectedDocPushErrors = { "seekrit" };
+        replicate(kC4OneShot, kC4Disabled);
+        CHECK(_callbackStatus.progress.documentCount == 2);
+        CHECK(encryptContext.called == 1);
+
+        // Try it again with good encryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
+        _initParams.propertyEncryptor = &testEncryptor;
+        _expectedDocPushErrors = {};
+        replicate(kC4OneShot, kC4Disabled);
+        CHECK(_callbackStatus.progress.documentCount == 0);
+        CHECK(encryptContext.called == 1);
+    }
+
+    SECTION("WebSocketDomain/503") {
+        encryptContext.simulateError = C4Error {WebSocketDomain, 503};
+        _mayGoOffline = true;
+        _expectedDocPushErrorsAfterOffline = { "seekrit" };
+        replicate(kC4OneShot, kC4Disabled);
+        CHECK(_wentOffline);
+        CHECK(encryptContext.called == 2);
+
+        Encoder enc;
+        enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionDisablePropertyDecryption));
+        enc.writeBool(true);
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+        deleteAndRecreateDB();
+        replicate(kC4Disabled, kC4OneShot);
+        CHECK(c4db_getDocumentCount(db) == 3);
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Replicate Decryptor Error", "[.SyncServer]") {
+    _remoteDBName = kScratchDBName;
+    flushScratchDatabase();
+
+    slice originalJSON = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+    slice unencryptedJSON = R"({"ans*wer": 42})"_sl;
+    {
+        TransactionHelper t(db);
+        createFleeceRev(db, "doc01"_sl, kRevID, unencryptedJSON);
+        createFleeceRev(db, "seekrit"_sl, kRevID, originalJSON);
+        createFleeceRev(db, "doc03"_sl, kRevID, unencryptedJSON);
+    }
+
+    TestEncryptorContext encryptContext = {"seekrit", "SSN"};
+    _initParams.propertyEncryptor = &testEncryptor;
+    _encCBContext = &encryptContext;
+    replicate(kC4OneShot, kC4Disabled);
+
+    // check the 3 documents are pushed and clear the local db
+    // Get ready for Pull/Decyption
+    CHECK(c4db_getDocumentCount(db) == 3);
+    deleteAndRecreateDB();
+    _encCBContext = NULL;
+    TestEncryptorContext decryptContext = {"seekrit", "SSN"};
+    _initParams.propertyDecryptor = &testDecryptorError;
+    _decCBContext = &decryptContext;
+
+    SECTION("LiteCoreDomain, kC4ErrorCrypto") {
+        decryptContext.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
+        _expectedDocPullErrors = { "seekrit" };
+        replicate(kC4Disabled, kC4OneShot);
+        CHECK(_callbackStatus.progress.documentCount == 2);
+        CHECK(decryptContext.called == 1);
+
+        // Try it again with good decryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
+        _initParams.propertyDecryptor = &testDecryptor;
+        _expectedDocPullErrors = {};
+        decryptContext.called = 0;
+        replicate( kC4Disabled, kC4OneShot);
+        CHECK(_callbackStatus.progress.documentCount == 0);
+        CHECK(decryptContext.called == 0);
+    }
+
+    SECTION("WebSocketDomain/503") {
+        decryptContext.simulateError = C4Error {WebSocketDomain, 503};
+        _mayGoOffline = true;
+        _expectedDocPullErrorsAfterOffline = { "seekrit" };
+        CHECK(decryptContext.called == 0);
+        replicate(kC4Disabled, kC4OneShot);
+        CHECK(_wentOffline);
+        CHECK(decryptContext.called == 2);
+        CHECK(c4db_getDocumentCount(db) == 3);
+    }
+}
+
+#endif //#ifdef COUCHBASE_ENTERPRISE
