@@ -103,12 +103,6 @@ namespace litecore::repl {
                 }
 
                 root = nullptr;
-                // The encryptor fails to yield the result. We won't have the content to
-                // send to the remote. If the encryptor does not specify an error, we assign
-                // the following error and sends it to the remote.
-                if (!c4err) {
-                    c4err = {LiteCoreDomain, kC4ErrorCrypto};
-                }
                 // Encyptor error is permanent.
                 completed = true;
             }
