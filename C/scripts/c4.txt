@@ -368,6 +368,8 @@ c4doc_getSelectedRevIDGlobalForm
 
 c4db_getIndexesInfo
 
+c4cert_getValidTimespan
+
 c4error_getBacktrace
 c4error_getCaptureBacktraces
 c4error_setCaptureBacktraces

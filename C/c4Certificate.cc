@@ -35,14 +35,12 @@
 #include "mbedtls/pk.h"
 #pragma clang diagnostic pop
 
-
-#ifdef COUCHBASE_ENTERPRISE
-
 using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::crypto;
 
+#ifdef COUCHBASE_ENTERPRISE
 
 CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
     CertSigningRequest::kOneYear,
@@ -67,11 +65,12 @@ C4Cert::C4Cert(CertBase *impl)
 
 C4Cert::~C4Cert() = default;
 
-
+#endif // COUCHBASE_ENTERPRISE
 Cert* C4Cert::asSignedCert() {
     return _impl->isSigned() ? (Cert*)_impl.get() : nullptr;
 }
 
+#ifdef COUCHBASE_ENTERPRISE
 
 Cert* C4Cert::assertSignedCert() {
     AssertParam(_impl->isSigned(), "C4Certificate is not signed");
@@ -133,7 +132,7 @@ C4Cert::NameInfo C4Cert::getSubjectNameAtIndex(unsigned index) {
     return {};
 }
 
-
+#endif // COUCHBASE_ENTERPRISE
 std::pair<C4Timestamp,C4Timestamp> C4Cert::getValidTimespan() {
     C4Timestamp created = C4Timestamp::None, expires = C4Timestamp::None;
     if (Cert *signedCert = asSignedCert(); signedCert) {
@@ -144,7 +143,7 @@ std::pair<C4Timestamp,C4Timestamp> C4Cert::getValidTimespan() {
     }
     return {created, expires};
 }
-
+#ifdef COUCHBASE_ENTERPRISE
 
 bool C4Cert::isSelfSigned() {
     Cert *signedCert = asSignedCert();

@@ -360,6 +360,8 @@ _c4doc_getSelectedRevIDGlobalForm
 
 _c4db_getIndexesInfo
 
+_c4cert_getValidTimespan
+
 _c4error_getBacktrace
 _c4error_getCaptureBacktraces
 _c4error_setCaptureBacktraces

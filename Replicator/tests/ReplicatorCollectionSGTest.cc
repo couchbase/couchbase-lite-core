@@ -1176,7 +1176,7 @@ static void validateCipherInputs(ReplicatorCollectionSGTest::CipherContextMap* c
     CHECK(spec == context.collection->getSpec());
     CHECK(docID == context.docID);
     CHECK(keyPath == context.keyPath);
-    context.called = true;
+    context.called++;
 }
 
 C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
@@ -1219,10 +1219,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
             createFleeceRev(_collections[i], slice(docs[i]), kRevID, originalJSON);
             encContextMap->emplace(std::piecewise_construct,
                                    std::forward_as_tuple(_collectionSpecs[i]),
-                                   std::forward_as_tuple(_collections[i], docs[i].c_str(), "xNum", false));
+                                   std::forward_as_tuple(_collections[i], docs[i].c_str(), "xNum"));
             decContextMap->emplace(std::piecewise_construct,
                                    std::forward_as_tuple(_collectionSpecs[i]),
-                                   std::forward_as_tuple(_collections[i], docs[i].c_str(), "xNum", false));
+                                   std::forward_as_tuple(_collections[i], docs[i].c_str(), "xNum"));
         }
     }
 
@@ -1231,13 +1231,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     ReplParams replParams { _collectionSpecs, kC4OneShot, kC4Disabled };
     replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
     replicate(replParams);
-
     verifyDocs(_docIDs, true, TestDecryption ? 2 : 1);
 
     // Check encryption on active replicator:
     for (auto& i : *encContextMap) {
         CipherContext& context = i.second;
-        CHECK(context.called);
+        CHECK(context.called > 0);
     }
 
     // Check decryption on verifyDb:
@@ -1249,7 +1248,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
         Dict props = c4doc_getProperties(doc);
 
         if (TestDecryption) {
-            CHECK(context.called);
+            CHECK(context.called > 0);
             CHECK(props.toJSON(false, true) == originalJSON);
         } else {
             CHECK(!context.called);
@@ -1264,6 +1263,275 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
         }
     }
 }
+
+
+static C4SliceResult
+propEncryptorError(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
+                   C4StringResult* outKeyID, C4Error* outError)
+{
+    auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
+    auto i = test->encContextMap->find(spec);
+    Assert(i != test->encContextMap->end());
+
+    auto& context = i->second;
+    if (context.called++ == 0) {
+        Assert(context.simulateError.has_value());
+        *outError = *context.simulateError;
+        return C4SliceResult(nullslice);
+    } else {
+        // second time, do normal encryption
+        return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
+    }
+}
+
+static C4SliceResult
+propDecryptorError(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                   C4String keyPath, C4Slice input, C4String algorithm,
+                   C4String keyID, C4Error* outError)
+{
+    auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
+    auto i = test->decContextMap->find(spec);
+    Assert(i != test->decContextMap->end());
+
+    auto& context = i->second;
+    if (context.called++ == 0) {
+        Assert(context.simulateError.has_value());
+        *outError = *context.simulateError;
+        return C4SliceResult(nullslice);
+    } else {
+        // second time, do normal encryption
+        return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
+    }
+}
+
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string channelID = idPrefix + "ch";
+
+    initTest({ Roses }, { channelID } );
+    // Assertion: _collectionCount == 1
+
+    encContextMap = std::make_unique<CipherContextMap>();
+
+    std::array<string, 3> docs {
+        idPrefix + "01",
+        idPrefix + "02",
+        idPrefix + "03"
+    };
+    slice clearJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+    alloc_slice clearBody = SG::addChannelToJSON(clearJSON, "channels", {channelID});
+    alloc_slice unencryptedBody = SG::addChannelToJSON(R"({"ans*wer": 42})"_sl, "channels", {channelID});
+
+    {
+        // Create 3 docs and docs[1] is to be encrypted.
+        TransactionHelper t(db);
+        for (unsigned i = 0; i < docs.size(); ++i) {
+            switch (i) {
+                case 1:
+                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                    encContextMap->emplace(std::piecewise_construct,
+                                           std::forward_as_tuple(_collectionSpecs[0]),
+                                           std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
+                    break;
+                default:
+                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+            }
+        }
+    }
+    updateDocIDs();
+
+    auto fetch = [&]() -> vector<string> {
+        resetVerifyDb();
+        C4Collection* collection;
+        verifyDb->createCollection(_collectionSpecs[0]);
+        collection = verifyDb->getCollection(_collectionSpecs[0]);
+        Assert(0 == c4coll_getDocumentCount(collection));
+
+        // Pull
+
+        std::vector<C4ReplicationCollection> replCollections { 1 };
+        replCollections[0] = C4ReplicationCollection{_collectionSpecs[0], kC4Disabled, kC4OneShot};
+        ReplParams replParams { replCollections };
+        replParams.setDocIDs(_docIDs);
+        replParams.setOption(kC4ReplicatorOptionDisablePropertyDecryption, true);
+
+        {
+            C4Database* savedb = db;
+            DEFER {
+                db = savedb;
+            };
+            db = verifyDb;
+            replicate(replParams);
+        }
+
+        vector<string> ret;
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            ret.push_back(string(info.docID));
+        }
+        return ret;
+    };
+
+    ReplParams replParams { _collectionSpecs, kC4OneShot, kC4Disabled };
+    replParams.setPropertyEncryptor(propEncryptorError).setPropertyDecryptor(NULL);
+
+    SECTION("LiteCoreDomain/kC4ErrorCrypto") {
+        encContextMap->begin()->second.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
+
+        _expectedDocPushErrors = {docs[1]};
+        replicate(replParams, false);
+
+        _expectedDocPushErrors = {};
+
+        vector<string> fetchedIDs = fetch();
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        // Second doc is not pushed due to encryption error.
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
+
+        // Now try the good encryption callback. We should push all the 3 docs.
+        replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(NULL);
+        replicate(replParams);
+        fetchedIDs = fetch();
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        // Prior to fix of CBL-4129, we still see only 2 docs are pushed the remote.
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
+    }
+
+    SECTION("WebSocketDomain/503") {
+        encContextMap->begin()->second.simulateError = C4Error {WebSocketDomain, 503};
+
+        _mayGoOffline = true;
+        replicate(replParams, false);
+        CHECK(_wentOffline);
+
+        vector<string> fetchedIDs = fetch();
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
+    }
+}
+
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServerCollection]") {
+    const string idPrefix = timePrefix();
+    const string channelID = idPrefix + "ch";
+
+    initTest({ Roses }, { channelID });
+    // Assertion: _collectionCount == 1
+
+    encContextMap = std::make_unique<CipherContextMap>();
+
+    std::array<string, 3> docs {
+        idPrefix + "01",
+        idPrefix + "02",
+        idPrefix + "03"
+    };
+    slice clearJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
+    alloc_slice clearBody = SG::addChannelToJSON(clearJSON, "channels", {channelID});
+    alloc_slice unencryptedBody = SG::addChannelToJSON(R"({"ans*wer": 42})"_sl, "channels", {channelID});
+
+    {
+        TransactionHelper t(db);
+        for (unsigned i = 0; i < docs.size(); ++i) {
+            switch (i) {
+                case 1:
+                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                    encContextMap->emplace(std::piecewise_construct,
+                                           std::forward_as_tuple(_collectionSpecs[0]),
+                                           std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
+                    break;
+                default:
+                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+            }
+        }
+    }
+
+    // Push the 3 documents to the remote
+
+    ReplParams replParams { _collectionSpecs, kC4OneShot, kC4Disabled };
+    replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(NULL);
+    replicate(replParams);
+
+    deleteAndRecreateDBAndCollections();
+
+    // Fetch and verify
+
+    decContextMap = std::make_unique<CipherContextMap>();
+    replParams.collections[0].push = kC4Disabled;
+    replParams.collections[0].pull = kC4OneShot;
+    replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptor);
+    decContextMap->emplace(std::piecewise_construct,
+                           std::forward_as_tuple(_collectionSpecs[0]),
+                           std::forward_as_tuple(_collections[0], docs[1].c_str(), "xNum"));
+    replicate(replParams);
+
+    vector<string> fetchedIDs;
+    c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
+    while (c4enum_next(e, ERROR_INFO())) {
+        C4DocumentInfo info;
+        c4enum_getDocumentInfo(e, &info);
+        fetchedIDs.push_back(string(info.docID));
+    }
+    std::sort(fetchedIDs.begin(), fetchedIDs.end());
+    CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
+
+    deleteAndRecreateDBAndCollections();
+    decContextMap->begin()->second.collection = _collections[0];
+    decContextMap->begin()->second.called = 0;
+    replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptorError);
+    fetchedIDs.clear();
+
+    SECTION("LiteCoreDomain, kC4ErrorCrypto") {
+        decContextMap->begin()->second.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
+        _expectedDocPullErrors = {docs[1]};
+        replicate(replParams, false);
+
+        e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            fetchedIDs.push_back(string(info.docID));
+        }
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
+
+        // For Pull, second attempt with good decryptor won't help. The remote checkpoint
+        // has passed it.
+        replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptor);
+        _expectedDocPullErrors = {};
+        fetchedIDs.clear();
+        replicate(replParams, false);
+
+        e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            fetchedIDs.push_back(string(info.docID));
+        }
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
+    }
+
+    SECTION("WebSocketDomain/503") {
+        decContextMap->begin()->second.simulateError = C4Error {WebSocketDomain, 503};
+        _mayGoOffline = true;
+        replicate(replParams);
+        CHECK(_wentOffline);
+
+        e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            fetchedIDs.push_back(string(info.docID));
+        }
+        std::sort(fetchedIDs.begin(), fetchedIDs.end());
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
+    }
+}
+
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pinned Certificate Success - SGColl", "[.SyncServerCollection]") {
     // Leaf cert (Replicator/tests/data/cert/sg_cert.pem (1st cert))

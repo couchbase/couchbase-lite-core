@@ -254,13 +254,13 @@ public:
         C4Collection* collection;
         slice docID;
         slice keyPath;
-        bool called;
+        int called {0};
+        std::optional<C4Error> simulateError;
 
-        CipherContext(C4Collection* c, const char* id, const char* path, bool called_)
+        CipherContext(C4Collection* c, const char* id, const char* path)
                 : collection(c)
                 , docID(id)
                 , keyPath(path)
-                , called(called_)
         {}
     };
 

@@ -491,6 +491,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Collate", "[Query][QueryParser][C
                "FROM kv_default AS book "
               "WHERE fl_value(book.body, 'author') = $_AUTHOR "
            "ORDER BY fl_value(book.body, 'title') COLLATE LCUnicode_C__");
+    CHECK(parseWhere("['COLLATE',{'CASE':false,'DIAC':true,'LOCALE':'se','UNICODE':false}"
+                     ",['=',['.name'],'fred']]")
+          == "fl_value(body, 'name') COLLATE NOCASE = 'fred'");
+    CHECK(parseWhere("['COLLATE',{'CASE':false,'DIAC':true,'LOCALE':'se','UNICODE':true}"
+                     ",['=',['.name'],'fred']]")
+          == "fl_value(body, 'name') COLLATE LCUnicode_C__se = 'fred'");
 }
 
 

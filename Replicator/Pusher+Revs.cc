@@ -84,6 +84,10 @@ namespace litecore::repl {
             else if (c4err) {
                 root = nullptr;
                 finishedDocumentWithError(request, c4err, false);
+                if (c4err.domain == WebSocketDomain && c4err.code == 503) {
+                    onError(c4err);
+                    return;
+                }
             }
         }
 
