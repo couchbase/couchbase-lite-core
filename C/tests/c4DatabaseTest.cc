@@ -775,14 +775,22 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     createRev(doc1ID, kRevID, kFleeceBody);
     createRev(doc2ID, kRevID, kFleeceBody);
     string srcPathStr = toString(c4db_getPath(db));
-
+    
     C4DatabaseConfig2 config = *c4db_getConfig2(db);
+
     string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
+
     C4Error error;
-    if(!c4db_deleteNamed(kNuName, config.parentDirectory, &error)) {
+    SECTION("WITH SLASH"){ }
+    SECTION("WITHOUT SLASH"){
+        srcPathStr.pop_back();
+        nuPath.pop_back();
+    }
+
+    if(!c4db_deleteNamed(kNuName, slice(nuPath), &error)) {
         REQUIRE(error.code == 0);
     }
-    
+
     REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
     auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
