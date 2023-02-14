@@ -200,6 +200,8 @@ public:
         if (s.level == kC4Offline) {
             C4Assert(_mayGoOffline);
             _wentOffline = true;
+            CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrorsAfterOffline));
+            CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrorsAfterOffline));
             _docPullErrors.clear();
             _docPushErrors.clear();
         }
@@ -472,5 +474,6 @@ public:
     bool _onlySelfSigned {false};
     alloc_slice _customCaCert {};
     SG _sg;
+    std::set<std::string> _expectedDocPushErrorsAfterOffline;
+    std::set<std::string> _expectedDocPullErrorsAfterOffline;
 };
-
