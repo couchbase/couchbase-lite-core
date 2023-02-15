@@ -14,6 +14,7 @@
 #include "c4Test.hh"
 #include "c4CppUtils.hh"
 #include "c4ReplicatorTypes.h"
+#include "Checkpoint.hh"
 #include "Base64.hh"
 #include "fleece/Mutable.hh"
 
@@ -212,6 +213,37 @@ TEST_CASE_METHOD(PropEncryptionTest, "No Property Encryption", "[Sync][Encryptio
         CHECK(encryptProperties(ConvertJSON5(string(testCase))) == nullptr);
         CHECK(_numCallbacks == 0);
     }
+}
+
+
+TEST_CASE_METHOD(PropEncryptionTest, "Checkpoint serialization", "[Sync][Encryption]") {
+    Checkpoint checkpoint;
+    unsigned n1 = 2, n2 = 15;
+    for (C4SequenceNumber i = n1; i < n2; ++i) {
+        checkpoint.completedSequence(i);
+    }
+    n1 = 20;
+    n2 = 22;
+    for (C4SequenceNumber i = n1; i < n2; ++i) {
+        checkpoint.completedSequence(i);
+    }
+    // Convert to JSON, which is what we would send it to SG
+    auto json = checkpoint.toJSON();
+    // json == R"({"time":1676483864,"localCompleted":[0,1,2,13,20,2]})"
+    // The time part is not invariant of the test, so
+    auto getLocalCompleted = [](slice s) {
+        auto comma = s.findByte(',');
+        return s.from(comma + 1).asString();
+    };
+    auto localCompletedJson = getLocalCompleted(json);
+    CHECK(localCompletedJson == R"("localCompleted":[0,1,2,13,20,2]})");
+
+    // Read it back to another Checkpoint obj. This simulates the logic
+    // when we read the the checkpoint sent back to us by SG
+    // The constructor does not read the "time" part of the json.
+    Checkpoint checkpoint2 {json};
+    auto json2 = checkpoint2.toJSON();
+    CHECK(localCompletedJson == getLocalCompleted(json2));
 }
 
 

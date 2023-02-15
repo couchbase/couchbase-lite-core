@@ -90,8 +90,7 @@ namespace litecore { namespace repl {
                 for (Array::iterator i(pending); i; ++i) {
                     C4SequenceNumber first = i->asInt();
                     C4SequenceNumber last = (++i)->asInt();
-                    if (last >= first)
-                        _completed.add(first, first + last);
+                    _completed.add(first, first + last);
                 }
             } else
 #endif
