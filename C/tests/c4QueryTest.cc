@@ -1169,6 +1169,19 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'small.nested'}],"
                         "WHERE: ['=', ['.nested.shapes[0].color'], 'red']}"));
     CHECK(run().size() == 2);
+
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'"s + kDatabaseName.asString() + "'}]}"));
+    checkColumnTitles({kDatabaseName.asString()});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'_'}]}"));
+    checkColumnTitles({"_"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'_default'}]}"));
+    checkColumnTitles({"_default"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'Widgets'}]}"));
+    checkColumnTitles({"Widgets"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
+    checkColumnTitles({"nested"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
+    checkColumnTitles({"alias"});
 }
 
 
