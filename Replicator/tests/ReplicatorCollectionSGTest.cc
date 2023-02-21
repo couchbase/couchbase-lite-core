@@ -250,7 +250,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     // The default scope is not in our SG config. It should be rejected by SG
     SECTION("Default Collection") {
         collectionSpecs = {Default};
-        expectedError = { WebSocketDomain, 404 };
+        expectedError = { WebSocketDomain, 400 };
     }
 
     SECTION("Another Named Collection") {
@@ -275,11 +275,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     }
     if (expectedError.code != 0) {
         replicate(replParams, false);
-        // Not pass due to CBG-2675
-//        FLStringResult emsg = c4error_getMessage(_callbackStatus.error);
-//        CHECK(_callbackStatus.error.domain == expectedError.domain);
-//        CHECK(_callbackStatus.error.code == expectedError.code);
-//        FLSliceResult_Release(emsg);
     } else {
         replicate(replParams);
         verifyDocs(_docIDs);
