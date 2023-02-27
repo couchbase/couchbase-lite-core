@@ -18,27 +18,22 @@ using namespace fleece;
 
 namespace litecore {
 
-    Record::Record(slice key)
-    :_key(key)
-    { }
+    Record::Record(slice key) : _key(key) {}
 
-    Record::Record(alloc_slice key)
-    :_key(move(key))
-    { }
+    Record::Record(alloc_slice key) : _key(move(key)) {}
 
     void Record::clear() noexcept {
         _key = _version = _body = _extra = nullslice;
         _bodySize = _extraSize = _subsequence = 0;
-        _sequence = 0_seq;
-        _flags = DocumentFlags::kNone;
-        _contentLoaded = kMetaOnly;
-        _exists = false;
+        _sequence                             = 0_seq;
+        _flags                                = DocumentFlags::kNone;
+        _contentLoaded                        = kMetaOnly;
+        _exists                               = false;
     }
 
     uint64_t Record::bodyAsUInt() const noexcept {
         uint64_t count;
-        if (body().size < sizeof(count))
-            return 0;
+        if ( body().size < sizeof(count) ) return 0;
         memcpy(&count, body().buf, sizeof(count));
         return endian::dec64(count);
     }
@@ -48,21 +43,13 @@ namespace litecore {
         setBody(slice(&newBody, sizeof(newBody)));
     }
 
+    RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_) : key(key_), body(body_), flags(flags_) {}
 
-    RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_)
-    :key(key_)
-    ,body(body_)
-    ,flags(flags_)
-    { }
-
-    
-    RecordUpdate::RecordUpdate(const Record &rec)
-    :RecordUpdate(rec.key(), rec.body(), rec.flags())
-    {
-        version = rec.version();
-        extra = rec.extra();
-        sequence = rec.sequence();
+    RecordUpdate::RecordUpdate(const Record &rec) : RecordUpdate(rec.key(), rec.body(), rec.flags()) {
+        version     = rec.version();
+        extra       = rec.extra();
+        sequence    = rec.sequence();
         subsequence = rec.subsequence();
     }
 
-}
+}  // namespace litecore

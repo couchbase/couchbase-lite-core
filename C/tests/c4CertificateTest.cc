@@ -14,11 +14,10 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
-#include "c4Certificate.h"
-#include "CertHelper.hh"
+#    include "c4Certificate.h"
+#    include "CertHelper.hh"
 
 using namespace std;
-
 
 TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
     // Just make sure c4cert functions are exported from LiteCore and minimally functional...
@@ -26,9 +25,9 @@ TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
 
     C4CertNameInfo name;
     C4Log("Client cert:");
-    for (int i = 0; c4cert_subjectNameAtIndex(certs.temporaryClientIdentity.cert, i, &name); ++i) {
+    for ( int i = 0; c4cert_subjectNameAtIndex(certs.temporaryClientIdentity.cert, i, &name); ++i ) {
         C4Log("  %.*s = '%.*s'", SPLAT(name.id), SPLAT(name.value));
-        if (i == 0) {
+        if ( i == 0 ) {
             CHECK(name.id == kC4Cert_CommonName);
             CHECK(name.value == "LiteCore Client Test"_sl);
         }

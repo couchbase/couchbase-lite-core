@@ -19,4 +19,4 @@ namespace litecore {
 
     std::string GetThreadName();
 
-}
+}  // namespace litecore

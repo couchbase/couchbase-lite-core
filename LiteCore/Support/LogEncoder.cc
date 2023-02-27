@@ -20,8 +20,8 @@
 #include <time.h>
 
 #if __APPLE__
-#include <CoreFoundation/CFBase.h>
-#include <CoreFoundation/CFString.h>
+#    include <CoreFoundation/CFBase.h>
+#    include <CoreFoundation/CFString.h>
 #endif
 
 using namespace std;
@@ -38,14 +38,10 @@ namespace litecore {
     // ...or when this many seconds have elapsed since the previous save:
     static const uint64_t kSaveInterval = 1 * kTicksPerSec;
 
-
     LogEncoder::LogEncoder(ostream &out, LogLevel level)
-    :_out(out)
-    ,_flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this)))
-    ,_level(level)
-    {
+        : _out(out), _flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this))), _level(level) {
         _writer.write(&LogDecoder::kMagicNumber, 4);
-        uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void*)};
+        uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void *)};
         _writer.write(&header, sizeof(header));
         auto now = LogDecoder::now();
         _writeUVarInt(now.secs);
@@ -59,7 +55,7 @@ namespace litecore {
         // timer here since it won't hurt other operations, but the actual
         // flush itself still needs to be guarded
         _flushTimer.reset();
-        
+
         lock_guard<mutex> lock(_mutex);
         _flush();
     }
@@ -69,31 +65,26 @@ namespace litecore {
         return _out.tellp();
     }
 
-
 #pragma mark - LOGGING:
 
-
-    void LogEncoder::log(const char *domain, const std::map<unsigned, std::string>& objectMap,
-                         ObjectRef object, const char *format, ...) {
+    void LogEncoder::log(const char *domain, const std::map<unsigned, std::string> &objectMap, ObjectRef object,
+                         const char *format, ...) {
         va_list args;
         va_start(args, format);
         vlog(domain, objectMap, object, format, args);
         va_end(args);
     }
 
+    int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
-    int64_t LogEncoder::_timeElapsed() const {
-        return int64_t(_st.elapsed() * kTicksPerSec);
-    }
-
-    void LogEncoder::vlog(const char *domain, const map<unsigned, string> &objectMap,
-                          ObjectRef object, const char *format, va_list args) {
+    void LogEncoder::vlog(const char *domain, const map<unsigned, string> &objectMap, ObjectRef object,
+                          const char *format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
-        auto elapsed = _timeElapsed();
-        uint64_t delta = elapsed - _lastElapsed;
-        _lastElapsed = elapsed;
+        auto     elapsed = _timeElapsed();
+        uint64_t delta   = elapsed - _lastElapsed;
+        _lastElapsed     = elapsed;
         _writeUVarInt(delta);
 
         // Write level, domain, format string:
@@ -102,10 +93,10 @@ namespace litecore {
 
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
+        if ( object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end() ) {
             _seenObjects.insert(objRef);
             const auto i = objectMap.find(objRef);
-            if(i == objectMap.end()) {
+            if ( i == objectMap.end() ) {
                 _writer.write({"?\0", 2});
             } else {
                 _writer.write(slice(i->second.c_str()));
@@ -116,123 +107,126 @@ namespace litecore {
         _writeStringToken(format);
 
         // Parse the format string looking for substitutions:
-        for (const char *c = format; *c != '\0'; ++c) {
-            if (*c == '%') {
-                bool minus = false;
+        for ( const char *c = format; *c != '\0'; ++c ) {
+            if ( *c == '%' ) {
+                bool minus   = false;
                 bool dotStar = false;
                 ++c;
-                if (*c == '-') {
+                if ( *c == '-' ) {
                     minus = true;
                     ++c;
                 }
                 c += strspn(c, "#0- +'");
-                while (isdigit(*c))
+                while ( isdigit(*c) ) ++c;
+                if ( *c == '.' ) {
                     ++c;
-                if (*c == '.') {
-                    ++c;
-                    if (*c == '*') {
+                    if ( *c == '*' ) {
                         dotStar = true;
                         ++c;
                     } else {
-                        while (isdigit(*c))
-                            ++c;
+                        while ( isdigit(*c) ) ++c;
                     }
                 }
                 c += strspn(c, "hljtzq");
 
-                switch(*c) {
+                switch ( *c ) {
                     case 'c':
                     case 'd':
-                    case 'i': {
-                        long long param;
-                        if (c[-1] == 'q')
-                            param = va_arg(args, long long);
-                        else if (c[-1] == 'z')
-                            param = va_arg(args, ptrdiff_t);
-                        else if (c[-1] != 'l')
-                            param = va_arg(args, int);
-                        else if (c[-2] != 'l')
-                            param = va_arg(args, long);
-                        else
-                            param = va_arg(args, long long);
-                        uint8_t sign = (param < 0) ? 1 : 0;
-                        _writer.write(&sign, 1);
-                        _writeUVarInt(abs(param));
-                        break;
-                    }
-                    case 'u':
-                    case 'x': case 'X': {
-                        unsigned long long param;
-                        if (c[-1] == 'q')
-                            param = va_arg(args, unsigned long long);
-                        else if (c[-1] == 'z')
-                            param = va_arg(args, size_t);
-                        else if (c[-1] != 'l')
-                            param = va_arg(args, unsigned int);
-                        else if (c[-2] != 'l')
-                            param = va_arg(args, unsigned long);
-                        else
-                            param = va_arg(args, unsigned long long);
-                        _writeUVarInt(param);
-                        break;
-                    }
-                    case 'e': case 'E':
-                    case 'f': case 'F':
-                    case 'g': case 'G':
-                    case 'a': case 'A': {
-                        fleece::endian::littleEndianDouble param = va_arg(args, double);
-                        _writer.write(&param, sizeof(param));
-                        break;
-                    }
-                    case 's': {
-                        const char *str;
-                        size_t size;
-                        if (dotStar) {
-                            size = va_arg(args, int);
-                            str = va_arg(args, const char*);
-                        } else {
-                            str = va_arg(args, const char*);
-                            size = strlen(str);
-                        }
-                        if (minus && !dotStar) {
-                            _writeStringToken(str);
-                        } else {
-                            _writeUVarInt(size);
-                            if (size > 0)
-                                _writer.write(str, size);
-                        }
-                        break;
-                    }
-                    case 'p': {
-                        size_t param = va_arg(args, size_t);
-                        if (sizeof(param) == 8)
-                            param = fleece::endian::encLittle64(param);
-                        else
-                            param = fleece::endian::encLittle32((uint32_t)param);
-                        _writer.write(&param, sizeof(param));
-                        break;
-                    }
-#if __APPLE__
-                    case '@': {
-                        // "%@" substitutes an Objective-C or CoreFoundation object's description.
-                        CFTypeRef param = va_arg(args, CFTypeRef);
-                        if (param == nullptr) {
-                            _writeUVarInt(6);
-                            _writer.write("(null)", 6);
-                        } else {
-                            CFStringRef description;
-                            if (CFGetTypeID(param) == CFStringGetTypeID())
-                                description = (CFStringRef)param;
+                    case 'i':
+                        {
+                            long long param;
+                            if ( c[-1] == 'q' ) param = va_arg(args, long long);
+                            else if ( c[-1] == 'z' )
+                                param = va_arg(args, ptrdiff_t);
+                            else if ( c[-1] != 'l' )
+                                param = va_arg(args, int);
+                            else if ( c[-2] != 'l' )
+                                param = va_arg(args, long);
                             else
-                                description = CFCopyDescription(param);
-                            nsstring_slice descSlice(description);
-                            _writeUVarInt(descSlice.size);
-                            _writer.write(descSlice);
-                            if (description != param)
-                                CFRelease(description);
+                                param = va_arg(args, long long);
+                            uint8_t sign = (param < 0) ? 1 : 0;
+                            _writer.write(&sign, 1);
+                            _writeUVarInt(abs(param));
+                            break;
                         }
-                        break;
-                    }
+                    case 'u':
+                    case 'x':
+                    case 'X':
+                        {
+                            unsigned long long param;
+                            if ( c[-1] == 'q' ) param = va_arg(args, unsigned long long);
+                            else if ( c[-1] == 'z' )
+                                param = va_arg(args, size_t);
+                            else if ( c[-1] != 'l' )
+                                param = va_arg(args, unsigned int);
+                            else if ( c[-2] != 'l' )
+                                param = va_arg(args, unsigned long);
+                            else
+                                param = va_arg(args, unsigned long long);
+                            _writeUVarInt(param);
+                            break;
+                        }
+                    case 'e':
+                    case 'E':
+                    case 'f':
+                    case 'F':
+                    case 'g':
+                    case 'G':
+                    case 'a':
+                    case 'A':
+                        {
+                            fleece::endian::littleEndianDouble param = va_arg(args, double);
+                            _writer.write(&param, sizeof(param));
+                            break;
+                        }
+                    case 's':
+                        {
+                            const char *str;
+                            size_t      size;
+                            if ( dotStar ) {
+                                size = va_arg(args, int);
+                                str  = va_arg(args, const char *);
+                            } else {
+                                str  = va_arg(args, const char *);
+                                size = strlen(str);
+                            }
+                            if ( minus && !dotStar ) {
+                                _writeStringToken(str);
+                            } else {
+                                _writeUVarInt(size);
+                                if ( size > 0 ) _writer.write(str, size);
+                            }
+                            break;
+                        }
+                    case 'p':
+                        {
+                            size_t param = va_arg(args, size_t);
+                            if ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
+                            else
+                                param = fleece::endian::encLittle32((uint32_t)param);
+                            _writer.write(&param, sizeof(param));
+                            break;
+                        }
+#if __APPLE__
+                    case '@':
+                        {
+                            // "%@" substitutes an Objective-C or CoreFoundation object's description.
+                            CFTypeRef param = va_arg(args, CFTypeRef);
+                            if ( param == nullptr ) {
+                                _writeUVarInt(6);
+                                _writer.write("(null)", 6);
+                            } else {
+                                CFStringRef description;
+                                if ( CFGetTypeID(param) == CFStringGetTypeID() ) description = (CFStringRef)param;
+                                else
+                                    description = CFCopyDescription(param);
+                                nsstring_slice descSlice(description);
+                                _writeUVarInt(descSlice.size);
+                                _writer.write(descSlice);
+                                if ( description != param ) CFRelease(description);
+                            }
+                            break;
+                        }
 #endif
                     case '%':
                         break;
@@ -242,8 +236,7 @@ namespace litecore {
             }
         }
 
-        if (_writer.length() > kBufferSize)
-            _flush();
+        if ( _writer.length() > kBufferSize ) _flush();
         else
             _scheduleFlush();
     }
@@ -253,46 +246,39 @@ namespace litecore {
         _writer.write(buf, PutUVarInt(buf, n));
     }
 
-
     void LogEncoder::_writeStringToken(const char *token) {
         const auto name = _formats.find((size_t)token);
-        if (name == _formats.end()) {
+        if ( name == _formats.end() ) {
             const auto n = (unsigned)_formats.size();
             _formats.insert({(size_t)token, n});
             _writeUVarInt(n);
-            _writer.write(token, strlen(token)+1);  // add the actual string the first time
+            _writer.write(token, strlen(token) + 1);  // add the actual string the first time
         } else {
             _writeUVarInt(name->second);
         }
     }
 
-
 #pragma mark - FLUSHING:
-
 
     void LogEncoder::flush() {
         lock_guard<mutex> lock(_mutex);
         _flush();
     }
-    
-    void LogEncoder::_flush() {
-        if (_writer.length() == 0)
-            return;
 
-        for (slice s : _writer.output())
-            _out << s;
+    void LogEncoder::_flush() {
+        if ( _writer.length() == 0 ) return;
+
+        for ( slice s : _writer.output() ) _out << s;
         _writer.reset();
         _out.flush();
         _lastSaved = _lastElapsed;
     }
 
-
     void LogEncoder::_scheduleFlush() {
-        if (_flushTimer && !_flushTimer->scheduled()) {
+        if ( _flushTimer && !_flushTimer->scheduled() ) {
             _flushTimer->fireAfter(std::chrono::microseconds(kSaveInterval));
         }
     }
-
 
     // This is called on a background thread by the Timer
     void LogEncoder::performScheduledFlush() {
@@ -300,14 +286,14 @@ namespace litecore {
 
         // Don't flush if there's already been a flush since the timer started:
         auto timeSinceSave = _timeElapsed() - _lastSaved;
-        if (timeSinceSave >= kSaveInterval) {
+        if ( timeSinceSave >= kSaveInterval ) {
             _flush();
-        } else if(_flushTimer) {
+        } else if ( _flushTimer ) {
             _flushTimer->fireAfter(std::chrono::microseconds(kSaveInterval - timeSinceSave));
         }
     }
 
-}
+}  // namespace litecore
 
 /* FILE FORMAT:
  

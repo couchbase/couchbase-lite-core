@@ -27,8 +27,8 @@ using FilePath = litecore::FilePath;
 
 
 class C4EncryptionTest : public C4Test {
-public:
-    C4EncryptionTest(int testOption) :C4Test(testOption) { }
+  public:
+    C4EncryptionTest(int testOption) : C4Test(testOption) {}
 
     void checkBadKey(const C4DatabaseConfig2 &config) {
         assert(!db);
@@ -40,20 +40,18 @@ public:
     }
 };
 
-
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    bool (*c4key_setPasswordFunc)(C4EncryptionKey *encryptionKey,
-                                  C4String password,
-                                  C4EncryptionAlgorithm alg) = nullptr;
-    string expectedKey;
-    C4EncryptionKey key {};
+    bool (*c4key_setPasswordFunc)(C4EncryptionKey * encryptionKey, C4String password, C4EncryptionAlgorithm alg)
+            = nullptr;
+    string          expectedKey;
+    C4EncryptionKey key{};
     SECTION("SHA256") {
         c4key_setPasswordFunc = c4key_setPassword;
-        expectedKey = "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909";
+        expectedKey           = "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909";
     }
     SECTION("SHA1") {
         c4key_setPasswordFunc = c4key_setPasswordSHA1;
-        expectedKey = "7ecec9cc8d4efbebcbf537a3169f61d9db05971a9fec9761ff37fdb1f09f862d";
+        expectedKey           = "7ecec9cc8d4efbebcbf537a3169f61d9db05971a9fec9761ff37fdb1f09f862d";
     }
     {
         ExpectingExceptions expectingExceptions;
@@ -73,7 +71,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     closeDB();
 
     C4Error error;
-    if (config.encryptionKey.algorithm == kC4EncryptionNone) {
+    if ( config.encryptionKey.algorithm == kC4EncryptionNone ) {
         // DB is not encrypted; try using a key:
         badConfig.encryptionKey.algorithm = kC4EncryptionAES256;
         memset(badConfig.encryptionKey.bytes, 0x7F, sizeof(badConfig.encryptionKey.bytes));
@@ -95,15 +93,14 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     CHECK(c4db_getDocumentCount(db) == 99);
 }
 
-
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryption][blob][C]") {
     createNumberedDocs(99);
 
     // Add blob to the store:
-    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
+    C4Slice   blobToStore = C4STR("This is a blob to store in the store!");
     C4BlobKey blobKey;
-    C4Error error;
-    auto blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
+    C4Error   error;
+    auto      blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
     REQUIRE(blobStore);
     REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, WITH_ERROR(&error)));
 
@@ -113,7 +110,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
 
     // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
     C4EncryptionKey newKey = {kC4EncryptionNone, {}};
-    if (c4db_getConfig2(db)->encryptionKey.algorithm == kC4EncryptionNone) {
+    if ( c4db_getConfig2(db)->encryptionKey.algorithm == kC4EncryptionNone ) {
         newKey.algorithm = kC4EncryptionAES256;
         memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
         REQUIRE(c4db_rekey(db, &newKey, WITH_ERROR(&error)));
@@ -134,16 +131,15 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     reopenDB();
 }
 
-
 static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
     static const C4DatabaseFlags kFlagsToTry[] = {/*kC4DB_ReadOnly, kC4DB_NoUpgrade,*/ 0};
     // Skipping NoUpgrade because schema version 302 is mandatory for writeable dbs in CBL 2.7.
     // Skipping ReadOnly because CBL 3.0 can't open 2.x dbs without upgrading them.
 
-    for (C4DatabaseFlags flag : kFlagsToTry) {
-        C4DatabaseConfig2 config = { };
-        config.parentDirectory = slice(TempDir());
-        config.flags = flag;
+    for ( C4DatabaseFlags flag : kFlagsToTry ) {
+        C4DatabaseConfig2 config       = {};
+        config.parentDirectory         = slice(TempDir());
+        config.flags                   = flag;
         config.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
         C4Error error;
@@ -154,14 +150,12 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
     }
 }
 
-
 TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C]") {
-    testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.5_AES256.cblite2",
-                                  "a different key than default....");
+    testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.5_AES256.cblite2", "a different key than default....");
 }
 
 
-#ifdef __APPLE__
+#    ifdef __APPLE__
 
 TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C]") {
     C4EncryptionKey key;
@@ -169,6 +163,6 @@ TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C]") {
     testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.1_AES128.cblite2", key.bytes);
 }
 
-#endif // __APPLE__
+#    endif  // __APPLE__
 
-#endif // COUCHBASE_ENTERPRISE
+#endif  // COUCHBASE_ENTERPRISE

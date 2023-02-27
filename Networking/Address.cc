@@ -24,85 +24,59 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
-
 namespace litecore { namespace net {
 
-    Address::Address(const alloc_slice &url)
-    :_url(url)
-    {
-        if (!c4address_fromURL(_url, this, nullptr))
-            error::_throw(error::Network, kC4NetErrInvalidURL);
+    Address::Address(const alloc_slice &url) : _url(url) {
+        if ( !c4address_fromURL(_url, this, nullptr) ) error::_throw(error::Network, kC4NetErrInvalidURL);
     }
 
-
-    Address::Address(const C4Address &addr)
-    :Address(alloc_slice(c4address_toURL(addr)))
-    { }
-
+    Address::Address(const C4Address &addr) : Address(alloc_slice(c4address_toURL(addr))) {}
 
     inline C4Address mkAddr(slice scheme, slice hostname, uint16_t port, slice uri) {
         C4Address address = {};
-        address.scheme = scheme;
-        address.hostname = hostname;
-        address.port = port;
-        address.path = uri;
+        address.scheme    = scheme;
+        address.hostname  = hostname;
+        address.port      = port;
+        address.path      = uri;
         return address;
     }
 
-
     Address::Address(slice scheme, slice hostname, uint16_t port, slice uri)
-    :Address(mkAddr(scheme, hostname, port, uri))
-    { }
+        : Address(mkAddr(scheme, hostname, port, uri)) {}
 
-
-    Address& Address::operator= (const Address &other) {
-        *((C4Address*)this) = other;
-        _url = other._url;
+    Address &Address::operator=(const Address &other) {
+        *((C4Address *)this) = other;
+        _url                 = other._url;
         return *this;
     }
-
 
     static alloc_slice dbURL(C4Database *db) {
         alloc_slice path(c4db_getPath(db));
         return alloc_slice(string("file:///") + string(path));
     }
 
+    Address::Address(C4Database *db) : Address(dbURL(db)) {}
 
-    Address::Address(C4Database *db)
-    :Address( dbURL(db) )
-    { }
-
-
-    alloc_slice Address::toURL(const C4Address &c4Addr) noexcept {
-        return c4address_toURL(c4Addr);
-    }
-
+    alloc_slice Address::toURL(const C4Address &c4Addr) noexcept { return c4address_toURL(c4Addr); }
 
     bool Address::isSecure(const C4Address &addr) noexcept {
         const C4Slice wss = kC4Replicator2TLSScheme;
         return (addr.scheme == wss || addr.scheme == "https"_sl);
     }
 
-    bool Address::domainEquals(slice d1, slice d2) noexcept {
-        return d1.caseEquivalent(d2);
-    }
+    bool Address::domainEquals(slice d1, slice d2) noexcept { return d1.caseEquivalent(d2); }
 
     bool Address::domainContains(slice baseDomain_, slice hostname_) noexcept {
         string baseDomain(baseDomain_), hostname(hostname_);
         return hasSuffixIgnoringCase(hostname, baseDomain)
-            && (hostname.size() == baseDomain.size()
-                || hostname[hostname.size() - baseDomain.size() - 1] == '.');
+               && (hostname.size() == baseDomain.size() || hostname[hostname.size() - baseDomain.size() - 1] == '.');
     }
 
     bool Address::pathContains(slice basePath, slice path) noexcept {
-        if (basePath.size == 0)
-            basePath = "/"_sl;
-        if (path.size == 0)
-            path = "/"_sl;
+        if ( basePath.size == 0 ) basePath = "/"_sl;
+        if ( path.size == 0 ) path = "/"_sl;
         return path.hasPrefix(basePath)
-            && (path.size == basePath.size
-                || path[basePath.size] == '/'
-                || basePath[basePath.size-1] == '/');
+               && (path.size == basePath.size || path[basePath.size] == '/' || basePath[basePath.size - 1] == '/');
     }
 
-} }
+}}  // namespace litecore::net

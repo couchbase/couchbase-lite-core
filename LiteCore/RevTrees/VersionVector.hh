@@ -25,9 +25,9 @@ namespace litecore {
         The string format is comma-separated Version strings (see above).
         The binary format is consecutive binary Versions (see above). */
     class VersionVector {
-    public:
+      public:
         /** Returns a VersionVector parsed from ASCII; see `readASCII` for details. */
-        static VersionVector fromASCII(slice asciiString, peerID myPeerID =kMePeerID) {
+        static VersionVector fromASCII(slice asciiString, peerID myPeerID = kMePeerID) {
             VersionVector v;
             v.readASCII(asciiString, myPeerID);
             return v;
@@ -41,13 +41,13 @@ namespace litecore {
         }
 
         /** Constructs an empty vector. */
-        VersionVector() =default;
+        VersionVector() = default;
 
         /** Parses textual form from ASCII data. Overwrites any existing state.
             Throws BadRevisionID if the string's not valid.
             If `myPeerID` is given, then the string is expected to be in absolute
             form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
-        void readASCII(slice asciiString, peerID myPeerID =kMePeerID);
+        void readASCII(slice asciiString, peerID myPeerID = kMePeerID);
 
         /** Assembles a version vector from its history, as a list of ASCII versions/vectors.
             This can take a few forms:
@@ -55,9 +55,7 @@ namespace litecore {
             - ["new version", "parent version vector"]
             - ["new version", "parent version", "grandparent version" ...]
             Throws BadRevisionID if the history isn't in a form it understands. */
-        void readHistory(const slice history[],
-                         size_t historyCount,
-                         peerID myPeerID =kMePeerID);
+        void readHistory(const slice history[], size_t historyCount, peerID myPeerID = kMePeerID);
 
         /** Reads binary form. */
         void readBinary(slice binaryData);
@@ -66,22 +64,27 @@ namespace litecore {
         static Version readCurrentVersionFromBinary(slice binaryData);
 
         /** Sets the vector to empty. */
-        void reset()                                        {_vers.clear();}
+        void reset() { _vers.clear(); }
 
         /** True if the vector is non-empty. */
-        explicit operator bool() const                      {return count() > 0;}
+        explicit operator bool() const { return count() > 0; }
 
         using vec = fleece::smallVector<Version, 2>;
 
-        size_t count() const                                {return _vers.size();}
-        bool empty() const                                  {return _vers.size() == 0;}
-        const Version& operator[] (size_t i) const          {return _vers[i];}
-        const Version& current() const                      {return _vers.get(0);}
-        const vec& versions() const                         {return _vers;}
+        size_t count() const { return _vers.size(); }
+
+        bool empty() const { return _vers.size() == 0; }
+
+        const Version& operator[](size_t i) const { return _vers[i]; }
+
+        const Version& current() const { return _vers.get(0); }
+
+        const vec& versions() const { return _vers; }
 
         /** Returns the generation count for the given author. */
         generation genOfAuthor(peerID) const;
-        generation operator[] (peerID author) const         {return genOfAuthor(author);}
+
+        generation operator[](peerID author) const { return genOfAuthor(author); }
 
         //---- Comparisons:
 
@@ -89,21 +92,27 @@ namespace litecore {
         versionOrder compareTo(const VersionVector&) const;
 
         /** Is this vector newer than the other vector, if you ignore the peerID `ignoring`? */
-        bool isNewerIgnoring(peerID ignoring, const VersionVector &other) const;
+        bool isNewerIgnoring(peerID ignoring, const VersionVector& other) const;
 
-        bool operator == (const VersionVector& v) const     {return compareTo(v) == kSame;}
-        bool operator != (const VersionVector& v) const     {return !(*this == v);}
-        bool operator <  (const VersionVector& v) const     {return compareTo(v) == kOlder;}
-        bool operator >  (const VersionVector& v) const     {return v < *this;}
-        bool operator <= (const VersionVector& v) const     {return compareTo(v) <= kOlder;}
-        bool operator >= (const VersionVector& v) const     {return v <= *this;}
+        bool operator==(const VersionVector& v) const { return compareTo(v) == kSame; }
+
+        bool operator!=(const VersionVector& v) const { return !(*this == v); }
+
+        bool operator<(const VersionVector& v) const { return compareTo(v) == kOlder; }
+
+        bool operator>(const VersionVector& v) const { return v < *this; }
+
+        bool operator<=(const VersionVector& v) const { return compareTo(v) <= kOlder; }
+
+        bool operator>=(const VersionVector& v) const { return v <= *this; }
 
         /** Compares with a single version, i.e. whether this vector is newer/older/same as a
             vector with the given current version. (Will never return kConflicting.) */
         versionOrder compareTo(const Version&) const;
 
-        bool operator == (const Version& v) const           {return compareTo(v) == kSame;}
-        bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
+        bool operator==(const Version& v) const { return compareTo(v) == kSame; }
+
+        bool operator>=(const Version& v) const { return compareTo(v) != kOlder; }
 
         //---- Conversions:
 
@@ -116,7 +125,7 @@ namespace litecore {
             Otherwise they're written as '*'. */
         fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
 
-        bool writeASCII(slice_ostream&, peerID myID =kMePeerID) const;
+        bool   writeASCII(slice_ostream&, peerID myID = kMePeerID) const;
         size_t maxASCIILen() const;
 
 #if DEBUG
@@ -159,30 +168,26 @@ namespace litecore {
 
         /** Creates a VersionVector expressing the changes from an earlier VersionVector to this one.
             If the other vector is not earlier or equal, `nullopt` is returned. */
-        std::optional<VersionVector> deltaFrom(const VersionVector &base) const;
+        std::optional<VersionVector> deltaFrom(const VersionVector& base) const;
 
         /** Applies a delta created by calling \ref deltaFrom on a newer VersionVector.
             if `D = B.deltaFrom(A)`, then `A.byApplyingDelta(D) == B`.
             If the delta is invalid, throws `BadRevisionID`.
             \warning If the delta was not created with this revision as a base, the result is undefined.
                     The method is likely to return an incorrect vector, not throw an exception. */
-        VersionVector byApplyingDelta(const VersionVector &delta) const;
+        VersionVector byApplyingDelta(const VersionVector& delta) const;
 
-    private:
-
-        VersionVector(vec::const_iterator begin,
-                      vec::const_iterator end)
-        :_vers(begin, end)
-        { }
+      private:
+        VersionVector(vec::const_iterator begin, vec::const_iterator end) : _vers(begin, end) {}
 #if DEBUG
         void validate() const;
 #else
-        void validate() const                               { }
+        void validate() const {}
 #endif
         // Finds my version by this author and returns an iterator to it, else returns end()
         vec::iterator findPeerIter(peerID) const;
 
-        vec _vers;          // versions, in order
+        vec _vers;  // versions, in order
     };
 
-}
+}  // namespace litecore

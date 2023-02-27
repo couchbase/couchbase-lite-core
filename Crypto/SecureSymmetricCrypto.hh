@@ -15,25 +15,21 @@
 
 namespace litecore {
 
-    static const size_t kAES256KeySize = kEncryptionKeySize[kAES256]; // 256 bits
-    static const size_t kAESBlockSize  = 16; // 128 bits (regardless of key size)
-    static const size_t kAESIVSize = kAESBlockSize;
+    static const size_t kAES256KeySize = kEncryptionKeySize[kAES256];  // 256 bits
+    static const size_t kAESBlockSize  = 16;                           // 128 bits (regardless of key size)
+    static const size_t kAESIVSize     = kAESBlockSize;
 
     /** AES256 encryption/decryption. */
-    size_t AES256(bool encrypt,        // true=encrypt, false=decrypt
-                  slice key,           // pointer to 32-byte key
-                  slice iv,            // pointer to 16-byte initialization vector
-                  bool padding,        // true=PKCS7 padding, false=no padding
-                  fleece::mutable_slice dst,   // output buffer & capacity
-                  slice src);          // input data
+    size_t AES256(bool                  encrypt,  // true=encrypt, false=decrypt
+                  slice                 key,      // pointer to 32-byte key
+                  slice                 iv,       // pointer to 16-byte initialization vector
+                  bool                  padding,  // true=PKCS7 padding, false=no padding
+                  fleece::mutable_slice dst,      // output buffer & capacity
+                  slice                 src);                     // input data
 
     /** Converts a password string into a key using PBKDF2. */
-    bool DeriveKeyFromPassword(slice password,
-                               void *outKey,
-                               size_t keyLength);
+    bool DeriveKeyFromPassword(slice password, void *outKey, size_t keyLength);
 
     /** Converts a password string into a key using PBKDF2 and SHA1 as the hashing function. */
-    bool DeriveKeyFromPasswordSHA1(slice password,
-                                   void *outKey,
-                                   size_t keyLength);
-}
+    bool DeriveKeyFromPasswordSHA1(slice password, void *outKey, size_t keyLength);
+}  // namespace litecore

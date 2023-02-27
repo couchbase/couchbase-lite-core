@@ -22,28 +22,28 @@
 #include <iostream>
 
 namespace fleece {
-    static inline std::ostream& operator<< (std::ostream &out, fleece::Array array) {
+    static inline std::ostream &operator<<(std::ostream &out, fleece::Array array) {
         return out << array.toJSONString();
     }
-    static inline std::ostream& operator<< (std::ostream &out, fleece::Dict dict) {
-        return out << dict.toJSONString();
-    }
-    static inline std::ostream& operator<< (std::ostream &out, const litecore::VectorRecord &doc) {
-        doc.dump(out); return out;
-    }
-}
 
+    static inline std::ostream &operator<<(std::ostream &out, fleece::Dict dict) { return out << dict.toJSONString(); }
+
+    static inline std::ostream &operator<<(std::ostream &out, const litecore::VectorRecord &doc) {
+        doc.dump(out);
+        return out;
+    }
+}  // namespace fleece
 
 namespace litecore {
-    static inline std::ostream& operator<< (std::ostream &out, const litecore::Revision &rev) {
-        return out << "Revision{" << rev.revID.str() << ", " << int(rev.flags)
-                   << ", " << rev.properties.toJSONString() << "}";
+    static inline std::ostream &operator<<(std::ostream &out, const litecore::Revision &rev) {
+        return out << "Revision{" << rev.revID.str() << ", " << int(rev.flags) << ", " << rev.properties.toJSONString()
+                   << "}";
     }
 
-    static inline bool operator== (const litecore::Revision &a, const litecore::Revision &b) {
+    static inline bool operator==(const litecore::Revision &a, const litecore::Revision &b) {
         return a.revID == b.revID && a.flags == b.flags && a.properties.isEqual(b.properties);
     }
-}
+}  // namespace litecore
 
 #include "LiteCoreTest.hh"
 
@@ -54,8 +54,7 @@ using namespace fleece;
 
 static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
 
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord]") {
     VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
     cerr << "Doc is: " << doc << "\n";
 
@@ -81,8 +80,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled VectorRecord", "[VectorRe
     CHECK(mutableProps == properties);
 }
 
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]") {
     {
         VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
 
@@ -144,8 +142,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
     }
 }
 
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord]") {
     {
         VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         CHECK(!doc.exists());
@@ -182,10 +179,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Empty Properties", "[
     }
 }
 
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord]") {
     ExclusiveTransaction t(db);
-    VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
+    VectorRecord         doc(*store, Versioning::RevTrees, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
     doc.setRevID(revidBuffer("1-f000"));
@@ -193,7 +189,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRec
 
     // Add a remote revision:
     MutableDict remoteProps = MutableDict::newDict();
-    remoteProps["rodent"] = "capybara";
+    remoteProps["rodent"]   = "capybara";
     revidBuffer remoteRev("2-eeee");
     doc.setRemoteRevision(kRemote1, Revision{remoteProps, remoteRev, DocumentFlags::kHasAttachments});
     CHECK(doc.changed());
@@ -219,22 +215,21 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRec
     cerr << "Storage:\n" << doc.dumpStorage();
 }
 
-
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord]") {
     ExclusiveTransaction t(db);
     {
         VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
-        
+
         // Create doc, as if pulled from a remote:
         revidBuffer revid1("1-1111");
         doc.mutableProperties()["rodent"] = "mouse";
-        doc.mutableProperties()["age"] = 1;
-        MutableArray loc = MutableArray::newArray();
+        doc.mutableProperties()["age"]    = 1;
+        MutableArray loc                  = MutableArray::newArray();
         loc.append(-108.3);
         loc.append(37.234);
         doc.mutableProperties()["loc"] = loc;
         doc.setRevID(revid1);
-        
+
         // Make remote 1 the same as local:
         auto local = doc.currentRevision();
         CHECK(local == (Revision{doc.properties(), revid1}));
@@ -244,10 +239,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remote Update", "[Vec
     {
         VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         cerr << "\nStorage after pull:\n" << doc.dumpStorage();
-        
+
         CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
-        CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties); // rev body only stored once
-        
+        CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties);  // rev body only stored once
+
         // Update doc locally:
         doc.mutableProperties()["age"] = 2;
         revidBuffer revid2("2-2222");
@@ -262,8 +257,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remote Update", "[Vec
         auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;
         CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
         CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
-        CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once
-        CHECK(props1["loc"] == props2["loc"]);          // array should only be stored once
+        CHECK(props1["rodent"] == props2["rodent"]);  // string should only be stored once
+        CHECK(props1["loc"] == props2["loc"]);        // array should only be stored once
         CHECK(props1["age"] != props2["age"]);
     }
 }

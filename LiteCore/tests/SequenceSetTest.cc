@@ -18,7 +18,6 @@
 using namespace std;
 using namespace litecore;
 
-
 static void checkEmpty(const SequenceSet &s) {
     CHECK(s.empty());
     CHECK(s.size() == 0);
@@ -29,13 +28,11 @@ static void checkEmpty(const SequenceSet &s) {
     CHECK(s.to_string() == "{}");
 }
 
-
 TEST_CASE("SequenceSet: empty", "[SequenceSet]") {
     SequenceSet s;
     checkEmpty(s);
     CHECK(!s.remove(1234));
 }
-
 
 TEST_CASE("SequenceSet: single item", "[SequenceSet]") {
     SequenceSet s;
@@ -62,7 +59,6 @@ TEST_CASE("SequenceSet: single item", "[SequenceSet]") {
     checkEmpty(s);
 }
 
-
 TEST_CASE("SequenceSet: two separate items", "[SequenceSet]") {
     SequenceSet s;
     SECTION("Forwards") {
@@ -77,11 +73,11 @@ TEST_CASE("SequenceSet: two separate items", "[SequenceSet]") {
     CHECK(!s.empty());
     CHECK(s.size() == 2);
     CHECK(s.first() == 100);
-    CHECK(s.last()  == 110);
-    CHECK(!s.contains( 99));
-    CHECK( s.contains(100));
+    CHECK(s.last() == 110);
+    CHECK(!s.contains(99));
+    CHECK(s.contains(100));
     CHECK(!s.contains(109));
-    CHECK( s.contains(110));
+    CHECK(s.contains(110));
     CHECK(!s.contains(111));
 
     auto i = s.begin();
@@ -102,7 +98,6 @@ TEST_CASE("SequenceSet: two separate items", "[SequenceSet]") {
     CHECK(s.to_string() == "{100, 110}");
 }
 
-
 TEST_CASE("SequenceSet: two consecutive items", "[SequenceSet]") {
     SequenceSet s;
     SECTION("Forwards") {
@@ -117,10 +112,10 @@ TEST_CASE("SequenceSet: two consecutive items", "[SequenceSet]") {
     CHECK(!s.empty());
     CHECK(s.size() == 2);
     CHECK(s.first() == 100);
-    CHECK(s.last()  == 101);
-    CHECK(!s.contains( 99));
-    CHECK( s.contains(100));
-    CHECK( s.contains(101));
+    CHECK(s.last() == 101);
+    CHECK(!s.contains(99));
+    CHECK(s.contains(100));
+    CHECK(s.contains(101));
     CHECK(!s.contains(102));
 
     auto i = s.begin();
@@ -131,7 +126,6 @@ TEST_CASE("SequenceSet: two consecutive items", "[SequenceSet]") {
     CHECK(i == s.end());
     CHECK(s.to_string() == "{100-101}");
 }
-
 
 TEST_CASE("SequenceSet: remove item", "[SequenceSet]") {
     SequenceSet s;
@@ -156,7 +150,6 @@ TEST_CASE("SequenceSet: remove item", "[SequenceSet]") {
     checkEmpty(s);
 }
 
-
 TEST_CASE("SequenceSet: merge ranges", "[SequenceSet]") {
     SequenceSet s;
     s.add(100);
@@ -168,7 +161,6 @@ TEST_CASE("SequenceSet: merge ranges", "[SequenceSet]") {
     CHECK(s.to_string() == "{100-104}");
 }
 
-
 TEST_CASE("SequenceSet: remove", "[SequenceSet]") {
     SequenceSet s;
     s.add(100);
@@ -178,12 +170,8 @@ TEST_CASE("SequenceSet: remove", "[SequenceSet]") {
     s.add(104);
     CHECK(s.to_string() == "{100-104}");
 
-    SECTION("Remove 99") {
-        CHECK(!s.remove(99));
-    }
-    SECTION("Remove 105") {
-        CHECK(!s.remove(105));
-    }
+    SECTION("Remove 99") { CHECK(!s.remove(99)); }
+    SECTION("Remove 105") { CHECK(!s.remove(105)); }
     SECTION("Actually remove") {
         SECTION("Remove 100") {
             CHECK(s.remove(100));
@@ -209,7 +197,6 @@ TEST_CASE("SequenceSet: remove", "[SequenceSet]") {
         CHECK(s.size() == 4);
     }
 }
-
 
 TEST_CASE("SequenceSet: add ranges", "[SequenceSet]") {
     SequenceSet s;
@@ -241,27 +228,24 @@ TEST_CASE("SequenceSet: add ranges", "[SequenceSet]") {
     }
 }
 
-
 TEST_CASE("SequenceSet: stress test", "[SequenceSet]") {
     static constexpr size_t N = 200;
-    using seq = SequenceSet::sequence;
+    using seq                 = SequenceSet::sequence;
 
     // Fill 'order' with the sequences [0..kCount), then shuffle them:
     seq order[N];
-    for (seq i = 0; i < N; ++i)
-        order[i] = i;
-    for (seq i = N - 1; i > 0; --i) {
+    for ( seq i = 0; i < N; ++i ) order[i] = i;
+    for ( seq i = N - 1; i > 0; --i ) {
         auto n = RandomNumber(uint32_t(i));
         swap(order[i], order[n]);
     }
 
     // Now add sequences in shuffled order:
     SequenceSet s;
-    for (seq i = 0; i < N; i++) {
+    for ( seq i = 0; i < N; i++ ) {
         s.add(order[i]);
         CHECK(s.size() == i + 1);
-        for (seq j = 0; j < N; j++)
-            CHECK(s.contains(order[j]) == (j <= i));
+        for ( seq j = 0; j < N; j++ ) CHECK(s.contains(order[j]) == (j <= i));
         //Log("%d: %s", i, dump(s).c_str());
     }
 
@@ -272,10 +256,9 @@ TEST_CASE("SequenceSet: stress test", "[SequenceSet]") {
     CHECK(next(iter) == s.end());
 
     // Remove them in shuffled order:
-    for (seq i = 0; i < N; i++) {
+    for ( seq i = 0; i < N; i++ ) {
         CHECK(s.size() == N - i);
-        for (seq j = 0; j < N; j++)
-            CHECK(s.contains(order[j]) == (j >= i));
+        for ( seq j = 0; j < N; j++ ) CHECK(s.contains(order[j]) == (j >= i));
         s.remove(order[i]);
     }
 

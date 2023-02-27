@@ -15,4 +15,4 @@
 
 namespace litecore { namespace actor {
 
-} }
+}}

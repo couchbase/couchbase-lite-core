@@ -26,17 +26,17 @@ namespace fleece::impl {
 namespace litecore {
 
     class PredictiveModel : public fleece::RefCounted {
-    public:
-        virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL,
-                                               DataFile::Delegate* NONNULL,
-                                               C4Error* NONNULL) noexcept =0;
+      public:
+        virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL, DataFile::Delegate* NONNULL,
+                                               C4Error* NONNULL) noexcept
+                = 0;
 
-        void registerAs(const std::string &name);
-        static bool unregister(const std::string &name);
+        void        registerAs(const std::string& name);
+        static bool unregister(const std::string& name);
 
         static fleece::Retained<PredictiveModel> named(const std::string&);
     };
 
-}
+}  // namespace litecore
 
 #endif

@@ -19,36 +19,43 @@
 #include <unordered_map>
 #include <vector>
 
-
 namespace litecore {
 
     class RevTree;
 
     /** In-memory representation of a single revision's metadata. */
     class Rev {
-    public:
-        const RevTree*  owner;
-        const Rev*      parent;
-        revid           revID;      /**< Revision ID (compressed) */
-        sequence_t      sequence;   /**< DB sequence number that this revision has/had */
+      public:
+        const RevTree* owner;
+        const Rev*     parent;
+        revid          revID;    /**< Revision ID (compressed) */
+        sequence_t     sequence; /**< DB sequence number that this revision has/had */
 
         slice body() const;
-        bool isBodyAvailable() const FLPURE{return _body.buf != nullptr;}
 
-        bool isLeaf() const FLPURE         {return (flags & kLeaf) != 0;}
-        bool isDeleted() const FLPURE      {return (flags & kDeleted) != 0;}
-        bool hasAttachments() const FLPURE {return (flags & kHasAttachments) != 0;}
-        bool isNew() const FLPURE          {return (flags & kNew) != 0;}
-        bool isConflict() const FLPURE     {return (flags & kIsConflict) != 0;}
-        bool isClosed() const FLPURE       {return (flags & kClosed) != 0;}
-        bool keepBody() const FLPURE       {return (flags & kKeepBody) != 0;}
+        bool isBodyAvailable() const FLPURE { return _body.buf != nullptr; }
+
+        bool isLeaf() const FLPURE { return (flags & kLeaf) != 0; }
+
+        bool isDeleted() const FLPURE { return (flags & kDeleted) != 0; }
+
+        bool hasAttachments() const FLPURE { return (flags & kHasAttachments) != 0; }
+
+        bool isNew() const FLPURE { return (flags & kNew) != 0; }
+
+        bool isConflict() const FLPURE { return (flags & kIsConflict) != 0; }
+
+        bool isClosed() const FLPURE { return (flags & kClosed) != 0; }
+
+        bool keepBody() const FLPURE { return (flags & kKeepBody) != 0; }
+
         bool isActive() const FLPURE;
 
-        unsigned index() const FLPURE;
-        const Rev* next() const FLPURE;       // next by order in array, i.e. descending priority
+        unsigned                index() const FLPURE;
+        const Rev*              next() const FLPURE;  // next by order in array, i.e. descending priority
         std::vector<const Rev*> history() const;
-        bool isAncestorOf(const Rev* NONNULL) const FLPURE;
-        bool isLatestRemoteRevision() const FLPURE;
+        bool                    isAncestorOf(const Rev* NONNULL) const FLPURE;
+        bool                    isLatestRemoteRevision() const FLPURE;
 
         enum Flags : uint8_t {
             kNoFlags        = 0x00,
@@ -60,22 +67,28 @@ namespace litecore {
             kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
             kClosed         = 0x40, /**< Rev is the end of a closed conflicting branch */
             // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
-            kPurge          = 0x80, /**< (Internal: Rev is marked for purging/pruning) */
+            kPurge = 0x80, /**< (Internal: Rev is marked for purging/pruning) */
         };
+
         Flags flags;
 
-    private:
-        slice       _body;          /**< Revision body (JSON), or empty if not stored in this tree*/
+      private:
+        slice _body; /**< Revision body (JSON), or empty if not stored in this tree*/
 
-        bool _hasInsertedRevID;     /**< Whether revID is owned by RevTree._insertedData */
-        bool _hasInsertedBody;      /**< Whether body is owned by RevTree._insertedData */
+        bool _hasInsertedRevID; /**< Whether revID is owned by RevTree._insertedData */
+        bool _hasInsertedBody;  /**< Whether body is owned by RevTree._insertedData */
 
-        void addFlag(Flags f)           {flags = (Flags)(flags | f);}
-        void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
-        void removeBody()               {clearFlag((Flags)(kKeepBody | kHasAttachments));
-                                         _hasInsertedBody = false;
-                                         _body = nullslice;}
-        bool isMarkedForPurge() const FLPURE    {return (flags & kPurge) != 0;}
+        void addFlag(Flags f) { flags = (Flags)(flags | f); }
+
+        void clearFlag(Flags f) { flags = (Flags)(flags & ~f); }
+
+        void removeBody() {
+            clearFlag((Flags)(kKeepBody | kHasAttachments));
+            _hasInsertedBody = false;
+            _body            = nullslice;
+        }
+
+        bool isMarkedForPurge() const FLPURE { return (flags & kPurge) != 0; }
 #if DEBUG
         void dump(std::ostream&);
 #endif
@@ -83,30 +96,34 @@ namespace litecore {
         friend class RawRevision;
     };
 
-
     /** A serializable tree of Revisions. */
     class RevTree {
-    public:
-        RevTree() =default;
+      public:
+        RevTree() = default;
         RevTree(slice body, slice extra, sequence_t seq);
         RevTree(const RevTree&);
-        virtual ~RevTree() =default;
+        virtual ~RevTree() = default;
 
         void decode(slice body, slice extra, sequence_t seq);
 
-        pair<slice,alloc_slice> encode();
+        pair<slice, alloc_slice> encode();
 
-        size_t size() const FLPURE                             {return _revs.size();}
+        size_t size() const FLPURE { return _revs.size(); }
+
         const Rev* get(unsigned index) const FLPURE;
         const Rev* get(revid) const FLPURE;
-        const Rev* operator[](unsigned index) const FLPURE {return get(index);}
-        const Rev* operator[](revid revID) const FLPURE    {return get(revID);}
+
+        const Rev* operator[](unsigned index) const FLPURE { return get(index); }
+
+        const Rev* operator[](revid revID) const FLPURE { return get(revID); }
+
         const Rev* getBySequence(sequence_t) const FLPURE;
 
-        const std::vector<Rev*>& allRevisions() const FLPURE   {return _revs;}
+        const std::vector<Rev*>& allRevisions() const FLPURE { return _revs; }
+
         const Rev* currentRevision() const;
-        bool hasConflict() const FLPURE;
-        bool hasNewRevisions() const FLPURE;
+        bool       hasConflict() const FLPURE;
+        bool       hasNewRevisions() const FLPURE;
 
         /// Given an array of revision IDs in consecutive descending-generation order,
         /// finds the first one that exists in this tree. Returns:
@@ -114,47 +131,35 @@ namespace litecore {
         /// * {nullptr, n} , where n=history.size(), if there are no common revisions;
         /// * {nullptr, -400} if the history array is invalid
         /// * {nullptr, -409} if `allowConflict` is false and inserting would cause a conflict
-        pair<Rev*,int> findCommonAncestor(const std::vector<revidBuffer> history,
-                                               bool allowConflict);
+        pair<Rev*, int> findCommonAncestor(const std::vector<revidBuffer> history, bool allowConflict);
 
         // Adds a new leaf revision, given the parent's revID
-        const Rev* insert(revid,
-                          const alloc_slice &body,
-                          Rev::Flags,
-                          revid parentRevID,
-                          bool allowConflict,
-                          bool markConflict,
-                          int &httpStatus);
+        const Rev* insert(revid, const alloc_slice& body, Rev::Flags, revid parentRevID, bool allowConflict,
+                          bool markConflict, int& httpStatus);
 
         // Adds a new leaf revision, given a pointer to the parent Rev
-        const Rev* insert(revid,
-                          const alloc_slice &body,
-                          Rev::Flags,
-                          const Rev* parent,
-                          bool allowConflict,
-                          bool markConflict,
-                          int &httpStatus);
+        const Rev* insert(revid, const alloc_slice& body, Rev::Flags, const Rev* parent, bool allowConflict,
+                          bool markConflict, int& httpStatus);
 
         // Adds a new leaf revision along with any new ancestor revs in its history.
         // (history[0] is the new rev's ID, history[1] is its parent's, etc.)
         // Returns the index in `history` of the common ancestor,
         // or -400 if the history vector is invalid, or -409 if there would be a conflict.
-        int insertHistory(const std::vector<revidBuffer> &history,
-                          const alloc_slice &body,
-                          Rev::Flags,
-                          bool allowConflict,
-                          bool markConflict);
+        int insertHistory(const std::vector<revidBuffer>& history, const alloc_slice& body, Rev::Flags,
+                          bool allowConflict, bool markConflict);
 
         // Clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsNotConflict(const Rev*, bool keepBodies);
-        
+
         // CBL-1089 / CBL-1174: Reset the sequence so that it can be the latest
         // when saved
         void resetConflictSequence(const Rev*);
 
-        void setPruneDepth(unsigned depth)              {_pruneDepth = depth;}
+        void setPruneDepth(unsigned depth) { _pruneDepth = depth; }
+
         unsigned prune(unsigned maxDepth);
-        unsigned prune()                                {return prune(_pruneDepth);}
+
+        unsigned prune() { return prune(_pruneDepth); }
 
         void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
@@ -172,48 +177,50 @@ namespace litecore {
 
         //////// Remotes:
 
-        using RemoteID = unsigned;
-        static constexpr RemoteID kNoRemoteID = 0;
-        static constexpr RemoteID kDefaultRemoteID = 1;     // 1st (& usually only) remote server
+        using RemoteID                             = unsigned;
+        static constexpr RemoteID kNoRemoteID      = 0;
+        static constexpr RemoteID kDefaultRemoteID = 1;  // 1st (& usually only) remote server
 
         using RemoteRevMap = std::unordered_map<RemoteID, const Rev*>;
 
         const Rev* latestRevisionOnRemote(RemoteID);
-        void setLatestRevisionOnRemote(RemoteID, const Rev*);
-        const RemoteRevMap& remoteRevisions() const         {return _remoteRevs;}
+        void       setLatestRevisionOnRemote(RemoteID, const Rev*);
+
+        const RemoteRevMap& remoteRevisions() const { return _remoteRevs; }
 
 #if DEBUG
         void dump();
 #endif
 
-    protected:
-        virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const FLPURE;
-        bool isLatestRemoteRevision(const Rev* NONNULL) const FLPURE;
+      protected:
+        virtual bool        isBodyOfRevisionAvailable(const Rev* r NONNULL) const FLPURE;
+        bool                isLatestRemoteRevision(const Rev* NONNULL) const FLPURE;
         virtual alloc_slice copyBody(slice body);
-        virtual alloc_slice copyBody(const alloc_slice &body);
-        void substituteBody(const Rev *rev, slice body)       {const_cast<Rev*>(rev)->_body = body;}
+        virtual alloc_slice copyBody(const alloc_slice& body);
+
+        void substituteBody(const Rev* rev, slice body) { const_cast<Rev*>(rev)->_body = body; }
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
 
-        bool _changed {false};
-        bool _unknown {false};
+        bool _changed{false};
+        bool _unknown{false};
 
-    private:
+      private:
         friend class Rev;
         friend class RawRevision;
         void initRevs();
-        Rev* _insert(revid, const alloc_slice &body, Rev *parent, Rev::Flags, bool markConflicts);
+        Rev* _insert(revid, const alloc_slice& body, Rev* parent, Rev::Flags, bool markConflicts);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();
 
-        bool                     _sorted {true};        // Is _revs currently sorted?
-        std::vector<Rev*>        _revs;                 // Revs in sorted order
-        std::deque<Rev>          _revsStorage;          // Actual storage of the Rev objects
-        std::vector<alloc_slice> _insertedData;         // Storage for new revids
-        RemoteRevMap             _remoteRevs;           // Tracks current rev for a remote DB URL
-        unsigned                 _pruneDepth {UINT_MAX};// Tree depth to prune to
+        bool                     _sorted{true};          // Is _revs currently sorted?
+        std::vector<Rev*>        _revs;                  // Revs in sorted order
+        std::deque<Rev>          _revsStorage;           // Actual storage of the Rev objects
+        std::vector<alloc_slice> _insertedData;          // Storage for new revids
+        RemoteRevMap             _remoteRevs;            // Tracks current rev for a remote DB URL
+        unsigned                 _pruneDepth{UINT_MAX};  // Tree depth to prune to
     };
 
-}
+}  // namespace litecore

@@ -26,4 +26,4 @@ namespace litecore {
         va_end(args);
     }
 
-}
+}  // namespace litecore

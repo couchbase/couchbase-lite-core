@@ -21,12 +21,12 @@
 
 #include <string>
 #if !defined __ANDROID__ || defined __clang__
-#include <codecvt>
+#    include <codecvt>
 #endif
 #include <locale>
 #include <iostream>
 
-#if LITECORE_USES_ICU // See UnicodeCollator_*.cc for other implementations
+#if LITECORE_USES_ICU  // See UnicodeCollator_*.cc for other implementations
 
 /* Note: To build and test this collator in Xcode on a Mac (useful during development) you'll
  need to:
@@ -49,119 +49,88 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-
     class ICUCollationContext : public CollationContext {
-    public:
-        UCollator* ucoll {nullptr};
+      public:
+        UCollator *ucoll{nullptr};
 
-        ICUCollationContext(const Collation &collation)
-        :CollationContext(collation)
-        {
+        ICUCollationContext(const Collation &collation) : CollationContext(collation) {
             UErrorCode status = U_ZERO_ERROR;
-            ucoll = lc_ucol_open(collation.localeName.asString().c_str(), &status);
-            if (U_SUCCESS(status)) {
-                if (status == U_USING_DEFAULT_WARNING)
+            ucoll             = lc_ucol_open(collation.localeName.asString().c_str(), &status);
+            if ( U_SUCCESS(status) ) {
+                if ( status == U_USING_DEFAULT_WARNING )
                     Warn("LiteCore indexer: unknown locale '%.*s', using default collator",
                          SPLAT(collation.localeName));
 
-                if (collation.diacriticSensitive) {
-                    if (!collation.caseSensitive)
-                        lc_ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_SECONDARY, &status);
+                if ( collation.diacriticSensitive ) {
+                    if ( !collation.caseSensitive ) lc_ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_SECONDARY, &status);
                 } else {
                     lc_ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_PRIMARY, &status);
-                    if (collation.caseSensitive)
-                        lc_ucol_setAttribute(ucoll, UCOL_CASE_LEVEL, UCOL_ON, &status);
+                    if ( collation.caseSensitive ) lc_ucol_setAttribute(ucoll, UCOL_CASE_LEVEL, UCOL_ON, &status);
                 }
             }
-            if (U_FAILURE(status))
-                error::_throw(error::UnexpectedError, "Failed to set up collation (ICU error %d)",
-                              (int)status);
+            if ( U_FAILURE(status) )
+                error::_throw(error::UnexpectedError, "Failed to set up collation (ICU error %d)", (int)status);
         }
 
         ~ICUCollationContext() {
-            if (ucoll)
-                lc_ucol_close(ucoll);
+            if ( ucoll ) lc_ucol_close(ucoll);
         }
     };
-
 
     unique_ptr<CollationContext> CollationContext::create(const Collation &coll) {
         return make_unique<ICUCollationContext>(coll);
     }
 
-
     /** Full Unicode-savvy string comparison. */
-    static inline int compareStringsUnicode(int len1, const void *chars1,
-                                            int len2, const void *chars2,
+    static inline int compareStringsUnicode(int len1, const void *chars1, int len2, const void *chars2,
                                             const ICUCollationContext &ctx) {
         UErrorCode status = U_ZERO_ERROR;
-        int result = lc_ucol_strcollUTF8(ctx.ucoll, (const char*)chars1, len1,
-                                                 (const char*)chars2, len2, &status);
-        if (U_FAILURE(status))
-            Warn("Unicode collation failed with ICU status %d", status);
+        int result = lc_ucol_strcollUTF8(ctx.ucoll, (const char *)chars1, len1, (const char *)chars2, len2, &status);
+        if ( U_FAILURE(status) ) Warn("Unicode collation failed with ICU status %d", status);
         return result;
     }
 
-
-    static int collateUnicodeCallback(void *context,
-                                      int len1, const void * chars1,
-                                      int len2, const void * chars2)
-    {
-        auto &coll = *(ICUCollationContext*)context;
-        if (coll.canCompareASCII) {
-            int result = CompareASCII(len1, (const uint8_t*)chars1,
-                                      len2, (const uint8_t*)chars2, coll.caseSensitive);
-            if (result != kCompareASCIIGaveUp)
-                return result;
+    static int collateUnicodeCallback(void *context, int len1, const void *chars1, int len2, const void *chars2) {
+        auto &coll = *(ICUCollationContext *)context;
+        if ( coll.canCompareASCII ) {
+            int result = CompareASCII(len1, (const uint8_t *)chars1, len2, (const uint8_t *)chars2, coll.caseSensitive);
+            if ( result != kCompareASCIIGaveUp ) return result;
         }
         return compareStringsUnicode(len1, chars1, len2, chars2, coll);
     }
-
 
     int CompareUTF8(slice str1, slice str2, const Collation &coll) {
         return CompareUTF8(str1, str2, ICUCollationContext(coll));
     }
 
-
     int CompareUTF8(slice str1, slice str2, const CollationContext &ctx) {
-        return collateUnicodeCallback((void*)&ctx, (int)str1.size, str1.buf,
-                                                   (int)str2.size, str2.buf);
+        return collateUnicodeCallback((void *)&ctx, (int)str1.size, str1.buf, (int)str2.size, str2.buf);
     }
-
 
     int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation &coll) {
         return LikeUTF8(str1, str2, ICUCollationContext(coll));
     }
-
 
     bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
         // FIXME: This is quite slow! Call ICU instead
         return ContainsUTF8_Slow(str, substr, ctx);
     }
 
-
-    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle,
-                                                                const Collation &coll) {
+    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3 *dbHandle, const Collation &coll) {
         unique_ptr<CollationContext> context(new ICUCollationContext(coll));
-        int rc = sqlite3_create_collation(dbHandle,
-                                        coll.sqliteName().c_str(),
-                                        SQLITE_UTF8,
-                                        (void*)context.get(),
-                                        collateUnicodeCallback);
-        if (rc != SQLITE_OK)
-            throw SQLite::Exception(dbHandle, rc);
+        int rc = sqlite3_create_collation(dbHandle, coll.sqliteName().c_str(), SQLITE_UTF8, (void *)context.get(),
+                                          collateUnicodeCallback);
+        if ( rc != SQLITE_OK ) throw SQLite::Exception(dbHandle, rc);
         return context;
     }
 
     vector<string> SupportedLocales() {
         vector<string> locales;
-        int32_t localeCount = lc_ucol_countAvailable();
-        for (int32_t i = 0; i < localeCount; i++) {
-            locales.push_back(lc_ucol_getAvailable(i));
-        }
+        int32_t        localeCount = lc_ucol_countAvailable();
+        for ( int32_t i = 0; i < localeCount; i++ ) { locales.push_back(lc_ucol_getAvailable(i)); }
 
         return locales;
     }
-}
+}  // namespace litecore
 
-#endif // !__APPLE__
+#endif  // !__APPLE__

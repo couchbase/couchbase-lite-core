@@ -21,11 +21,11 @@ namespace SQLite {
     class Database;
     class Statement;
     class Transaction;
-}
-namespace fleece { namespace impl {
-    class SharedKeys;
-} }
+}  // namespace SQLite
 
+namespace fleece { namespace impl {
+        class SharedKeys;
+}}  // namespace fleece::impl
 
 namespace litecore {
 
@@ -34,39 +34,30 @@ namespace litecore {
     void LogStatement(const SQLite::Statement &st);
 
 
-    constexpr const char* kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
-
+    constexpr const char *kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
 
     // Little helper class that makes sure Statement objects get reset on exit
     class UsingStatement {
-    public:
+      public:
         UsingStatement(SQLite::Statement &stmt) noexcept;
 
-        UsingStatement(const std::unique_ptr<SQLite::Statement> &stmt) noexcept
-        :UsingStatement(*stmt.get())
-        { }
+        UsingStatement(const std::unique_ptr<SQLite::Statement> &stmt) noexcept : UsingStatement(*stmt.get()) {}
 
         ~UsingStatement();
 
-    private:
+      private:
         SQLite::Statement &_stmt;
     };
 
-
-    slice getColumnAsSlice(SQLite::Statement&, int col);
-
+    slice getColumnAsSlice(SQLite::Statement &, int col);
 
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
-        fleeceFuncContext(DataFile::Delegate *d,
-                          fleece::impl::SharedKeys *sk)
-        :delegate(d), sharedKeys(sk)
-        { }
+        fleeceFuncContext(DataFile::Delegate *d, fleece::impl::SharedKeys *sk) : delegate(d), sharedKeys(sk) {}
 
-        DataFile::Delegate* delegate;
-        fleece::impl::SharedKeys* const sharedKeys;
+        DataFile::Delegate             *delegate;
+        fleece::impl::SharedKeys *const sharedKeys;
     };
 
-
     void RegisterSQLiteFunctions(sqlite3 *db, fleeceFuncContext);
-}
+}  // namespace litecore

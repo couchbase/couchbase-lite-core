@@ -16,18 +16,18 @@
 
 #if ACTORS_USE_MANIFESTS
 
-#include <chrono>
-#include <list>
-#include <iostream>
-#include <mutex>
+#    include <chrono>
+#    include <list>
+#    include <iostream>
+#    include <mutex>
 
-#ifdef ACTORS_USE_GCD
-#include <dispatch/dispatch.h>
-#endif
+#    ifdef ACTORS_USE_GCD
+#        include <dispatch/dispatch.h>
+#    endif
 
 namespace litecore::actor {
     class Actor;
-    
+
     /** A simple class to keep track of nested mailbox calls, similar to the way that Apple tracks
      *  through GCD enqueue calls.  The way it works is as follows, and is common between both
      *  GCD and threaded mailbox:
@@ -44,9 +44,8 @@ namespace litecore::actor {
      *  4. After the block is finished, the thread local manifest is cleared so that only truly nested calls are recorded.
      *     Subsequent enqueues will start a new manifest
      */
-    class ChannelManifest
-    {
-    public:
+    class ChannelManifest {
+      public:
         /**
          * Records a call to enqueue, with an optional delay
          * @param name  The name of the method being enqueued
@@ -81,26 +80,24 @@ namespace litecore::actor {
         /**
          * Sets the number of "frames" to keep track of to avoid unbounded growth
          */
-        void setLimit(uint8_t limit) {
-            _limit = limit;
-        }
-    private:
-        struct ChannelManifestEntry
-        {
+        void setLimit(uint8_t limit) { _limit = limit; }
+
+      private:
+        struct ChannelManifestEntry {
             std::chrono::microseconds elapsed;
-            std::string description;
+            std::string               description;
         };
 
         const std::chrono::system_clock::time_point _start = std::chrono::system_clock::now();
 
         std::list<ChannelManifestEntry> _enqueueCalls;
         std::list<ChannelManifestEntry> _executions;
-        uint8_t _limit {100};
-        uint32_t _truncatedEnqueue {0};
-        uint32_t _truncatedExecution {0};
-        std::mutex _mutex;
+        uint8_t                         _limit{100};
+        uint32_t                        _truncatedEnqueue{0};
+        uint32_t                        _truncatedExecution{0};
+        std::mutex                      _mutex;
     };
 
-}
+}  // namespace litecore::actor
 
 #endif

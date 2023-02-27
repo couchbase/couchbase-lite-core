@@ -21,16 +21,12 @@
 namespace litecore {
 
     bool isAlphanumericOrUnderscore(slice str) {
-        if (str.size == 0)
-            return false;
-        for (size_t i = 0; i < str.size; i++)
-            if (!isalnum(str[i]) && str[i] != '_')
-                return false;
+        if ( str.size == 0 ) return false;
+        for ( size_t i = 0; i < str.size; i++ )
+            if ( !isalnum(str[i]) && str[i] != '_' ) return false;
         return true;
     }
 
-    bool isValidIdentifier(slice str) {
-        return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
-    }
+    bool isValidIdentifier(slice str) { return isAlphanumericOrUnderscore(str) && !isdigit(str[0]); }
 
-}
+}  // namespace litecore

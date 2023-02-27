@@ -21,68 +21,67 @@ namespace litecore { namespace blip {
 
     /** An outgoing message that's been constructed by a MessageBuilder. */
     class MessageOut : public Message {
-    protected:
+      protected:
         friend class MessageIn;
         friend class Connection;
         friend class BLIPIO;
 
-        MessageOut(Connection *connection,
-                   FrameFlags flags,
-                   alloc_slice payload,
-                   MessageDataSource&& dataSource,
+        MessageOut(Connection *connection, FrameFlags flags, alloc_slice payload, MessageDataSource &&dataSource,
                    MessageNo number);
 
-        MessageOut(Connection *connection,
-                   MessageBuilder &builder,
-                   MessageNo number)
-        :MessageOut(connection, (FrameFlags)0, builder.finish(), std::move(builder.dataSource), number)
-        {
-            _flags = builder.flags();   // finish() may update the flags, so set them after
+        MessageOut(Connection *connection, MessageBuilder &builder, MessageNo number)
+            : MessageOut(connection, (FrameFlags)0, builder.finish(), std::move(builder.dataSource), number) {
+            _flags      = builder.flags();  // finish() may update the flags, so set them after
             _onProgress = std::move(builder.onProgress);
         }
 
-        void dontCompress()                     {_flags = (FrameFlags)(_flags & ~kCompressed);}
+        void dontCompress() { _flags = (FrameFlags)(_flags & ~kCompressed); }
+
         void nextFrameToSend(Codec &codec, fleece::slice_ostream &dst, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
-        bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
-        MessageIn* createResponse();
-        void disconnected();
+
+        bool needsAck() { return _unackedBytes >= kMaxUnackedBytes; }
+
+        MessageIn *createResponse();
+        void       disconnected();
 
         // for debugging/logging:
         std::string description();
-        void dump(std::ostream& out, bool withBody);
-        const char* findProperty(const char *propertyName);
+        void        dump(std::ostream &out, bool withBody);
+        const char *findProperty(const char *propertyName);
 
-    private:
+      private:
         using slice_istream = fleece::slice_istream;
 
-        std::pair<slice,slice> getPropsAndBody() const;
+        std::pair<slice, slice> getPropsAndBody() const;
 
         static const uint32_t kMaxUnackedBytes = 128000;
 
         /** Manages the data (properties, body, data source) of a MessageOut. */
         class Contents {
-        public:
+          public:
             Contents(alloc_slice payload, MessageDataSource dataSource);
-            slice_istream& dataToSend();
-            bool hasMoreDataToSend() const;
-            std::pair<slice,slice> getPropsAndBody() const;
-            slice body() const                  {return _payload;}
-        private:
+            slice_istream          &dataToSend();
+            bool                    hasMoreDataToSend() const;
+            std::pair<slice, slice> getPropsAndBody() const;
+
+            slice body() const { return _payload; }
+
+          private:
             void readFromDataSource();
 
-            alloc_slice _payload;               // Message data (uncompressed)
-            slice_istream _unsentPayload;       // Unsent subrange of _payload
-            MessageDataSource _dataSource;      // Callback that produces more data to send
-            alloc_slice _dataBuffer;            // Data read from _dataSource
-            slice_istream _unsentDataBuffer;    // Unsent subrange of _dataBuffer
+            alloc_slice       _payload;           // Message data (uncompressed)
+            slice_istream     _unsentPayload;     // Unsent subrange of _payload
+            MessageDataSource _dataSource;        // Callback that produces more data to send
+            alloc_slice       _dataBuffer;        // Data read from _dataSource
+            slice_istream     _unsentDataBuffer;  // Unsent subrange of _dataBuffer
         };
 
-        Connection* const _connection;          // My BLIP connection
-        Contents _contents;                     // Message data
-        uint32_t _uncompressedBytesSent {0};    // Number of bytes of the data sent so far
-        uint32_t _bytesSent {0};                // Number of bytes transmitted (after compression)
-        uint32_t _unackedBytes {0};             // Bytes transmitted for which no ack received yet
+        Connection *const _connection;                // My BLIP connection
+        Contents          _contents;                  // Message data
+        uint32_t          _uncompressedBytesSent{0};  // Number of bytes of the data sent so far
+        uint32_t          _bytesSent{0};              // Number of bytes transmitted (after compression)
+        uint32_t          _unackedBytes{0};           // Bytes transmitted for which no ack received yet
     };
 
-} }
+}}  // namespace litecore::blip

@@ -26,69 +26,66 @@ namespace litecore { namespace net {
     class HTTPLogic;
     struct ProxySpec;
     class TLSContext;
-} }
+}}  // namespace litecore::net
 
 namespace litecore { namespace REST {
 
     /** An incoming HTTP body. */
     class Body {
-    public:
+      public:
         using HTTPStatus = net::HTTPStatus;
 
-        fleece::slice header(const char *name) const        {return _headers[fleece::slice(name)];}
-        fleece::slice operator[] (const char *name) const   {return header(name);}
+        fleece::slice header(const char* name) const { return _headers[fleece::slice(name)]; }
 
-        bool hasContentType(fleece::slice contentType) const;
+        fleece::slice operator[](const char* name) const { return header(name); }
+
+        bool                hasContentType(fleece::slice contentType) const;
         fleece::alloc_slice body() const;
-        fleece::Value bodyAsJSON() const;
+        fleece::Value       bodyAsJSON() const;
 
-    protected:
+      protected:
         Body() = default;
-        Body(websocket::Headers headers, fleece::alloc_slice body)
-        :_headers(headers), _body(body)
-        { }
 
-        void setHeaders(websocket::Headers h)       {_headers = h;}
-        void setBody(fleece::alloc_slice body)      {_body = body;}
+        Body(websocket::Headers headers, fleece::alloc_slice body) : _headers(headers), _body(body) {}
 
-        websocket::Headers _headers;
+        void setHeaders(websocket::Headers h) { _headers = h; }
+
+        void setBody(fleece::alloc_slice body) { _body = body; }
+
+        websocket::Headers  _headers;
         fleece::alloc_slice _body;
-        mutable bool _gotBodyFleece {false};
+        mutable bool        _gotBodyFleece{false};
         mutable fleece::Doc _bodyFleece;
     };
-
 
     /** An HTTP response from a server, created by specifying a request to send.
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
-    public:
-        Response(const net::Address&,
-                 net::Method =net::GET);
+      public:
+        Response(const net::Address&, net::Method = net::GET);
 
-        Response(const std::string &scheme,
-                 const std::string &method,
-                 const std::string &hostname,
-                 uint16_t port,
-                 const std::string &uri);
+        Response(const std::string& scheme, const std::string& method, const std::string& hostname, uint16_t port,
+                 const std::string& uri);
 
-        Response(const std::string &method,
-                 const std::string &hostname,
-                 uint16_t port,
-                 const std::string &uri)
-        :Response("http", method, hostname, port, uri)
-        { }
+        Response(const std::string& method, const std::string& hostname, uint16_t port, const std::string& uri)
+            : Response("http", method, hostname, port, uri) {}
 
         ~Response();
 
         Response& setHeaders(fleece::Doc headers);
-        Response& setHeaders(const websocket::Headers &headers);
+        Response& setHeaders(const websocket::Headers& headers);
 
         Response& setAuthHeader(fleece::slice authHeader);
         Response& setBody(fleece::slice body);
         Response& setTLSContext(net::TLSContext*);
         Response& setProxy(const net::ProxySpec&);
-        double    getTimeout() const                    { return _timeout; }
-        Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
+
+        double getTimeout() const { return _timeout; }
+
+        Response& setTimeout(double timeoutSecs) {
+            _timeout = timeoutSecs;
+            return *this;
+        }
 
         Response& allowOnlyCert(fleece::slice certData);
         Response& setRootCerts(fleece::slice certsData);
@@ -100,28 +97,41 @@ namespace litecore { namespace REST {
 
         bool run();
 
-        explicit operator bool()      {return run();}
+        explicit operator bool() { return run(); }
 
-        C4Error error()               {run(); return _error;}
-        HTTPStatus status()           {run(); return _status;}
-        std::string statusMessage()   {run(); return _statusMessage;}
+        C4Error error() {
+            run();
+            return _error;
+        }
 
-    protected:
+        HTTPStatus status() {
+            run();
+            return _status;
+        }
+
+        std::string statusMessage() {
+            run();
+            return _statusMessage;
+        }
+
+      protected:
         net::TLSContext* tlsContext();
-        bool hasRun()                 {return _logic == nullptr;}
-        void setStatus(int status, const std::string &msg) {
-            _status = (HTTPStatus)status;
+
+        bool hasRun() { return _logic == nullptr; }
+
+        void setStatus(int status, const std::string& msg) {
+            _status        = (HTTPStatus)status;
             _statusMessage = msg;
         }
 
-    private:
-        double _timeout {0};
-        std::unique_ptr<net::HTTPLogic> _logic;
+      private:
+        double                            _timeout{0};
+        std::unique_ptr<net::HTTPLogic>   _logic;
         fleece::Retained<net::TLSContext> _tlsContext;
-        fleece::alloc_slice _requestBody;
-        HTTPStatus _status {HTTPStatus::undefined};
-        std::string _statusMessage;
-        C4Error _error {};
+        fleece::alloc_slice               _requestBody;
+        HTTPStatus                        _status{HTTPStatus::undefined};
+        std::string                       _statusMessage;
+        C4Error                           _error{};
     };
 
-} }
+}}  // namespace litecore::REST

@@ -13,10 +13,10 @@
 #include "ThreadUtil.hh"
 
 #if defined(CMAKE)
-#   include "config_thread.h"
+#    include "config_thread.h"
 #elif defined(__APPLE__)
-#   define HAVE_PTHREAD_GETNAME_NP
-#   define HAVE_PTHREAD_THREADID_NP
+#    define HAVE_PTHREAD_GETNAME_NP
+#    define HAVE_PTHREAD_THREADID_NP
 #endif
 
 #include <thread>
@@ -26,69 +26,64 @@
 
 
 #ifndef _MSC_VER
-#pragma mark - UNIX:
+#    pragma mark - UNIX:
 
-#include <pthread.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifndef HAVE_PTHREAD_THREADID_NP
-#   include <sys/syscall.h>
-#endif
-#ifndef HAVE_PTHREAD_GETNAME_NP
-#   include <sys/prctl.h>
-#endif
+#    include <pthread.h>
+#    include <sys/types.h>
+#    include <unistd.h>
+#    ifndef HAVE_PTHREAD_THREADID_NP
+#        include <sys/syscall.h>
+#    endif
+#    ifndef HAVE_PTHREAD_GETNAME_NP
+#        include <sys/prctl.h>
+#    endif
 
 namespace litecore {
 
     void SetThreadName(const char *name) {
-#ifdef __APPLE__
+#    ifdef __APPLE__
         pthread_setname_np(name);
-#else
+#    else
         pthread_setname_np(pthread_self(), name);
-#endif
+#    endif
     }
 
-
     std::string GetThreadName() {
-        std::string retVal;
+        std::string       retVal;
         std::stringstream s;
-        char name[256];
-#if defined(HAVE_PTHREAD_GETNAME_NP)
-        if(pthread_getname_np(pthread_self(), name, 255) == 0 && name[0] != 0) {
-            s << name << " ";
-        }
-#elif defined(HAVE_PRCTL)
-        if(prctl(PR_GET_NAME, name, 0, 0, 0) == 0) {
-            s << name << " ";
-        }
-#else
+        char              name[256];
+#    if defined(HAVE_PTHREAD_GETNAME_NP)
+        if ( pthread_getname_np(pthread_self(), name, 255) == 0 && name[0] != 0 ) { s << name << " "; }
+#    elif defined(HAVE_PRCTL)
+        if ( prctl(PR_GET_NAME, name, 0, 0, 0) == 0 ) { s << name << " "; }
+#    else
         s << "<unknown thread name> ";
-#endif
+#    endif
 
         pid_t tid;
-#if defined(HAVE_PTHREAD_THREADID_NP)
+#    if defined(HAVE_PTHREAD_THREADID_NP)
         // FreeBSD only pthread call, cannot use with glibc, and conversely syscall
         // is deprecated in macOS 10.12+
         uint64_t tmp;
         pthread_threadid_np(pthread_self(), &tmp);
         tid = (pid_t)tmp;
-#elif defined(HAVE_SYS_GETTID)
+#    elif defined(HAVE_SYS_GETTID)
         tid = syscall(SYS_gettid);
-#elif defined(HAVE_NR_GETTID)
+#    elif defined(HAVE_NR_GETTID)
         tid = syscall(__NR_gettid);
-#endif
+#    endif
 
         s << "(" << tid << ")";
         return s.str();
     }
-}
+}  // namespace litecore
 
 
-#else // i.e. ifdef _MSC_VER
-#pragma mark - WINDOWS:
+#else  // i.e. ifdef _MSC_VER
+#    pragma mark - WINDOWS:
 
-#include <Windows.h>
-#include <atlbase.h>
+#    include <Windows.h>
+#    include <atlbase.h>
 
 namespace litecore {
 
@@ -99,39 +94,38 @@ namespace litecore {
 
     const DWORD MS_VC_EXCEPTION = 0x406D1388;
 
-#pragma pack(push, 8)
-    typedef struct
-    {
-        DWORD dwType; // Must be 0x1000.
-        LPCSTR szName; // Pointer to name (in user addr space).
-        DWORD dwThreadID; // Thread ID (-1=caller thread).
-        DWORD dwFlags; // Reserved for future use, must be zero.
+#    pragma pack(push, 8)
+
+    typedef struct {
+        DWORD  dwType;      // Must be 0x1000.
+        LPCSTR szName;      // Pointer to name (in user addr space).
+        DWORD  dwThreadID;  // Thread ID (-1=caller thread).
+        DWORD  dwFlags;     // Reserved for future use, must be zero.
     } THREADNAME_INFO;
-#pragma pack(pop)
+
+#    pragma pack(pop)
 
     // Sometimes these functions are only available this way, according to the docs:
     // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreaddescription#remarks
-    typedef HRESULT(*SetThreadNameCall)(HANDLE, PCWSTR);
-    typedef HRESULT(*GetThreadNameCall)(HANDLE, PWSTR*);
-
+    typedef HRESULT (*SetThreadNameCall)(HANDLE, PCWSTR);
+    typedef HRESULT (*GetThreadNameCall)(HANDLE, PWSTR *);
 
     static HINSTANCE kernelLib() {
         // Defer the LoadLibrary call from static-init time, until it's actually needed:
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#    if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         static HINSTANCE sKernelLib = LoadLibrary(TEXT("kernel32.dll"));
-#else
+#    else
         static HINSTANCE sKernelLib = LoadPackagedLibrary(L"kernel32.dll", 0);
-#endif
+#    endif
         return sKernelLib;
     }
 
-
-    static bool TryNewSetThreadName(const char* name) {
+    static bool TryNewSetThreadName(const char *name) {
         bool valid = false;
-        if(kernelLib() != NULL) {
-            static SetThreadNameCall setThreadNameCall =
-                (SetThreadNameCall)GetProcAddress(kernelLib(), "SetThreadDescription");
-            if(setThreadNameCall != NULL) {
+        if ( kernelLib() != NULL ) {
+            static SetThreadNameCall setThreadNameCall
+                    = (SetThreadNameCall)GetProcAddress(kernelLib(), "SetThreadDescription");
+            if ( setThreadNameCall != NULL ) {
                 CA2WEX<256> wide(name, CP_UTF8);
                 setThreadNameCall(GetCurrentThread(), wide);
                 valid = true;
@@ -142,35 +136,30 @@ namespace litecore {
     }
 
     void SetThreadName(const char *name) {
-        if(!TryNewSetThreadName(name)) {
-            return;
-        }
+        if ( !TryNewSetThreadName(name) ) { return; }
 
         THREADNAME_INFO info;
-        info.dwType = 0x1000;
-        info.szName = name;
+        info.dwType     = 0x1000;
+        info.szName     = name;
         info.dwThreadID = -1;
-        info.dwFlags = 0;
+        info.dwFlags    = 0;
 
         __try {
-            RaiseException(MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-        } __except(EXCEPTION_EXECUTE_HANDLER) {
-
-        }
+            RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR *)&info);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {}
     }
 
-
     std::string GetThreadName() {
-        std::string retVal;
+        std::string       retVal;
         std::stringstream s;
 
-        if(kernelLib() != NULL) {
-            static GetThreadNameCall getThreadNameCall =
-                (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
-            if(getThreadNameCall != NULL) {
+        if ( kernelLib() != NULL ) {
+            static GetThreadNameCall getThreadNameCall
+                    = (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
+            if ( getThreadNameCall != NULL ) {
                 wchar_t *buf;
-                HRESULT r = getThreadNameCall(GetCurrentThread(), &buf);
-                if(SUCCEEDED(r)) {
+                HRESULT  r = getThreadNameCall(GetCurrentThread(), &buf);
+                if ( SUCCEEDED(r) ) {
                     CW2AEX<256> mb(buf, CP_UTF8);
                     retVal = mb;
                     LocalFree(buf);
@@ -178,13 +167,13 @@ namespace litecore {
             }
         }
 
-        if(retVal.size() == 0) {
+        if ( retVal.size() == 0 ) {
             s << std::this_thread::get_id();
             retVal = s.str();
         }
 
         return retVal;
     }
-}
+}  // namespace litecore
 
-#endif // _MSC_VER
+#endif  // _MSC_VER

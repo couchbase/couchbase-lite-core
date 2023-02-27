@@ -19,7 +19,7 @@ C4_ASSUME_NONNULL_BEGIN
 namespace fleece::impl {
     class Dict;
     class SharedKeys;
-}
+}  // namespace fleece::impl
 
 namespace litecore {
 
@@ -37,8 +37,8 @@ namespace litecore {
             appear elsewhere in the dictionary as blobs are preserved. */
         fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
                                                              fleece::impl::SharedKeys* C4NULLABLE);
-    }
+    }  // namespace legacy_attachments
 
-}
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

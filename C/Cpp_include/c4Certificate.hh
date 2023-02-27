@@ -26,10 +26,10 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
-struct C4Cert final : public fleece::RefCounted,
-                      public fleece::InstanceCountedIn<C4Cert>,
-                      C4Base
-{
+struct C4Cert final
+    : public fleece::RefCounted
+    , public fleece::InstanceCountedIn<C4Cert>
+    , C4Base {
 #ifdef COUCHBASE_ENTERPRISE
     static Retained<C4Cert> fromData(slice certData);
 
@@ -44,13 +44,13 @@ struct C4Cert final : public fleece::RefCounted,
     alloc_slice getSubjectNameComponent(C4CertNameAttributeID);
 
     struct NameInfo {
-        alloc_slice id;   ///< X.509 attribute name (e.g. "CN" or "O"), like a C4CertNameAttributeID
-        alloc_slice value;///< The value of the name component, i.e. the name.
+        alloc_slice id;     ///< X.509 attribute name (e.g. "CN" or "O"), like a C4CertNameAttributeID
+        alloc_slice value;  ///< The value of the name component, i.e. the name.
     };
 
     NameInfo getSubjectNameAtIndex(unsigned index);
-#endif // COUCHBASE_ENTERPRISE
-    std::pair<C4Timestamp,C4Timestamp> getValidTimespan();
+#endif  // COUCHBASE_ENTERPRISE
+    std::pair<C4Timestamp, C4Timestamp> getValidTimespan();
 #ifdef COUCHBASE_ENTERPRISE
     C4CertUsage getUsages();
 
@@ -64,23 +64,19 @@ struct C4Cert final : public fleece::RefCounted,
 
     // Certificate signing requests:
 
-    static Retained<C4Cert> createRequest(std::vector<C4CertNameComponent> nameComponents,
-                                          C4CertUsage certUsages,
+    static Retained<C4Cert> createRequest(std::vector<C4CertNameComponent> nameComponents, C4CertUsage certUsages,
                                           C4KeyPair *subjectKey);
 
     static Retained<C4Cert> requestFromData(slice certRequestData);
 
     bool isSigned();
 
-    using SigningCallback = std::function<void(C4Cert*,C4Error)>;
+    using SigningCallback = std::function<void(C4Cert *, C4Error)>;
 
-    void sendSigningRequest(const C4Address &address,
-                            slice optionsDictFleece,
-                            const SigningCallback &callback);
+    void sendSigningRequest(const C4Address &address, slice optionsDictFleece, const SigningCallback &callback);
 
-    Retained<C4Cert> signRequest(const C4CertIssuerParameters &params,
-                                 C4KeyPair *issuerPrivateKey,
-                                 C4Cert* C4NULLABLE issuerCert);
+    Retained<C4Cert> signRequest(const C4CertIssuerParameters &params, C4KeyPair *issuerPrivateKey,
+                                 C4Cert *C4NULLABLE issuerCert);
 
     // Persistence:
 
@@ -94,33 +90,30 @@ struct C4Cert final : public fleece::RefCounted,
 
     // Internal:
 
-    litecore::crypto::Cert* assertSignedCert();
+    litecore::crypto::Cert *assertSignedCert();
 
-private:
-    explicit C4Cert(litecore::crypto::CertBase*);
+  private:
+    explicit C4Cert(litecore::crypto::CertBase *);
     ~C4Cert();
-    litecore::crypto::CertSigningRequest* assertUnsignedCert();
+    litecore::crypto::CertSigningRequest *assertUnsignedCert();
 
-#endif // COUCHBASE_ENTERPRISE
-    litecore::crypto::Cert* C4NULLABLE asSignedCert();
+#endif  // COUCHBASE_ENTERPRISE
+    litecore::crypto::Cert *C4NULLABLE   asSignedCert();
     Retained<litecore::crypto::CertBase> _impl;
 };
 
 #ifdef COUCHBASE_ENTERPRISE
 
-#pragma mark - KEY PAIRS:
+#    pragma mark - KEY PAIRS:
 
-
-struct C4KeyPair final : public fleece::RefCounted, C4Base {
-
-    static Retained<C4KeyPair> generate(C4KeyPairAlgorithm algorithm,
-                                        unsigned sizeInBits,
-                                        bool persistent);
+struct C4KeyPair final
+    : public fleece::RefCounted
+    , C4Base {
+    static Retained<C4KeyPair> generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent);
 
     static Retained<C4KeyPair> fromPublicKeyData(slice publicKeyData);
 
-    static Retained<C4KeyPair> fromPrivateKeyData(slice privateKeyData,
-                                                  slice passwordOrNull);
+    static Retained<C4KeyPair> fromPrivateKeyData(slice privateKeyData, slice passwordOrNull);
 
     bool hasPrivateKey();
 
@@ -134,31 +127,29 @@ struct C4KeyPair final : public fleece::RefCounted, C4Base {
 
     bool isPersistent();
 
-    static Retained<C4KeyPair> persistentWithPublicKey(C4KeyPair*);
+    static Retained<C4KeyPair> persistentWithPublicKey(C4KeyPair *);
 
     void removePersistent();
 
     // Externally-Implemented Key-Pairs:
 
-    static Retained<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm,
-                                            size_t keySizeInBits,
-                                            void *externalKey,
+    static Retained<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void *externalKey,
                                             const C4ExternalKeyCallbacks &callbacks);
 
     // Internal:
-    litecore::crypto::PrivateKey* C4NULLABLE getPrivateKey();
+    litecore::crypto::PrivateKey *C4NULLABLE getPrivateKey();
 
-private:
+  private:
     friend struct C4Cert;
 
-    explicit C4KeyPair(litecore::crypto::Key*);
+    explicit C4KeyPair(litecore::crypto::Key *);
     ~C4KeyPair();
-    Retained<litecore::crypto::PublicKey> getPublicKey();
-    litecore::crypto::PersistentPrivateKey* getPersistentPrivateKey();
+    Retained<litecore::crypto::PublicKey>   getPublicKey();
+    litecore::crypto::PersistentPrivateKey *getPersistentPrivateKey();
 
     Retained<litecore::crypto::Key> _impl;
 };
 
-#endif // COUCHBASE_ENTERPRISE
+#endif  // COUCHBASE_ENTERPRISE
 
 C4_ASSUME_NONNULL_END

@@ -24,5 +24,5 @@ namespace litecore {
         The database MUST NOT be open by any other connections.
         Returns false if the configuration does not allow for upgrading the database. */
     bool UpgradeDatabaseInPlace(const FilePath &path, C4DatabaseConfig);
-    
-}
+
+}  // namespace litecore

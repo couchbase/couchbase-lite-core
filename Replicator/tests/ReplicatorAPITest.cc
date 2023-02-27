@@ -29,15 +29,13 @@ using namespace std;
 using namespace litecore;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
-constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
-                         ReplicatorAPITest::kWikipedia1kDBName,
-                         ReplicatorAPITest::kProtectedDBName,
-                         ReplicatorAPITest::kImagesDBName;
-std::once_flag           ReplicatorAPITest::once;
+constexpr const C4String  ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
+        ReplicatorAPITest::kWikipedia1kDBName, ReplicatorAPITest::kProtectedDBName, ReplicatorAPITest::kImagesDBName;
+std::once_flag ReplicatorAPITest::once;
 
 TEST_CASE("URL Parsing", "[C]][Replicator]") {
     C4Address address;
-    C4String dbName;
+    C4String  dbName;
 
     REQUIRE(c4address_fromURL("ws://localhost/dbname"_sl, &address, &dbName));
     CHECK(address.scheme == "ws"_sl);
@@ -135,29 +133,26 @@ TEST_CASE("URL Parsing", "[C]][Replicator]") {
     CHECK(!c4address_fromURL("ws://snej:password@example.com:8080/db"_sl, &address, &dbName));
 }
 
-
 TEST_CASE("URL Generation", "[C]][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
-    CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0,    "/"_sl}))    == "ws://foo.com/"_sl);
+    CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0, "/"_sl})) == "ws://foo.com/"_sl);
 }
-
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    params.push = kC4OneShot;
-    params.pull = kC4Disabled;
+    params.push            = kC4OneShot;
+    params.pull            = kC4Disabled;
     params.callbackContext = this;
-    params.socketFactory = _socketFactory;
-    _sg.remoteDBName = "something"_sl;
+    params.socketFactory   = _socketFactory;
+    _sg.remoteDBName       = "something"_sl;
 
     _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, ERROR_INFO(err));
     CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
 }
-
 
 // Test invalid URL scheme:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
@@ -170,7 +165,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") 
     CHECK(err.code == kC4NetErrInvalidURL);
 }
 
-
 // Test missing or invalid database name:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
@@ -182,25 +176,24 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     CHECK(err.code == kC4NetErrInvalidURL);
 
     _sg.remoteDBName = "Invalid Name"_sl;
-    err = {};
+    err              = {};
     CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
 }
 
-
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
     _sg.address.hostname = C4STR("localhost");
-    _sg.address.port = 1;  // wrong port!
-    _mayGoOffline = true;
+    _sg.address.port     = 1;  // wrong port!
+    _mayGoOffline        = true;
 
     {
         Encoder enc;
         enc.beginDict();
-        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetries]       = 3;
         enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
         enc.endDict();
         _options = AllocedDict(enc.finish());
@@ -217,7 +210,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     CHECK(_numCallbacksWithLevel[kC4Idle] == 0);
     CHECK(_numCallbacksWithLevel[kC4Offline] == 3);
 }
-
 
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
@@ -237,13 +229,13 @@ C4_IGNORE_NONNULL
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]")
 #ifdef __clang__
-__attribute__((no_sanitize("nullability-arg"))) // suppress breakpoint passing nullptr below
+__attribute__((no_sanitize("nullability-arg")))  // suppress breakpoint passing nullptr below
 #endif
 {
-    C4Error err;
-    C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
+    C4Error                             err;
+    C4Address                           addr{kC4Replicator2Scheme, C4STR("localhost"), 4984};
     repl::C4ReplParamsDefaultCollection params;
-    params.pull = kC4OneShot;
+    params.pull                = kC4OneShot;
     c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, ERROR_INFO(err));
     REQUIRE(repl);
 
@@ -296,53 +288,40 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     createDB2();
     createRev(db2, "doc"_sl, kRevID, kFleeceBody);
 
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    std::vector<std::string> docIDs;
-    params.pull = kC4OneShot;
-    int overall = 0;
-    int perCollection = 0;
+    std::vector<std::string>            docIDs;
+    params.pull            = kC4OneShot;
+    int overall            = 0;
+    int perCollection      = 0;
     params.callbackContext = &overall;
-    params.onDocumentsEnded = [](C4Replicator* repl,
-        bool pushing,
-        size_t numDocs,
-        const C4DocumentEnded* docs[],
-        void* context) {
-            *((int*)context) = 42;
-            if (docs[0]->collectionContext) {
-                *((int*)docs[0]->collectionContext) = 24;
-            }
-    };
+    params.onDocumentsEnded
+            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
+                  *((int*)context) = 42;
+                  if ( docs[0]->collectionContext ) { *((int*)docs[0]->collectionContext) = 24; }
+              };
 
-    int expectedOverall = 0;
+    int expectedOverall       = 0;
     int expectedPerCollection = 0;
 
     C4ReplicationCollection coll;
     SECTION("When using a collection, but not setting a per collection context, only overall is used") {
-        coll = {
-            kC4DefaultCollectionSpec,
-            kC4Disabled,
-            kC4OneShot
-        };
+        coll = {kC4DefaultCollectionSpec, kC4Disabled, kC4OneShot};
 
         params.collectionCount = 1;
-        params.collections = &coll;
-        expectedOverall = 42;
+        params.collections     = &coll;
+        expectedOverall        = 42;
         // perCollection is untouched
     }
 
     SECTION("When using a collection, and setting a per collection context, both contexts are available") {
-        coll = {
-            kC4DefaultCollectionSpec,
-            kC4Disabled,
-            kC4OneShot
-        };
+        coll = {kC4DefaultCollectionSpec, kC4Disabled, kC4OneShot};
 
-        coll.callbackContext = &perCollection;
+        coll.callbackContext   = &perCollection;
         params.collectionCount = 1;
-        params.collections = &coll;
-        expectedOverall = 42;
-        expectedPerCollection = 24;
+        params.collections     = &coll;
+        expectedOverall        = 42;
+        expectedPerCollection  = 24;
     }
 
     c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
@@ -358,49 +337,45 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][Sync]") {
     createDB2();
-    
-    C4CollectionSpec Roses = { "roses"_sl, "flowers"_sl };
-    auto collRose1 = createCollection(db, Roses);
-    auto collRose2 = createCollection(db2, Roses);
-    
+
+    C4CollectionSpec Roses     = {"roses"_sl, "flowers"_sl};
+    auto             collRose1 = createCollection(db, Roses);
+    auto             collRose2 = createCollection(db2, Roses);
+
     addDocs(db, Roses, 10);
     addDocs(db2, Roses, 10);
-    
-    int expectDocCountInDB = 0;
+
+    int expectDocCountInDB  = 0;
     int expectDocCountInDB2 = 0;
-    
+
     C4ReplicationCollection coll;
     SECTION("Push") {
         coll = {
-            Roses,
-            kC4OneShot,
-            kC4Disabled,
+                Roses,
+                kC4OneShot,
+                kC4Disabled,
         };
-        expectDocCountInDB = 10;
+        expectDocCountInDB  = 10;
         expectDocCountInDB2 = 20;
     }
-    
+
     SECTION("Pull") {
-        coll = {
-            Roses,
-            kC4Disabled,
-            kC4OneShot
-        };
-        expectDocCountInDB = 20;
+        coll                = {Roses, kC4Disabled, kC4OneShot};
+        expectDocCountInDB  = 20;
         expectDocCountInDB2 = 10;
     }
-    
+
     C4ReplicatorParameters params{};
-    params.collections = &coll;
+    params.collections     = &coll;
     params.collectionCount = 1;
-    
-    C4Error err;
+
+    C4Error               err;
     c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
     REQUIRE(repl);
 
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
-    
+
     CHECK(c4coll_getDocumentCount(collRose1) == expectDocCountInDB);
     CHECK(c4coll_getDocumentCount(collRose2) == expectDocCountInDB2);
 }
@@ -410,17 +385,18 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
     _sg.address.hostname = C4STR("localhost");
+
     struct Context {
-        int factoryCalls = 0;
-        C4Socket* socket = nullptr;
+        int       factoryCalls = 0;
+        C4Socket* socket       = nullptr;
     };
-    Context context;
+
+    Context         context;
     C4SocketFactory factory = {};
-    factory.context = &context;
-    factory.open = [](C4Socket* socket, const C4Address* addr,
-                      C4Slice options, void *context) {
+    factory.context         = &context;
+    factory.open            = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
         ((Context*)context)->factoryCalls++;
-        ((Context*)context)->socket = c4socket_retain(socket);      // Retain the socket
+        ((Context*)context)->socket = c4socket_retain(socket);  // Retain the socket
         socket->setNativeHandle((void*)0x12345678);
         c4socket_closed(socket, {NetworkDomain, kC4NetErrTooManyRedirects});
     };
@@ -445,8 +421,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
-                     C4RevisionFlags flags, FLDict flbody, void *context) {
+    _pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID, C4RevisionFlags flags,
+                     FLDict flbody, void* context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
         assert(revID.size > 0);
@@ -471,20 +447,16 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
     // Need a large enough data set so that the pulled documents come
     // through in more than one batch
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 15.0, false, db2);
-    
+
     _enableDocProgressNotifications = true;
-    
-    _onDocsEnded = [](C4Replicator* repl,
-                      bool pushing,
-                      size_t numDocs,
-                      const C4DocumentEnded* docs[],
-                      void* context) {
+
+    _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
         ((ReplicatorAPITest*)context)->_docsEnded += (int)numDocs;
         c4repl_stop(repl);
     };
-    
+
     replicate(kC4Disabled, kC4Continuous);
-    
+
     // Not being equal implies that some of the doc ended callbacks failed
     // (presumably because of CBL-221 which causes an actor internal assertion
     // failure that cannot be detected from the outside)
@@ -497,31 +469,27 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    FLSliceResult options {};
+    FLSliceResult options{};
 
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    params.push = kC4OneShot;
-    params.pull = kC4Disabled;
+    params.push            = kC4OneShot;
+    params.pull            = kC4Disabled;
     params.callbackContext = this;
-    params.socketFactory = _socketFactory;
+    params.socketFactory   = _socketFactory;
 
     int expectedPending = 0;
-    SECTION("Normal") {
-        expectedPending = 100;
-    }
+    SECTION("Normal") { expectedPending = 100; }
 
     SECTION("Filtered") {
-        expectedPending = 99;
-        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
-                               C4RevisionFlags flags, FLDict flbody, void *context) {
-            return FLSlice_Compare(docID, "0000005"_sl) != 0;
-        };
+        expectedPending   = 99;
+        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID, C4RevisionFlags flags,
+                               FLDict flbody, void* context) { return FLSlice_Compare(docID, "0000005"_sl) != 0; };
     }
 
     SECTION("Set Doc IDs") {
         expectedPending = 2;
-        FLEncoder e = FLEncoder_New();
+        FLEncoder e     = FLEncoder_New();
         FLEncoder_BeginDict(e, 1);
         FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
         FLEncoder_BeginArray(e, 2);
@@ -529,7 +497,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_WriteString(e, FLSTR("0000004"));
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
-        options = FLEncoder_Finish(e, nullptr);
+        options                                 = FLEncoder_Finish(e, nullptr);
         params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
@@ -558,25 +526,23 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    FLSliceResult options {};
+    FLSliceResult options{};
 
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    params.push = kC4OneShot;
-    params.pull = kC4Disabled;
+    params.push            = kC4OneShot;
+    params.pull            = kC4Disabled;
     params.callbackContext = this;
-    params.socketFactory = _socketFactory;
+    params.socketFactory   = _socketFactory;
 
     bool expectedIsPending = true;
-    SECTION("Normal") {
-        expectedIsPending = true;
-    }
+    SECTION("Normal") { expectedIsPending = true; }
 
     SECTION("Filtered") {
-        expectedIsPending = false;
+        expectedIsPending                     = false;
         params.replCollection.callbackContext = this;
-        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID,
-                               C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID, C4RevisionFlags flags,
+                               FLDict flbody, void* context) {
             auto test = (ReplicatorAPITest*)context;
             c4repl_getStatus(test->_repl);  // If _repl were locked during this callback, this would deadlock
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
@@ -585,7 +551,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
     SECTION("Set Doc IDs") {
         expectedIsPending = false;
-        FLEncoder e = FLEncoder_New();
+        FLEncoder e       = FLEncoder_New();
         FLEncoder_BeginDict(e, 1);
         FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
         FLEncoder_BeginArray(e, 2);
@@ -593,7 +559,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_WriteString(e, FLSTR("0000004"));
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
-        options = FLEncoder_Finish(e, nullptr);
+        options                                 = FLEncoder_Finish(e, nullptr);
         params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
@@ -601,14 +567,14 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec, ERROR_INFO(err));
     CHECK(err.code == 0);
     CHECK(isPending == expectedIsPending);
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
 
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec,  ERROR_INFO(err));
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec, ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
 }
@@ -619,8 +585,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push]") {
     ExpectingExceptions x;
     // Create collection in the db and import documents
-    C4CollectionSpec Kyber = {"kyber"_sl, "crystal"_sl};
-    auto collKyber = createCollection(db, Kyber);
+    C4CollectionSpec Kyber     = {"kyber"_sl, "crystal"_sl};
+    auto             collKyber = createCollection(db, Kyber);
     importJSONLines(sFixturesDir + "names_100.json", collKyber);
 
     // Create the collection in the database to be replicated to
@@ -631,12 +597,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
     C4CollectionSpec Republic = {"republic"_sl, "galactic"_sl};
 
     // Set options for the replication
-    C4Error err;
+    C4Error                         err;
     repl::C4ReplParamsOneCollection params{Kyber};
-    params.push = kC4OneShot;
-    params.pull = kC4Disabled;
+    params.push            = kC4OneShot;
+    params.pull            = kC4Disabled;
     params.callbackContext = this;
-    params.socketFactory = _socketFactory;
+    params.socketFactory   = _socketFactory;
 
     _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
     REQUIRE(_repl);
@@ -653,10 +619,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push]") {
     // Create collections and import documents to them
-    C4CollectionSpec Council = { "council"_sl, "jedi"_sl };
-    C4CollectionSpec Federation = { "federation"_sl, "trade"_sl };
-    auto collCouncil = createCollection(db, Council);
-    auto collFederation = createCollection(db, Federation);
+    C4CollectionSpec Council        = {"council"_sl, "jedi"_sl};
+    C4CollectionSpec Federation     = {"federation"_sl, "trade"_sl};
+    auto             collCouncil    = createCollection(db, Council);
+    auto             collFederation = createCollection(db, Federation);
     importJSONLines(sFixturesDir + "names_100.json", collCouncil);
     importJSONLines(sFixturesDir + "wikipedia_100.json", collFederation);
 
@@ -667,26 +633,26 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
 
     // Set options for the replication
     // Replicating only the Council collection
-    C4Error err;
-    repl::C4ReplParamsOneCollection paramsCouncil {Council };
-    paramsCouncil.push = kC4OneShot;
-    paramsCouncil.pull = kC4Disabled;
+    C4Error                         err;
+    repl::C4ReplParamsOneCollection paramsCouncil{Council};
+    paramsCouncil.push            = kC4OneShot;
+    paramsCouncil.pull            = kC4Disabled;
     paramsCouncil.callbackContext = this;
-    paramsCouncil.socketFactory = _socketFactory;
+    paramsCouncil.socketFactory   = _socketFactory;
 
     // Create replicator config for Federation collection
     // This won't actually be replicated, but is needed to call c4repl_getPendingDocIDs for the collection
-    repl::C4ReplParamsOneCollection paramsFederation {Federation };
-    paramsFederation.push = kC4OneShot;
-    paramsFederation.pull = kC4Disabled;
+    repl::C4ReplParamsOneCollection paramsFederation{Federation};
+    paramsFederation.push         = kC4OneShot;
+    paramsFederation.pull         = kC4Disabled;
     paramsCouncil.callbackContext = this;
-    paramsCouncil.socketFactory = _socketFactory;
+    paramsCouncil.socketFactory   = _socketFactory;
 
     _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
     REQUIRE(_repl);
 
     // Not actually used for replication
-    auto replFed = c4::ref{ c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err)) };
+    auto replFed = c4::ref{c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err))};
     REQUIRE(replFed);
 
     // Check that collection 1 has the right amount of pending documents
@@ -724,7 +690,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     C4Error err;
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR(&err)));
     waitForStatus(kC4Busy, 5s);
-    
+
     C4ReplicatorActivityLevel expected = kC4Stopped;
     SECTION("Stop / Start") {
         c4repl_stop(_repl);
@@ -743,48 +709,48 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
         c4repl_setSuspended(_repl, false);
         expected = kC4Idle;
     }
-    
+
     SECTION("Suspend / Unsuspend / Suspend") {
         c4repl_setSuspended(_repl, true);
         c4repl_setSuspended(_repl, false);
         c4repl_setSuspended(_repl, true);
         expected = kC4Offline;
     }
-    
+
     SECTION("Stop / Suspend") {
         c4repl_stop(_repl);
         c4repl_setSuspended(_repl, true);
     }
-    
+
     SECTION("Suspend / Stop") {
         c4repl_setSuspended(_repl, true);
         c4repl_stop(_repl);
     }
-    
+
     SECTION("Stop / Unsuspend") {
         c4repl_stop(_repl);
         c4repl_setSuspended(_repl, false);
     }
-    
+
     SECTION("Suspend / Stop / Unsuspend") {
         c4repl_setSuspended(_repl, true);
         c4repl_stop(_repl);
         c4repl_setSuspended(_repl, false);
     }
-    
+
     SECTION("Stop / Stop") {
         c4repl_stop(_repl);
         c4repl_stop(_repl);
     }
-    
+
     SECTION("Offline stop") {
         c4repl_setSuspended(_repl, true);
         waitForStatus(kC4Offline);
         c4repl_stop(_repl);
     }
-    
+
     waitForStatus(expected);
-    if(expected != kC4Stopped) {
+    if ( expected != kC4Stopped ) {
         c4repl_stop(_repl);
         waitForStatus(kC4Stopped);
     }
@@ -795,58 +761,53 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull]") {
     C4SocketFactory factory = {};
     SECTION("Using framing") {
-        factory.open = [](C4Socket* socket, const C4Address* addr,
-                          C4Slice options, void *context) {
+        factory.open = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
             // Do nothing, just let things time out....
         };
-        
+
         factory.close = [](C4Socket* socket) {
             // This is a requirement for this test to pass, or the socket will
             // never actually finish "closing"
             c4socket_closed(socket, {});
         };
     }
-    
+
     SECTION("Not using framing") {
         factory.framing = kC4NoFraming;
-        factory.open = [](C4Socket* socket, const C4Address* addr,
-                          C4Slice options, void *context) {
+        factory.open    = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
             // Do nothing, just let things time out....
         };
-        
+
         factory.requestClose = [](C4Socket* socket, int code, C4Slice message) {
             // This is a requirement for this test to pass, or the socket will
             // never actually finish "closing"
             c4socket_closed(socket, {});
         };
     }
-    
+
     _socketFactory = &factory;
-    
+
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
     CHECK_BEFORE(2s, c4repl_getStatus(_repl).level == kC4Connecting);
-    
+
     c4repl_stop(_repl);
-    
+
     // This should not take more than 5 seconds, and certainly not more than 8!
     waitForStatus(kC4Stopped, 8s);
     _socketFactory = nullptr;
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull]") {
-    _mayGoOffline = true;
+    _mayGoOffline           = true;
     C4SocketFactory factory = {};
-    factory.open = [](C4Socket* socket, const C4Address* addr,
-                      C4Slice options, void *context) {
+    factory.open            = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
         c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
     };
-    
-    factory.close = [](C4Socket* socket) {
-        c4socket_closed(socket, {});
-    };
-    
+
+    factory.close = [](C4Socket* socket) { c4socket_closed(socket, {}); };
+
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
@@ -855,20 +816,19 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     _numCallbacksWithLevel[kC4Offline] = 0;
     waitForStatus(kC4Offline);
     c4repl_stop(_repl);
-    
+
     waitForStatus(kC4Stopped);
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {
     // c.f. the flow with test case "Stop after transient connect failure"
-    _mayGoOffline = true;
-    C4SocketFactory factory = {};
-    C4Socket* c4socket = nullptr;
-    factory.context = &c4socket;
-    factory.open = [](C4Socket* socket, const C4Address* addr,
-                      C4Slice options, void *context) {
+    _mayGoOffline            = true;
+    C4SocketFactory factory  = {};
+    C4Socket*       c4socket = nullptr;
+    factory.context          = &c4socket;
+    factory.open             = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
         C4Socket** pp = (C4Socket**)context;
-        if (*pp == nullptr) {
+        if ( *pp == nullptr ) {
             *pp = socket;
             // elongate the lifetime of C4Socket.
             c4socket_retain(socket);
@@ -876,9 +836,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
         c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
     };
 
-    factory.close = [](C4Socket* socket) {
-        c4socket_closed(socket, {});
-    };
+    factory.close = [](C4Socket* socket) { c4socket_closed(socket, {}); };
 
     _socketFactory = &factory;
     C4Error err;
@@ -903,40 +861,35 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     createDB2();
 
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    std::vector<std::string> docIDs;
+    std::vector<std::string>            docIDs;
     params.pull = kC4OneShot;
-    params.onDocumentsEnded = [](C4Replicator* repl,
-                      bool pushing,
-                      size_t numDocs,
-                      const C4DocumentEnded* docs[],
-                      void* context) {
-        auto docIDs = (std::vector<std::string>*)context;
-        for(size_t i = 0; i < numDocs; i++) {
-            docIDs->emplace_back(slice(docs[i]->docID));
-        }
-    };
+    params.onDocumentsEnded
+            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
+                  auto docIDs = (std::vector<std::string>*)context;
+                  for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
+              };
 
-    params.callbackContext = &docIDs;
+    params.callbackContext     = &docIDs;
     c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
     REQUIRE(repl);
 
     {
         TransactionHelper t(db2);
-        constexpr size_t docBufSize = 20;
-        constexpr size_t jsonBufSize = 100;
-        char docID[docBufSize], json[jsonBufSize];
-        for (unsigned i = 1; i <= 50; i++) {
+        constexpr size_t  docBufSize  = 20;
+        constexpr size_t  jsonBufSize = 100;
+        char              docID[docBufSize], json[jsonBufSize];
+        for ( unsigned i = 1; i <= 50; i++ ) {
             snprintf(docID, docBufSize, "doc-%03u", i);
-            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
 
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
-    
+
     REQUIRE(c4db_getLastSequence(db) == 50);
     CHECK(docIDs.empty());
     docIDs.clear();
@@ -945,12 +898,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
     {
         TransactionHelper t(db2);
-        constexpr size_t docBufSize = 20;
-        constexpr size_t jsonBufSize = 100;
-        char docID[docBufSize], json[jsonBufSize];
-        for (unsigned i = 51; i <= 100; i++) {
+        constexpr size_t  docBufSize  = 20;
+        constexpr size_t  jsonBufSize = 100;
+        char              docID[docBufSize], json[jsonBufSize];
+        for ( unsigned i = 51; i <= 100; i++ ) {
             snprintf(docID, docBufSize, "doc-%03u", i);
-            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
             C4Test::createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -959,9 +912,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
 
     REQUIRE(c4db_getLastSequence(db) == 100);
-    REQUIRE(docIDs.size() == 50); 
-    for(unsigned i = 0; i < 50; i++) {
-        auto nextID = litecore::format( "doc-%03u", i + 51);
+    REQUIRE(docIDs.size() == 50);
+    for ( unsigned i = 0; i < 50; i++ ) {
+        auto nextID = litecore::format("doc-%03u", i + 51);
         CHECK(nextID == docIDs[i]);
     }
 }
@@ -969,20 +922,15 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     createDB2();
 
-    C4Error err;
+    C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
-    std::vector<std::string> docIDs;
+    std::vector<std::string>            docIDs;
     params.pull = kC4OneShot;
-    params.onDocumentsEnded = [](C4Replicator* repl,
-                      bool pushing,
-                      size_t numDocs,
-                      const C4DocumentEnded* docs[],
-                      void* context) {
-        auto docIDs = (std::vector<std::string>*)context;
-        for(size_t i = 0; i < numDocs; i++) {
-            docIDs->emplace_back(slice(docs[i]->docID));
-        }
-    };
+    params.onDocumentsEnded
+            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
+                  auto docIDs = (std::vector<std::string>*)context;
+                  for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
+              };
 
     params.callbackContext = &docIDs;
 
@@ -993,7 +941,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     {
         Encoder enc;
         enc.beginDict();
-        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetries]       = 3;
         enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
         enc.endDict();
         _options = AllocedDict(enc.finish());
@@ -1002,12 +950,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     c4repl_setOptions(repl, _options.data());
     {
         TransactionHelper t(db2);
-        constexpr size_t docBufSize = 20;
-        constexpr size_t jsonBufSize = 100;
-        char docID[docBufSize], json[jsonBufSize];
-        for (unsigned i = 1; i <= 50; i++) {
+        constexpr size_t  docBufSize  = 20;
+        constexpr size_t  jsonBufSize = 100;
+        char              docID[docBufSize], json[jsonBufSize];
+        for ( unsigned i = 1; i <= 50; i++ ) {
             snprintf(docID, docBufSize, "doc-%03u", i);
-            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
             createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
         }
     }
@@ -1015,22 +963,23 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
     REQUIRE(c4db_getLastSequence(db) == 50);
-    REQUIRE(docIDs.size() == 50); 
-    for(unsigned i = 0; i < 50; i++) {
-        auto nextID = litecore::format( "doc-%03u", i + 1);
+    REQUIRE(docIDs.size() == 50);
+    for ( unsigned i = 0; i < 50; i++ ) {
+        auto nextID = litecore::format("doc-%03u", i + 1);
         CHECK(nextID == docIDs[i]);
     }
 }
 
-
-#include "c4ReplicatorImpl.hh"
+#    include "c4ReplicatorImpl.hh"
 
 struct C4TestReplicator : public litecore::C4ReplicatorImpl {
-    C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
-        : C4ReplicatorImpl(db, params)   { }
+    C4TestReplicator(C4Database* db, C4ReplicatorParameters params) : C4ReplicatorImpl(db, params) {}
+
     alloc_slice propertiesMemory() const { return _options->properties.data(); }
-    void createReplicator() override     { }
-    alloc_slice URL() const override     { return nullslice; }
+
+    void createReplicator() override {}
+
+    alloc_slice URL() const override { return nullslice; }
 };
 
 #endif
@@ -1038,14 +987,13 @@ struct C4TestReplicator : public litecore::C4ReplicatorImpl {
 TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Push][Pull][.Slow]") {
     // CBL-2410
     C4SocketFactory factory = {};
-    _mayGoOffline = true;
+    _mayGoOffline           = true;
 
     SECTION("Using framing") {
-        factory.open = [](C4Socket* socket, const C4Address* addr,
-                          C4Slice options, void *context) {
+        factory.open = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
             // Do nothing, just let things time out....
         };
-        
+
         factory.close = [](C4Socket* socket) {
             // This is a requirement for this test to pass, or the socket will
             // never actually finish "closing".  Furthermore, this call will hang
@@ -1053,14 +1001,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
             c4socket_closed(socket, {});
         };
     }
-    
+
     SECTION("Not using framing") {
         factory.framing = kC4NoFraming;
-        factory.open = [](C4Socket* socket, const C4Address* addr,
-                          C4Slice options, void *context) {
+        factory.open    = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
             // Do nothing, just let things time out....
         };
-        
+
         factory.requestClose = [](C4Socket* socket, int code, C4Slice message) {
             // This is a requirement for this test to pass, or the socket will
             // never actually finish "closing".  Furthermore, this call will hang
@@ -1070,11 +1017,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     }
 
     _socketFactory = &factory;
-    
+
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Disabled, kC4OneShot, &err));
-    
+
     // Before the fix, offline would never be reached
     waitForStatus(kC4Offline, 16s);
     c4repl_stop(_repl);
@@ -1085,42 +1032,37 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
 // CBL-3747: createFleeceRev was creating rev in the default collection if revID
 // is null.
 TEST_CASE_METHOD(ReplicatorAPITest, "createFleeceRev - null revID", "[C]") {
-    C4CollectionSpec collSpec { "nullRevID"_sl, "fleeceRev"_sl };
-    auto coll = c4db_createCollection(db, collSpec, ERROR_INFO());
-    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    C4CollectionSpec collSpec{"nullRevID"_sl, "fleeceRev"_sl};
+    auto             coll        = c4db_createCollection(db, collSpec, ERROR_INFO());
+    auto             defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     REQUIRE(coll);
     REQUIRE(defaultColl);
-    
+
     constexpr size_t bufSize = 10;
-    for(int i = 0; i < 10; ++i) {
+    for ( int i = 0; i < 10; ++i ) {
         char docID[bufSize];
         snprintf(docID, bufSize, "doc-%i", i);
         createFleeceRev(coll, slice(docID), nullslice, slice(json5("{revID:'null',create:'fleece'}")));
     }
-    
+
     CHECK(c4coll_getDocumentCount(coll) == 10);
     CHECK(c4coll_getDocumentCount(defaultColl) == 0);
 }
 
 class ReplicatorAPITestRemoteReplicator : public C4ReplicatorImpl {
-public:
+  public:
     ReplicatorAPITestRemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params)
         : C4ReplicatorImpl(db, params) {}
 
-    unsigned maxRetryCount() const {
-        return getIntProperty(kC4ReplicatorOptionMaxRetries, 0);
-    }
+    unsigned maxRetryCount() const { return getIntProperty(kC4ReplicatorOptionMaxRetries, 0); }
 
-    void createReplicator() override {
+    void createReplicator() override {}
 
-    }
-
-    alloc_slice URL() const override {
-        return nullslice;
-    }
+    alloc_slice URL() const override { return nullslice; }
 };
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not turn to zero", "[Replicator][CBL-3872]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not turn to zero",
+                 "[Replicator][CBL-3872]") {
     Encoder e;
     e.beginDict(1);
     e.writeKey(kC4ReplicatorOptionMaxRetries);
@@ -1129,8 +1071,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not
     auto fleece = e.finish();
 
     repl::C4ReplParamsDefaultCollection parameters;
-    parameters.push = kC4OneShot;
+    parameters.push              = kC4OneShot;
     parameters.optionsDictFleece = fleece;
     ReplicatorAPITestRemoteReplicator replicator(db, parameters);
-    CHECK(replicator.maxRetryCount() == UINT_MAX); // 32-bit capped
+    CHECK(replicator.maxRetryCount() == UINT_MAX);  // 32-bit capped
 }

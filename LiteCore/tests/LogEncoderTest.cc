@@ -27,35 +27,19 @@ using namespace std;
 
 constexpr size_t kFolderBufSize = 64;
 
-class LogObject : public Logging
-{
-public:
-    LogObject(const std::string& identifier)
-        : Logging(DBLog)
-    ,_identifier(identifier)
-    {
-        
-    }
+class LogObject : public Logging {
+  public:
+    LogObject(const std::string &identifier) : Logging(DBLog), _identifier(identifier) {}
 
-    LogObject(std::string&& identifier)
-        : Logging(DBLog)
-    ,_identifier(identifier)
-    {
-        
-    }
+    LogObject(std::string &&identifier) : Logging(DBLog), _identifier(identifier) {}
 
     void doLog(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info); }
 
-    std::string loggingClassName() const override
-    {
-        return _identifier;
-    }
+    std::string loggingClassName() const override { return _identifier; }
 
-    unsigned getRef() const
-    {
-        return getObjectRef();
-    }
-private:
+    unsigned getRef() const { return getObjectRef(); }
+
+  private:
     std::string _identifier;
 };
 
@@ -63,52 +47,54 @@ static string dumpLog(string encoded, vector<string> levelNames) {
     cerr << "Encoded log is " << encoded.size() << " bytes\n";
     stringstream in(encoded);
     stringstream outDecoded;
-    LogDecoder decoder(in);
+    LogDecoder   decoder(in);
     decoder.decodeTo(outDecoded, levelNames);
     string result = outDecoded.str();
     cerr << result;
     return result;
 }
 
-
 TEST_CASE("LogEncoder formatting", "[Log]") {
     stringstream out;
     {
-        LogEncoder logger(out, LogLevel::Info);
-        size_t size = 0xabcdabcd;
+        LogEncoder            logger(out, LogLevel::Info);
+        size_t                size = 0xabcdabcd;
         map<unsigned, string> dummy;
         logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
-                   1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
-        for (int sgn = -1; sgn <= 1; sgn += 2) {
+                   1234567890U, 2345678901LU, 123456789123456789LLU, size, (void *)0x7fff5fbc);
+        for ( int sgn = -1; sgn <= 1; sgn += 2 ) {
             ptrdiff_t ptrdiff = 1234567890;
             logger.log(nullptr, dummy, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
-                       1234567890*sgn, 234567890L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
+                       1234567890 * sgn, 234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
         }
         const char *str = "C string";
-        slice buf("hello");
-        logger.log(nullptr, dummy, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
+        slice       buf("hello");
+        logger.log(nullptr, dummy, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf),
+                   SPLAT(buf));
     }
     string encoded = out.str();
-    string result = dumpLog(encoded, {});
+    string result  = dumpLog(encoded, {});
 
-    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer 0x7fff5fbc\\n"
-                   TIMESTAMP "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n"
-                   TIMESTAMP "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n"
-                   TIMESTAMP "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
+    regex expected(
+            TIMESTAMP
+            "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+            "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
+            "0x7fff5fbc\\n" TIMESTAMP
+            "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n" TIMESTAMP
+            "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
+            "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
 }
 
-
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
-    stringstream out[4];
+    stringstream                out[4];
     {
         map<unsigned, string> dummy;
-        LogEncoder verbose(out[0], LogLevel::Verbose);
-        LogEncoder info(out[1], LogLevel::Info);
-        LogEncoder warning(out[2], LogLevel::Warning);
-        LogEncoder error(out[3], LogLevel::Error);
+        LogEncoder            verbose(out[0], LogLevel::Verbose);
+        LogEncoder            info(out[1], LogLevel::Info);
+        LogEncoder            warning(out[2], LogLevel::Warning);
+        LogEncoder            error(out[3], LogLevel::Error);
         info.log("Draw", dummy, LogEncoder::None, "drawing %d pictures", 2);
         verbose.log("Paint", dummy, LogEncoder::None, "Waiting for drawings");
         warning.log("Draw", dummy, LogEncoder::None, "made a mistake!");
@@ -118,28 +104,23 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         error.log("Customer", dummy, LogEncoder::None, "This isn't what I asked for!");
     }
 
-    static const vector<string> expectedDomains[] = {
-        { "Paint" },
-        { "Draw", "Draw", "Draw", "Paint" },
-        { "Draw" },
-        { "Customer" }
-    };
-    
-    for(int i = 0; i < 4; i++) {
+    static const vector<string> expectedDomains[]
+            = {{"Paint"}, {"Draw", "Draw", "Draw", "Paint"}, {"Draw"}, {"Customer"}};
+
+    for ( int i = 0; i < 4; i++ ) {
         string encoded = out[i].str();
-        string result = dumpLog(encoded, kLevels);
+        string result  = dumpLog(encoded, kLevels);
 
         stringstream in(encoded);
-        LogDecoder decoder(in);
-        unsigned j = 0;
-        while (decoder.next()) {
-            CHECK(decoder.level() == i+1);
+        LogDecoder   decoder(in);
+        unsigned     j = 0;
+        while ( decoder.next() ) {
+            CHECK(decoder.level() == i + 1);
             CHECK(string(decoder.domain()) == expectedDomains[i][j]);
             ++i;
         }
     }
 }
-
 
 TEST_CASE("LogEncoder tokens", "[Log]") {
     map<unsigned, string> objects;
@@ -158,36 +139,31 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
         logger2.log(nullptr, objects, (LogEncoder::ObjectRef)2, "Am I the rattle too?");
     }
     string encoded = out.str();
-    string result = dumpLog(encoded, {});
-    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{1\\|Tweedledum\\} I'm Tweedledum\\n"
-                   TIMESTAMP "\\{3\\|Tweedledee\\} I'm Tweedledee\\n"
-                   TIMESTAMP "\\{2\\|rattle\\} and I'm the rattle\\n");
+    string result  = dumpLog(encoded, {});
+    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                              "\\{1\\|Tweedledum\\} I'm Tweedledum\\n" TIMESTAMP
+                              "\\{3\\|Tweedledee\\} I'm Tweedledee\\n" TIMESTAMP
+                              "\\{2\\|rattle\\} and I'm the rattle\\n");
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
-    result = dumpLog(encoded, {});
+    result  = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
+    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                               "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
 
-
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
-    LogEncoder logger(out, LogLevel::Info);
+    LogEncoder   logger(out, LogLevel::Info);
     logger.log(nullptr, map<unsigned, string>(), LogEncoder::None, "Hi there");
 
-    logger.withStream([&](ostream &s) {
-        CHECK(out.str().empty());
-    });
+    logger.withStream([&](ostream &s) { CHECK(out.str().empty()); });
     string encoded;
-    CHECK(WaitUntil(5000ms, [&out, &logger, &encoded]{
-        logger.withStream([&](ostream &s) {
-            encoded = out.str();
-        });
+    CHECK(WaitUntil(5000ms, [&out, &logger, &encoded] {
+        logger.withStream([&](ostream &s) { encoded = out.str(); });
         return !encoded.empty();
     }));
 
@@ -203,21 +179,21 @@ TEST_CASE("Logging rollover", "[Log]") {
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
     tmpLogDir["intheway"].mkdir();
-    
+
     {
         ofstream tmpOut(tmpLogDir["abcd"].canonicalPath(), ios::binary);
         tmpOut << "I" << endl;
     }
-    
+
 
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
-    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false };
+    LogFileOptions       fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false};
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
-    for(int i = 0; i < 1024; i++) {
+    for ( int i = 0; i < 1024; i++ ) {
         // Do a lot of logging, so that pruning also gets tested
         obj.doLog("This is line #%d in the log.", i);
-        if(i == 256) {
+        if ( i == 256 ) {
             // Otherwise the logging will happen to fast that
             // rollover won't have a chance to occur
             this_thread::sleep_for(2s);
@@ -229,52 +205,47 @@ TEST_CASE("Logging rollover", "[Log]") {
     snprintf(folderName, kFolderBufSize, "Log_Rollover2_%" PRIms "/", now.count());
     FilePath other = TestFixture::sTempDir[folderName];
     other.mkdir();
-    LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
+    LogFileOptions fileOptions2{other.canonicalPath(), LogLevel::Info, 1024, 2, false};
     LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
-    
+
     vector<string> infoFiles;
-    int totalCount = 0;
-    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath f)
-    {
-       totalCount++;
-       if(f.path().find("info") != string::npos) {
-           infoFiles.push_back(f.path());
-       } 
+    int            totalCount = 0;
+    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath f) {
+        totalCount++;
+        if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 
-    CHECK(totalCount == 8); // 1 for each level besides info, 1 info, 1 "intheway", 1 "acbd"
+    CHECK(totalCount == 8);  // 1 for each level besides info, 1 info, 1 "intheway", 1 "acbd"
     REQUIRE(infoFiles.size() == 2);
     stringstream out;
-    ifstream fin(infoFiles[0], ios::binary);
-    LogDecoder d1(fin);
-    d1.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+    ifstream     fin(infoFiles[0], ios::binary);
+    LogDecoder   d1(fin);
+    d1.decodeTo(out, vector<string>{"", "", "INFO", "", ""});
 
     out.str("");
     // If obj ref rollover is not working then this will throw an exception
-    ifstream fin2(infoFiles[1], ios::binary);
+    ifstream   fin2(infoFiles[1], ios::binary);
     LogDecoder d2(fin2);
-    d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+    d2.decodeTo(out, vector<string>{"", "", "INFO", "", ""});
 
-    LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
+    LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
 
 TEST_CASE("Logging throw in c++", "[Log]") {
     auto now = chrono::milliseconds(time(nullptr));
     char folderName[kFolderBufSize];
     snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
-    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
-    LogFileOptions fileOptions { tmpLogDir.path(), LogLevel::Info, 1024, 1, false };
+    FilePath       tmpLogDir = TestFixture::sTempDir[folderName];
+    LogFileOptions fileOptions{tmpLogDir.path(), LogLevel::Info, 1024, 1, false};
     // Note that we haven't created tmpLogDir. Therefore, there will be an exception.
-    string msg {"File Logger fails to open file, "};
+    string msg{"File Logger fails to open file, "};
     msg += tmpLogDir.path();
-    string excMsg;
+    string               excMsg;
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     try {
         ExpectingExceptions x;
         LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
-    } catch (std::exception& exc) {
-        excMsg = exc.what();
-    }
+    } catch ( std::exception &exc ) { excMsg = exc.what(); }
     CHECK(excMsg.find(msg) == 0);
     LogDomain::writeEncodedLogsTo(prevOptions);
 }
@@ -285,15 +256,14 @@ TEST_CASE("Logging throw in c4", "[Log]") {
     snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     // Note that we haven't created tmpLogDir.
-    C4Error error;
+    C4Error        error;
     LogFileOptions prevOptions;
     {
         ExpectingExceptions x;
         prevOptions = LogDomain::currentLogFileOptions();
-        CHECK(!c4log_writeToBinaryFile({kC4LogVerbose, slice(tmpLogDir.path()), 16*1024, 1, false},
-                                   &error));
+        CHECK(!c4log_writeToBinaryFile({kC4LogVerbose, slice(tmpLogDir.path()), 16 * 1024, 1, false}, &error));
     }
-    string excMsg {"File Logger fails to open file, "};
+    string excMsg{"File Logger fails to open file, "};
     excMsg += tmpLogDir.path();
     string errMsg = "LiteCore CantOpenFile, \"";
     errMsg += excMsg;
@@ -309,24 +279,21 @@ TEST_CASE("Logging plaintext", "[Log]") {
     tmpLogDir.mkdir();
 
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
-    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true };
+    LogFileOptions       fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true};
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
     obj.doLog("This will be in plaintext");
 
     vector<string> infoFiles;
-    tmpLogDir.forEachFile([&infoFiles](const FilePath f)
-    {
-       if(f.path().find("info") != string::npos) {
-           infoFiles.push_back(f.path());
-       } 
+    tmpLogDir.forEachFile([&infoFiles](const FilePath f) {
+        if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 
     REQUIRE(infoFiles.size() == 1);
-    ifstream fin(infoFiles[0]);
-    string line;
+    ifstream       fin(infoFiles[0]);
+    string         line;
     vector<string> lines;
-    while(fin.good()) {
+    while ( fin.good() ) {
         getline(fin, line);
         lines.push_back(line);
     }
@@ -336,5 +303,5 @@ TEST_CASE("Logging plaintext", "[Log]") {
     CHECK(lines[1].find("{dummy#") != string::npos);
     CHECK(lines[1].find("This will be in plaintext") != string::npos);
 
-    LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
+    LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }

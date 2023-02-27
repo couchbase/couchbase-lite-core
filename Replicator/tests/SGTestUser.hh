@@ -26,41 +26,32 @@
 #include "HTTPLogic.hh"
 
 class SG::TestUser {
-public:
-    explicit TestUser()
-        : _sg { nullptr }, _authHeader { nullslice }
-    {}
+  public:
+    explicit TestUser() : _sg{nullptr}, _authHeader{nullslice} {}
 
-    explicit TestUser(SG& sg,
-                      const std::string& username,
-                      const std::vector<std::string>& channels = { "*" },
-                      const std::vector<C4CollectionSpec>& collectionSpecs = { kC4DefaultCollectionSpec },
-                      const std::string& password = "password")
-            : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{ collectionSpecs }
-    {
+    explicit TestUser(SG& sg, const std::string& username, const std::vector<std::string>& channels = {"*"},
+                      const std::vector<C4CollectionSpec>& collectionSpecs = {kC4DefaultCollectionSpec},
+                      const std::string&                   password        = "password")
+        : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{collectionSpecs} {
         Assert(_sg->createUser(_username, _password));
         Assert(_sg->assignUserChannel(_username, _collectionSpecs, _channels));
         _authHeader = HTTPLogic::basicAuth(_username, _password);
     }
+
     // Same as above constructor, but accepts an array parameter
     template <size_t N>
-    explicit TestUser(SG& sg,
-             const std::string& username,
-             const std::vector<std::string>& channels = { "*" },
-             const std::array<C4CollectionSpec, N>& collectionSpecs = { kC4DefaultCollectionSpec },
-             const std::string& password = "password")
-         : TestUser(sg, username, channels, std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), password)
-    {}
+    explicit TestUser(SG& sg, const std::string& username, const std::vector<std::string>& channels = {"*"},
+                      const std::array<C4CollectionSpec, N>& collectionSpecs = {kC4DefaultCollectionSpec},
+                      const std::string&                     password        = "password")
+        : TestUser(sg, username, channels,
+                   std::vector<C4CollectionSpec>(collectionSpecs.begin(), collectionSpecs.end()), password) {}
 
     TestUser(TestUser& other)
-        : TestUser(*(other._sg), other._username, other._channels, other._collectionSpecs, other._password)
-    {}
+        : TestUser(*(other._sg), other._username, other._channels, other._collectionSpecs, other._password) {}
 
-    ~TestUser() {
-        _sg->deleteUser(_username);
-    }
+    ~TestUser() { _sg->deleteUser(_username); }
 
-    TestUser& operator= (const TestUser& other);
+    TestUser& operator=(const TestUser& other);
 
     alloc_slice authHeader() const { return _authHeader; }
 
@@ -71,9 +62,9 @@ public:
     std::string _username;
     std::string _password;
 
-private:
-    SG* _sg;
-    alloc_slice _authHeader;
-    std::vector<std::string> _channels;
+  private:
+    SG*                           _sg;
+    alloc_slice                   _authHeader;
+    std::vector<std::string>      _channels;
     std::vector<C4CollectionSpec> _collectionSpecs;
 };

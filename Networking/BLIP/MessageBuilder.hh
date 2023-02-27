@@ -25,19 +25,18 @@ namespace litecore { namespace blip {
         return the number of bytes written, or 0 on EOF, or a negative number on error. */
     //using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
     class IMessageDataSource {
-    public:
-        virtual int operator() (void *buf, size_t capacity) =0;
-        virtual ~IMessageDataSource() = default;
+      public:
+        virtual int operator()(void* buf, size_t capacity) = 0;
+        virtual ~IMessageDataSource()                      = default;
     };
 
     using MessageDataSource = std::unique_ptr<IMessageDataSource>;
 
-
     /** A temporary object used to construct an outgoing message (request or response).
         The message is sent by calling Connection::sendRequest() or MessageIn::respond(). */
     class MessageBuilder {
-    public:
-        using slice = fleece::slice;
+      public:
+        using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
         typedef std::pair<slice, slice> property;
@@ -49,7 +48,7 @@ namespace litecore { namespace blip {
         MessageBuilder(std::initializer_list<property>);
 
         /** Constructs a MessageBuilder for a response. */
-        MessageBuilder(MessageIn *inReplyTo);
+        MessageBuilder(MessageIn* inReplyTo);
 
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
@@ -61,22 +60,29 @@ namespace litecore { namespace blip {
         MessageBuilder& addProperties(std::initializer_list<property>);
 
         struct propertySetter {
-            MessageBuilder &builder;
-            slice name;
-            MessageBuilder& operator= (slice value)   {return builder.addProperty(name, value);}
-            MessageBuilder& operator= (int64_t value) {return builder.addProperty(name, value);}
+            MessageBuilder& builder;
+            slice           name;
+
+            MessageBuilder& operator=(slice value) { return builder.addProperty(name, value); }
+
+            MessageBuilder& operator=(int64_t value) { return builder.addProperty(name, value); }
         };
-        propertySetter operator[] (slice name)        { return {*this, name}; }
+
+        propertySetter operator[](slice name) { return {*this, name}; }
 
         /** Makes a response an error. */
         void makeError(Error);
 
         /** JSON encoder that can be used to write JSON to the body. */
-        fleece::JSONEncoder& jsonBody()          {finishProperties(); return _out;}
+        fleece::JSONEncoder& jsonBody() {
+            finishProperties();
+            return _out;
+        }
 
         /** Adds data to the body of the message. No more properties can be added afterwards. */
         MessageBuilder& write(slice s);
-        MessageBuilder& operator<< (slice s)        {return write(s);}
+
+        MessageBuilder& operator<<(slice s) { return write(s); }
 
         /** Clears the MessageBuilder so it can be used to create another message. */
         void reset();
@@ -88,30 +94,30 @@ namespace litecore { namespace blip {
         MessageProgressCallback onProgress;
 
         /** Is the message urgent (will be sent more quickly)? */
-        bool urgent         {false};
+        bool urgent{false};
 
         /** Should the message's body be gzipped? */
-        bool compressed     {false};
+        bool compressed{false};
 
         /** Should the message refuse replies? */
-        bool noreply        {false};
+        bool noreply{false};
 
-    protected:
+      protected:
         friend class MessageIn;
         friend class MessageOut;
 
-        FrameFlags flags() const;
+        FrameFlags  flags() const;
         alloc_slice finish();
-        void writeTokenizedString(std::ostream &out, slice str);
+        void        writeTokenizedString(std::ostream& out, slice str);
 
-        MessageType type {kRequestType};
+        MessageType type{kRequestType};
 
-    private:
+      private:
         void finishProperties();
 
-        fleece::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
-        std::stringstream _properties;  // Accumulates encoded properties
-        bool _wroteProperties {false};  // Have _properties been written to _out yet?
+        fleece::JSONEncoder _out;                     // Actually using it for the entire msg, not just JSON
+        std::stringstream   _properties;              // Accumulates encoded properties
+        bool                _wroteProperties{false};  // Have _properties been written to _out yet?
     };
 
-} }
+}}  // namespace litecore::blip

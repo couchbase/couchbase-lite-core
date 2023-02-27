@@ -21,23 +21,23 @@
 #include "sockpp/socket.h"
 
 namespace litecore { namespace net {
-	// This needs to stay here because of the platform variations of
-	// socket_t and INVALID_SOCKET (Windows has them globally and
-	// Unix has them in this namespace)
-	using namespace sockpp; 
-	
+    // This needs to stay here because of the platform variations of
+    // socket_t and INVALID_SOCKET (Windows has them globally and
+    // Unix has them in this namespace)
+    using namespace sockpp;
+
     /** Enables async I/O by running `poll` on a background thread. */
     class Poller {
-    public:
+      public:
         /// The single shared instance (all that's necessary in normal use)
         static Poller& instance();
 
         enum Event {
-            kReadable,      // Data (or EOF) has arrived
-            kWriteable,     // Socket has room to write data
-            kDisconnected   // Socket was closed locally or remotely, or disconnected with error
+            kReadable,     // Data (or EOF) has arrived
+            kWriteable,    // Socket has room to write data
+            kDisconnected  // Socket was closed locally or remotely, or disconnected with error
         };
-        
+
         using Listener = std::function<void()>;
 
         /// The next time the Event is possible on the file descriptor, call the Listener.
@@ -56,21 +56,24 @@ namespace litecore { namespace net {
         Poller();
         ~Poller();
         Poller& start();
-        void stop();
+        void    stop();
 
-    private:
-        Poller(bool startNow)               :Poller() {if (startNow) start();}
+      private:
+        Poller(bool startNow) : Poller() {
+            if ( startNow ) start();
+        }
+
         bool poll();
         void callAndRemoveListener(int fd, Event);
         void _interrupt(int fd);
 
-        std::mutex _mutex;
-        std::unordered_map<socket_t, std::array<Listener,3>> _listeners; // array indexed by Event
-        std::thread _thread;
-        std::atomic_bool _waiting {false};
+        std::mutex                                            _mutex;
+        std::unordered_map<socket_t, std::array<Listener, 3>> _listeners;  // array indexed by Event
+        std::thread                                           _thread;
+        std::atomic_bool                                      _waiting{false};
 
-        socket_t _interruptReadFD  {INVALID_SOCKET}; // Pipe used to interrupt poll()
-        socket_t _interruptWriteFD {INVALID_SOCKET}; // Other end of the pipe
+        socket_t _interruptReadFD{INVALID_SOCKET};   // Pipe used to interrupt poll()
+        socket_t _interruptWriteFD{INVALID_SOCKET};  // Other end of the pipe
     };
 
-} }
+}}  // namespace litecore::net

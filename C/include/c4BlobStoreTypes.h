@@ -13,14 +13,13 @@
 #pragma once
 #include "c4Base.h"
 #ifdef __cplusplus
-    #include "fleece/slice.hh"
-    #include <optional>
-    #include <string>
+#    include "fleece/slice.hh"
+#    include <optional>
+#    include <string>
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
-
 
 /** \defgroup Blobs Blobs
     @{ */
@@ -48,18 +47,13 @@ struct C4BlobKey {
     std::string digestString() const;
 
     /** Returns a slice pointing to the digest bytes. */
-    explicit operator slice() const     {return slice(bytes, sizeof(bytes));}
+    explicit operator slice() const { return slice(bytes, sizeof(bytes)); }
 
-    bool operator== (const C4BlobKey &k) const {
-        return memcmp(bytes, k.bytes, sizeof(bytes)) == 0;
-    }
+    bool operator==(const C4BlobKey &k) const { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
 
-    bool operator!= (const C4BlobKey &k) const {
-        return !(*this == k);
-    }
+    bool operator!=(const C4BlobKey &k) const { return !(*this == k); }
 #endif
 };
-
 
 /** @} */
 /** @} */

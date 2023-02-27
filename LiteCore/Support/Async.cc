@@ -17,7 +17,7 @@ namespace litecore { namespace actor {
 
 
     bool AsyncState::_asyncCall(const AsyncBase &a, int lineNo) {
-        _calling = a._context;
+        _calling    = a._context;
         _continueAt = lineNo;
         return !a.ready();
     }
@@ -28,9 +28,7 @@ namespace litecore { namespace actor {
 #endif
 
 
-    AsyncContext::AsyncContext(Actor *actor)
-    :_actor(actor)
-    {
+    AsyncContext::AsyncContext(Actor *actor) : _actor(actor) {
 #if DEBUG
         ++gInstanceCount;
 #endif
@@ -49,8 +47,7 @@ namespace litecore { namespace actor {
 
     void AsyncContext::start() {
         _waitingSelf = this;
-        if (_actor && _actor != Actor::currentActor())
-            _actor->wakeAsyncContext(this);     // Start on my Actor's queue
+        if ( _actor && _actor != Actor::currentActor() ) _actor->wakeAsyncContext(this);  // Start on my Actor's queue
         else
             next();
     }
@@ -62,21 +59,20 @@ namespace litecore { namespace actor {
 
     void AsyncContext::wakeUp(AsyncContext *async) {
         assert(async == _calling);
-        if (_waitingActor) {
+        if ( _waitingActor ) {
             fleece::Retained<Actor> waitingActor = std::move(_waitingActor);
-            waitingActor->wakeAsyncContext(this);       // queues the next() call on its Mailbox
+            waitingActor->wakeAsyncContext(this);  // queues the next() call on its Mailbox
         } else {
             next();
         }
     }
 
     void AsyncContext::_gotResult() {
-        _ready = true;
+        _ready        = true;
         auto observer = _observer;
-        _observer = nullptr;
-        if (observer)
-            observer->wakeUp(this);
+        _observer     = nullptr;
+        if ( observer ) observer->wakeUp(this);
         _waitingSelf = nullptr;
     }
 
-} }
+}}  // namespace litecore::actor

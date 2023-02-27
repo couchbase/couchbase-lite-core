@@ -127,271 +127,227 @@ namespace litecore { namespace actor {
 
      */
 
-#define BEGIN_ASYNC_RETURNING(T) \
+#define BEGIN_ASYNC_RETURNING(T)                                                                                       \
     return _asyncBody<T>([=](AsyncState &_async_state_) mutable -> T { \
         switch (_async_state_.continueAt()) { \
             default:
-
-#define BEGIN_ASYNC() \
+#define BEGIN_ASYNC()                                                                                                  \
     _asyncBody<void>([=](AsyncState &_async_state_) mutable -> void { \
         switch (_async_state_.continueAt()) { \
             default:
+#define asyncCall(VAR, CALL)                                                                                           \
+    if ( _async_state_._asyncCall(CALL, __LINE__) ) return {};                                                         \
+    case __LINE__:                                                                                                     \
+        VAR = _async_state_.asyncResult<decltype(CALL)::ResultType>();                                                 \
+        _async_state_.reset();
 
-#define asyncCall(VAR, CALL) \
-                if (_async_state_._asyncCall(CALL, __LINE__)) return {}; \
-            case __LINE__: \
-            VAR = _async_state_.asyncResult<decltype(CALL)::ResultType>(); _async_state_.reset();
-
-#define END_ASYNC() \
-        } \
+#define END_ASYNC()                                                                                                    \
+    }                                                                                                                  \
     });
 
 
     class AsyncBase;
     class AsyncContext;
-    template <class T> class Async;
-    template <class T> class AsyncProvider;
-
+    template <class T>
+    class Async;
+    template <class T>
+    class AsyncProvider;
 
     /** The state data passed to the lambda of an async function. */
     class AsyncState {
-    public:
-        uint32_t continueAt() const                         {return _continueAt;}
+      public:
+        uint32_t continueAt() const { return _continueAt; }
 
         bool _asyncCall(const AsyncBase &a, int lineNo);
 
         template <class T>
-        T&& asyncResult() {
-            return ((AsyncProvider<T>*)_calling.get())->extractResult();
+        T &&asyncResult() {
+            return ((AsyncProvider<T> *)_calling.get())->extractResult();
         }
 
-        void reset()                                        {_calling = nullptr;}
+        void reset() { _calling = nullptr; }
 
-    protected:
-        fleece::Retained<AsyncContext> _calling;            // What I'm blocked awaiting
-        uint32_t _continueAt {0};                           // label/line# to continue lambda at
+      protected:
+        fleece::Retained<AsyncContext> _calling;        // What I'm blocked awaiting
+        uint32_t                       _continueAt{0};  // label/line# to continue lambda at
     };
-
 
     // Maintains the context/state of an async operation and its observer.
     // Abstract base class of AsyncProvider<T>.
-    class AsyncContext : public fleece::RefCounted, protected AsyncState {
-    public:
-        bool ready() const                                  {return _ready;}
+    class AsyncContext
+        : public fleece::RefCounted
+        , protected AsyncState {
+      public:
+        bool ready() const { return _ready; }
+
         void setObserver(AsyncContext *p);
         void wakeUp(AsyncContext *async);
 
-    protected:
+      protected:
         AsyncContext(Actor *actor);
         ~AsyncContext();
         void start();
         void _wait();
         void _gotResult();
 
-        virtual void next() =0;
+        virtual void next() = 0;
 
-        bool _ready {false};                                // True when result is ready
-        fleece::Retained<AsyncContext> _observer;           // Dependent context waiting on me
-        Actor *_actor;                                      // Owning actor, if any
-        fleece::Retained<Actor> _waitingActor;              // Actor that's waiting, if any
-        fleece::Retained<AsyncContext> _waitingSelf;        // Keeps `this` from being freed
+        bool                           _ready{false};  // True when result is ready
+        fleece::Retained<AsyncContext> _observer;      // Dependent context waiting on me
+        Actor                         *_actor;         // Owning actor, if any
+        fleece::Retained<Actor>        _waitingActor;  // Actor that's waiting, if any
+        fleece::Retained<AsyncContext> _waitingSelf;   // Keeps `this` from being freed
 
 #if DEBUG
-    public:
+      public:
         static std::atomic_int gInstanceCount;
 #endif
 
-        template <class T> friend class Async;
+        template <class T>
+        friend class Async;
         friend class Actor;
     };
-
 
     /** An asynchronously-provided result, seen from the producer side. */
     template <class T>
     class AsyncProvider : public AsyncContext {
-    public:
+      public:
         template <class LAMBDA>
-        explicit AsyncProvider(Actor *actor, const LAMBDA body)
-        :AsyncContext(actor)
-        ,_body(body)
-        { }
+        explicit AsyncProvider(Actor *actor, const LAMBDA body) : AsyncContext(actor), _body(body) {}
 
-        static fleece::Retained<AsyncProvider> create() {
-            return new AsyncProvider;
-        }
+        static fleece::Retained<AsyncProvider> create() { return new AsyncProvider; }
 
-        Async<T> asyncValue() {
-            return Async<T>(this);
-        }
+        Async<T> asyncValue() { return Async<T>(this); }
 
         void setResult(const T &result) {
             _result = result;
             _gotResult();
         }
 
-        const T& result() const {
+        const T &result() const {
             assert(_ready);
             return _result;
         }
 
-        T&& extractResult() {
+        T &&extractResult() {
             assert(_ready);
             return std::move(_result);
         }
 
-    private:
-        AsyncProvider()
-        :AsyncContext(nullptr)
-        { }
+      private:
+        AsyncProvider() : AsyncContext(nullptr) {}
 
         void next() override {
             _result = _body(*this);
-            if (_calling)
-                _wait();
+            if ( _calling ) _wait();
             else
                 _gotResult();
         }
 
-        std::function<T(AsyncState&)> _body;            // The async function body
-        T _result {};                                   // My result
+        std::function<T(AsyncState &)> _body;      // The async function body
+        T                              _result{};  // My result
     };
-
 
     // Specialization of AsyncProvider for use in functions with no return value (void).
     template <>
     class AsyncProvider<void> : public AsyncContext {
-    public:
+      public:
         template <class LAMBDA>
-        explicit AsyncProvider(Actor *actor, const LAMBDA &body)
-        :AsyncContext(actor)
-        ,_body(body)
-        { }
+        explicit AsyncProvider(Actor *actor, const LAMBDA &body) : AsyncContext(actor), _body(body) {}
 
-        static fleece::Retained<AsyncProvider> create() {
-            return new AsyncProvider;
-        }
+        static fleece::Retained<AsyncProvider> create() { return new AsyncProvider; }
 
-    private:
-        AsyncProvider()
-        :AsyncContext(nullptr)
-        { }
+      private:
+        AsyncProvider() : AsyncContext(nullptr) {}
 
         void next() override {
             _body(*this);
-            if (_calling)
-                _wait();
+            if ( _calling ) _wait();
             else
                 _gotResult();
         }
 
-        std::function<void(AsyncState&)> _body;         // The async function body
+        std::function<void(AsyncState &)> _body;  // The async function body
     };
-
 
     // base class of Async<T>
     class AsyncBase {
-    public:
-        explicit AsyncBase(const fleece::Retained<AsyncContext> &context)
-        :_context(context)
-        { }
+      public:
+        explicit AsyncBase(const fleece::Retained<AsyncContext> &context) : _context(context) {}
 
-        bool ready() const                                          {return _context->ready();}
+        bool ready() const { return _context->ready(); }
 
-    protected:
-        fleece::Retained<AsyncContext> _context;        // The AsyncProvider that owns my value
+      protected:
+        fleece::Retained<AsyncContext> _context;  // The AsyncProvider that owns my value
 
         friend class AsyncState;
     };
 
-
     /** An asynchronously-provided result, seen from the client side. */
     template <class T>
     class Async : public AsyncBase {
-    public:
+      public:
         using ResultType = T;
 
-        Async(AsyncProvider<T> *provider)
-        :AsyncBase(provider)
-        { }
+        Async(AsyncProvider<T> *provider) : AsyncBase(provider) {}
 
-        Async(const fleece::Retained<AsyncProvider<T>> &provider)
-        :AsyncBase(provider)
-        { }
+        Async(const fleece::Retained<AsyncProvider<T>> &provider) : AsyncBase(provider) {}
 
         template <class LAMBDA>
-        Async(Actor *actor, const LAMBDA& bodyFn)
-        :Async( new AsyncProvider<T>(actor, bodyFn) )
-        {
+        Async(Actor *actor, const LAMBDA &bodyFn) : Async(new AsyncProvider<T>(actor, bodyFn)) {
             _context->start();
         }
 
         /** Returns a new AsyncProvider<T>. */
-        static fleece::Retained<AsyncProvider<T>> provider() {
-            return AsyncProvider<T>::create();
-        }
+        static fleece::Retained<AsyncProvider<T>> provider() { return AsyncProvider<T>::create(); }
 
-        const T& result() const             {return ((AsyncProvider<T>*)_context.get())->result();}
+        const T &result() const { return ((AsyncProvider<T> *)_context.get())->result(); }
 
         /** Invokes the callback when this Async's result becomes ready,
             or immediately if it's ready now. */
         template <class LAMBDA>
         void wait(LAMBDA callback) {
-            if (ready())
-                callback(result());
+            if ( ready() ) callback(result());
             else
-                (void) new AsyncWaiter(_context, callback);
+                (void)new AsyncWaiter(_context, callback);
         }
-
 
         // Internal class used by wait(), above
         class AsyncWaiter : public AsyncContext {
-        public:
+          public:
             template <class LAMBDA>
-            AsyncWaiter(AsyncContext *context, LAMBDA callback)
-            :AsyncContext(nullptr)
-            ,_callback(callback)
-            {
+            AsyncWaiter(AsyncContext *context, LAMBDA callback) : AsyncContext(nullptr), _callback(callback) {
                 _waitingSelf = this;
-                _calling = context;
+                _calling     = context;
                 _wait();
             }
 
-        protected:
+          protected:
             void next() override {
                 _callback(asyncResult<T>());
                 _waitingSelf = nullptr;
             }
 
-        private:
+          private:
             std::function<void(T)> _callback;
         };
     };
 
-
     // Specialization of Async<> for functions with no result
     template <>
     class Async<void> : public AsyncBase {
-    public:
-        Async(AsyncProvider<void> *provider)
-        :AsyncBase(provider)
-        { }
+      public:
+        Async(AsyncProvider<void> *provider) : AsyncBase(provider) {}
 
-        Async(const fleece::Retained<AsyncProvider<void>> &provider)
-        :AsyncBase(provider)
-        { }
+        Async(const fleece::Retained<AsyncProvider<void>> &provider) : AsyncBase(provider) {}
 
-        static fleece::Retained<AsyncProvider<void>> provider() {
-            return AsyncProvider<void>::create();
-        }
+        static fleece::Retained<AsyncProvider<void>> provider() { return AsyncProvider<void>::create(); }
 
         template <class LAMBDA>
-        Async(Actor *actor, const LAMBDA& bodyFn)
-        :Async( new AsyncProvider<void>(actor, bodyFn) )
-        {
+        Async(Actor *actor, const LAMBDA &bodyFn) : Async(new AsyncProvider<void>(actor, bodyFn)) {
             _context->start();
         }
     };
-
 
     /** Body of an async function: Creates an AsyncProvider from the lambda given,
         then returns an Async that refers to that provider. */
@@ -400,4 +356,4 @@ namespace litecore { namespace actor {
         return Async<T>(nullptr, bodyFn);
     }
 
-} }
+}}  // namespace litecore::actor

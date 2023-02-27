@@ -25,20 +25,13 @@ using namespace fleece;
 
 #pragma mark - WEBSOCKET:
 
-
 namespace litecore { namespace websocket {
 
     LogDomain WSLogDomain("WS", LogLevel::Warning);
 
+    WebSocket::WebSocket(const alloc_slice& a, Role role) : _url(a), _role(role) {}
 
-    WebSocket::WebSocket(const alloc_slice &a, Role role)
-    :_url(a)
-    ,_role(role)
-    { }
-
-
-    WebSocket::~WebSocket() =default;
-
+    WebSocket::~WebSocket() = default;
 
     void WebSocket::connect(Retained<WeakHolder<Delegate>> weakDelegate) {
         DebugAssert(!_delegateWeakHolder);
@@ -46,12 +39,11 @@ namespace litecore { namespace websocket {
         connect();
     }
 
-
-    const char* CloseStatus::reasonName() const  {
-        static const char* kReasonNames[] = {"WebSocket/HTTP status", "errno",
-            "Network error", "Exception", "Unknown error"};
+    const char* CloseStatus::reasonName() const {
+        static const char* kReasonNames[]
+                = {"WebSocket/HTTP status", "errno", "Network error", "Exception", "Unknown error"};
         DebugAssert(reason < CloseReason(5));
         return kReasonNames[reason];
     }
 
-} }
+}}  // namespace litecore::websocket

@@ -40,59 +40,67 @@ namespace litecore {
         consists of multiple binary versions concatenated. HOWEVER, the `revid` API only gives information
         about the first (current) version in the vector, except for the `asVersionVector` method. */
     class revid : public slice {
-    public:
-        revid()                                            :slice() {}
-        revid(const void* b, size_t s)                     :slice(b,s) {}
-        explicit revid(slice s)                            :slice(s) {}
+      public:
+        revid() : slice() {}
 
-        bool operator< (const revid&) const FLPURE;
-        bool operator> (const revid &r) const FLPURE       {return r < *this;}
+        revid(const void *b, size_t s) : slice(b, s) {}
+
+        explicit revid(slice s) : slice(s) {}
+
+        bool operator<(const revid &) const FLPURE;
+
+        bool operator>(const revid &r) const FLPURE { return r < *this; }
 
         /// Returns true if both revids represent the same revision:
         /// - If both are version vectors (or single versions) and their leading versions are equal
         /// - or if both are digest-based and are bitwise equal.
-        bool isEquivalentTo(const revid&) const noexcept FLPURE;
+        bool isEquivalentTo(const revid &) const noexcept FLPURE;
 
         /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
-        bool isVersion() const noexcept FLPURE             {return size > 0 && (*this)[0] == 0;}
+        bool isVersion() const noexcept FLPURE { return size > 0 && (*this)[0] == 0; }
 
         //---- Tree revision IDs only
-        pair<unsigned,slice> generationAndDigest() const FLPURE;
-        unsigned generation() const FLPURE;
-        slice digest() const FLPURE                        {return generationAndDigest().second;}
+        pair<unsigned, slice> generationAndDigest() const FLPURE;
+        unsigned              generation() const FLPURE;
+
+        slice digest() const FLPURE { return generationAndDigest().second; }
 
         //---- Version IDs only
-        Version asVersion() const FLPURE;
+        Version       asVersion() const FLPURE;
         VersionVector asVersionVector() const;
 
         //---- ASCII conversions:
         alloc_slice expanded() const;
-        bool expandInto(slice_ostream &dst) const noexcept;
+        bool        expandInto(slice_ostream &dst) const noexcept;
         std::string str() const;
-        explicit operator std::string() const       {return str();}
+
+        explicit operator std::string() const { return str(); }
     };
 
-    
     /** A self-contained revid that includes its own data buffer.
 
         PLEASE NOTE: the `parse` and `tryParse` methods can parse a single version, but not an entire
         VersionVector -- they will barf at the first comma. This is intentional. A `revidBuffer` is fixed-
         size and can't hold an arbitrarily long version vector. */
     class revidBuffer : public revid {
-    public:
-        revidBuffer()                               :revid(&_buffer, 0) {}
+      public:
+        revidBuffer() : revid(&_buffer, 0) {}
+
         revidBuffer(unsigned generation, slice digest);
-        explicit revidBuffer(revid rev)             {*this = rev;}
-        explicit revidBuffer(const Version &v)      {*this = v;}
-        revidBuffer(const revidBuffer &r)           {*this = r;}
+
+        explicit revidBuffer(revid rev) { *this = rev; }
+
+        explicit revidBuffer(const Version &v) { *this = v; }
+
+        revidBuffer(const revidBuffer &r) { *this = r; }
 
         /** Constructs a revidBuffer from an ASCII revision (digest or version style).
             Throws BadRevisionID if the string isn't parseable.*/
-        explicit revidBuffer(slice asciiString)     :revid(&_buffer, 0) {parse(asciiString);}
+        explicit revidBuffer(slice asciiString) : revid(&_buffer, 0) { parse(asciiString); }
 
-        revidBuffer& operator= (const revidBuffer&) noexcept;
-        revidBuffer& operator= (const revid&);
-        revidBuffer& operator= (const Version &vers) noexcept;
+        revidBuffer &operator=(const revidBuffer &) noexcept;
+        revidBuffer &operator=(const revid &);
+        revidBuffer &operator=(const Version &vers) noexcept;
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
             Throws BadRevisionID if the string isn't parseable.
@@ -106,7 +114,7 @@ namespace litecore {
                     To parse the entire vector, call \ref VersionVector::fromASCII. */
         bool tryParse(slice asciiString) noexcept;
 
-    private:
+      private:
         uint8_t _buffer[42];
     };
-}
+}  // namespace litecore

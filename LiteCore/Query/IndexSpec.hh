@@ -18,37 +18,34 @@
 namespace fleece::impl {
     class Array;
     class Doc;
-}
+}  // namespace fleece::impl
 
 namespace litecore {
-    
-    enum class QueryLanguage {          // Values MUST match C4QueryLanguage in c4Query.h
+
+    enum class QueryLanguage {  // Values MUST match C4QueryLanguage in c4Query.h
         kJSON,
         kN1QL,
     };
 
     struct IndexSpec {
         enum Type {
-            kValue,         ///< Regular index of property value
-            kFullText,      ///< Full-text index, for MATCH queries
-            kArray,         ///< Index of array values, for UNNEST queries
-            kPredictive,    ///< Index of prediction results
+            kValue,       ///< Regular index of property value
+            kFullText,    ///< Full-text index, for MATCH queries
+            kArray,       ///< Index of array values, for UNNEST queries
+            kPredictive,  ///< Index of prediction results
         };
 
         struct Options {
-            const char* language;   ///< NULL or an ISO language code ("en", etc)
-            bool ignoreDiacritics;  ///< True to strip diacritical marks/accents from letters
-            bool disableStemming;   ///< Disables stemming
-            const char* stopWords;  ///< NULL for default, or comma-delimited string, or empty
+            const char* language;          ///< NULL or an ISO language code ("en", etc)
+            bool        ignoreDiacritics;  ///< True to strip diacritical marks/accents from letters
+            bool        disableStemming;   ///< Disables stemming
+            const char* stopWords;         ///< NULL for default, or comma-delimited string, or empty
         };
 
-        IndexSpec(std::string name_,
-                  Type type_,
-                  alloc_slice expression_,
-                  QueryLanguage queryLanguage =QueryLanguage::kJSON,
-                  const Options* opt =nullptr);
+        IndexSpec(std::string name_, Type type_, alloc_slice expression_,
+                  QueryLanguage queryLanguage = QueryLanguage::kJSON, const Options* opt = nullptr);
 
-        IndexSpec(const IndexSpec&) =delete;
+        IndexSpec(const IndexSpec&) = delete;
         IndexSpec(IndexSpec&&);
 
         ~IndexSpec();
@@ -60,7 +57,7 @@ namespace litecore {
             return kTypeName[type];
         }
 
-        const Options* optionsPtr() const       {return options ? &*options : nullptr;}
+        const Options* optionsPtr() const { return options ? &*options : nullptr; }
 
         /** The required WHAT clause: the list of expressions to index */
         const fleece::impl::Array* NONNULL what() const;
@@ -69,15 +66,15 @@ namespace litecore {
         const fleece::impl::Array* where() const;
 
         std::string const            name;
-        Type        const            type;
+        Type const                   type;
         alloc_slice const            expression;
         QueryLanguage                queryLanguage;
         std::optional<Options> const options;
 
-    private:
+      private:
         fleece::impl::Doc* doc() const;
 
         mutable Retained<fleece::impl::Doc> _doc;
     };
 
-}
+}  // namespace litecore

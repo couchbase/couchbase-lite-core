@@ -20,50 +20,43 @@ namespace litecore { namespace repl {
     /** A set of opaque remote sequence IDs, representing server-side database sequences.
         This is used by the replicator to keep track of which revisions are being pulled. */
     class RemoteSequenceSet {
-    public:
-        RemoteSequenceSet()                     =default;
+      public:
+        RemoteSequenceSet() = default;
 
         /** Empties the set. */
         void clear(RemoteSequence since) {
             _sequences.clear();
             _nextOrder = 0;
             _lastAdded = since;
-            _first = _sequences.end();
+            _first     = _sequences.end();
         }
 
-        bool empty() const {
-            return _sequences.empty();
-        }
+        bool empty() const { return _sequences.empty(); }
 
-        size_t size() const {
-            return _sequences.size();
-        }
+        size_t size() const { return _sequences.size(); }
 
         /** Returns the sequence before the earliest one still in the set. */
-        RemoteSequence since() {
-            return (_first != _sequences.end()) ? _first->second.prevSequence : _lastAdded;
-        }
+        RemoteSequence since() { return (_first != _sequences.end()) ? _first->second.prevSequence : _lastAdded; }
 
         /** Adds a sequence to the set. */
         void add(RemoteSequence s, uint64_t bodySize) {
             bool wasEmpty = empty();
-            auto p = _sequences.insert({s, {_nextOrder++, _lastAdded, bodySize}});
-            _lastAdded = std::move(s);
-            if (wasEmpty)
-                _first = p.first;
+            auto p        = _sequences.insert({s, {_nextOrder++, _lastAdded, bodySize}});
+            _lastAdded    = std::move(s);
+            if ( wasEmpty ) _first = p.first;
         }
 
         /** Removes the sequence if it's in the set. Returns true if it was the earliest. */
         void remove(const RemoteSequence &s, bool &wasEarliest, uint64_t &outBodySize) {
             auto i = _sequences.find(s);
-            if (i == _sequences.end()) {
+            if ( i == _sequences.end() ) {
                 outBodySize = 0;
                 wasEarliest = false;
                 return;
             }
             outBodySize = i->second.bodySize;
             wasEarliest = (i == _first);
-            if (wasEarliest) {
+            if ( wasEarliest ) {
                 size_t minOrder = i->second.order;
                 _sequences.erase(i);
                 findFirst(minOrder + 1);
@@ -77,35 +70,34 @@ namespace litecore { namespace repl {
             return (i == _sequences.end()) ? 0 : i->second.bodySize;
         }
 
-    private:
-
+      private:
         // Updates _first to point to the earliest entry in _sequences
         void findFirst(size_t minOrderInSet) {
-            sequenceMap::iterator first = _sequences.end();
-            size_t minOrderSoFar = SIZE_MAX;
+            sequenceMap::iterator first         = _sequences.end();
+            size_t                minOrderSoFar = SIZE_MAX;
             // OPT: Slow linear scan. Keep a secondary collection sorted by order?
-            for (auto i = _sequences.begin(); i != _sequences.end(); ++i) {
-                if (i->second.order < minOrderSoFar) {
+            for ( auto i = _sequences.begin(); i != _sequences.end(); ++i ) {
+                if ( i->second.order < minOrderSoFar ) {
                     minOrderSoFar = i->second.order;
-                    first = i;
-                    if (minOrderSoFar == minOrderInSet)
-                        break;  // we know we've found the minimum
+                    first         = i;
+                    if ( minOrderSoFar == minOrderInSet ) break;  // we know we've found the minimum
                 }
             }
             _first = first;
         }
 
         struct value {
-            size_t order;                   // Chronological order in which this sequence was added
-            RemoteSequence prevSequence;    // The previously-added sequence
-            uint64_t bodySize;              // Approx doc size, for client's use
+            size_t         order;         // Chronological order in which this sequence was added
+            RemoteSequence prevSequence;  // The previously-added sequence
+            uint64_t       bodySize;      // Approx doc size, for client's use
         };
+
         using sequenceMap = std::map<RemoteSequence, value>;
 
-        sequenceMap _sequences;             // Maps sequence to {order, previous seq}
-        size_t _nextOrder {0};              // Order to assign to the next insertion
-        RemoteSequence _lastAdded;          // The last sequence added
-        sequenceMap::iterator _first {};    // Points to the earliest sequence still in _sequences
+        sequenceMap           _sequences;     // Maps sequence to {order, previous seq}
+        size_t                _nextOrder{0};  // Order to assign to the next insertion
+        RemoteSequence        _lastAdded;     // The last sequence added
+        sequenceMap::iterator _first{};       // Points to the earliest sequence still in _sequences
     };
 
-} }
+}}  // namespace litecore::repl

@@ -19,28 +19,22 @@
 
 using namespace std;
 
-
 namespace litecore {
 
     class C4CollectionObserverImpl : public C4CollectionObserver {
-    public:
-        C4CollectionObserverImpl(C4Collection *collection,
-                                 C4SequenceNumber since,
-                                 Callback callback)
-        :_retainDatabase(collection->getDatabase())
-        ,_collection(asInternal(collection))
-        ,_callback(move(callback))
-        {
+      public:
+        C4CollectionObserverImpl(C4Collection *collection, C4SequenceNumber since, Callback callback)
+            : _retainDatabase(collection->getDatabase())
+            , _collection(asInternal(collection))
+            , _callback(move(callback)) {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(&st,
-                                  [this](CollectionChangeNotifier&) {_callback(this);},
-                                  since);
+                _notifier.emplace(
+                        &st, [this](CollectionChangeNotifier &) { _callback(this); }, since);
             });
         }
 
-
         ~C4CollectionObserverImpl() {
-            if (!_collection->isValid()) {
+            if ( !_collection->isValid() ) {
                 // HACK: If the collection is not valid anymore, the notifier tracker is probably
                 // also bad, so null it out so the destructor doesn't try to use it
                 _notifier->tracker = nullptr;
@@ -54,64 +48,50 @@ namespace litecore {
             });
         }
 
-
-        C4CollectionObservation getChanges(Change outChanges[],
-                                           uint32_t maxChanges) override
-        {
+        C4CollectionObservation getChanges(Change outChanges[], uint32_t maxChanges) override {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
                           "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
             return _collection->sequenceTracker().useLocked<C4CollectionObservation>([&](SequenceTracker &st) {
                 bool outExternal;
-                auto retVal = (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
-                                                          maxChanges,
-                                                          outExternal);
+                auto retVal = (uint32_t)_notifier->readChanges((SequenceTracker::Change *)outChanges, maxChanges,
+                                                               outExternal);
 
                 return C4CollectionObservation{retVal, outExternal, _collection};
             });
         }
 
-    private:
-        Retained<C4Database> _retainDatabase;
-        Retained<CollectionImpl> _collection;
+      private:
+        Retained<C4Database>               _retainDatabase;
+        Retained<CollectionImpl>           _collection;
         optional<CollectionChangeNotifier> _notifier;
-        Callback _callback;
-        bool _inCallback {false};
+        Callback                           _callback;
+        bool                               _inCallback{false};
     };
 
-}
+}  // namespace litecore
 
-
-unique_ptr<C4CollectionObserver>
-C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback callback) {
+unique_ptr<C4CollectionObserver> C4CollectionObserver::create(C4Collection                  *coll,
+                                                              C4CollectionObserver::Callback callback) {
     return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, move(callback));
 }
 
-
 #pragma mark - DOCUMENT OBSERVER:
-
 
 namespace litecore {
 
     class C4DocumentObserverImpl : public C4DocumentObserver {
-    public:
-        C4DocumentObserverImpl(C4Collection *collection,
-                               slice docID,
-                               Callback callback)
-        :_retainedDatabase(collection->getDatabase())
-        ,_collection(asInternal(collection))
-        ,_callback(callback)
-        {
+      public:
+        C4DocumentObserverImpl(C4Collection *collection, slice docID, Callback callback)
+            : _retainedDatabase(collection->getDatabase()), _collection(asInternal(collection)), _callback(callback) {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
-                _notifier.emplace(&st,
-                                  docID,
-                                  [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
-                                        _callback(this, _collection, docID, sequence);
-                                  });
+                _notifier.emplace(&st, docID, [this](DocChangeNotifier &, slice docID, sequence_t sequence) {
+                    _callback(this, _collection, docID, sequence);
+                });
             });
         }
 
         ~C4DocumentObserverImpl() {
-            if (!_collection->isValid()) {
+            if ( !_collection->isValid() ) {
                 // HACK: If the collection is not valid anymore, the notifier tracker is probably
                 // also bad, so null it out so the destructor doesn't try to use it
                 _notifier->tracker = nullptr;
@@ -124,18 +104,17 @@ namespace litecore {
                 _notifier = nullopt;
             });
         }
-        
-    private:
-        Retained<C4Database> _retainedDatabase;
-        Retained<CollectionImpl> _collection;
-        Callback _callback;
+
+      private:
+        Retained<C4Database>        _retainedDatabase;
+        Retained<CollectionImpl>    _collection;
+        Callback                    _callback;
         optional<DocChangeNotifier> _notifier;
     };
 
-}
+}  // namespace litecore
 
-
-unique_ptr<C4DocumentObserver>
-C4DocumentObserver::create(C4Collection *db, slice docID, C4DocumentObserver::Callback callback) {
+unique_ptr<C4DocumentObserver> C4DocumentObserver::create(C4Collection *db, slice docID,
+                                                          C4DocumentObserver::Callback callback) {
     return make_unique<litecore::C4DocumentObserverImpl>(db, docID, callback);
 }

@@ -15,46 +15,30 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 
-
 namespace litecore {
 
     LogDomain QueryLog("Query");
 
-
     Query::Query(DataFile &dataFile, slice expression, QueryLanguage language)
-    :Logging(QueryLog)
-    ,_dataFile(&dataFile)
-    ,_expression(expression)
-    ,_language(language)
-    {
+        : Logging(QueryLog), _dataFile(&dataFile), _expression(expression), _language(language) {
         _dataFile->registerQuery(this);
     }
 
-
     void Query::disposing() {
-        if (!_disposed && _dataFile)
-            _dataFile->unregisterQuery(this);
+        if ( !_disposed && _dataFile ) _dataFile->unregisterQuery(this);
         _disposed = true;
     }
 
+    std::string Query::loggingIdentifier() const { return string(_expression); }
 
-    std::string Query::loggingIdentifier() const {
-        return string(_expression);
-    }
-
-
-    DataFile& Query::dataFile() const {
-        if (!_dataFile)
-            error::_throw(error::NotOpen);
+    DataFile &Query::dataFile() const {
+        if ( !_dataFile ) error::_throw(error::NotOpen);
         return *_dataFile;
     }
 
-
     Query::parseError::parseError(const char *message, int errPos)
-    :error(error::LiteCore, error::InvalidQuery,
-           format("%s near character %d", message, errPos+1))
-    ,errorPosition(errPos)
-    { }
+        : error(error::LiteCore, error::InvalidQuery, format("%s near character %d", message, errPos + 1))
+        , errorPosition(errPos) {}
 
 
-}
+}  // namespace litecore

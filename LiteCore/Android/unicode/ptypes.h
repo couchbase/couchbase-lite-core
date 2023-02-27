@@ -34,7 +34,7 @@
  * @internal
  */
 #ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS
+#    define __STDC_LIMIT_MACROS
 #endif
 
 /* NULL, size_t, wchar_t */
@@ -63,63 +63,63 @@
  * <inttypes.h> includes <stdint.h> and adds the printf/scanf helpers PRId32, SCNx16 etc.
  * which we almost never use, plus stuff like imaxabs() which we never use.
  */
-#include <stdint.h>
+#    include <stdint.h>
 
-#if U_PLATFORM == U_PF_OS390
+#    if U_PLATFORM == U_PF_OS390
 /* The features header is needed to get (u)int64_t sometimes. */
-#include <features.h>
+#        include <features.h>
 /* z/OS has <stdint.h>, but some versions are missing uint8_t (APAR PK62248). */
-#if !defined(__uint8_t)
-#define __uint8_t 1
+#        if !defined(__uint8_t)
+#            define __uint8_t 1
 typedef unsigned char uint8_t;
-#endif
-#endif /* U_PLATFORM == U_PF_OS390 */
+#        endif
+#    endif /* U_PLATFORM == U_PF_OS390 */
 
 #elif U_HAVE_INTTYPES_H
 
-#   include <inttypes.h>
+#    include <inttypes.h>
 
 #else /* neither U_HAVE_STDINT_H nor U_HAVE_INTTYPES_H */
 
-#if ! U_HAVE_INT8_T
-typedef signed char int8_t;
-#endif
+#    if !U_HAVE_INT8_T
+typedef signed char      int8_t;
+#    endif
 
-#if ! U_HAVE_UINT8_T
-typedef unsigned char uint8_t;
-#endif
+#    if !U_HAVE_UINT8_T
+typedef unsigned char    uint8_t;
+#    endif
 
-#if ! U_HAVE_INT16_T
-typedef signed short int16_t;
-#endif
+#    if !U_HAVE_INT16_T
+typedef signed short     int16_t;
+#    endif
 
-#if ! U_HAVE_UINT16_T
-typedef unsigned short uint16_t;
-#endif
+#    if !U_HAVE_UINT16_T
+typedef unsigned short   uint16_t;
+#    endif
 
-#if ! U_HAVE_INT32_T
-typedef signed int int32_t;
-#endif
+#    if !U_HAVE_INT32_T
+typedef signed int       int32_t;
+#    endif
 
-#if ! U_HAVE_UINT32_T
-typedef unsigned int uint32_t;
-#endif
+#    if !U_HAVE_UINT32_T
+typedef unsigned int     uint32_t;
+#    endif
 
-#if ! U_HAVE_INT64_T
-#ifdef _MSC_VER
-    typedef signed __int64 int64_t;
-#else
-    typedef signed long long int64_t;
-#endif
-#endif
+#    if !U_HAVE_INT64_T
+#        ifdef _MSC_VER
+typedef signed __int64   int64_t;
+#        else
+typedef signed long long   int64_t;
+#        endif
+#    endif
 
-#if ! U_HAVE_UINT64_T
-#ifdef _MSC_VER
-    typedef unsigned __int64 uint64_t;
-#else
-    typedef unsigned long long uint64_t;
-#endif
-#endif
+#    if !U_HAVE_UINT64_T
+#        ifdef _MSC_VER
+typedef unsigned __int64 uint64_t;
+#        else
+typedef unsigned long long uint64_t;
+#        endif
+#    endif
 
 #endif /* U_HAVE_STDINT_H / U_HAVE_INTTYPES_H */
 

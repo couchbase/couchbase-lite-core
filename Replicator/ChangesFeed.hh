@@ -33,97 +33,102 @@ namespace litecore::repl {
 
     /** Queries the database to find revisions for the Pusher to send. */
     class ChangesFeed : public Logging {
-    public:
+      public:
         class Delegate {
-        public:
-            virtual ~Delegate() =default;;
+          public:
+            virtual ~Delegate() = default;
+            ;
             /** Callback when new changes are available. Only called in continuous mode, after catching
                 up, and then only after `getMoreChanges` has returned less than the limit. It will only
                 be called once until the next call to `getMoreChanges`.
                 \warning This is called on an arbitrary thread! */
-            virtual void dbHasNewChanges() =0;
+            virtual void dbHasNewChanges() = 0;
             /** Called if `getMoreChanges` encounters an error reading a document while deciding
                 whether to include it.*/
-            virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) =0;
+            virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) = 0;
         };
 
-        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*);
+        ChangesFeed(Delegate &, const Options *NONNULL, DBAccess &db, Checkpointer *);
         ~ChangesFeed();
 
         // Setup:
-        void setContinuous(bool continuous)         {_continuous = continuous;}
-        void setLastSequence(C4SequenceNumber s)    {_maxSequence = s;}
-        void setEchoLocalChanges(bool echo)         {_echoLocalChanges = echo;}
-        void setSkipDeletedDocs(bool skip)          {_skipDeleted = skip;}
-        void setCheckpointValid(bool valid)         {_isCheckpointValid = valid;}
+        void setContinuous(bool continuous) { _continuous = continuous; }
+
+        void setLastSequence(C4SequenceNumber s) { _maxSequence = s; }
+
+        void setEchoLocalChanges(bool echo) { _echoLocalChanges = echo; }
+
+        void setSkipDeletedDocs(bool skip) { _skipDeleted = skip; }
+
+        void setCheckpointValid(bool valid) { _isCheckpointValid = valid; }
 
         /** Filters to the docIDs in the given Fleece array.
             If a filter already exists, the two will be intersected. */
         void filterByDocIDs(fleece::Array docIDs);
 
         struct Changes {
-            RevToSendList revs;                     // Ordered list of new revisions
-            C4SequenceNumber firstSequence;         // The first sequence that was checked
-            C4SequenceNumber lastSequence;          // The last sequence that was checked
-            C4Error err;                            // On failure, error goes here
-            bool askAgain;                          // Should client call getMoreChanges again?
+            RevToSendList    revs;           // Ordered list of new revisions
+            C4SequenceNumber firstSequence;  // The first sequence that was checked
+            C4SequenceNumber lastSequence;   // The last sequence that was checked
+            C4Error          err;            // On failure, error goes here
+            bool             askAgain;       // Should client call getMoreChanges again?
         };
 
         /** Returns up to `limit` more changes.
             If exactly `limit` are returned, there may be more, so the client should call again. */
         virtual Changes getMoreChanges(unsigned limit) MUST_USE_RESULT;
 
-        C4SequenceNumber lastSequence() const       {return _maxSequence;}
+        C4SequenceNumber lastSequence() const { return _maxSequence; }
 
         /** True after all historical changes have been returned from `getMoreChanges`. */
-        bool caughtUp() const                       {return _caughtUp;}
+        bool caughtUp() const { return _caughtUp; }
 
         /** Returns true if the given rev matches the push filters. */
-        virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
+        virtual bool shouldPushRev(RevToSend *NONNULL) const MUST_USE_RESULT;
 
-    protected:
-        std::string loggingClassName() const override;
+      protected:
+        std::string  loggingClassName() const override;
         virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
 
-    private:
-        void getHistoricalChanges(Changes&, unsigned limit);
-        void getObservedChanges(Changes&, unsigned limit);
-        void _dbChanged();
-        Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*);
-        bool shouldPushRev(RevToSend*, C4DocEnumerator*) const;
+      private:
+        void                getHistoricalChanges(Changes &, unsigned limit);
+        void                getObservedChanges(Changes &, unsigned limit);
+        void                _dbChanged();
+        Retained<RevToSend> makeRevToSend(C4DocumentInfo &, C4DocEnumerator *);
+        bool                shouldPushRev(RevToSend *, C4DocEnumerator *) const;
 
-    protected:
-        Delegate& _delegate;
+      protected:
+        Delegate              &_delegate;
         RetainedConst<Options> _options;
-        DBAccess& _db;
-        bool _getForeignAncestors {false};                  // True in propose-changes mode
-    private:
-        Checkpointer* _checkpointer;
-        DocIDSet _docIDs;                                   // Doc IDs to filter to, or null
-        std::unique_ptr<C4DatabaseObserver> _changeObserver;// Used in continuous push mode
-        C4SequenceNumber _maxSequence {0};                  // Latest sequence I've read
-        bool _continuous;                                   // Continuous mode
-        bool _echoLocalChanges {false};                     // True if including changes made by _db
-        bool _skipDeleted {false};                          // True if skipping tombstones
-        bool _isCheckpointValid {true};
-        bool _caughtUp {false};                             // Delivered all historical changes
-        std::atomic<bool> _notifyOnChanges {false};         // True if expecting change notification
-        CollectionIndex _collectionIndex;                   // Identifies the collection index (in the replicator) of the collection being used
+        DBAccess              &_db;
+        bool                   _getForeignAncestors{false};  // True in propose-changes mode
+      private:
+        Checkpointer                       *_checkpointer;
+        DocIDSet                            _docIDs;                   // Doc IDs to filter to, or null
+        std::unique_ptr<C4DatabaseObserver> _changeObserver;           // Used in continuous push mode
+        C4SequenceNumber                    _maxSequence{0};           // Latest sequence I've read
+        bool                                _continuous;               // Continuous mode
+        bool                                _echoLocalChanges{false};  // True if including changes made by _db
+        bool                                _skipDeleted{false};       // True if skipping tombstones
+        bool                                _isCheckpointValid{true};
+        bool                                _caughtUp{false};         // Delivered all historical changes
+        std::atomic<bool>                   _notifyOnChanges{false};  // True if expecting change notification
+        CollectionIndex
+                _collectionIndex;  // Identifies the collection index (in the replicator) of the collection being used
     };
 
-
     class ReplicatorChangesFeed final : public ChangesFeed {
-    public:
-        ReplicatorChangesFeed(Delegate &delegate, const Options *options,
-                              DBAccess &db, Checkpointer *cp);
+      public:
+        ReplicatorChangesFeed(Delegate &delegate, const Options *options, DBAccess &db, Checkpointer *cp);
 
-        void setFindForeignAncestors(bool use)      {_getForeignAncestors = use;}
+        void setFindForeignAncestors(bool use) { _getForeignAncestors = use; }
 
         virtual Changes getMoreChanges(unsigned limit) override MUST_USE_RESULT;
 
-    protected:
+      protected:
         bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const override;
-    private:
+
+      private:
         const bool _usingVersionVectors;
     };
-}
+}  // namespace litecore::repl
