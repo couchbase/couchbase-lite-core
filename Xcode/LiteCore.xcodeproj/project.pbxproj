@@ -507,6 +507,10 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		EA45B2432981A7B600AD1BA0 /* ReplicatorWalrusTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA45B23C2981A7B600AD1BA0 /* ReplicatorWalrusTest.cc */; };
+		EA45B2442981A7B600AD1BA0 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA45B23E2981A7B600AD1BA0 /* SG.cc */; };
+		EA45B2452981A7B600AD1BA0 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA45B2402981A7B600AD1BA0 /* SGTestUser.cc */; };
+		EA45B2462981A7B600AD1BA0 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA45B2412981A7B600AD1BA0 /* ReplParams.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -1651,6 +1655,14 @@
 		93FA3F6C1EE21BAE00D15CF5 /* LCSServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCSServerConfig.h; sourceTree = "<group>"; };
 		93FA3F6D1EE21BAE00D15CF5 /* LCSServerConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LCSServerConfig.m; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
+		EA45B2382981A7B600AD1BA0 /* ReplicatorSGTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorSGTest.hh; sourceTree = "<group>"; };
+		EA45B23C2981A7B600AD1BA0 /* ReplicatorWalrusTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorWalrusTest.cc; sourceTree = "<group>"; };
+		EA45B23D2981A7B600AD1BA0 /* SG.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SG.hh; sourceTree = "<group>"; };
+		EA45B23E2981A7B600AD1BA0 /* SG.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SG.cc; sourceTree = "<group>"; };
+		EA45B23F2981A7B600AD1BA0 /* ReplParams.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplParams.hh; sourceTree = "<group>"; };
+		EA45B2402981A7B600AD1BA0 /* SGTestUser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SGTestUser.cc; sourceTree = "<group>"; };
+		EA45B2412981A7B600AD1BA0 /* ReplParams.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
+		EA45B2422981A7B600AD1BA0 /* SGTestUser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SGTestUser.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2433,6 +2445,14 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				EA45B2382981A7B600AD1BA0 /* ReplicatorSGTest.hh */,
+				EA45B23C2981A7B600AD1BA0 /* ReplicatorWalrusTest.cc */,
+				EA45B2412981A7B600AD1BA0 /* ReplParams.cc */,
+				EA45B23F2981A7B600AD1BA0 /* ReplParams.hh */,
+				EA45B23E2981A7B600AD1BA0 /* SG.cc */,
+				EA45B23D2981A7B600AD1BA0 /* SG.hh */,
+				EA45B2402981A7B600AD1BA0 /* SGTestUser.cc */,
+				EA45B2422981A7B600AD1BA0 /* SGTestUser.hh */,
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
@@ -3968,12 +3988,14 @@
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				EA45B2432981A7B600AD1BA0 /* ReplicatorWalrusTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
+				EA45B2452981A7B600AD1BA0 /* SGTestUser.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
@@ -3988,6 +4010,8 @@
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
+				EA45B2462981A7B600AD1BA0 /* ReplParams.cc in Sources */,
+				EA45B2442981A7B600AD1BA0 /* SG.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,

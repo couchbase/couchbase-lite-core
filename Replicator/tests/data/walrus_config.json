@@ -1,0 +1,69 @@
+{
+	"disable_persistent_config": true,
+  "logging": {
+    "console": { "log_level": "info", "log_keys": ["*"] }
+  },
+	
+	"adminInterface": ":4985",
+	"admin_interface_authentication": false,
+	
+	"databases": {
+		"itunes": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false
+		},
+		"beer": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false
+		},
+		"images": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false
+		},
+		"scratch": {
+			"server": "walrus:",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false
+		},
+		"scratch_allows_conflicts": {
+			"server": "walrus:",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": true
+		},
+		"scratch_revocation": {
+			"server": "walrus:",
+			"users": {
+				"pupshaw": {"password": "frank", "admin_channels": ["a", "b"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false,
+			"sync": `function (doc, oldDoc) { channel(doc.channels); }`
+		},
+		"seekrit": {
+			"server": "walrus:",
+			"users": {
+				"pupshaw": {"password": "frank", "admin_channels": ["*"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false
+		}
+	}
+}
