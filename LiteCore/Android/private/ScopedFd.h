@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,37 @@
 
 #pragma once
 
-#include <sys/types.h>
+#include <unistd.h>
 
-#include <linux/netlink.h>
-#include <linux/rtnetlink.h>
+#include "bionic_macros.h"
+#include "ErrnoRestorer.h"
 
-#include "private/ScopedFd.h"
-
-struct nlmsghdr;
-
-class NetlinkConnection {
+class ScopedFd final {
  public:
-  NetlinkConnection();
-  ~NetlinkConnection();
+  explicit ScopedFd(int fd) : fd_(fd) {
+  }
 
-  bool SendRequest(int type);
-  bool ReadResponses(void callback(void*, nlmsghdr*), void* context);
+  ScopedFd() : fd_(-1) {
+  }
+
+  ~ScopedFd() {
+    reset(-1);
+  }
+
+  void reset(int fd = -1) {
+    if (fd_ != -1) {
+      ErrnoRestorer e;
+      close(fd_);
+    }
+    fd_ = fd;
+  }
+
+  int get() const {
+    return fd_;
+  }
 
  private:
   int fd_;
-  char* data_;
-  size_t size_;
+
+  DISALLOW_COPY_AND_ASSIGN(ScopedFd);
 };
