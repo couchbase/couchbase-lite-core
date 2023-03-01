@@ -49,25 +49,25 @@ namespace litecore {
         sequence_t lastSequence() const override;
         uint64_t   purgeCount() const override;
 
-        const std::string &tableName() const { return _tableName; }
+        const std::string& tableName() const { return _tableName; }
 
-        const std::string &quotedTableName() const { return _quotedTableName; }
+        const std::string& quotedTableName() const { return _quotedTableName; }
 
         /// Modifies a collection name to either add or remove mangling necessary for
         /// case sensitive collection names in a case insensitive environment
-        MUST_USE_RESULT static std::string transformCollectionName(const std::string &name, bool mangle);
+        MUST_USE_RESULT static std::string transformCollectionName(const std::string& name, bool mangle);
 
-        bool read(Record &rec, ReadBy, ContentOption) const override;
+        bool read(Record& rec, ReadBy, ContentOption) const override;
 
-        sequence_t set(const RecordUpdate &, bool updateSequence, ExclusiveTransaction &) override;
-        void       setKV(slice key, slice version, slice value, ExclusiveTransaction &) override;
+        sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
+        void       setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool del(slice key, ExclusiveTransaction &, sequence_t s = 0_seq,
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq,
                  std::optional<uint64_t> subseq = std::nullopt) override;
 
-        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction &) override;
+        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
 
-        void moveTo(slice key, KeyStore &dst, ExclusiveTransaction &, slice newKey = nullslice) override;
+        void moveTo(slice key, KeyStore& dst, ExclusiveTransaction&, slice newKey = nullslice) override;
 
         virtual bool         setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
@@ -76,12 +76,12 @@ namespace litecore {
 
         bool supportsIndexes(IndexSpec::Type t) const override { return true; }
 
-        bool createIndex(const IndexSpec &) override;
+        bool createIndex(const IndexSpec&) override;
 
         void                   deleteIndex(slice name) override;
         std::vector<IndexSpec> getIndexes() const override;
 
-        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs,
                                                        WithDocBodyCallback       callback) override;
 
         void createSequenceIndex();
@@ -91,15 +91,15 @@ namespace litecore {
         /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
         void addExpiration() override;
 
-        void shareSequencesWith(KeyStore &) override;
+        void shareSequencesWith(KeyStore&) override;
 
       protected:
         virtual bool            mayHaveExpiration() override;
-        RecordEnumerator::Impl *newEnumeratorImpl(bool bySequence, sequence_t since,
+        RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
                                                   RecordEnumerator::Options) override;
 
-        std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
-        SQLite::Statement                 &compileCached(const std::string &sqlTemplate) const;
+        std::unique_ptr<SQLite::Statement> compile(const char* sql) const;
+        SQLite::Statement&                 compileCached(const std::string& sqlTemplate) const;
 
         void transactionWillEnd(bool commit) override;
 
@@ -108,36 +108,36 @@ namespace litecore {
 
         /// Updates a record's flags, version, body, extra from a statement whose column order
         /// matches the RecordColumn enum.
-        static void setRecordMetaAndBody(Record &rec, SQLite::Statement &stmt, ContentOption, bool setKey,
+        static void setRecordMetaAndBody(Record& rec, SQLite::Statement& stmt, ContentOption, bool setKey,
                                          bool setSequence);
 
-        static slice columnAsSlice(const SQLite::Column &);
+        static slice columnAsSlice(const SQLite::Column&);
 
       private:
         friend class SQLiteDataFile;
         friend class SQLiteEnumerator;
 
-        SQLiteKeyStore(SQLiteDataFile &, const std::string &name, KeyStore::Capabilities options);
+        SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
         void createTable();
 
-        SQLiteDataFile &db() const { return (SQLiteDataFile &)dataFile(); }
+        SQLiteDataFile& db() const { return (SQLiteDataFile&)dataFile(); }
 
-        std::string subst(const char *sqlTemplate) const;
+        std::string subst(const char* sqlTemplate) const;
         void        setLastSequence(sequence_t seq);
         void        incrementPurgeCount();
         void createTrigger(std::string_view triggerName, std::string_view triggerSuffix, std::string_view operation,
                            std::string when, std::string_view statements);
-        bool createValueIndex(const IndexSpec &);
-        bool createIndex(const IndexSpec &, const std::string &sourceTableName,
-                         fleece::impl::ArrayIterator &expressions);
-        void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
-        bool createFTSIndex(const IndexSpec &);
-        bool createArrayIndex(const IndexSpec &);
-        std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options *);
+        bool createValueIndex(const IndexSpec&);
+        bool createIndex(const IndexSpec&, const std::string& sourceTableName,
+                         fleece::impl::ArrayIterator& expressions);
+        void _createFlagsIndex(const char* indexName NONNULL, DocumentFlags flag, bool& created);
+        bool createFTSIndex(const IndexSpec&);
+        bool createArrayIndex(const IndexSpec&);
+        std::string createUnnestedTable(const fleece::impl::Value* arrayPath, const IndexSpec::Options*);
 
 #ifdef COUCHBASE_ENTERPRISE
-        bool        createPredictiveIndex(const IndexSpec &);
-        std::string createPredictionTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options *);
+        bool        createPredictiveIndex(const IndexSpec&);
+        std::string createPredictionTable(const fleece::impl::Value* arrayPath, const IndexSpec::Options*);
         void        garbageCollectPredictiveIndexes();
 #endif
 
@@ -155,7 +155,7 @@ namespace litecore {
         bool                              _hasExpirationColumn{false};
         bool                              _uncommittedExpirationColumn{false};
         bool                              _uncommitedTable{false};
-        SQLiteKeyStore                   *_sequencesOwner{nullptr};
+        SQLiteKeyStore*                   _sequencesOwner{nullptr};
     };
 
 }  // namespace litecore

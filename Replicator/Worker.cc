@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
 
         LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
-        static void writeRedacted(Dict dict, stringstream &s) {
+        static void writeRedacted(Dict dict, stringstream& s) {
             s << "{";
             int n = 0;
             for ( Dict::iterator i(dict); i; ++i ) {
@@ -58,12 +58,12 @@ namespace litecore { namespace repl {
         }
 
         Options::operator string() const {
-            static const char *kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
+            static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
             stringstream       s;
             s << "{";
             bool     firstline = true;
             uint32_t i         = 0;  // Collection index
-            for ( auto &c : collectionOpts ) {
+            for ( auto& c : collectionOpts ) {
                 if ( !firstline ) {
                     s << ",\n";
                 } else {
@@ -81,8 +81,8 @@ namespace litecore { namespace repl {
             return s.str();
         }
 
-        Worker::Worker(blip::Connection *connection, Worker *parent, const Options *options,
-                       std::shared_ptr<DBAccess> dbAccess, const char *namePrefix, CollectionIndex coll)
+        Worker::Worker(blip::Connection* connection, Worker* parent, const Options* options,
+                       std::shared_ptr<DBAccess> dbAccess, const char* namePrefix, CollectionIndex coll)
             : Actor(SyncLog, string(namePrefix) + connection->name(), (parent ? parent->mailboxForChildren() : nullptr))
             , _connection(connection)
             , _parent(parent)
@@ -92,7 +92,7 @@ namespace litecore { namespace repl {
             , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
             , _collectionIndex(coll) {}
 
-        Worker::Worker(Worker *parent, const char *namePrefix, CollectionIndex coll)
+        Worker::Worker(Worker* parent, const char* namePrefix, CollectionIndex coll)
             : Worker(&parent->connection(), parent, parent->_options, parent->_db, namePrefix, coll) {}
 
         Worker::~Worker() {
@@ -106,7 +106,7 @@ namespace litecore { namespace repl {
             return className;
         }
 
-        void Worker::sendRequest(blip::MessageBuilder &builder, MessageProgressCallback callback) {
+        void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
             if ( callback ) {
                 increment(_pendingResponseCount);
                 builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
@@ -144,7 +144,7 @@ namespace litecore { namespace repl {
             return {blipDomain, code, message};
         }
 
-        C4Error Worker::blipToC4Error(const blip::Error &err) {
+        C4Error Worker::blipToC4Error(const blip::Error& err) {
             if ( !err.domain || err.code == 0 ) return {};
             C4ErrorDomain domain = LiteCoreDomain;
             int           code   = 0;
@@ -170,7 +170,7 @@ namespace litecore { namespace repl {
             return C4Error::make(domain, code, err.message);
         }
 
-        void Worker::gotError(const MessageIn *msg) {
+        void Worker::gotError(const MessageIn* msg) {
             auto err = msg->getError();
             logError("Got error response: %.*s %d '%.*s'", SPLAT(err.domain), err.code, SPLAT(err.message));
             onError(blipToC4Error(err));
@@ -181,7 +181,7 @@ namespace litecore { namespace repl {
             onError(err);
         }
 
-        void Worker::caughtException(const std::exception &x) {
+        void Worker::caughtException(const std::exception& x) {
             logError("Threw C++ exception: %s", x.what());
             onError(C4Error::make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what())));
         }
@@ -203,13 +203,13 @@ namespace litecore { namespace repl {
             return replicator;
         }
 
-        void Worker::finishedDocumentWithError(ReplicatedRev *rev, C4Error error, bool transient) {
+        void Worker::finishedDocumentWithError(ReplicatedRev* rev, C4Error error, bool transient) {
             rev->error            = error;
             rev->errorIsTransient = transient;
             finishedDocument(rev);
         }
 
-        void Worker::finishedDocument(ReplicatedRev *rev) {
+        void Worker::finishedDocument(ReplicatedRev* rev) {
             if ( rev->error.code == 0 ) addProgress({0, 0, 1});
             if ( rev->error.code || rev->isWarning || progressNotificationLevel() >= 1 )
                 replicator()->endedDocument(rev);
@@ -273,7 +273,7 @@ namespace litecore { namespace repl {
         }
 
         // Either there is error, or return a valid collection index
-        std::pair<CollectionIndex, slice> Worker::checkCollectionOfMsg(const blip::MessageIn &msg) const {
+        std::pair<CollectionIndex, slice> Worker::checkCollectionOfMsg(const blip::MessageIn& msg) const {
             CollectionIndex collIn = getCollectionIndex(msg);
 
             constexpr static slice kErrorIndexInappropriateUse = "inappropriate use of the collection property."_sl;
@@ -295,9 +295,9 @@ namespace litecore { namespace repl {
             return std::make_pair(collIn, err);
         }
 
-        const C4Collection *Worker::getCollection() const {
+        const C4Collection* Worker::getCollection() const {
             Assert(collectionIndex() != kNotCollectionIndex);
-            Worker *nonConstThis = const_cast<Worker *>(this);
+            Worker* nonConstThis = const_cast<Worker*>(this);
             return nonConstThis->replicator()->collection(collectionIndex());
         }
 }}  // namespace litecore::repl

@@ -31,7 +31,7 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
-    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate, CollectionIndex coll)
+    RevFinder::RevFinder(Replicator* replicator, Delegate* delegate, CollectionIndex coll)
         : Worker(replicator, "RevFinder", coll), _delegate(delegate) {
         _mustBeProposed = passive() && _options->noIncomingConflicts() && !_db->usingVersionVectors();
         replicator->registerWorkerHandler(this, "changes", &RevFinder::handleChanges);
@@ -71,7 +71,7 @@ namespace litecore::repl {
     }
 
     // Actually handle a "changes" (or "proposeChanges") message:
-    void RevFinder::handleChangesNow(MessageIn *req) {
+    void RevFinder::handleChangesNow(MessageIn* req) {
         try {
             slice reqType  = req->property("Profile"_sl);
             bool  proposed = (reqType == "proposeChanges"_sl);
@@ -122,7 +122,7 @@ namespace litecore::repl {
                 vector<ChangeSequence> sequences;  // the vector I will send to the delegate
                 sequences.reserve(nChanges);
 
-                auto &encoder           = response.jsonBody();
+                auto& encoder           = response.jsonBody();
                 auto  getConflictRevIDs = req->boolProperty(Pusher::kConflictIncludesRevProperty);
                 encoder.beginArray();
                 int requested = proposed ? findProposedRevs(changes, encoder, getConflictRevIDs, sequences)
@@ -163,7 +163,7 @@ namespace litecore::repl {
 
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
-    int RevFinder::findRevs(Array changes, JSONEncoder &encoder, vector<ChangeSequence> &sequences) {
+    int RevFinder::findRevs(Array changes, JSONEncoder& encoder, vector<ChangeSequence>& sequences) {
         // Compile the docIDs/revIDs into parallel vectors:
         vector<slice>                 docIDs, revIDs;
         vector<Retained<RevToInsert>> revoked;
@@ -268,8 +268,8 @@ namespace litecore::repl {
     }
 
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
-    int RevFinder::findProposedRevs(Array changes, JSONEncoder &encoder, bool conflictIncludesRev,
-                                    vector<ChangeSequence> &sequences) {
+    int RevFinder::findProposedRevs(Array changes, JSONEncoder& encoder, bool conflictIncludesRev,
+                                    vector<ChangeSequence>& sequences) {
         unsigned itemsWritten = 0, requested = 0;
         int      i = -1;
         for ( auto item : changes ) {
@@ -315,7 +315,7 @@ namespace litecore::repl {
 
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
-    int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice &outCurrentRevID) {
+    int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID) {
         C4DocumentFlags flags = 0;
         {
             // Get the local doc's current revID/vector and flags:
@@ -349,7 +349,7 @@ namespace litecore::repl {
                         return 409;
                 }
                 abort();  // unreachable
-            } catch ( const error &x ) {
+            } catch ( const error& x ) {
                 if ( x == error::BadRevisionID ) return 500;
                 else
                     throw;

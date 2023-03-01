@@ -38,18 +38,18 @@ namespace litecore { namespace actor {
           public:
             /** Pushes a new value to the front of the queue.
             @return  True if the queue was empty before the push. */
-            bool push(const T &t);
+            bool push(const T& t);
 
             /** Pops the next value from the end of the queue.
             If the queue is empty, blocks until another thread adds something to the queue.
             If the queue is closed and empty, returns a default (zero) T.
             @param empty  Will be set to true if the queue is now empty. */
-            T pop(bool &empty) { return pop(empty, true); }
+            T pop(bool& empty) { return pop(empty, true); }
 
             /** Pops the next value from the end of the queue.
             If the queue is empty, immediately returns a default (zero) T.
             @param empty  Will be set to true if the queue is now empty. */
-            T popNoWaiting(bool &empty) { return pop(empty, false); }
+            T popNoWaiting(bool& empty) { return pop(empty, false); }
 
             /** Pops the next value from the end of the queue.
             If the queue is empty, blocks until another thread adds something to the queue.
@@ -60,7 +60,7 @@ namespace litecore { namespace actor {
             }
 
             /** Returns the front item of the queue without popping it. The queue MUST be non-empty. */
-            const T &front() const;
+            const T& front() const;
 
             /** Returns the number of items in the queue. */
             size_t size() const;
@@ -73,7 +73,7 @@ namespace litecore { namespace actor {
             mutable std::mutex _mutex;
 
           private:
-            T pop(bool &empty, bool wait);
+            T pop(bool& empty, bool wait);
 
             std::condition_variable _cond;
             std::queue<T>           _queue;
@@ -81,7 +81,7 @@ namespace litecore { namespace actor {
         };
 
         template <class T>
-        bool Channel<T>::push(const T &t) {
+        bool Channel<T>::push(const T& t) {
             std::unique_lock<std::mutex> lock(_mutex);
             bool                         wasEmpty = _queue.empty();
             if ( !_closed ) { _queue.push(t); }
@@ -92,7 +92,7 @@ namespace litecore { namespace actor {
         }
 
         template <class T>
-        T Channel<T>::pop(bool &empty, bool wait) {
+        T Channel<T>::pop(bool& empty, bool wait) {
             std::unique_lock<std::mutex> lock(_mutex);
             while ( wait && _queue.empty() && !_closed ) _cond.wait(lock);
             if ( _queue.empty() ) {
@@ -107,7 +107,7 @@ namespace litecore { namespace actor {
         }
 
         template <class T>
-        const T &Channel<T>::front() const {
+        const T& Channel<T>::front() const {
             std::unique_lock<std::mutex> lock(_mutex);
             DebugAssert(!_queue.empty());
             return _queue.front();

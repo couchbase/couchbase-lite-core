@@ -41,14 +41,14 @@ class CertHelper {
 
 
 #    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    const Identity &persistentServerIdentity() {
+    const Identity& persistentServerIdentity() {
         C4Log("Using server TLS w/persistent key for this test");
         if ( !_serverPersistentIdentity.cert )
             _serverPersistentIdentity = createIdentity(true, kC4CertUsage_TLSServer, "ListenerHarness");
         return _serverPersistentIdentity;
     }
 
-    const Identity &persistentClientIdentity() {
+    const Identity& persistentClientIdentity() {
         if ( !_clientPersistentIdentity.cert )
             _clientPersistentIdentity = createIdentity(true, kC4CertUsage_TLSClient, "ListenerHarness");
         return _clientPersistentIdentity;
@@ -57,8 +57,8 @@ class CertHelper {
 
 
     // Read cert & private key from files
-    static Identity readIdentity(const std::string &certPath, const std::string &keyPath,
-                                 const std::string &keyPassword) {
+    static Identity readIdentity(const std::string& certPath, const std::string& keyPath,
+                                 const std::string& keyPassword) {
         Identity id{c4cert_fromData(C4Test::readFile(certPath), nullptr),
                     c4keypair_fromPrivateKeyData(C4Test::readFile(keyPath), slice(keyPassword), nullptr)};
         REQUIRE(id.cert);
@@ -66,8 +66,8 @@ class CertHelper {
         return id;
     }
 
-    static Identity createIdentity(bool persistent, C4CertUsage usage, const char *commonName,
-                                   const char *email = nullptr, const Identity *signingIdentity = nullptr,
+    static Identity createIdentity(bool persistent, C4CertUsage usage, const char* commonName,
+                                   const char* email = nullptr, const Identity* signingIdentity = nullptr,
                                    bool isCA = false) {
         C4Log("Generating %s TLS key-pair and cert...", (persistent ? "persistent" : "temporary"));
         C4Error  error;

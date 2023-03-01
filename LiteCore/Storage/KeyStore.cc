@@ -60,7 +60,7 @@ namespace litecore {
         return rec;
     }
 
-    void KeyStore::set(Record &rec, bool updateSequence, ExclusiveTransaction &t) {
+    void KeyStore::set(Record& rec, bool updateSequence, ExclusiveTransaction& t) {
         if ( auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0_seq ) {
             rec.setExists();
             if ( updateSequence ) rec.updateSequence(seq);
@@ -71,7 +71,7 @@ namespace litecore {
         }
     }
 
-    void KeyStore::setKV(Record &rec, ExclusiveTransaction &t) {
+    void KeyStore::setKV(Record& rec, ExclusiveTransaction& t) {
         setKV(rec.key(), rec.version(), rec.body(), t);
         rec.setExists();
     }
@@ -81,7 +81,7 @@ namespace litecore {
     }
 
     bool KeyStore::createIndex(slice name, slice expression, QueryLanguage queryLanguage, IndexSpec::Type type,
-                               const IndexSpec::Options *options) {
+                               const IndexSpec::Options* options) {
         return createIndex({string(name), type, alloc_slice(expression), queryLanguage, options});
     }
 

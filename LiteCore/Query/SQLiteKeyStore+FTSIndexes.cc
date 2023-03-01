@@ -30,10 +30,10 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options *);
+    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::Options*);
 
     // Creates a FTS index.
-    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createFTSIndex(const IndexSpec& spec) {
         auto ftsTableName = db().FTSTableName(tableName(), spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
         QueryParser qp(db(), collectionName(), tableName());
@@ -85,7 +85,7 @@ namespace litecore {
     }
 
     // subroutine that generates the option string passed to the FTS tokenizer
-    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options *options) {
+    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::Options* options) {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if ( options ) {

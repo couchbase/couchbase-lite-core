@@ -50,7 +50,7 @@ namespace litecore::repl {
     /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
     fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
                                                   C4ReplicatorPropertyEncryptionCallback callback,
-                                                  void *callbackContext, C4Error *outError) noexcept;
+                                                  void* callbackContext, C4Error* outError) noexcept;
 
     /// Finds encrypted properties in `doc` and decrypts them.
     /// @param docID  The ID of the document.
@@ -61,7 +61,7 @@ namespace litecore::repl {
     /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
     fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
                                                   C4ReplicatorPropertyDecryptionCallback callback,
-                                                  void *callbackContext, C4Error *outError) noexcept;
+                                                  void* callbackContext, C4Error* outError) noexcept;
 
     constexpr int kPropertyEncryptionAPIVersion = 1;
 }  // namespace litecore::repl

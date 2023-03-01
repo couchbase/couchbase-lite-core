@@ -203,8 +203,8 @@ enum {
  *         the output was truncated, and the error code is set to U_BUFFER_OVERFLOW_ERROR.
  * @stable ICU 2.0
  */
-U_STABLE int32_t U_EXPORT2 unorm_normalize(const UChar *source, int32_t sourceLength, UNormalizationMode mode,
-                                           int32_t options, UChar *result, int32_t resultLength, UErrorCode *status);
+U_STABLE int32_t U_EXPORT2 unorm_normalize(const UChar* source, int32_t sourceLength, UNormalizationMode mode,
+                                           int32_t options, UChar* result, int32_t resultLength, UErrorCode* status);
 
 /**
  * Performing quick check on a string, to quickly determine if the string is 
@@ -226,8 +226,8 @@ U_STABLE int32_t U_EXPORT2 unorm_normalize(const UChar *source, int32_t sourceLe
  * @see unorm_isNormalized
  * @stable ICU 2.0
  */
-U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheck(const UChar *source, int32_t sourcelength,
-                                                              UNormalizationMode mode, UErrorCode *status);
+U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheck(const UChar* source, int32_t sourcelength,
+                                                              UNormalizationMode mode, UErrorCode* status);
 
 /**
  * Performing quick check on a string; same as unorm_quickCheck but
@@ -245,9 +245,9 @@ U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheck(const UChar *sourc
  * @see unorm_isNormalized
  * @stable ICU 2.6
  */
-U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheckWithOptions(const UChar *src, int32_t srcLength,
+U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheckWithOptions(const UChar* src, int32_t srcLength,
                                                                          UNormalizationMode mode, int32_t options,
-                                                                         UErrorCode *pErrorCode);
+                                                                         UErrorCode* pErrorCode);
 
 /**
  * Test if a string is in a given normalization form.
@@ -270,8 +270,8 @@ U_STABLE UNormalizationCheckResult U_EXPORT2 unorm_quickCheckWithOptions(const U
  * @see unorm_quickCheck
  * @stable ICU 2.2
  */
-U_STABLE UBool U_EXPORT2 unorm_isNormalized(const UChar *src, int32_t srcLength, UNormalizationMode mode,
-                                            UErrorCode *pErrorCode);
+U_STABLE UBool U_EXPORT2 unorm_isNormalized(const UChar* src, int32_t srcLength, UNormalizationMode mode,
+                                            UErrorCode* pErrorCode);
 
 /**
  * Test if a string is in a given normalization form; same as unorm_isNormalized but
@@ -290,8 +290,8 @@ U_STABLE UBool U_EXPORT2 unorm_isNormalized(const UChar *src, int32_t srcLength,
  * @see unorm_isNormalized
  * @stable ICU 2.6
  */
-U_STABLE UBool U_EXPORT2 unorm_isNormalizedWithOptions(const UChar *src, int32_t srcLength, UNormalizationMode mode,
-                                                       int32_t options, UErrorCode *pErrorCode);
+U_STABLE UBool U_EXPORT2 unorm_isNormalizedWithOptions(const UChar* src, int32_t srcLength, UNormalizationMode mode,
+                                                       int32_t options, UErrorCode* pErrorCode);
 
 /**
  * Iterative normalization forward.
@@ -366,9 +366,9 @@ U_STABLE UBool U_EXPORT2 unorm_isNormalizedWithOptions(const UChar *src, int32_t
  *
  * @stable ICU 2.1
  */
-U_STABLE int32_t U_EXPORT2 unorm_next(UCharIterator *src, UChar *dest, int32_t destCapacity, UNormalizationMode mode,
-                                      int32_t options, UBool doNormalize, UBool *pNeededToNormalize,
-                                      UErrorCode *pErrorCode);
+U_STABLE int32_t U_EXPORT2 unorm_next(UCharIterator* src, UChar* dest, int32_t destCapacity, UNormalizationMode mode,
+                                      int32_t options, UBool doNormalize, UBool* pNeededToNormalize,
+                                      UErrorCode* pErrorCode);
 
 /**
  * Iterative normalization backward.
@@ -396,9 +396,9 @@ U_STABLE int32_t U_EXPORT2 unorm_next(UCharIterator *src, UChar *dest, int32_t d
  *
  * @stable ICU 2.1
  */
-U_STABLE int32_t U_EXPORT2 unorm_previous(UCharIterator *src, UChar *dest, int32_t destCapacity,
+U_STABLE int32_t U_EXPORT2 unorm_previous(UCharIterator* src, UChar* dest, int32_t destCapacity,
                                           UNormalizationMode mode, int32_t options, UBool doNormalize,
-                                          UBool *pNeededToNormalize, UErrorCode *pErrorCode);
+                                          UBool* pNeededToNormalize, UErrorCode* pErrorCode);
 
 /**
  * Concatenate normalized strings, making sure that the result is normalized as well.
@@ -437,9 +437,9 @@ U_STABLE int32_t U_EXPORT2 unorm_previous(UCharIterator *src, UChar *dest, int32
  *
  * @stable ICU 2.1
  */
-U_STABLE int32_t U_EXPORT2 unorm_concatenate(const UChar *left, int32_t leftLength, const UChar *right,
-                                             int32_t rightLength, UChar *dest, int32_t destCapacity,
-                                             UNormalizationMode mode, int32_t options, UErrorCode *pErrorCode);
+U_STABLE int32_t U_EXPORT2 unorm_concatenate(const UChar* left, int32_t leftLength, const UChar* right,
+                                             int32_t rightLength, UChar* dest, int32_t destCapacity,
+                                             UNormalizationMode mode, int32_t options, UErrorCode* pErrorCode);
 
 /**
  * Option bit for unorm_compare:
@@ -531,8 +531,8 @@ U_STABLE int32_t U_EXPORT2 unorm_concatenate(const UChar *left, int32_t leftLeng
  *
  * @stable ICU 2.2
  */
-U_STABLE int32_t U_EXPORT2 unorm_compare(const UChar *s1, int32_t length1, const UChar *s2, int32_t length2,
-                                         uint32_t options, UErrorCode *pErrorCode);
+U_STABLE int32_t U_EXPORT2 unorm_compare(const UChar* s1, int32_t length1, const UChar* s2, int32_t length2,
+                                         uint32_t options, UErrorCode* pErrorCode);
 
 #endif /* #if !UCONFIG_NO_NORMALIZATION */
 

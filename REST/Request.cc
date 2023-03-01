@@ -35,7 +35,7 @@ namespace litecore { namespace REST {
 
 #pragma mark - REQUEST:
 
-    Request::Request(Method method, const string &path, const string &queries, websocket::Headers headers,
+    Request::Request(Method method, const string& path, const string& queries, websocket::Headers headers,
                      fleece::alloc_slice body)
         : Body(move(headers), body), _method(method), _path(path), _queries(queries) {}
 
@@ -48,7 +48,7 @@ namespace litecore { namespace REST {
         slice  version = in.readToDelimiter("\r\n"_sl);
         if ( method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl) ) return false;
 
-        const uint8_t *q = uri.findByte('?');
+        const uint8_t* q = uri.findByte('?');
         if ( q ) {
             _queries = string(uri.from(q + 1));
             uri      = uri.upTo(q);
@@ -78,9 +78,9 @@ namespace litecore { namespace REST {
         return URLDecode(component);
     }
 
-    string Request::query(const char *param) const { return getURLQueryParam(_queries, param); }
+    string Request::query(const char* param) const { return getURLQueryParam(_queries, param); }
 
-    int64_t Request::intQuery(const char *param, int64_t defaultValue) const {
+    int64_t Request::intQuery(const char* param, int64_t defaultValue) const {
         string val = query(param);
         if ( !val.empty() ) {
             slice_istream s(val);
@@ -90,7 +90,7 @@ namespace litecore { namespace REST {
         return defaultValue;
     }
 
-    bool Request::boolQuery(const char *param, bool defaultValue) const {
+    bool Request::boolQuery(const char* param, bool defaultValue) const {
         string val = query(param);
         if ( val.empty() ) return defaultValue;
         return val != "false" && val != "0";  // same behavior as Obj-C CBL 1.x
@@ -98,7 +98,7 @@ namespace litecore { namespace REST {
 
 #pragma mark - RESPONSE STATUS LINE:
 
-    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket> socket)
+    RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
         : _server(server), _socket(move(socket)) {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
@@ -114,7 +114,7 @@ namespace litecore { namespace REST {
         }
     }
 
-    void RequestResponse::setStatus(HTTPStatus status, const char *message) {
+    void RequestResponse::setStatus(HTTPStatus status, const char* message) {
         Assert(!_sentStatus);
         _status        = status;
         _statusMessage = message ? message : "";
@@ -125,7 +125,7 @@ namespace litecore { namespace REST {
         if ( _sentStatus ) return;
         Log("Response status: %d", static_cast<int>(_status));
         if ( _statusMessage.empty() ) {
-            const char *defaultMessage = StatusMessage(_status);
+            const char* defaultMessage = StatusMessage(_status);
             if ( defaultMessage ) _statusMessage = defaultMessage;
         }
         string statusLine = format("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
@@ -139,15 +139,15 @@ namespace litecore { namespace REST {
         setHeader("Date", s.str().c_str());
     }
 
-    void RequestResponse::writeStatusJSON(HTTPStatus status, const char *message) {
-        auto &json = jsonEncoder();
+    void RequestResponse::writeStatusJSON(HTTPStatus status, const char* message) {
+        auto& json = jsonEncoder();
         if ( int(status) < 300 ) {
             json.writeKey("ok"_sl);
             json.writeBool(true);
         } else {
             json.writeKey("status"_sl);
             json.writeInt(int(status));
-            const char *defaultMessage = StatusMessage(status);
+            const char* defaultMessage = StatusMessage(status);
             if ( defaultMessage ) {
                 json.writeKey("error"_sl);
                 json.writeString(defaultMessage);
@@ -164,13 +164,13 @@ namespace litecore { namespace REST {
         writeStatusJSON(errorToStatus(err), (message ? message.asString().c_str() : nullptr));
     }
 
-    void RequestResponse::respondWithStatus(HTTPStatus status, const char *message) {
+    void RequestResponse::respondWithStatus(HTTPStatus status, const char* message) {
         setStatus(status, message);
         uncacheable();
 
         if ( status >= HTTPStatus::OK && status != HTTPStatus::NoContent && status != HTTPStatus::NotModified ) {
             _jsonEncoder.reset();  // drop any prior buffered output
-            auto &json = jsonEncoder();
+            auto& json = jsonEncoder();
             json.beginDict();
             writeStatusJSON(status, message);
             json.endDict();
@@ -234,7 +234,7 @@ namespace litecore { namespace REST {
 
 #pragma mark - RESPONSE HEADERS:
 
-    void RequestResponse::setHeader(const char *header, const char *value) {
+    void RequestResponse::setHeader(const char* header, const char* value) {
         sendStatus();
         Assert(!_endedHeaders);
         _responseHeaderWriter.write(slice(header));
@@ -244,7 +244,7 @@ namespace litecore { namespace REST {
     }
 
     void RequestResponse::addHeaders(map<string, string> headers) {
-        for ( auto &entry : headers ) setHeader(entry.first.c_str(), entry.second.c_str());
+        for ( auto& entry : headers ) setHeader(entry.first.c_str(), entry.second.c_str());
     }
 
     void RequestResponse::setContentLength(uint64_t length) {
@@ -278,8 +278,8 @@ namespace litecore { namespace REST {
         _responseWriter.write(content);
     }
 
-    void RequestResponse::printf(const char *format, ...) {
-        char   *str;
+    void RequestResponse::printf(const char* format, ...) {
+        char*   str;
         va_list args;
         va_start(args, format);
         int length = vasprintf(&str, format, args);
@@ -289,7 +289,7 @@ namespace litecore { namespace REST {
         free(str);
     }
 
-    fleece::JSONEncoder &RequestResponse::jsonEncoder() {
+    fleece::JSONEncoder& RequestResponse::jsonEncoder() {
         if ( !_jsonEncoder ) _jsonEncoder.reset(new fleece::JSONEncoder);
         return *_jsonEncoder;
     }
@@ -320,7 +320,7 @@ namespace litecore { namespace REST {
                && header("Sec-WebSocket-Key").size >= 10;
     }
 
-    void RequestResponse::sendWebSocketResponse(const string &protocol) {
+    void RequestResponse::sendWebSocketResponse(const string& protocol) {
         string nonce(header("Sec-WebSocket-Key"));
         setStatus(HTTPStatus::Upgraded, "Upgraded");
         setHeader("Connection", "Upgrade");
@@ -330,7 +330,7 @@ namespace litecore { namespace REST {
         finish();
     }
 
-    void RequestResponse::onClose(std::function<void()> &&callback) { _socket->onClose(move(callback)); }
+    void RequestResponse::onClose(std::function<void()>&& callback) { _socket->onClose(move(callback)); }
 
     unique_ptr<ResponderSocket> RequestResponse::extractSocket() {
         finish();

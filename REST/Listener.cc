@@ -23,11 +23,11 @@ using namespace fleece;
 namespace litecore { namespace REST {
 
 
-    Listener::Listener(const Config &config) : _config(config) {
+    Listener::Listener(const Config& config) : _config(config) {
         if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
     }
 
-    string Listener::databaseNameFromPath(const FilePath &path) {
+    string Listener::databaseNameFromPath(const FilePath& path) {
         string name  = path.fileOrDirName();
         auto   split = FilePath::splitExtension(name);
         if ( split.second != kC4DatabaseFilenameExtension )
@@ -39,20 +39,20 @@ namespace litecore { namespace REST {
         if ( name.size() == 0 ) name = "db";
         else if ( name[0] == '_' )
             name[0] = '-';
-        for ( char &c : name ) {
+        for ( char& c : name ) {
             if ( iscntrl(c) || c == '/' ) c = '-';
         }
         return name;
     }
 
-    bool Listener::isValidDatabaseName(const string &name) {
+    bool Listener::isValidDatabaseName(const string& name) {
         if ( name.empty() || name.size() > 240 || name[0] == '_' ) return false;
         for ( uint8_t c : name )
             if ( iscntrl(c) ) return false;
         return true;
     }
 
-    bool Listener::registerDatabase(C4Database *db, optional<string> name) {
+    bool Listener::registerDatabase(C4Database* db, optional<string> name) {
         if ( !name ) {
             alloc_slice path(db->getPath());
             name = databaseNameFromPath(FilePath(string(path)));
@@ -77,7 +77,7 @@ namespace litecore { namespace REST {
         return true;
     }
 
-    bool Listener::unregisterDatabase(C4Database *db) {
+    bool Listener::unregisterDatabase(C4Database* db) {
         lock_guard<mutex> lock(_mutex);
         for ( auto i = _databases.begin(); i != _databases.end(); ++i ) {
             if ( i->second == db ) {
@@ -88,7 +88,7 @@ namespace litecore { namespace REST {
         return false;
     }
 
-    bool Listener::registerCollection(const string &name, CollectionSpec collection) {
+    bool Listener::registerCollection(const string& name, CollectionSpec collection) {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
         if ( i == _databases.end() ) return false;
@@ -104,7 +104,7 @@ namespace litecore { namespace REST {
         return true;
     }
 
-    bool Listener::unregisterCollection(const string &name, CollectionSpec collection) {
+    bool Listener::unregisterCollection(const string& name, CollectionSpec collection) {
         lock_guard<mutex> lock(_mutex);
         auto              i = _allowedCollections.find(name);
         if ( i == _allowedCollections.end() ) return false;
@@ -119,7 +119,7 @@ namespace litecore { namespace REST {
         return false;
     }
 
-    Retained<C4Database> Listener::databaseNamed(const string &name) const {
+    Retained<C4Database> Listener::databaseNamed(const string& name) const {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
         if ( i == _databases.end() ) return nullptr;
@@ -128,9 +128,9 @@ namespace litecore { namespace REST {
         return i->second;
     }
 
-    optional<string> Listener::nameOfDatabase(C4Database *db) const {
+    optional<string> Listener::nameOfDatabase(C4Database* db) const {
         lock_guard<mutex> lock(_mutex);
-        for ( auto &[aName, aDB] : _databases )
+        for ( auto& [aName, aDB] : _databases )
             if ( aDB == db ) return aName;
         return nullopt;
     }
@@ -138,7 +138,7 @@ namespace litecore { namespace REST {
     vector<string> Listener::databaseNames() const {
         lock_guard<mutex> lock(_mutex);
         vector<string>    names;
-        for ( auto &d : _databases ) names.push_back(d.first);
+        for ( auto& d : _databases ) names.push_back(d.first);
         return names;
     }
 

@@ -26,9 +26,9 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
-    static void predictionFunc(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+    static void predictionFunc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         try {
-            auto name  = (const char *)sqlite3_value_text(argv[0]);
+            auto name  = (const char*)sqlite3_value_text(argv[0]);
             auto model = PredictiveModel::named(name);
             if ( !model ) {
                 string msg = format("Unknown ML model name '%s'", name);
@@ -36,7 +36,7 @@ namespace litecore {
                 return;
             }
 
-            const Value *input = fleeceParam(ctx, argv[1], false);
+            const Value* input = fleeceParam(ctx, argv[1], false);
             if ( !input || input->type() != kDict ) {
                 if ( !input && sqlite3_value_type(argv[1]) == SQLITE_NULL ) sqlite3_result_null(ctx);
                 else
@@ -53,7 +53,7 @@ namespace litecore {
             }
 
             C4Error     error  = {};
-            alloc_slice result = model->prediction((const Dict *)input, getDBDelegate(ctx), &error);
+            alloc_slice result = model->prediction((const Dict*)input, getDBDelegate(ctx), &error);
             if ( !result ) {
                 if ( error.code == 0 ) {
                     LogVerbose(QueryLog, "    ...prediction returned no result");
@@ -62,7 +62,7 @@ namespace litecore {
                     alloc_slice desc(c4error_getDescription(error));
                     LogError(QueryLog, "Predictive model '%s' failed: %.*s", name, SPLAT(desc));
                     alloc_slice msg = c4error_getMessage(error);
-                    sqlite3_result_error(ctx, (const char *)msg.buf, (int)msg.size);
+                    sqlite3_result_error(ctx, (const char*)msg.buf, (int)msg.size);
                 }
                 return;
             }
@@ -72,15 +72,15 @@ namespace litecore {
             if ( argc < 3 ) {
                 setResultBlobFromFleeceData(ctx, result);
             } else {
-                const Value *val = Value::fromTrustedData(result);
+                const Value* val = Value::fromTrustedData(result);
                 val              = evaluatePathFromArg(ctx, argv, 2, val);
                 setResultFromValue(ctx, val);
             }
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "predictionFunc: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "predictionFunc: exception!", -1); }
     }
 
     // Creates Fleece array iterators on the 1st two parameters of the function.
-    static bool getArrays(sqlite3_context *ctx, sqlite3_value **argv, Array::iterator &i1, Array::iterator &i2) {
+    static bool getArrays(sqlite3_context* ctx, sqlite3_value** argv, Array::iterator& i1, Array::iterator& i2) {
         auto p1 = fleeceParam(ctx, argv[0], false), p2 = fleeceParam(ctx, argv[1], false);
         if ( !p1 || !p2 ) return false;
         auto a1 = p1->asArray(), a2 = p2->asArray();
@@ -91,7 +91,7 @@ namespace litecore {
     }
 
     // https://en.wikipedia.org/wiki/Euclidean_distance
-    static void euclidean_distance(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+    static void euclidean_distance(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
 
@@ -113,7 +113,7 @@ namespace litecore {
     }
 
     // https://en.wikipedia.org/wiki/Cosine_similarity
-    static void cosine_distance(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+    static void cosine_distance(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
 

@@ -43,19 +43,19 @@ namespace litecore {
 
     namespace qp {
         struct caseInsensitiveSlice {
-            size_t operator()(pure_slice const &s) const {
+            size_t operator()(pure_slice const& s) const {
                 uint32_t h = 2166136261;
                 for ( size_t i = 0; i < s.size; i++ ) { h = (h ^ tolower(s[i])) * 16777619; }
 
                 return h;
             }
 
-            bool operator()(const slice &a, const slice &b) const { return a.caseEquivalent(b); }
+            bool operator()(const slice& a, const slice& b) const { return a.caseEquivalent(b); }
         };
 
         using case_insensitive_set = std::unordered_set<slice, caseInsensitiveSlice, caseInsensitiveSlice>;
 
-        bool isImplicitBool(const Value *op) {
+        bool isImplicitBool(const Value* op) {
             if ( !op ) { return false; }
 
             static const case_insensitive_set implicitBoolOps = {
@@ -65,7 +65,7 @@ namespace litecore {
             return implicitBoolOps.count(op->asString()) > 0;
         }
 
-        void fail(const char *format, ...) {
+        void fail(const char* format, ...) {
             va_list args;
             va_start(args, format);
             string message = vformat(format, args);
@@ -75,21 +75,21 @@ namespace litecore {
             throw error(error::LiteCore, error::InvalidQuery, message);
         }
 
-        const Array *requiredArray(const Value *v, const char *what) {
+        const Array* requiredArray(const Value* v, const char* what) {
             return required(required(v, what)->asArray(), what, "must be an array");
         }
 
-        const Dict *requiredDict(const Value *v, const char *what) {
+        const Dict* requiredDict(const Value* v, const char* what) {
             return required(required(v, what)->asDict(), what, "must be a dictionary");
         }
 
-        slice requiredString(const Value *v, const char *what) {
+        slice requiredString(const Value* v, const char* what) {
             slice str = required(required(v, what)->asString(), what, "must be a string");
             require(str.size > 0, "%s must be non-empty", what);
             return str;
         }
 
-        slice optionalString(const Value *v, const char *what) {
+        slice optionalString(const Value* v, const char* what) {
             slice str;
             if ( v ) {
                 str = required(v->asString(), what, "must be a string");
@@ -98,13 +98,13 @@ namespace litecore {
             return str;
         }
 
-        const Value *getCaseInsensitive(const Dict *dict, slice key) {
+        const Value* getCaseInsensitive(const Dict* dict, slice key) {
             for ( Dict::iterator i(dict); i; ++i )
                 if ( i.key()->asString().caseEquivalent(key) ) return i.value();
             return nullptr;
         }
 
-        unsigned findNodes(const Value *root, slice op, unsigned argCount, function_ref<void(const Array *)> callback) {
+        unsigned findNodes(const Value* root, slice op, unsigned argCount, function_ref<void(const Array*)> callback) {
             unsigned n = 0;
             for ( DeepIterator di(root); di; ++di ) {
                 auto operation = di.value()->asArray();
@@ -117,7 +117,7 @@ namespace litecore {
         }
     }  // namespace qp
 
-    static bool isValidAlias(const string &alias) { return !slice(alias).findAnyByteOf("'\":"); }
+    static bool isValidAlias(const string& alias) { return !slice(alias).findAnyByteOf("'\":"); }
 
     static string quotedIdentifierString(slice str) {
         if ( isValidIdentifier(str) ) {
@@ -133,7 +133,7 @@ namespace litecore {
         slice_istream in(inputPath);
         Assert(in.peekByte() == '$');
         alloc_slice escaped(in.size + 1);
-        auto        dst = (char *)escaped.buf;
+        auto        dst = (char*)escaped.buf;
         dst[0]          = '\\';
         in.readAll(dst + 1, escaped.size - 1);
         return escaped;
@@ -157,7 +157,7 @@ namespace litecore {
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
     }
 
-    static void handleFleeceException(const FleeceException &x) {
+    static void handleFleeceException(const FleeceException& x) {
         switch ( x.code ) {
             case PathSyntaxError:
                 fail("Invalid property path: %s", x.what());
@@ -172,18 +172,18 @@ namespace litecore {
         Retained<Doc> doc;
         try {
             doc = Doc::fromJSON(expressionJSON);
-        } catch ( const FleeceException &x ) { handleFleeceException(x); }
+        } catch ( const FleeceException& x ) { handleFleeceException(x); }
         return parse(doc->root());
     }
 
-    void QueryParser::parse(const Value *expression) {
+    void QueryParser::parse(const Value* expression) {
         reset();
         try {
             if ( expression->asDict() ) {
                 // Given a dict; assume it's the operands of a SELECT:
                 writeSelect(expression->asDict());
             } else {
-                const Array *a = expression->asArray();
+                const Array* a = expression->asArray();
                 if ( a && a->count() > 0 && a->get(0)->asString() == "SELECT"_sl ) {
                     // Given an entire SELECT statement:
                     parseNode(expression);
@@ -194,20 +194,20 @@ namespace litecore {
                     writeSelect(select);
                 }
             }
-        } catch ( const FleeceException &x ) { handleFleeceException(x); }
+        } catch ( const FleeceException& x ) { handleFleeceException(x); }
     }
 
-    void QueryParser::parseJustExpression(const Value *expression) {
+    void QueryParser::parseJustExpression(const Value* expression) {
         reset();
         addDefaultAlias();
         try {
             parseNode(expression);
-        } catch ( const FleeceException &x ) { handleFleeceException(x); }
+        } catch ( const FleeceException& x ) { handleFleeceException(x); }
     }
 
 #pragma mark - SELECT STATEMENT
 
-    void QueryParser::writeSelect(const Dict *operands) {
+    void QueryParser::writeSelect(const Dict* operands) {
         // Find all the joins in the FROM clause first, to populate alias info. This has to be done
         // before writing the WHAT clause, because that will depend on the aliases.
         auto from = getCaseInsensitive(operands, "FROM"_sl);
@@ -277,8 +277,8 @@ namespace litecore {
             extra << quotedIdentifierString(_dbAlias) << ".rowid";
 
             // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
-            for ( string &ftsTable : _ftsTables ) {
-                const string &alias = _indexJoinTables[ftsTable];
+            for ( string& ftsTable : _ftsTables ) {
+                const string& alias = _indexJoinTables[ftsTable];
                 extra << ", offsets(" << alias << "." << sqlIdentifier(ftsTable) << ")";
             }
             extra << ", ";
@@ -301,7 +301,7 @@ namespace litecore {
     }
 
     // Writes a SELECT statement's 'WHAT', 'GROUP BY' or 'ORDER BY' clause:
-    unsigned QueryParser::writeSelectListClause(const Dict *operands, slice key, const char *sql, bool aggregatesOK) {
+    unsigned QueryParser::writeSelectListClause(const Dict* operands, slice key, const char* sql, bool aggregatesOK) {
         auto param = getCaseInsensitive(operands, key);
         if ( !param ) return 0;
         auto list  = requiredArray(param, "WHAT / GROUP BY / ORDER BY parameter");
@@ -320,15 +320,15 @@ namespace litecore {
         return count;
     }
 
-    void QueryParser::writeWhereClause(const Value *where) {
+    void QueryParser::writeWhereClause(const Value* where) {
         if ( where ) {
             _sql << " WHERE ";
             parseNode(where);
         }
     }
 
-    void QueryParser::writeCreateIndex(const string &indexName, const string &onTableName,
-                                       Array::iterator &expressionsIter, const Array *whereClause,
+    void QueryParser::writeCreateIndex(const string& indexName, const string& onTableName,
+                                       Array::iterator& expressionsIter, const Array* whereClause,
                                        bool isUnnestedTable) {
         _defaultTableName = onTableName;
         reset();
@@ -344,10 +344,10 @@ namespace litecore {
                 _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
             }
             if ( whereClause && !isUnnestedTable ) writeWhereClause(whereClause);
-        } catch ( const FleeceException &x ) { handleFleeceException(x); }
+        } catch ( const FleeceException& x ) { handleFleeceException(x); }
     }
 
-    bool QueryParser::writeOrderOrLimitClause(const Dict *operands, slice jsonKey, const char *sqlKeyword) {
+    bool QueryParser::writeOrderOrLimitClause(const Dict* operands, slice jsonKey, const char* sqlKeyword) {
         auto value = getCaseInsensitive(operands, jsonKey);
         if ( !value ) return false;
         _sql << " " << sqlKeyword << " MAX(0, ";
@@ -363,14 +363,14 @@ namespace litecore {
         _aliases.insert({_dbAlias, {kDBAlias, _dbAlias, _defaultCollectionName, _defaultTableName}});
     }
 
-    void QueryParser::addAlias(aliasInfo &&entry) {
+    void QueryParser::addAlias(aliasInfo&& entry) {
         require(isValidAlias(entry.alias), "Invalid AS identifier '%s'", entry.alias.c_str());
         require(_aliases.find(entry.alias) == _aliases.end(), "duplicate collection alias '%s'", entry.alias.c_str());
         if ( entry.type == kDBAlias ) _dbAlias = entry.alias;
         _aliases.insert({entry.alias, move(entry)});
     }
 
-    void QueryParser::addAlias(const string &alias, aliasType type, const string &tableName) {
+    void QueryParser::addAlias(const string& alias, aliasType type, const string& tableName) {
         aliasInfo entry;
         entry.type       = type;
         entry.alias      = alias;
@@ -379,7 +379,7 @@ namespace litecore {
         addAlias(move(entry));
     }
 
-    QueryParser::aliasInfo QueryParser::parseFromEntry(const Value *value) {
+    QueryParser::aliasInfo QueryParser::parseFromEntry(const Value* value) {
         auto      dict       = requiredDict(value, "FROM item");
         slice     collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl), "COLLECTION in FROM item");
         slice     scope      = optionalString(getCaseInsensitive(dict, "SCOPE"_sl), "SCOPE in FROM item");
@@ -417,7 +417,7 @@ namespace litecore {
     }
 
     // Sanity-checks the FROM clause, and  populates _kvTables and _aliases based on it.
-    void QueryParser::parseFromClause(const Value *from) {
+    void QueryParser::parseFromClause(const Value* from) {
         _aliases.clear();
         bool first = true;
         if ( from ) {
@@ -452,7 +452,7 @@ namespace litecore {
         }
     }
 
-    static string aliasOfFromEntry(const Value *value, const string &defaultAlias) {
+    static string aliasOfFromEntry(const Value* value, const string& defaultAlias) {
         auto   dict = requiredDict(value, "FROM item");
         string ret{optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
         if ( ret.empty() ) {
@@ -468,13 +468,13 @@ namespace litecore {
         return ret;
     }
 
-    void QueryParser::writeFromClause(const Value *from) {
-        auto fromArray = (const Array *)from;  // already type-checked by parseFromClause
+    void QueryParser::writeFromClause(const Value* from) {
+        auto fromArray = (const Array*)from;  // already type-checked by parseFromClause
 
         if ( fromArray && !fromArray->empty() ) {
             for ( Array::iterator i(fromArray); i; ++i ) {
                 auto       fromAlias = aliasOfFromEntry(i.value(), _defaultCollectionName);
-                aliasInfo &entry     = _aliases.find(fromAlias)->second;
+                aliasInfo& entry     = _aliases.find(fromAlias)->second;
                 switch ( entry.type ) {
                     case kDBAlias:
                         {
@@ -532,9 +532,9 @@ namespace litecore {
         }
 
         // Add joins to index tables (FTS, predictive):
-        for ( auto &ftsTable : _indexJoinTables ) {
-            auto &table = ftsTable.first;
-            auto &alias = ftsTable.second;
+        for ( auto& ftsTable : _indexJoinTables ) {
+            auto& table = ftsTable.first;
+            auto& alias = ftsTable.second;
             auto  idxAt = table.find(KeyStore::kIndexSeparator);
             // Encoded in the name of the index table is collection against which the index
             // is created. "docID" of this table is to match the "rowid" of the collection table.
@@ -569,7 +569,7 @@ namespace litecore {
 
 #pragma mark - PARSING THE "WHERE" CLAUSE:
 
-    void QueryParser::parseNode(const Value *node) {
+    void QueryParser::parseNode(const Value* node) {
         _curNode = node;
         switch ( node->type() ) {
             case kNull:
@@ -587,17 +587,17 @@ namespace litecore {
             case kData:
                 fail("Binary data not supported in query");
             case kArray:
-                parseOpNode((const Array *)node);
+                parseOpNode((const Array*)node);
                 break;
             case kDict:
-                writeDictLiteral((const Dict *)node);
+                writeDictLiteral((const Dict*)node);
                 break;
         }
     }
 
     // Like parseNode(), but adds a SQL `COLLATE` operator if a collation is in effect and has not
     // yet been written into the SQL.
-    void QueryParser::parseCollatableNode(const Value *node) {
+    void QueryParser::parseCollatableNode(const Value* node) {
         if ( _collationUsed ) {
             parseNode(node);
         } else {
@@ -612,7 +612,7 @@ namespace litecore {
 
     void QueryParser::writeCollation() { _sql << " COLLATE " << sqlIdentifier(_collation.sqliteName()); }
 
-    void QueryParser::parseOpNode(const Array *node) {
+    void QueryParser::parseOpNode(const Array* node) {
         Array::iterator array(node);
         require(array.count() > 0, "Empty JSON array");
         slice op = requiredString(array[0], "operation");
@@ -621,7 +621,7 @@ namespace litecore {
         // Look up the handler:
         int              nargs       = min(array.count(), 9u);
         bool             nameMatched = false;
-        const Operation *def;
+        const Operation* def;
         for ( def = kOperationList; def->op; ++def ) {
             if ( op.caseEquivalent(def->op) ) {
                 nameMatched = true;
@@ -633,7 +633,7 @@ namespace litecore {
     }
 
     // Invokes an Operation's handler. Pushes Operation on the stack and writes parens if needed
-    void QueryParser::handleOperation(const Operation *op, slice actualOperator, Array::iterator &operands) {
+    void QueryParser::handleOperation(const Operation* op, slice actualOperator, Array::iterator& operands) {
         bool parenthesize = (op->precedence <= _context.back()->precedence);
         _context.push_back(op);
         if ( parenthesize ) _sql << '(';
@@ -658,7 +658,7 @@ namespace litecore {
 #pragma mark - DELETED-DOC HANDLING:
 
     // Returns true if the expression is the `meta()` property of the given alias.
-    static bool isMetaProperty(const Array *meta, slice alias, bool uniqAlias) {
+    static bool isMetaProperty(const Array* meta, slice alias, bool uniqAlias) {
         if ( !meta || meta->empty() || !meta->get(0)->asString().caseEquivalent("META()") ) return false;
         if ( meta->count() == 1 ) return alias.empty() || uniqAlias;
         else
@@ -668,7 +668,7 @@ namespace litecore {
     // Returns true if the expression is a reference to the "deleted" meta-property of an alias.
     // This can be appear either as a document property `_deleted`, or as a references to the
     // `deleted` property of the `meta()` function.
-    static bool isDeletedPropertyRef(const Array *operation, slice alias, bool uniqAlias) {
+    static bool isDeletedPropertyRef(const Array* operation, slice alias, bool uniqAlias) {
         if ( operation && !operation->empty() ) {
             slice op = operation->get(0)->asString();
             if ( op.hasPrefix('.') ) {
@@ -689,12 +689,12 @@ namespace litecore {
         return false;
     }
 
-    static bool isDeletedPropertyRef(const Value *expr, slice alias, bool uniqAlias) {
+    static bool isDeletedPropertyRef(const Value* expr, slice alias, bool uniqAlias) {
         return expr && isDeletedPropertyRef(expr->asArray(), alias, uniqAlias);
     }
 
-    static bool findDeletedPropertyRefs(const Dict *expr, slice alias, bool uniqAlias) {
-        const Value *what = getCaseInsensitive(expr, "WHAT");
+    static bool findDeletedPropertyRefs(const Dict* expr, slice alias, bool uniqAlias) {
+        const Value* what = getCaseInsensitive(expr, "WHAT");
         for ( DeepIterator iter(expr); iter; ++iter ) {
             if ( auto operation = iter.value()->asArray(); operation && operation != what ) {
                 if ( isDeletedPropertyRef(operation, alias, uniqAlias) ) return true;
@@ -717,7 +717,7 @@ namespace litecore {
 
     // Returns `kDeletedDocs` if the expression only matches deleted documents,
     // 'kLiveTable' if it doesn't access the 'deleted' meta-property at all,
-    static bool matchesOnlyDeletedDocs(const Value *expr, slice alias, bool uniqAlias) {
+    static bool matchesOnlyDeletedDocs(const Value* expr, slice alias, bool uniqAlias) {
         if ( isDeletedPropertyRef(expr, alias, uniqAlias) ) return true;
         if ( auto operation = expr->asArray(); operation && operation->count() >= 2 ) {
             Array::iterator operands(operation);
@@ -738,15 +738,15 @@ namespace litecore {
         return false;
     }
 
-    void QueryParser::lookForDeleted(const Dict *select) {
-        const Value               *where = getCaseInsensitive(select, "WHERE");
+    void QueryParser::lookForDeleted(const Dict* select) {
+        const Value*               where = getCaseInsensitive(select, "WHERE");
         vector<AliasMap::iterator> aliasIters;
         for ( auto iter = _aliases.begin(); iter != _aliases.end(); ++iter ) {
             if ( iter->second.type == kDBAlias || iter->second.type == kJoinAlias ) { aliasIters.push_back(iter); }
         }
 
         for ( auto iter : aliasIters ) {
-            aliasInfo &info  = iter->second;
+            aliasInfo& info  = iter->second;
             slice      alias = info.alias;
             if ( info.type == kDBAlias && !_propertiesUseSourcePrefix ) alias = ""_sl;
             auto type = kLiveDocs;
@@ -776,7 +776,7 @@ namespace litecore {
         }
     }
 
-    void QueryParser::writeDeletionTest(const string &alias) {
+    void QueryParser::writeDeletionTest(const string& alias) {
         switch ( _aliases[alias].delStatus ) {
             case kLiveDocs:
                 _sql << "false";
@@ -795,20 +795,20 @@ namespace litecore {
 #pragma mark - OPERATION HANDLERS:
 
     // Handles prefix (unary) operators
-    void QueryParser::prefixOp(slice op, Array::iterator &operands) {
+    void QueryParser::prefixOp(slice op, Array::iterator& operands) {
         _sql << op;
         if ( isalpha(op[op.size - 1]) ) _sql << ' ';
         parseNode(operands[0]);
     }
 
     // Handles postfix operators
-    void QueryParser::postfixOp(slice op, Array::iterator &operands) {
+    void QueryParser::postfixOp(slice op, Array::iterator& operands) {
         parseNode(operands[0]);
         _sql << " " << op;
     }
 
     // Handles infix operators
-    void QueryParser::infixOp(slice op, Array::iterator &operands) {
+    void QueryParser::infixOp(slice op, Array::iterator& operands) {
         bool functionWantsCollation = _functionWantsCollation;
         _functionWantsCollation     = false;
 
@@ -820,7 +820,7 @@ namespace litecore {
         }
 
         int n = 0;
-        for ( auto &i = operands; i; ++i ) {
+        for ( auto& i = operands; i; ++i ) {
             // Write the operation/delimiter between arguments
             if ( n++ > 0 ) {
                 if ( op != ","_sl )  // special case for argument lists
@@ -837,7 +837,7 @@ namespace litecore {
         }
     }
 
-    static string columnTitleFromProperty(const Path &property, bool useAlias) {
+    static string columnTitleFromProperty(const Path& property, bool useAlias) {
         if ( property.empty() )
             return "*";  // for the property ".", i.e. the entire doc. It will be translated to unique db alias.
         string first(property[0].keyStr());
@@ -851,10 +851,10 @@ namespace litecore {
     }
 
     // Handles the WHAT clause (list of results)
-    void QueryParser::resultOp(slice op, Array::iterator &operands) {
+    void QueryParser::resultOp(slice op, Array::iterator& operands) {
         int      n         = 0;
         unsigned anonCount = 0;
-        for ( auto &i = operands; i; ++i ) {
+        for ( auto& i = operands; i; ++i ) {
             // Write the operation/delimiter between arguments
             if ( n++ > 0 ) _sql << ", ";
 
@@ -912,12 +912,12 @@ namespace litecore {
 
     // Handles array literals (the "[]" op)
     // But note that this op is treated specially if it's an operand of "IN" (see inOp)
-    void QueryParser::arrayLiteralOp(slice op, Array::iterator &operands) {
+    void QueryParser::arrayLiteralOp(slice op, Array::iterator& operands) {
         functionOp(kArrayFnNameWithParens, operands);
     }
 
     // Handles EXISTS
-    void QueryParser::existsOp(slice op, Array::iterator &operands) {
+    void QueryParser::existsOp(slice op, Array::iterator& operands) {
         // "EXISTS propertyname" turns into a call to fl_exists()
         if ( writeNestedPropertyOpIfAny(kExistsFnName, operands) ) return;
 
@@ -926,18 +926,18 @@ namespace litecore {
         parseNode(operands[0]);
     }
 
-    static void setFlagFromOption(bool &flag, const Dict *options, slice key) {
-        const Value *val = getCaseInsensitive(options, key);
+    static void setFlagFromOption(bool& flag, const Dict* options, slice key) {
+        const Value* val = getCaseInsensitive(options, key);
         if ( val ) flag = val->asBool();
     }
 
     // Handles COLLATE
-    void QueryParser::collateOp(slice op, Array::iterator &operands) {
+    void QueryParser::collateOp(slice op, Array::iterator& operands) {
         auto outerCollation     = _collation;
         auto outerCollationUsed = _collationUsed;
 
         // Apply the collation options, overriding the inherited ones:
-        const Dict *options = requiredDict(operands[0], "COLLATE options");
+        const Dict* options = requiredDict(operands[0], "COLLATE options");
         setFlagFromOption(_collation.unicodeAware, options, "UNICODE"_sl);
         setFlagFromOption(_collation.caseSensitive, options, "CASE"_sl);
         setFlagFromOption(_collation.diacriticSensitive, options, "DIAC"_sl);
@@ -965,10 +965,10 @@ namespace litecore {
     }
 
     // Handles "x || y", turning it into a call to the concat() function
-    void QueryParser::concatOp(slice op, Array::iterator &operands) { functionOp("concat()"_sl, operands); }
+    void QueryParser::concatOp(slice op, Array::iterator& operands) { functionOp("concat()"_sl, operands); }
 
     // Handles "x BETWEEN y AND z" expressions
-    void QueryParser::betweenOp(slice op, Array::iterator &operands) {
+    void QueryParser::betweenOp(slice op, Array::iterator& operands) {
         parseCollatableNode(operands[0]);
         _sql << ' ' << op << ' ';
         parseNode(operands[1]);
@@ -977,7 +977,7 @@ namespace litecore {
     }
 
     // Handles "x IN y" and "x NOT IN y" expressions
-    void QueryParser::inOp(slice op, Array::iterator &operands) {
+    void QueryParser::inOp(slice op, Array::iterator& operands) {
         bool notIn        = (op != "IN"_sl);
         auto arrayOperand = operands[1]->asArray();
         if ( arrayOperand && arrayOperand->count() > 0 && arrayOperand->get(0)->asString() == "[]"_sl ) {
@@ -1005,7 +1005,7 @@ namespace litecore {
         }
     }
 
-    void QueryParser::likeOp(slice op, Array::iterator &operands) {
+    void QueryParser::likeOp(slice op, Array::iterator& operands) {
         // Optimization: use SQLite's built-in LIKE function when possible, i.e. when the collation
         // in effect matches SQLite's BINARY collation. This allows the query optimizer to use the
         // "LIKE optimization", allowing an indexed prefix search, when the pattern is a literal or
@@ -1023,7 +1023,7 @@ namespace litecore {
     }
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
-    void QueryParser::matchOp(slice op, Array::iterator &operands) {
+    void QueryParser::matchOp(slice op, Array::iterator& operands) {
         // Is a MATCH legal here? Look at the parent operation(s):
         auto parentCtx = _context.rbegin() + 1;
         auto parentOp  = (*parentCtx)->op;
@@ -1039,13 +1039,13 @@ namespace litecore {
     }
 
     // Handles "ANY var IN array SATISFIES expr" (and EVERY, and ANY AND EVERY)
-    void QueryParser::anyEveryOp(slice op, Array::iterator &operands) {
+    void QueryParser::anyEveryOp(slice op, Array::iterator& operands) {
         auto var = (string)requiredString(operands[0], "ANY/EVERY first parameter");
         require(isValidIdentifier(var), "ANY/EVERY first parameter must be an identifier; '%s' is not", var.c_str());
         require(_variables.count(var) == 0, "Variable '%s' is already in use", var.c_str());
         _variables.insert(var);
 
-        const Value *arraySource = operands[1];
+        const Value* arraySource = operands[1];
         auto         predicate   = requiredArray(operands[2], "ANY/EVERY third parameter");
 
         bool every       = !op.caseEquivalent("ANY"_sl);
@@ -1078,22 +1078,22 @@ namespace litecore {
     }
 
     // Handles doc property accessors, e.g. [".", "prop"] or [".prop"] --> fl_value(body, "prop")
-    void QueryParser::propertyOp(slice op, Array::iterator &operands) {
+    void QueryParser::propertyOp(slice op, Array::iterator& operands) {
         writePropertyGetter(kValueFnName, propertyFromOperands(operands));
     }
 
-    bool QueryParser::optimizeMetaKeyExtraction(Array::iterator &operands) {
+    bool QueryParser::optimizeMetaKeyExtraction(Array::iterator& operands) {
         // Handle Meta().id - N1QL
         // ["_.", ["meta()", <db>], ".id"] - JSON
 
-        const Array *metaop = operands[0]->asArray();
+        const Array* metaop = operands[0]->asArray();
         if ( metaop == nullptr || metaop->count() == 0
              || !metaop->begin().value()->asString().caseEquivalent("meta()") ) {
             return false;
         }
         slice dbAlias;
         if ( metaop->count() > 1 ) {
-            const Value *second = metaop->get(1);
+            const Value* second = metaop->get(1);
             if ( second->type() == kString ) { dbAlias = second->asString(); }
         }
         slice meta_key = operands[1]->asString();
@@ -1101,7 +1101,7 @@ namespace litecore {
         if ( meta_key[0] == '.' ) { meta_key.moveStart(1); }
         string      dbAlias_s = dbAlias.asString();
         Path        path{slice(dbAlias_s + ".id")};
-        const auto &dbIter = verifyDbAlias(path);
+        const auto& dbIter = verifyDbAlias(path);
         require(dbAlias_s.empty() || dbAlias_s == dbIter->first,
                 "database alias '%s' does not match a declared 'AS' alias", dbAlias_s.c_str());
 
@@ -1110,7 +1110,7 @@ namespace litecore {
     }
 
     // Handles object (dict) property accessors, e.g. ["_.", [...], "prop"] --> fl_nested_value(..., "prop")
-    void QueryParser::objectPropertyOp(slice op, Array::iterator &operands) {
+    void QueryParser::objectPropertyOp(slice op, Array::iterator& operands) {
         auto nOperands = operands.count();
 
         if ( nOperands == 2 && optimizeMetaKeyExtraction(operands) ) { return; }
@@ -1134,12 +1134,12 @@ namespace litecore {
         _sql << ", " << sqlString(path) << ")";
     }
 
-    void QueryParser::blobOp(slice op, Array::iterator &operands) {
+    void QueryParser::blobOp(slice op, Array::iterator& operands) {
         writePropertyGetter(kBlobFnName, Path(requiredString(operands[0], "blob path")));
     }
 
     // Handles substituted query parameters, e.g. ["$", "x"] or ["$x"] --> $_x
-    void QueryParser::parameterOp(slice op, Array::iterator &operands) {
+    void QueryParser::parameterOp(slice op, Array::iterator& operands) {
         alloc_slice parameter;
         if ( op.size == 1 ) {
             parameter = operands[0]->toString();
@@ -1155,7 +1155,7 @@ namespace litecore {
     }
 
     // Handles variables used in ANY/EVERY predicates
-    void QueryParser::variableOp(slice op, Array::iterator &operands) {
+    void QueryParser::variableOp(slice op, Array::iterator& operands) {
         // Concatenate the op and operands as a path:
         Path path;
         if ( op.size > 1 ) {
@@ -1180,10 +1180,10 @@ namespace litecore {
     }
 
     // Handles MISSING, which is the N1QL equivalent of NULL
-    void QueryParser::missingOp(slice op, Array::iterator &operands) { _sql << "NULL"; }
+    void QueryParser::missingOp(slice op, Array::iterator& operands) { _sql << "NULL"; }
 
     // Handles CASE
-    void QueryParser::caseOp(fleece::slice op, Array::iterator &operands) {
+    void QueryParser::caseOp(fleece::slice op, Array::iterator& operands) {
         // First operand is either the expression being tested, or null if there isn't one.
         // After that, operands come in pairs of 'when', 'then'.
         // If there's one remaining, it's the 'else'.
@@ -1216,7 +1216,7 @@ namespace litecore {
     }
 
     // Handles SELECT
-    void QueryParser::selectOp(fleece::slice op, Array::iterator &operands) {
+    void QueryParser::selectOp(fleece::slice op, Array::iterator& operands) {
         // SELECT is unusual in that its operands are encoded as an object
         auto dict = requiredDict(operands[0], "Argument to SELECT");
         if ( _context.size() <= 2 ) {
@@ -1240,7 +1240,7 @@ namespace litecore {
     }  // namespace
 
     // Handles ["meta", dbAlias_optional]
-    void QueryParser::metaOp(slice op, Array::iterator &operands) {
+    void QueryParser::metaOp(slice op, Array::iterator& operands) {
         // Pre-conditions: op == "meta"
         //                 operands.size() == 0 || operands[0]->type() == kString (dbAlias)
 
@@ -1248,7 +1248,7 @@ namespace litecore {
         if ( operands.count() > 0 && operands[0]->type() == kString ) { arg = operands[0]->asString(); }
 
         Path        path{slice(arg + ".id")};
-        const auto &dbIter = verifyDbAlias(path);
+        const auto& dbIter = verifyDbAlias(path);
         require(arg.empty() || arg == dbIter->first, "database alias '%s' does not match a declared 'AS' alias",
                 arg.c_str());
 
@@ -1266,12 +1266,12 @@ namespace litecore {
         _sql << ')';
     }
 
-    void QueryParser::writeMetaPropertyGetter(slice metaKey, const string &dbAlias) {
+    void QueryParser::writeMetaPropertyGetter(slice metaKey, const string& dbAlias) {
         string tablePrefix;
         if ( !dbAlias.empty() ) { tablePrefix = quotedIdentifierString(dbAlias) + "."; }
 
         auto b  = &kMetaKeys[0];
-        auto it = find_if(b, b + mkCount, [metaKey](auto &p) { return p == metaKey; });
+        auto it = find_if(b, b + mkCount, [metaKey](auto& p) { return p == metaKey; });
         require(it != b + mkCount, "'%s' is not a valid Meta key", metaKey.asString().c_str());
 
         switch ( int i = (int)(it - b) ) {
@@ -1299,7 +1299,7 @@ namespace litecore {
     }
 
     // Handles unrecognized operators, based on prefix ('.', '$', '?') or suffix ('()').
-    void QueryParser::fallbackOp(slice op, Array::iterator &operands) {
+    void QueryParser::fallbackOp(slice op, Array::iterator& operands) {
         // Put the actual op into the context instead of a null
         auto operation  = *_context.back();
         operation.op    = op;
@@ -1327,11 +1327,11 @@ namespace litecore {
     }
 
     // Handles function calls, where the op ends with "()"
-    void QueryParser::functionOp(slice op, Array::iterator &operands) {
+    void QueryParser::functionOp(slice op, Array::iterator& operands) {
         // Look up the function name:
         if ( op.hasSuffix("()"_sl) ) { op.shorten(op.size - 2); }
         string              fnName = op.asString();
-        const FunctionSpec *spec;
+        const FunctionSpec* spec;
         for ( spec = kFunctionList; spec->name; ++spec ) {
             if ( op.caseEquivalent(spec->name) ) break;
         }
@@ -1367,7 +1367,7 @@ namespace litecore {
 
         // Special case: "prediction()" may be indexed:
 #ifdef COUCHBASE_ENTERPRISE
-        if ( op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array *)_curNode) ) return;
+        if ( op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode) ) return;
 #endif
 
         if ( !_collationUsed && spec->wants_collation ) {
@@ -1380,15 +1380,15 @@ namespace litecore {
     }
 
     // Writes operands as a comma-separated list (parenthesized depending on current precedence)
-    void QueryParser::writeArgList(Array::iterator &operands) {
+    void QueryParser::writeArgList(Array::iterator& operands) {
         handleOperation(&kArgListOperation, kArgListOperation.op, operands);
     }
 
-    void QueryParser::writeColumnList(Array::iterator &operands) {
+    void QueryParser::writeColumnList(Array::iterator& operands) {
         handleOperation(&kColumnListOperation, kColumnListOperation.op, operands);
     }
 
-    void QueryParser::writeDictLiteral(const fleece::impl::Dict *dict) {
+    void QueryParser::writeDictLiteral(const fleece::impl::Dict* dict) {
         _context.push_back(&kArgListOperation);
         _sql << kDictFnName << '(';
         int n = 0;
@@ -1405,10 +1405,10 @@ namespace litecore {
 
     namespace qp {
         // Concatenates property operands to produce the property path string
-        Path propertyFromOperands(Array::iterator &operands, bool firstIsEncoded) {
+        Path propertyFromOperands(Array::iterator& operands, bool firstIsEncoded) {
             Path path;
             int  n = 0;
-            for ( auto &i = operands; i; ++i, ++n ) {
+            for ( auto& i = operands; i; ++i, ++n ) {
                 auto arr = i.value()->asArray();
                 if ( arr ) {
                     require(n > 0, "Property path can't start with an array index");
@@ -1436,7 +1436,7 @@ namespace litecore {
         }
 
         // Returns the property represented by a node, or "" if it's not a property node
-        Path propertyFromNode(const Value *node, char prefix) {
+        Path propertyFromNode(const Value* node, char prefix) {
             Array::iterator i(node->asArray());
             if ( i.count() >= 1 ) {
                 auto op = i[0]->asString();
@@ -1452,7 +1452,7 @@ namespace litecore {
 
     // If the first operand is a property operation, writes it using the given SQL function name
     // and returns true; else returns false.
-    bool QueryParser::writeNestedPropertyOpIfAny(slice fnName, Array::iterator &operands) {
+    bool QueryParser::writeNestedPropertyOpIfAny(slice fnName, Array::iterator& operands) {
         if ( operands.count() == 0 ) return false;
         Path property = propertyFromNode(operands[0]);
         if ( property.empty() ) return false;
@@ -1460,7 +1460,7 @@ namespace litecore {
         return true;
     }
 
-    void QueryParser::writeFunctionGetter(slice fn, const Value *source, const Value *param) {
+    void QueryParser::writeFunctionGetter(slice fn, const Value* source, const Value* param) {
         Path property = propertyFromNode(source);
         if ( property.empty() ) {
             _sql << fn << "(";
@@ -1475,7 +1475,7 @@ namespace litecore {
         }
     }
 
-    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, slice property) {
+    void QueryParser::writeMetaProperty(slice fn, const string& tablePrefix, slice property) {
         require(fn == kValueFnName, "can't use '_%.*s' in this context", SPLAT(property));
         _sql << tablePrefix << property;
     }
@@ -1483,8 +1483,8 @@ namespace litecore {
     // Return the iterator to _aliases based on the property.
     // Post-condition:
     //     return_iterator != _aliases.end() && return_iterator->second.type != kResultAlias
-    QueryParser::AliasMap::const_iterator QueryParser::verifyDbAlias(fleece::impl::Path &property,
-                                                                     string             *error) const {
+    QueryParser::AliasMap::const_iterator QueryParser::verifyDbAlias(fleece::impl::Path& property,
+                                                                     string*             error) const {
         string alias;
         auto   iType = _aliases.end();
         if ( !property.empty() ) {
@@ -1550,16 +1550,16 @@ namespace litecore {
     }
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
+    void QueryParser::writePropertyGetter(slice fn, Path&& property, const Value* param) {
         size_t propertySizeIn = property.size();
         // We send "property" to verifyDbAlias(). This function ensure that, after return,
         // property is a path to the property in the doc. If the original property starts
         // with database alias, such as db.name.firstname, the function will strip
         // the leading database alias, db, and hence, property as a path will have its size
         // reduced by 1.
-        auto        &&iType                           = verifyDbAlias(property);
+        auto&&        iType                           = verifyDbAlias(property);
         bool          propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
-        const string &alias                           = iType->first;
+        const string& alias                           = iType->first;
         aliasType     type                            = iType->second.type;
         string        tablePrefix                     = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
 
@@ -1583,7 +1583,7 @@ namespace litecore {
             }
 
             if ( resultAliasIter != _aliases.end() ) {
-                const string &resultAlias = resultAliasIter->first;
+                const string& resultAlias = resultAliasIter->first;
                 // If the property in question is identified as an alias, emit that instead of
                 // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
                 // vs alias -> doc["path"]["to"]["value"])
@@ -1640,7 +1640,7 @@ namespace litecore {
         _sql << ")";
     }
 
-    void QueryParser::writeUnnestPropertyGetter(slice fn, Path &property, const string &alias, aliasType type) {
+    void QueryParser::writeUnnestPropertyGetter(slice fn, Path& property, const string& alias, aliasType type) {
         require(fn == kValueFnName, "can't use an UNNEST alias in this context");
         string spec(property);
         require(slice(spec) != kDocIDProperty && slice(spec) != kSequenceProperty, "can't use '%s' on an UNNEST",
@@ -1662,7 +1662,7 @@ namespace litecore {
     }
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
-    void QueryParser::writeEachExpression(Path &&property) {
+    void QueryParser::writeEachExpression(Path&& property) {
         require(!property.empty(), "array expressions only support a property as their source");
 #if 0
         // Is the property an existing UNNEST alias?
@@ -1682,14 +1682,14 @@ namespace litecore {
     }
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
-    void QueryParser::writeEachExpression(const Value *propertyExpr) { writeFunctionGetter(kEachFnName, propertyExpr); }
+    void QueryParser::writeEachExpression(const Value* propertyExpr) { writeFunctionGetter(kEachFnName, propertyExpr); }
 
-    std::string QueryParser::expressionSQL(const fleece::impl::Value *expr) {
+    std::string QueryParser::expressionSQL(const fleece::impl::Value* expr) {
         parseJustExpression(expr);
         return SQL();
     }
 
-    std::string QueryParser::whereClauseSQL(const fleece::impl::Value *arrayExpr, string_view dbAlias) {
+    std::string QueryParser::whereClauseSQL(const fleece::impl::Value* arrayExpr, string_view dbAlias) {
         reset();
         if ( !dbAlias.empty() ) addAlias(string(dbAlias), kDBAlias, _defaultTableName);
         writeWhereClause(arrayExpr);
@@ -1698,14 +1698,14 @@ namespace litecore {
         return sql;
     }
 
-    std::string QueryParser::eachExpressionSQL(const fleece::impl::Value *arrayExpr) {
+    std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
         reset();
         addDefaultAlias();
         writeEachExpression(arrayExpr);
         return SQL();
     }
 
-    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value *ftsExpr) {
+    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
         reset();
         addDefaultAlias();
         writeFunctionGetter(kFTSValueFnName, ftsExpr);
@@ -1714,7 +1714,7 @@ namespace litecore {
 
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
     // a new alias if necessary, which will begin with that prefix.
-    const string &QueryParser::indexJoinTableAlias(const string &tableName, const char *aliasPrefix) {
+    const string& QueryParser::indexJoinTableAlias(const string& tableName, const char* aliasPrefix) {
         auto i = _indexJoinTables.find(tableName);
         if ( i == _indexJoinTables.end() ) {
             if ( !aliasPrefix ) {
@@ -1731,14 +1731,14 @@ namespace litecore {
 
     // Recursively looks for MATCH expressions and adds the properties being matched to
     // _indexJoinTables. Returns the number of expressions found.
-    unsigned QueryParser::findFTSProperties(const Value *root) {
-        return findNodes(root, "MATCH()"_sl, 1, [this](const Array *match) {
+    unsigned QueryParser::findFTSProperties(const Value* root) {
+        return findNodes(root, "MATCH()"_sl, 1, [this](const Array* match) {
             FTSJoinTableAlias(match->get(1), true);  // add LHS
         });
     }
 
     // Returns the FTS table name given the LHS of a MATCH expression.
-    string QueryParser::FTSTableName(const Value *key) const {
+    string QueryParser::FTSTableName(const Value* key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
@@ -1776,16 +1776,16 @@ namespace litecore {
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
-    const string &QueryParser::FTSJoinTableAlias(const Value *matchLHS, bool canAdd) {
+    const string& QueryParser::FTSJoinTableAlias(const Value* matchLHS, bool canAdd) {
         auto          tableName = FTSTableName(matchLHS);
-        const string &alias     = indexJoinTableAlias(tableName);
+        const string& alias     = indexJoinTableAlias(tableName);
         if ( !canAdd || !alias.empty() ) return alias;
         _ftsTables.push_back(tableName);
         return indexJoinTableAlias(tableName, "fts");
     }
 
     // Returns the column name of an FTS table to use for a MATCH expression.
-    string QueryParser::FTSColumnName(const Value *expression) {
+    string QueryParser::FTSColumnName(const Value* expression) {
         slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
         require(op.hasPrefix('.'), "FTS index expression must be a property");
         string property(propertyFromNode(expression));
@@ -1796,7 +1796,7 @@ namespace litecore {
 #pragma mark - UNNEST QUERY:
 
     // Constructs a unique identifier of an expression, from a digest of its JSON.
-    string QueryParser::expressionIdentifier(const Array *expression, unsigned maxItems) const {
+    string QueryParser::expressionIdentifier(const Array* expression, unsigned maxItems) const {
         require(expression, "Invalid expression to index");
         SHA1Builder sha;
         unsigned    item = 0;
@@ -1816,14 +1816,14 @@ namespace litecore {
     }
 
     // Returns the index table name for an unnested array property.
-    string QueryParser::unnestedTableName(const Value *arrayExpr) const {
+    string QueryParser::unnestedTableName(const Value* arrayExpr) const {
         string table = _defaultTableName;
         Path   path  = propertyFromNode(arrayExpr);
         string propertyStr;
         if ( !path.empty() ) {
             // It's a property path
             if ( _propertiesUseSourcePrefix ) {
-                if ( const auto &first = path[0]; first.isKey() ) {
+                if ( const auto& first = path[0]; first.isKey() ) {
                     if ( string keyStr(first.keyStr()); keyStr != _dbAlias ) {
                         if ( auto i = _aliases.find(keyStr); i != _aliases.end() ) { table = i->second.tableName; }
                     }
@@ -1843,7 +1843,7 @@ namespace litecore {
 
 
 #ifndef COUCHBASE_ENTERPRISE
-    void QueryParser::findPredictionCalls(const Value *root) {}
+    void QueryParser::findPredictionCalls(const Value* root) {}
 #endif
 
 }  // namespace litecore

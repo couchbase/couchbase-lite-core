@@ -66,12 +66,12 @@ namespace litecore::qp {
     constexpr slice kPredictionFnName           = "prediction"_sl;
     constexpr slice kPredictionFnNameWithParens = "prediction()"_sl;
 
-    const char *const kDefaultTableAlias = "_doc";
+    const char* const kDefaultTableAlias = "_doc";
 
 
 #pragma mark - FUNCTIONS:
 
-    [[noreturn]] __printflike(1, 2) void fail(const char *format, ...);
+    [[noreturn]] __printflike(1, 2) void fail(const char* format, ...);
 
 #define require(TEST, FORMAT, ...)                                                                                     \
     if ( TEST )                                                                                                        \
@@ -80,23 +80,23 @@ namespace litecore::qp {
         fail(FORMAT, ##__VA_ARGS__)
 
     template <class T>
-    static T required(T val, const char *name, const char *message = "is missing") {
+    static T required(T val, const char* name, const char* message = "is missing") {
         require(val, "%s %s", name, message);
         return val;
     }
 
-    const Value *getCaseInsensitive(const Dict *dict, slice key);
-    bool         isImplicitBool(const Value *op);
+    const Value* getCaseInsensitive(const Dict* dict, slice key);
+    bool         isImplicitBool(const Value* op);
 
-    const Array *requiredArray(const Value *v, const char *what);
-    const Dict  *requiredDict(const Value *v, const char *what);
-    slice        requiredString(const Value *v, const char *what);
-    slice        optionalString(const Value *v, const char *what);
+    const Array* requiredArray(const Value* v, const char* what);
+    const Dict*  requiredDict(const Value* v, const char* what);
+    slice        requiredString(const Value* v, const char* what);
+    slice        optionalString(const Value* v, const char* what);
 
-    Path propertyFromOperands(ArrayIterator &operands, bool skipDot = false);
-    Path propertyFromNode(const Value *node, char prefix = '.');
+    Path propertyFromOperands(ArrayIterator& operands, bool skipDot = false);
+    Path propertyFromNode(const Value* node, char prefix = '.');
 
-    unsigned findNodes(const Value *root, fleece::slice op, unsigned argCount,
-                       function_ref<void(const Array *)> callback);
+    unsigned findNodes(const Value* root, fleece::slice op, unsigned argCount,
+                       function_ref<void(const Array*)> callback);
 
 }  // namespace litecore::qp

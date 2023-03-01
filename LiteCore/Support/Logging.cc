@@ -44,10 +44,10 @@ using namespace std;
 using namespace std::chrono;
 
 struct ScopedSetter {
-    bool &_var;
+    bool& _var;
     bool  _origVal, _newVal;
 
-    ScopedSetter(bool &var, bool toValue) : _var(var), _origVal(var) { _var = toValue; }
+    ScopedSetter(bool& var, bool toValue) : _var(var), _origVal(var) { _var = toValue; }
 
     ~ScopedSetter() { _var = _origVal; }
 };
@@ -61,9 +61,9 @@ struct ScopedSetter {
 
 namespace litecore {
 
-    LogDomain       *LogDomain::sFirstDomain = nullptr;
+    LogDomain*       LogDomain::sFirstDomain = nullptr;
     static LogDomain _ActorLog("Actor");
-    LogDomain       &ActorLog = _ActorLog;
+    LogDomain&       ActorLog = _ActorLog;
 
     LogLevel                     LogDomain::sCallbackMinLevel = LogLevel::Uninitialized;
     static LogDomain::Callback_t sCallback                    = LogDomain::defaultCallback;
@@ -71,8 +71,8 @@ namespace litecore {
     LogLevel                     LogDomain::sFileMinLevel     = LogLevel::None;
     unsigned                     LogDomain::slastObjRef{0};
     map<unsigned, string>        LogDomain::sObjNames;
-    static ofstream             *sFileOut[5]    = {};  // File per log level
-    static LogEncoder           *sLogEncoder[5] = {};
+    static ofstream*             sFileOut[5]    = {};  // File per log level
+    static LogEncoder*           sLogEncoder[5] = {};
     static LogFileOptions        sCurrentOptions;
     static string                sLogDirectory;
     static int                   sMaxCount = 0;     // For rotation
@@ -80,8 +80,8 @@ namespace litecore {
     static string                sInitialMessage;   // For rotation, goes at top of each log
     static mutex                 sLogMutex;
 
-    static const char *const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
-    static const char       *kLevels[]     = {"***", "", "", "WARNING", "ERROR"};
+    static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
+    static const char*       kLevels[]     = {"***", "", "", "WARNING", "ERROR"};
 
     static string createLogPath(LogLevel level) {
         int64_t millisSinceEpoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -107,7 +107,7 @@ namespace litecore {
     }
 
     static void teardownEncoders() {
-        for ( auto &encoder : sLogEncoder ) {
+        for ( auto& encoder : sLogEncoder ) {
             if ( encoder ) encoder->flush();
             delete encoder;
             encoder = nullptr;
@@ -115,14 +115,14 @@ namespace litecore {
     }
 
     static void teardownFileOut() {
-        for ( auto &fout : sFileOut ) {
+        for ( auto& fout : sFileOut ) {
             if ( fout ) fout->flush();
             delete fout;
             fout = nullptr;
         }
     }
 
-    static bool needsTeardown(const LogFileOptions &options) {
+    static bool needsTeardown(const LogFileOptions& options) {
         if ( sLogEncoder[0] == nullptr && !options.isPlaintext ) { return true; }
 
         if ( sLogEncoder[0] != nullptr && options.isPlaintext ) { return true; }
@@ -137,9 +137,9 @@ namespace litecore {
         if ( !logDir.existsAsDir() ) { return; }
 
         multimap<time_t, FilePath> logFiles;
-        const char                *levelStr = kLevelNames[(int)level];
+        const char*                levelStr = kLevelNames[(int)level];
 
-        logDir.forEachFile([&](const FilePath &f) {
+        logDir.forEachFile([&](const FilePath& f) {
             if ( f.fileName().find(levelStr) != string::npos && f.extension() == CBL_LOG_EXTENSION ) {
                 logFiles.insert(make_pair(f.lastModified(), f));
             }
@@ -185,9 +185,9 @@ namespace litecore {
     void LogDomain::flushLogFiles() {
         unique_lock<mutex> lock(sLogMutex);
 
-        for ( auto &encoder : sLogEncoder )
+        for ( auto& encoder : sLogEncoder )
             if ( encoder ) encoder->flush();
-        for ( auto &fout : sFileOut )
+        for ( auto& fout : sFileOut )
             if ( fout ) fout->flush();
     }
 
@@ -203,7 +203,7 @@ namespace litecore {
 
     LogDomain::Callback_t LogDomain::currentCallback() { return sCallback; }
 
-    void LogDomain::writeEncodedLogsTo(const LogFileOptions &options, const string &initialMessage) {
+    void LogDomain::writeEncodedLogsTo(const LogFileOptions& options, const string& initialMessage) {
         unique_lock<mutex> lock(sLogMutex);
         sMaxSize            = max((int64_t)1024, options.maxSize);
         sMaxCount           = max(0, options.maxCount);
@@ -228,12 +228,12 @@ namespace litecore {
 
             if ( !sInitialMessage.empty() ) {
                 if ( sLogEncoder[0] ) {
-                    for ( auto &encoder : sLogEncoder ) {
+                    for ( auto& encoder : sLogEncoder ) {
                         encoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
                         encoder->flush();  // Make sure at least the magic bytes are present
                     }
                 } else {
-                    for ( auto &fout : sFileOut ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
+                    for ( auto& fout : sFileOut ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
                 }
             }
 
@@ -243,7 +243,7 @@ namespace litecore {
                 atexit([] {
                     if ( sLogMutex.try_lock() ) {  // avoid deadlock on crash inside logging code
                         if ( sLogEncoder[0] ) {
-                            for ( auto &encoder : sLogEncoder ) {
+                            for ( auto& encoder : sLogEncoder ) {
                                 encoder->log("", {}, LogEncoder::None, "---- END ----");
                             }
                         }
@@ -312,9 +312,9 @@ namespace litecore {
     // Returns the LogLevel override set by an environment variable, or Uninitialized if none
     LogLevel LogDomain::levelFromEnvironment() const noexcept {
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-        char *val = getenv((string("LiteCoreLog") + _name).c_str());
+        char* val = getenv((string("LiteCoreLog") + _name).c_str());
         if ( val ) {
-            static const char *const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", "none", nullptr};
+            static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", "none", nullptr};
             for ( int i = 0; kLevelNames[i]; i++ ) {
                 if ( 0 == strcasecmp(val, kLevelNames[i]) ) return LogLevel(i);
             }
@@ -329,7 +329,7 @@ namespace litecore {
         return _level;
     }
 
-    LogLevel LogDomain::level() const noexcept { return const_cast<LogDomain *>(this)->computeLevel(); }
+    LogLevel LogDomain::level() const noexcept { return const_cast<LogDomain*>(this)->computeLevel(); }
 
     void LogDomain::setLevel(litecore::LogLevel level) noexcept {
         unique_lock<mutex> lock(sLogMutex);
@@ -344,7 +344,7 @@ namespace litecore {
         _effectiveLevel = max((LogLevel)_level, min(_callbackLogLevel(), sFileMinLevel));
     }
 
-    LogDomain *LogDomain::named(const char *name) {
+    LogDomain* LogDomain::named(const char* name) {
         unique_lock<mutex> lock(sLogMutex);
         if ( !name ) name = "";
         for ( auto d = sFirstDomain; d; d = d->_next )
@@ -357,7 +357,7 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
-    void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char *fmt, va_list args) {
+    void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char* fmt, va_list args) {
         if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
         if ( !willLog(level) ) return;
 
@@ -393,22 +393,22 @@ namespace litecore {
         if ( level >= sFileMinLevel ) { dylog(level, _name, (LogEncoder::ObjectRef)objRef, fmt, args); }
     }
 
-    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+    void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) {
         vlog(level, LogEncoder::None, true, fmt, args);
     }
 
-    void LogDomain::log(LogLevel level, const char *fmt, ...) {
+    void LogDomain::log(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         vlog(level, LogEncoder::None, true, fmt, args);
         va_end(args);
     }
 
-    void LogDomain::vlogNoCallback(LogLevel level, const char *fmt, va_list args) {
+    void LogDomain::vlogNoCallback(LogLevel level, const char* fmt, va_list args) {
         vlog(level, LogEncoder::None, false, fmt, args);
     }
 
-    void LogDomain::logNoCallback(LogLevel level, const char *fmt, ...) {
+    void LogDomain::logNoCallback(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         vlog(level, LogEncoder::None, false, fmt, args);
@@ -416,7 +416,7 @@ namespace litecore {
     }
 
     // Must have sLogMutex held
-    void LogDomain::dylog(LogLevel level, const char *domain, unsigned objRef, const char *fmt, va_list args) {
+    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char* fmt, va_list args) {
         auto     obj = getObject(objRef);
         uint64_t pos = 0;
 
@@ -444,7 +444,7 @@ namespace litecore {
         if ( pos >= sMaxSize ) { Logging::rotateLog(level); }
     }
 
-    __printflike(3, 4) static void invokeCallback(LogDomain &domain, LogLevel level, const char *fmt, ...) {
+    __printflike(3, 4) static void invokeCallback(LogDomain& domain, LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         if ( sCallbackPreformatted ) {
@@ -458,7 +458,7 @@ namespace litecore {
     }
 
     // The default logging callback writes to stderr, or on Android to __android_log_write.
-    void LogDomain::defaultCallback(const LogDomain &domain, LogLevel level, const char *fmt, va_list args) {
+    void LogDomain::defaultCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
 #if ANDROID
         string tag("LiteCore");
         string domainName(domain.name());
@@ -483,8 +483,8 @@ namespace litecore {
         return "?";
     }
 
-    unsigned LogDomain::registerObject(const void *object, const unsigned *val, const string &description,
-                                       const string &nickname, LogLevel level) {
+    unsigned LogDomain::registerObject(const void* object, const unsigned* val, const string& description,
+                                       const string& nickname, LogLevel level) {
         unique_lock<mutex> lock(sLogMutex);
         if ( *val != 0 ) { return *val; }
 
@@ -506,13 +506,13 @@ namespace litecore {
         if ( _objectRef ) _domain.unregisterObject(_objectRef);
     }
 
-    static std::string classNameOf(const Logging *obj) {
-        const char *name = typeid(*obj).name();
+    static std::string classNameOf(const Logging* obj) {
+        const char* name = typeid(*obj).name();
 #if ( defined(__linux__) || defined(__APPLE__) ) && !defined(__ANDROID__)
         // Get the name of my class, unmangle it, and remove namespaces:
         size_t unmangledLen;
         int    status;
-        char  *unmangled = abi::__cxa_demangle(name, nullptr, &unmangledLen, &status);
+        char*  unmangled = abi::__cxa_demangle(name, nullptr, &unmangledLen, &status);
         if ( unmangled ) name = unmangled;
         string result(name);
         free(unmangled);
@@ -542,7 +542,7 @@ namespace litecore {
         return _objectRef;
     }
 
-    void Logging::_log(LogLevel level, const char *format, ...) const {
+    void Logging::_log(LogLevel level, const char* format, ...) const {
         va_list args;
         va_start(args, format);
         _logv(level, format, args);
@@ -552,7 +552,7 @@ namespace litecore {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-    void Logging::_logv(LogLevel level, const char *format, va_list args) const {
+    void Logging::_logv(LogLevel level, const char* format, va_list args) const {
         _domain.computeLevel();
         if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, format, args);
     }

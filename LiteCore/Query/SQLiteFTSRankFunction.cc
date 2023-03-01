@@ -52,8 +52,8 @@ namespace litecore {
      **     WHERE documents MATCH <query>
      **     ORDER BY rank(matchinfo(documents), 1.0, 0.5) DESC
      */
-    static void rankfunc(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal) {
-        int32_t *aMatchinfo;  /* Return value of matchinfo() */
+    static void rankfunc(sqlite3_context* pCtx, int nVal, sqlite3_value** apVal) {
+        int32_t* aMatchinfo;  /* Return value of matchinfo() */
         int32_t  nCol;        /* Number of columns in the table */
         int32_t  nPhrase;     /* Number of phrases in the query */
         int32_t  iPhrase;     /* Current phrase */
@@ -66,7 +66,7 @@ namespace litecore {
          ** query, and nCol to the number of columns in the table.
          */
         if ( nVal != 1 ) goto wrong_number_args;
-        aMatchinfo = (int32_t *)sqlite3_value_blob(apVal[0]);
+        aMatchinfo = (int32_t*)sqlite3_value_blob(apVal[0]);
         if ( !aMatchinfo ) {
             sqlite3_result_error(pCtx, "nothing for rank() to match", -1);
             return;
@@ -88,7 +88,7 @@ namespace litecore {
              ** the hit count and global hit counts for each column are found in
              ** aPhraseinfo[iCol*3] and aPhraseinfo[iCol*3+1], respectively.
              */
-            int *aPhraseinfo = &aMatchinfo[2 + iPhrase * nCol * 3];
+            int* aPhraseinfo = &aMatchinfo[2 + iPhrase * nCol * 3];
             for ( iCol = 0; iCol < nCol; iCol++ ) {
                 int    nHitCount       = aPhraseinfo[3 * iCol];
                 int    nGlobalHitCount = aPhraseinfo[3 * iCol + 1];

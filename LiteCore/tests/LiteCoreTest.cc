@@ -49,7 +49,7 @@ string TestFixture::sFixturesDir = "LiteCore/tests/data/";
 
 FilePath TestFixture::sTempDir = GetTempDirectory();
 
-string stringWithFormat(const char *format, ...) {
+string stringWithFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);
     string str = vformat(format, args);
@@ -62,7 +62,7 @@ void ExpectException(litecore::error::Domain domain, int code, std::function<voi
         ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
         lambda();
-    } catch ( std::runtime_error &x ) {
+    } catch ( std::runtime_error& x ) {
         Log("... caught exception %s", x.what());
         error err = error::convertRuntimeError(x).standardized();
         CHECK(err.domain == domain);
@@ -78,7 +78,7 @@ void ExpectException(litecore::error::Domain domain, int code, std::function<voi
 static LogDomain::Callback_t sPrevCallback;
 static atomic_uint           sWarningsLogged;
 
-static void logCallback(const LogDomain &domain, LogLevel level, const char *fmt, va_list args) {
+static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
     sPrevCallback(domain, level, fmt, args);
     if ( level >= LogLevel::Warning ) ++sWarningsLogged;
 }
@@ -119,42 +119,42 @@ TestFixture::~TestFixture() {
 
 unsigned TestFixture::warningsLogged() noexcept { return sWarningsLogged - _warningsAlreadyLogged; }
 
-FilePath TestFixture::GetPath(const string &name, const string &extension) noexcept {
+FilePath TestFixture::GetPath(const string& name, const string& extension) noexcept {
     static chrono::milliseconds unique;
 
     static once_flag f;
     call_once(f, [=] { unique = chrono::milliseconds(time(nullptr)); });
 
-    const char *trimmedExtension
+    const char* trimmedExtension
             = !extension.empty() && extension[0] == '.' ? extension.c_str() + 1 : extension.c_str();
     const size_t bufSize = name.size() + 32;
     TempArray(folderName, char, bufSize);
     snprintf(folderName, bufSize, "%s%" PRIms ".%s", name.c_str(), unique.count(), trimmedExtension);
 
-    const auto base = sTempDir[(const char *)folderName];
+    const auto base = sTempDir[(const char*)folderName];
 
     return base;
 }
 
 #pragma mark - DATAFILETESTFIXTURE:
 
-DataFile::Factory &DataFileTestFixture::factory() { return SQLiteDataFile::sqliteFactory(); }
+DataFile::Factory& DataFileTestFixture::factory() { return SQLiteDataFile::sqliteFactory(); }
 
 FilePath DataFileTestFixture::databasePath(const string baseName) {
     return GetPath(baseName, factory().filenameExtension());
 }
 
-/*static*/ void DataFileTestFixture::deleteDatabase(const FilePath &dbPath) {
+/*static*/ void DataFileTestFixture::deleteDatabase(const FilePath& dbPath) {
     auto factory = DataFile::factoryForFile(dbPath);
     factory->deleteFile(dbPath);
 }
 
-DataFile *DataFileTestFixture::newDatabase(const FilePath &path, const DataFile::Options *options) {
+DataFile* DataFileTestFixture::newDatabase(const FilePath& path, const DataFile::Options* options) {
     //TODO: Set up options
     return factory().openFile(path, this, options);
 }
 
-void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
+void DataFileTestFixture::reopenDatabase(const DataFile::Options* newOptions) {
     auto dbPath  = db->filePath();
     auto options = db->options();
     WriteDebug("//// Closing db");
@@ -165,7 +165,7 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
     store = &db->defaultKeyStore();
 }
 
-DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
+DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options* options) {
     auto dbPath = databasePath(databaseName());
     deleteDatabase(dbPath);
     db.reset(newDatabase(dbPath, options));
@@ -183,15 +183,15 @@ DataFileTestFixture::~DataFileTestFixture() {
     if ( db ) deleteDatabase();
 }
 
-sequence_t DataFileTestFixture::createDoc(KeyStore &s, slice docID, slice body, ExclusiveTransaction &t) {
+sequence_t DataFileTestFixture::createDoc(KeyStore& s, slice docID, slice body, ExclusiveTransaction& t) {
     RecordUpdate rec(docID, body);
     auto         seq = s.set(rec, true, t);
     CHECK(seq != 0_seq);
     return seq;
 }
 
-sequence_t DataFileTestFixture::writeDoc(KeyStore &toStore, slice docID, DocumentFlags flags, ExclusiveTransaction &t,
-                                         function<void(fleece::impl::Encoder &)> writeProperties) {
+sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, DocumentFlags flags, ExclusiveTransaction& t,
+                                         function<void(fleece::impl::Encoder&)> writeProperties) {
     fleece::impl::Encoder enc;
     enc.beginDictionary();
     writeProperties(enc);
@@ -207,4 +207,4 @@ sequence_t DataFileTestFixture::writeDoc(KeyStore &toStore, slice docID, Documen
     }
 }
 
-alloc_slice DataFileTestFixture::blobAccessor(const fleece::impl::Dict *) const { return {}; }
+alloc_slice DataFileTestFixture::blobAccessor(const fleece::impl::Dict*) const { return {}; }

@@ -30,14 +30,14 @@ namespace litecore {
     // The fake peer/source ID used for versions migrated from revIDs.
     static constexpr peerID kLegacyPeerID{0x7777777};
 
-    static constexpr const char *kNameOfVersioning[3] = {"v2.x rev-trees", "v3.x rev-trees", "version vectors"};
+    static constexpr const char* kNameOfVersioning[3] = {"v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
 
-    static void upgradeToVersionVectors(DatabaseImpl *, const Record &, RevTreeRecord &, ExclusiveTransaction &);
-    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl *, Record, RevTreeRecord &,
+    static void upgradeToVersionVectors(DatabaseImpl*, const Record&, RevTreeRecord&, ExclusiveTransaction&);
+    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl*, Record, RevTreeRecord&,
                                                             alloc_slice currentVersion);
 
-    static const Rev *commonAncestor(const Rev *a, const Rev *b) {
+    static const Rev* commonAncestor(const Rev* a, const Rev* b) {
         if ( a && b ) {
             for ( auto rev = b; rev; rev = rev->parent ) {
                 if ( rev->isAncestorOf(a) ) return rev;
@@ -47,7 +47,7 @@ namespace litecore {
     }
 
     void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning, C4DocumentVersioning newVersioning,
-                                                 ExclusiveTransaction &t) {
+                                                 ExclusiveTransaction& t) {
         if ( newVersioning == curVersioning ) return;
         if ( newVersioning < curVersioning )
             error::_throw(error::Unimplemented, "Cannot downgrade document versioning");
@@ -60,7 +60,7 @@ namespace litecore {
         uint64_t docCount = 0;
 
         // Iterate over all documents in all collections:
-        for ( string &ksName : _dataFile->allKeyStoreNames() ) {
+        for ( string& ksName : _dataFile->allKeyStoreNames() ) {
             if ( SQLiteDataFile::keyStoreNameIsCollection(ksName) ) {
                 LogTo(DBLog, "*** Upgrading stored documents in `%s` from %s to %s ***", ksName.c_str(),
                       kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
@@ -72,7 +72,7 @@ namespace litecore {
                 while ( e.next() ) {
                     // Read the doc as a RevTreeRecord. This will correctly read both the old 2.x style
                     // record (with no `extra`) and the new 3.x style.
-                    const Record &rec = e.record();
+                    const Record& rec = e.record();
                     RevTreeRecord revTree(defaultKeyStore(), rec);
                     if ( newVersioning == kC4VectorVersioning ) {
                         // Upgrade from rev-trees (v2 or v3) to version-vectors:
@@ -94,8 +94,8 @@ namespace litecore {
     }
 
     // Upgrades a Record from rev-trees to version vectors.
-    static void upgradeToVersionVectors(DatabaseImpl *db, const Record &rec, RevTreeRecord &revTree,
-                                        ExclusiveTransaction &t) {
+    static void upgradeToVersionVectors(DatabaseImpl* db, const Record& rec, RevTreeRecord& revTree,
+                                        ExclusiveTransaction& t) {
         // Upgrade from rev-trees (v2 or v3) to version-vectors:
         auto currentRev = revTree.currentRevision();
         auto remoteRev  = revTree.latestRevisionOnRemote(RevTree::kDefaultRemoteID);
@@ -139,10 +139,10 @@ namespace litecore {
     }
 
     // Subroutine that does extra work to upgrade a doc with remote-tagged revs to version vectors.
-    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl *db, Record rec, RevTreeRecord &revTree,
+    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl* db, Record rec, RevTreeRecord& revTree,
                                                             alloc_slice currentVersion) {
         // Make an in-memory VV-based Record, with no remote revisions:
-        const Rev *currentRev = revTree.currentRevision();
+        const Rev* currentRev = revTree.currentRevision();
         rec.setVersion(currentVersion);
         rec.setBody(currentRev->body());
         rec.setExtra(nullslice);
@@ -154,7 +154,7 @@ namespace litecore {
         // Add each remote revision:
         for ( auto i = revTree.remoteRevisions().begin(); i != revTree.remoteRevisions().end(); ++i ) {
             auto        remoteID = RemoteID(i->first);
-            const Rev  *rev      = i->second;
+            const Rev*  rev      = i->second;
             Revision    nuRev;
             alloc_slice binaryVers;
             if ( rev == currentRev ) {

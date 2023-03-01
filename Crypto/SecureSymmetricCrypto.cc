@@ -48,17 +48,17 @@ namespace litecore {
         return outSize;
     }
 
-    bool DeriveKeyFromPassword(slice password, void *outKey, size_t keyLength) {
-        int status = CCKeyDerivationPBKDF(kCCPBKDF2, (const char *)password.buf, password.size,
-                                          (const uint8_t *)kPBKDFSalt.buf, kPBKDFSalt.size, kCCPRFHmacAlgSHA256,
-                                          kPBKDFRounds, (uint8_t *)outKey, keyLength);
+    bool DeriveKeyFromPassword(slice password, void* outKey, size_t keyLength) {
+        int status = CCKeyDerivationPBKDF(kCCPBKDF2, (const char*)password.buf, password.size,
+                                          (const uint8_t*)kPBKDFSalt.buf, kPBKDFSalt.size, kCCPRFHmacAlgSHA256,
+                                          kPBKDFRounds, (uint8_t*)outKey, keyLength);
         return (status == noErr);
     }
 
-    bool DeriveKeyFromPasswordSHA1(slice password, void *outKey, size_t keyLength) {
-        int status = CCKeyDerivationPBKDF(kCCPBKDF2, (const char *)password.buf, password.size,
-                                          (const uint8_t *)kPBKDFSalt.buf, kPBKDFSalt.size, kCCPRFHmacAlgSHA1,
-                                          kPBKDFRounds, (uint8_t *)outKey, keyLength);
+    bool DeriveKeyFromPasswordSHA1(slice password, void* outKey, size_t keyLength) {
+        int status = CCKeyDerivationPBKDF(kCCPBKDF2, (const char*)password.buf, password.size,
+                                          (const uint8_t*)kPBKDFSalt.buf, kPBKDFSalt.size, kCCPRFHmacAlgSHA1,
+                                          kPBKDFRounds, (uint8_t*)outKey, keyLength);
         return (status == noErr);
     }
 #else
@@ -70,7 +70,7 @@ namespace litecore {
         DebugAssert(key.size == key_size);
         DebugAssert(iv.buf == nullptr || iv.size == kAESBlockSize, "IV is wrong size");
         mbedtls_cipher_context_t     cipher_ctx;
-        const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type(cipher);
+        const mbedtls_cipher_info_t* cipher_info = mbedtls_cipher_info_from_type(cipher);
         if ( cipher_info == nullptr ) {
             Warn("mbedtls_cipher_info_from_type failed");
             error::_throw(error::CryptoError);
@@ -85,10 +85,10 @@ namespace litecore {
         }
 
         size_t out_len = dst.size;
-        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char *)key.buf, (int)key_size * 8,
+        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, (int)key_size * 8,
                               encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT);
-        mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char *)iv.buf, iv.size, (const unsigned char *)src.buf,
-                             src.size, (unsigned char *)dst.buf, &out_len);
+        mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf,
+                             src.size, (unsigned char*)dst.buf, &out_len);
 
         mbedtls_cipher_free(&cipher_ctx);
         return out_len;
@@ -98,30 +98,30 @@ namespace litecore {
         return AES(kAES256KeySize, MBEDTLS_CIPHER_AES_256_CBC, encrypt, key, iv, padding, dst, src);
     }
 
-    bool DeriveKeyFromPassword(slice password, void *outKey, size_t keyLength) {
-        const mbedtls_md_info_t *digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+    bool DeriveKeyFromPassword(slice password, void* outKey, size_t keyLength) {
+        const mbedtls_md_info_t* digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
         if ( !digestType ) return false;
         mbedtls_md_context_t ctx;
         mbedtls_md_init(&ctx);
         int status = mbedtls_md_setup(&ctx, digestType, 1);
         if ( status != 0 ) return false;
-        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char *)password.buf, password.size,
-                                           (const unsigned char *)kPBKDFSalt.buf, kPBKDFSalt.size, kPBKDFRounds,
-                                           (int)keyLength, (unsigned char *)outKey);
+        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char*)password.buf, password.size,
+                                           (const unsigned char*)kPBKDFSalt.buf, kPBKDFSalt.size, kPBKDFRounds,
+                                           (int)keyLength, (unsigned char*)outKey);
         mbedtls_md_free(&ctx);
         return (status == 0);
     }
 
-    bool DeriveKeyFromPasswordSHA1(slice password, void *outKey, size_t keyLength) {
-        const mbedtls_md_info_t *digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
+    bool DeriveKeyFromPasswordSHA1(slice password, void* outKey, size_t keyLength) {
+        const mbedtls_md_info_t* digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
         if ( !digestType ) return false;
         mbedtls_md_context_t ctx;
         mbedtls_md_init(&ctx);
         int status = mbedtls_md_setup(&ctx, digestType, 1);
         if ( status != 0 ) return false;
-        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char *)password.buf, password.size,
-                                           (const unsigned char *)kPBKDFSalt.buf, kPBKDFSalt.size, kPBKDFRounds,
-                                           (int)keyLength, (unsigned char *)outKey);
+        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char*)password.buf, password.size,
+                                           (const unsigned char*)kPBKDFSalt.buf, kPBKDFSalt.size, kPBKDFRounds,
+                                           (int)keyLength, (unsigned char*)outKey);
         mbedtls_md_free(&ctx);
         return (status == 0);
     }

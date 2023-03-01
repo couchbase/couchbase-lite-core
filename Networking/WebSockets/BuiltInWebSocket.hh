@@ -45,11 +45,11 @@ namespace litecore { namespace websocket {
             static void registerWithReplicator();
 
             /** Client-side constructor. Call \ref connect() afterwards. */
-            BuiltInWebSocket(const URL &url, const Parameters &, C4Database *database);
+            BuiltInWebSocket(const URL& url, const Parameters&, C4Database* database);
 
             /** Server-side constructor; takes an already-connected socket that's been through the
             HTTP WebSocket handshake and is ready to send/receive frames. */
-            BuiltInWebSocket(const URL &url, std::unique_ptr<net::ResponderSocket>);
+            BuiltInWebSocket(const URL& url, std::unique_ptr<net::ResponderSocket>);
 
             /** Starts the TCP connection for a client socket. */
             virtual void connect() override;
@@ -64,23 +64,23 @@ namespace litecore { namespace websocket {
             virtual void requestClose(int status, fleece::slice message) override;
 
             // CookieProvider API:
-            virtual fleece::alloc_slice cookiesForRequest(const net::Address &) override;
-            virtual void                setCookie(const net::Address &, fleece::slice cookieHeader) override;
+            virtual fleece::alloc_slice cookiesForRequest(const net::Address&) override;
+            virtual void                setCookie(const net::Address&, fleece::slice cookieHeader) override;
 
           private:
-            BuiltInWebSocket(const URL &, Role, const Parameters &);
+            BuiltInWebSocket(const URL&, Role, const Parameters&);
             void                               _bgConnect();
             void                               setThreadName();
             bool                               configureClientCert(fleece::Dict auth);
-            bool                               configureAuthHeader(net::HTTPLogic &, fleece::Dict auth);
-            bool                               configureProxy(net::HTTPLogic &, fleece::Dict proxyOpt);
+            bool                               configureAuthHeader(net::HTTPLogic&, fleece::Dict auth);
+            bool                               configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
             std::unique_ptr<net::ClientSocket> _connectLoop() MUST_USE_RESULT;
             void                               ioLoop();
             void                               awaitReadable();
             void                               awaitWriteable();
             void                               readFromSocket();
             void                               writeToSocket();
-            void                               closeWithException(const std::exception &, const char *where);
+            void                               closeWithException(const std::exception&, const char* where);
             void                               closeWithError(C4Error);
 
             // Max number of bytes read that haven't been processed by the client yet.

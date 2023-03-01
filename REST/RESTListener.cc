@@ -45,7 +45,7 @@ namespace litecore::REST {
         return format("%s/%.*s", kServerName.c_str(), SPLAT(version));
     }
 
-    RESTListener::RESTListener(const Config &config)
+    RESTListener::RESTListener(const Config& config)
         : Listener(config)
         , _directory(config.directory.buf ? new FilePath(slice(config.directory).asString(), "") : nullptr)
         , _allowCreateDB(config.allowCreateDBs && _directory)
@@ -56,9 +56,9 @@ namespace litecore::REST {
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if ( auto callback = config.httpAuthCallback; callback ) {
-            void *context = config.callbackContext;
+            void* context = config.callbackContext;
             _server->setAuthenticator([=](slice authorizationHeader) {
-                return callback((C4Listener *)this, authorizationHeader, context);
+                return callback((C4Listener*)this, authorizationHeader, context);
             });
         }
 
@@ -99,7 +99,7 @@ namespace litecore::REST {
         if ( _server ) _server->stop();
     }
 
-    vector<Address> RESTListener::_addresses(C4Database *dbOrNull, C4ListenerAPIs api) const {
+    vector<Address> RESTListener::_addresses(C4Database* dbOrNull, C4ListenerAPIs api) const {
         optional<string> dbNameStr;
         slice            dbName;
         if ( dbOrNull ) {
@@ -117,11 +117,11 @@ namespace litecore::REST {
 
         uint16_t        port = _server->port();
         vector<Address> addresses;
-        for ( auto &host : _server->addresses() ) addresses.emplace_back(scheme, host, port, dbName);
+        for ( auto& host : _server->addresses() ) addresses.emplace_back(scheme, host, port, dbName);
         return addresses;
     }
 
-    vector<Address> RESTListener::addresses(C4Database *dbOrNull, C4ListenerAPIs api) const {
+    vector<Address> RESTListener::addresses(C4Database* dbOrNull, C4ListenerAPIs api) const {
         if ( api != kC4RESTAPI ) {
             error::_throw(error::LiteCoreError::InvalidParameter,
                           "The listener is not running in the specified API mode.");
@@ -132,7 +132,7 @@ namespace litecore::REST {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-    Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
+    Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig* config) {
         if ( !config ) return nullptr;
         Retained<Cert>       cert = config->certificate->assertSignedCert();
         Retained<PrivateKey> privateKey;
@@ -156,7 +156,7 @@ namespace litecore::REST {
 #endif  // COUCHBASE_ENTERPRISE
 
 
-    Retained<TLSContext> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
+    Retained<TLSContext> RESTListener::createTLSContext(const C4TLSConfig* tlsConfig) {
         if ( !tlsConfig ) return nullptr;
 #ifdef COUCHBASE_ENTERPRISE
         _identity = loadTLSIdentity(tlsConfig);
@@ -168,7 +168,7 @@ namespace litecore::REST {
         if ( auto callback = tlsConfig->certAuthCallback; callback ) {
             auto context = tlsConfig->tlsCallbackContext;
             tlsContext->setCertAuthCallback(
-                    [=](slice certData) { return callback((C4Listener *)this, certData, context); });
+                    [=](slice certData) { return callback((C4Listener*)this, certData, context); });
         }
         return tlsContext;
 #else
@@ -180,12 +180,12 @@ namespace litecore::REST {
 
 #pragma mark - REGISTERING DATABASES:
 
-    static void replace(string &str, char oldChar, char newChar) {
-        for ( char &c : str )
+    static void replace(string& str, char oldChar, char newChar) {
+        for ( char& c : str )
             if ( c == oldChar ) c = newChar;
     }
 
-    bool RESTListener::pathFromDatabaseName(const string &name, FilePath &path) {
+    bool RESTListener::pathFromDatabaseName(const string& name, FilePath& path) {
         if ( !_directory || !isValidDatabaseName(name) ) return false;
         string filename = name;
         replace(filename, '/', ':');
@@ -209,20 +209,20 @@ namespace litecore::REST {
         }
     }
 
-    void RESTListener::Task::writeDescription(fleece::JSONEncoder &json) {
+    void RESTListener::Task::writeDescription(fleece::JSONEncoder& json) {
         json.writeKey("pid"_sl);
         json.writeUInt(_taskID);
         json.writeKey("started_on"_sl);
         json.writeUInt(_timeStarted);
     }
 
-    unsigned RESTListener::registerTask(Task *task) {
+    unsigned RESTListener::registerTask(Task* task) {
         lock_guard<mutex> lock(_mutex);
         _tasks.insert(task);
         return _nextTaskID++;
     }
 
-    void RESTListener::unregisterTask(Task *task) {
+    void RESTListener::unregisterTask(Task* task) {
         lock_guard<mutex> lock(_mutex);
         _tasks.erase(task);
     }
@@ -244,13 +244,13 @@ namespace litecore::REST {
 
 #pragma mark - UTILITIES:
 
-    void RESTListener::addHandler(Method method, const char *uri, HandlerMethod handler) {
+    void RESTListener::addHandler(Method method, const char* uri, HandlerMethod handler) {
         using namespace std::placeholders;
         _server->addHandler(method, uri, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Method method, const char *uri, DBHandlerMethod handler) {
-        _server->addHandler(method, uri, [this, handler](RequestResponse &rq) {
+    void RESTListener::addDBHandler(Method method, const char* uri, DBHandlerMethod handler) {
+        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
             Retained<C4Database> db = databaseFor(rq);
             if ( db ) {
                 db->lockClientMutex();
@@ -265,8 +265,8 @@ namespace litecore::REST {
         });
     }
 
-    void RESTListener::addCollectionHandler(Method method, const char *uri, CollectionHandlerMethod handler) {
-        _server->addHandler(method, uri, [this, handler](RequestResponse &rq) {
+    void RESTListener::addCollectionHandler(Method method, const char* uri, CollectionHandlerMethod handler) {
+        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
             auto [db, collection] = collectionFor(rq);
             if ( db ) {
                 db->lockClientMutex();
@@ -294,9 +294,9 @@ namespace litecore::REST {
         return {string(dbName), spec};
     }
 
-    bool RESTListener::collectionGiven(RequestResponse &rq) { return !!slice(rq.path(0)).findByte('.'); }
+    bool RESTListener::collectionGiven(RequestResponse& rq) { return !!slice(rq.path(0)).findByte('.'); }
 
-    Retained<C4Database> RESTListener::getDatabase(RequestResponse &rq, const string &dbName) {
+    Retained<C4Database> RESTListener::getDatabase(RequestResponse& rq, const string& dbName) {
         Retained<C4Database> db = databaseNamed(dbName);
         if ( !db ) {
             if ( isValidDatabaseName(dbName) ) rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
@@ -306,7 +306,7 @@ namespace litecore::REST {
         return db;
     }
 
-    Retained<C4Database> RESTListener::databaseFor(RequestResponse &rq) {
+    Retained<C4Database> RESTListener::databaseFor(RequestResponse& rq) {
         string keySpace     = rq.path(0);
         auto [dbName, spec] = parseKeySpace(keySpace);
         if ( spec.name.buf || spec.scope.buf ) {
@@ -317,16 +317,16 @@ namespace litecore::REST {
     }
 
     // returning the retained db is necessary because retaining a collection does not retain its db!
-    pair<Retained<C4Database>, C4Collection *> RESTListener::collectionFor(RequestResponse &rq) {
+    pair<Retained<C4Database>, C4Collection*> RESTListener::collectionFor(RequestResponse& rq) {
         string keySpace     = rq.path(0);
         auto [dbName, spec] = parseKeySpace(keySpace);
         auto db             = getDatabase(rq, dbName);
         if ( !db ) return {};
         if ( !spec.name.buf ) spec.name = kC4DefaultCollectionName;
-        C4Collection *collection;
+        C4Collection* collection;
         try {
             collection = db->getCollection(spec);
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             rq.respondWithError(C4Error::fromCurrentException());
             return {};
         }

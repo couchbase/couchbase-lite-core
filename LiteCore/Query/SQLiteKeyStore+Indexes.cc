@@ -48,7 +48,7 @@ namespace litecore {
      */
 
 
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createIndex(const IndexSpec& spec) {
         spec.validateName();
 
         Stopwatch            st;
@@ -83,8 +83,8 @@ namespace litecore {
     }
 
     // Actually creates the index (called by the createXXXIndex methods)
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec, const string &sourceTableName,
-                                     Array::iterator &expressions) {
+    bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
+                                     Array::iterator& expressions) {
         Assert(spec.type != IndexSpec::kFullText);
         QueryParser qp(db(), "", sourceTableName);
         qp.writeCreateIndex(spec.name, sourceTableName, expressions, spec.where(), (spec.type != IndexSpec::kValue));
@@ -113,7 +113,7 @@ namespace litecore {
     }
 
     // Creates indexes on flags
-    void SQLiteKeyStore::_createFlagsIndex(const char *indexName, DocumentFlags flag, bool &created) {
+    void SQLiteKeyStore::_createFlagsIndex(const char* indexName, DocumentFlags flag, bool& created) {
         if ( !created ) {
             db().execWithLock(CONCAT("CREATE INDEX IF NOT EXISTS \"" << tableName() << "_" << indexName << "\" ON "
                                                                      << quotedTableName()
@@ -134,13 +134,13 @@ namespace litecore {
 
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
-        for ( auto &spec : db().getIndexes(this) ) result.push_back(move(spec));
+        for ( auto& spec : db().getIndexes(this) ) result.push_back(move(spec));
         return result;
     }
 
 #pragma mark - VALUE INDEX:
 
-    bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createValueIndex(const IndexSpec& spec) {
         Array::iterator expressions(spec.what());
         return createIndex(spec, tableName(), expressions);
     }

@@ -34,13 +34,13 @@ namespace litecore {
         /// from v3.x where it's Fleece (and the rev-tree is in 'extra'.)
         static bool isRevTree(slice raw_tree);
 
-        static std::deque<Rev> decodeTree(slice raw_tree, RevTree::RemoteRevMap &remoteMap, RevTree *owner NONNULL,
+        static std::deque<Rev> decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap, RevTree* owner NONNULL,
                                           sequence_t curSeq);
 
-        static alloc_slice encodeTree(const std::vector<Rev *> &revs, const RevTree::RemoteRevMap &remoteMap);
+        static alloc_slice encodeTree(const std::vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap);
 
         static inline slice getCurrentRevBody(slice raw_tree) noexcept {
-            auto rawRev = (const RawRevision *)raw_tree.buf;
+            auto rawRev = (const RawRevision*)raw_tree.buf;
             return rawRev->body();
         }
 
@@ -69,19 +69,19 @@ namespace litecore {
 
         slice body() const;
 
-        const RawRevision *next() const {
-            return (const RawRevision *)fleece::offsetby(this, fleece::endian::dec32(size_BE));
+        const RawRevision* next() const {
+            return (const RawRevision*)fleece::offsetby(this, fleece::endian::dec32(size_BE));
         }
 
         unsigned count() const {
             unsigned count = 0;
-            for ( const RawRevision *rev = this; rev->isValid(); rev = rev->next() ) ++count;
+            for ( const RawRevision* rev = this; rev->isValid(); rev = rev->next() ) ++count;
             return count;
         }
 
-        static size_t sizeToWrite(const Rev &);
-        void          copyTo(Rev &dst, const std::deque<Rev> &) const;
-        RawRevision  *copyFrom(const Rev &rev);
+        static size_t sizeToWrite(const Rev&);
+        void          copyTo(Rev& dst, const std::deque<Rev>&) const;
+        RawRevision*  copyFrom(const Rev& rev);
     };
 
 #pragma pack()

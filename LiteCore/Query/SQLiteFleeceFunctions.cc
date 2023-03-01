@@ -30,18 +30,18 @@ namespace litecore {
 
 
     // fl_root(body) -> fleeceData
-    static void fl_root(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         if ( sqlite3_value_type(argv[0]) == SQLITE_BLOB ) {
             // Pull the Fleece data out of a raw document body:
             bool  copied{false};
             slice body = valueAsDocBody(argv[0], copied);
             setResultBlobFromFleeceData(ctx, body);
-            if ( copied ) ::free((void *)body.buf);
+            if ( copied ) ::free((void*)body.buf);
         } else {
             // If arg isn't a blob, check if it's a tagged Fleece pointer:
-            const Value *val = asFleeceValue(argv[0]);
+            const Value* val = asFleeceValue(argv[0]);
             if ( val ) {
-                sqlite3_result_pointer(ctx, (void *)val, kFleeceValuePointerType, nullptr);
+                sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
             } else {
                 DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_NULL);
                 sqlite3_result_null(ctx);
@@ -50,27 +50,27 @@ namespace litecore {
     }
 
     // fl_value(body, propertyPath) -> propertyValue
-    __hot static void fl_value(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    __hot static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             setResultFromValue(ctx, scope.root);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_value: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_value: exception!", -1); }
     }
 
     // fl_version(version) -> propertyValue (string)
-    static void fl_version(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_version(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             slice version = valueAsSlice(argv[0]);
             setResultTextFromSlice(ctx, revid(version).expanded());
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_version: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_version: exception!", -1); }
     }
 
     // fl_blob(body, propertyPath) -> blob data
-    static void fl_blob(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_blob(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) return;
-            const Dict *blobDict = scope.root->asDict();
+            const Dict* blobDict = scope.root->asDict();
             if ( !blobDict ) return;
             // Read the blob data:
             auto delegate = getDBDelegate(ctx);
@@ -78,27 +78,27 @@ namespace litecore {
             alloc_slice data;
             try {
                 data = delegate->blobAccessor(blobDict);
-            } catch ( const std::exception & ) {
+            } catch ( const std::exception& ) {
                 // ignore exception; just return 'missing'
             }
             setResultBlobFromData(ctx, data);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "unexpected error reading blob", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "unexpected error reading blob", -1); }
     }
 
     // fl_nested_value(fleeceData, propertyPath) -> propertyValue
-    static void fl_nested_value(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
-            const Value *val = fleeceParam(ctx, argv[0], false);
+            const Value* val = fleeceParam(ctx, argv[0], false);
             if ( !val ) {
                 sqlite3_result_null(ctx);
                 return;
             }
             val = evaluatePathFromArg(ctx, argv, 1, val);
             setResultFromValue(ctx, val);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
     }
 
-    static void handle_fts_value(const Value *data, stringstream &result) {
+    static void handle_fts_value(const Value* data, stringstream& result) {
         if ( _usuallyFalse(!data) ) {
             Warn("Null value received in handle_fts_value");
             return;
@@ -123,7 +123,7 @@ namespace litecore {
     }
 
     // fl_fts_value(body, propertyPath) -> blob data
-    static void fl_fts_value(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_fts_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( scope.root == nullptr ) { return; }
@@ -136,13 +136,13 @@ namespace litecore {
 
             const string resultStr = result.str();
             setResultTextFromSlice(ctx, slice(resultStr.substr(0, resultStr.size() - 1)));
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
     }
 
     // fl_unnested_value(unnestTableBody [, propertyPath]) -> propertyValue
-    static void fl_unnested_value(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_unnested_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         DebugAssert(argc == 1 || argc == 2);
-        sqlite3_value *body = argv[0];
+        sqlite3_value* body = argv[0];
         if ( sqlite3_value_type(body) == SQLITE_BLOB ) {
             // body is Fleece data:
             if ( argc == 1 ) return fl_root(ctx, argc, argv);
@@ -157,16 +157,16 @@ namespace litecore {
     }
 
     // fl_exists(body, propertyPath) -> 0/1
-    static void fl_exists(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             sqlite3_result_int(ctx, (scope.root ? 1 : 0));
             sqlite3_result_subtype(ctx, kFleeceIntBoolean);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_exists: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_exists: exception!", -1); }
     }
 
     // fl_count(body, propertyPath) -> int
-    static void fl_count(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) {
@@ -194,20 +194,20 @@ namespace litecore {
                     sqlite3_result_null(ctx);
                     break;
             }
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_count: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_count: exception!", -1); }
     }
 
     // fl_result(value) -> value suitable for use as a result column
     // Primarily what this does is change the various custom value subtypes into Fleece containers
     // that can be read by SQLiteQueryRunner::encodeColumn().
-    __hot static void fl_result(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    __hot static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             auto arg = argv[0];
             switch ( sqlite3_value_type(arg) ) {
                 case SQLITE_NULL:
                     {
                         // A SQLite encoded pointer looks like a NULL:
-                        const Value *value = asFleeceValue(arg);
+                        const Value* value = asFleeceValue(arg);
                         if ( value ) {
                             setResultBlobFromEncodedValue(ctx, value);
                             return;
@@ -263,22 +263,22 @@ namespace litecore {
 
             // Default behavior if none of the special cases above apply: just return directly
             sqlite3_result_value(ctx, arg);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_result: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_result: exception!", -1); }
     }
 
-    static void fl_null(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_null(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         sqlite3_result_zeroblob(ctx, 0);
         sqlite3_result_subtype(ctx, kFleeceNullSubtype);
     }
 
-    static void fl_bool(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_bool(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         sqlite3_result_int(ctx, sqlite3_value_int(argv[0]) != 0);
         sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // fl_boolean_result(value) -> value suitable for use as a result column
     // Used for functions that SQLite returns as integers, that actually need a true or false
-    static void fl_boolean_result(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_boolean_result(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         enhanced_bool_t result = booleanValue(ctx, argv[0]);
         if ( result == kTrue || result == kFalse ) {
             slice encoded = result ? Encoder::kPreEncodedTrue : Encoder::kPreEncodedFalse;
@@ -291,14 +291,14 @@ namespace litecore {
 #pragma mark - CONTAINS()
 
     // fl_contains(body, propertyPath, value) -> 0/1
-    static void fl_contains(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             collectionContainsImpl(ctx, scope.root, argv[2]);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_contains: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_contains: exception!", -1); }
     }
 
-    void collectionContainsImpl(sqlite3_context *ctx, const Value *collection, sqlite3_value *arg) {
+    void collectionContainsImpl(sqlite3_context* ctx, const Value* collection, sqlite3_value* arg) {
         if ( !collection || collection->type() < kArray ) {
             sqlite3_result_zeroblob(ctx, 0);  // JSON null
             return;
@@ -313,28 +313,28 @@ namespace litecore {
 
         target_t  target;
         valueType targetType;
-        bool (*predicate)(const Value *, const target_t &);
+        bool (*predicate)(const Value*, const target_t&);
 
         switch ( sqlite3_value_type(arg) ) {
             case SQLITE_INTEGER:
                 {
                     targetType = kNumber;
                     target.i   = sqlite3_value_int64(arg);
-                    predicate  = [](const Value *v, const target_t &t) { return v->asInt() == t.i; };
+                    predicate  = [](const Value* v, const target_t& t) { return v->asInt() == t.i; };
                     break;
                 }
             case SQLITE_FLOAT:
                 {
                     targetType = kNumber;
                     target.d   = sqlite3_value_double(arg);
-                    predicate  = [](const Value *v, const target_t &t) { return v->asDouble() == t.d; };
+                    predicate  = [](const Value* v, const target_t& t) { return v->asDouble() == t.d; };
                     break;
                 }
             case SQLITE_TEXT:
                 {
                     targetType = kString;
                     target.s   = slice(sqlite3_value_blob(arg), sqlite3_value_bytes(arg));
-                    predicate  = [](const Value *v, const target_t &t) { return v->asString() == slice(t.s); };
+                    predicate  = [](const Value* v, const target_t& t) { return v->asString() == slice(t.s); };
                     break;
                 }
             case SQLITE_BLOB:
@@ -346,7 +346,7 @@ namespace litecore {
                     } else {
                         targetType = kData;
                         target.s   = slice(sqlite3_value_blob(arg), sqlite3_value_bytes(arg));
-                        predicate  = [](const Value *v, const target_t &t) { return v->asData() == slice(t.s); };
+                        predicate  = [](const Value* v, const target_t& t) { return v->asData() == slice(t.s); };
                     }
                     break;
                 }
@@ -395,7 +395,7 @@ namespace litecore {
 #pragma mark - ARRAY() and OBJECT()
 
     // writes a SQLite arg value to a Fleece Encoder. Returns false on failure
-    static bool writeSQLiteValue(sqlite3_context *ctx, sqlite3_value *arg, slice key, Encoder &enc) {
+    static bool writeSQLiteValue(sqlite3_context* ctx, sqlite3_value* arg, slice key, Encoder& enc) {
         auto type = sqlite3_value_type(arg);
         if ( key && type != SQLITE_NULL ) enc.writeKey(key);
         switch ( type ) {
@@ -418,7 +418,7 @@ namespace litecore {
                     switch ( sqlite3_value_subtype(arg) ) {
                         case 0:
                             {
-                                const Value *value = fleeceParam(ctx, arg);
+                                const Value* value = fleeceParam(ctx, arg);
                                 if ( !value ) return false;  // error occurred
                                 enc.writeValue(value);
                                 break;
@@ -437,7 +437,7 @@ namespace litecore {
                 }
             case SQLITE_NULL:
                 {
-                    const Value *value = asFleeceValue(arg);
+                    const Value* value = asFleeceValue(arg);
                     if ( value ) {
                         if ( key ) enc.writeKey(key);
                         enc.writeValue(value);
@@ -448,7 +448,7 @@ namespace litecore {
         return true;
     }
 
-    static void array_of(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void array_of(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         Encoder enc;
         enc.beginArray(argc);
         for ( int i = 0; i < argc; i++ ) {
@@ -458,7 +458,7 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
-    static void dict_of(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void dict_of(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         if ( argc % 2 ) {
             sqlite3_result_error(ctx, "object() must have an even arg count", -1);
             return;
@@ -480,7 +480,7 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
     // fl_callback(docID, revID, body, extra, sequence, callback, flags) -> string
-    static void fl_callback(sqlite3_context *ctx, int argc, sqlite3_value **argv) noexcept {
+    static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version   = valueAsSlice(argv[1]);
         rec.extra     = valueAsSlice(argv[3]);
@@ -492,9 +492,9 @@ namespace litecore {
             return;
         }
         try {
-            alloc_slice result = (*(KeyStore::WithDocBodyCallback *)callback)(rec);
+            alloc_slice result = (*(KeyStore::WithDocBodyCallback*)callback)(rec);
             setResultTextFromSlice(ctx, result);
-        } catch ( const std::exception & ) { sqlite3_result_error(ctx, "fl_callback: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_callback: exception!", -1); }
     }
 
 #pragma mark - REGISTRATION:

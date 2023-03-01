@@ -54,7 +54,7 @@ namespace litecore {
     class ErrorTable {
       public:
         /// The singleton instance.
-        static ErrorTable &instance() {
+        static ErrorTable& instance() {
             static ErrorTable sInstance;
             return sInstance;
         }
@@ -80,7 +80,7 @@ namespace litecore {
         }
 
         /// Creates a C4Error with a formatted message.
-        __cold __printflike(4, 0) C4Error vmakeError(C4ErrorDomain domain, int code, const char *format, va_list args,
+        __cold __printflike(4, 0) C4Error vmakeError(C4ErrorDomain domain, int code, const char* format, va_list args,
                                                      unsigned skipStackFrames = 0) noexcept {
             ErrorInfo info;
             if ( format && *format ) {
@@ -110,8 +110,8 @@ namespace litecore {
 
 }  // namespace litecore
 
-__cold static const char *getErrorName(C4Error err) {
-    static constexpr const char *kLiteCoreNames[] = {
+__cold static const char* getErrorName(C4Error err) {
+    static constexpr const char* kLiteCoreNames[] = {
             // These must match up with the codes in the declaration of LiteCoreError
             "no error",  // 0
             "AssertionFailed",
@@ -150,7 +150,7 @@ __cold static const char *getErrorName(C4Error err) {
     static_assert(sizeof(kLiteCoreNames) / sizeof(kLiteCoreNames[0]) == error::NumLiteCoreErrorsPlus1,
                   "Incomplete error message table");
 
-    if ( err.domain == LiteCoreDomain && err.code < sizeof(kLiteCoreNames) / sizeof(char *) )
+    if ( err.domain == LiteCoreDomain && err.code < sizeof(kLiteCoreNames) / sizeof(char*) )
         return kLiteCoreNames[err.code];
     else
         return nullptr;
@@ -164,11 +164,11 @@ __cold C4Error C4Error::make(C4ErrorDomain domain, int code, slice message) {
     return ErrorTable::instance().makeError(domain, code, move(info));
 }
 
-__cold C4Error C4Error::vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) {
+__cold C4Error C4Error::vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) {
     return ErrorTable::instance().vmakeError(domain, code, format, args);
 }
 
-__cold C4Error C4Error::printf(C4ErrorDomain domain, int code, const char *format, ...) {
+__cold C4Error C4Error::printf(C4ErrorDomain domain, int code, const char* format, ...) {
     va_list args;
     va_start(args, format);
     auto err = vprintf(domain, code, format, args);
@@ -176,7 +176,7 @@ __cold C4Error C4Error::printf(C4ErrorDomain domain, int code, const char *forma
     return err;
 }
 
-__cold void C4Error::set(C4Error *outError, C4ErrorDomain domain, int code, const char *format, ...) {
+__cold void C4Error::set(C4Error* outError, C4ErrorDomain domain, int code, const char* format, ...) {
     if ( outError ) {
         if ( format && format[0] ) {
             va_list args;
@@ -189,7 +189,7 @@ __cold void C4Error::set(C4Error *outError, C4ErrorDomain domain, int code, cons
     }
 }
 
-__cold C4Error C4Error::fromException(const exception &x) noexcept {
+__cold C4Error C4Error::fromException(const exception& x) noexcept {
     error e = error::convertException(x).standardized();
     return ErrorTable::instance().makeError((C4ErrorDomain)e.domain, e.code, {e.what(), e.backtrace});
 }
@@ -200,7 +200,7 @@ __cold C4Error C4Error::fromCurrentException() noexcept {
     if ( xp ) {
         try {
             std::rethrow_exception(xp);
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             // Now we have the exception, so we can record it in outError:
             return C4Error::fromException(x);
         } catch ( ... ) {}
@@ -219,7 +219,7 @@ __cold C4Error C4Error::fromCurrentException() noexcept {
     }
 }
 
-[[noreturn]] __cold void C4Error::raise(C4ErrorDomain domain, int code, const char *format, ...) {
+[[noreturn]] __cold void C4Error::raise(C4ErrorDomain domain, int code, const char* format, ...) {
     std::string message;
     if ( format ) {
         va_list args;
@@ -246,7 +246,7 @@ __cold string C4Error::message() const {
 
 __cold string C4Error::description() const {
     if ( code == 0 ) return "No error";
-    const char  *errName = getErrorName(*this);
+    const char*  errName = getErrorName(*this);
     stringstream str;
     str << error::nameOfDomain((error::Domain)domain) << " ";
     if ( errName ) str << errName;
@@ -271,7 +271,7 @@ __cold C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) no
     return C4Error::make(domain, code, message);
 }
 
-__cold C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) noexcept {
+__cold C4Error c4error_printf(C4ErrorDomain domain, int code, const char* format, ...) noexcept {
     va_list args;
     va_start(args, format);
     C4Error error = C4Error::vprintf(domain, code, format, args);
@@ -279,11 +279,11 @@ __cold C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format
     return error;
 }
 
-__cold C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) noexcept {
+__cold C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) noexcept {
     return C4Error::vprintf(domain, code, format, args);
 }
 
-__cold void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) noexcept {
+__cold void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error* outError) noexcept {
     if ( outError ) *outError = ErrorTable::instance().makeError(domain, code, {string(slice(message))});
 }
 
@@ -295,7 +295,7 @@ __cold C4SliceResult c4error_getMessage(C4Error err) noexcept {
 
 __cold C4SliceResult c4error_getDescription(C4Error error) noexcept { return toSliceResult(error.description()); }
 
-__cold char *c4error_getDescriptionC(C4Error error, char buffer[], size_t bufferSize) noexcept {
+__cold char* c4error_getDescriptionC(C4Error error, char buffer[], size_t bufferSize) noexcept {
     string msg = error.description();
     auto   len = min(msg.size(), bufferSize - 1);
     memcpy(buffer, msg.data(), len);
@@ -317,11 +317,11 @@ __cold C4StringResult c4error_getBacktrace(C4Error error) noexcept {
 
 
 using CodeList = const int[];
-using ErrorSet = const int *[kC4MaxErrorDomainPlus1];
+using ErrorSet = const int* [kC4MaxErrorDomainPlus1];
 
-__cold static bool errorIsInSet(const C4Error &err, ErrorSet set) {
+__cold static bool errorIsInSet(const C4Error& err, ErrorSet set) {
     if ( err.code != 0 && (unsigned)err.domain < kC4MaxErrorDomainPlus1 ) {
-        const int *pCode = set[err.domain];
+        const int* pCode = set[err.domain];
         if ( pCode ) {
             for ( ; *pCode != 0; ++pCode )
                 if ( *pCode == err.code ) return true;

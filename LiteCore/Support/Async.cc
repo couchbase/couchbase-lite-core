@@ -16,7 +16,7 @@
 namespace litecore { namespace actor {
 
 
-    bool AsyncState::_asyncCall(const AsyncBase &a, int lineNo) {
+    bool AsyncState::_asyncCall(const AsyncBase& a, int lineNo) {
         _calling    = a._context;
         _continueAt = lineNo;
         return !a.ready();
@@ -28,7 +28,7 @@ namespace litecore { namespace actor {
 #endif
 
 
-    AsyncContext::AsyncContext(Actor *actor) : _actor(actor) {
+    AsyncContext::AsyncContext(Actor* actor) : _actor(actor) {
 #if DEBUG
         ++gInstanceCount;
 #endif
@@ -40,7 +40,7 @@ namespace litecore { namespace actor {
 #endif
     }
 
-    void AsyncContext::setObserver(AsyncContext *p) {
+    void AsyncContext::setObserver(AsyncContext* p) {
         assert(!_observer);
         _observer = p;
     }
@@ -57,7 +57,7 @@ namespace litecore { namespace actor {
         _calling->setObserver(this);
     }
 
-    void AsyncContext::wakeUp(AsyncContext *async) {
+    void AsyncContext::wakeUp(AsyncContext* async) {
         assert(async == _calling);
         if ( _waitingActor ) {
             fleece::Retained<Actor> waitingActor = std::move(_waitingActor);

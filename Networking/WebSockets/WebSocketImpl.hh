@@ -47,14 +47,14 @@ namespace litecore { namespace websocket {
                 fleece::AllocedDict options;             ///< Other options
             };
 
-            WebSocketImpl(const URL &url, Role role, bool framing, const Parameters &);
+            WebSocketImpl(const URL& url, Role role, bool framing, const Parameters&);
 
             virtual void connect() override;
             virtual bool send(fleece::slice message, bool binary = true) override;
             virtual void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) override;
 
             // Concrete socket implementation needs to call these:
-            void gotHTTPResponse(int status, const Headers &headers);
+            void gotHTTPResponse(int status, const Headers& headers);
             void onConnect();
             void onCloseRequested(int status, fleece::slice message);
             void onClose(int posixErrno);
@@ -62,9 +62,9 @@ namespace litecore { namespace websocket {
             void onReceive(fleece::slice);
             void onWriteComplete(size_t);
 
-            const Parameters &parameters() const { return _parameters; }
+            const Parameters& parameters() const { return _parameters; }
 
-            const fleece::AllocedDict &options() const { return _parameters.options; }
+            const fleece::AllocedDict& options() const { return _parameters.options; }
 
           protected:
             // Timeout for WebSocket connection (until HTTP response received)
@@ -97,7 +97,7 @@ namespace litecore { namespace websocket {
             using ServerProtocol = uWS::WebSocketProtocol<true>;
 
             bool sendOp(fleece::slice, int opcode);
-            bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin);
+            bool handleFragment(char* data, size_t length, unsigned int remainingBytes, int opCode, bool fin);
             bool receivedMessage(int opCode, fleece::alloc_slice message);
             bool receivedClose(fleece::slice);
             void deliverMessageToDelegate(fleece::slice data, bool binary);

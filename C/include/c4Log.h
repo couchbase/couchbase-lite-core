@@ -35,7 +35,7 @@ typedef C4_ENUM(int8_t, C4LogLevel){
 };
 
 /** Reference to a _log domain_: a specific source of logs that can be enabled or disabled. */
-typedef struct c4LogDomain *C4LogDomain;
+typedef struct c4LogDomain* C4LogDomain;
 
 
 /** Subsystems that produce logs. Log levels can be configured for each, so you can focus your
@@ -65,7 +65,7 @@ typedef struct C4LogFileOptions {
     @param options The options to use when setting up the binary logger
     @param error  On failure, the filesystem error that caused the call to fail.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *C4NULLABLE error) C4API;
+CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
 
 /** Returns the filesystem path of the directory where log files are kept. */
 CBL_CORE_API FLStringResult c4log_binaryFilePath(void) C4API;
@@ -85,7 +85,7 @@ CBL_CORE_API void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
 
 
 /** A logging callback that the application can register. */
-typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt, va_list args);
+typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fmt, va_list args);
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
     Before this is called, a default callback is used that writes to stderr at the Info level.
@@ -115,10 +115,10 @@ CBL_CORE_API void c4log_setCallbackLevel(C4LogLevel level) C4API;
     @param name  The name of the domain, or NULL for the default domain.
     @param create  If true, the domain will be created if it doesn't exist.
     @return  The domain object, or NULL if not found. */
-CBL_CORE_API C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
+CBL_CORE_API C4LogDomain c4log_getDomain(const char* name, bool create) C4API;
 
 /** Returns the name of a log domain. (The default domain's name is an empty string.) */
-CBL_CORE_API const char *c4log_getDomainName(C4LogDomain) C4API;
+CBL_CORE_API const char* c4log_getDomainName(C4LogDomain) C4API;
 
 /** Returns the current log level of a domain, the minimum level of message it will log. */
 CBL_CORE_API C4LogLevel c4log_getLevel(C4LogDomain) C4API;
@@ -166,10 +166,10 @@ CBL_CORE_API void c4log_enableFatalExceptionBacktrace(void) C4API;
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
-CBL_CORE_API void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API __printflike(3, 4);
+CBL_CORE_API void c4log(C4LogDomain domain, C4LogLevel level, const char* fmt, ...) C4API __printflike(3, 4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
-CBL_CORE_API void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API __printflike(3, 0);
+CBL_CORE_API void c4vlog(C4LogDomain domain, C4LogLevel level, const char* fmt, va_list args) C4API __printflike(3, 0);
 
 /** Same as c4log, except it accepts preformatted messages as FLSlices */
 CBL_CORE_API void c4slog(C4LogDomain domain, C4LogLevel level, FLString msg) C4API;

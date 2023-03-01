@@ -39,7 +39,7 @@ using namespace fleece;
 using namespace litecore;
 
 
-CBL_CORE_API const char *const kC4DatabaseFilenameExtension = ".cblite2";
+CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
 
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine = "SQLite";
 
@@ -70,19 +70,19 @@ static FilePath dbPath(slice name, slice parentDir) {
     return FilePath(string(parentDir), string(name)).addingExtension(kC4DatabaseFilenameExtension);
 }
 
-static void ensureConfigDirExists(const C4DatabaseConfig2 &config) {
+static void ensureConfigDirExists(const C4DatabaseConfig2& config) {
     if ( !(config.flags & kC4DB_ReadOnly) ) (void)FilePath(slice(config.parentDirectory), "").mkdir();
 }
 
-static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
+static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
     return C4DatabaseConfig{config2.flags | kC4DB_AutoCompact, NULL,
                             (config2.flags & kC4DB_VersionVectors) ? kC4VectorVersioning : kC4TreeVersioning_v2,
                             config2.encryptionKey};
 }
 
-/*static*/ bool C4Database::deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine storageEngine) {
+/*static*/ bool C4Database::deleteDatabaseFileAtPath(const string& dbPath, C4StorageEngine storageEngine) {
     FilePath           path(dbPath);
-    DataFile::Factory *factory = nullptr;
+    DataFile::Factory* factory = nullptr;
     if ( storageEngine ) {
         factory = DataFile::factoryNamed(storageEngine);
         if ( !factory ) Warn("c4db_deleteNamed: unknown storage engine '%s'", storageEngine);
@@ -102,7 +102,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
             auto            dbFilePath    = DatabaseImpl::findOrCreateBundle(bundle.dir(), false, storageEngine);
             // Delete it:
             deleteDatabaseFileAtPath(dbFilePath, storageEngine);
-        } catch ( const error &x ) {
+        } catch ( const error& x ) {
             if ( x.code != error::WrongFormat )  // ignore exception if db file isn't found
                 throw;
         }
@@ -113,20 +113,20 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 
 /*static*/ bool C4Database::exists(slice name, slice inDirectory) { return dbPath(name, inDirectory).exists(); }
 
-/*static*/ Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
+/*static*/ Retained<C4Database> C4Database::openNamed(slice name, const Config& config) {
     ensureConfigDirExists(config);
     FilePath         path      = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
     return DatabaseImpl::open(path, oldConfig);
 }
 
-/*static*/ Retained<C4Database> C4Database::openAtPath(slice path, C4DatabaseFlags flags, const C4EncryptionKey *key) {
+/*static*/ Retained<C4Database> C4Database::openAtPath(slice path, C4DatabaseFlags flags, const C4EncryptionKey* key) {
     C4DatabaseConfig config = {flags};
     if ( key ) config.encryptionKey = *key;
     return DatabaseImpl::open(FilePath(path, ""), config);
 }
 
-/*static*/ void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config &config) {
+/*static*/ void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config& config) {
     ensureConfigDirExists(config);
     FilePath         from(sourcePath, "");
     FilePath         to        = dbPath(destinationName, config.parentDirectory);
@@ -134,7 +134,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
     CopyPrebuiltDB(from, to, &oldConfig);
 }
 
-/*static*/ void C4Database::copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig &config) {
+/*static*/ void C4Database::copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig& config) {
     return CopyPrebuiltDB(FilePath(sourcePath), FilePath(destinationPath), &config);
 }
 
@@ -146,21 +146,21 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 
 /*static*/ void C4Database::shutdownLiteCore() { SQLiteDataFile::shutdown(); }
 
-C4Collection *C4Database::getDefaultCollection() const {
+C4Collection* C4Database::getDefaultCollection() const {
     // Make a distinction: If the DB is open and the default collection is deleted
     // then simply return null.  If the DB is closed, an error should occur.
     checkOpen();
     return (_defaultCollection && !_defaultCollection->isValid()) ? nullptr : _defaultCollection;
 }
 
-C4Collection *C4Database::getDefaultCollectionSafe() const {
+C4Collection* C4Database::getDefaultCollectionSafe() const {
     Retained<C4Collection> dc = getDefaultCollection();
     if ( !dc ) { error::_throw(error::NotOpen); }
 
     return dc;
 }
 
-C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig &inConfig)
+C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig& inConfig)
     : _name(move(name))
     , _parentDirectory(move(dir))
     , _config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
@@ -168,14 +168,14 @@ C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig
 
 #pragma mark - QUERIES:
 
-Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int *errPos) const {
+Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int* errPos) const {
     return C4Query::newQuery(getDefaultCollectionSafe(), language, expr, errPos);
 }
 
 #pragma mark - INDEXES:
 
 void C4Database::createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexSpecLanguage, C4IndexType indexType,
-                             const C4IndexOptions *indexOptions) {
+                             const C4IndexOptions* indexOptions) {
     getDefaultCollectionSafe()->createIndex(indexName, indexSpec, indexSpecLanguage, indexType, indexOptions);
 }
 
@@ -191,7 +191,7 @@ alloc_slice C4Database::getIndexRows(slice indexName) const {
 
 #pragma mark - COOKIES:
 
-alloc_slice C4Database::getCookies(const C4Address &request) {
+alloc_slice C4Database::getCookies(const C4Address& request) {
     checkOpen();
 
     litecore::repl::DatabaseCookies cookies(this);
@@ -220,9 +220,9 @@ void C4Database::clearCookies() {
 
 #pragma mark - COLLECTIONS:
 
-void C4Database::forEachCollection(slice inScope, const CollectionSpecCallback &cb) const {
+void C4Database::forEachCollection(slice inScope, const CollectionSpecCallback& cb) const {
     if ( !inScope ) inScope = kC4DefaultScopeID;
-    forEachCollection([&](const CollectionSpec &spec) {
+    forEachCollection([&](const CollectionSpec& spec) {
         if ( spec.scope == inScope ) cb(spec);
     });
 }
@@ -246,8 +246,8 @@ Retained<C4Document> C4Database::getDocumentBySequence(C4SequenceNumber sequence
     return getDefaultCollectionSafe()->getDocumentBySequence(sequence);
 }
 
-Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq, size_t *C4NULLABLE outCommonAncestorIndex,
-                                             C4Error *outError) {
+Retained<C4Document> C4Database::putDocument(const C4DocPutRequest& rq, size_t* C4NULLABLE outCommonAncestorIndex,
+                                             C4Error* outError) {
     return getDefaultCollectionSafe()->putDocument(rq, outCommonAncestorIndex, outError);
 }
 

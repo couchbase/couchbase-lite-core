@@ -88,17 +88,17 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
 
     auto [queryJson, expectOptimized]
-            = GENERATE(pair<const char *, bool>{"['AND', ['=', ['.type'], 'number'], "
-                                                "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]",
-                                                true},
-                       pair<const char *, bool>{"['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", false});
+            = GENERATE(pair<const char*, bool>{"['AND', ['=', ['.type'], 'number'], "
+                                               "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]",
+                                               true},
+                       pair<const char*, bool>{"['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", false});
     logSection(string("Query: ") + queryJson);
     Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query, expectOptimized);
 
     int64_t     rowCount;
     alloc_slice rows;
-    ((SQLiteDataFile &)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
+    ((SQLiteDataFile&)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
     string rowsJSON = Value::fromTrustedData(rows)->toJSONString();
     Log("Index has %" PRIi64 " rows", rowCount);
     Log("Index contents: %s", rowsJSON.c_str());
@@ -114,7 +114,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
 
     store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["IS NOT",[".num"],["MISSING"]]})"_sl);
 
-    const char *queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+    const char* queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
 
     Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query);
@@ -221,7 +221,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("n");
             enc.writeNull();
         });
@@ -244,7 +244,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query array_count null value", "[Query][CBL-3087]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("n");
             enc.beginArray();
             enc.writeNull();
@@ -286,7 +286,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
     }
     CHECK(e->refresh(query) == nullptr);
 
-#if 0   //FIX: This doesn't work yet, because the doc's sequence and revID are in the query results,                   \
+#if 0  //FIX: This doesn't work yet, because the doc's sequence and revID are in the query results,                   \
         // and those do change...
     // Modify a doc in a way that doesn't affect the query results
     {
@@ -313,7 +313,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
         ExclusiveTransaction t(store->dataFile());
         for ( int i = 0; i < 2; i++ ) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("value");
                 enc.writeBool(i == 0);
             });
@@ -322,7 +322,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
         // Integer 0 and 1 would have fooled ISBOOLEAN() before
         for ( int i = 2; i < 4; i++ ) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("value");
                 enc.writeInt(i - 2);
             });
@@ -363,7 +363,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query uint64", "[Query]") {
         };
         for ( int i = 0; i < 4; i++ ) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("value");
                 if ( i < 2 ) enc.writeInt(ivals[i]);
                 else
@@ -394,7 +394,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query uint64", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(1);
             enc.writeKey("col");
@@ -453,7 +453,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("$foo");
             enc.writeInt(17);
             enc.writeKey("?foo");
@@ -562,7 +562,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     // Create a doc with a blob property:
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("goop"_sl, (DocumentFlags)0, t, [](Encoder &enc) {
+        writeDoc("goop"_sl, (DocumentFlags)0, t, [](Encoder& enc) {
             enc.writeKey("text");
             enc.beginDictionary();
             enc.writeKey("@type");
@@ -591,7 +591,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
         ExclusiveTransaction t(store->dataFile());
         for ( int i = 0; i < 2; i++ ) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("value");
                 enc.beginArray(i + 1);
                 for ( int j = 0; j < i + 1; j++ ) { enc.writeInt(j); }
@@ -614,13 +614,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string               docID = "doc1";
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
             enc.writeKey("real_value");
             enc.writeInt(1);
         });
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
             enc.writeKey("atai");
@@ -721,15 +721,15 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("awesome value");
         });
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("cool value");
         });
-        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("invalid");
         });
@@ -917,7 +917,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
-        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("602214076000000000000000");  // overflows uint64_t
         });
@@ -994,22 +994,22 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
 
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             // [1]
             enc.beginArray();
             enc.writeInt(1);
             enc.endArray();
         });
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("string value");
         });
-        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeDouble(4.5);
         });
-        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             // { "subvalue": "FTW" }
             enc.beginDictionary(1);
@@ -1017,7 +1017,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
             enc.writeString("FTW");
             enc.endDictionary();
         });
-        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
         });
@@ -1056,22 +1056,22 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
 
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             // [1]
             enc.beginArray();
             enc.writeInt(1);
             enc.endArray();
         });
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("string value");
         });
-        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeDouble(4.5);
         });
-        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             // { "subvalue": "FTW" }
             enc.beginDictionary(1);
@@ -1079,7 +1079,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
             enc.writeString("FTW");
             enc.endDictionary();
         });
-        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
         });
@@ -1122,7 +1122,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
         char             docID[bufSize];
         for ( int i = 0; i < 20; i++ ) {
             snprintf(docID, bufSize, "doc%02d", i);
-            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("identifier");
                 enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);
                 enc.writeKey("index");
@@ -1319,7 +1319,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeUInt(1);
         });
@@ -1338,7 +1338,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeData("number one"_sl);
         });
@@ -1361,7 +1361,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(1234);
             enc.writeKey("string");
@@ -1388,7 +1388,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(1234);
             enc.writeKey("string");
@@ -1440,7 +1440,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
             stringstream ss(docID);
             ss << i + 1;
 
-            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("num1");
                 enc.writeInt(i);
                 enc.writeKey("num2");
@@ -1448,7 +1448,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
             });
         }
 
-        writeDoc("magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("magic"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("theone");
             enc.writeInt(4);
         });
@@ -1505,7 +1505,7 @@ class ArrayQueryTest : public QueryTest {
         }
     }
 
-    void testArrayQuery(const string &json, bool checkOptimization) {
+    void testArrayQuery(const string& json, bool checkOptimization) {
         addArrayDocs(1, 90);
 
         query              = store->compileQuery(json);
@@ -1598,7 +1598,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // C
 
     for ( int i = 0; i < 2; i++ ) {
         string docID = stringWithFormat("rec-%03d", i + 1);
-        writeDoc(docID, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(docID, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("variants");
             enc.beginArray(1);
             enc.beginDictionary(1);
@@ -1623,7 +1623,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // C
     Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
     size_t row = 0;
-    for ( const auto &expectedResult : expectedResults ) {
+    for ( const auto& expectedResult : expectedResults ) {
         REQUIRE(e->next());
         CHECK(e->columns()[0]->asString() == expectedResult);
         ++row;
@@ -1638,7 +1638,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query][N1QL]") {
         for ( int i = 0; i < 3; i++ ) {
             stringstream ss;
             ss << "rec-0" << i + 1;
-            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 if ( i > 0 ) {
                     enc.writeKey("callsign");
                     if ( i == 1 ) {
@@ -1797,7 +1797,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
         string               docID = "rec-00";
 
         stringstream ss(docID);
-        writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("string");
             enc.writeString("string");
             enc.writeKey("int_min");
@@ -1854,7 +1854,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     ExclusiveTransaction t(store->dataFile());
-    writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("dict");
         enc.beginDictionary(2);
         enc.writeKey("key1");
@@ -1869,7 +1869,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         enc.endArray();
     });
 
-    writeDoc("uber_doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("uber_doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("dict");
         enc.beginDictionary(2);
         enc.writeKey("key1");
@@ -1975,7 +1975,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
     size_t row = 0;
-    for ( const auto &expectedResult : expectedResults ) {
+    for ( const auto& expectedResult : expectedResults ) {
         REQUIRE(e->next());
         CHECK(e->columns()[0]->asString() == expectedResult);
         if ( !expectedAliases.empty() ) CHECK(e->columns()[1]->toJSONString() == expectedAliases[row]);
@@ -2035,15 +2035,15 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     vector<string>       keys{"$Type", "Ty$pe", "Type$"};
     ExclusiveTransaction t(store->dataFile());
-    writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
-        for ( const string &key : keys ) {
+    writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
+        for ( const string& key : keys ) {
             enc.writeKey(key);
             enc.writeString("special");
         }
     });
     t.commit();
 
-    for ( const string &key : keys ) {
+    for ( const string& key : keys ) {
         string                    queryStr = stringWithFormat("{WHAT: [['.%s']]}", key.c_str());
         Retained<Query>           query    = store->compileQuery(json5(queryStr));
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -2062,19 +2062,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
-    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Jack");
         enc.writeKey("test_id");
         enc.writeString("alias_func");
     });
-    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Jean");
         enc.writeKey("test_id");
         enc.writeString("alias_func");
     });
-    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Scott");
         enc.writeKey("test_id");
@@ -2097,19 +2097,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
-    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Jack");
         enc.writeKey("test_id");
         enc.writeString("agg_func");
     });
-    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Jean");
         enc.writeKey("test_id");
         enc.writeString("alias_func");
     });
-    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
         enc.writeKey("customerId");
         enc.writeString("Scott");
         enc.writeKey("test_id");
@@ -2123,7 +2123,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query][N1QL]") {
     REQUIRE(e->next());
     CHECK(e->columns().count() == 1);
     CHECK(e->columns()[0]->type() == kArray);
-    const Array *agg = e->columns()[0]->asArray();
+    const Array* agg = e->columns()[0]->asArray();
     CHECK(agg->count() == 2);
     CHECK(agg->get(0)->asString() == "Jack"_sl);
     CHECK(agg->get(1)->asString() == "Scott"_sl);
@@ -2133,13 +2133,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string               docID = "doc1";
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
             enc.writeKey("real_value");
             enc.writeInt(1);
         });
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeNull();
             enc.writeKey("atai");
@@ -2152,7 +2152,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
-    const Value *dict = e->columns()[0];
+    const Value* dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     string dictJson = dict->toJSON().asString();
     transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
@@ -2192,7 +2192,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string               docID = "doc1";
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("unitPrice");
             enc.writeInt(8);
             enc.writeKey("orderlines");
@@ -2205,109 +2205,109 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     }
 
     string meta_default = "META(" + collectionName + ").revisionID";
-    std::tuple<const char *, std::function<bool(const Value *, bool)>> testCases[] = {
+    std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {
             {"acos(3)",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             {"acos(\"abc\")",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             {"2/0",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return missing;
              }},
             {"lower([1,2])",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             /*4*/
             {"length(missingValue)",
-             [](const Value *v, bool missing) {  // =MISSING
+             [](const Value* v, bool missing) {  // =MISSING
                  return missing && v->type() == kNull;
              }},
             {"is_array(null)",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             {"atan(asin(1.1))",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             {"round(12.5)",
-             [](const Value *v, bool missing) {  // =13
+             [](const Value* v, bool missing) {  // =13
                  return !missing && v->type() == kNumber && v->asDouble() == 13;
              }},
             {"8/10",
-             [](const Value *v, bool missing) {  // =0
+             [](const Value* v, bool missing) {  // =0
                  return !missing && v->type() == kNumber && v->asDouble() == 0;
              }},
             /*9*/
             {"unitPrice/10",
-             [](const Value *v, bool missing) {  // =0
+             [](const Value* v, bool missing) {  // =0
                  return !missing && v->type() == kNumber && v->asDouble() == 0;
              }},
             {"orderlines",
-             [](const Value *v, bool missing) {  // type() == kArray & columnTitle="orderlines"
+             [](const Value* v, bool missing) {  // type() == kArray & columnTitle="orderlines"
                  return !missing && v->type() == kArray;
              }},
             {"orderlines[0]",
-             [](const Value *v, bool missing) {  // columnTitle="$11"
+             [](const Value* v, bool missing) {  // columnTitle="$11"
                  return !missing && v->type() == kNumber && v->asDouble() == 1;
              }},
             {"div(8, 10)",
-             [](const Value *v, bool missing) {  // =0.8
+             [](const Value* v, bool missing) {  // =0.8
                  return !missing && v->type() == kNumber && v->asDouble() == 0.8;
              }},
             {"idiv(8, 10)",
-             [](const Value *v, bool missing) {  // =0
+             [](const Value* v, bool missing) {  // =0
                  return !missing && v->type() == kNumber && v->asDouble() == 0;
              }},
             /*14*/
             {"idiv(-1, 1.9)",
-             [](const Value *v, bool missing) {  // =-1
+             [](const Value* v, bool missing) {  // =-1
                  return !missing && v->type() == kNumber && v->asDouble() == -1;
              }},
             {"idiv(-1, 2.0)",
-             [](const Value *v, bool missing) {  // =0
+             [](const Value* v, bool missing) {  // =0
                  return !missing && v->type() == kNumber && v->asDouble() == 0;
              }},
             {"idiv(-1, 2.9)",
-             [](const Value *v, bool missing) {  // =0
+             [](const Value* v, bool missing) {  // =0
                  return !missing && v->type() == kNumber && v->asDouble() == 0;
              }},
             {"idiv(-3.9, 2.1)",
-             [](const Value *v, bool missing) {  // =-1
+             [](const Value* v, bool missing) {  // =-1
                  return !missing && v->type() == kNumber && v->asDouble() == -1;
              }},
             {"idiv(5, 3)",
-             [](const Value *v, bool missing) {  // =1
+             [](const Value* v, bool missing) {  // =1
                  return !missing && v->type() == kNumber && v->asDouble() == 1;
              }},
             /*19*/
             {"idiv(5, 3.0)",
-             [](const Value *v, bool missing) {  // =1
+             [](const Value* v, bool missing) {  // =1
                  return !missing && v->type() == kNumber && v->asDouble() == 1;
              }},
             {"idiv(1, 0.99)",
-             [](const Value *v, bool missing) {  // =NULL
+             [](const Value* v, bool missing) {  // =NULL
                  return !missing && v->type() == kNull;
              }},
             {"round_even(12.5)",
-             [](const Value *v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
             {"round_even(11.5)",
-             [](const Value *v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
             {"round_even(12.115, 2)",
-             [](const Value *v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
             /*24*/
             {"round_even(-12.125, 2)",
-             [](const Value *v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
             {"META().id",
-             [](const Value *v, bool missing) {
+             [](const Value* v, bool missing) {
                  return !missing && v->type() == kString && (v->asString().compare("doc1") == 0);
              }},
-            {meta_default.c_str(), [](const Value *v, bool missing) { return missing && v->type() == kNull; }}};
+            {meta_default.c_str(), [](const Value* v, bool missing) { return missing && v->type() == kNull; }}};
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);
@@ -2337,7 +2337,7 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
             stringstream ss("rec-00");
             ss << i + 1;
 
-            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder& enc) {
                 enc.writeKey("num1");
                 enc.writeInt(i);
                 enc.writeKey("num2");
@@ -2345,8 +2345,8 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
             });
         }
 
-        KeyStore &secondary = db->getKeyStore(".secondary");
-        writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        KeyStore& secondary = db->getKeyStore(".secondary");
+        writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("theone");
             enc.writeInt(4);
         });
@@ -2377,13 +2377,13 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     addNumberedDocs(1, 10);
 
-    auto checkType = [this](const string &jsonQuery) {
+    auto checkType = [this](const string& jsonQuery) {
         Retained<Query>           query = store->compileQuery(jsonQuery);
         Retained<QueryEnumerator> e(query->createEnumerator());
         while ( e->next() ) { CHECK(e->columns()[0]->asString() == "number"_sl); }
     };
 
-    auto checkTypeN1QL = [this](const string &n1qlQuery) {
+    auto checkTypeN1QL = [this](const string& n1qlQuery) {
         Retained<Query>           query = store->compileQuery(n1qlQuery, QueryLanguage::kN1QL);
         Retained<QueryEnumerator> e(query->createEnumerator());
         while ( e->next() ) { CHECK(e->columns()[0]->asString() == "number"_sl); }
@@ -2428,7 +2428,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
 TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
     string      tooLong(252, 'x');
     string      tooLong2 = "a." + tooLong, tooLong3 = tooLong + ".z";
-    const char *kBadCollectionNames[] = {// "_",   <- nope, "_" happens to be legal (synonym for the default collection)
+    const char* kBadCollectionNames[] = {// "_",   <- nope, "_" happens to be legal (synonym for the default collection)
                                          "%",
                                          "%xx",
                                          "_xx",
@@ -2450,7 +2450,7 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
         try {
             store->compileQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'"s + badName + "'}]}"));
             FAIL_CHECK("Didn't detect an invalid collection name");
-        } catch ( const error &x ) {
+        } catch ( const error& x ) {
             CHECK(x == error::InvalidQuery);
             if ( string(x.what()).find("is not a valid collection") == string::npos )
                 FAIL_CHECK("Wrong error: " << x.what());

@@ -54,10 +54,10 @@ static string getBuildInfo() {
     static string commit;
 #ifdef COUCHBASE_ENTERPRISE
     if ( commit.empty() ) { commit = format("%.8s+%.8s", GitCommitEE, GitCommit); }
-    static const char *ee = "EE ";
+    static const char* ee = "EE ";
 #else
     if ( commit.empty() ) { commit = format("%.8s", GitCommit); }
-    static const char *ee = "";
+    static const char* ee = "";
 #endif
 #if LiteCoreOfficial
     return format("%sbuild number %s, ID %.8s, from commit %s", ee, LiteCoreBuildNum, LiteCoreBuildID, commit.c_str());
@@ -78,10 +78,10 @@ C4StringResult c4_getVersion() C4API {
     vers = format("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
 #else
 #    ifdef COUCHBASE_ENTERPRISE
-    static const char *ee     = "-EE";
+    static const char* ee     = "-EE";
     string             commit = format("%.8s+%.8s", GitCommitEE, GitCommit);
 #    else
-    static const char *ee     = "";
+    static const char* ee     = "";
     string             commit = format("%.8s", GitCommit);
 #    endif
     if ( strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0) )
@@ -104,7 +104,7 @@ C4SliceResult c4_getEnvironmentInfo() C4API {
 
     auto locales = SupportedLocales();
     e.beginArray(locales.size());
-    for ( const auto &locale : locales ) { e.writeString(locale); }
+    for ( const auto& locale : locales ) { e.writeString(locale); }
     e.endArray();
     e.endDict();
 
@@ -120,9 +120,9 @@ C4Timestamp c4_now(void) C4API { return KeyStore::now(); }
 
 namespace litecore {
 
-    C4SliceResult toSliceResult(const string &str) { return C4SliceResult(alloc_slice(str)); }
+    C4SliceResult toSliceResult(const string& str) { return C4SliceResult(alloc_slice(str)); }
 
-    void destructExtraInfo(C4ExtraInfo &x) noexcept {
+    void destructExtraInfo(C4ExtraInfo& x) noexcept {
         if ( x.destructor ) {
             x.destructor(x.pointer);
             x.destructor = nullptr;
@@ -144,7 +144,7 @@ C4LogCallback c4log_getCallback() noexcept { return (C4LogCallback)LogDomain::cu
 
 // LCOV_EXCL_STOP
 
-bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *outError) noexcept {
+bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* outError) noexcept {
     return tryCatch(outError, [=] {
         LogFileOptions lfOptions{slice(options.base_path).asString(), (LogLevel)options.log_level,
                                  options.max_size_bytes, options.max_rotate_count, options.use_plaintext};
@@ -178,30 +178,30 @@ CBL_CORE_API C4LogDomain const kC4QueryLog     = (C4LogDomain)&QueryLog;
 CBL_CORE_API C4LogDomain const kC4SyncLog      = (C4LogDomain)&SyncLog;
 CBL_CORE_API C4LogDomain const kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
 
-C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {
+C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
     if ( !domain && create ) domain = new LogDomain(name);
     return (C4LogDomain)domain;
 }
 
-const char *c4log_getDomainName(C4LogDomain c4Domain) noexcept {
-    auto domain = (LogDomain *)c4Domain;
+const char* c4log_getDomainName(C4LogDomain c4Domain) noexcept {
+    auto domain = (LogDomain*)c4Domain;
     return domain->name();
 }
 
 C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept {
-    auto domain = (LogDomain *)c4Domain;
+    auto domain = (LogDomain*)c4Domain;
     return (C4LogLevel)domain->level();
 }
 
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
-    auto domain = (LogDomain *)c4Domain;
+    auto domain = (LogDomain*)c4Domain;
     domain->setLevel((LogLevel)level);
 }
 
 bool c4log_willLog(C4LogDomain c4Domain, C4LogLevel level) C4API {
-    auto domain = (LogDomain *)c4Domain;
+    auto domain = (LogDomain*)c4Domain;
     return domain->willLog((LogLevel)level);
 }
 
@@ -210,7 +210,7 @@ void c4log_warnOnErrors(bool warn) noexcept { error::sWarnOnError = warn; }
 bool c4log_getWarnOnErrors() noexcept { return error::sWarnOnError; }
 
 void c4log_enableFatalExceptionBacktrace() C4API {
-    fleece::Backtrace::installTerminateHandler([](const string &backtrace) {
+    fleece::Backtrace::installTerminateHandler([](const string& backtrace) {
         c4log(kC4DefaultLog, kC4LogError,
               "COUCHBASE LITE CORE FATAL ERROR (backtrace follows)\n"
               "********************\n"
@@ -222,16 +222,16 @@ void c4log_enableFatalExceptionBacktrace() C4API {
 
 void c4log_flushLogFiles() C4API { LogDomain::flushLogFiles(); }
 
-void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
+void c4log(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, ...) noexcept {
     va_list args;
     va_start(args, fmt);
     c4vlog(c4Domain, level, fmt, args);
     va_end(args);
 }
 
-void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list args) noexcept {
+void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, va_list args) noexcept {
     try {
-        ((LogDomain *)c4Domain)->vlog((LogLevel)level, fmt, args);
+        ((LogDomain*)c4Domain)->vlog((LogLevel)level, fmt, args);
     } catch ( ... ) {}
 }
 
@@ -240,23 +240,23 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     if ( msg.buf == nullptr ) { return; }
 
     try {
-        ((LogDomain *)c4Domain)->logNoCallback((LogLevel)level, "%.*s", SPLAT(msg));
+        ((LogDomain*)c4Domain)->logNoCallback((LogLevel)level, "%.*s", SPLAT(msg));
     } catch ( ... ) {}
 }
 
 // LCOV_EXCL_STOP
 
 
-__cold void C4Error::warnCurrentException(const char *inFunction) noexcept {
+__cold void C4Error::warnCurrentException(const char* inFunction) noexcept {
     C4WarnError("Caught & ignored exception %s in %s", C4Error::fromCurrentException().description().c_str(),
                 inFunction);
 }
 
 #pragma mark - REFERENCE COUNTED:
 
-void *c4base_retain(void *obj) C4API { return retain((RefCounted *)obj); }
+void* c4base_retain(void* obj) C4API { return retain((RefCounted*)obj); }
 
-void c4base_release(void *obj) C4API { release((RefCounted *)obj); }
+void c4base_release(void* obj) C4API { release((RefCounted*)obj); }
 
 #pragma mark - INSTANCE COUNTED:
 
@@ -265,8 +265,8 @@ int c4_getObjectCount() noexcept { return fleece::InstanceCounted::liveInstanceC
 // LCOV_EXCL_START
 void c4_dumpInstances(void) C4API {
 #if INSTANCECOUNTED_TRACK
-    fleece::InstanceCounted::dumpInstances([](const fleece::InstanceCounted *obj) {
-        if ( auto logger = dynamic_cast<const Logging *>(obj); logger )
+    fleece::InstanceCounted::dumpInstances([](const fleece::InstanceCounted* obj) {
+        if ( auto logger = dynamic_cast<const Logging*>(obj); logger )
             fprintf(stderr, "%s, ", logger->loggingName().c_str());
         fprintf(stderr, "a ");
     });
@@ -275,7 +275,7 @@ void c4_dumpInstances(void) C4API {
 
 #pragma mark - MISCELLANEOUS:
 
-bool c4_setTempDir(C4String path, C4Error *err) C4API {
+bool c4_setTempDir(C4String path, C4Error* err) C4API {
     if ( sqlite3_temp_directory != nullptr ) {
         c4error_return(LiteCoreDomain, kC4ErrorUnsupported, C4STR("c4_setTempDir cannot be called more than once!"),
                        err);
@@ -283,7 +283,7 @@ bool c4_setTempDir(C4String path, C4Error *err) C4API {
     }
 
 
-    sqlite3_temp_directory = (char *)sqlite3_malloc((int)path.size + 1);
+    sqlite3_temp_directory = (char*)sqlite3_malloc((int)path.size + 1);
     memcpy(sqlite3_temp_directory, path.buf, path.size);
     sqlite3_temp_directory[path.size] = 0;
     return true;
@@ -292,4 +292,4 @@ bool c4_setTempDir(C4String path, C4Error *err) C4API {
 // LCOV_EXCL_STOP
 
 
-void c4_runAsyncTask(void (*task)(void *), void *context) C4API { actor::Mailbox::runAsyncTask(task, context); }
+void c4_runAsyncTask(void (*task)(void*), void* context) C4API { actor::Mailbox::runAsyncTask(task, context); }

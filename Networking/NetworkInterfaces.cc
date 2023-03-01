@@ -49,20 +49,20 @@ namespace litecore::net {
 
 #pragma mark - IPADDRESS:
 
-    IPAddress::IPAddress(const sockaddr &addr) noexcept : _family(addr.sa_family) {
+    IPAddress::IPAddress(const sockaddr& addr) noexcept : _family(addr.sa_family) {
         static_assert(sizeof(_data) >= sizeof(in_addr));
         static_assert(sizeof(_data) >= sizeof(in6_addr));
         Assert(_family == AF_INET || _family == AF_INET6);
-        if ( _family == AF_INET ) _addr4() = ((const sockaddr_in &)addr).sin_addr;
+        if ( _family == AF_INET ) _addr4() = ((const sockaddr_in&)addr).sin_addr;
         else
-            _addr6() = ((const sockaddr_in6 &)addr).sin6_addr;
+            _addr6() = ((const sockaddr_in6&)addr).sin6_addr;
     }
 
-    IPAddress::IPAddress(const in_addr &addr) noexcept : _family(AF_INET) { _addr4() = addr; }
+    IPAddress::IPAddress(const in_addr& addr) noexcept : _family(AF_INET) { _addr4() = addr; }
 
-    IPAddress::IPAddress(const in6_addr &addr) noexcept : _family(AF_INET6) { _addr6() = addr; }
+    IPAddress::IPAddress(const in6_addr& addr) noexcept : _family(AF_INET6) { _addr6() = addr; }
 
-    optional<IPAddress> IPAddress::parse(const string &str) {
+    optional<IPAddress> IPAddress::parse(const string& str) {
         IPAddress addr;
         if ( ::inet_pton(AF_INET, str.c_str(), &addr._data) == 1 ) {
             addr._family = AF_INET;
@@ -78,13 +78,13 @@ namespace litecore::net {
 
     bool IPAddress::isIPv6() const { return _family == AF_INET6; }
 
-    in_addr &IPAddress::_addr4() { return *(in_addr *)&_data; }
+    in_addr& IPAddress::_addr4() { return *(in_addr*)&_data; }
 
-    in6_addr &IPAddress::_addr6() { return *(in6_addr *)&_data; };
+    in6_addr& IPAddress::_addr6() { return *(in6_addr*)&_data; };
 
-    const in_addr &IPAddress::addr4() const { return *(const in_addr *)&_data; }
+    const in_addr& IPAddress::addr4() const { return *(const in_addr*)&_data; }
 
-    const in6_addr &IPAddress::addr6() const { return *(const in6_addr *)&_data; };
+    const in6_addr& IPAddress::addr6() const { return *(const in6_addr*)&_data; };
 
     bool IPAddress::isLoopback() const {
         if ( isIPv4() ) return ntohl(addr4().s_addr) == INADDR_LOOPBACK;
@@ -114,7 +114,7 @@ namespace litecore::net {
 
     IPAddress::operator string() const {
         char        buf[INET6_ADDRSTRLEN];
-        const void *addr = (isIPv4()) ? (void *)&addr4() : (void *)&addr6();
+        const void* addr = (isIPv4()) ? (void*)&addr4() : (void*)&addr6();
         return inet_ntop(_family, addr, buf, sizeof(buf));
     }
 
@@ -128,7 +128,7 @@ namespace litecore::net {
         }
     }
 
-    bool IPAddress::operator==(const IPAddress &b) const {
+    bool IPAddress::operator==(const IPAddress& b) const {
         if ( _family != b._family ) return false;
         else if ( isIPv4() )
             return addr4().s_addr == b.addr4().s_addr;
@@ -136,7 +136,7 @@ namespace litecore::net {
             return memcmp(&addr6(), &b.addr6(), sizeof(in6_addr)) == 0;
     }
 
-    static bool operator<(const IPAddress &a, const IPAddress &b) {
+    static bool operator<(const IPAddress& a, const IPAddress& b) {
         return (a.family() < b.family())                                // ipv4 < ipv6
                || (a.family() == b.family() && a.scope() > b.scope());  // routable < local < loopback
     }
@@ -146,19 +146,19 @@ namespace litecore::net {
 
     // Platform-specific code to read the enabled network interfaces.
     // Results are unsorted/unfiltered.
-    static void _getInterfaces(vector<Interface> &interfaces);
+    static void _getInterfaces(vector<Interface>& interfaces);
 
     bool Interface::isLoopback() const { return (flags & IFF_LOOPBACK) != 0; }
 
     bool Interface::isRoutable() const { return primaryAddress().isRoutable(); }
 
-    const IPAddress &Interface::primaryAddress() const { return addresses[0]; }
+    const IPAddress& Interface::primaryAddress() const { return addresses[0]; }
 
-    static bool operator<(const Interface &a, const Interface &b) { return a.primaryAddress() < b.primaryAddress(); }
+    static bool operator<(const Interface& a, const Interface& b) { return a.primaryAddress() < b.primaryAddress(); }
 
     void Interface::dump() {
         fprintf(stderr, "%s [flags %04x, type %x]: ", name.c_str(), flags, type);
-        for ( auto &addr : addresses ) fprintf(stderr, "%s, ", string(addr).c_str());
+        for ( auto& addr : addresses ) fprintf(stderr, "%s, ", string(addr).c_str());
         fprintf(stderr, "\n");
     }
 
@@ -167,7 +167,7 @@ namespace litecore::net {
         _getInterfaces(interfaces);
 
         for ( auto i = interfaces.begin(); i != interfaces.end(); ) {
-            auto &intf = *i;
+            auto& intf = *i;
             if ( intf.addresses.empty() ) {
                 i = interfaces.erase(i);
                 continue;
@@ -186,9 +186,9 @@ namespace litecore::net {
         return interfaces;
     }
 
-    optional<Interface> Interface::withAddress(const IPAddress &addr) {
-        for ( auto &intf : Interface::all() ) {
-            for ( auto &ifAddr : intf.addresses ) {
+    optional<Interface> Interface::withAddress(const IPAddress& addr) {
+        for ( auto& intf : Interface::all() ) {
+            for ( auto& ifAddr : intf.addresses ) {
                 if ( ifAddr == addr ) return intf;
             }
         }
@@ -197,8 +197,8 @@ namespace litecore::net {
 
     std::vector<IPAddress> Interface::allAddresses(IPAddress::Scope scope) {
         vector<IPAddress> allAddrs;
-        for ( auto &intf : Interface::all() ) {
-            for ( auto &addr : intf.addresses ) {
+        for ( auto& intf : Interface::all() ) {
+            for ( auto& addr : intf.addresses ) {
                 if ( addr.scope() >= scope ) allAddrs.push_back(addr);
             }
         }
@@ -207,7 +207,7 @@ namespace litecore::net {
 
     std::vector<IPAddress> Interface::primaryAddresses() {
         vector<IPAddress> addresses;
-        for ( auto &intf : Interface::all() ) addresses.push_back(intf.addresses[0]);
+        for ( auto& intf : Interface::all() ) addresses.push_back(intf.addresses[0]);
         return addresses;
     }
 
@@ -243,15 +243,15 @@ namespace litecore::net {
 
     // Platform-specific code to read the enabled network interfaces.
     // Results are unsorted/unfiltered.
-    static void _getInterfaces(vector<Interface> &interfaces) {
+    static void _getInterfaces(vector<Interface>& interfaces) {
 #ifdef _WIN32
-        auto  info = static_cast<IP_ADAPTER_ADDRESSES *>(HeapAlloc(GetProcessHeap(), 0, sizeof(IP_ADAPTER_ADDRESSES)));
+        auto  info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, sizeof(IP_ADAPTER_ADDRESSES)));
         ULONG bufferSize   = sizeof(IP_ADAPTER_ADDRESSES);
         const DWORD flags  = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
         auto        result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
         if ( result == ERROR_BUFFER_OVERFLOW ) {
             HeapFree(GetProcessHeap(), 0, info);
-            info   = static_cast<IP_ADAPTER_ADDRESSES *>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
+            info   = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
             result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
         }
 
@@ -294,10 +294,10 @@ namespace litecore::net {
         // so this map will keep track of the ones we've seen so far so we can add on the
         // addresses to them instead of erroneously creating duplicate interfaces
         map<string, size_t> results;
-        struct ifaddrs *addrs;
+        struct ifaddrs* addrs;
         if ( getifaddrs(&addrs) < 0 ) error::_throwErrno();
 
-        Interface *intf = nullptr;
+        Interface* intf = nullptr;
         for ( auto a = addrs; a; a = a->ifa_next ) {
             auto nextIterator = results.find(a->ifa_name);
             if ( nextIterator == results.end() ) {
@@ -313,7 +313,7 @@ namespace litecore::net {
                 switch ( a->ifa_addr->sa_family ) {
 #    ifdef __APPLE__
                     case AF_LINK:
-                        intf->type = ((const if_data *)a->ifa_data)->ifi_type;
+                        intf->type = ((const if_data*)a->ifa_data)->ifi_type;
                         break;
 #    endif
                     case AF_INET:

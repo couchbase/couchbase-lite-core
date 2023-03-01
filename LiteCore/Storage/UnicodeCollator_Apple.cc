@@ -31,7 +31,7 @@ namespace litecore {
     class TempCFString {
       public:
         explicit TempCFString(slice str) noexcept
-            : _cfStr(CFStringCreateWithBytesNoCopy(nullptr, (const UInt8 *)str.buf, str.size, kCFStringEncodingUTF8,
+            : _cfStr(CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)str.buf, str.size, kCFStringEncodingUTF8,
                                                    false, kCFAllocatorNull)) {}
 
         ~TempCFString() noexcept {
@@ -43,8 +43,8 @@ namespace litecore {
       private:
         CFStringRef const _cfStr;
 
-        TempCFString(const TempCFString &)            = delete;
-        TempCFString &operator=(const TempCFString &) = delete;
+        TempCFString(const TempCFString&)            = delete;
+        TempCFString& operator=(const TempCFString&) = delete;
     };
 
     // Stores CF collation parameters for fast lookup; callback context points to this
@@ -53,7 +53,7 @@ namespace litecore {
         CFLocaleRef          localeRef{nullptr};
         CFStringCompareFlags flags;
 
-        explicit CFCollationContext(const Collation &coll)
+        explicit CFCollationContext(const Collation& coll)
             : CollationContext(coll), flags(kCFCompareNonliteral | kCFCompareWidthInsensitive) {
             Assert(coll.unicodeAware);
             if ( !coll.caseSensitive ) flags |= kCFCompareCaseInsensitive;
@@ -71,17 +71,17 @@ namespace litecore {
             if ( localeRef ) CFRelease(localeRef);
         }
 
-        CFCollationContext(const CFCollationContext &)            = delete;
-        CFCollationContext &operator=(const CFCollationContext &) = delete;
+        CFCollationContext(const CFCollationContext&)            = delete;
+        CFCollationContext& operator=(const CFCollationContext&) = delete;
     };
 
-    unique_ptr<CollationContext> CollationContext::create(const Collation &coll) {
+    unique_ptr<CollationContext> CollationContext::create(const Collation& coll) {
         return make_unique<CFCollationContext>(coll);
     }
 
     /** Full Unicode-savvy string comparison. */
-    __hot static inline int compareStringsUnicode(int len1, const void *chars1, int len2, const void *chars2,
-                                                  const CFCollationContext &ctx) {
+    __hot static inline int compareStringsUnicode(int len1, const void* chars1, int len2, const void* chars2,
+                                                  const CFCollationContext& ctx) {
         // OPT: Consider using UCCompareText(), from <CarbonCore/UnicodeUtilities.h>, instead?
 
         TempCFString cfstr1({chars1, size_t(len1)});
@@ -92,38 +92,38 @@ namespace litecore {
                                                         ctx.flags, ctx.localeRef);
     }
 
-    __hot static int collateUnicodeCallback(void *context, int len1, const void *chars1, int len2, const void *chars2) {
-        auto &coll = *(CFCollationContext *)context;
+    __hot static int collateUnicodeCallback(void* context, int len1, const void* chars1, int len2, const void* chars2) {
+        auto& coll = *(CFCollationContext*)context;
         if ( coll.canCompareASCII ) {
-            int result = CompareASCII(len1, (const uint8_t *)chars1, len2, (const uint8_t *)chars2, coll.caseSensitive);
+            int result = CompareASCII(len1, (const uint8_t*)chars1, len2, (const uint8_t*)chars2, coll.caseSensitive);
             if ( result != kCompareASCIIGaveUp ) return result;
         }
         return compareStringsUnicode(len1, chars1, len2, chars2, coll);
     }
 
-    int CompareUTF8(slice str1, slice str2, const Collation &coll) {
+    int CompareUTF8(slice str1, slice str2, const Collation& coll) {
         return CompareUTF8(str1, str2, CFCollationContext(coll));
     }
 
-    int CompareUTF8(slice str1, slice str2, const CollationContext &ctx) {
-        return collateUnicodeCallback((void *)&ctx, (int)str1.size, str1.buf, (int)str2.size, str2.buf);
+    int CompareUTF8(slice str1, slice str2, const CollationContext& ctx) {
+        return collateUnicodeCallback((void*)&ctx, (int)str1.size, str1.buf, (int)str2.size, str2.buf);
     }
 
-    int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation &coll) {
+    int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation& coll) {
         return LikeUTF8(str1, str2, CFCollationContext(coll));
     }
 
-    __hot bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+    __hot bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext& ctx) {
         TempCFString cfStr(str), cfSubstr(substr);
         if ( _usuallyFalse(!cfStr || !cfSubstr) ) return false;
-        auto &cfCtx = (const CFCollationContext &)ctx;
+        auto& cfCtx = (const CFCollationContext&)ctx;
         return CFStringFindWithOptionsAndLocale(cfStr, cfSubstr, {0, CFStringGetLength(cfStr)}, cfCtx.flags,
                                                 cfCtx.localeRef, nullptr);
     }
 
-    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3 *dbHandle, const Collation &coll) {
+    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle, const Collation& coll) {
         unique_ptr<CollationContext> context(new CFCollationContext(coll));
-        int rc = sqlite3_create_collation(dbHandle, coll.sqliteName().c_str(), SQLITE_UTF8, (void *)context.get(),
+        int rc = sqlite3_create_collation(dbHandle, coll.sqliteName().c_str(), SQLITE_UTF8, (void*)context.get(),
                                           collateUnicodeCallback);
         if ( rc != SQLITE_OK ) throw SQLite::Exception(dbHandle, rc);
         return context;

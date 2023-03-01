@@ -47,7 +47,7 @@ namespace litecore { namespace REST {
           public:
             Server();
 
-            void start(uint16_t port, slice networkInterface = nullslice, net::TLSContext * = nullptr);
+            void start(uint16_t port, slice networkInterface = nullslice, net::TLSContext* = nullptr);
 
             virtual void stop();
 
@@ -65,16 +65,16 @@ namespace litecore { namespace REST {
             void setAuthenticator(Authenticator auth) { _authenticator = move(auth); }
 
             /** Extra HTTP headers to add to every response. */
-            void setExtraHeaders(const std::map<std::string, std::string> &headers);
+            void setExtraHeaders(const std::map<std::string, std::string>& headers);
 
             /** A function that handles a request. */
-            using Handler = std::function<void(RequestResponse &)>;
+            using Handler = std::function<void(RequestResponse&)>;
 
             /** Registers a handler function for a URI pattern.
             Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
             Multiple patterns can be joined with a "|".
             Patterns are tested in the order the handlers are added, and the first match is used.*/
-            void addHandler(net::Methods, const std::string &pattern, const Handler &);
+            void addHandler(net::Methods, const std::string& pattern, const Handler&);
 
             int connectionCount() { return _connectionCount; }
 
@@ -86,15 +86,15 @@ namespace litecore { namespace REST {
                 Handler      handler;
             };
 
-            URIRule *findRule(net::Method method, const std::string &path);
+            URIRule* findRule(net::Method method, const std::string& path);
             virtual ~Server() override;
 
-            void dispatchRequest(RequestResponse *);
+            void dispatchRequest(RequestResponse*);
 
           private:
             void awaitConnection();
             void acceptConnection();
-            void handleConnection(sockpp::stream_socket &&);
+            void handleConnection(sockpp::stream_socket&&);
 
             fleece::Retained<crypto::Identity> _identity;
             fleece::Retained<net::TLSContext>  _tlsContext;

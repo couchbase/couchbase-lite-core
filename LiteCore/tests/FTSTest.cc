@@ -24,7 +24,7 @@ using namespace fleece::impl;
 
 class FTSTest : public DataFileTestFixture {
   public:
-    static constexpr const char *const kStrings[]
+    static constexpr const char* const kStrings[]
             = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database "
                "applications.",
                "In their most elementary form, full-text search engines allow the user to efficiently search a large "
@@ -37,7 +37,7 @@ class FTSTest : public DataFileTestFixture {
 
     vector<string> _stringsInDB;
 
-    static DataFile::Options *dbOptions() {
+    static DataFile::Options* dbOptions() {
         static DataFile::Options sOptions = DataFile::Options::defaults;
         sOptions.keyStores.sequences      = false;  // make it easier to overwrite docs in this test
         return &sOptions;
@@ -49,7 +49,7 @@ class FTSTest : public DataFileTestFixture {
         t.commit();
     }
 
-    void createDoc(ExclusiveTransaction &t, int i, string sentence) {
+    void createDoc(ExclusiveTransaction& t, int i, string sentence) {
         string docID = stringWithFormat("rec-%03d", i);
 
         fleece::impl::Encoder enc;
@@ -69,7 +69,7 @@ class FTSTest : public DataFileTestFixture {
         store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, &options);
     }
 
-    void testQuery(const char *queryStr, vector<int> expectedOrder, vector<int> expectedTerms,
+    void testQuery(const char* queryStr, vector<int> expectedOrder, vector<int> expectedTerms,
                    QueryLanguage language = QueryLanguage::kJSON) {
         Retained<Query> query{
                 db->compileQuery(language == QueryLanguage::kJSON ? json5(queryStr) : slice(queryStr), language)};
@@ -96,11 +96,11 @@ class FTSTest : public DataFileTestFixture {
     }
 };
 
-constexpr const char *const FTSTest::kStrings[5];
+constexpr const char* const FTSTest::kStrings[5];
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     createIndex({"english", true});
-    const char   *queryStr = nullptr;
+    const char*   queryStr = nullptr;
     QueryLanguage lang     = QueryLanguage::kJSON;
     SECTION("JSON query") {
         queryStr = "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
@@ -200,9 +200,9 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-218>
 
     store->deleteIndex("List"_sl);
-    const char *const jsonQuery = "{WHAT: [ '._id'], WHERE: ['MATCH()', 'List', ['$title']]}";
-    const char *const n1qlQuery = "SELECT META().id FROM _ WHERE MATCH(List, $title)";
-    const char       *queryStr  = nullptr;
+    const char* const jsonQuery = "{WHAT: [ '._id'], WHERE: ['MATCH()', 'List', ['$title']]}";
+    const char* const n1qlQuery = "SELECT META().id FROM _ WHERE MATCH(List, $title)";
+    const char*       queryStr  = nullptr;
     QueryLanguage     lang      = QueryLanguage::kJSON;
 
     SECTION("Create Index First") {
@@ -214,7 +214,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
 
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc(slice("movies"), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice("movies"), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("Title");
             enc.writeString("Top 100 movies");
             enc.writeKey("List");
@@ -232,7 +232,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
             enc.endArray();
         });
 
-        writeDoc(slice("action"), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice("action"), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("Title");
             enc.writeString("Top 100 Action movies");
             enc.writeKey("List");
@@ -250,7 +250,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
             enc.endArray();
         });
 
-        writeDoc(slice("thriller"), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice("thriller"), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("Title");
             enc.writeString("Top 100 Thriller movies");
             enc.writeKey("List");
@@ -268,7 +268,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
             enc.endArray();
         });
 
-        writeDoc(slice("history"), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice("history"), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("Title");
             enc.writeString("Top 100 History movies");
             enc.writeKey("List");
@@ -333,7 +333,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
 TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc(slice("dict"), DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc(slice("dict"), DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("dict_value");
             enc.beginDictionary(2);
             enc.writeKey("value_one"_sl);
@@ -363,37 +363,37 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
 TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeBool(true);
         });
 
-        writeDoc("2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeBool(false);
         });
 
-        writeDoc("3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeBool(true);
         });
 
-        writeDoc("3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeInt(-41);
         });
 
-        writeDoc("4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("4"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeUInt(42);
         });
 
-        writeDoc("5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("5"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeFloat(3.14f);
         });
 
-        writeDoc("6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("6"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeDouble(1.234);
         });
@@ -436,7 +436,7 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
 
     {
         ExclusiveTransaction t(store->dataFile());
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("key-fts");
             enc.writeString("some terms to search against");
             enc.writeKey("key-2");
@@ -445,7 +445,7 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
             enc.writeString("bar");
         });
 
-        writeDoc("sample2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("sample2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("key-fts");
             enc.writeString("other terms to search against");
             enc.writeKey("key-2");

@@ -175,7 +175,7 @@ namespace litecore {
     }
 
     // Reads as many bytes as possible from _buffer into `remaining`.
-    void EncryptedReadStream::readFromBuffer(slice_ostream &remaining) {
+    void EncryptedReadStream::readFromBuffer(slice_ostream& remaining) {
         size_t nFromBuffer = min(_bufferSize - _bufferPos, remaining.capacity());
         if ( nFromBuffer > 0 ) {
             remaining.write(&_buffer[_bufferPos], nFromBuffer);
@@ -183,7 +183,7 @@ namespace litecore {
         }
     }
 
-    size_t EncryptedReadStream::read(void *dst, size_t count) {
+    size_t EncryptedReadStream::read(void* dst, size_t count) {
         slice_ostream remaining(dst, count);
         // If there's decrypted data in the buffer, copy it to the output:
         readFromBuffer(remaining);
@@ -199,11 +199,11 @@ namespace litecore {
                 readFromBuffer(remaining);
             }
         }
-        return (uint8_t *)remaining.next() - (uint8_t *)dst;
+        return (uint8_t*)remaining.next() - (uint8_t*)dst;
     }
 
     uint64_t EncryptedReadStream::getLength() const {
-        if ( _cleartextLength == UINT64_MAX ) (const_cast<EncryptedReadStream *>(this))->findLength();
+        if ( _cleartextLength == UINT64_MAX ) (const_cast<EncryptedReadStream*>(this))->findLength();
         return _cleartextLength;
     }
 

@@ -37,8 +37,8 @@ namespace litecore { namespace net {
 
             // -------- Setup:
 
-            explicit HTTPLogic(const Address &address, bool handleRedirects = true);
-            HTTPLogic(const Address &address, const websocket::Headers &requestHeaders, bool handleRedirects = true);
+            explicit HTTPLogic(const Address& address, bool handleRedirects = true);
+            HTTPLogic(const Address& address, const websocket::Headers& requestHeaders, bool handleRedirects = true);
             ~HTTPLogic();
 
             /// Specifies the HTTP method to use.
@@ -57,18 +57,18 @@ namespace litecore { namespace net {
             }
 
             /// Sets the request headers.
-            void setHeaders(const websocket::Headers &requestHeaders);
+            void setHeaders(const websocket::Headers& requestHeaders);
 
             /// Interface that provides HTTP cookie storage for an HTTPLogic instance.
             class CookieProvider {
               public:
-                virtual ~CookieProvider()                                          = default;
-                virtual alloc_slice cookiesForRequest(const Address &)             = 0;
-                virtual void        setCookie(const Address &, slice cookieHeader) = 0;
+                virtual ~CookieProvider()                                         = default;
+                virtual alloc_slice cookiesForRequest(const Address&)             = 0;
+                virtual void        setCookie(const Address&, slice cookieHeader) = 0;
             };
 
             /// Registers an object that manages HTTP cookies.
-            void setCookieProvider(CookieProvider *cp) { _cookieProvider = cp; }
+            void setCookieProvider(CookieProvider* cp) { _cookieProvider = cp; }
 
             // -------- Proxies:
 
@@ -87,7 +87,7 @@ namespace litecore { namespace net {
             /// The current address/URL, which changes after a redirect.
             /// Don't use this when opening a TCP connection! Use \ref directAddress for that,
             /// because it incorporates proxy settings.
-            const Address &address() { return _address; }
+            const Address& address() { return _address; }
 
             /// Sets the "Authorization:" header to send in the request.
             void setAuthHeader(slice authHeader) { _authHeader = authHeader; }
@@ -103,7 +103,7 @@ namespace litecore { namespace net {
 
             /// The actual hostname/port/scheme to connect to.
             /// This is affected by proxy settings and by redirects.
-            const Address &directAddress();
+            const Address& directAddress();
 
             /// Returns an encoded HTTP request (minus the body).
             std::string requestToSend();
@@ -130,7 +130,7 @@ namespace litecore { namespace net {
             alloc_slice statusMessage() { return _statusMessage; }
 
             /// The headers of the latest response.
-            const websocket::Headers &responseHeaders() { return _responseHeaders; }
+            const websocket::Headers& responseHeaders() { return _responseHeaders; }
 
             /// The error status of the latest response.
             C4Error error() { return _error; }
@@ -153,7 +153,7 @@ namespace litecore { namespace net {
             /// Convenience method that uses an HTTPClientSocket to send the request and receive the
             /// response.
             /// The socket must _not_ be connected yet, unless the current disposition is kContinue.
-            Disposition sendNextRequest(ClientSocket &, slice body = fleece::nullslice);
+            Disposition sendNextRequest(ClientSocket&, slice body = fleece::nullslice);
 
             // -------- Utility functions:
 
@@ -165,17 +165,17 @@ namespace litecore { namespace net {
             /** Utility function to parse HTTP headers. Reads header lines from HTTP data until
             it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
             data remaining after the empty line. */
-            static bool parseHeaders(fleece::slice_istream &httpData, websocket::Headers &);
+            static bool parseHeaders(fleece::slice_istream& httpData, websocket::Headers&);
 
             /// Given a "Sec-WebSocket-Key" header value, returns the "Sec-WebSocket-Accept" value.
-            static std::string webSocketKeyResponse(const std::string &nonce);
+            static std::string webSocketKeyResponse(const std::string& nonce);
 
           private:
             Disposition failure(C4ErrorDomain domain, int code, slice message = fleece::nullslice);
-            Disposition failure(ClientSocket &);
+            Disposition failure(ClientSocket&);
             Disposition failure();
             bool        connectingToProxy();
-            bool        parseStatusLine(fleece::slice_istream &responseData);
+            bool        parseStatusLine(fleece::slice_istream& responseData);
             Disposition handleRedirect();
             Disposition handleAuthChallenge(slice headerName, bool forProxy);
             Disposition handleUpgrade();
@@ -189,7 +189,7 @@ namespace litecore { namespace net {
             alloc_slice        _userAgent;                // Value of User-Agent header to send
             alloc_slice        _authHeader;               // Value of Authorization header to send
             bool            _enableChallengeAuth{false};  // Use challenge auth instead of the default preemptive auth
-            CookieProvider *_cookieProvider{nullptr};     // HTTP cookie storage
+            CookieProvider* _cookieProvider{nullptr};     // HTTP cookie storage
             std::optional<ProxySpec> _proxy;              // Proxy settings
             std::optional<Address>   _proxyAddress;       // Proxy converted to Address
 

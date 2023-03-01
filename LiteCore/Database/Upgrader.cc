@@ -40,10 +40,10 @@ namespace litecore {
 
     class Upgrader {
       public:
-        Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
+        Upgrader(const FilePath& oldPath, const FilePath& newPath, C4DatabaseConfig config)
             : Upgrader(oldPath, DatabaseImpl::open(newPath, asTreeVersioning(config))) {}
 
-        Upgrader(const FilePath &oldPath, Retained<DatabaseImpl> newDB)
+        Upgrader(const FilePath& oldPath, Retained<DatabaseImpl> newDB)
             : _oldPath(oldPath)
             , _oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE)  // *
             , _newDB(move(newDB))
@@ -76,9 +76,9 @@ namespace litecore {
                 copyLocalDocs();
 #endif
                 t.commit();
-            } catch ( const std::exception &x ) {
+            } catch ( const std::exception& x ) {
                 error       e    = error::convertException(x);
-                const char *what = e.what();
+                const char* what = e.what();
                 if ( !what ) what = "";
                 error::_throw(error::CantUpgradeDatabase, "Error upgrading database: %s", what);
             }
@@ -86,7 +86,7 @@ namespace litecore {
 
 
       private:
-        static int compareRevIDs(void *context, int len1, const void *chars1, int len2, const void *chars2) {
+        static int compareRevIDs(void* context, int len1, const void* chars1, int len2, const void* chars2) {
             revidBuffer rev1, rev2;
             rev1.parse({chars1, size_t(len1)});
             rev2.parse({chars2, size_t(len2)});
@@ -114,9 +114,9 @@ namespace litecore {
                 try {
                     auto newDoc = _newDB->getDocument(docID, false, kDocGetAll);
                     copyRevisions(docKey, newDoc);
-                } catch ( const error &x ) {
+                } catch ( const error& x ) {
                     // Add docID to exception message:
-                    const char *what = x.what();
+                    const char* what = x.what();
                     if ( !what ) what = "exception";
                     throw error(x.domain, x.code, format("%s, converting doc \"%.*s\"", what, SPLAT(docID)));
                 }
@@ -124,7 +124,7 @@ namespace litecore {
         }
 
         // Copies all revisions of a document.
-        void copyRevisions(int64_t oldDocKey, C4Document *newDoc) {
+        void copyRevisions(int64_t oldDocKey, C4Document* newDoc) {
             if ( !_currentRev ) {
                 // Gets the current revision of doc
                 _currentRev.reset(new SQLite::Statement(_oldDB,
@@ -165,7 +165,7 @@ namespace litecore {
                 if ( hasAttachments ) copyAttachments(doc);
                 body = doc->allocedData();
             }
-            put.allocedBody = {(void *)body.buf, body.size};
+            put.allocedBody = {(void*)body.buf, body.size};
 
             int64_t nextSequence = _currentRev->getColumn(2);
 
@@ -182,7 +182,7 @@ namespace litecore {
             }
 
             put.historyCount = history.size();
-            put.history      = (C4String *)history.data();
+            put.history      = (C4String*)history.data();
             put.save         = true;
             C4Error error;
             if ( !newDoc->putExistingRevision(put, &error) ) error::_throw((error::Domain)error.domain, error.code);
@@ -190,14 +190,14 @@ namespace litecore {
 
         // Converts a JSON document body to Fleece.
         Retained<Doc> convertBody(slice json) {
-            Encoder      &enc = _newDB->sharedEncoder();
+            Encoder&      enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if ( !converter.encodeJSON(json) ) error::_throw(error::CorruptRevisionData, "invalid JSON data");
             return enc.finishDoc();
         }
 
         // Copies all blobs referenced in attachments of a revision from the old db.
-        void copyAttachments(Doc *doc) {
+        void copyAttachments(Doc* doc) {
             auto root = doc->asDict();
             if ( !root ) return;
             auto atts = root->get(C4STR(kC4LegacyAttachmentsProperty));
@@ -219,7 +219,7 @@ namespace litecore {
             optional<C4BlobKey> key = C4BlobKey::withDigestString(digest);
             if ( !key ) return false;
             string hex = slice(*key).hexString();
-            for ( char &c : hex ) c = (char)toupper(c);
+            for ( char& c : hex ) c = (char)toupper(c);
             FilePath src = _attachments[hex + ".blob"];
             if ( !src.exists() ) return false;
 
@@ -229,7 +229,7 @@ namespace litecore {
             FileReadStream in(src);
             size_t         bytesRead;
             while ( 0 != (bytesRead = in.read(buf, sizeof(buf))) ) out.write({buf, bytesRead});
-            out.install((C4BlobKey *)&key);
+            out.install((C4BlobKey*)&key);
             return true;
         }
 
@@ -262,11 +262,11 @@ namespace litecore {
         unique_ptr<SQLite::Statement> _currentRev, _parentRevs;
     };
 
-    void UpgradeDatabase(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig cfg) {
+    void UpgradeDatabase(const FilePath& oldPath, const FilePath& newPath, C4DatabaseConfig cfg) {
         Upgrader(oldPath, newPath, cfg).run();
     }
 
-    bool UpgradeDatabaseInPlace(const FilePath &path, C4DatabaseConfig config) {
+    bool UpgradeDatabaseInPlace(const FilePath& path, C4DatabaseConfig config) {
         if ( config.flags & (kC4DB_NoUpgrade | kC4DB_ReadOnly) ) return false;
 
         string p = path.path();

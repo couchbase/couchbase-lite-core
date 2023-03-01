@@ -52,16 +52,16 @@ namespace litecore { namespace crypto {
 
 #pragma mark - DISTINGUISHED NAME
 
-    DistinguishedName::DistinguishedName(const std::vector<Entry> &entries) {
+    DistinguishedName::DistinguishedName(const std::vector<Entry>& entries) {
         Writer out;
-        for ( auto &e : entries ) {
+        for ( auto& e : entries ) {
             if ( out.length() > 0 ) out << ", "_sl;
 
             out << e.key << '=';
 
             // Escape commas in the value:
             slice          value = e.value;
-            const uint8_t *comma;
+            const uint8_t* comma;
             while ( nullptr != (comma = value.findByte(',')) ) {
                 out << slice(value.buf, comma) << "\\,"_sl;
                 value.setStart(comma + 1);
@@ -105,7 +105,7 @@ namespace litecore { namespace crypto {
     }
 
     alloc_slice DistinguishedName::operator[](slice key) {
-        for ( auto &kv : asVector() ) {
+        for ( auto& kv : asVector() ) {
             if ( kv.first == key ) return kv.second;
         }
         return nullslice;
@@ -127,15 +127,15 @@ namespace litecore { namespace crypto {
     };
 
     std::optional<SANTag> SubjectAltNames::tagNamed(fleece::slice name) {
-        for ( auto &item : kSANTagNames )
+        for ( auto& item : kSANTagNames )
             if ( item.first == name ) return item.second;
         return nullopt;
     }
 
     fleece::slice SubjectAltNames::nameOfTag(SANTag tag) { return kSANTagNames[unsigned(tag)].first; }
 
-    SubjectAltNames::SubjectAltNames(mbedtls_x509_sequence *subject_alt_names) {
-        const mbedtls_x509_sequence *cur;
+    SubjectAltNames::SubjectAltNames(mbedtls_x509_sequence* subject_alt_names) {
+        const mbedtls_x509_sequence* cur;
         for ( cur = subject_alt_names; cur; cur = cur->next ) {
             auto rawTag = cur->buf.tag;
             if ( (rawTag & MBEDTLS_ASN1_TAG_CLASS_MASK) != MBEDTLS_ASN1_CONTEXT_SPECIFIC ) continue;
@@ -147,14 +147,14 @@ namespace litecore { namespace crypto {
     alloc_slice SubjectAltNames::encode() const {
         // Allocate enough buffer space:
         size_t bufferSize = 0;
-        for ( auto &name : *this ) bufferSize += name.second.size + 16;
+        for ( auto& name : *this ) bufferSize += name.second.size + 16;
         TempArray(start, uint8_t, bufferSize);
-        uint8_t *pos = start + bufferSize;
+        uint8_t* pos = start + bufferSize;
 
         size_t totalLen = 0;
-        for ( auto &name : *this ) {
+        for ( auto& name : *this ) {
             size_t len = 0;
-            len += TRY(mbedtls_asn1_write_raw_buffer(&pos, start, (const uint8_t *)name.second.buf, name.second.size));
+            len += TRY(mbedtls_asn1_write_raw_buffer(&pos, start, (const uint8_t*)name.second.buf, name.second.size));
             len += TRY(mbedtls_asn1_write_len(&pos, start, len));
             len += TRY(mbedtls_asn1_write_tag(&pos, start, MBEDTLS_ASN1_CONTEXT_SPECIFIC | uint8_t(name.first)));
             totalLen += len;
@@ -166,7 +166,7 @@ namespace litecore { namespace crypto {
     }
 
     alloc_slice SubjectAltNames::operator[](SANTag tag) const {
-        for ( auto &altName : *this ) {
+        for ( auto& altName : *this ) {
             if ( altName.first == tag ) return altName.second;
         }
         return nullslice;
@@ -185,20 +185,20 @@ namespace litecore { namespace crypto {
         }
     }
 
-    alloc_slice CertBase::summary(const char *indent) {
-        return allocString(10000, [&](char *buf, size_t size) { return writeInfo(buf, size, indent); });
+    alloc_slice CertBase::summary(const char* indent) {
+        return allocString(10000, [&](char* buf, size_t size) { return writeInfo(buf, size, indent); });
     }
 
 #pragma mark - CERT:
 
-    Cert::Cert(Cert *prev, mbedtls_x509_crt *crt) : _cert(crt), _prev(prev) {}
+    Cert::Cert(Cert* prev, mbedtls_x509_crt* crt) : _cert(crt), _prev(prev) {}
 
-    Cert::Cert(slice data) : _cert((mbedtls_x509_crt *)mbedtls_calloc(1, sizeof(mbedtls_x509_crt))) {
+    Cert::Cert(slice data) : _cert((mbedtls_x509_crt*)mbedtls_calloc(1, sizeof(mbedtls_x509_crt))) {
         mbedtls_x509_crt_init(_cert);
         parsePEMorDER(data, "certificate", context(), &mbedtls_x509_crt_parse);
     }
 
-    Cert::Cert(const SubjectParameters &subjectParams, const IssuerParameters &issuerParams, PrivateKey *keyPair)
+    Cert::Cert(const SubjectParameters& subjectParams, const IssuerParameters& issuerParams, PrivateKey* keyPair)
         : Cert(create(subjectParams, keyPair->publicKey().get(), issuerParams, keyPair, nullptr)) {}
 
     Cert::~Cert() {
@@ -232,9 +232,9 @@ namespace litecore { namespace crypto {
         return keyUsage;
     }
 
-    alloc_slice Cert::create(const SubjectParameters &subjectParams, PublicKey *subjectKey NONNULL,
-                             const IssuerParameters &issuerParams, PrivateKey *issuerKeyPair NONNULL,
-                             Cert *issuerCert) {
+    alloc_slice Cert::create(const SubjectParameters& subjectParams, PublicKey* subjectKey NONNULL,
+                             const IssuerParameters& issuerParams, PrivateKey* issuerKeyPair NONNULL,
+                             Cert* issuerCert) {
         {
             alloc_slice         issuerKeyData = issuerKeyPair->publicKeyData();
             Retained<PublicKey> issuerPublicKey;
@@ -283,7 +283,7 @@ namespace litecore { namespace crypto {
             bool        critical = (subjectParams.subjectName.size == 0);
             TRY(mbedtls_x509write_crt_set_extension(&crt, MBEDTLS_OID_SUBJECT_ALT_NAME,
                                                     MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME), critical,
-                                                    (const uint8_t *)ext.buf, ext.size));
+                                                    (const uint8_t*)ext.buf, ext.size));
         }
 
         TRY(mbedtls_mpi_read_string(&serial, 10, string(issuerParams.serial).c_str()));
@@ -313,14 +313,14 @@ namespace litecore { namespace crypto {
         if ( key_usage != 0 ) TRY(mbedtls_x509write_crt_set_key_usage(&crt, key_usage));
 
         // Finally, sign and encode the certificate:
-        return allocDER(4096, [&](uint8_t *data, size_t size) {
+        return allocDER(4096, [&](uint8_t* data, size_t size) {
             return mbedtls_x509write_crt_der(&crt, data, size, mbedtls_ctr_drbg_random, RandomNumberContext());
         });
     }
 
     slice Cert::derData() { return {_cert->raw.p, _cert->raw.len}; }
 
-    mbedtls_pk_context *Cert::keyContext() { return &_cert->pk; }
+    mbedtls_pk_context* Cert::keyContext() { return &_cert->pk; }
 
     DistinguishedName Cert::subjectName() { return DistinguishedName(getX509Name(&_cert->subject)); }
 
@@ -330,11 +330,11 @@ namespace litecore { namespace crypto {
 
     SubjectAltNames Cert::subjectAltNames() { return SubjectAltNames(&_cert->subject_alt_names); }
 
-    int Cert::writeInfo(char *buf, size_t bufSize, const char *indent) {
+    int Cert::writeInfo(char* buf, size_t bufSize, const char* indent) {
         return mbedtls_x509_crt_info(buf, bufSize, indent, _cert);
     }
 
-    alloc_slice Cert::summary(const char *indent) {
+    alloc_slice Cert::summary(const char* indent) {
         alloc_slice summary;
         for ( Retained<Cert> cert = this; cert; cert = cert->next() ) {
             alloc_slice single = cert->CertBase::summary(indent);
@@ -347,7 +347,7 @@ namespace litecore { namespace crypto {
         return summary;
     }
 
-    static time_t x509_to_time_t(const mbedtls_x509_time &xtime) {
+    static time_t x509_to_time_t(const mbedtls_x509_time& xtime) {
         sys_days    date     = year{xtime.year} / xtime.mon / xtime.day;
         sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
 
@@ -388,7 +388,7 @@ namespace litecore { namespace crypto {
         return newNext;
     }
 
-    void Cert::append(Cert *other) {
+    void Cert::append(Cert* other) {
         Assert(!other->_prev);  // other must be the start of a chain (or standalone)
         if ( hasChain() ) {
             next()->append(other);
@@ -414,7 +414,7 @@ namespace litecore { namespace crypto {
         // Concatenate the data:
         alloc_slice   result(totalSize);
         slice_ostream dst(result);
-        for ( alloc_slice &pem : pems ) dst.write(pem);
+        for ( alloc_slice& pem : pems ) dst.write(pem);
         DebugAssert(dst.bytesWritten() == result.size);
         return result;
     }
@@ -454,10 +454,10 @@ namespace litecore { namespace crypto {
         parsePEMorDER(data, "certificate request", context(), &mbedtls_x509_csr_parse);
     }
 
-    CertSigningRequest::CertSigningRequest(const Cert::SubjectParameters &params, PrivateKey *subjectKey)
+    CertSigningRequest::CertSigningRequest(const Cert::SubjectParameters& params, PrivateKey* subjectKey)
         : CertSigningRequest(create(params, subjectKey)) {}
 
-    alloc_slice CertSigningRequest::create(const Cert::SubjectParameters &params, PrivateKey *subjectKey) {
+    alloc_slice CertSigningRequest::create(const Cert::SubjectParameters& params, PrivateKey* subjectKey) {
         // (This is simply a subset of what Cert::create() does, but the fn names differ slightly.)
         mbedtls_x509write_csr csr;
         mbedtls_x509write_csr_init(&csr);
@@ -476,7 +476,7 @@ namespace litecore { namespace crypto {
             alloc_slice ext = params.subjectAltNames.encode();
             TRY(mbedtls_x509write_csr_set_extension(&csr, MBEDTLS_OID_SUBJECT_ALT_NAME,
                                                     MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
-                                                    (const uint8_t *)ext.buf, ext.size));
+                                                    (const uint8_t*)ext.buf, ext.size));
         }
 
         auto key_usage = params.keyUsage;
@@ -488,7 +488,7 @@ namespace litecore { namespace crypto {
         if ( key_usage != 0 ) TRY(mbedtls_x509write_csr_set_key_usage(&csr, uint8_t(key_usage)));
 
         // Finally, encode the request:
-        return allocDER(4096, [&](uint8_t *data, size_t size) {
+        return allocDER(4096, [&](uint8_t* data, size_t size) {
             return mbedtls_x509write_csr_der(&csr, data, size, mbedtls_ctr_drbg_random, RandomNumberContext());
         });
     }
@@ -505,14 +505,14 @@ namespace litecore { namespace crypto {
 
     NSCertType CertSigningRequest::nsCertType() { return NSCertType(_csr->ns_cert_type); }
 
-    int CertSigningRequest::writeInfo(char *buf, size_t bufSize, const char *indent) {
+    int CertSigningRequest::writeInfo(char* buf, size_t bufSize, const char* indent) {
         return mbedtls_x509_csr_info(buf, bufSize, indent, _csr.get());
     }
 
-    mbedtls_pk_context *CertSigningRequest::keyContext() { return &_csr->pk; }
+    mbedtls_pk_context* CertSigningRequest::keyContext() { return &_csr->pk; }
 
-    Retained<Cert> CertSigningRequest::sign(const Cert::IssuerParameters &issuerParams, PrivateKey *issuerKeyPair,
-                                            Cert *issuerCert) {
+    Retained<Cert> CertSigningRequest::sign(const Cert::IssuerParameters& issuerParams, PrivateKey* issuerKeyPair,
+                                            Cert* issuerCert) {
         Cert::SubjectParameters subjectParams(subjectName());
         subjectParams.keyUsage        = keyUsage();
         subjectParams.nsCertType      = nsCertType();
@@ -526,7 +526,7 @@ namespace litecore { namespace crypto {
         return cert;
     }
 
-    Identity::Identity(Cert *cert_, PrivateKey *key_) : cert(cert_), privateKey(key_) {
+    Identity::Identity(Cert* cert_, PrivateKey* key_) : cert(cert_), privateKey(key_) {
         // Make sure the private and public keys match:
         Assert(mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) == 0);
     }

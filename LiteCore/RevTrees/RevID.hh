@@ -43,18 +43,18 @@ namespace litecore {
       public:
         revid() : slice() {}
 
-        revid(const void *b, size_t s) : slice(b, s) {}
+        revid(const void* b, size_t s) : slice(b, s) {}
 
         explicit revid(slice s) : slice(s) {}
 
-        bool operator<(const revid &) const FLPURE;
+        bool operator<(const revid&) const FLPURE;
 
-        bool operator>(const revid &r) const FLPURE { return r < *this; }
+        bool operator>(const revid& r) const FLPURE { return r < *this; }
 
         /// Returns true if both revids represent the same revision:
         /// - If both are version vectors (or single versions) and their leading versions are equal
         /// - or if both are digest-based and are bitwise equal.
-        bool isEquivalentTo(const revid &) const noexcept FLPURE;
+        bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
         /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
         bool isVersion() const noexcept FLPURE { return size > 0 && (*this)[0] == 0; }
@@ -71,7 +71,7 @@ namespace litecore {
 
         //---- ASCII conversions:
         alloc_slice expanded() const;
-        bool        expandInto(slice_ostream &dst) const noexcept;
+        bool        expandInto(slice_ostream& dst) const noexcept;
         std::string str() const;
 
         explicit operator std::string() const { return str(); }
@@ -90,17 +90,17 @@ namespace litecore {
 
         explicit revidBuffer(revid rev) { *this = rev; }
 
-        explicit revidBuffer(const Version &v) { *this = v; }
+        explicit revidBuffer(const Version& v) { *this = v; }
 
-        revidBuffer(const revidBuffer &r) { *this = r; }
+        revidBuffer(const revidBuffer& r) { *this = r; }
 
         /** Constructs a revidBuffer from an ASCII revision (digest or version style).
             Throws BadRevisionID if the string isn't parseable.*/
         explicit revidBuffer(slice asciiString) : revid(&_buffer, 0) { parse(asciiString); }
 
-        revidBuffer &operator=(const revidBuffer &) noexcept;
-        revidBuffer &operator=(const revid &);
-        revidBuffer &operator=(const Version &vers) noexcept;
+        revidBuffer& operator=(const revidBuffer&) noexcept;
+        revidBuffer& operator=(const revid&);
+        revidBuffer& operator=(const Version& vers) noexcept;
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
             Throws BadRevisionID if the string isn't parseable.

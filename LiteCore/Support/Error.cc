@@ -200,8 +200,8 @@ namespace litecore {
             {0, /*must end with err=0*/ error::Fleece, 0},
     };
 
-    __cold static bool mapError(error::Domain &domain, int &code, const codeMapping table[]) {
-        for ( const codeMapping *row = &table[0]; row->err != 0; ++row ) {
+    __cold static bool mapError(error::Domain& domain, int& code, const codeMapping table[]) {
+        for ( const codeMapping* row = &table[0]; row->err != 0; ++row ) {
             if ( row->err == code ) {
                 domain = row->domain;
                 code   = row->code;
@@ -211,10 +211,10 @@ namespace litecore {
         return false;
     }
 
-    __cold static int getPrimaryCode(const error::Domain &domain, const int &code) {
+    __cold static int getPrimaryCode(const error::Domain& domain, const int& code) {
 #ifdef WIN32
         if ( domain == error::Domain::POSIX ) {
-            for ( const codeMapping *row = &kPrimaryCodeMapping[0]; row->err != 0; ++row ) {
+            for ( const codeMapping* row = &kPrimaryCodeMapping[0]; row->err != 0; ++row ) {
                 if ( row->err == code ) { return row->code; }
             }
         }
@@ -226,8 +226,8 @@ namespace litecore {
     }
 
 #ifdef LITECORE_IMPL
-    __cold static const char *litecore_errstr(error::LiteCoreError code) {
-        static const char *kLiteCoreMessages[] = {
+    __cold static const char* litecore_errstr(error::LiteCoreError code) {
+        static const char* kLiteCoreMessages[] = {
                 // These must match up with the codes in the declaration of LiteCoreError
                 "no error",  // 0
                 "assertion failed",
@@ -265,14 +265,14 @@ namespace litecore {
         };
         static_assert(sizeof(kLiteCoreMessages) / sizeof(kLiteCoreMessages[0]) == error::NumLiteCoreErrorsPlus1,
                       "Incomplete error message table");
-        const char *str = nullptr;
-        if ( code < sizeof(kLiteCoreMessages) / sizeof(char *) ) str = kLiteCoreMessages[code];
+        const char* str = nullptr;
+        if ( code < sizeof(kLiteCoreMessages) / sizeof(char*) ) str = kLiteCoreMessages[code];
         if ( !str ) str = "(unknown LiteCoreError)";
         return str;
     }
 
-    __cold static const char *fleece_errstr(fleece::ErrorCode code) {
-        static const char *kFleeceMessages[] = {
+    __cold static const char* fleece_errstr(fleece::ErrorCode code) {
+        static const char* kFleeceMessages[] = {
                 // These must match up with the codes in the declaration of FLError
                 "no error",  // 0
                 "memory error",
@@ -286,14 +286,14 @@ namespace litecore {
                 "item not found",
                 "misuse of Fleece shared-keys API",
         };
-        const char *str = nullptr;
-        if ( code < sizeof(kFleeceMessages) / sizeof(char *) ) str = kFleeceMessages[code];
+        const char* str = nullptr;
+        if ( code < sizeof(kFleeceMessages) / sizeof(char*) ) str = kFleeceMessages[code];
         if ( !str ) str = "(unknown Fleece error)";
         return str;
     }
 
-    __cold static const char *network_errstr(int code) {
-        static const char *kNetworkMessages[]
+    __cold static const char* network_errstr(int code) {
+        static const char* kNetworkMessages[]
                 = {// These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
                    // The wording is from a client's perspective, i.e. the peer is referred to as "server";
                    // these errors do occur on the server side but are not reported by C4Listener.
@@ -325,16 +325,16 @@ namespace litecore {
                    "address not available",
                    "broken pipe",
                    "unknown interface"};
-        const char *str = nullptr;
-        if ( code < sizeof(kNetworkMessages) / sizeof(char *) ) str = kNetworkMessages[code];
+        const char* str = nullptr;
+        if ( code < sizeof(kNetworkMessages) / sizeof(char*) ) str = kNetworkMessages[code];
         if ( !str ) str = "(unknown network error)";
         return str;
     }
 
-    __cold static const char *websocket_errstr(int code) {
+    __cold static const char* websocket_errstr(int code) {
         static const struct {
             int         code;
-            const char *message;
+            const char* message;
         } kWebSocketMessages[] = {{400, "invalid request"},
                                   {401, "unauthorized"},
                                   {403, "forbidden"},
@@ -400,15 +400,15 @@ namespace litecore {
         }
 #else
         C4StringResult msg = c4error_getMessage({(C4ErrorDomain)domain, code});
-        string         result((const char *)msg.buf, msg.size);
+        string         result((const char*)msg.buf, msg.size);
         c4slice_free(msg);
         return result;
 #endif
     }
 
-    __cold const char *error::nameOfDomain(Domain domain) noexcept {
+    __cold const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
-        static const char *kDomainNames[]
+        static const char* kDomainNames[]
                 = {"0", "LiteCore", "POSIX", "SQLite", "Fleece", "Network", "WebSocket", "mbedTLS"};
         static_assert(sizeof(kDomainNames) / sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                       "Incomplete domain name table");
@@ -430,12 +430,12 @@ namespace litecore {
 
     __cold error::error(error::Domain d, int c) : error(d, c, _what(d, c)) { DebugAssert(c != 0); }
 
-    __cold error::error(error::Domain d, int c, const std::string &what)
+    __cold error::error(error::Domain d, int c, const std::string& what)
         : runtime_error(what), domain(d), code(getPrimaryCode(d, c)) {
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
 
-    __cold error &error::operator=(const error &e) {
+    __cold error& error::operator=(const error& e) {
         // This has to be hacked, since `domain` and `code` are marked `const`.
         this->~error();
         new (this) error(e);
@@ -473,10 +473,10 @@ namespace litecore {
         return err;
     }
 
-    __cold static error unexpectedException(const std::exception &x) {
+    __cold static error unexpectedException(const std::exception& x) {
         // Get the actual exception class name using RTTI.
         // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
-        const char *name = typeid(x).name();
+        const char* name = typeid(x).name();
         while ( isalpha(*name) ) ++name;
         while ( isdigit(*name) ) ++name;
         Warn("Caught unexpected C++ %s(\"%s\")", name, x.what());
@@ -485,25 +485,25 @@ namespace litecore {
         return err;
     }
 
-    __cold error error::convertRuntimeError(const std::runtime_error &re) {
-        const char *what = re.what();
-        if ( auto e = dynamic_cast<const error *>(&re); e ) {
+    __cold error error::convertRuntimeError(const std::runtime_error& re) {
+        const char* what = re.what();
+        if ( auto e = dynamic_cast<const error*>(&re); e ) {
             return *e;
-        } else if ( auto iae = dynamic_cast<const invalid_argument *>(&re); iae ) {
+        } else if ( auto iae = dynamic_cast<const invalid_argument*>(&re); iae ) {
             return error(LiteCore, InvalidParameter, what);
-        } else if ( auto faf = dynamic_cast<const fleece::assertion_failure *>(&re); faf ) {
+        } else if ( auto faf = dynamic_cast<const fleece::assertion_failure*>(&re); faf ) {
             return error(LiteCore, AssertionFailed, what);
-        } else if ( auto se = dynamic_cast<const SQLite::Exception *>(&re); se ) {
+        } else if ( auto se = dynamic_cast<const SQLite::Exception*>(&re); se ) {
             return error(SQLite, se->getExtendedErrorCode(), what);
-        } else if ( auto fe = dynamic_cast<const fleece::FleeceException *>(&re); fe ) {
+        } else if ( auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe ) {
             error err(Fleece, fe->code, what);
             err.backtrace = fe->backtrace;
             return err;
 #ifdef LITECORE_IMPL
-        } else if ( auto syserr = dynamic_cast<const sockpp::sys_error *>(&re); syserr ) {
+        } else if ( auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr ) {
             int code = syserr->error();
             return error((code < 0 ? MbedTLS : POSIX), code);
-        } else if ( auto gx = dynamic_cast<const sockpp::getaddrinfo_error *>(&re); gx ) {
+        } else if ( auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&re); gx ) {
             if ( gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND ) {
                 return error(Network, websocket::kNetErrUnknownHost, "Unknown hostname \"" + gx->hostname() + "\"");
             } else {
@@ -516,12 +516,12 @@ namespace litecore {
         }
     }
 
-    __cold error error::convertException(const std::exception &x) {
-        if ( auto re = dynamic_cast<const std::runtime_error *>(&x); re ) return convertRuntimeError(*re);
-        if ( auto le = dynamic_cast<const std::logic_error *>(&x); le ) {
+    __cold error error::convertException(const std::exception& x) {
+        if ( auto re = dynamic_cast<const std::runtime_error*>(&x); re ) return convertRuntimeError(*re);
+        if ( auto le = dynamic_cast<const std::logic_error*>(&x); le ) {
             LiteCoreError code = AssertionFailed;
-            if ( dynamic_cast<const std::invalid_argument *>(le) != nullptr
-                 || dynamic_cast<const std::domain_error *>(le) != nullptr )
+            if ( dynamic_cast<const std::invalid_argument*>(le) != nullptr
+                 || dynamic_cast<const std::domain_error*>(le) != nullptr )
                 code = InvalidParameter;
             return error(LiteCore, code, le->what());
         }
@@ -562,7 +562,7 @@ namespace litecore {
 
     __cold void error::_throwErrno() { error{POSIX, errno}._throw(1); }
 
-    __cold void error::_throw(error::LiteCoreError code, const char *fmt, ...) {
+    __cold void error::_throw(error::LiteCoreError code, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         std::string message = vformat(fmt, args);
@@ -570,7 +570,7 @@ namespace litecore {
         error{LiteCore, code, message}._throw(1);
     }
 
-    __cold void error::_throwErrno(const char *fmt, ...) {
+    __cold void error::_throwErrno(const char* fmt, ...) {
         int     code = errno;
         va_list args;
         va_start(args, fmt);
@@ -581,8 +581,8 @@ namespace litecore {
         error{POSIX, code, message}._throw(1);
     }
 
-    __cold void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
-                                       const char *message, ...) {
+    __cold void error::assertionFailed(const char* fn, const char* file, unsigned line, const char* expr,
+                                       const char* message, ...) {
         string messageStr = "Assertion failed: ";
         if ( message ) {
             va_list args;

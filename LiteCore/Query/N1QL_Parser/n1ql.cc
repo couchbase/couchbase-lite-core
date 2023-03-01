@@ -69,34 +69,34 @@ namespace litecore { namespace n1ql {
 #ifndef YY_PART
 
         typedef struct _yycontext yycontext;
-        typedef void (*yyaction)(yycontext *yy, char *yytext, int yyleng);
+        typedef void (*yyaction)(yycontext* yy, char* yytext, int yyleng);
 
         typedef struct _yythunk {
             int              begin, end;
             yyaction         action;
-            struct _yythunk *next;
+            struct _yythunk* next;
         } yythunk;
 
         struct _yycontext {
-            char    *__buf;
+            char*    __buf;
             int      __buflen;
             int      __pos;
             int      __limit;
             int      __maxpos;
-            char    *__text;
+            char*    __text;
             int      __textlen;
             int      __begin;
             int      __end;
             int      __textmax;
-            yythunk *__thunks;
+            yythunk* __thunks;
             int      __thunkslen;
             int      __thunkpos;
             YYSTYPE  __;
-            YYSTYPE *__val;
+            YYSTYPE* __val;
 #    ifdef __cplusplus
-            std::vector<YYSTYPE> *__vals;
+            std::vector<YYSTYPE>* __vals;
 #    else
-            YYSTYPE *__vals;
+            YYSTYPE* __vals;
             int      __valslen;
 #    endif
 #    ifdef YY_CTX_MEMBERS
@@ -106,7 +106,7 @@ namespace litecore { namespace n1ql {
 
 #    ifdef YY_CTX_LOCAL
 #        define YY_CTX_PARAM_ yycontext *yyctx,
-#        define YY_CTX_PARAM  yycontext *yyctx
+#        define YY_CTX_PARAM  yycontext* yyctx
 #        define YY_CTX_ARG_   yyctx,
 #        define YY_CTX_ARG    yyctx
 #        ifndef YY_INPUT
@@ -123,7 +123,7 @@ namespace litecore { namespace n1ql {
 #        define YY_CTX_ARG_
 #        define YY_CTX_ARG
         yycontext _yyctx = {0, 0};
-        yycontext *yyctx = &_yyctx;
+        yycontext* yyctx = &_yyctx;
 #        ifndef YY_INPUT
 #            define YY_INPUT(buf, result, max_size)                                                                    \
                 {                                                                                                      \
@@ -134,11 +134,11 @@ namespace litecore { namespace n1ql {
 #        endif
 #    endif
 
-        YY_LOCAL(int) yyrefill(yycontext *yy) {
+        YY_LOCAL(int) yyrefill(yycontext* yy) {
             int yyn;
             while ( yy->__buflen - yy->__pos < 512 ) {
                 yy->__buflen *= 2;
-                yy->__buf = (char *)YY_REALLOC(yy, yy->__buf, yy->__buflen);
+                yy->__buf = (char*)YY_REALLOC(yy, yy->__buf, yy->__buflen);
             }
 #    ifdef YY_CTX_LOCAL
             YY_INPUT(yy, (yy->__buf + yy->__pos), yyn, (yy->__buflen - yy->__pos));
@@ -150,21 +150,21 @@ namespace litecore { namespace n1ql {
             return 1;
         }
 
-        YY_LOCAL(void) yyrecordMaxPos(yycontext *yy) {
+        YY_LOCAL(void) yyrecordMaxPos(yycontext* yy) {
             if ( yy->__pos > yy->__maxpos ) {
                 yy->__maxpos = yy->__pos;
                 yyprintf((stderr, "       maxpos=%d [after '%c']\n", yy->__maxpos, yy->__buf[yy->__maxpos - 1]));
             }
         }
 
-        YY_LOCAL(int) yymatchDot(yycontext *yy) {
+        YY_LOCAL(int) yymatchDot(yycontext* yy) {
             if ( yy->__pos >= yy->__limit && !yyrefill(yy) ) return 0;
             ++yy->__pos;
             yyrecordMaxPos(yy);
             return 1;
         }
 
-        YY_LOCAL(int) yymatchChar(yycontext *yy, int c) {
+        YY_LOCAL(int) yymatchChar(yycontext* yy, int c) {
             if ( yy->__pos >= yy->__limit && !yyrefill(yy) ) return 0;
             if ( (unsigned char)yy->__buf[yy->__pos] == c ) {
                 ++yy->__pos;
@@ -176,7 +176,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_LOCAL(int) yymatchString(yycontext *yy, const char *s) {
+        YY_LOCAL(int) yymatchString(yycontext* yy, const char* s) {
             int yysav = yy->__pos;
             while ( *s ) {
                 if ( yy->__pos >= yy->__limit && !yyrefill(yy) ) return 0;
@@ -191,7 +191,7 @@ namespace litecore { namespace n1ql {
             return 1;
         }
 
-        YY_LOCAL(int) yymatchIString(yycontext *yy, const char *s) {
+        YY_LOCAL(int) yymatchIString(yycontext* yy, const char* s) {
             int yysav = yy->__pos;
             while ( *s ) {
                 if ( yy->__pos >= yy->__limit && !yyrefill(yy) ) return 0;
@@ -206,7 +206,7 @@ namespace litecore { namespace n1ql {
             return 1;
         }
 
-        YY_LOCAL(int) yymatchClass(yycontext *yy, unsigned char *bits) {
+        YY_LOCAL(int) yymatchClass(yycontext* yy, unsigned char* bits) {
             int c;
             if ( yy->__pos >= yy->__limit && !yyrefill(yy) ) return 0;
             c = (unsigned char)yy->__buf[yy->__pos];
@@ -220,10 +220,10 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_LOCAL(void) yyDo(yycontext *yy, yyaction action, int begin, int end) {
+        YY_LOCAL(void) yyDo(yycontext* yy, yyaction action, int begin, int end) {
             while ( yy->__thunkpos >= yy->__thunkslen ) {
                 yy->__thunkslen *= 2;
-                yy->__thunks = (yythunk *)YY_REALLOC(yy, yy->__thunks, sizeof(yythunk) * yy->__thunkslen);
+                yy->__thunks = (yythunk*)YY_REALLOC(yy, yy->__thunks, sizeof(yythunk) * yy->__thunkslen);
             }
             yy->__thunks[yy->__thunkpos].begin  = begin;
             yy->__thunks[yy->__thunkpos].end    = end;
@@ -231,13 +231,13 @@ namespace litecore { namespace n1ql {
             ++yy->__thunkpos;
         }
 
-        YY_LOCAL(int) yyText(yycontext *yy, int begin, int end) {
+        YY_LOCAL(int) yyText(yycontext* yy, int begin, int end) {
             int yyleng = end - begin;
             if ( yyleng <= 0 ) yyleng = 0;
             else {
                 while ( yy->__textlen < (yyleng + 1) ) {
                     yy->__textlen *= 2;
-                    yy->__text = (char *)YY_REALLOC(yy, yy->__text, yy->__textlen);
+                    yy->__text = (char*)YY_REALLOC(yy, yy->__text, yy->__textlen);
                 }
                 memcpy(yy->__text, yy->__buf + begin, yyleng);
             }
@@ -245,10 +245,10 @@ namespace litecore { namespace n1ql {
             return yyleng;
         }
 
-        YY_LOCAL(void) yyDone(yycontext *yy) {
+        YY_LOCAL(void) yyDone(yycontext* yy) {
             int pos;
             for ( pos = 0; pos < yy->__thunkpos; ++pos ) {
-                yythunk *thunk  = &yy->__thunks[pos];
+                yythunk* thunk  = &yy->__thunks[pos];
                 int      yyleng = thunk->end ? yyText(yy, thunk->begin, thunk->end) : thunk->begin;
                 yyprintf((stderr, "DO [%d] %p %s\n", pos, thunk->action, yy->__text));
                 thunk->action(yy, yy->__text, yyleng);
@@ -256,14 +256,14 @@ namespace litecore { namespace n1ql {
             yy->__thunkpos = 0;
         }
 
-        YY_LOCAL(void) yyCommit(yycontext *yy) {
+        YY_LOCAL(void) yyCommit(yycontext* yy) {
             if ( (yy->__limit -= yy->__pos) ) { memmove(yy->__buf, yy->__buf + yy->__pos, yy->__limit); }
             yy->__begin -= yy->__pos;
             yy->__end -= yy->__pos;
             yy->__pos = yy->__thunkpos = 0;
         }
 
-        YY_LOCAL(int) yyAccept(yycontext *yy, int tp0) {
+        YY_LOCAL(int) yyAccept(yycontext* yy, int tp0) {
             if ( tp0 ) {
                 fprintf(stderr, "accept denied at %d\n", tp0);
                 return 0;
@@ -274,7 +274,7 @@ namespace litecore { namespace n1ql {
             return 1;
         }
 
-        YY_LOCAL(void) yyPush(yycontext *yy, char *text, int count) {
+        YY_LOCAL(void) yyPush(yycontext* yy, char* text, int count) {
 #    ifdef __cplusplus
             yy->__vals->resize(yy->__vals->size() + count);
             yy->__val = &yy->__vals->back();
@@ -284,14 +284,14 @@ namespace litecore { namespace n1ql {
                 long offset = yy->__val - yy->__vals;
                 size_t oldlen = yy->__valslen;
                 yy->__valslen *= 2;
-                yy->__vals = (YYSTYPE *)YY_REALLOC(yy, yy->__vals, sizeof(YYSTYPE) * yy->__valslen);
+                yy->__vals = (YYSTYPE*)YY_REALLOC(yy, yy->__vals, sizeof(YYSTYPE) * yy->__valslen);
                 memset(&yy->__vals[oldlen], 0, sizeof(YYSTYPE) * oldlen);
                 yy->__val = yy->__vals + offset;
             }
 #    endif
         }
 
-        YY_LOCAL(void) yyPop(yycontext *yy, char *text, int count) {
+        YY_LOCAL(void) yyPop(yycontext* yy, char* text, int count) {
 #    ifdef __cplusplus
             yy->__vals->resize(yy->__vals->size() - count);
             yy->__val = &yy->__vals->back();
@@ -300,128 +300,128 @@ namespace litecore { namespace n1ql {
 #    endif
         }
 
-        YY_LOCAL(void) yySet(yycontext *yy, char *text, int count) { yy->__val[count] = yy->__; }
+        YY_LOCAL(void) yySet(yycontext* yy, char* text, int count) { yy->__val[count] = yy->__; }
 
 #endif /* YY_PART */
 
 #define YYACCEPT yyAccept(yy, yythunkpos0)
 
-        YY_RULE(int) yy_DIGIT(yycontext *yy);              /* 114 */
-        YY_RULE(int) yy_BOOLEAN_LITERAL(yycontext *yy);    /* 113 */
-        YY_RULE(int) yy_FLOAT_LITERAL(yycontext *yy);      /* 112 */
-        YY_RULE(int) yy_STRING_LITERAL(yycontext *yy);     /* 111 */
-        YY_RULE(int) yy_TRUE(yycontext *yy);               /* 110 */
-        YY_RULE(int) yy_FALSE(yycontext *yy);              /* 109 */
-        YY_RULE(int) yy_functionName(yycontext *yy);       /* 108 */
-        YY_RULE(int) yy_indexTable(yycontext *yy);         /* 107 */
-        YY_RULE(int) yy_INT_LITERAL(yycontext *yy);        /* 106 */
-        YY_RULE(int) yy_propertyName(yycontext *yy);       /* 105 */
-        YY_RULE(int) yy_property(yycontext *yy);           /* 104 */
-        YY_RULE(int) yy_function(yycontext *yy);           /* 103 */
-        YY_RULE(int) yy_EXISTS(yycontext *yy);             /* 102 */
-        YY_RULE(int) yy_OP_PREFIX(yycontext *yy);          /* 101 */
-        YY_RULE(int) yy_dictLiteral(yycontext *yy);        /* 100 */
-        YY_RULE(int) yy_literal(yycontext *yy);            /* 99 */
-        YY_RULE(int) yy__baseExpr(yycontext *yy);          /* 98 */
-        YY_RULE(int) yy_WB(yycontext *yy);                 /* 97 */
-        YY_RULE(int) yy_collationLang(yycontext *yy);      /* 96 */
-        YY_RULE(int) yy_collation(yycontext *yy);          /* 95 */
-        YY_RULE(int) yy_COLLATE(yycontext *yy);            /* 94 */
-        YY_RULE(int) yy_propertyPath(yycontext *yy);       /* 93 */
-        YY_RULE(int) yy_baseExpr(yycontext *yy);           /* 92 */
-        YY_RULE(int) yy_arrayLiteral(yycontext *yy);       /* 91 */
-        YY_RULE(int) yy_parenExprs(yycontext *yy);         /* 90 */
-        YY_RULE(int) yy_selectExpr(yycontext *yy);         /* 89 */
-        YY_RULE(int) yy_IN_OR_NOT(yycontext *yy);          /* 88 */
-        YY_RULE(int) yy_OR(yycontext *yy);                 /* 87 */
-        YY_RULE(int) yy_BETWEEN(yycontext *yy);            /* 86 */
-        YY_RULE(int) yy_LIKE(yycontext *yy);               /* 85 */
-        YY_RULE(int) yy_OP_PREC_1(yycontext *yy);          /* 84 */
-        YY_RULE(int) yy_expr0(yycontext *yy);              /* 83 */
-        YY_RULE(int) yy_OP_PREC_2(yycontext *yy);          /* 82 */
-        YY_RULE(int) yy_expr1(yycontext *yy);              /* 81 */
-        YY_RULE(int) yy_OP_PREC_3(yycontext *yy);          /* 80 */
-        YY_RULE(int) yy_expr2(yycontext *yy);              /* 79 */
-        YY_RULE(int) yy_OP_PREC_4(yycontext *yy);          /* 78 */
-        YY_RULE(int) yy_expr3(yycontext *yy);              /* 77 */
-        YY_RULE(int) yy_OP_PREC_5(yycontext *yy);          /* 76 */
-        YY_RULE(int) yy_expr4(yycontext *yy);              /* 75 */
-        YY_RULE(int) yy_OP_PREC_6(yycontext *yy);          /* 74 */
-        YY_RULE(int) yy_betweenExpression(yycontext *yy);  /* 73 */
-        YY_RULE(int) yy_likeExpression(yycontext *yy);     /* 72 */
-        YY_RULE(int) yy_inExpression(yycontext *yy);       /* 71 */
-        YY_RULE(int) yy_expr5(yycontext *yy);              /* 70 */
-        YY_RULE(int) yy_OP_PREC_7(yycontext *yy);          /* 69 */
-        YY_RULE(int) yy_expr6(yycontext *yy);              /* 68 */
-        YY_RULE(int) yy_OP_PREC_8(yycontext *yy);          /* 67 */
-        YY_RULE(int) yy_expr7(yycontext *yy);              /* 66 */
-        YY_RULE(int) yy_collateSuffix(yycontext *yy);      /* 65 */
-        YY_RULE(int) yy_expr8(yycontext *yy);              /* 64 */
-        YY_RULE(int) yy_VALUED(yycontext *yy);             /* 63 */
-        YY_RULE(int) yy_MISSING(yycontext *yy);            /* 62 */
-        YY_RULE(int) yy_IS(yycontext *yy);                 /* 61 */
-        YY_RULE(int) yy_NULL(yycontext *yy);               /* 60 */
-        YY_RULE(int) yy_NOT(yycontext *yy);                /* 59 */
-        YY_RULE(int) yy_POST_OP_PREC_6(yycontext *yy);     /* 58 */
-        YY_RULE(int) yy_SOME(yycontext *yy);               /* 57 */
-        YY_RULE(int) yy_ANY(yycontext *yy);                /* 56 */
-        YY_RULE(int) yy_EVERY(yycontext *yy);              /* 55 */
-        YY_RULE(int) yy_AND(yycontext *yy);                /* 54 */
-        YY_RULE(int) yy_anyOrSome(yycontext *yy);          /* 53 */
-        YY_RULE(int) yy_SATISFIES(yycontext *yy);          /* 52 */
-        YY_RULE(int) yy_IN(yycontext *yy);                 /* 51 */
-        YY_RULE(int) yy_variableName(yycontext *yy);       /* 50 */
-        YY_RULE(int) yy_anyEvery(yycontext *yy);           /* 49 */
-        YY_RULE(int) yy_anyEveryExpression(yycontext *yy); /* 48 */
-        YY_RULE(int) yy_END(yycontext *yy);                /* 47 */
-        YY_RULE(int) yy_ELSE(yycontext *yy);               /* 46 */
-        YY_RULE(int) yy_THEN(yycontext *yy);               /* 45 */
-        YY_RULE(int) yy_WHEN(yycontext *yy);               /* 44 */
-        YY_RULE(int) yy_CASE(yycontext *yy);               /* 43 */
-        YY_RULE(int) yy_caseExpression(yycontext *yy);     /* 42 */
-        YY_RULE(int) yy_expr9(yycontext *yy);              /* 41 */
-        YY_RULE(int) yy_indexName(yycontext *yy);          /* 40 */
-        YY_RULE(int) yy_DESC(yycontext *yy);               /* 39 */
-        YY_RULE(int) yy_ASC(yycontext *yy);                /* 38 */
-        YY_RULE(int) yy_order(yycontext *yy);              /* 37 */
-        YY_RULE(int) yy_ordering(yycontext *yy);           /* 36 */
-        YY_RULE(int) yy_ORDER(yycontext *yy);              /* 35 */
-        YY_RULE(int) yy_HAVING(yycontext *yy);             /* 34 */
-        YY_RULE(int) yy_BY(yycontext *yy);                 /* 33 */
-        YY_RULE(int) yy_GROUP(yycontext *yy);              /* 32 */
-        YY_RULE(int) yy_JOIN(yycontext *yy);               /* 31 */
-        YY_RULE(int) yy_CROSS(yycontext *yy);              /* 30 */
-        YY_RULE(int) yy_INNER(yycontext *yy);              /* 29 */
-        YY_RULE(int) yy_OUTER(yycontext *yy);              /* 28 */
-        YY_RULE(int) yy_LEFT(yycontext *yy);               /* 27 */
-        YY_RULE(int) yy_ON(yycontext *yy);                 /* 26 */
-        YY_RULE(int) yy_joinOperator(yycontext *yy);       /* 25 */
-        YY_RULE(int) yy_IDENTIFIER(yycontext *yy);         /* 24 */
-        YY_RULE(int) yy_collectionAlias(yycontext *yy);    /* 23 */
-        YY_RULE(int) yy_collectionName(yycontext *yy);     /* 22 */
-        YY_RULE(int) yy_join(yycontext *yy);               /* 21 */
-        YY_RULE(int) yy_dataSource(yycontext *yy);         /* 20 */
-        YY_RULE(int) yy_FROM(yycontext *yy);               /* 19 */
-        YY_RULE(int) yy_columnAlias(yycontext *yy);        /* 18 */
-        YY_RULE(int) yy_AS(yycontext *yy);                 /* 17 */
-        YY_RULE(int) yy_selectResult(yycontext *yy);       /* 16 */
-        YY_RULE(int) yy_OFFSET(yycontext *yy);             /* 15 */
-        YY_RULE(int) yy_LIMIT(yycontext *yy);              /* 14 */
-        YY_RULE(int) yy_orderBy(yycontext *yy);            /* 13 */
-        YY_RULE(int) yy_having(yycontext *yy);             /* 12 */
-        YY_RULE(int) yy_groupBy(yycontext *yy);            /* 11 */
-        YY_RULE(int) yy_expression(yycontext *yy);         /* 10 */
-        YY_RULE(int) yy_WHERE(yycontext *yy);              /* 9 */
-        YY_RULE(int) yy_from(yycontext *yy);               /* 8 */
-        YY_RULE(int) yy_ALL(yycontext *yy);                /* 7 */
-        YY_RULE(int) yy_DISTINCT(yycontext *yy);           /* 6 */
-        YY_RULE(int) yy_SELECT(yycontext *yy);             /* 5 */
-        YY_RULE(int) yy_selectResults(yycontext *yy);      /* 4 */
-        YY_RULE(int) yy_selectStatement(yycontext *yy);    /* 3 */
-        YY_RULE(int) yy__(yycontext *yy);                  /* 2 */
-        YY_RULE(int) yy_n1ql(yycontext *yy);               /* 1 */
+        YY_RULE(int) yy_DIGIT(yycontext* yy);              /* 114 */
+        YY_RULE(int) yy_BOOLEAN_LITERAL(yycontext* yy);    /* 113 */
+        YY_RULE(int) yy_FLOAT_LITERAL(yycontext* yy);      /* 112 */
+        YY_RULE(int) yy_STRING_LITERAL(yycontext* yy);     /* 111 */
+        YY_RULE(int) yy_TRUE(yycontext* yy);               /* 110 */
+        YY_RULE(int) yy_FALSE(yycontext* yy);              /* 109 */
+        YY_RULE(int) yy_functionName(yycontext* yy);       /* 108 */
+        YY_RULE(int) yy_indexTable(yycontext* yy);         /* 107 */
+        YY_RULE(int) yy_INT_LITERAL(yycontext* yy);        /* 106 */
+        YY_RULE(int) yy_propertyName(yycontext* yy);       /* 105 */
+        YY_RULE(int) yy_property(yycontext* yy);           /* 104 */
+        YY_RULE(int) yy_function(yycontext* yy);           /* 103 */
+        YY_RULE(int) yy_EXISTS(yycontext* yy);             /* 102 */
+        YY_RULE(int) yy_OP_PREFIX(yycontext* yy);          /* 101 */
+        YY_RULE(int) yy_dictLiteral(yycontext* yy);        /* 100 */
+        YY_RULE(int) yy_literal(yycontext* yy);            /* 99 */
+        YY_RULE(int) yy__baseExpr(yycontext* yy);          /* 98 */
+        YY_RULE(int) yy_WB(yycontext* yy);                 /* 97 */
+        YY_RULE(int) yy_collationLang(yycontext* yy);      /* 96 */
+        YY_RULE(int) yy_collation(yycontext* yy);          /* 95 */
+        YY_RULE(int) yy_COLLATE(yycontext* yy);            /* 94 */
+        YY_RULE(int) yy_propertyPath(yycontext* yy);       /* 93 */
+        YY_RULE(int) yy_baseExpr(yycontext* yy);           /* 92 */
+        YY_RULE(int) yy_arrayLiteral(yycontext* yy);       /* 91 */
+        YY_RULE(int) yy_parenExprs(yycontext* yy);         /* 90 */
+        YY_RULE(int) yy_selectExpr(yycontext* yy);         /* 89 */
+        YY_RULE(int) yy_IN_OR_NOT(yycontext* yy);          /* 88 */
+        YY_RULE(int) yy_OR(yycontext* yy);                 /* 87 */
+        YY_RULE(int) yy_BETWEEN(yycontext* yy);            /* 86 */
+        YY_RULE(int) yy_LIKE(yycontext* yy);               /* 85 */
+        YY_RULE(int) yy_OP_PREC_1(yycontext* yy);          /* 84 */
+        YY_RULE(int) yy_expr0(yycontext* yy);              /* 83 */
+        YY_RULE(int) yy_OP_PREC_2(yycontext* yy);          /* 82 */
+        YY_RULE(int) yy_expr1(yycontext* yy);              /* 81 */
+        YY_RULE(int) yy_OP_PREC_3(yycontext* yy);          /* 80 */
+        YY_RULE(int) yy_expr2(yycontext* yy);              /* 79 */
+        YY_RULE(int) yy_OP_PREC_4(yycontext* yy);          /* 78 */
+        YY_RULE(int) yy_expr3(yycontext* yy);              /* 77 */
+        YY_RULE(int) yy_OP_PREC_5(yycontext* yy);          /* 76 */
+        YY_RULE(int) yy_expr4(yycontext* yy);              /* 75 */
+        YY_RULE(int) yy_OP_PREC_6(yycontext* yy);          /* 74 */
+        YY_RULE(int) yy_betweenExpression(yycontext* yy);  /* 73 */
+        YY_RULE(int) yy_likeExpression(yycontext* yy);     /* 72 */
+        YY_RULE(int) yy_inExpression(yycontext* yy);       /* 71 */
+        YY_RULE(int) yy_expr5(yycontext* yy);              /* 70 */
+        YY_RULE(int) yy_OP_PREC_7(yycontext* yy);          /* 69 */
+        YY_RULE(int) yy_expr6(yycontext* yy);              /* 68 */
+        YY_RULE(int) yy_OP_PREC_8(yycontext* yy);          /* 67 */
+        YY_RULE(int) yy_expr7(yycontext* yy);              /* 66 */
+        YY_RULE(int) yy_collateSuffix(yycontext* yy);      /* 65 */
+        YY_RULE(int) yy_expr8(yycontext* yy);              /* 64 */
+        YY_RULE(int) yy_VALUED(yycontext* yy);             /* 63 */
+        YY_RULE(int) yy_MISSING(yycontext* yy);            /* 62 */
+        YY_RULE(int) yy_IS(yycontext* yy);                 /* 61 */
+        YY_RULE(int) yy_NULL(yycontext* yy);               /* 60 */
+        YY_RULE(int) yy_NOT(yycontext* yy);                /* 59 */
+        YY_RULE(int) yy_POST_OP_PREC_6(yycontext* yy);     /* 58 */
+        YY_RULE(int) yy_SOME(yycontext* yy);               /* 57 */
+        YY_RULE(int) yy_ANY(yycontext* yy);                /* 56 */
+        YY_RULE(int) yy_EVERY(yycontext* yy);              /* 55 */
+        YY_RULE(int) yy_AND(yycontext* yy);                /* 54 */
+        YY_RULE(int) yy_anyOrSome(yycontext* yy);          /* 53 */
+        YY_RULE(int) yy_SATISFIES(yycontext* yy);          /* 52 */
+        YY_RULE(int) yy_IN(yycontext* yy);                 /* 51 */
+        YY_RULE(int) yy_variableName(yycontext* yy);       /* 50 */
+        YY_RULE(int) yy_anyEvery(yycontext* yy);           /* 49 */
+        YY_RULE(int) yy_anyEveryExpression(yycontext* yy); /* 48 */
+        YY_RULE(int) yy_END(yycontext* yy);                /* 47 */
+        YY_RULE(int) yy_ELSE(yycontext* yy);               /* 46 */
+        YY_RULE(int) yy_THEN(yycontext* yy);               /* 45 */
+        YY_RULE(int) yy_WHEN(yycontext* yy);               /* 44 */
+        YY_RULE(int) yy_CASE(yycontext* yy);               /* 43 */
+        YY_RULE(int) yy_caseExpression(yycontext* yy);     /* 42 */
+        YY_RULE(int) yy_expr9(yycontext* yy);              /* 41 */
+        YY_RULE(int) yy_indexName(yycontext* yy);          /* 40 */
+        YY_RULE(int) yy_DESC(yycontext* yy);               /* 39 */
+        YY_RULE(int) yy_ASC(yycontext* yy);                /* 38 */
+        YY_RULE(int) yy_order(yycontext* yy);              /* 37 */
+        YY_RULE(int) yy_ordering(yycontext* yy);           /* 36 */
+        YY_RULE(int) yy_ORDER(yycontext* yy);              /* 35 */
+        YY_RULE(int) yy_HAVING(yycontext* yy);             /* 34 */
+        YY_RULE(int) yy_BY(yycontext* yy);                 /* 33 */
+        YY_RULE(int) yy_GROUP(yycontext* yy);              /* 32 */
+        YY_RULE(int) yy_JOIN(yycontext* yy);               /* 31 */
+        YY_RULE(int) yy_CROSS(yycontext* yy);              /* 30 */
+        YY_RULE(int) yy_INNER(yycontext* yy);              /* 29 */
+        YY_RULE(int) yy_OUTER(yycontext* yy);              /* 28 */
+        YY_RULE(int) yy_LEFT(yycontext* yy);               /* 27 */
+        YY_RULE(int) yy_ON(yycontext* yy);                 /* 26 */
+        YY_RULE(int) yy_joinOperator(yycontext* yy);       /* 25 */
+        YY_RULE(int) yy_IDENTIFIER(yycontext* yy);         /* 24 */
+        YY_RULE(int) yy_collectionAlias(yycontext* yy);    /* 23 */
+        YY_RULE(int) yy_collectionName(yycontext* yy);     /* 22 */
+        YY_RULE(int) yy_join(yycontext* yy);               /* 21 */
+        YY_RULE(int) yy_dataSource(yycontext* yy);         /* 20 */
+        YY_RULE(int) yy_FROM(yycontext* yy);               /* 19 */
+        YY_RULE(int) yy_columnAlias(yycontext* yy);        /* 18 */
+        YY_RULE(int) yy_AS(yycontext* yy);                 /* 17 */
+        YY_RULE(int) yy_selectResult(yycontext* yy);       /* 16 */
+        YY_RULE(int) yy_OFFSET(yycontext* yy);             /* 15 */
+        YY_RULE(int) yy_LIMIT(yycontext* yy);              /* 14 */
+        YY_RULE(int) yy_orderBy(yycontext* yy);            /* 13 */
+        YY_RULE(int) yy_having(yycontext* yy);             /* 12 */
+        YY_RULE(int) yy_groupBy(yycontext* yy);            /* 11 */
+        YY_RULE(int) yy_expression(yycontext* yy);         /* 10 */
+        YY_RULE(int) yy_WHERE(yycontext* yy);              /* 9 */
+        YY_RULE(int) yy_from(yycontext* yy);               /* 8 */
+        YY_RULE(int) yy_ALL(yycontext* yy);                /* 7 */
+        YY_RULE(int) yy_DISTINCT(yycontext* yy);           /* 6 */
+        YY_RULE(int) yy_SELECT(yycontext* yy);             /* 5 */
+        YY_RULE(int) yy_selectResults(yycontext* yy);      /* 4 */
+        YY_RULE(int) yy_selectStatement(yycontext* yy);    /* 3 */
+        YY_RULE(int) yy__(yycontext* yy);                  /* 2 */
+        YY_RULE(int) yy_n1ql(yycontext* yy);               /* 1 */
 
-        YY_ACTION(void) yy_2_STRING_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_STRING_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -436,7 +436,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_STRING_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_STRING_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -451,7 +451,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_INT_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_INT_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -466,7 +466,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_FLOAT_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_FLOAT_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -483,7 +483,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_BOOLEAN_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_BOOLEAN_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -498,7 +498,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_BOOLEAN_LITERAL(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_BOOLEAN_LITERAL(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -513,7 +513,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_literal(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_literal(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -528,7 +528,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_literal(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_literal(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -543,7 +543,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3_dictLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_dictLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define v          yy->__val[-1]
 #define e          yy->__val[-2]
 #define k          yy->__val[-3]
@@ -564,7 +564,7 @@ namespace litecore { namespace n1ql {
 #undef k
         }
 
-        YY_ACTION(void) yy_2_dictLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_dictLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define v          yy->__val[-1]
 #define e          yy->__val[-2]
 #define k          yy->__val[-3]
@@ -585,7 +585,7 @@ namespace litecore { namespace n1ql {
 #undef k
         }
 
-        YY_ACTION(void) yy_1_dictLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_dictLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define v          yy->__val[-1]
 #define e          yy->__val[-2]
 #define k          yy->__val[-3]
@@ -606,7 +606,7 @@ namespace litecore { namespace n1ql {
 #undef k
         }
 
-        YY_ACTION(void) yy_3_arrayLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_arrayLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define __         yy->__
@@ -625,7 +625,7 @@ namespace litecore { namespace n1ql {
 #undef e
         }
 
-        YY_ACTION(void) yy_2_arrayLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_arrayLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define __         yy->__
@@ -644,7 +644,7 @@ namespace litecore { namespace n1ql {
 #undef e
         }
 
-        YY_ACTION(void) yy_1_arrayLiteral(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_arrayLiteral(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define __         yy->__
@@ -663,7 +663,7 @@ namespace litecore { namespace n1ql {
 #undef e
         }
 
-        YY_ACTION(void) yy_2_IDENTIFIER(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_IDENTIFIER(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -678,7 +678,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_IDENTIFIER(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_IDENTIFIER(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -693,7 +693,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_4_parenExprs(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_parenExprs(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define f          yy->__val[-3]
@@ -714,7 +714,7 @@ namespace litecore { namespace n1ql {
 #undef f
         }
 
-        YY_ACTION(void) yy_3_parenExprs(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_parenExprs(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define f          yy->__val[-3]
@@ -735,7 +735,7 @@ namespace litecore { namespace n1ql {
 #undef f
         }
 
-        YY_ACTION(void) yy_2_parenExprs(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_parenExprs(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define f          yy->__val[-3]
@@ -756,7 +756,7 @@ namespace litecore { namespace n1ql {
 #undef f
         }
 
-        YY_ACTION(void) yy_1_parenExprs(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_parenExprs(yycontext* yy, char* yytext, int yyleng) {
 #define e2         yy->__val[-1]
 #define e          yy->__val[-2]
 #define f          yy->__val[-3]
@@ -777,7 +777,7 @@ namespace litecore { namespace n1ql {
 #undef f
         }
 
-        YY_ACTION(void) yy_11_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_11_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -802,7 +802,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_10_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_10_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -827,7 +827,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_9_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_9_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -852,7 +852,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_8_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_8_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -877,7 +877,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_7_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_7_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -902,7 +902,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_6_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_6_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -927,7 +927,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_5_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_5_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -952,7 +952,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_4_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -977,7 +977,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_3_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -1002,7 +1002,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_2_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -1027,7 +1027,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_1_function(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_function(yycontext* yy, char* yytext, int yyleng) {
 #define e          yy->__val[-1]
 #define f          yy->__val[-2]
 #define t          yy->__val[-3]
@@ -1052,7 +1052,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_2_indexTable(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_indexTable(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define a          yy->__val[-2]
 #define __         yy->__
@@ -1072,7 +1072,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_1_indexTable(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_indexTable(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define a          yy->__val[-2]
 #define __         yy->__
@@ -1091,7 +1091,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_4_propertyPath(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_propertyPath(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define p2         yy->__val[-2]
 #define p          yy->__val[-3]
@@ -1112,7 +1112,7 @@ namespace litecore { namespace n1ql {
 #undef p
         }
 
-        YY_ACTION(void) yy_3_propertyPath(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_propertyPath(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define p2         yy->__val[-2]
 #define p          yy->__val[-3]
@@ -1133,7 +1133,7 @@ namespace litecore { namespace n1ql {
 #undef p
         }
 
-        YY_ACTION(void) yy_2_propertyPath(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_propertyPath(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define p2         yy->__val[-2]
 #define p          yy->__val[-3]
@@ -1154,7 +1154,7 @@ namespace litecore { namespace n1ql {
 #undef p
         }
 
-        YY_ACTION(void) yy_1_propertyPath(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_propertyPath(yycontext* yy, char* yytext, int yyleng) {
 #define i          yy->__val[-1]
 #define p2         yy->__val[-2]
 #define p          yy->__val[-3]
@@ -1175,7 +1175,7 @@ namespace litecore { namespace n1ql {
 #undef p
         }
 
-        YY_ACTION(void) yy_3_property(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_property(yycontext* yy, char* yytext, int yyleng) {
 #define p          yy->__val[-1]
 #define a          yy->__val[-2]
 #define __         yy->__
@@ -1194,7 +1194,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_2_property(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_property(yycontext* yy, char* yytext, int yyleng) {
 #define p          yy->__val[-1]
 #define a          yy->__val[-2]
 #define __         yy->__
@@ -1213,7 +1213,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_1_property(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_property(yycontext* yy, char* yytext, int yyleng) {
 #define p          yy->__val[-1]
 #define a          yy->__val[-2]
 #define __         yy->__
@@ -1232,7 +1232,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_1_OP_PREFIX(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREFIX(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1247,7 +1247,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3__baseExpr(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3__baseExpr(yycontext* yy, char* yytext, int yyleng) {
 #define s          yy->__val[-1]
 #define r          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -1268,7 +1268,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_2__baseExpr(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2__baseExpr(yycontext* yy, char* yytext, int yyleng) {
 #define s          yy->__val[-1]
 #define r          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -1289,7 +1289,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_1__baseExpr(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1__baseExpr(yycontext* yy, char* yytext, int yyleng) {
 #define s          yy->__val[-1]
 #define r          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -1310,7 +1310,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_2_collation(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_collation(yycontext* yy, char* yytext, int yyleng) {
 #define l          yy->__val[-1]
 #define __         yy->__
 #define yypos      yy->__pos
@@ -1327,7 +1327,7 @@ namespace litecore { namespace n1ql {
 #undef l
         }
 
-        YY_ACTION(void) yy_1_collation(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_collation(yycontext* yy, char* yytext, int yyleng) {
 #define l          yy->__val[-1]
 #define __         yy->__
 #define yypos      yy->__pos
@@ -1344,7 +1344,7 @@ namespace litecore { namespace n1ql {
 #undef l
         }
 
-        YY_ACTION(void) yy_3_collationLang(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_collationLang(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1359,7 +1359,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_collationLang(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_collationLang(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1374,7 +1374,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_collationLang(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_collationLang(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1389,7 +1389,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_4_collateSuffix(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_collateSuffix(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define co         yy->__val[-2]
 #define __         yy->__
@@ -1408,7 +1408,7 @@ namespace litecore { namespace n1ql {
 #undef co
         }
 
-        YY_ACTION(void) yy_3_collateSuffix(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_collateSuffix(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define co         yy->__val[-2]
 #define __         yy->__
@@ -1430,7 +1430,7 @@ namespace litecore { namespace n1ql {
 #undef co
         }
 
-        YY_ACTION(void) yy_2_collateSuffix(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_collateSuffix(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define co         yy->__val[-2]
 #define __         yy->__
@@ -1449,7 +1449,7 @@ namespace litecore { namespace n1ql {
 #undef co
         }
 
-        YY_ACTION(void) yy_1_collateSuffix(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_collateSuffix(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define co         yy->__val[-2]
 #define __         yy->__
@@ -1468,7 +1468,7 @@ namespace litecore { namespace n1ql {
 #undef co
         }
 
-        YY_ACTION(void) yy_2_expr0(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr0(yycontext* yy, char* yytext, int yyleng) {
 #define p          yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -1487,7 +1487,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr0(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr0(yycontext* yy, char* yytext, int yyleng) {
 #define p          yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -1506,7 +1506,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_selectExpr(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_selectExpr(yycontext* yy, char* yytext, int yyleng) {
 #define s          yy->__val[-1]
 #define __         yy->__
 #define yypos      yy->__pos
@@ -1523,7 +1523,7 @@ namespace litecore { namespace n1ql {
 #undef s
         }
 
-        YY_ACTION(void) yy_2_IN_OR_NOT(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_IN_OR_NOT(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1538,7 +1538,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_IN_OR_NOT(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_IN_OR_NOT(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1553,7 +1553,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_inExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_inExpression(yycontext* yy, char* yytext, int yyleng) {
 #define a          yy->__val[-1]
 #define p          yy->__val[-2]
 #define s          yy->__val[-3]
@@ -1578,7 +1578,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_inExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_inExpression(yycontext* yy, char* yytext, int yyleng) {
 #define a          yy->__val[-1]
 #define p          yy->__val[-2]
 #define s          yy->__val[-3]
@@ -1603,7 +1603,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_1(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_1(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1618,7 +1618,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_2(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_2(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1633,7 +1633,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_3(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_3(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1648,7 +1648,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_4(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_4(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1663,7 +1663,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_5(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_5(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1678,7 +1678,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_4_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1693,7 +1693,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1708,7 +1708,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1723,7 +1723,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1738,7 +1738,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_7(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_7(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1753,7 +1753,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_OP_PREC_8(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_OP_PREC_8(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -1768,7 +1768,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_betweenExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_betweenExpression(yycontext* yy, char* yytext, int yyleng) {
 #define max        yy->__val[-1]
 #define min        yy->__val[-2]
 #define n          yy->__val[-3]
@@ -1793,7 +1793,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_likeExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_likeExpression(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define n          yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1816,7 +1816,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr1(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr1(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1836,7 +1836,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr1(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr1(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1857,7 +1857,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr2(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr2(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1877,7 +1877,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr2(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr2(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1898,7 +1898,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr3(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr3(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1918,7 +1918,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr3(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr3(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1939,7 +1939,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr4(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr4(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1959,7 +1959,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr4(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr4(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -1980,7 +1980,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr5(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr5(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2000,7 +2000,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr5(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr5(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2021,7 +2021,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_3_expr6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_expr6(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define o          yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2041,7 +2041,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr6(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define o          yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2062,7 +2062,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr6(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define o          yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2083,7 +2083,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr7(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr7(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2103,7 +2103,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr7(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr7(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2124,7 +2124,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr8(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr8(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2144,7 +2144,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr8(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr8(yycontext* yy, char* yytext, int yyleng) {
 #define r          yy->__val[-1]
 #define op         yy->__val[-2]
 #define x          yy->__val[-3]
@@ -2165,7 +2165,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_expr9(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_expr9(yycontext* yy, char* yytext, int yyleng) {
 #define co         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2184,7 +2184,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_expr9(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_expr9(yycontext* yy, char* yytext, int yyleng) {
 #define co         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2211,7 +2211,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_7_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_7_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2226,7 +2226,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_6_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_6_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2241,7 +2241,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_5_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_5_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2256,7 +2256,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_4_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2271,7 +2271,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2286,7 +2286,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2301,7 +2301,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_POST_OP_PREC_6(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_POST_OP_PREC_6(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2316,7 +2316,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3_anyEvery(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_anyEvery(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2331,7 +2331,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_anyEvery(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_anyEvery(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2346,7 +2346,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_anyEvery(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_anyEvery(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2361,7 +2361,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_1_anyEveryExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_anyEveryExpression(yycontext* yy, char* yytext, int yyleng) {
 #define s          yy->__val[-1]
 #define e          yy->__val[-2]
 #define v          yy->__val[-3]
@@ -2389,7 +2389,7 @@ namespace litecore { namespace n1ql {
 #undef a
         }
 
-        YY_ACTION(void) yy_4_caseExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_caseExpression(yycontext* yy, char* yytext, int yyleng) {
 #define elsex      yy->__val[-1]
 #define then       yy->__val[-2]
 #define when       yy->__val[-3]
@@ -2412,7 +2412,7 @@ namespace litecore { namespace n1ql {
 #undef val
         }
 
-        YY_ACTION(void) yy_3_caseExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_caseExpression(yycontext* yy, char* yytext, int yyleng) {
 #define elsex      yy->__val[-1]
 #define then       yy->__val[-2]
 #define when       yy->__val[-3]
@@ -2435,7 +2435,7 @@ namespace litecore { namespace n1ql {
 #undef val
         }
 
-        YY_ACTION(void) yy_2_caseExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_caseExpression(yycontext* yy, char* yytext, int yyleng) {
 #define elsex      yy->__val[-1]
 #define then       yy->__val[-2]
 #define when       yy->__val[-3]
@@ -2459,7 +2459,7 @@ namespace litecore { namespace n1ql {
 #undef val
         }
 
-        YY_ACTION(void) yy_1_caseExpression(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_caseExpression(yycontext* yy, char* yytext, int yyleng) {
 #define elsex      yy->__val[-1]
 #define then       yy->__val[-2]
 #define when       yy->__val[-3]
@@ -2482,7 +2482,7 @@ namespace litecore { namespace n1ql {
 #undef val
         }
 
-        YY_ACTION(void) yy_1_order(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_order(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2497,7 +2497,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_2_ordering(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_ordering(yycontext* yy, char* yytext, int yyleng) {
 #define o          yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2516,7 +2516,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_ordering(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_ordering(yycontext* yy, char* yytext, int yyleng) {
 #define o          yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2535,7 +2535,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_3_orderBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_orderBy(yycontext* yy, char* yytext, int yyleng) {
 #define o2         yy->__val[-1]
 #define o          yy->__val[-2]
 #define __         yy->__
@@ -2554,7 +2554,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_2_orderBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_orderBy(yycontext* yy, char* yytext, int yyleng) {
 #define o2         yy->__val[-1]
 #define o          yy->__val[-2]
 #define __         yy->__
@@ -2573,7 +2573,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_1_orderBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_orderBy(yycontext* yy, char* yytext, int yyleng) {
 #define o2         yy->__val[-1]
 #define o          yy->__val[-2]
 #define __         yy->__
@@ -2592,7 +2592,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_3_groupBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_groupBy(yycontext* yy, char* yytext, int yyleng) {
 #define x2         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2611,7 +2611,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_2_groupBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_groupBy(yycontext* yy, char* yytext, int yyleng) {
 #define x2         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2630,7 +2630,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_groupBy(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_groupBy(yycontext* yy, char* yytext, int yyleng) {
 #define x2         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2649,7 +2649,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_1_joinOperator(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_joinOperator(yycontext* yy, char* yytext, int yyleng) {
 #define __         yy->__
 #define yypos      yy->__pos
 #define yythunkpos yy->__thunkpos
@@ -2665,7 +2665,7 @@ namespace litecore { namespace n1ql {
 #undef yy
         }
 
-        YY_ACTION(void) yy_3_join(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_join(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define s          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -2686,7 +2686,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_2_join(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_join(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define s          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -2707,7 +2707,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_1_join(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_join(yycontext* yy, char* yytext, int yyleng) {
 #define c          yy->__val[-1]
 #define s          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -2728,7 +2728,7 @@ namespace litecore { namespace n1ql {
 #undef o
         }
 
-        YY_ACTION(void) yy_3_collectionName(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_collectionName(yycontext* yy, char* yytext, int yyleng) {
 #define c2         yy->__val[-1]
 #define c          yy->__val[-2]
 #define __         yy->__
@@ -2747,7 +2747,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_2_collectionName(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_collectionName(yycontext* yy, char* yytext, int yyleng) {
 #define c2         yy->__val[-1]
 #define c          yy->__val[-2]
 #define __         yy->__
@@ -2766,7 +2766,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_1_collectionName(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_collectionName(yycontext* yy, char* yytext, int yyleng) {
 #define c2         yy->__val[-1]
 #define c          yy->__val[-2]
 #define __         yy->__
@@ -2785,7 +2785,7 @@ namespace litecore { namespace n1ql {
 #undef c
         }
 
-        YY_ACTION(void) yy_3_dataSource(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_dataSource(yycontext* yy, char* yytext, int yyleng) {
 #define a          yy->__val[-1]
 #define n          yy->__val[-2]
 #define __         yy->__
@@ -2804,7 +2804,7 @@ namespace litecore { namespace n1ql {
 #undef n
         }
 
-        YY_ACTION(void) yy_2_dataSource(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_dataSource(yycontext* yy, char* yytext, int yyleng) {
 #define a          yy->__val[-1]
 #define n          yy->__val[-2]
 #define __         yy->__
@@ -2823,7 +2823,7 @@ namespace litecore { namespace n1ql {
 #undef n
         }
 
-        YY_ACTION(void) yy_1_dataSource(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_dataSource(yycontext* yy, char* yytext, int yyleng) {
 #define a          yy->__val[-1]
 #define n          yy->__val[-2]
 #define __         yy->__
@@ -2842,7 +2842,7 @@ namespace litecore { namespace n1ql {
 #undef n
         }
 
-        YY_ACTION(void) yy_3_from(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_from(yycontext* yy, char* yytext, int yyleng) {
 #define j          yy->__val[-1]
 #define d          yy->__val[-2]
 #define __         yy->__
@@ -2861,7 +2861,7 @@ namespace litecore { namespace n1ql {
 #undef d
         }
 
-        YY_ACTION(void) yy_2_from(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_from(yycontext* yy, char* yytext, int yyleng) {
 #define j          yy->__val[-1]
 #define d          yy->__val[-2]
 #define __         yy->__
@@ -2880,7 +2880,7 @@ namespace litecore { namespace n1ql {
 #undef d
         }
 
-        YY_ACTION(void) yy_1_from(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_from(yycontext* yy, char* yytext, int yyleng) {
 #define j          yy->__val[-1]
 #define d          yy->__val[-2]
 #define __         yy->__
@@ -2899,7 +2899,7 @@ namespace litecore { namespace n1ql {
 #undef d
         }
 
-        YY_ACTION(void) yy_1_selectResult(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_selectResult(yycontext* yy, char* yytext, int yyleng) {
 #define ca         yy->__val[-1]
 #define x          yy->__val[-2]
 #define __         yy->__
@@ -2921,7 +2921,7 @@ namespace litecore { namespace n1ql {
 #undef x
         }
 
-        YY_ACTION(void) yy_3_selectResults(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_selectResults(yycontext* yy, char* yytext, int yyleng) {
 #define sr2        yy->__val[-1]
 #define sr         yy->__val[-2]
 #define __         yy->__
@@ -2940,7 +2940,7 @@ namespace litecore { namespace n1ql {
 #undef sr
         }
 
-        YY_ACTION(void) yy_2_selectResults(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_selectResults(yycontext* yy, char* yytext, int yyleng) {
 #define sr2        yy->__val[-1]
 #define sr         yy->__val[-2]
 #define __         yy->__
@@ -2959,7 +2959,7 @@ namespace litecore { namespace n1ql {
 #undef sr
         }
 
-        YY_ACTION(void) yy_1_selectResults(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_selectResults(yycontext* yy, char* yytext, int yyleng) {
 #define sr2        yy->__val[-1]
 #define sr         yy->__val[-2]
 #define __         yy->__
@@ -2978,7 +2978,7 @@ namespace litecore { namespace n1ql {
 #undef sr
         }
 
-        YY_ACTION(void) yy_13_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_13_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3013,7 +3013,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_12_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_12_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3048,7 +3048,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_11_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_11_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3083,7 +3083,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_10_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_10_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3118,7 +3118,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_9_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_9_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3153,7 +3153,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_8_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_8_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3188,7 +3188,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_7_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_7_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3223,7 +3223,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_6_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_6_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3258,7 +3258,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_5_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_5_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3293,7 +3293,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_4_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_4_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3328,7 +3328,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_3_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_3_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3363,7 +3363,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_2_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3398,7 +3398,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_1_selectStatement(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_selectStatement(yycontext* yy, char* yytext, int yyleng) {
 #define off        yy->__val[-1]
 #define l          yy->__val[-2]
 #define o          yy->__val[-3]
@@ -3433,7 +3433,7 @@ namespace litecore { namespace n1ql {
 #undef select
         }
 
-        YY_ACTION(void) yy_2_n1ql(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_2_n1ql(yycontext* yy, char* yytext, int yyleng) {
 #define sr         yy->__val[-1]
 #define s          yy->__val[-2]
 #define __         yy->__
@@ -3454,7 +3454,7 @@ namespace litecore { namespace n1ql {
 #undef s
         }
 
-        YY_ACTION(void) yy_1_n1ql(yycontext *yy, char *yytext, int yyleng) {
+        YY_ACTION(void) yy_1_n1ql(yycontext* yy, char* yytext, int yyleng) {
 #define sr         yy->__val[-1]
 #define s          yy->__val[-2]
 #define __         yy->__
@@ -3473,12 +3473,12 @@ namespace litecore { namespace n1ql {
 #undef s
         }
 
-        YY_RULE(int) yy_DIGIT(yycontext *yy) {
+        YY_RULE(int) yy_DIGIT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "DIGIT"));
             if ( !yymatchClass(yy,
-                               (unsigned char *)"\000\000\000\000\000\000\377\003\000\000\000\000\000\000\000\000\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                               (unsigned char*)"\000\000\000\000\000\000\377\003\000\000\000\000\000\000\000\000\000"
+                                               "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                 goto l1;
             yyprintf((stderr, "  ok   %s @ %s\n", "DIGIT", yy->__buf + yy->__pos));
             return 1;
@@ -3489,7 +3489,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_BOOLEAN_LITERAL(yycontext *yy) {
+        YY_RULE(int) yy_BOOLEAN_LITERAL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "BOOLEAN_LITERAL"));
             {
@@ -3513,7 +3513,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_FLOAT_LITERAL(yycontext *yy) {
+        YY_RULE(int) yy_FLOAT_LITERAL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "FLOAT_LITERAL"));
             yyText(yy, yy->__begin, yy->__end);
@@ -3576,15 +3576,15 @@ namespace litecore { namespace n1ql {
                         int yypos18 = yy->__pos, yythunkpos18 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\000\000\000\000\000\000\000\000\040\000\000\000\040\000\000\000\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                     (unsigned char*)"\000\000\000\000\000\000\000\000\040\000\000\000\040\000\000\000"
+                                                     "\000"
+                                                     "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                             goto l18;
                         {
                             int yypos20 = yy->__pos, yythunkpos20 = yy->__thunkpos;
-                            if ( !yymatchClass(yy, (unsigned char *)"\000\000\000\000\000\050\000\000\000\000\000\000"
-                                                                    "\000\000\000\000\000\000\000\000\000\000\000\000"
-                                                                    "\000\000\000\000\000\000\000\000") )
+                            if ( !yymatchClass(yy, (unsigned char*)"\000\000\000\000\000\050\000\000\000\000\000\000"
+                                                                   "\000\000\000\000\000\000\000\000\000\000\000\000"
+                                                                   "\000\000\000\000\000\000\000\000") )
                                 goto l20;
                             goto l21;
                         l20:;
@@ -3624,16 +3624,16 @@ namespace litecore { namespace n1ql {
                     }
                     if ( !yymatchClass(
                                  yy,
-                                 (unsigned char *)"\000\000\000\000\000\000\000\000\040\000\000\000\040\000\000\000\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                 (unsigned char*)"\000\000\000\000\000\000\000\000\040\000\000\000\040\000\000\000\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                         goto l5;
                     {
                         int yypos26 = yy->__pos, yythunkpos26 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\000\000\000\000\000\050\000\000\000\000\000\000\000\000\000\000\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                     (unsigned char*)"\000\000\000\000\000\050\000\000\000\000\000\000\000\000\000\000"
+                                                     "\000"
+                                                     "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                             goto l26;
                         goto l27;
                     l26:;
@@ -3674,7 +3674,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_STRING_LITERAL(yycontext *yy) {
+        YY_RULE(int) yy_STRING_LITERAL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "STRING_LITERAL"));
             {
@@ -3695,9 +3695,9 @@ namespace litecore { namespace n1ql {
                         int yypos35 = yy->__pos, yythunkpos35 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\377\377\377\377\177\377\377\377\377\377\377\377\377\377\377\377\377"
-                                                "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
+                                     (unsigned char*)"\377\377\377\377\177\377\377\377\377\377\377\377\377\377\377\377"
+                                                     "\377"
+                                                     "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
                             goto l36;
                         goto l35;
                     l36:;
@@ -3742,9 +3742,9 @@ namespace litecore { namespace n1ql {
                         int yypos39 = yy->__pos, yythunkpos39 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\377\377\377\377\373\377\377\377\377\377\377\377\377\377\377\377\377"
-                                                "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
+                                     (unsigned char*)"\377\377\377\377\373\377\377\377\377\377\377\377\377\377\377\377"
+                                                     "\377"
+                                                     "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
                             goto l40;
                         goto l39;
                     l40:;
@@ -3780,7 +3780,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_TRUE(yycontext *yy) {
+        YY_RULE(int) yy_TRUE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "TRUE"));
             if ( !yymatchIString(yy, "true") ) goto l41;
@@ -3794,7 +3794,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_FALSE(yycontext *yy) {
+        YY_RULE(int) yy_FALSE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "FALSE"));
             if ( !yymatchIString(yy, "false") ) goto l42;
@@ -3808,7 +3808,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_functionName(yycontext *yy) {
+        YY_RULE(int) yy_functionName(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "functionName"));
             if ( !yy_IDENTIFIER(yy) ) goto l43;
@@ -3829,7 +3829,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_indexTable(yycontext *yy) {
+        YY_RULE(int) yy_indexTable(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "indexTable"));
@@ -3860,7 +3860,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_INT_LITERAL(yycontext *yy) {
+        YY_RULE(int) yy_INT_LITERAL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "INT_LITERAL"));
             yyText(yy, yy->__begin, yy->__end);
@@ -3909,7 +3909,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_propertyName(yycontext *yy) {
+        YY_RULE(int) yy_propertyName(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "propertyName"));
             if ( !yy_IDENTIFIER(yy) ) goto l52;
@@ -3922,7 +3922,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_property(yycontext *yy) {
+        YY_RULE(int) yy_property(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "property"));
@@ -3959,7 +3959,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_function(yycontext *yy) {
+        YY_RULE(int) yy_function(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 5, 0);
             yyprintf((stderr, "%s\n", "function"));
@@ -4044,7 +4044,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_EXISTS(yycontext *yy) {
+        YY_RULE(int) yy_EXISTS(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "EXISTS"));
             if ( !yymatchIString(yy, "exists") ) goto l64;
@@ -4058,7 +4058,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREFIX(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREFIX(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREFIX"));
             yyText(yy, yy->__begin, yy->__end);
@@ -4102,7 +4102,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_dictLiteral(yycontext *yy) {
+        YY_RULE(int) yy_dictLiteral(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "dictLiteral"));
@@ -4153,7 +4153,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_literal(yycontext *yy) {
+        YY_RULE(int) yy_literal(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "literal"));
             {
@@ -4197,7 +4197,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy__baseExpr(yycontext *yy) {
+        YY_RULE(int) yy__baseExpr(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "_baseExpr"));
@@ -4280,15 +4280,15 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_WB(yycontext *yy) {
+        YY_RULE(int) yy_WB(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "WB"));
             {
                 int yypos94 = yy->__pos, yythunkpos94 = yy->__thunkpos;
                 int yymaxpos94 = yy->__maxpos;
                 if ( !yymatchClass(
-                             yy, (unsigned char *)"\000\000\000\000\000\000\377\003\376\377\377\207\376\377\377\007\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                             yy, (unsigned char*)"\000\000\000\000\000\000\377\003\376\377\377\207\376\377\377\007\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                     goto l94;
                 yy->__maxpos = yymaxpos94;
                 goto l93;
@@ -4307,7 +4307,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_collationLang(yycontext *yy) {
+        YY_RULE(int) yy_collationLang(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "collationLang"));
             {
@@ -4349,17 +4349,17 @@ namespace litecore { namespace n1ql {
                     if ( !yymatchChar(yy, ':') ) goto l98;
                     if ( !yymatchClass(
                                  yy,
-                                 (unsigned char *)"\000\000\000\000\000\000\000\000\376\377\377\007\376\377\377\007\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                 (unsigned char*)"\000\000\000\000\000\000\000\000\376\377\377\007\376\377\377\007\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                         goto l98;
                 l100:;
                     {
                         int yypos101 = yy->__pos, yythunkpos101 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\000\000\000\000\000\000\377\003\376\377\377\207\376\377\377\007\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                     (unsigned char*)"\000\000\000\000\000\000\377\003\376\377\377\207\376\377\377\007"
+                                                     "\000"
+                                                     "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                             goto l101;
                         goto l100;
                     l101:;
@@ -4392,7 +4392,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_collation(yycontext *yy) {
+        YY_RULE(int) yy_collation(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 1, 0);
             yyprintf((stderr, "%s\n", "collation"));
@@ -4455,7 +4455,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_COLLATE(yycontext *yy) {
+        YY_RULE(int) yy_COLLATE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "COLLATE"));
             if ( !yymatchIString(yy, "collate") ) goto l109;
@@ -4469,7 +4469,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_propertyPath(yycontext *yy) {
+        YY_RULE(int) yy_propertyPath(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "propertyPath"));
@@ -4516,7 +4516,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_baseExpr(yycontext *yy) {
+        YY_RULE(int) yy_baseExpr(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "baseExpr"));
             if ( !yy__baseExpr(yy) ) goto l115;
@@ -4530,7 +4530,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_arrayLiteral(yycontext *yy) {
+        YY_RULE(int) yy_arrayLiteral(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "arrayLiteral"));
@@ -4573,7 +4573,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_parenExprs(yycontext *yy) {
+        YY_RULE(int) yy_parenExprs(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "parenExprs"));
@@ -4618,7 +4618,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_selectExpr(yycontext *yy) {
+        YY_RULE(int) yy_selectExpr(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 1, 0);
             yyprintf((stderr, "%s\n", "selectExpr"));
@@ -4637,7 +4637,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_IN_OR_NOT(yycontext *yy) {
+        YY_RULE(int) yy_IN_OR_NOT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "IN_OR_NOT"));
             {
@@ -4662,7 +4662,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OR(yycontext *yy) {
+        YY_RULE(int) yy_OR(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OR"));
             if ( !yymatchIString(yy, "or") ) goto l130;
@@ -4676,7 +4676,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_BETWEEN(yycontext *yy) {
+        YY_RULE(int) yy_BETWEEN(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "BETWEEN"));
             if ( !yymatchIString(yy, "between") ) goto l131;
@@ -4690,7 +4690,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_LIKE(yycontext *yy) {
+        YY_RULE(int) yy_LIKE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "LIKE"));
             if ( !yymatchIString(yy, "like") ) goto l132;
@@ -4704,7 +4704,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_1(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_1(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_1"));
             yyText(yy, yy->__begin, yy->__end);
@@ -4734,7 +4734,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr0(yycontext *yy) {
+        YY_RULE(int) yy_expr0(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "expr0"));
@@ -4765,7 +4765,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_2(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_2(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_2"));
             yyText(yy, yy->__begin, yy->__end);
@@ -4777,8 +4777,8 @@ namespace litecore { namespace n1ql {
 #undef yyleng
             }
             if ( !yymatchClass(yy,
-                               (unsigned char *)"\000\000\000\000\040\204\000\000\000\000\000\000\000\000\000\000\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                               (unsigned char*)"\000\000\000\000\040\204\000\000\000\000\000\000\000\000\000\000\000"
+                                               "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                 goto l137;
             yyText(yy, yy->__begin, yy->__end);
             {
@@ -4798,7 +4798,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr1(yycontext *yy) {
+        YY_RULE(int) yy_expr1(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr1"));
@@ -4830,7 +4830,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_3(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_3(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_3"));
             yyText(yy, yy->__begin, yy->__end);
@@ -4842,8 +4842,8 @@ namespace litecore { namespace n1ql {
 #undef yyleng
             }
             if ( !yymatchClass(yy,
-                               (unsigned char *)"\000\000\000\000\000\050\000\000\000\000\000\000\000\000\000\000\000"
-                                                "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                               (unsigned char*)"\000\000\000\000\000\050\000\000\000\000\000\000\000\000\000\000\000"
+                                               "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                 goto l141;
             yyText(yy, yy->__begin, yy->__end);
             {
@@ -4863,7 +4863,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr2(yycontext *yy) {
+        YY_RULE(int) yy_expr2(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr2"));
@@ -4895,7 +4895,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_4(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_4(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_4"));
             yyText(yy, yy->__begin, yy->__end);
@@ -4944,7 +4944,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr3(yycontext *yy) {
+        YY_RULE(int) yy_expr3(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr3"));
@@ -4976,7 +4976,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_5(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_5(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_5"));
             yyText(yy, yy->__begin, yy->__end);
@@ -5025,7 +5025,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr4(yycontext *yy) {
+        YY_RULE(int) yy_expr4(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr4"));
@@ -5057,7 +5057,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_6(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_6(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_6"));
             {
@@ -5112,7 +5112,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_betweenExpression(yycontext *yy) {
+        YY_RULE(int) yy_betweenExpression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 4, 0);
             yyprintf((stderr, "%s\n", "betweenExpression"));
@@ -5145,7 +5145,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_likeExpression(yycontext *yy) {
+        YY_RULE(int) yy_likeExpression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "likeExpression"));
@@ -5176,7 +5176,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_inExpression(yycontext *yy) {
+        YY_RULE(int) yy_inExpression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 5, 0);
             yyprintf((stderr, "%s\n", "inExpression"));
@@ -5222,7 +5222,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr5(yycontext *yy) {
+        YY_RULE(int) yy_expr5(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr5"));
@@ -5254,7 +5254,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_7(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_7(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_7"));
             if ( !yy_AND(yy) ) goto l183;
@@ -5268,7 +5268,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr6(yycontext *yy) {
+        YY_RULE(int) yy_expr6(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr6"));
@@ -5328,7 +5328,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OP_PREC_8(yycontext *yy) {
+        YY_RULE(int) yy_OP_PREC_8(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OP_PREC_8"));
             if ( !yy_OR(yy) ) goto l192;
@@ -5342,7 +5342,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr7(yycontext *yy) {
+        YY_RULE(int) yy_expr7(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr7"));
@@ -5374,7 +5374,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_collateSuffix(yycontext *yy) {
+        YY_RULE(int) yy_collateSuffix(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "collateSuffix"));
@@ -5435,7 +5435,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr8(yycontext *yy) {
+        YY_RULE(int) yy_expr8(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "expr8"));
@@ -5467,7 +5467,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_VALUED(yycontext *yy) {
+        YY_RULE(int) yy_VALUED(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "VALUED"));
             if ( !yymatchIString(yy, "valued") ) goto l205;
@@ -5481,7 +5481,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_MISSING(yycontext *yy) {
+        YY_RULE(int) yy_MISSING(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "MISSING"));
             if ( !yymatchIString(yy, "missing") ) goto l206;
@@ -5495,7 +5495,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_IS(yycontext *yy) {
+        YY_RULE(int) yy_IS(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "IS"));
             if ( !yymatchIString(yy, "is") ) goto l207;
@@ -5509,7 +5509,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_NULL(yycontext *yy) {
+        YY_RULE(int) yy_NULL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "NULL"));
             if ( !yymatchIString(yy, "null") ) goto l208;
@@ -5523,7 +5523,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_NOT(yycontext *yy) {
+        YY_RULE(int) yy_NOT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "NOT"));
             if ( !yymatchIString(yy, "not") ) goto l209;
@@ -5537,7 +5537,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_POST_OP_PREC_6(yycontext *yy) {
+        YY_RULE(int) yy_POST_OP_PREC_6(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "POST_OP_PREC_6"));
             {
@@ -5601,7 +5601,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_SOME(yycontext *yy) {
+        YY_RULE(int) yy_SOME(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "SOME"));
             if ( !yymatchIString(yy, "some") ) goto l218;
@@ -5615,7 +5615,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ANY(yycontext *yy) {
+        YY_RULE(int) yy_ANY(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ANY"));
             if ( !yymatchIString(yy, "any") ) goto l219;
@@ -5629,7 +5629,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_EVERY(yycontext *yy) {
+        YY_RULE(int) yy_EVERY(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "EVERY"));
             if ( !yymatchIString(yy, "every") ) goto l220;
@@ -5643,7 +5643,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_AND(yycontext *yy) {
+        YY_RULE(int) yy_AND(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "AND"));
             if ( !yymatchIString(yy, "and") ) goto l221;
@@ -5657,7 +5657,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_anyOrSome(yycontext *yy) {
+        YY_RULE(int) yy_anyOrSome(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "anyOrSome"));
             {
@@ -5679,7 +5679,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_SATISFIES(yycontext *yy) {
+        YY_RULE(int) yy_SATISFIES(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "SATISFIES"));
             if ( !yymatchIString(yy, "satisfies") ) goto l225;
@@ -5693,7 +5693,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_IN(yycontext *yy) {
+        YY_RULE(int) yy_IN(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "IN"));
             if ( !yymatchIString(yy, "in") ) goto l226;
@@ -5707,7 +5707,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_variableName(yycontext *yy) {
+        YY_RULE(int) yy_variableName(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "variableName"));
             if ( !yy_IDENTIFIER(yy) ) goto l227;
@@ -5720,7 +5720,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_anyEvery(yycontext *yy) {
+        YY_RULE(int) yy_anyEvery(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "anyEvery"));
             {
@@ -5752,7 +5752,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_anyEveryExpression(yycontext *yy) {
+        YY_RULE(int) yy_anyEveryExpression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 4, 0);
             yyprintf((stderr, "%s\n", "anyEveryExpression"));
@@ -5783,7 +5783,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_END(yycontext *yy) {
+        YY_RULE(int) yy_END(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "END"));
             if ( !yymatchIString(yy, "end") ) goto l233;
@@ -5797,7 +5797,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ELSE(yycontext *yy) {
+        YY_RULE(int) yy_ELSE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ELSE"));
             if ( !yymatchIString(yy, "else") ) goto l234;
@@ -5811,7 +5811,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_THEN(yycontext *yy) {
+        YY_RULE(int) yy_THEN(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "THEN"));
             if ( !yymatchIString(yy, "then") ) goto l235;
@@ -5825,7 +5825,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_WHEN(yycontext *yy) {
+        YY_RULE(int) yy_WHEN(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "WHEN"));
             if ( !yymatchIString(yy, "when") ) goto l236;
@@ -5839,7 +5839,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_CASE(yycontext *yy) {
+        YY_RULE(int) yy_CASE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "CASE"));
             if ( !yymatchIString(yy, "case") ) goto l237;
@@ -5853,7 +5853,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_caseExpression(yycontext *yy) {
+        YY_RULE(int) yy_caseExpression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 4, 0);
             yyprintf((stderr, "%s\n", "caseExpression"));
@@ -5926,7 +5926,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expr9(yycontext *yy) {
+        YY_RULE(int) yy_expr9(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "expr9"));
@@ -5955,7 +5955,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_indexName(yycontext *yy) {
+        YY_RULE(int) yy_indexName(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "indexName"));
             if ( !yy_IDENTIFIER(yy) ) goto l249;
@@ -5968,7 +5968,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_DESC(yycontext *yy) {
+        YY_RULE(int) yy_DESC(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "DESC"));
             if ( !yymatchIString(yy, "desc") ) goto l250;
@@ -5982,7 +5982,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ASC(yycontext *yy) {
+        YY_RULE(int) yy_ASC(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ASC"));
             if ( !yymatchIString(yy, "asc") ) goto l251;
@@ -5996,7 +5996,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_order(yycontext *yy) {
+        YY_RULE(int) yy_order(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "order"));
             yyText(yy, yy->__begin, yy->__end);
@@ -6035,7 +6035,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ordering(yycontext *yy) {
+        YY_RULE(int) yy_ordering(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "ordering"));
@@ -6064,7 +6064,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ORDER(yycontext *yy) {
+        YY_RULE(int) yy_ORDER(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ORDER"));
             if ( !yymatchIString(yy, "order") ) goto l258;
@@ -6078,7 +6078,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_HAVING(yycontext *yy) {
+        YY_RULE(int) yy_HAVING(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "HAVING"));
             if ( !yymatchIString(yy, "having") ) goto l259;
@@ -6092,7 +6092,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_BY(yycontext *yy) {
+        YY_RULE(int) yy_BY(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "BY"));
             if ( !yymatchIString(yy, "by") ) goto l260;
@@ -6106,7 +6106,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_GROUP(yycontext *yy) {
+        YY_RULE(int) yy_GROUP(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "GROUP"));
             if ( !yymatchIString(yy, "group") ) goto l261;
@@ -6120,7 +6120,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_JOIN(yycontext *yy) {
+        YY_RULE(int) yy_JOIN(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "JOIN"));
             if ( !yymatchIString(yy, "join") ) goto l262;
@@ -6134,7 +6134,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_CROSS(yycontext *yy) {
+        YY_RULE(int) yy_CROSS(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "CROSS"));
             if ( !yymatchIString(yy, "cross") ) goto l263;
@@ -6148,7 +6148,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_INNER(yycontext *yy) {
+        YY_RULE(int) yy_INNER(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "INNER"));
             if ( !yymatchIString(yy, "inner") ) goto l264;
@@ -6162,7 +6162,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OUTER(yycontext *yy) {
+        YY_RULE(int) yy_OUTER(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OUTER"));
             if ( !yymatchIString(yy, "outer") ) goto l265;
@@ -6176,7 +6176,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_LEFT(yycontext *yy) {
+        YY_RULE(int) yy_LEFT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "LEFT"));
             if ( !yymatchIString(yy, "left") ) goto l266;
@@ -6190,7 +6190,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ON(yycontext *yy) {
+        YY_RULE(int) yy_ON(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ON"));
             if ( !yymatchIString(yy, "on") ) goto l267;
@@ -6204,7 +6204,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_joinOperator(yycontext *yy) {
+        YY_RULE(int) yy_joinOperator(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "joinOperator"));
             yyText(yy, yy->__begin, yy->__end);
@@ -6266,7 +6266,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_IDENTIFIER(yycontext *yy) {
+        YY_RULE(int) yy_IDENTIFIER(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "IDENTIFIER"));
             {
@@ -6280,16 +6280,16 @@ namespace litecore { namespace n1ql {
 #undef yyleng
                 }
                 if ( !yymatchClass(
-                             yy, (unsigned char *)"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                             yy, (unsigned char*)"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                     goto l278;
             l279:;
                 {
                     int yypos280 = yy->__pos, yythunkpos280 = yy->__thunkpos;
                     if ( !yymatchClass(
                                  yy,
-                                 (unsigned char *)"\000\000\000\000\020\000\377\003\376\377\377\207\376\377\377\007\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                                 (unsigned char*)"\000\000\000\000\020\000\377\003\376\377\377\207\376\377\377\007\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                         goto l280;
                     goto l279;
                 l280:;
@@ -6334,9 +6334,9 @@ namespace litecore { namespace n1ql {
                         int yypos283 = yy->__pos, yythunkpos283 = yy->__thunkpos;
                         if ( !yymatchClass(
                                      yy,
-                                     (unsigned char
-                                              *)"\377\377\377\377\377\377\377\377\377\377\377\377\376\377\377\377\377"
-                                                "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
+                                     (unsigned char*)"\377\377\377\377\377\377\377\377\377\377\377\377\376\377\377\377"
+                                                     "\377"
+                                                     "\377\377\377\377\377\377\377\377\377\377\377\377\377\377\377") )
                             goto l284;
                         goto l283;
                     l284:;
@@ -6372,7 +6372,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_collectionAlias(yycontext *yy) {
+        YY_RULE(int) yy_collectionAlias(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "collectionAlias"));
             if ( !yy_IDENTIFIER(yy) ) goto l285;
@@ -6385,7 +6385,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_collectionName(yycontext *yy) {
+        YY_RULE(int) yy_collectionName(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "collectionName"));
@@ -6415,7 +6415,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_join(yycontext *yy) {
+        YY_RULE(int) yy_join(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 3, 0);
             yyprintf((stderr, "%s\n", "join"));
@@ -6449,7 +6449,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_dataSource(yycontext *yy) {
+        YY_RULE(int) yy_dataSource(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "dataSource"));
@@ -6487,7 +6487,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_FROM(yycontext *yy) {
+        YY_RULE(int) yy_FROM(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "FROM"));
             if ( !yymatchIString(yy, "from") ) goto l297;
@@ -6501,7 +6501,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_columnAlias(yycontext *yy) {
+        YY_RULE(int) yy_columnAlias(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "columnAlias"));
             if ( !yy_IDENTIFIER(yy) ) goto l298;
@@ -6514,7 +6514,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_AS(yycontext *yy) {
+        YY_RULE(int) yy_AS(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "AS"));
             if ( !yymatchIString(yy, "as") ) goto l299;
@@ -6528,7 +6528,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_selectResult(yycontext *yy) {
+        YY_RULE(int) yy_selectResult(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "selectResult"));
@@ -6565,7 +6565,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_OFFSET(yycontext *yy) {
+        YY_RULE(int) yy_OFFSET(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "OFFSET"));
             if ( !yymatchIString(yy, "offset") ) goto l305;
@@ -6579,7 +6579,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_LIMIT(yycontext *yy) {
+        YY_RULE(int) yy_LIMIT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "LIMIT"));
             if ( !yymatchIString(yy, "limit") ) goto l306;
@@ -6593,7 +6593,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_orderBy(yycontext *yy) {
+        YY_RULE(int) yy_orderBy(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "orderBy"));
@@ -6627,7 +6627,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_having(yycontext *yy) {
+        YY_RULE(int) yy_having(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "having"));
             if ( !yy_HAVING(yy) ) goto l310;
@@ -6641,7 +6641,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_groupBy(yycontext *yy) {
+        YY_RULE(int) yy_groupBy(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "groupBy"));
@@ -6675,7 +6675,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_expression(yycontext *yy) {
+        YY_RULE(int) yy_expression(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "expression"));
             if ( !yy_expr9(yy) ) goto l314;
@@ -6688,7 +6688,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_WHERE(yycontext *yy) {
+        YY_RULE(int) yy_WHERE(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "WHERE"));
             if ( !yymatchIString(yy, "where") ) goto l315;
@@ -6702,7 +6702,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_from(yycontext *yy) {
+        YY_RULE(int) yy_from(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "from"));
@@ -6733,7 +6733,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_ALL(yycontext *yy) {
+        YY_RULE(int) yy_ALL(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "ALL"));
             if ( !yymatchIString(yy, "all") ) goto l319;
@@ -6747,7 +6747,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_DISTINCT(yycontext *yy) {
+        YY_RULE(int) yy_DISTINCT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "DISTINCT"));
             if ( !yymatchIString(yy, "distinct") ) goto l320;
@@ -6761,7 +6761,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_SELECT(yycontext *yy) {
+        YY_RULE(int) yy_SELECT(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyprintf((stderr, "%s\n", "SELECT"));
             if ( !yymatchIString(yy, "select") ) goto l321;
@@ -6775,7 +6775,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_selectResults(yycontext *yy) {
+        YY_RULE(int) yy_selectResults(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "selectResults"));
@@ -6807,7 +6807,7 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy_selectStatement(yycontext *yy) {
+        YY_RULE(int) yy_selectStatement(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 10, 0);
             yyprintf((stderr, "%s\n", "selectStatement"));
@@ -6967,14 +6967,14 @@ namespace litecore { namespace n1ql {
             return 0;
         }
 
-        YY_RULE(int) yy__(yycontext *yy) {
+        YY_RULE(int) yy__(yycontext* yy) {
             yyprintf((stderr, "%s\n", "_"));
         l351:;
             {
                 int yypos352 = yy->__pos, yythunkpos352 = yy->__thunkpos;
                 if ( !yymatchClass(
-                             yy, (unsigned char *)"\000\046\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000"
-                                                  "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
+                             yy, (unsigned char*)"\000\046\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000"
+                                                 "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000") )
                     goto l352;
                 goto l351;
             l352:;
@@ -6985,7 +6985,7 @@ namespace litecore { namespace n1ql {
             return 1;
         }
 
-        YY_RULE(int) yy_n1ql(yycontext *yy) {
+        YY_RULE(int) yy_n1ql(yycontext* yy) {
             int yypos0 = yy->__pos, yythunkpos0 = yy->__thunkpos;
             yyDo(yy, yyPush, 2, 0);
             yyprintf((stderr, "%s\n", "n1ql"));
@@ -7039,23 +7039,23 @@ namespace litecore { namespace n1ql {
 
 #ifndef YY_PART
 
-        typedef int (*yyrule)(yycontext *yy);
+        typedef int (*yyrule)(yycontext* yy);
 
         YY_PARSE(int) YYPARSEFROM(YY_CTX_PARAM_ yyrule yystart) {
             int yyok;
             if ( !yyctx->__buflen ) {
                 yyctx->__buflen    = YY_BUFFER_SIZE;
-                yyctx->__buf       = (char *)YY_MALLOC(yyctx, yyctx->__buflen);
+                yyctx->__buf       = (char*)YY_MALLOC(yyctx, yyctx->__buflen);
                 yyctx->__textlen   = YY_BUFFER_SIZE;
-                yyctx->__text      = (char *)YY_MALLOC(yyctx, yyctx->__textlen);
+                yyctx->__text      = (char*)YY_MALLOC(yyctx, yyctx->__textlen);
                 yyctx->__thunkslen = YY_STACK_SIZE;
-                yyctx->__thunks    = (yythunk *)YY_MALLOC(yyctx, sizeof(yythunk) * yyctx->__thunkslen);
+                yyctx->__thunks    = (yythunk*)YY_MALLOC(yyctx, sizeof(yythunk) * yyctx->__thunkslen);
 #    ifdef __cplusplus
                 yyctx->__vals = new std::vector<YYSTYPE>();
                 yyctx->__vals->reserve(YY_STACK_SIZE);
 #    else
                 ` yyctx->__valslen = YY_STACK_SIZE;
-                yyctx->__vals = (YYSTYPE *)YY_MALLOC(yyctx, sizeof(YYSTYPE) * yyctx->__valslen);
+                yyctx->__vals = (YYSTYPE*)YY_MALLOC(yyctx, sizeof(YYSTYPE) * yyctx->__valslen);
                 memset(yyctx->__vals, 0, sizeof(YYSTYPE) * yyctx->__valslen);
 #    endif
                 yyctx->__begin = yyctx->__end = yyctx->__pos = yyctx->__limit = yyctx->__maxpos = yyctx->__thunkpos = 0;
@@ -7076,7 +7076,7 @@ namespace litecore { namespace n1ql {
 
         YY_PARSE(int) YYPARSE(YY_CTX_PARAM) { return YYPARSEFROM(YY_CTX_ARG_ yy_n1ql); }
 
-        YY_PARSE(yycontext *) YYRELEASE(yycontext *yyctx) {
+        YY_PARSE(yycontext*) YYRELEASE(yycontext* yyctx) {
             if ( yyctx->__buflen ) {
                 yyctx->__buflen = 0;
                 YY_FREE(yyctx, yyctx->__buf);
@@ -7101,12 +7101,12 @@ namespace litecore { namespace n1ql {
 
         const char kN1QLEND = '\0';
 
-        static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
+        static int n1ql_input(yycontext* ctx, char* buf, size_t max_size) {
             ctx->stream->get(buf, max_size, kN1QLEND);
             return (int)ctx->stream->gcount();
         }
 
-        FLMutableDict parse(const string &input, unsigned *errPos) {
+        FLMutableDict parse(const string& input, unsigned* errPos) {
             MutableDict       result;
             std::stringstream stream(input, std::ios_base::in);
             yycontext         ctx = {};

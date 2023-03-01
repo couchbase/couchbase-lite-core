@@ -20,16 +20,16 @@ namespace litecore {
 
     class VectorDocumentFactory final : public DocumentFactory {
       public:
-        VectorDocumentFactory(C4Collection *db) : DocumentFactory(db) {}
+        VectorDocumentFactory(C4Collection* db) : DocumentFactory(db) {}
 
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
-        Retained<C4Document> newDocumentInstance(const Record &) override;
+        Retained<C4Document> newDocumentInstance(const Record&) override;
 
-        std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
+        std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static C4Document *documentContaining(FLValue value);
+        static C4Document* documentContaining(FLValue value);
     };
 
 }  // namespace litecore

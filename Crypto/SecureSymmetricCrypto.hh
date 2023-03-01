@@ -28,8 +28,8 @@ namespace litecore {
                   slice                 src);                     // input data
 
     /** Converts a password string into a key using PBKDF2. */
-    bool DeriveKeyFromPassword(slice password, void *outKey, size_t keyLength);
+    bool DeriveKeyFromPassword(slice password, void* outKey, size_t keyLength);
 
     /** Converts a password string into a key using PBKDF2 and SHA1 as the hashing function. */
-    bool DeriveKeyFromPasswordSHA1(slice password, void *outKey, size_t keyLength);
+    bool DeriveKeyFromPasswordSHA1(slice password, void* outKey, size_t keyLength);
 }  // namespace litecore

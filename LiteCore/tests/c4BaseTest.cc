@@ -95,7 +95,7 @@ TEST_CASE("C4Error exceptions") {
     CHECK(messageStr == "Oops");
 }
 
-static string fakeErrorTest(int n, C4Error *outError) {
+static string fakeErrorTest(int n, C4Error* outError) {
     if ( n >= 0 ) return "ok";
     c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Dude, that's negative"_sl, outError);
     return "bad";
@@ -208,8 +208,8 @@ namespace {
         auto baseInstances = InstanceCounted::liveInstanceCount();
         auto n             = new NonVirtCounty(12);
         auto v             = new VirtCounty(34);
-        C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted *)n);
-        C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt> *)v);
+        C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted*)n);
+        C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt>*)v);
         REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances + 2);
         c4_dumpInstances();
         delete n;

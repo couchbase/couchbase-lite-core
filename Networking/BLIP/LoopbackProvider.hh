@@ -41,16 +41,16 @@ namespace litecore { namespace websocket {
         const actor::delay_t _latency;
 
       public:
-        LoopbackWebSocket(const fleece::alloc_slice &url, Role role, actor::delay_t latency = actor::delay_t::zero())
+        LoopbackWebSocket(const fleece::alloc_slice& url, Role role, actor::delay_t latency = actor::delay_t::zero())
             : WebSocket(url, role), _latency(latency) {}
 
         /** Binds two LoopbackWebSocket objects to each other, so after they open, each will
             receive messages sent by the other. When one closes, the other will receive a close
             event.
             MUST be called before the socket objects' connect() methods are called! */
-        static void bind(WebSocket *c1, WebSocket *c2, const websocket::Headers &responseHeaders = {}) {
-            auto lc1 = dynamic_cast<LoopbackWebSocket *>(c1);
-            auto lc2 = dynamic_cast<LoopbackWebSocket *>(c2);
+        static void bind(WebSocket* c1, WebSocket* c2, const websocket::Headers& responseHeaders = {}) {
+            auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
+            auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
             lc1->bind(lc2, responseHeaders);
             lc2->bind(lc1, responseHeaders);
         }
@@ -75,15 +75,15 @@ namespace litecore { namespace websocket {
 
 
       protected:
-        void bind(LoopbackWebSocket *peer, const websocket::Headers &responseHeaders) {
+        void bind(LoopbackWebSocket* peer, const websocket::Headers& responseHeaders) {
             Assert(!_driver);
             _driver = createDriver();
             _driver->bind(peer, responseHeaders);
         }
 
-        virtual Driver *createDriver() { return new Driver(this, _latency); }
+        virtual Driver* createDriver() { return new Driver(this, _latency); }
 
-        Driver *driver() const { return _driver; }
+        Driver* driver() const { return _driver; }
 
         void peerIsConnecting(actor::delay_t latency = actor::delay_t::zero()) {
             _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_peerIsConnecting));
@@ -91,7 +91,7 @@ namespace litecore { namespace websocket {
 
         virtual void ack(size_t msgSize) { _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_ack), msgSize); }
 
-        void received(Message *message, actor::delay_t latency = actor::delay_t::zero()) {
+        void received(Message* message, actor::delay_t latency = actor::delay_t::zero()) {
             if ( latency == actor::delay_t::zero() ) {
                 _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_received), retained(message));
             } else {
@@ -100,7 +100,7 @@ namespace litecore { namespace websocket {
             }
         }
 
-        void closed(CloseReason reason = kWebSocketClose, int status = 1000, const char *message = nullptr,
+        void closed(CloseReason reason = kWebSocketClose, int status = 1000, const char* message = nullptr,
                     actor::delay_t latency = actor::delay_t::zero()) {
             _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_closed),
                                   CloseStatus(reason, status, fleece::slice(message)));
@@ -109,7 +109,7 @@ namespace litecore { namespace websocket {
         class LoopbackMessage : public Message {
           public:
             template <class SLICE>
-            LoopbackMessage(LoopbackWebSocket *ws, SLICE data, bool binary)
+            LoopbackMessage(LoopbackWebSocket* ws, SLICE data, bool binary)
                 : Message(data, binary), _size(data.size), _webSocket(ws) {}
 
             ~LoopbackMessage() { _webSocket->ack(_size); }
@@ -122,7 +122,7 @@ namespace litecore { namespace websocket {
         // The internal Actor that does the real work
         class Driver final : public actor::Actor {
           public:
-            Driver(LoopbackWebSocket *ws, actor::delay_t latency)
+            Driver(LoopbackWebSocket* ws, actor::delay_t latency)
                 : Actor(WSLogDomain), _webSocket(ws), _latency(latency) {}
 
             virtual std::string loggingIdentifier() const override {
@@ -131,7 +131,7 @@ namespace litecore { namespace websocket {
 
             virtual std::string loggingClassName() const override { return "LoopbackWS"; }
 
-            void bind(LoopbackWebSocket *peer, const websocket::Headers &responseHeaders) {
+            void bind(LoopbackWebSocket* peer, const websocket::Headers& responseHeaders) {
                 // Called by LoopbackProvider::bind, which is called before my connect() method,
                 // so it's safe to set the member variables directly instead of on the actor queue.
                 _peer            = peer;
@@ -240,7 +240,7 @@ namespace litecore { namespace websocket {
                 if ( _state == State::closed ) return;
                 if ( _state >= State::connecting ) {
                     logInfo("CLOSED with %-s %d: %.*s", status.reasonName(), status.code,
-                            fleece::narrow_cast<int>(status.message.size), (char *)status.message.buf);
+                            fleece::narrow_cast<int>(status.message.size), (char*)status.message.buf);
                     _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketClose, status);
                 } else {
                     logInfo("CLOSED");
@@ -266,7 +266,7 @@ namespace litecore { namespace websocket {
                     }
                     desc << std::dec;
                 } else {
-                    desc.write((char *)msg.buf, size);
+                    desc.write((char*)msg.buf, size);
                 }
 
                 if ( size < msg.size ) desc << "... [" << msg.size << "]";

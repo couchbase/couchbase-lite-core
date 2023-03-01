@@ -31,7 +31,7 @@ namespace litecore { namespace REST {
         The HTTP work is done by a Server object. */
     class RESTListener : public Listener {
       public:
-        explicit RESTListener(const Config &);
+        explicit RESTListener(const Config&);
         ~RESTListener();
 
         virtual void stop();
@@ -39,7 +39,7 @@ namespace litecore { namespace REST {
         uint16_t port() const { return _server->port(); }
 
         /** My root URL, or the URL of a database. */
-        virtual std::vector<net::Address> addresses(C4Database    *dbOrNull = nullptr,
+        virtual std::vector<net::Address> addresses(C4Database*    dbOrNull = nullptr,
                                                     C4ListenerAPIs api      = kC4RESTAPI) const;
 
         virtual int connectionCount() override;
@@ -47,21 +47,21 @@ namespace litecore { namespace REST {
         virtual int activeConnectionCount() override { return (int)tasks().size(); }
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
-        bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
+        bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
         /** An asynchronous task (like a replication). */
         class Task : public RefCounted {
           public:
-            explicit Task(RESTListener *listener) : _listener(listener) {}
+            explicit Task(RESTListener* listener) : _listener(listener) {}
 
-            RESTListener *listener() const { return _listener; }
+            RESTListener* listener() const { return _listener; }
 
             unsigned taskID() const { return _taskID; }
 
             time_t timeUpdated() const { return _timeUpdated; }
 
             virtual bool finished() const = 0;
-            virtual void writeDescription(fleece::JSONEncoder &);
+            virtual void writeDescription(fleece::JSONEncoder&);
 
             virtual void stop() = 0;
 
@@ -74,7 +74,7 @@ namespace litecore { namespace REST {
             time_t _timeUpdated{0};
 
           private:
-            RESTListener *const _listener;
+            RESTListener* const _listener;
             unsigned            _taskID{0};
             time_t              _timeStarted{0};
         };
@@ -85,55 +85,55 @@ namespace litecore { namespace REST {
       protected:
         friend class Task;
 
-        Retained<net::TLSContext>  createTLSContext(const C4TLSConfig *);
-        Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig *);
+        Retained<net::TLSContext>  createTLSContext(const C4TLSConfig*);
+        Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
 
-        Server *server() const { return _server.get(); }
+        Server* server() const { return _server.get(); }
 
-        Retained<C4Database> getDatabase(RequestResponse &rq, const string &dbName);
+        Retained<C4Database> getDatabase(RequestResponse& rq, const string& dbName);
 
         /** Returns the database for this request, or null on error. */
-        Retained<C4Database> databaseFor(RequestResponse &);
+        Retained<C4Database> databaseFor(RequestResponse&);
         /** Returns the collection for this request, or null on error */
-        std::pair<Retained<C4Database>, C4Collection *> collectionFor(RequestResponse &);
-        unsigned                                        registerTask(Task *);
-        void                                            unregisterTask(Task *);
+        std::pair<Retained<C4Database>, C4Collection*> collectionFor(RequestResponse&);
+        unsigned                                       registerTask(Task*);
+        void                                           unregisterTask(Task*);
 
-        using HandlerMethod           = void (RESTListener::*)(RequestResponse &);
-        using DBHandlerMethod         = void (RESTListener::*)(RequestResponse &, C4Database *);
-        using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse &, C4Collection *);
+        using HandlerMethod           = void (RESTListener::*)(RequestResponse&);
+        using DBHandlerMethod         = void (RESTListener::*)(RequestResponse&, C4Database*);
+        using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse&, C4Collection*);
 
-        void addHandler(net::Method, const char *uri, HandlerMethod);
-        void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
-        void addCollectionHandler(net::Method, const char *uri, CollectionHandlerMethod);
+        void addHandler(net::Method, const char* uri, HandlerMethod);
+        void addDBHandler(net::Method, const char* uri, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char* uri, CollectionHandlerMethod);
 
-        std::vector<net::Address> _addresses(C4Database *dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
+        std::vector<net::Address> _addresses(C4Database* dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
 
-        virtual void handleSync(RequestResponse &, C4Database *);
+        virtual void handleSync(RequestResponse&, C4Database*);
 
         static std::string serverNameAndVersion();
         static std::string kServerName;
 
       private:
         pair<string, C4CollectionSpec> parseKeySpace(slice keySpace);
-        bool                           collectionGiven(RequestResponse &);
+        bool                           collectionGiven(RequestResponse&);
 
-        void handleGetRoot(RequestResponse &);
-        void handleGetAllDBs(RequestResponse &);
-        void handleReplicate(RequestResponse &);
-        void handleActiveTasks(RequestResponse &);
+        void handleGetRoot(RequestResponse&);
+        void handleGetAllDBs(RequestResponse&);
+        void handleReplicate(RequestResponse&);
+        void handleActiveTasks(RequestResponse&);
 
-        void handleGetDatabase(RequestResponse &, C4Collection *);
-        void handleCreateDatabase(RequestResponse &);
-        void handleDeleteDatabase(RequestResponse &, C4Collection *);
+        void handleGetDatabase(RequestResponse&, C4Collection*);
+        void handleCreateDatabase(RequestResponse&);
+        void handleDeleteDatabase(RequestResponse&, C4Collection*);
 
-        void handleGetAllDocs(RequestResponse &, C4Collection *);
-        void handleGetDoc(RequestResponse &, C4Collection *);
-        void handleModifyDoc(RequestResponse &, C4Collection *);
-        void handleBulkDocs(RequestResponse &, C4Collection *);
+        void handleGetAllDocs(RequestResponse&, C4Collection*);
+        void handleGetDoc(RequestResponse&, C4Collection*);
+        void handleModifyDoc(RequestResponse&, C4Collection*);
+        void handleBulkDocs(RequestResponse&, C4Collection*);
 
         bool modifyDoc(fleece::Dict body, std::string docID, std::string revIDQuery, bool deleting, bool newEdits,
-                       C4Collection *coll, fleece::JSONEncoder &json, C4Error *outError) noexcept;
+                       C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
 
         std::unique_ptr<FilePath>  _directory;
         const bool                 _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;

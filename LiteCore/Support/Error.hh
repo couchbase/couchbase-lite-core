@@ -90,11 +90,11 @@ namespace litecore {
         std::shared_ptr<fleece::Backtrace> backtrace;
 
         error(Domain, int code);
-        error(error::Domain, int code, const std::string &what);
+        error(error::Domain, int code, const std::string& what);
 
         explicit error(LiteCoreError e) : error(LiteCore, e) {}
 
-        error &operator=(const error &e);
+        error& operator=(const error& e);
 
         void captureBacktrace(unsigned skipFrames = 0);
 
@@ -108,24 +108,24 @@ namespace litecore {
         /** Returns the error equivalent to a given runtime_error. Uses RTTI to discover if the
             error is already an `error` instance; otherwise tries to convert some other known
             exception types like SQLite::Exception. */
-        static error convertRuntimeError(const std::runtime_error &);
-        static error convertException(const std::exception &);
+        static error convertRuntimeError(const std::runtime_error&);
+        static error convertException(const std::exception&);
 
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;
 
-        static const char *nameOfDomain(Domain) noexcept;
+        static const char* nameOfDomain(Domain) noexcept;
 
         /** Constructs and throws an error. */
         [[noreturn]] static void _throw(Domain d, int c);
         [[noreturn]] static void _throw(LiteCoreError);
         [[noreturn]] static void _throwErrno();
-        [[noreturn]] static void _throw(LiteCoreError, const char *msg, ...) __printflike(2, 3);
-        [[noreturn]] static void _throwErrno(const char *msg, ...) __printflike(1, 2);
+        [[noreturn]] static void _throw(LiteCoreError, const char* msg, ...) __printflike(2, 3);
+        [[noreturn]] static void _throwErrno(const char* msg, ...) __printflike(1, 2);
 
         /** Throws an assertion failure exception. Called by the Assert() macro. */
-        [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line, const char *expr,
-                                                 const char *message = nullptr, ...) __printflike(5, 6);
+        [[noreturn]] static void assertionFailed(const char* func, const char* file, unsigned line, const char* expr,
+                                                 const char* message = nullptr, ...) __printflike(5, 6);
 
         static void setNotableExceptionHook(std::function<void()> hook);
 
@@ -133,11 +133,11 @@ namespace litecore {
         static bool sCaptureBacktraces;
     };
 
-    static inline bool operator==(const error &a, const error &b) noexcept {
+    static inline bool operator==(const error& a, const error& b) noexcept {
         return a.domain == b.domain && a.code == b.code;
     }
 
-    static inline bool operator==(const error &a, error::LiteCoreError code) noexcept {
+    static inline bool operator==(const error& a, error::LiteCoreError code) noexcept {
         return a.domain == error::LiteCore && a.code == code;
     }
 

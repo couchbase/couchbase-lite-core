@@ -150,7 +150,7 @@ class ReplicatorLoopbackTest
             for ( int i = 0; i < optsRef1->collectionOpts.size(); ++i ) {
                 _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
             }
-        } catch ( const exception &exc ) {
+        } catch ( const exception& exc ) {
             // In this suite of tests, we don't use C4Replicator as the holder.
             // The delegate of the respective Replicators is 'this'. With C4Replicator
             // as the holder, the exception would have been caught by C4Replicator when it
@@ -216,7 +216,7 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
-    virtual void replicatorGotHTTPResponse(Replicator *repl, int status, const websocket::Headers &headers) override {
+    virtual void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -230,7 +230,7 @@ class ReplicatorLoopbackTest
 
     virtual void replicatorGotTLSCertificate(slice certData) override {}
 
-    virtual void replicatorStatusChanged(Replicator *repl, const Replicator::Status &status) override {
+    virtual void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -255,7 +255,7 @@ class ReplicatorLoopbackTest
             }
         }
 
-        bool &finished = (repl == _replClient) ? _replicatorClientFinished : _replicatorServerFinished;
+        bool& finished = (repl == _replClient) ? _replicatorClientFinished : _replicatorServerFinished;
         Assert(!finished);
         if ( status.level == kC4Stopped ) {
             finished = true;
@@ -263,13 +263,13 @@ class ReplicatorLoopbackTest
         }
     }
 
-    virtual void replicatorDocumentsEnded(Replicator *repl, const std::vector<Retained<ReplicatedRev>> &revs) override {
+    virtual void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
             Assert(!_replicatorClientFinished);
-            for ( auto &rev : revs ) {
+            for ( auto& rev : revs ) {
                 auto dir = rev->dir();
                 if ( rev->error.code ) {
                     if ( dir == Dir::kPulling && rev->error.domain == LiteCoreDomain
@@ -295,7 +295,7 @@ class ReplicatorLoopbackTest
         }
     }
 
-    virtual void replicatorBlobProgress(Replicator *repl, const Replicator::BlobProgress &p) override {
+    virtual void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -312,7 +312,7 @@ class ReplicatorLoopbackTest
             p.bytesCompleted, p.bytesTotal);
     }
 
-    virtual void replicatorConnectionClosed(Replicator *repl, const CloseStatus &status) override {
+    virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -329,8 +329,8 @@ class ReplicatorLoopbackTest
     void installConflictHandler() {
         c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
         REQUIRE(resolvDB);
-        auto &conflictHandlerRunning = _conflictHandlerRunning;
-        _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev *rev) {
+        auto& conflictHandlerRunning = _conflictHandlerRunning;
+        _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev* rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             Log("Resolving conflict in '%.*s' ...", SPLAT(rev->docID));
 
@@ -403,7 +403,7 @@ class ReplicatorLoopbackTest
         std::this_thread::sleep_for(interval);
     }
 
-    int addDocs(C4Collection *coll, duration interval, int total) {
+    int addDocs(C4Collection* coll, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int              docNo   = 1;
         constexpr size_t bufSize = 20;
@@ -421,9 +421,9 @@ class ReplicatorLoopbackTest
         return docNo - 1;
     }
 
-    static void addRevs(C4Collection *collection, duration interval, alloc_slice docID, int firstRev, int totalRevs,
-                        bool useFakeRevIDs, const char *logName) {
-        C4Database *db = c4coll_getDatabase(collection);
+    static void addRevs(C4Collection* collection, duration interval, alloc_slice docID, int firstRev, int totalRevs,
+                        bool useFakeRevIDs, const char* logName) {
+        C4Database* db = c4coll_getDatabase(collection);
         for ( int i = 0; i < totalRevs; i++ ) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
@@ -442,7 +442,7 @@ class ReplicatorLoopbackTest
         Log("-------- %s: Done creating revs --------", logName);
     }
 
-    static std::thread *runInParallel(std::function<void()> callback) {
+    static std::thread* runInParallel(std::function<void()> callback) {
         return new std::thread([=]() mutable { callback(); });
     }
 
@@ -465,7 +465,7 @@ class ReplicatorLoopbackTest
 
 #pragma mark - VALIDATION:
 
-    alloc_slice absoluteRevID(C4Document *doc) {
+    alloc_slice absoluteRevID(C4Document* doc) {
         if ( isRevTrees() ) return alloc_slice(doc->revID);
         else
             return alloc_slice(c4doc_getRevisionHistory(doc, 999, nullptr, 0));
@@ -477,7 +477,7 @@ class ReplicatorLoopbackTest
     else                                                                                                               \
         REQUIRE(EXPR)  // REQUIRE() is kind of expensive
 
-    void compareDocs(C4Document *doc1, C4Document *doc2) {
+    void compareDocs(C4Document* doc1, C4Document* doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
         fastREQUIRE(doc1->docID == doc2->docID);
@@ -522,18 +522,18 @@ class ReplicatorLoopbackTest
         }
     }
 
-    void validateCheckpoint(C4Database *database, bool local, const char *body, const char *meta = "1-") {
+    void validateCheckpoint(C4Database* database, bool local, const char* body, const char* meta = "1-") {
         validateCollectionCheckpoint(database, 0, local, body, meta);
     }
 
-    void validateCheckpoints(C4Database *localDB, C4Database *remoteDB, const char *body, const char *meta = "1-cc") {
+    void validateCheckpoints(C4Database* localDB, C4Database* remoteDB, const char* body, const char* meta = "1-cc") {
         validateCollectionCheckpoints(localDB, remoteDB, 0, body, meta);
     }
 
-    void clearCheckpoint(C4Database *database, bool local) { clearCollectionCheckpoint(database, 0, local); }
+    void clearCheckpoint(C4Database* database, bool local) { clearCollectionCheckpoint(database, 0, local); }
 
-    void validateCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local, const char *body,
-                                      const char *meta = "1-") {
+    void validateCollectionCheckpoint(C4Database* database, unsigned collectionIndex, bool local, const char* body,
+                                      const char* meta = "1-") {
         C4Error err = {};
         C4Slice storeName;
         if ( local ) {
@@ -551,13 +551,13 @@ class ReplicatorLoopbackTest
         if ( !local ) CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }
 
-    void validateCollectionCheckpoints(C4Database *localDB, C4Database *remoteDB, unsigned collectionIndex,
-                                       const char *body, const char *meta = "1-cc") {
+    void validateCollectionCheckpoints(C4Database* localDB, C4Database* remoteDB, unsigned collectionIndex,
+                                       const char* body, const char* meta = "1-cc") {
         validateCollectionCheckpoint(localDB, collectionIndex, true, body, meta);
         validateCollectionCheckpoint(remoteDB, collectionIndex, false, body, meta);
     }
 
-    void clearCollectionCheckpoint(C4Database *database, unsigned collectionIndex, bool local) {
+    void clearCollectionCheckpoint(C4Database* database, unsigned collectionIndex, bool local) {
         C4Error err;
         C4Slice storeName;
         if ( local ) {
@@ -575,49 +575,49 @@ class ReplicatorLoopbackTest
     static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
         alloc_slice ciphertext(cleartext);
         for ( size_t i = 0; i < ciphertext.size; ++i )
-            (uint8_t &)ciphertext[i] += delta;  // "I've got patent pending on that!" --Wallace
+            (uint8_t&)ciphertext[i] += delta;  // "I've got patent pending on that!" --Wallace
         return ciphertext;
     }
 
 #pragma mark - UTILS:
 
     template <class SET>
-    static std::vector<std::string> asVector(const SET &strings) {
+    static std::vector<std::string> asVector(const SET& strings) {
         std::vector<std::string> out;
-        for ( const std::string &s : strings ) out.push_back(s);
+        for ( const std::string& s : strings ) out.push_back(s);
         return out;
     }
 
 #pragma mark - VARS:
 
 
-    C4Database                          *db2{nullptr};
-    static constexpr C4CollectionSpec    _collSpec{"test"_sl, "loopback"_sl};
-    C4Collection                        *_collDB1;
-    C4Collection                        *_collDB2;
-    Retained<Replicator>                 _replClient, _replServer;
-    std::vector<alloc_slice>             _checkpointIDs;
-    std::unique_ptr<std::thread>         _parallelThread;
-    bool                                 _stopOnIdle{0};
-    std::mutex                           _mutex;
-    std::condition_variable              _cond;
-    bool                                 _replicatorClientFinished{false}, _replicatorServerFinished{false};
-    C4ReplicatorProgressLevel            _clientProgressLevel{}, _serverProgressLevel{};
-    bool                                 _gotResponse{false};
-    Replicator::Status                   _statusReceived{};
-    unsigned                             _statusChangedCalls{0};
-    int64_t                              _expectedDocumentCount{0};
-    int64_t                              _expectedUnitsComplete{-1};
-    C4Error                              _expectedError{};
-    std::set<std::string>                _docPushErrors, _docPullErrors;
-    std::set<std::string>                _expectedDocPushErrors, _expectedDocPullErrors;
-    bool                                 _ignoreLackOfDocErrors = false;
-    bool                                 _ignoreTransientErrors = false;
-    bool                                 _checkDocsFinished{true};
-    std::multiset<std::string>           _docsFinished, _expectedDocsFinished;
-    unsigned                             _blobPushProgressCallbacks{0}, _blobPullProgressCallbacks{0};
-    Replicator::BlobProgress             _lastBlobPushProgress{}, _lastBlobPullProgress{};
-    std::function<void(ReplicatedRev *)> _conflictHandler;
-    bool                                 _conflictHandlerRunning{false};
-    std::function<repl::Options(const repl::Options &)> _updateClientOptions;
+    C4Database*                         db2{nullptr};
+    static constexpr C4CollectionSpec   _collSpec{"test"_sl, "loopback"_sl};
+    C4Collection*                       _collDB1;
+    C4Collection*                       _collDB2;
+    Retained<Replicator>                _replClient, _replServer;
+    std::vector<alloc_slice>            _checkpointIDs;
+    std::unique_ptr<std::thread>        _parallelThread;
+    bool                                _stopOnIdle{0};
+    std::mutex                          _mutex;
+    std::condition_variable             _cond;
+    bool                                _replicatorClientFinished{false}, _replicatorServerFinished{false};
+    C4ReplicatorProgressLevel           _clientProgressLevel{}, _serverProgressLevel{};
+    bool                                _gotResponse{false};
+    Replicator::Status                  _statusReceived{};
+    unsigned                            _statusChangedCalls{0};
+    int64_t                             _expectedDocumentCount{0};
+    int64_t                             _expectedUnitsComplete{-1};
+    C4Error                             _expectedError{};
+    std::set<std::string>               _docPushErrors, _docPullErrors;
+    std::set<std::string>               _expectedDocPushErrors, _expectedDocPullErrors;
+    bool                                _ignoreLackOfDocErrors = false;
+    bool                                _ignoreTransientErrors = false;
+    bool                                _checkDocsFinished{true};
+    std::multiset<std::string>          _docsFinished, _expectedDocsFinished;
+    unsigned                            _blobPushProgressCallbacks{0}, _blobPullProgressCallbacks{0};
+    Replicator::BlobProgress            _lastBlobPushProgress{}, _lastBlobPullProgress{};
+    std::function<void(ReplicatedRev*)> _conflictHandler;
+    bool                                _conflictHandlerRunning{false};
+    std::function<repl::Options(const repl::Options&)> _updateClientOptions;
 };

@@ -29,11 +29,11 @@ constexpr size_t kFolderBufSize = 64;
 
 class LogObject : public Logging {
   public:
-    LogObject(const std::string &identifier) : Logging(DBLog), _identifier(identifier) {}
+    LogObject(const std::string& identifier) : Logging(DBLog), _identifier(identifier) {}
 
-    LogObject(std::string &&identifier) : Logging(DBLog), _identifier(identifier) {}
+    LogObject(std::string&& identifier) : Logging(DBLog), _identifier(identifier) {}
 
-    void doLog(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info); }
+    void doLog(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info); }
 
     std::string loggingClassName() const override { return _identifier; }
 
@@ -61,13 +61,13 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
         size_t                size = 0xabcdabcd;
         map<unsigned, string> dummy;
         logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
-                   1234567890U, 2345678901LU, 123456789123456789LLU, size, (void *)0x7fff5fbc);
+                   1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for ( int sgn = -1; sgn <= 1; sgn += 2 ) {
             ptrdiff_t ptrdiff = 1234567890;
             logger.log(nullptr, dummy, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
                        1234567890 * sgn, 234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
         }
-        const char *str = "C string";
+        const char* str = "C string";
         slice       buf("hello");
         logger.log(nullptr, dummy, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf),
                    SPLAT(buf));
@@ -160,10 +160,10 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     LogEncoder   logger(out, LogLevel::Info);
     logger.log(nullptr, map<unsigned, string>(), LogEncoder::None, "Hi there");
 
-    logger.withStream([&](ostream &s) { CHECK(out.str().empty()); });
+    logger.withStream([&](ostream& s) { CHECK(out.str().empty()); });
     string encoded;
     CHECK(WaitUntil(5000ms, [&out, &logger, &encoded] {
-        logger.withStream([&](ostream &s) { encoded = out.str(); });
+        logger.withStream([&](ostream& s) { encoded = out.str(); });
         return !encoded.empty();
     }));
 
@@ -245,7 +245,7 @@ TEST_CASE("Logging throw in c++", "[Log]") {
     try {
         ExpectingExceptions x;
         LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
-    } catch ( std::exception &exc ) { excMsg = exc.what(); }
+    } catch ( std::exception& exc ) { excMsg = exc.what(); }
     CHECK(excMsg.find(msg) == 0);
     LogDomain::writeEncodedLogsTo(prevOptions);
 }

@@ -40,12 +40,12 @@ namespace litecore {
       public:
         access_lock() : _contents() {}
 
-        explicit access_lock(T &&contents) : _contents(std::move(contents)) {}
+        explicit access_lock(T&& contents) : _contents(std::move(contents)) {}
 
-        explicit access_lock(T &&contents, MUTEX &mutex) : _contents(std::move(contents)), _mutex(mutex) {}
+        explicit access_lock(T&& contents, MUTEX& mutex) : _contents(std::move(contents)), _mutex(mutex) {}
 
         using LOCK_GUARD = std::lock_guard<std::remove_reference_t<MUTEX>>;
-        using SENTRY     = std::function<void(const T &)>;
+        using SENTRY     = std::function<void(const T&)>;
 
         /** Temporary access token returned by the `useLocked()` method. You can pass it as a parameter
             as though it were that object, call the object via `->`, or access the object
@@ -53,15 +53,15 @@ namespace litecore {
         template <class REF>
         class access {
           public:
-            access(MUTEX &mut, REF ref) : _lock(mut), _ref(ref) {}
+            access(MUTEX& mut, REF ref) : _lock(mut), _ref(ref) {}
 
-            access(const access &) = delete;  // I cannot be copied
+            access(const access&) = delete;  // I cannot be copied
 #if defined(_MSC_VER) && _MSC_VER < 1920
             // https://developercommunity.visualstudio.com/t/15935-guaranteed-copy-elision-failure/1398603
             // Deleting this constructor causes copy elision failure.  Microsoft won't fix prior to VS 2019.
-            access(access &&) { throw std::runtime_error("No moving!"); }
+            access(access&&) { throw std::runtime_error("No moving!"); }
 #else
-            access(access &&) = delete;  // I cannot be moved
+            access(access&&) = delete;  // I cannot be moved
 #endif
 
             REF get() { return _ref; }
@@ -73,7 +73,7 @@ namespace litecore {
           private:
             friend access_lock;
 
-            access(MUTEX &mut, REF ref, SENTRY &sentry) : access(mut, ref) {
+            access(MUTEX& mut, REF ref, SENTRY& sentry) : access(mut, ref) {
                 if ( sentry ) sentry(_ref);
             }
 
@@ -86,54 +86,54 @@ namespace litecore {
 
         // (specialization when T is Retained<>)
         template <class R>
-        class access<Retained<R> &> {
+        class access<Retained<R>&> {
           public:
-            access(MUTEX &mut, Retained<R> &ref) : _lock(mut), _ref(ref) {}
+            access(MUTEX& mut, Retained<R>& ref) : _lock(mut), _ref(ref) {}
 
-            access(const access &) = delete;  // I cannot be copied
+            access(const access&) = delete;  // I cannot be copied
 #if defined(_MSC_VER) && _MSC_VER < 1920
             // https://developercommunity.visualstudio.com/t/15935-guaranteed-copy-elision-failure/1398603
             // Deleting this constructor causes copy elision failure.  Microsoft won't fix prior to VS 2019.
-            access(access &&) { throw std::runtime_error("No moving!"); }
+            access(access&&) { throw std::runtime_error("No moving!"); }
 #else
-            access(access &&) = delete;  // I cannot be moved
+            access(access&&) = delete;  // I cannot be moved
 #endif
 
-            Retained<R> &get() { return _ref; }
+            Retained<R>& get() { return _ref; }
 
-            operator R *() { return _ref; }
+            operator R*() { return _ref; }
 
-            R *operator->() { return _ref; }
+            R* operator->() { return _ref; }
 
           private:
             friend access_lock;
 
-            access(MUTEX &mut, Retained<R> &ref, SENTRY &sentry) : access(mut, ref) {
+            access(MUTEX& mut, Retained<R>& ref, SENTRY& sentry) : access(mut, ref) {
                 if ( sentry ) sentry(_ref);
             }
 
             access_lock::LOCK_GUARD _lock;
-            Retained<R>            &_ref;
+            Retained<R>&            _ref;
         };
 
         // (specialization for const access when T is Retained<>)
         template <class R>
-        class access<const Retained<R> &> {
+        class access<const Retained<R>&> {
           public:
-            access(MUTEX &mut, const R *ref) : _lock(mut), _ref(ref) {}
+            access(MUTEX& mut, const R* ref) : _lock(mut), _ref(ref) {}
 
-            access(const access &) = delete;  // I cannot be copied
+            access(const access&) = delete;  // I cannot be copied
 #if defined(_MSC_VER) && _MSC_VER < 1920
             // https://developercommunity.visualstudio.com/t/15935-guaranteed-copy-elision-failure/1398603
             // Deleting this constructor causes copy elision failure.  Microsoft won't fix prior to VS 2019.
-            access(access &&) { throw std::runtime_error("No moving!"); }
+            access(access&&) { throw std::runtime_error("No moving!"); }
 #else
-            access(access &&) = delete;  // I cannot be moved
+            access(access&&) = delete;  // I cannot be moved
 #endif
 
             auto get() { return _ref; }
 
-            operator const R *() { return _ref; }
+            operator const R*() { return _ref; }
 
             auto operator*() { return _ref; }
 
@@ -142,12 +142,12 @@ namespace litecore {
           private:
             friend access_lock;
 
-            access(MUTEX &mut, const Retained<R> &ref, SENTRY &sentry) : access(mut, ref.get()) {
+            access(MUTEX& mut, const Retained<R>& ref, SENTRY& sentry) : access(mut, ref.get()) {
                 if ( sentry ) sentry(ref);
             }
 
             access_lock::LOCK_GUARD _lock;
-            const R                *_ref;
+            const R*                _ref;
         };
 
         /// Locks my mutex and returns an `access` object that acts as a proxy for my contents.
@@ -157,7 +157,7 @@ namespace litecore {
         /// You can assign the result of `useLocked()` to a local variable and use it multiple times
         /// within the same lock scope; just make sure that variable has as brief a lifetime as
         /// possible.
-        auto useLocked() { return access<T &>(_mutex, _contents, _sentry); }
+        auto useLocked() { return access<T&>(_mutex, _contents, _sentry); }
 
         /// Locks my mutex and passes a refence to my contents to the callback.
         template <class LAMBDA>
@@ -180,7 +180,7 @@ namespace litecore {
 
         // const versions:
 
-        auto useLocked() const { return access<const T &>(getMutex(), _contents, const_cast<SENTRY &>(_sentry)); }
+        auto useLocked() const { return access<const T&>(getMutex(), _contents, const_cast<SENTRY&>(_sentry)); }
 
         template <class LAMBDA>
         void useLocked(LAMBDA callback) const {
@@ -196,7 +196,7 @@ namespace litecore {
             return callback(_contents);
         }
 
-        MUTEX &getMutex() const { return const_cast<MUTEX &>(_mutex); }
+        MUTEX& getMutex() const { return const_cast<MUTEX&>(_mutex); }
 
       protected:
         SENTRY _sentry;
@@ -209,15 +209,15 @@ namespace litecore {
     /** An access_lock that shares the same mutex as another instance instead of having its own.
         Obviously the other instance needs to remain valid as long as this one exists! */
     template <class T, class MUTEX = std::recursive_mutex>
-    class shared_access_lock : public access_lock<T, MUTEX &> {
+    class shared_access_lock : public access_lock<T, MUTEX&> {
       public:
         template <class U>
-        explicit shared_access_lock(T &&contents, const access_lock<U, MUTEX> &sharing)
-            : access_lock<T, MUTEX &>(std::move(contents), sharing.getMutex()) {}
+        explicit shared_access_lock(T&& contents, const access_lock<U, MUTEX>& sharing)
+            : access_lock<T, MUTEX&>(std::move(contents), sharing.getMutex()) {}
 
         template <class U>
-        explicit shared_access_lock(T &&contents, const access_lock<U, MUTEX> *sharing)
-            : access_lock<T, MUTEX &>(std::move(contents), sharing->getMutex()) {}
+        explicit shared_access_lock(T&& contents, const access_lock<U, MUTEX>* sharing)
+            : access_lock<T, MUTEX&>(std::move(contents), sharing->getMutex()) {}
     };
 
 }  // namespace litecore

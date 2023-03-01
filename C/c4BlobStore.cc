@@ -42,9 +42,9 @@ static constexpr size_t kBlobDigestStringLength
         = ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4,  // Length of base64 w/o prefix
         kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
 
-static SHA1 &digest(C4BlobKey &key) { return (SHA1 &)key.bytes; }
+static SHA1& digest(C4BlobKey& key) { return (SHA1&)key.bytes; }
 
-static const SHA1 &digest(const C4BlobKey &key) { return (const SHA1 &)key.bytes; }
+static const SHA1& digest(const C4BlobKey& key) { return (const SHA1&)key.bytes; }
 
 C4BlobKey C4BlobKey::computeDigestOfContent(slice content) {
     C4BlobKey key;
@@ -70,7 +70,7 @@ std::optional<C4BlobKey> C4BlobKey::withDigestString(slice base64String) {
     return BlobKeyFromBase64(base64String);
 }
 
-static string BlobKeyToFilename(const C4BlobKey &key) {
+static string BlobKeyToFilename(const C4BlobKey& key) {
     // Change '/' characters in the base64 into '_':
     string str = digest(key).asBase64();
     replace(str.begin(), str.end(), '/', '_');
@@ -89,7 +89,7 @@ static optional<C4BlobKey> BlobKeyFromFilename(slice filename) {
 
 #pragma mark - C4BLOBSTORE METHODS:
 
-C4BlobStore::C4BlobStore(slice dirPath, C4DatabaseFlags flags, const C4EncryptionKey &key)
+C4BlobStore::C4BlobStore(slice dirPath, C4DatabaseFlags flags, const C4EncryptionKey& key)
     : _dirPath(dirPath), _flags(flags), _encryptionKey(key) {
     FilePath dir(_dirPath, "");
     if ( dir.exists() ) {
@@ -159,7 +159,7 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
 
 #pragma mark - CREATING / DELETING BLOBS:
 
-C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) {
+C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey* expectedKey) {
     auto stream = getWriteStream();
     stream->write(contents);
     return install(stream.get(), expectedKey);
@@ -170,7 +170,7 @@ unique_ptr<BlobWriteStream> C4BlobStore::getWriteStream() {
                                         slice(&_encryptionKey.bytes, sizeof(_encryptionKey.bytes)));
 }
 
-C4BlobKey C4BlobStore::install(BlobWriteStream *writer, const C4BlobKey *expectedKey) {
+C4BlobKey C4BlobStore::install(BlobWriteStream* writer, const C4BlobKey* expectedKey) {
     writer->close();
     C4BlobKey key = writer->computeKey();
     if ( expectedKey && *expectedKey != key ) error::_throw(error::CorruptData);
@@ -182,10 +182,10 @@ void C4BlobStore::deleteBlob(C4BlobKey key) { pathForKey(key).del(); }
 
 #pragma mark - HOUSEKEEPING:
 
-unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey> &inUse) {
+unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey>& inUse) {
     unsigned numDeleted = 0;
-    dir().forEachFile([&](const FilePath &path) {
-        const string &filename = path.fileName();
+    dir().forEachFile([&](const FilePath& path) {
+        const string& filename = path.fileName();
         if ( auto key = BlobKeyFromFilename(filename); key ) {
             if ( find(inUse.cbegin(), inUse.cend(), *key) == inUse.cend() ) {
                 ++numDeleted;
@@ -199,9 +199,9 @@ unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey> &inUse) {
     return numDeleted;
 }
 
-void C4BlobStore::copyBlobsTo(C4BlobStore &toStore) {
-    dir().forEachFile([&](const FilePath &path) {
-        const string &filename = path.fileName();
+void C4BlobStore::copyBlobsTo(C4BlobStore& toStore) {
+    dir().forEachFile([&](const FilePath& path) {
+        const string& filename = path.fileName();
         if ( auto key = BlobKeyFromFilename(filename); key ) {
             auto    src = getReadStream(*key);
             auto    dst = toStore.getWriteStream();
@@ -215,7 +215,7 @@ void C4BlobStore::copyBlobsTo(C4BlobStore &toStore) {
     });
 }
 
-void C4BlobStore::replaceWith(C4BlobStore &other) {
+void C4BlobStore::replaceWith(C4BlobStore& other) {
     other.dir().moveToReplacingDir(dir(), true);
     _flags         = other._flags;
     _encryptionKey = other._encryptionKey;
@@ -223,9 +223,9 @@ void C4BlobStore::replaceWith(C4BlobStore &other) {
 
 #pragma mark - STREAMS:
 
-C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key) : _impl(store.getReadStream(key)) {}
+C4ReadStream::C4ReadStream(const C4BlobStore& store, C4BlobKey key) : _impl(store.getReadStream(key)) {}
 
-C4ReadStream::C4ReadStream(C4ReadStream &&other) : _impl(move(other._impl)) {}
+C4ReadStream::C4ReadStream(C4ReadStream&& other) : _impl(move(other._impl)) {}
 
 C4ReadStream::~C4ReadStream() = default;
 
@@ -236,9 +236,9 @@ void    C4ReadStream::seek(int64_t pos)             { _impl->seek(pos); }
 
 // clang-format on
 
-C4WriteStream::C4WriteStream(C4BlobStore &store) : _impl(store.getWriteStream()), _store(store) {}
+C4WriteStream::C4WriteStream(C4BlobStore& store) : _impl(store.getWriteStream()), _store(store) {}
 
-C4WriteStream::C4WriteStream(C4WriteStream &&other)
+C4WriteStream::C4WriteStream(C4WriteStream&& other)
     : InstanceCounted(move(other)), _impl(move(other._impl)), _store(other._store) {}
 
 C4WriteStream::~C4WriteStream() {
@@ -285,7 +285,7 @@ bool C4Blob::dictContainsBlobs(FLDict dict) noexcept {
     return found;
 }
 
-bool C4Blob::findBlobReferences(FLDict dict, const FindBlobCallback &callback) {
+bool C4Blob::findBlobReferences(FLDict dict, const FindBlobCallback& callback) {
     if ( dict ) {
         for ( DeepIterator i = Dict(dict); i; ++i ) {
             auto d = FLDict(i.value().asDict());
@@ -298,7 +298,7 @@ bool C4Blob::findBlobReferences(FLDict dict, const FindBlobCallback &callback) {
     return true;
 }
 
-bool C4Blob::findAttachmentReferences(FLDict docRoot, const FindBlobCallback &callback) {
+bool C4Blob::findAttachmentReferences(FLDict docRoot, const FindBlobCallback& callback) {
     if ( auto atts = Dict(docRoot).get(C4Blob::kLegacyAttachmentsProperty).asDict(); atts ) {
         for ( Dict::iterator i(atts); i; ++i ) {
             if ( auto d = i.value().asDict(); d ) {
@@ -324,13 +324,13 @@ static constexpr slice kGoodTypeSubstrings[] = {"json"_sl, "html"_sl, "xml"_sl, 
 static constexpr slice kBadTypePrefixes[] = {"image/"_sl, "audio/"_sl, "video/"_sl, {}};
 
 static bool containsAnyOf(slice type, const slice types[]) {
-    for ( const slice *t = &types[0]; *t; ++t )
+    for ( const slice* t = &types[0]; *t; ++t )
         if ( type.find(*t) ) return true;
     return false;
 }
 
 static bool startsWithAnyOf(slice type, const slice types[]) {
-    for ( const slice *t = &types[0]; *t; ++t )
+    for ( const slice* t = &types[0]; *t; ++t )
         if ( type.hasPrefix(*t) ) return true;
     return false;
 }

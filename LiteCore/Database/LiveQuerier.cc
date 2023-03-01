@@ -33,7 +33,7 @@ namespace litecore {
     static constexpr delay_t kShortDelay = chrono::milliseconds(0);
     static constexpr delay_t kLongDelay  = 500ms;
 
-    LiveQuerier::LiveQuerier(DatabaseImpl *db, Query *query, bool continuous, Delegate *delegate)
+    LiveQuerier::LiveQuerier(DatabaseImpl* db, Query* query, bool continuous, Delegate* delegate)
         : Actor(QueryLog)
         , _database(db)
         , _backgroundDB(db->backgroundDatabase())
@@ -54,21 +54,21 @@ namespace litecore {
 
     std::string LiveQuerier::loggingIdentifier() const { return string(_expression); }
 
-    void LiveQuerier::start(const Query::Options &options) {
+    void LiveQuerier::start(const Query::Options& options) {
         _stopping = false;
         _lastTime = clock::now();
         _stopping = false;
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
 
-    void LiveQuerier::changeOptions(const Query::Options &options) {
+    void LiveQuerier::changeOptions(const Query::Options& options) {
         _lastTime = clock::now();
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_changeOptions), options);
     }
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
+        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&](DataFile* df) {
             // CBL-2335: Guard access to the _stopping variable so that
             // it is not changed at unpredictable times
             if ( _stopping ) { return true; }
@@ -95,7 +95,7 @@ namespace litecore {
 
     void LiveQuerier::_stop() {
         if ( _query ) {
-            _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+            _backgroundDB->dataFile().useLocked([&](DataFile* df) {
                 _query             = nullptr;
                 _currentEnumerator = nullptr;
                 if ( _continuous ) _backgroundDB->removeTransactionObserver(this);
@@ -129,7 +129,7 @@ namespace litecore {
         Retained<QueryEnumerator> newQE;
         C4Error                   error{};
         fleece::Stopwatch         st;
-        auto                      stopping = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
+        auto                      stopping = _backgroundDB->dataFile().useLocked<bool>([&](DataFile* df) {
             if ( _stopping ) {
                 // CBL-2335: Guard access to the _stopping variable so that
                 // it is not changed at unpredictable times

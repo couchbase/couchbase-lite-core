@@ -42,7 +42,7 @@ namespace litecore::net {
       public:
         using slice = fleece::slice;
 
-        explicit TCPSocket(bool isClient, TLSContext * = nullptr);
+        explicit TCPSocket(bool isClient, TLSContext* = nullptr);
         virtual ~TCPSocket();
 
         /// Initializes TCPSocket, must call at least once before using any
@@ -50,7 +50,7 @@ namespace litecore::net {
         static void initialize();
 
         /// Returns the TLS context, if any, used by this socket.
-        TLSContext *tlsContext();
+        TLSContext* tlsContext();
 
         /// Closes the socket if it's open.
         void close();
@@ -59,7 +59,7 @@ namespace litecore::net {
 
         operator bool() const { return connected(); }
 
-        void onClose(std::function<void()> &&callback) { _onClose = move(callback); }
+        void onClose(std::function<void()>&& callback) { _onClose = move(callback); }
 
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
@@ -83,11 +83,11 @@ namespace litecore::net {
         ///   reached or not.
         ///
         /// On other error returns -1.
-        ssize_t read(void *dst, size_t byteCount) MUST_USE_RESULT;
+        ssize_t read(void* dst, size_t byteCount) MUST_USE_RESULT;
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
         /// On premature EOF returns 0 and sets error {WebSocket, 400}.
-        ssize_t readExactly(void *dst, size_t byteCount) MUST_USE_RESULT;
+        ssize_t readExactly(void* dst, size_t byteCount) MUST_USE_RESULT;
 
         static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
@@ -110,7 +110,7 @@ namespace litecore::net {
         /// Reads an HTTP body, given the headers.
         /// Supports explicit Content-Length, Chunked transfer encoding, or old-school read-to-EOF.
         /// On error, sets the error property and returns false.
-        bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body) MUST_USE_RESULT;
+        bool readHTTPBody(const websocket::Headers& headers, fleece::alloc_slice& body) MUST_USE_RESULT;
 
         bool atReadEOF() const { return _eofOnRead; }
 
@@ -126,7 +126,7 @@ namespace litecore::net {
         /// Those that are completely written are removed from the head of the vector.
         /// One that's partially written has its `buf` and `size` adjusted to cover only the
         /// unsent bytes. (This will always be the 1st in the vector on return.)
-        ssize_t write(std::vector<fleece::slice> &ioByteRanges) MUST_USE_RESULT;
+        ssize_t write(std::vector<fleece::slice>& ioByteRanges) MUST_USE_RESULT;
 
         bool atWriteEOF() const { return _eofOnWrite; }
 
@@ -152,14 +152,14 @@ namespace litecore::net {
         void    checkStreamError();
         bool    checkReadWriteStreamError();
         bool    checkSocketFailure();
-        ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
+        ssize_t _read(void* dst, size_t byteCount) MUST_USE_RESULT;
         void    pushUnread(slice);
         int     fileDescriptor();
 
       private:
         bool                   _setTimeout(double secs);
-        sockpp::stream_socket *actualSocket() const;
-        void                   addListener(int pollerEvent /*Poller::Event*/, std::function<void()> &&);
+        sockpp::stream_socket* actualSocket() const;
+        void                   addListener(int pollerEvent /*Poller::Event*/, std::function<void()>&&);
 
         std::unique_ptr<sockpp::stream_socket> _socket;              // The TCP (or TLS) socket
         fleece::Retained<TLSContext>           _tlsContext;          // Custom TLS context if any
@@ -177,10 +177,10 @@ namespace litecore::net {
     /** A client socket, that opens a TCP connection. */
     class ClientSocket : public TCPSocket {
       public:
-        explicit ClientSocket(TLSContext * = nullptr);
+        explicit ClientSocket(TLSContext* = nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
-        bool connect(const Address &addr) MUST_USE_RESULT;
+        bool connect(const Address& addr) MUST_USE_RESULT;
 
         /// Wrap the existing socket in TLS, performing a handshake.
         /// This is used after connecting to a CONNECT-type proxy, not in a normal connection.
@@ -199,9 +199,9 @@ namespace litecore::net {
     /** A server-side socket, that handles a client connection. */
     class ResponderSocket : public TCPSocket {
       public:
-        explicit ResponderSocket(TLSContext * = nullptr);
+        explicit ResponderSocket(TLSContext* = nullptr);
 
-        bool acceptSocket(sockpp::stream_socket &&) MUST_USE_RESULT;
+        bool acceptSocket(sockpp::stream_socket&&) MUST_USE_RESULT;
         bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;
 
         /// Perform server-side TLS handshake.

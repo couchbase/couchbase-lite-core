@@ -24,7 +24,7 @@ namespace litecore {
 
 
     /** Clears a C4Error back to empty. */
-    static inline void clearError(C4Error *outError) noexcept {
+    static inline void clearError(C4Error* outError) noexcept {
         if ( outError ) outError->code = 0;
     }
 
@@ -54,7 +54,7 @@ namespace litecore {
     // If `fn` throws an exception, it catches the exception, stores it into `outError`,
     // and returns a default 0/nullptr/false value.
     template <typename RESULT, typename LAMBDA>
-    ALWAYS_INLINE RESULT tryCatch(C4Error *outError, LAMBDA fn) noexcept {
+    ALWAYS_INLINE RESULT tryCatch(C4Error* outError, LAMBDA fn) noexcept {
         try {
             return fn();
         }
@@ -66,7 +66,7 @@ namespace litecore {
     // If `fn` throws an exception, it catches the exception, stores it into `outError`,
     // and returns false.
     template <typename LAMBDA>
-    ALWAYS_INLINE bool tryCatch(C4Error *outError, LAMBDA fn) noexcept {
+    ALWAYS_INLINE bool tryCatch(C4Error* outError, LAMBDA fn) noexcept {
         try {
             fn();
             return true;

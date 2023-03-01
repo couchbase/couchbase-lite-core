@@ -32,20 +32,20 @@ namespace litecore {
     bool RawRevision::isRevTree(slice raw_tree) {
         // The data cannot be shorter than a single revision:
         if ( raw_tree.size < sizeof(RawRevision) ) return false;
-        auto end = (const RawRevision *)raw_tree.end();
+        auto end = (const RawRevision*)raw_tree.end();
         // Check each revision:
-        const RawRevision *next;
-        for ( auto rawRev = (const RawRevision *)raw_tree.buf; rawRev < end; rawRev = next ) {
+        const RawRevision* next;
+        for ( auto rawRev = (const RawRevision*)raw_tree.buf; rawRev < end; rawRev = next ) {
             next = rawRev->next();
             if ( next == rawRev ) return true;  // This is the end-of-tree marker (a 0 size).
-            if ( next <= (void *)&rawRev->revID[rawRev->revIDLen] ) return false;  // Rev is too short for its data:
+            if ( next <= (void*)&rawRev->revID[rawRev->revIDLen] ) return false;  // Rev is too short for its data:
         }
         return false;  // Fell off end before finding end marker
     }
 
-    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap &remoteMap, RevTree *owner,
+    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap, RevTree* owner,
                                             sequence_t curSeq) {
-        const RawRevision *rawRev = (const RawRevision *)raw_tree.buf;
+        const RawRevision* rawRev = (const RawRevision*)raw_tree.buf;
         if ( fleece::endian::dec32(rawRev->size_BE) > raw_tree.size )
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary error");
         unsigned count = rawRev->count();
@@ -60,8 +60,8 @@ namespace litecore {
             rev++;
         }
 
-        auto entry = (const RemoteEntry *)offsetby(rawRev, sizeof(uint32_t));
-        while ( entry < (const void *)raw_tree.end() ) {
+        auto entry = (const RemoteEntry*)offsetby(rawRev, sizeof(uint32_t));
+        while ( entry < (const void*)raw_tree.end() ) {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto              revIndex = endian::dec16(entry->revIndex_BE);
             if ( remoteID == 0 || revIndex >= count )
@@ -70,41 +70,41 @@ namespace litecore {
             ++entry;
         }
 
-        if ( (uint8_t *)entry != (uint8_t *)raw_tree.end() ) {
+        if ( (uint8_t*)entry != (uint8_t*)raw_tree.end() ) {
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary layout error");
         }
         return revs;
     }
 
-    alloc_slice RawRevision::encodeTree(const vector<Rev *> &revs, const RevTree::RemoteRevMap &remoteMap) {
+    alloc_slice RawRevision::encodeTree(const vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
-        for ( Rev *rev : revs ) totalSize += sizeToWrite(*rev);
+        for ( Rev* rev : revs ) totalSize += sizeToWrite(*rev);
         totalSize += remoteMap.size() * sizeof(RemoteEntry);
 
         alloc_slice result(totalSize);
 
         // Write the raw revs:
-        RawRevision *dst = (RawRevision *)result.buf;
-        for ( Rev *src : revs ) { dst = dst->copyFrom(*src); }
+        RawRevision* dst = (RawRevision*)result.buf;
+        for ( Rev* src : revs ) { dst = dst->copyFrom(*src); }
         dst->size_BE = endian::enc32(0);  // write trailing 0 size marker
 
-        auto entry = (RemoteEntry *)offsetby(dst, sizeof(uint32_t));
+        auto entry = (RemoteEntry*)offsetby(dst, sizeof(uint32_t));
         for ( auto remote : remoteMap ) {
             entry->remoteDBID_BE = endian::enc16(uint16_t(remote.first));
             entry->revIndex_BE   = endian::enc16(uint16_t(remote.second->index()));
             ++entry;
         }
 
-        Assert(entry == (const void *)result.end());
+        Assert(entry == (const void*)result.end());
         return result;
     }
 
-    size_t RawRevision::sizeToWrite(const Rev &rev) {
+    size_t RawRevision::sizeToWrite(const Rev& rev) {
         return offsetof(RawRevision, revID) + rev.revID.size + SizeOfVarInt(uint64_t(rev.sequence)) + rev._body.size;
     }
 
-    RawRevision *RawRevision::copyFrom(const Rev &rev) {
+    RawRevision* RawRevision::copyFrom(const Rev& rev) {
         size_t revSize = sizeToWrite(rev);
         this->size_BE  = endian::enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
@@ -115,15 +115,15 @@ namespace litecore {
         if ( rev._body ) dstFlags |= RawRevision::kHasData;
         this->flags = (Rev::Flags)dstFlags;
 
-        void *dstData = offsetby(&this->revID[0], rev.revID.size);
+        void* dstData = offsetby(&this->revID[0], rev.revID.size);
         dstData       = offsetby(dstData, PutUVarInt(dstData, uint64_t(rev.sequence)));
         rev._body.copyTo(dstData);
 
-        return (RawRevision *)offsetby(this, revSize);
+        return (RawRevision*)offsetby(this, revSize);
     }
 
-    void RawRevision::copyTo(Rev &dst, const deque<Rev> &revs) const {
-        const void *end       = this->next();
+    void RawRevision::copyTo(Rev& dst, const deque<Rev>& revs) const {
+        const void* end       = this->next();
         dst._hasInsertedRevID = false;
         dst._hasInsertedBody  = false;
         dst.revID             = {this->revID, this->revIDLen};
@@ -132,9 +132,9 @@ namespace litecore {
         if ( parentIndex == kNoParent ) dst.parent = nullptr;
         else
             dst.parent = &revs[parentIndex];
-        const void *data = offsetby(&this->revID, this->revIDLen);
-        ptrdiff_t   len  = (uint8_t *)end - (uint8_t *)data;
-        data             = offsetby(data, GetUVarInt(slice(data, len), (uint64_t *)&dst.sequence));
+        const void* data = offsetby(&this->revID, this->revIDLen);
+        ptrdiff_t   len  = (uint8_t*)end - (uint8_t*)data;
+        data             = offsetby(data, GetUVarInt(slice(data, len), (uint64_t*)&dst.sequence));
         if ( this->flags & RawRevision::kHasData ) dst._body = slice(data, end);
         else
             dst._body = nullslice;
@@ -142,8 +142,8 @@ namespace litecore {
 
     slice RawRevision::body() const {
         if ( _usuallyTrue(this->flags & RawRevision::kHasData) ) {
-            const void *end  = this->next();
-            const void *data = offsetby(&this->revID, this->revIDLen);
+            const void* end  = this->next();
+            const void* data = offsetby(&this->revID, this->revIDLen);
             data             = SkipVarInt(data);
             return slice(data, end);
         } else {

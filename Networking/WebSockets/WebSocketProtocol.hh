@@ -90,19 +90,19 @@ namespace uWS {
       private:
         typedef uint16_t frameFormat;
 
-        static inline bool isFin(frameFormat &frame) { return frame & 128; }
+        static inline bool isFin(frameFormat& frame) { return frame & 128; }
 
-        static inline unsigned char getOpCode(frameFormat &frame) { return frame & 15; }
+        static inline unsigned char getOpCode(frameFormat& frame) { return frame & 15; }
 
-        static inline unsigned char payloadLength(frameFormat &frame) { return (frame >> 8) & 127; }
+        static inline unsigned char payloadLength(frameFormat& frame) { return (frame >> 8) & 127; }
 
-        static inline bool rsv23(frameFormat &frame) { return frame & 48; }
+        static inline bool rsv23(frameFormat& frame) { return frame & 48; }
 
-        static inline bool rsv1(frameFormat &frame) { return frame & 64; }
+        static inline bool rsv1(frameFormat& frame) { return frame & 64; }
 
-        static inline bool getMask(frameFormat &frame) { return frame & 32768; }
+        static inline bool getMask(frameFormat& frame) { return frame & 32768; }
 
-        static inline void unmaskPrecise(char *dst, char *src, char *mask, unsigned int length) {
+        static inline void unmaskPrecise(char* dst, char* src, char* mask, unsigned int length) {
             for ( ; length >= 4; length -= 4 ) {
                 *(dst++) = *(src++) ^ mask[0];
                 *(dst++) = *(src++) ^ mask[1];
@@ -112,12 +112,12 @@ namespace uWS {
             for ( ; length > 0; --length ) *(dst++) = *(src++) ^ *(mask++);
         }
 
-        static inline void unmaskPreciseCopyMask(char *dst, char *src, char *maskPtr, unsigned int length) {
+        static inline void unmaskPreciseCopyMask(char* dst, char* src, char* maskPtr, unsigned int length) {
             char mask[4] = {maskPtr[0], maskPtr[1], maskPtr[2], maskPtr[3]};
             unmaskPrecise(dst, src, mask, length);
         }
 
-        static inline void rotateMask(unsigned int offset, char *mask) {
+        static inline void rotateMask(unsigned int offset, char* mask) {
             char originalMask[4]   = {mask[0], mask[1], mask[2], mask[3]};
             mask[(0 + offset) % 4] = originalMask[0];
             mask[(1 + offset) % 4] = originalMask[1];
@@ -125,8 +125,8 @@ namespace uWS {
             mask[(3 + offset) % 4] = originalMask[3];
         }
 
-        static inline void unmaskInplace(char *data, char *stop, char *mask) {
-            char *stop1 = stop - 3;
+        static inline void unmaskInplace(char* data, char* stop, char* mask) {
+            char* stop1 = stop - 3;
             while ( data < stop1 ) {
                 *(data++) ^= mask[0];
                 *(data++) ^= mask[1];
@@ -141,7 +141,7 @@ namespace uWS {
         enum send_state_t { SND_CONTINUATION = 1, SND_NO_FIN = 2, SND_COMPRESSED = 64 };
 
         template <const int MESSAGE_HEADER, typename T>
-        inline bool consumeMessage(T payLength, char *&src, unsigned int &length, frameFormat frame, void *user) {
+        inline bool consumeMessage(T payLength, char*& src, unsigned int& length, frameFormat frame, void* user) {
             if ( getOpCode(frame) ) {
                 if ( opStack == 1 || (!lastFin && getOpCode(frame) < 2) ) {
                     forceClose(user);
@@ -197,7 +197,7 @@ namespace uWS {
             }
         }
 
-        inline bool consumeContinuation(char *&src, unsigned int &length, void *user) {
+        inline bool consumeContinuation(char*& src, unsigned int& length, void* user) {
             if ( remainingBytes <= length ) {
                 if ( isServer ) {
                     int n = remainingBytes >> 2;
@@ -245,8 +245,8 @@ namespace uWS {
 
         // Based on utf8_check.c by Markus Kuhn, 2005
         // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c
-        static bool isValidUtf8(unsigned char *s, size_t length) {
-            for ( unsigned char *e = s + length; s != e; ) {
+        static bool isValidUtf8(unsigned char* s, size_t length) {
+            for ( unsigned char* e = s + length; s != e; ) {
                 while ( !(*s & 0x80) ) {
                     if ( ++s == e ) { return true; }
                 }
@@ -275,24 +275,24 @@ namespace uWS {
 
         struct CloseFrame {
             uint16_t code;
-            char    *message;
+            char*    message;
             size_t   length;
         };
 
-        static inline CloseFrame parseClosePayload(char *src, size_t length) {
+        static inline CloseFrame parseClosePayload(char* src, size_t length) {
             CloseFrame cf = {};
             if ( length >= 2 ) {
                 memcpy(&cf.code, src, 2);
                 cf = {ntohs(cf.code), src + 2, length - 2};
                 if ( cf.code < 1000 || cf.code > 4999 || (cf.code > 1011 && cf.code < 4000)
-                     || (cf.code >= 1004 && cf.code <= 1006) || !isValidUtf8((unsigned char *)cf.message, cf.length) ) {
+                     || (cf.code >= 1004 && cf.code <= 1006) || !isValidUtf8((unsigned char*)cf.message, cf.length) ) {
                     return {};
                 }
             }
             return cf;
         }
 
-        static inline size_t formatClosePayload(char *dst, uint16_t code, const char *message, size_t length) {
+        static inline size_t formatClosePayload(char* dst, uint16_t code, const char* message, size_t length) {
             if ( code ) {
                 code = htons(code);
                 memcpy(dst, &code, 2);
@@ -303,7 +303,7 @@ namespace uWS {
             return 0;
         }
 
-        static inline size_t formatMessage(char *dst, const char *src, size_t length, OpCode opCode,
+        static inline size_t formatMessage(char* dst, const char* src, size_t length, OpCode opCode,
                                            size_t reportedLength, bool compressed) {
             size_t messageLength;
             size_t headerLength;
@@ -311,13 +311,13 @@ namespace uWS {
                 headerLength = 2;
                 dst[1]       = (char)reportedLength;
             } else if ( reportedLength <= UINT16_MAX ) {
-                headerLength           = 4;
-                dst[1]                 = 126;
-                *((uint16_t *)&dst[2]) = htons((uint16_t)reportedLength);
+                headerLength          = 4;
+                dst[1]                = 126;
+                *((uint16_t*)&dst[2]) = htons((uint16_t)reportedLength);
             } else {
-                headerLength           = 10;
-                dst[1]                 = 127;
-                *((uint64_t *)&dst[2]) = htobe64(reportedLength);
+                headerLength          = 10;
+                dst[1]                = 127;
+                *((uint64_t*)&dst[2]) = htobe64(reportedLength);
             }
 
             int flags = 0;
@@ -326,7 +326,7 @@ namespace uWS {
 
             char mask[4];
             if ( !isServer ) {
-                ((uint8_t *)dst)[1] |= 0x80;
+                ((uint8_t*)dst)[1] |= 0x80;
                 uint32_t random = litecore::RandomNumber();
                 memcpy(mask, &random, 4);
                 memcpy(dst + headerLength, &random, 4);
@@ -341,15 +341,15 @@ namespace uWS {
                 //WebSocketProtocol<isServer>::unmaskInplace(dst + headerLength, dst + headerLength + length, mask);
 
                 // this is not optimal
-                char *start = dst + headerLength;
-                char *stop  = start + length;
+                char* start = dst + headerLength;
+                char* stop  = start + length;
                 int   i     = 0;
                 while ( start != stop ) { (*start++) ^= mask[i++ % 4]; }
             }
             return messageLength;
         }
 
-        void consume(const char *src, unsigned int length, void *user) {
+        void consume(const char* src, unsigned int length, void* user) {
             while ( spillLength > 0 ) {
                 // Use up any unread bytes, without letting _consume do it, because it will copy them
                 // before `src`, causing memory corruption or crashes. (#531)
@@ -364,10 +364,10 @@ namespace uWS {
                 _consume(buf, bufLen, user);
                 if ( length == 0 ) return;
             }
-            _consume((char *)src, length, user);
+            _consume((char*)src, length, user);
         }
 
-        void _consume(char *src, unsigned int length, void *user) {
+        void _consume(char* src, unsigned int length, void* user) {
             if ( spillLength ) {
                 src -= spillLength;
                 length += spillLength;
@@ -420,10 +420,10 @@ namespace uWS {
         static const int CONSUME_PRE_PADDING  = LONG_MESSAGE_HEADER - 1;
 
         // events to be implemented by application (can't be inline currently)
-        bool refusePayloadLength(void *user, int length);
-        bool setCompressed(void *user);
-        void forceClose(void *user);
-        bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user);
+        bool refusePayloadLength(void* user, int length);
+        bool setCompressed(void* user);
+        void forceClose(void* user);
+        bool handleFragment(char* data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void* user);
     };
 
 }  // namespace uWS

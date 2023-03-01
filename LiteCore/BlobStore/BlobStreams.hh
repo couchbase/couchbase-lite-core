@@ -23,13 +23,13 @@
 namespace litecore {
 
     /** Returns a stream for reading a blob from the given file in the BlobStore. */
-    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile, EncryptionAlgorithm,
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath& blobFile, EncryptionAlgorithm,
                                                       slice           encryptionKey);
 
     /** A stream for writing a new blob. */
     class BlobWriteStream final : public WriteStream {
       public:
-        BlobWriteStream(const std::string &blobStoreDirectory, EncryptionAlgorithm, slice encryptionKey);
+        BlobWriteStream(const std::string& blobStoreDirectory, EncryptionAlgorithm, slice encryptionKey);
 
         ~BlobWriteStream();
 
@@ -45,7 +45,7 @@ namespace litecore {
         /** Moves the temporary file to the given path,
             or if a file already exists there, just deletes the temporary (since the existing
             file must have the same contents.) */
-        void install(const FilePath &dstPath);
+        void install(const FilePath& dstPath);
 
       private:
         bool deleteTempFile();

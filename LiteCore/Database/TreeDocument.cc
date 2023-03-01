@@ -41,17 +41,17 @@ namespace litecore {
         : public C4Document
         , public fleece::InstanceCountedIn<TreeDocument> {
       public:
-        TreeDocument(C4Collection *collection, slice docID, ContentOption content)
+        TreeDocument(C4Collection* collection, slice docID, ContentOption content)
             : C4Document(collection, alloc_slice(docID)), _revTree(keyStore(), docID, content) {
             init();
         }
 
-        TreeDocument(C4Collection *collection, const Record &doc)
+        TreeDocument(C4Collection* collection, const Record& doc)
             : C4Document(collection, doc.key()), _revTree(keyStore(), doc) {
             init();
         }
 
-        TreeDocument(const TreeDocument &other) : C4Document(other), _revTree(other._revTree) {
+        TreeDocument(const TreeDocument& other) : C4Document(other), _revTree(other._revTree) {
             if ( other._selectedRev ) _selectedRev = _revTree[other._selectedRev->revID];
         }
 
@@ -88,11 +88,11 @@ namespace litecore {
             if ( !_revTree.revsAvailable() ) {
                 LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(_docID));
                 alloc_slice curRev = _selectedRevID;
-                if ( !const_cast<TreeDocument *>(this)->_revTree.read(kEntireBody) ) {
+                if ( !const_cast<TreeDocument*>(this)->_revTree.read(kEntireBody) ) {
                     LogTo(DBLog, "Couldn't read matching rev-tree of doc '%.*s'; it's been updated", SPLAT(_docID));
                     return false;
                 }
-                const_cast<TreeDocument *>(this)->selectRevision(curRev, true);
+                const_cast<TreeDocument*>(this)->selectRevision(curRev, true);
             }
             return true;
         }
@@ -123,7 +123,7 @@ namespace litecore {
 
         alloc_slice getRevisionHistory(unsigned maxRevs, const slice backToRevs[],
                                        unsigned backToRevsCount) const override {
-            return const_cast<TreeDocument *>(this)->_getRevisionHistory(maxRevs, backToRevs, backToRevsCount);
+            return const_cast<TreeDocument*>(this)->_getRevisionHistory(maxRevs, backToRevs, backToRevsCount);
         }
 
         alloc_slice _getRevisionHistory(unsigned maxRevs, const slice backToRevs[], unsigned backToRevsCount) {
@@ -137,7 +137,7 @@ namespace litecore {
             auto append = [&](slice revID) {
                 lastPos = (string::size_type)historyStream.tellp();
                 if ( revsWritten++ > 0 ) historyStream << ',';
-                historyStream.write((const char *)revID.buf, revID.size);
+                historyStream.write((const char*)revID.buf, revID.size);
             };
 
             auto hasRemoteAncestor = [&](slice revID) {
@@ -198,7 +198,7 @@ namespace litecore {
             return alloc_slice(historyStream.str());
         }
 
-        bool selectRevision(const Rev *rev) noexcept {  // doesn't throw
+        bool selectRevision(const Rev* rev) noexcept {  // doesn't throw
             _selectedRev = rev;
             if ( rev ) {
                 _selectedRevID     = rev->revID.expanded();
@@ -218,7 +218,7 @@ namespace litecore {
         bool selectRevision(slice revID, bool withBody) override {
             if ( revID.buf ) {
                 if ( !loadRevisions() ) return false;
-                const Rev *rev = _revTree[revidBuffer(revID)];
+                const Rev* rev = _revTree[revidBuffer(revID)];
                 if ( !selectRevision(rev) ) return false;
                 if ( withBody ) (void)loadRevisionBody();
             } else {
@@ -266,8 +266,8 @@ namespace litecore {
 
         bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
             requireRevisions();
-            const Rev *rev1 = _revTree[revidBuffer(revID1)];
-            const Rev *rev2 = _revTree[revidBuffer(revID2)];
+            const Rev* rev1 = _revTree[revidBuffer(revID1)];
+            const Rev* rev2 = _revTree[revidBuffer(revID2)];
             if ( !rev1 || !rev2 ) error::_throw(error::NotFound);
             while ( rev1 != rev2 ) {
                 int d = (int)rev1->revID.generation() - (int)rev2->revID.generation();
@@ -287,7 +287,7 @@ namespace litecore {
 
         void setRemoteAncestorRevID(C4RemoteID remote, slice revID) override {
             mustLoadRevisions();
-            const Rev *rev = _revTree[revidBuffer(revID)];
+            const Rev* rev = _revTree[revidBuffer(revID)];
             if ( !rev ) error::_throw(error::NotFound);
             _revTree.setLatestRevisionOnRemote(remote, rev);
         }
@@ -366,7 +366,7 @@ namespace litecore {
                 selectRevision(losingRev);
                 C4DocPutRequest rq = {};
                 rq.revFlags        = kRevDeleted | kRevClosed;
-                rq.history         = (C4String *)&losingRevID;
+                rq.history         = (C4String*)&losingRevID;
                 rq.historyCount    = 1;
                 Assert(putNewRevision(rq, nullptr));
             }
@@ -384,7 +384,7 @@ namespace litecore {
                 C4DocPutRequest rq = {};
                 rq.revFlags        = mergedFlags & (kRevDeleted | kRevHasAttachments);
                 rq.body            = mergedBody;
-                rq.history         = (C4String *)&winningRevID;
+                rq.history         = (C4String*)&winningRevID;
                 rq.historyCount    = 1;
                 Assert(putNewRevision(rq, nullptr));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s", SPLAT(_docID), SPLAT(_selected.revID));
@@ -408,7 +408,7 @@ namespace litecore {
 #pragma mark - INSERTING REVISIONS
 
         // Returns the body of the revision to be stored.
-        alloc_slice requestBody(const C4DocPutRequest &rq, C4Error *outError) {
+        alloc_slice requestBody(const C4DocPutRequest& rq, C4Error* outError) {
             alloc_slice body;
             if ( rq.deltaCB == nullptr ) {
                 body = (rq.allocedBody.buf) ? alloc_slice(rq.allocedBody) : alloc_slice(rq.body);
@@ -436,7 +436,7 @@ namespace litecore {
             return body;
         }
 
-        int32_t putExistingRevision(const C4DocPutRequest &rq, C4Error *outError) override {
+        int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             Assert(rq.historyCount >= 1);
             int32_t commonAncestor = -1;
             mustLoadRevisions();
@@ -497,7 +497,7 @@ namespace litecore {
                     // branch than it used to be, either due to revs added to this branch, or
                     // deletion of the old branch. In either case this is not a conflict.
                     Assert(newRev->isConflict());
-                    const char *effect;
+                    const char* effect;
                     if ( oldRev->isConflict() ) {
                         _revTree.purge(oldRev->revID);
                         effect = "purging old branch";
@@ -522,7 +522,7 @@ namespace litecore {
             return commonAncestor;
         }
 
-        bool putNewRevision(const C4DocPutRequest &rq, C4Error *outError) override {
+        bool putNewRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
 
             if ( rq.maxRevTreeDepth > 0 ) _revTree.setPruneDepth(rq.maxRevTreeDepth);
@@ -556,7 +556,7 @@ namespace litecore {
             return true;
         }
 
-        bool saveNewRev(const C4DocPutRequest &rq, const Rev *newRev NONNULL, bool reallySave = true) {
+        bool saveNewRev(const C4DocPutRequest& rq, const Rev* newRev NONNULL, bool reallySave = true) {
             selectRevision(newRev);
             if ( rq.save && reallySave ) {
                 if ( !save() ) return false;
@@ -573,18 +573,18 @@ namespace litecore {
             return true;
         }
 
-        static bool hasEncryptables(slice body, SharedKeys *sk) {
+        static bool hasEncryptables(slice body, SharedKeys* sk) {
 #ifndef COUCHBASE_ENTERPRISE
             return false;
 #else
-            const Value *v = Value::fromTrustedData(body);
+            const Value* v = Value::fromTrustedData(body);
             if ( v == nullptr ) { return false; }
 
             Scope scope(body, sk);
             for ( DeepIterator i(v->asDict()); i; ++i ) {
-                const Dict *dict = i.value()->asDict();
+                const Dict* dict = i.value()->asDict();
                 if ( dict ) {
-                    const Value *objType = dict->get(C4Document::kObjectTypeProperty);
+                    const Value* objType = dict->get(C4Document::kObjectTypeProperty);
                     if ( objType && objType->asString() == C4Document::kObjectType_Encryptable ) { return true; }
                 }
             }
@@ -616,7 +616,7 @@ namespace litecore {
 
       private:
         RevTreeRecord _revTree;
-        const Rev    *_selectedRev{nullptr};
+        const Rev*    _selectedRev{nullptr};
     };
 
 #pragma mark - FACTORY:
@@ -625,18 +625,18 @@ namespace litecore {
         return new TreeDocument(collection(), docID, c);
     }
 
-    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
+    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(const Record& rec) {
         return new TreeDocument(collection(), rec);
     }
 
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) const { return revID.hasPrefix("1-"); }
 
-    C4Document *TreeDocumentFactory::documentContaining(FLValue value) {
-        RevTreeRecord *vdoc = RevTreeRecord::containing((const fleece::impl::Value *)value);
-        return vdoc ? (TreeDocument *)vdoc->owner : nullptr;
+    C4Document* TreeDocumentFactory::documentContaining(FLValue value) {
+        RevTreeRecord* vdoc = RevTreeRecord::containing((const fleece::impl::Value*)value);
+        return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 
-    vector<alloc_slice> TreeDocumentFactory::findAncestors(const vector<slice> &docIDs, const vector<slice> &revIDs,
+    vector<alloc_slice> TreeDocumentFactory::findAncestors(const vector<slice>& docIDs, const vector<slice>& revIDs,
                                                            unsigned maxAncestors, bool mustHaveBodies,
                                                            C4RemoteID remoteDBID) {
         // Map docID->revID for faster lookup in the callback:
@@ -644,7 +644,7 @@ namespace litecore {
         for ( ssize_t i = docIDs.size() - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
-        auto callback = [&](const RecordUpdate &rec) -> alloc_slice {
+        auto callback = [&](const RecordUpdate& rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each docID in the vector ---
             // Convert revID to encoded binary form:
@@ -662,7 +662,7 @@ namespace litecore {
             }
 
             // Does it exist in the doc?
-            if ( const Rev *rev = tree[revID] ) {
+            if ( const Rev* rev = tree[revID] ) {
                 if ( rev->isBodyAvailable() ) status |= kRevsHaveLocal;
                 if ( remoteDBID && rev == tree.latestRevisionOnRemote(remoteDBID) ) status |= kRevsAtThisRemote;
                 if ( current != rev ) {

@@ -18,8 +18,8 @@ using namespace std;
 
 namespace litecore { namespace actor {
 
-    Timer::Manager &Timer::manager() {
-        static Manager *sManager = new Manager;
+    Timer::Manager& Timer::manager() {
+        static Manager* sManager = new Manager;
         return *sManager;
     }
 
@@ -62,7 +62,7 @@ namespace litecore { namespace actor {
     // Removes a Timer from _scheduled. Returns true if the next fire time is affected.
     // Precondition: _mutex must be locked.
     // Postconditions: timer is not in _scheduled. timer->_state != kScheduled.
-    bool Timer::Manager::_unschedule(Timer *timer) {
+    bool Timer::Manager::_unschedule(Timer* timer) {
         if ( timer->_state != kScheduled ) return false;
         bool affectsTiming = (timer->_entry == _schedule.begin());
         _schedule.erase(timer->_entry);
@@ -76,7 +76,7 @@ namespace litecore { namespace actor {
     // (Called by Timer::stop())
     // Precondition: _mutex must NOT be locked.
     // Postcondition: timer is not in _scheduled. timer->_state != kScheduled.
-    void Timer::Manager::unschedule(Timer *timer, bool deleting) {
+    void Timer::Manager::unschedule(Timer* timer, bool deleting) {
         unique_lock<mutex> lock(_mutex);
         if ( _unschedule(timer) ) _condition.notify_one();  // wakes up run() so it can recalculate its wait time
 
@@ -92,7 +92,7 @@ namespace litecore { namespace actor {
     // If `earlier` is true, it will only move the fire time closer, else it returns `false`.
     // Precondition: _mutex must NOT be locked.
     // Postcondition: timer is in _scheduled. timer->_state == kScheduled.
-    bool Timer::Manager::setFireTime(Timer *timer, clock::time_point when, bool earlier) {
+    bool Timer::Manager::setFireTime(Timer* timer, clock::time_point when, bool earlier) {
         unique_lock<mutex> lock(_mutex);
         // Don't allow timer's callback to reschedule itself when deletion is pending:
         if ( timer->_state == kDeleted ) return false;

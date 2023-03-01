@@ -36,7 +36,7 @@ namespace litecore {
         /** Decodes the entire log and writes it to the output stream, with timestamps.
             If you want more control over the presentation, use the other methods below to
             read the timestamps and messages individually. */
-        virtual void decodeTo(std::ostream &, const std::vector<std::string> &levelNames,
+        virtual void decodeTo(std::ostream&, const std::vector<std::string>& levelNames,
                               std::optional<Timestamp> startingAt = std::nullopt);
 
         /** Reads the next line from the log, or returns false at EOF. */
@@ -52,10 +52,10 @@ namespace litecore {
         virtual int8_t level() const = 0;
 
         /** Returns the current line's domain. */
-        virtual const std::string &domain() const = 0;
+        virtual const std::string& domain() const = 0;
 
         virtual uint64_t           objectID() const          = 0;
-        virtual const std::string *objectDescription() const = 0;
+        virtual const std::string* objectDescription() const = 0;
 
         /** Reads the next message from the input and returns it as a string.
          You can only read each message once; calling this twice in a row will fail. */
@@ -63,13 +63,13 @@ namespace litecore {
 
         /** Reads the next message from the input and writes it to the output.
          You can only read each message once; calling this twice in a row will fail.  */
-        virtual void decodeMessageTo(std::ostream &) = 0;
+        virtual void decodeMessageTo(std::ostream&) = 0;
 
         static Timestamp   now();
         static std::string formatDate(Timestamp);
-        static void        writeISO8601DateTime(Timestamp, std::ostream &);
-        static void        writeTimestamp(Timestamp, std::ostream &);
-        static void        writeHeader(const std::string &levelName, const std::string &domainName, std::ostream &);
+        static void        writeISO8601DateTime(Timestamp, std::ostream&);
+        static void        writeTimestamp(Timestamp, std::ostream&);
+        static void        writeHeader(const std::string& levelName, const std::string& domainName, std::ostream&);
     };
 
     /** Decodes logs written by LogEncoder. */
@@ -78,10 +78,10 @@ namespace litecore {
         static const uint8_t kMagicNumber[4];
 
         /** Initializes decoder with a stream written by a LogEncoder. */
-        LogDecoder(std::istream &);
+        LogDecoder(std::istream&);
 
         // LogIterator API:
-        void decodeTo(std::ostream &, const std::vector<std::string> &levelNames,
+        void decodeTo(std::ostream&, const std::vector<std::string>& levelNames,
                       std::optional<Timestamp> startingAt = std::nullopt) override;
         bool next() override;
 
@@ -91,11 +91,11 @@ namespace litecore {
 
         int8_t level() const override { return _curLevel; }
 
-        const std::string &domain() const override { return *_curDomain; }
+        const std::string& domain() const override { return *_curDomain; }
 
         uint64_t           objectID() const override;
-        const std::string *objectDescription() const override;
-        void               decodeMessageTo(std::ostream &) override;
+        const std::string* objectDescription() const override;
+        void               decodeMessageTo(std::ostream&) override;
 
         static constexpr uint8_t kFormatVersion = 1;
 
@@ -103,16 +103,16 @@ namespace litecore {
             if an I/O error or unexpected EOF occurs on the input stream. */
         class error : public std::runtime_error {
           public:
-            explicit error(const char *msg) : runtime_error(msg) {}
+            explicit error(const char* msg) : runtime_error(msg) {}
         };
 
       private:
         uint64_t           readUVarInt();
-        const std::string &readStringToken();
+        const std::string& readStringToken();
         std::string        readCString();
-        [[noreturn]] void  reraise(const std::ios_base::failure &);
+        [[noreturn]] void  reraise(const std::ios_base::failure&);
 
-        std::istream                   &_in;
+        std::istream&                   _in;
         size_t                          _pointerSize;
         time_t                          _startTime;
         uint64_t                        _elapsedTicks{0};
@@ -121,22 +121,22 @@ namespace litecore {
         std::map<uint64_t, std::string> _objects;
 
         int8_t             _curLevel{0};
-        const std::string *_curDomain{nullptr};
+        const std::string* _curDomain{nullptr};
         uint64_t           _curObject;
         bool               _curObjectIsNew;
         mutable bool       _putCurObjectInMessage;
         bool               _readMessage;
     };
 
-    static inline bool operator==(const LogDecoder::Timestamp &a, const LogDecoder::Timestamp &b) {
+    static inline bool operator==(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
         return a.secs == b.secs && a.microsecs == b.microsecs;
     }
 
-    static inline bool operator<(const LogDecoder::Timestamp &a, const LogDecoder::Timestamp &b) {
+    static inline bool operator<(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
         return a.secs < b.secs || (a.secs == b.secs && a.microsecs < b.microsecs);
     }
 
-    static inline std::ostream &operator<<(std::ostream &out, const LogDecoder::Timestamp &ts) {
+    static inline std::ostream& operator<<(std::ostream& out, const LogDecoder::Timestamp& ts) {
         LogDecoder::writeTimestamp(ts, out);
         return out;
     }

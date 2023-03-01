@@ -21,12 +21,12 @@ namespace litecore { namespace repl {
     /** Persists a CookieStore to/from a Database. */
     class DatabaseCookies {
       public:
-        DatabaseCookies(C4Database *);
+        DatabaseCookies(C4Database*);
 
-        std::string cookiesForRequest(const C4Address &addr) { return _store->cookiesForRequest(addr); }
+        std::string cookiesForRequest(const C4Address& addr) { return _store->cookiesForRequest(addr); }
 
         // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
-        bool setCookie(const std::string &headerValue, const std::string &fromHost, const std::string &fromPath,
+        bool setCookie(const std::string& headerValue, const std::string& fromHost, const std::string& fromPath,
                        bool acceptParentDomain = false) {
             return _store->setCookie(headerValue, fromHost, fromPath, acceptParentDomain);
         }
@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
         void saveChanges();
 
       private:
-        C4Database                *_db;
+        C4Database*                _db;
         Retained<net::CookieStore> _store;
     };
 

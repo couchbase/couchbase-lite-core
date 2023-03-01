@@ -68,7 +68,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "Delete DB", "[DataFile]") {
     auto path = db->filePath();
     deleteDatabase();
     path.forEachMatch(
-            [](const FilePath &file) { FAIL("Leftover file(s) '" << file.path() << "' after deleting database"); });
+            [](const FilePath& file) { FAIL("Leftover file(s) '" << file.path() << "' after deleting database"); });
 }
 
 N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]") {
@@ -166,7 +166,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile SaveDocs", "[DataFile]") {
     REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 3_seq);
 }
 
-static void createNumberedDocs(KeyStore *store, int n = 100, bool withAssertions = true) {
+static void createNumberedDocs(KeyStore* store, int n = 100, bool withAssertions = true) {
     ExclusiveTransaction t(store->dataFile());
     for ( int i = 1; i <= n; i++ ) {
         string       docID = stringWithFormat("rec-%03d", i);
@@ -401,7 +401,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile KeyStoreInfo", "[DataFile]
 N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile KeyStore Create-Then-Abort", "[DataFile]") {
     {
         ExclusiveTransaction t(db);
-        KeyStore            &s = db->getKeyStore("store", KeyStore::noSequences);
+        KeyStore&            s = db->getKeyStore("store", KeyStore::noSequences);
         s.setKV("key"_sl, "value"_sl, t);
         t.abort();
     }
@@ -409,7 +409,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile KeyStore Create-Then-Abort
     // Now try to write to it again -- the KeyStore should repeat the CREATE TABLE command.
     {
         ExclusiveTransaction t(db);
-        KeyStore            &s = db->getKeyStore("store", KeyStore::noSequences);
+        KeyStore&            s = db->getKeyStore("store", KeyStore::noSequences);
         s.setKV("key"_sl, "value"_sl, t);
         t.commit();
     }
@@ -539,7 +539,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]"
     CHECK(store->lastSequence() == 2_seq);
     CHECK(store->purgeCount() == 0);
 
-    KeyStore &otherStore = db->getKeyStore("other");
+    KeyStore& otherStore = db->getKeyStore("other");
     CHECK(otherStore.lastSequence() == 0_seq);
     CHECK(otherStore.purgeCount() == 0);
 
@@ -572,7 +572,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]"
             ExpectingExceptions x;
             store->moveTo("key", otherStore, t, "bogus");
             FAIL_CHECK("Moving nonexistent record didn't throw");
-        } catch ( const error &x ) {
+        } catch ( const error& x ) {
             CHECK(x.domain == error::LiteCore);
             CHECK(x.code == error::NotFound);
         }
@@ -581,7 +581,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]"
         try {
             ExpectingExceptions x;
             store->moveTo("xxx", otherStore, t, "newKey");
-        } catch ( const error &x ) {
+        } catch ( const error& x ) {
             CHECK(x.domain == error::LiteCore);
             CHECK(x.code == error::Conflict);
         }
@@ -646,7 +646,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 
 TEST_CASE("CanonicalPath") {
 #ifdef _MSC_VER
-    const char *startPath = "C:\\folder\\..\\subfolder\\";
+    const char* startPath = "C:\\folder\\..\\subfolder\\";
     string      endPath   = "C:\\subfolder\\";
 #else
     auto tmpPath   = TestFixture::sTempDir.path();
@@ -855,14 +855,14 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]")
 }
 
 N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[DataFile]") {
-    auto &lower = db->getKeyStore("keystore");
+    auto& lower = db->getKeyStore("keystore");
     CHECK(db->keyStoreExists("keystore"));
     CHECK(!db->keyStoreExists("KEYSTORE"));
     auto names = db->allKeyStoreNames();
     CHECK(find(names.begin(), names.end(), "keystore") != names.end());
     CHECK(find(names.begin(), names.end(), "KEYSTORE") == names.end());
 
-    auto &upper = db->getKeyStore("KEYSTORE");
+    auto& upper = db->getKeyStore("KEYSTORE");
     CHECK(db->keyStoreExists("keystore"));
     CHECK(db->keyStoreExists("KEYSTORE"));
     names = db->allKeyStoreNames();

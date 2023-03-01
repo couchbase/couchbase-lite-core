@@ -30,10 +30,10 @@ using namespace litecore;
 #pragma mark - C++ API:
 
 // All instances are subclasses of C4BaseReplicator.
-static C4ReplicatorImpl *asInternal(const C4Replicator *repl) { return (C4ReplicatorImpl *)repl; }
+static C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
 
 Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice remoteDatabaseName,
-                                                 const C4ReplicatorParameters &params) {
+                                                 const C4ReplicatorParameters& params) {
     if ( !params.socketFactory ) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
         if ( serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl ) {
@@ -47,9 +47,9 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice 
 
 
 #ifdef COUCHBASE_ENTERPRISE
-Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB, const C4ReplicatorParameters &params) {
+Retained<C4Replicator> C4Database::newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params) {
     std::for_each(params.collections, params.collections + params.collectionCount,
-                  [](const C4ReplicationCollection &coll) {
+                  [](const C4ReplicationCollection& coll) {
                       AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
                                   "Either push or pull must be enabled");
                   });
@@ -59,11 +59,11 @@ Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB, 
 #endif
 
 
-Retained<C4Replicator> C4Database::newIncomingReplicator(WebSocket *openSocket, const C4ReplicatorParameters &params) {
+Retained<C4Replicator> C4Database::newIncomingReplicator(WebSocket* openSocket, const C4ReplicatorParameters& params) {
     return new C4IncomingReplicator(this, params, openSocket);
 }
 
-Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket *openSocket, const C4ReplicatorParameters &params) {
+Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params) {
     return newIncomingReplicator(WebSocketFrom(openSocket), params);
 }
 
@@ -82,11 +82,11 @@ bool C4Replicator::isDocumentPending(slice docID, C4CollectionSpec spec) const {
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-C4Cert *C4Replicator::getPeerTLSCertificate() const { return asInternal(this)->getPeerTLSCertificate(); }
+C4Cert* C4Replicator::getPeerTLSCertificate() const { return asInternal(this)->getPeerTLSCertificate(); }
 #endif
 
 
-CBL_CORE_API const char *const kC4ReplicatorActivityLevelNames[6]
+CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6]
         = {"stopped", "offline", "connecting", "idle", "busy", "stopping"};
 
 static bool isValidScheme(slice scheme) { return scheme.size > 0 && isalpha(scheme[0]); }
@@ -110,7 +110,7 @@ bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
            && !dbName.findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
 }
 
-bool C4Address::isValidRemote(slice dbName, C4Error *outError) const noexcept {
+bool C4Address::isValidRemote(slice dbName, C4Error* outError) const noexcept {
     slice message;
     if ( !isValidReplicatorScheme(scheme) ) message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
     else if ( !C4Replicator::isValidDatabaseName(dbName) )
@@ -125,12 +125,12 @@ bool C4Address::isValidRemote(slice dbName, C4Error *outError) const noexcept {
     return true;
 }
 
-void C4Replicator::validateRemote(const C4Address &addr, slice dbName) {
+void C4Replicator::validateRemote(const C4Address& addr, slice dbName) {
     C4Error error;
     if ( !addr.isValidRemote(dbName, &error) ) C4Error::raise(error);
 }
 
-bool C4Address::fromURL(slice url, C4Address *address, slice *dbName) {
+bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
@@ -177,7 +177,7 @@ bool C4Address::fromURL(slice url, C4Address *address, slice *dbName) {
         str.setStart(pathStart + 1);
 
         if ( str.hasSuffix("/"_sl) ) str.setSize(str.size - 1);
-        const uint8_t *slash;
+        const uint8_t* slash;
         while ( (slash = str.findByte('/')) != nullptr ) str.setStart(slash + 1);
 
         address->path = slice(pathStart, str.buf);

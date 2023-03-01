@@ -27,20 +27,20 @@ namespace litecore {
 
 
     // Scans the entire query for PREDICTION() calls and adds join tables for ones that are indexed.
-    void QueryParser::findPredictionCalls(const Value *root) {
+    void QueryParser::findPredictionCalls(const Value* root) {
         findNodes(root, kPredictionFnNameWithParens, 1,
-                  [this](const Array *pred) { predictiveJoinTableAlias(pred, true); });
+                  [this](const Array* pred) { predictiveJoinTableAlias(pred, true); });
     }
 
     // Looks up or adds a join alias for a predictive index table.
-    const string &QueryParser::predictiveJoinTableAlias(const Value *predictionExpr, bool canAdd) {
+    const string& QueryParser::predictiveJoinTableAlias(const Value* predictionExpr, bool canAdd) {
         string table = predictiveTableName(predictionExpr);
         if ( canAdd && !_delegate.tableExists(table) ) canAdd = false;  // not indexed
         return indexJoinTableAlias(table, (canAdd ? "pred" : nullptr));
     }
 
     // Constructs a unique identifier of a specific PREDICTION() call, from a digest of its JSON.
-    string QueryParser::predictiveIdentifier(const Value *expression) const {
+    string QueryParser::predictiveIdentifier(const Value* expression) const {
         auto array = expression->asArray();
         if ( !array || array->count() < 2 || !array->get(0)->asString().caseEquivalent(kPredictionFnNameWithParens) )
             fail("Invalid PREDICTION() call");
@@ -48,12 +48,12 @@ namespace litecore {
     }
 
     // Returns the name of the index table for a PREDICTION() call expression.
-    string QueryParser::predictiveTableName(const Value *expression) const {
+    string QueryParser::predictiveTableName(const Value* expression) const {
         string table = _defaultTableName;  //TEMP
         return _delegate.predictiveTableName(table, predictiveIdentifier(expression));
     }
 
-    bool QueryParser::writeIndexedPrediction(const Array *node) {
+    bool QueryParser::writeIndexedPrediction(const Array* node) {
         auto alias = predictiveJoinTableAlias(node);
         if ( alias.empty() ) return false;
         if ( node->count() >= 4 ) {

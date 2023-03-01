@@ -49,9 +49,9 @@ struct C4BlobKey {
     /** Returns a slice pointing to the digest bytes. */
     explicit operator slice() const { return slice(bytes, sizeof(bytes)); }
 
-    bool operator==(const C4BlobKey &k) const { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
+    bool operator==(const C4BlobKey& k) const { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
 
-    bool operator!=(const C4BlobKey &k) const { return !(*this == k); }
+    bool operator!=(const C4BlobKey& k) const { return !(*this == k); }
 #endif
 };
 

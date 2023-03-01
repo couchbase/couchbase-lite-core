@@ -40,7 +40,7 @@ namespace litecore {
         /** The number of sequences in the set. */
         size_t size() const {
             size_t total = 0;
-            for ( auto &range : _sequences ) total += range.second - range.first;
+            for ( auto& range : _sequences ) total += range.second - range.first;
             return total;
         }
 
@@ -61,9 +61,9 @@ namespace litecore {
             return s < i->second;
         }
 
-        bool operator==(const SequenceSet &other) const { return _sequences == other._sequences; }
+        bool operator==(const SequenceSet& other) const { return _sequences == other._sequences; }
 
-        bool operator!=(const SequenceSet &other) const { return _sequences != other._sequences; }
+        bool operator!=(const SequenceSet& other) const { return _sequences != other._sequences; }
 
         /** Adds a sequence. */
         void add(sequence s) { (void)_add(s); }

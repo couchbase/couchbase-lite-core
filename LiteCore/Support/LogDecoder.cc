@@ -51,14 +51,14 @@ namespace litecore {
         return {secs, microsecs};
     }
 
-    void LogIterator::writeTimestamp(Timestamp t, ostream &out) {
+    void LogIterator::writeTimestamp(Timestamp t, ostream& out) {
         local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
         struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
         tp -= GetLocalTZOffset(&tmpTime, true);
         out << format("%T| ", tp);
     }
 
-    void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream &out) {
+    void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream& out) {
         sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
         out << format("%FT%TZ", tp);
     }
@@ -78,7 +78,7 @@ namespace litecore {
         return out.str();
     }
 
-    /*static*/ void LogIterator::writeHeader(const string &levelName, const string &domainName, ostream &out) {
+    /*static*/ void LogIterator::writeHeader(const string& levelName, const string& domainName, ostream& out) {
         if ( !levelName.empty() ) {
             if ( !domainName.empty() ) out << '[' << domainName << "] ";
             out << levelName << ": ";
@@ -87,7 +87,7 @@ namespace litecore {
         }
     }
 
-    void LogIterator::decodeTo(ostream &out, const std::vector<std::string> &levelNames, optional<Timestamp> start) {
+    void LogIterator::decodeTo(ostream& out, const std::vector<std::string>& levelNames, optional<Timestamp> start) {
         while ( next() ) {
             auto ts = timestamp();
             if ( start && ts < *start ) continue;
@@ -103,18 +103,18 @@ namespace litecore {
 
 #pragma mark - LOG DECODER:
 
-    LogDecoder::LogDecoder(std::istream &in) : _in(in) {
+    LogDecoder::LogDecoder(std::istream& in) : _in(in) {
         try {
             _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
             uint8_t header[6];
-            _in.read((char *)&header, sizeof(header));
+            _in.read((char*)&header, sizeof(header));
             if ( memcmp(&header, &kMagicNumber, 4) != 0 ) throw runtime_error("Not a LiteCore log file");
             if ( header[4] != kFormatVersion ) throw runtime_error("Unsupported log format version");
             _pointerSize = header[5];
             if ( _pointerSize != 4 && _pointerSize != 8 ) throw runtime_error("This log file seems to be damaged");
             _startTime   = time_t(readUVarInt());
             _readMessage = true;
-        } catch ( std::ios_base::failure &x ) { reraise(x); }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
 
     bool LogDecoder::next() {
@@ -143,10 +143,10 @@ namespace litecore {
 
             _readMessage = false;
             return true;
-        } catch ( std::ios_base::failure &x ) { reraise(x); }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
 
-    void LogDecoder::decodeTo(ostream &out, const std::vector<std::string> &levelNames,
+    void LogDecoder::decodeTo(ostream& out, const std::vector<std::string>& levelNames,
                               std::optional<Timestamp> startingAt) {
         if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
             writeTimestamp({_startTime, 0}, out);
@@ -166,7 +166,7 @@ namespace litecore {
         return _curObject;
     }
 
-    const string *LogDecoder::objectDescription() const {
+    const string* LogDecoder::objectDescription() const {
         _putCurObjectInMessage = false;
         if ( _curObject > 0 ) {
             auto i = _objects.find(_curObject);
@@ -175,7 +175,7 @@ namespace litecore {
         return nullptr;
     }
 
-    void LogDecoder::decodeMessageTo(ostream &out) {
+    void LogDecoder::decodeMessageTo(ostream& out) {
         try {
             assert(!_readMessage);
             _readMessage = true;
@@ -189,7 +189,7 @@ namespace litecore {
 
             // Read the format string, then the parameters:
             string format = readStringToken().c_str();
-            for ( const char *c = format.c_str(); *c != '\0'; ++c ) {
+            for ( const char* c = format.c_str(); *c != '\0'; ++c ) {
                 if ( *c != '%' ) {
                     out << *c;
                 } else {
@@ -245,7 +245,7 @@ namespace litecore {
                         case 'A':
                             {
                                 fleece::endian::littleEndianDouble param;
-                                _in.read((char *)&param, sizeof(param));
+                                _in.read((char*)&param, sizeof(param));
                                 out << param;
                                 break;
                             }
@@ -280,11 +280,11 @@ namespace litecore {
                                 out << "0x" << hex;
                                 if ( _pointerSize == 8 ) {
                                     uint64_t ptr;
-                                    _in.read((char *)&ptr, sizeof(ptr));
+                                    _in.read((char*)&ptr, sizeof(ptr));
                                     out << ptr;
                                 } else {
                                     uint32_t ptr;
-                                    _in.read((char *)&ptr, sizeof(ptr));
+                                    _in.read((char*)&ptr, sizeof(ptr));
                                     out << ptr;
                                 }
                                 out << std::dec;
@@ -298,10 +298,10 @@ namespace litecore {
                     }
                 }
             }
-        } catch ( std::ios_base::failure &x ) { reraise(x); }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
 
-    const string &LogDecoder::readStringToken() {
+    const string& LogDecoder::readStringToken() {
         auto tokenID = (size_t)readUVarInt();
         if ( tokenID < _tokens.size() ) {
             return _tokens[tokenID];
@@ -322,11 +322,11 @@ namespace litecore {
         return str;
     }
 
-    void LogDecoder::reraise(const std::ios_base::failure &x) {
+    void LogDecoder::reraise(const std::ios_base::failure& x) {
         if ( _in.good() ) throw x;  // exception isn't on _in, so pass it on
         auto state = _in.rdstate();
         _in.clear();
-        const char *message;
+        const char* message;
         if ( state & ios_base::eofbit ) message = "unexpected EOF in log";
         else if ( state & ios_base::failbit )
             message = "error decoding log";
@@ -340,7 +340,7 @@ namespace litecore {
 
     // Begin code extracted from varint.cc
     struct slice {
-        const void *buf;
+        const void* buf;
         size_t      size;
     };
 
@@ -350,10 +350,10 @@ namespace litecore {
         kMaxVarintLen64 = 10,
     };
 
-    static size_t _GetUVarInt(slice buf, uint64_t *n) {
+    static size_t _GetUVarInt(slice buf, uint64_t* n) {
         // NOTE: The public inline function GetUVarInt already decodes 1-byte varints,
         // so if we get here we can assume the varint is at least 2 bytes.
-        auto     pos    = (const uint8_t *)buf.buf;
+        auto     pos    = (const uint8_t*)buf.buf;
         auto     end    = pos + std::min(buf.size, (size_t)kMaxVarintLen64);
         uint64_t result = *pos++ & 0x7F;
         int      shift  = 7;
@@ -365,7 +365,7 @@ namespace litecore {
             } else {
                 result |= (uint64_t)byte << shift;
                 *n            = result;
-                size_t nBytes = pos - (const uint8_t *)buf.buf;
+                size_t nBytes = pos - (const uint8_t*)buf.buf;
                 if ( nBytes == kMaxVarintLen64 && byte > 1 ) nBytes = 0;  // Numeric overflow
                 return nBytes;
             }
@@ -373,9 +373,9 @@ namespace litecore {
         return 0;  // buffer too short
     }
 
-    static inline size_t GetUVarInt(slice buf, uint64_t *n) {
+    static inline size_t GetUVarInt(slice buf, uint64_t* n) {
         if ( buf.size == 0 ) return 0;
-        uint8_t byte = *(const uint8_t *)buf.buf;
+        uint8_t byte = *(const uint8_t*)buf.buf;
         if ( byte < 0x80 ) {
             *n = byte;
             return 1;

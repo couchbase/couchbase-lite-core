@@ -40,7 +40,7 @@ class SQLiteFunctionsTest
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
-    void insert(const char *key, const char *json) {
+    void insert(const char* key, const char* json) {
         auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
@@ -50,7 +50,7 @@ class SQLiteFunctionsTest
 
     virtual string databaseName() const override { return "db"; }
 
-    virtual alloc_slice blobAccessor(const Dict *blob) const override {
+    virtual alloc_slice blobAccessor(const Dict* blob) const override {
         auto digestProp = blob->get("digest"_sl);
         if ( !digestProp ) return {};
         slice digest = digestProp->asString();
@@ -62,7 +62,7 @@ class SQLiteFunctionsTest
         }
     }
 
-    vector<string> query(const char *query) {
+    vector<string> query(const char* query) {
         SQLite::Statement each(db, query);
         vector<string>    results;
         while ( each.executeStep() ) {
@@ -78,7 +78,7 @@ class SQLiteFunctionsTest
         return results;
     }
 
-    vector<string> query(const string &query) { return this->query(query.c_str()); }
+    vector<string> query(const string& query) { return this->query(query.c_str()); }
 
   protected:
     SQLite::Database              db;
@@ -181,7 +181,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
     insert("e", "{\"hey\": [99, -5.5, \"wow\"]}");
     insert("f", "{\"hey\": 8.125}");
 
-    const char *sql          = "SELECT ARRAY_AGG(fl_value(body, 'hey')) FROM kv";
+    const char* sql          = "SELECT ARRAY_AGG(fl_value(body, 'hey')) FROM kv";
     slice       expectedJSON = "[17,8.125,\"there\",null,[99,-5.5,\"wow\"],8.125]"_sl;
     SECTION("Distinct") {
         sql          = "SELECT ARRAY_AGG(DISTINCT fl_value(body, 'hey')) FROM kv";
@@ -283,7 +283,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[Query]") {
     CHECK(query("SELECT trunc(fl_value(kv.body, 'hey'), 1) FROM kv") == (vector<string>{"4.0", "2.5"}));
 }
 
-static void testTrim(const char16_t *str, int onSide, int leftTrimmed, int rightTrimmed) {
+static void testTrim(const char16_t* str, int onSide, int leftTrimmed, int rightTrimmed) {
     auto   newStr = str;
     size_t length = 0;
     for ( auto cp = str; *cp; ++cp ) ++length;
@@ -294,7 +294,7 @@ static void testTrim(const char16_t *str, int onSide, int leftTrimmed, int right
     CHECK(newLength == max(0l, (long)length - leftTrimmed - rightTrimmed));
 }
 
-static void testTrim(const char16_t *str, unsigned leftTrimmed, unsigned rightTrimmed) {
+static void testTrim(const char16_t* str, unsigned leftTrimmed, unsigned rightTrimmed) {
     testTrim(str, -1, leftTrimmed, 0);
     testTrim(str, 0, leftTrimmed, rightTrimmed);
     testTrim(str, 1, 0, rightTrimmed);

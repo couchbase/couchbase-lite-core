@@ -27,9 +27,9 @@ namespace litecore::REST {
       public:
         CertRequest();
 
-        using CompletionRoutine = std::function<void(crypto::Cert *, C4Error)>;
+        using CompletionRoutine = std::function<void(crypto::Cert*, C4Error)>;
 
-        void start(crypto::CertSigningRequest *csr NONNULL, const net::Address &address,
+        void start(crypto::CertSigningRequest* csr NONNULL, const net::Address& address,
                    fleece::AllocedDict networkConfig, CompletionRoutine);
 
       private:

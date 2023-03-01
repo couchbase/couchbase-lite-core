@@ -41,17 +41,16 @@ namespace litecore { namespace blip {
         using CloseStatus = websocket::CloseStatus;
 
         /** WebSocket 'protocol' name for BLIP; use as value of kProtocolsOption option. */
-        static constexpr const char *kWSProtocolName = "BLIP_3";
+        static constexpr const char* kWSProtocolName = "BLIP_3";
 
         /** Option to set the 'deflate' compression level. Value must be an integer in the range
             0 (no compression) to 9 (best compression). */
-        static constexpr const char *kCompressionLevelOption = "BLIPCompressionLevel";
+        static constexpr const char* kCompressionLevelOption = "BLIPCompressionLevel";
 
         /** Creates a BLIP connection on a WebSocket. */
-        Connection(websocket::WebSocket *, const fleece::AllocedDict &options,
-                   Retained<WeakHolder<ConnectionDelegate>>);
+        Connection(websocket::WebSocket*, const fleece::AllocedDict& options, Retained<WeakHolder<ConnectionDelegate>>);
 
-        const std::string &name() const { return _name; }
+        const std::string& name() const { return _name; }
 
         websocket::Role role() const { return _role; }
 
@@ -64,9 +63,9 @@ namespace litecore { namespace blip {
         void terminate();
 
         /** Sends a built message as a new request. */
-        void sendRequest(MessageBuilder &);
+        void sendRequest(MessageBuilder&);
 
-        typedef std::function<void(MessageIn *)> RequestHandler;
+        typedef std::function<void(MessageIn*)> RequestHandler;
 
         /** Registers a callback that will be called when a message with a given profile arrives. */
         void setRequestHandler(std::string profile, bool atBeginning, RequestHandler);
@@ -79,7 +78,7 @@ namespace litecore { namespace blip {
         virtual std::string loggingIdentifier() const override { return _name; }
 
         /** Exposed only for testing. */
-        websocket::WebSocket *webSocket() const;
+        websocket::WebSocket* webSocket() const;
 
       protected:
         virtual ~Connection();
@@ -87,8 +86,8 @@ namespace litecore { namespace blip {
         friend class MessageIn;
         friend class BLIPIO;
 
-        void send(MessageOut *);
-        void gotHTTPResponse(int status, const websocket::Headers &headers);
+        void send(MessageOut*);
+        void gotHTTPResponse(int status, const websocket::Headers& headers);
         void gotTLSCertificate(slice certData);
         void connected();
         void closed(CloseStatus);
@@ -111,7 +110,7 @@ namespace litecore { namespace blip {
         virtual ~ConnectionDelegate() = default;
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
-        virtual void onHTTPResponse(int status, const websocket::Headers &headers) {}
+        virtual void onHTTPResponse(int status, const websocket::Headers& headers) {}
 
         virtual void onTLSCertificate(slice certData) = 0;
 
@@ -125,10 +124,10 @@ namespace litecore { namespace blip {
 
         /** Called when the beginning of an incoming request arrives. The properties will be
             complete, but the body is likely to be incomplete. */
-        virtual void onRequestBeginning(MessageIn *request) {}
+        virtual void onRequestBeginning(MessageIn* request) {}
 
         /** Called when an incoming request is completely received. */
-        virtual void onRequestReceived(MessageIn *request) { request->notHandled(); }
+        virtual void onRequestReceived(MessageIn* request) { request->notHandled(); }
     };
 
 }}  // namespace litecore::blip

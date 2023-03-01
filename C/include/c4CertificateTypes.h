@@ -127,7 +127,7 @@ typedef struct C4ExternalKeyCallbacks {
         @param outputMaxLen  Maximum length of output that can be written.
         @param outputLen  Store the length of the output here before returning.
         @return  True on success, false on failure. */
-    bool (*publicKeyData)(void *externalKey, void *output, size_t outputMaxLen, size_t *outputLen);
+    bool (*publicKeyData)(void* externalKey, void* output, size_t outputMaxLen, size_t* outputLen);
     /** Decrypts data using the private key.
         @param externalKey  The client-provided key token given to c4keypair_fromExternal.
         @param input  The encrypted data (size is always equal to the key size.)
@@ -135,7 +135,7 @@ typedef struct C4ExternalKeyCallbacks {
         @param outputMaxLen  Maximum length of output that can be written.
         @param outputLen  Store the length of the output here before returning.
         @return  True on success, false on failure. */
-    bool (*decrypt)(void *externalKey, C4Slice input, void *output, size_t outputMaxLen, size_t *outputLen);
+    bool (*decrypt)(void* externalKey, C4Slice input, void* output, size_t outputMaxLen, size_t* outputLen);
     /** Uses the private key to generate a signature of input data.
         @param externalKey  The client-provided key value given to c4keypair_fromExternal.
         @param digestAlgorithm  Indicates what type of digest to create the signature from.
@@ -144,11 +144,11 @@ typedef struct C4ExternalKeyCallbacks {
         @return  True on success, false on failure.
         \note The data in inputData is _already hashed_ and does not need to be hashed by the caller.  The
               algorithm is provided as a reference for what was used to perform the hashing.    */
-    bool (*sign)(void *externalKey, C4SignatureDigestAlgorithm digestAlgorithm, C4Slice inputData, void *outSignature);
+    bool (*sign)(void* externalKey, C4SignatureDigestAlgorithm digestAlgorithm, C4Slice inputData, void* outSignature);
     /** Called when the C4KeyPair is released and the externalKey is no longer needed, so that
         your code can free any associated resources. (This callback is optionaly and may be NULL.)
         @param externalKey  The client-provided key value given when the C4KeyPair was created. */
-    void (*C4NULLABLE free)(void *externalKey);
+    void (*C4NULLABLE free)(void* externalKey);
 } C4ExternalKeyCallbacks;
 
 /** @} */

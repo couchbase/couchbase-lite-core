@@ -60,13 +60,13 @@ namespace litecore {
 
     class LogDomain {
       public:
-        LogDomain(const char *name, LogLevel level = LogLevel::Info) : _level(level), _name(name), _next(sFirstDomain) {
+        LogDomain(const char* name, LogLevel level = LogLevel::Info) : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
         }
 
-        static LogDomain *named(const char *name);
+        static LogDomain* named(const char* name);
 
-        const char *name() const { return _name; }
+        const char* name() const { return _name; }
 
         void     setLevel(LogLevel lvl) noexcept;
         LogLevel level() const noexcept;
@@ -81,14 +81,14 @@ namespace litecore {
 
         bool willLog(LogLevel lv) const { return _effectiveLevel <= lv; }
 
-        void logNoCallback(LogLevel level, const char *fmt, ...) __printflike(3, 4);
-        void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
-        void vlog(LogLevel level, const char *fmt, va_list) __printflike(3, 0);
-        void vlogNoCallback(LogLevel level, const char *fmt, va_list) __printflike(3, 0);
+        void logNoCallback(LogLevel level, const char* fmt, ...) __printflike(3, 4);
+        void log(LogLevel level, const char* fmt, ...) __printflike(3, 4);
+        void vlog(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
+        void vlogNoCallback(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
 
-        using Callback_t = void (*)(const LogDomain &, LogLevel, const char *format, va_list);
+        using Callback_t = void (*)(const LogDomain&, LogLevel, const char* format, va_list);
 
-        static void       defaultCallback(const LogDomain &, LogLevel, const char *format, va_list) __printflike(3, 0);
+        static void       defaultCallback(const LogDomain&, LogLevel, const char* format, va_list) __printflike(3, 0);
         static Callback_t currentCallback();
 
         /** Registers (or unregisters) a callback to be passed log messages.
@@ -100,7 +100,7 @@ namespace litecore {
         /** Registers (or unregisters) a file to which log messages will be written in binary format.
         @param options The options to use when performing file logging
         @param initialMessage  First message that will be written to the log, e.g. version info */
-        static void writeEncodedLogsTo(const LogFileOptions &options, const std::string &initialMessage = "");
+        static void writeEncodedLogsTo(const LogFileOptions& options, const std::string& initialMessage = "");
 
         /** Returns the current log file configuration options, as given to `writeEncodedLogsTo`. */
         static LogFileOptions currentLogFileOptions();
@@ -117,10 +117,10 @@ namespace litecore {
       private:
         friend class Logging;
         static std::string getObject(unsigned);
-        unsigned           registerObject(const void *object, const unsigned *val, const std::string &description,
-                                          const std::string &nickname, LogLevel level);
+        unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
+                                          const std::string& nickname, LogLevel level);
         void               unregisterObject(unsigned obj);
-        void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list) __printflike(5, 0);
+        void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
       private:
         static LogLevel _callbackLogLevel() noexcept;
@@ -128,16 +128,16 @@ namespace litecore {
         LogLevel        levelFromEnvironment() const noexcept;
         static void     _invalidateEffectiveLevels() noexcept;
 
-        void dylog(LogLevel level, const char *domain, unsigned objRef, const char *fmt, va_list) __printflike(5, 0);
+        void dylog(LogLevel level, const char* domain, unsigned objRef, const char* fmt, va_list) __printflike(5, 0);
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
-        const char *const     _name;
-        LogDomain *const      _next;
+        const char* const     _name;
+        LogDomain* const      _next;
 
         static unsigned                        slastObjRef;
         static std::map<unsigned, std::string> sObjNames;
-        static LogDomain                      *sFirstDomain;
+        static LogDomain*                      sFirstDomain;
         static LogLevel                        sCallbackMinLevel;
         static LogLevel                        sFileMinLevel;
     };
@@ -204,7 +204,7 @@ namespace litecore {
         std::string loggingName() const;
 
       protected:
-        Logging(LogDomain &domain) : _domain(domain) {}
+        Logging(LogDomain& domain) : _domain(domain) {}
 
         virtual ~Logging();
 
@@ -218,52 +218,52 @@ namespace litecore {
     _logv(LogLevel::LEVEL, format, args);                                                                              \
     va_end(args);
 
-        void warn(const char *format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
+        void warn(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
 
-        void logError(const char *format, ...) const __printflike(2, 3) { LOGBODY(Error) }
+        void logError(const char* format, ...) const __printflike(2, 3) { LOGBODY(Error) }
 
-        void _logInfo(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info) }
+        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        void _logVerbose(const char *format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
+        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char *format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
+        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
         bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
-        void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char *format, va_list) const;
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
+        void _logv(LogLevel level, const char* format, va_list) const;
 
-        inline void _logAt(LogLevel level, const char *format, va_list args) const {
+        inline void _logAt(LogLevel level, const char* format, va_list args) const {
             if ( _usuallyFalse(this->willLog(level)) ) this->_logv(level, format, args);
         }
 
-        virtual inline void logInfo(const char *format, ...) const {
+        virtual inline void logInfo(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Info, format, args);
             va_end(args);
         }
 
-        virtual inline void logVerbose(const char *format, ...) const {
+        virtual inline void logVerbose(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Verbose, format, args);
             va_end(args);
         }
 #if DEBUG
-        virtual inline void logDebug(const char *format, ...) const {
+        virtual inline void logDebug(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Debug, format, args);
             va_end(args);
         }
 #else
-        virtual inline void logDebug(const char *format, ...) const {}
+        virtual inline void logDebug(const char* format, ...) const {}
 #endif
 
         unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
-        LogDomain &_domain;
+        LogDomain& _domain;
 
       private:
         friend class LogDomain;

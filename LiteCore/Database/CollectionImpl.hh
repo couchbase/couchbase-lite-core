@@ -38,7 +38,7 @@ namespace litecore {
         : public C4Collection
         , public Logging {
       public:
-        CollectionImpl(C4Database *db, C4CollectionSpec spec, KeyStore &store)
+        CollectionImpl(C4Database* db, C4CollectionSpec spec, KeyStore& store)
             : C4Collection(db, spec), Logging(DBLog), _keyStore(&store) {
             auto flags = _database->getConfiguration().flags;
             if ( flags & kC4DB_VersionVectors ) _documentFactory = std::make_unique<VectorDocumentFactory>(this);
@@ -77,7 +77,7 @@ namespace litecore {
             return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
-        KeyStore &keyStore() const {
+        KeyStore& keyStore() const {
             if ( _usuallyFalse(!isValid()) ) failClosed();
             return *_keyStore;
         }
@@ -86,11 +86,11 @@ namespace litecore {
 
         C4SequenceNumber getLastSequence() const override { return keyStore().lastSequence(); }
 
-        DatabaseImpl *dbImpl() { return asInternal(getDatabase()); }
+        DatabaseImpl* dbImpl() { return asInternal(getDatabase()); }
 
-        const DatabaseImpl *dbImpl() const { return asInternal(getDatabase()); }
+        const DatabaseImpl* dbImpl() const { return asInternal(getDatabase()); }
 
-        access_lock<SequenceTracker> &sequenceTracker() {
+        access_lock<SequenceTracker>& sequenceTracker() {
             if ( !_sequenceTracker ) error::_throw(error::UnsupportedOperation);
             return *_sequenceTracker;
         }
@@ -105,7 +105,7 @@ namespace litecore {
             return _sequenceTracker && _sequenceTracker->useLocked()->changedDuringTransaction();
         }
 
-        void transactionEnding(ExclusiveTransaction *transaction, bool committing) {
+        void transactionEnding(ExclusiveTransaction* transaction, bool committing) {
             if ( _sequenceTracker ) {
                 auto st = _sequenceTracker->useLocked();
                 // Notify other Database instances on this file:
@@ -114,13 +114,13 @@ namespace litecore {
             }
         }
 
-        void externalTransactionCommitted(const SequenceTracker &sourceTracker) {
+        void externalTransactionCommitted(const SequenceTracker& sourceTracker) {
             if ( _sequenceTracker ) _sequenceTracker->useLocked()->addExternalTransaction(sourceTracker);
         }
 
 #pragma mark - BLOBS:
 
-        void findBlobReferences(const fleece::function_ref<bool(FLDict)> &blobCallback) override {
+        void findBlobReferences(const fleece::function_ref<bool(FLDict)>& blobCallback) override {
             uint64_t                  numRevisions = 0;
             RecordEnumerator::Options options;
             options.onlyBlobs  = true;
@@ -142,12 +142,12 @@ namespace litecore {
 
 #pragma mark - DOCUMENTS:
 
-        DocumentFactory *documentFactory() const {
+        DocumentFactory* documentFactory() const {
             if ( _usuallyFalse(!isValid()) ) failClosed();
             return _documentFactory.get();
         }
 
-        virtual Retained<C4Document> newDocumentInstance(const litecore::Record &record) {
+        virtual Retained<C4Document> newDocumentInstance(const litecore::Record& record) {
             return documentFactory()->newDocumentInstance(record);
         }
 
@@ -164,7 +164,7 @@ namespace litecore {
                 return nullptr;
         }
 
-        std::vector<alloc_slice> findDocAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
+        std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                   unsigned maxAncestors, bool mustHaveBodies,
                                                   C4RemoteID remoteDBID) const override {
             return documentFactory()->findAncestors(docIDs, revIDs, maxAncestors, mustHaveBodies, remoteDBID);
@@ -172,7 +172,7 @@ namespace litecore {
 
         // Errors other than NotFound, Conflict and delta failures
         // should be thrown as exceptions, in the C++ API.
-        static void throwIfUnexpected(const C4Error &inError, C4Error *outError) {
+        static void throwIfUnexpected(const C4Error& inError, C4Error* outError) {
             if ( outError ) *outError = inError;
             if ( inError.domain == LiteCoreDomain ) {
                 switch ( inError.code ) {
@@ -216,7 +216,7 @@ namespace litecore {
         }
 
         Retained<C4Document> createDocument(slice docID, slice revBody, C4RevisionFlags revFlags,
-                                            C4Error *outError) override {
+                                            C4Error* outError) override {
             C4DocPutRequest rq = {};
             rq.docID           = docID;
             rq.body            = revBody;
@@ -225,8 +225,8 @@ namespace litecore {
             return putDocument(rq, nullptr, outError);
         }
 
-        Retained<C4Document> putDocument(const C4DocPutRequest &rq, size_t *outCommonAncestorIndex,
-                                         C4Error *outError) override {
+        Retained<C4Document> putDocument(const C4DocPutRequest& rq, size_t* outCommonAncestorIndex,
+                                         C4Error* outError) override {
             dbImpl()->mustBeInTransaction();
             if ( rq.docID.buf && !C4Document::isValidDocID(rq.docID) ) error::_throw(error::BadDocID);
             if ( rq.existingRevision || rq.historyCount > 0 ) AssertParam(rq.docID.buf, "Missing docID");
@@ -283,7 +283,7 @@ namespace litecore {
         }
 
         // Is this a PutRequest that doesn't require a Record to exist already?
-        bool isNewDocPutRequest(const C4DocPutRequest &rq) {
+        bool isNewDocPutRequest(const C4DocPutRequest& rq) {
             if ( rq.deltaCB ) return false;
             else if ( rq.existingRevision )
                 return documentFactory()->isFirstGenRevID(rq.history[rq.historyCount - 1]);
@@ -292,7 +292,7 @@ namespace litecore {
         }
 
         // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-        pair<Retained<C4Document>, int> putNewDoc(const C4DocPutRequest &rq) {
+        pair<Retained<C4Document>, int> putNewDoc(const C4DocPutRequest& rq) {
             DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
             Record record(rq.docID);
             if ( !rq.docID.buf ) record.setKey(C4Document::createDocID());
@@ -305,15 +305,15 @@ namespace litecore {
             return {doc, commonAncestorIndex};
         }
 
-        void moveDocument(slice docID, C4Collection *toCollection, slice newDocID) override {
+        void moveDocument(slice docID, C4Collection* toCollection, slice newDocID) override {
             C4Database::Transaction t(getDatabase());
             if ( newDocID ) C4Document::requireValidDocID(newDocID);
-            keyStore().moveTo(docID, ((CollectionImpl *)toCollection)->keyStore(), dbImpl()->transaction(), newDocID);
+            keyStore().moveTo(docID, ((CollectionImpl*)toCollection)->keyStore(), dbImpl()->transaction(), newDocID);
             // DOES NOT NOTIFY SEQUENCE TRACKER! (should it?)
             t.commit();
         }
 
-        void documentSaved(C4Document *doc) {
+        void documentSaved(C4Document* doc) {
             // CBL-1089
             // Conflicted documents are not eligible to be replicated,
             // so ignore them.  Later when the conflict is resolved
@@ -392,9 +392,9 @@ namespace litecore {
         static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
 
         void createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
-                         const C4IndexOptions *indexOptions = nullptr) override {
+                         const C4IndexOptions* indexOptions = nullptr) override {
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
-                                   (const IndexSpec::Options *)indexOptions);
+                                   (const IndexSpec::Options*)indexOptions);
         }
 
         void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }
@@ -402,7 +402,7 @@ namespace litecore {
         alloc_slice getIndexesInfo(bool fullInfo = true) const override {
             FLEncoder enc = FLEncoder_New();
             FLEncoder_BeginArray(enc, 2);
-            for ( const auto &spec : keyStore().getIndexes() ) {
+            for ( const auto& spec : keyStore().getIndexes() ) {
                 if ( fullInfo ) {
                     FLEncoder_BeginDict(enc, 3);
                     FLEncoder_WriteKey(enc, slice("name"));
@@ -432,7 +432,7 @@ namespace litecore {
         }
 
         alloc_slice getIndexRows(slice indexName) const override {
-            auto        dataFile = (SQLiteDataFile *)dbImpl()->dataFile();
+            auto        dataFile = (SQLiteDataFile*)dbImpl()->dataFile();
             int64_t     rowCount;
             alloc_slice rows;
             dataFile->inspectIndex(indexName, rowCount, &rows);
@@ -451,14 +451,14 @@ namespace litecore {
 
 
       private:
-        KeyStore                                *_keyStore;         // The actual DB table
+        KeyStore*                                _keyStore;         // The actual DB table
         unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
     };
 
-    static inline CollectionImpl *asInternal(C4Collection *coll) { return (CollectionImpl *)coll; }
+    static inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }
 
-    static inline const CollectionImpl *asInternal(const C4Collection *coll) { return (const CollectionImpl *)coll; }
+    static inline const CollectionImpl* asInternal(const C4Collection* coll) { return (const CollectionImpl*)coll; }
 
 }  // namespace litecore

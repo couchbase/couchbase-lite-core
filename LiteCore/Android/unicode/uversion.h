@@ -155,7 +155,7 @@ U_NAMESPACE_USE
  *                      values of up to 255 each.
  * @stable ICU 2.4
  */
-U_STABLE void U_EXPORT2 u_versionFromString(UVersionInfo versionArray, const char *versionString);
+U_STABLE void U_EXPORT2 u_versionFromString(UVersionInfo versionArray, const char* versionString);
 
 /**
  * Parse a Unicode string with dotted-decimal version information and
@@ -168,7 +168,7 @@ U_STABLE void U_EXPORT2 u_versionFromString(UVersionInfo versionArray, const cha
  *                      fields with values of up to 255 each.
  * @stable ICU 4.2
  */
-U_STABLE void U_EXPORT2 u_versionFromUString(UVersionInfo versionArray, const UChar *versionString);
+U_STABLE void U_EXPORT2 u_versionFromUString(UVersionInfo versionArray, const UChar* versionString);
 
 
 /**
@@ -183,7 +183,7 @@ U_STABLE void U_EXPORT2 u_versionFromUString(UVersionInfo versionArray, const UC
  *                      The buffer size must be at least U_MAX_VERSION_STRING_LENGTH.
  * @stable ICU 2.4
  */
-U_STABLE void U_EXPORT2 u_versionToString(const UVersionInfo versionArray, char *versionString);
+U_STABLE void U_EXPORT2 u_versionToString(const UVersionInfo versionArray, char* versionString);
 
 /**
  * Gets the ICU release version.  The version array stores the version information

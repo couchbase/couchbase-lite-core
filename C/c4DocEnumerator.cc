@@ -36,17 +36,17 @@ class C4DocEnumerator::Impl
     : public RecordEnumerator
     , public fleece::InstanceCounted {
   public:
-    Impl(C4Collection *collection, sequence_t since, const C4EnumeratorOptions &options)
+    Impl(C4Collection* collection, sequence_t since, const C4EnumeratorOptions& options)
         : RecordEnumerator(asInternal(collection)->keyStore(), since, recordOptions(options))
         , _collection(asInternal(collection))
         , _options(options) {}
 
-    Impl(C4Collection *collection, const C4EnumeratorOptions &options)
+    Impl(C4Collection* collection, const C4EnumeratorOptions& options)
         : RecordEnumerator(asInternal(collection)->keyStore(), recordOptions(options))
         , _collection(asInternal(collection))
         , _options(options) {}
 
-    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions &c4options) {
+    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions& c4options) {
         RecordEnumerator::Options options;
         if ( c4options.flags & kC4Descending ) options.sortOption = kDescending;
         else if ( c4options.flags & kC4Unsorted )
@@ -64,7 +64,7 @@ class C4DocEnumerator::Impl
         return _collection->newDocumentInstance(record());
     }
 
-    bool getDocInfo(C4DocumentInfo *outInfo) noexcept {
+    bool getDocInfo(C4DocumentInfo* outInfo) noexcept {
         if ( !*this ) return false;
 
         revid vers(record().version());
@@ -83,28 +83,28 @@ class C4DocEnumerator::Impl
     }
 
   private:
-    litecore::CollectionImpl *_collection;
+    litecore::CollectionImpl* _collection;
     C4EnumeratorOptions const _options;
     alloc_slice               _docRevID;
 };
 
-C4DocEnumerator::C4DocEnumerator(C4Collection *collection, C4SequenceNumber since, const C4EnumeratorOptions &options)
+C4DocEnumerator::C4DocEnumerator(C4Collection* collection, C4SequenceNumber since, const C4EnumeratorOptions& options)
     : _impl(new Impl(collection, since, options)) {}
 
-C4DocEnumerator::C4DocEnumerator(C4Collection *collection, const C4EnumeratorOptions &options)
+C4DocEnumerator::C4DocEnumerator(C4Collection* collection, const C4EnumeratorOptions& options)
     : _impl(new Impl(collection, options)) {}
 
 #ifndef C4_STRICT_COLLECTION_API
-C4DocEnumerator::C4DocEnumerator(C4Database *database, const C4EnumeratorOptions &options)
+C4DocEnumerator::C4DocEnumerator(C4Database* database, const C4EnumeratorOptions& options)
     : C4DocEnumerator(database->getDefaultCollection(), options) {}
 
-C4DocEnumerator::C4DocEnumerator(C4Database *database, C4SequenceNumber since, const C4EnumeratorOptions &options)
+C4DocEnumerator::C4DocEnumerator(C4Database* database, C4SequenceNumber since, const C4EnumeratorOptions& options)
     : C4DocEnumerator(database->getDefaultCollection(), since, options) {}
 #endif
 
 C4DocEnumerator::~C4DocEnumerator() = default;
 
-bool C4DocEnumerator::getDocumentInfo(C4DocumentInfo &info) const noexcept { return _impl && _impl->getDocInfo(&info); }
+bool C4DocEnumerator::getDocumentInfo(C4DocumentInfo& info) const noexcept { return _impl && _impl->getDocInfo(&info); }
 
 C4DocumentInfo C4DocEnumerator::documentInfo() const {
     C4DocumentInfo i;

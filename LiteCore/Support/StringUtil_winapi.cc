@@ -22,11 +22,11 @@ namespace litecore {
     using namespace fleece;
 
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
-        int length = MultiByteToWideChar(CP_UTF8, 0, (const char *)str.buf, narrow_cast<DWORD>(str.size), nullptr, 0);
+        int length = MultiByteToWideChar(CP_UTF8, 0, (const char*)str.buf, narrow_cast<DWORD>(str.size), nullptr, 0);
         if ( length == 0 ) { return {}; }
 
         TempArray(wstr, wchar_t, length);
-        MultiByteToWideChar(CP_UTF8, 0, (const char *)str.buf, narrow_cast<DWORD>(str.size), wstr, length);
+        MultiByteToWideChar(CP_UTF8, 0, (const char*)str.buf, narrow_cast<DWORD>(str.size), wstr, length);
 
         DWORD flags = toUppercase ? LCMAP_UPPERCASE : LCMAP_LOWERCASE;
         int   resultLength
@@ -40,7 +40,7 @@ namespace litecore {
         if ( finalLength == 0 ) { return {}; }
 
         alloc_slice result(finalLength);
-        WideCharToMultiByte(CP_UTF8, 0, mapped, resultLength, (char *)result.buf, narrow_cast<DWORD>(result.size),
+        WideCharToMultiByte(CP_UTF8, 0, mapped, resultLength, (char*)result.buf, narrow_cast<DWORD>(result.size),
                             nullptr, nullptr);
         return result;
     }

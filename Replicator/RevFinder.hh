@@ -33,7 +33,7 @@ namespace litecore { namespace repl {
 
         class Delegate : public Worker {
           public:
-            Delegate(Worker *parent, const char *namePrefix, CollectionIndex coll) : Worker(parent, namePrefix, coll) {}
+            Delegate(Worker* parent, const char* namePrefix, CollectionIndex coll) : Worker(parent, namePrefix, coll) {}
 
             virtual ~Delegate() = default;
             /** Tells the Delegate the peer has finished sending historical changes. */
@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
             virtual void documentsRevoked(std::vector<Retained<RevToInsert>>) = 0;
         };
 
-        RevFinder(Replicator *NONNULL, Delegate *NONNULL, CollectionIndex);
+        RevFinder(Replicator* NONNULL, Delegate* NONNULL, CollectionIndex);
 
         /** Delegate must call this every time it receives a "rev" message. */
         void revReceived() { enqueue(FUNCTION_TO_QUEUE(RevFinder::_revReceived)); }
@@ -64,11 +64,11 @@ namespace litecore { namespace repl {
 
         void handleChanges(Retained<blip::MessageIn>);
         void handleMoreChanges();
-        void handleChangesNow(blip::MessageIn *req);
+        void handleChangesNow(blip::MessageIn* req);
 
-        int  findRevs(fleece::Array, fleece::JSONEncoder &, std::vector<ChangeSequence> &);
-        int  findProposedRevs(fleece::Array, fleece::JSONEncoder &, bool, std::vector<ChangeSequence> &);
-        int  findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice &outCurrentRevID);
+        int  findRevs(fleece::Array, fleece::JSONEncoder&, std::vector<ChangeSequence>&);
+        int  findProposedRevs(fleece::Array, fleece::JSONEncoder&, bool, std::vector<ChangeSequence>&);
+        int  findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID);
         void _revReceived();
         void _reRequestingRev();
         void checkDocAndRevID(slice docID, slice revID);

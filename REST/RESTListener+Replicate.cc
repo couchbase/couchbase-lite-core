@@ -38,10 +38,10 @@ namespace litecore { namespace REST {
         using Mutex = recursive_mutex;
         using Lock  = unique_lock<Mutex>;
 
-        ReplicationTask(RESTListener *listener, slice source, slice target, bool bidi, bool continuous)
+        ReplicationTask(RESTListener* listener, slice source, slice target, bool bidi, bool continuous)
             : Task(listener), _source(source), _target(target), _bidi(bidi), _continuous(continuous) {}
 
-        void start(C4Database *localDB, C4String localDbName, const C4Address &remoteAddress, C4String remoteDbName,
+        void start(C4Database* localDB, C4String localDbName, const C4Address& remoteAddress, C4String remoteDbName,
                    C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
             if ( findMatchingTask() ) C4Error::raise(WebSocketDomain, 409, "Equivalent replication already running");
 
@@ -60,8 +60,8 @@ namespace litecore { namespace REST {
                 AllocedDict                         optionsDict;
                 params.push            = pushMode;
                 params.pull            = pullMode;
-                params.onStatusChanged = [](C4Replicator *, C4ReplicatorStatus status, void *context) {
-                    ((ReplicationTask *)context)->onReplStateChanged(status);
+                params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
+                    ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
                 params.callbackContext = this;
                 if ( _user ) {
@@ -90,10 +90,10 @@ namespace litecore { namespace REST {
             onReplStateChanged(_repl->getStatus());
         }
 
-        ReplicationTask *findMatchingTask() {
+        ReplicationTask* findMatchingTask() {
             for ( auto task : listener()->tasks() ) {
                 // Note that either direction is considered a match
-                ReplicationTask *repl = dynamic_cast<ReplicationTask *>(task.get());
+                ReplicationTask* repl = dynamic_cast<ReplicationTask*>(task.get());
                 if ( repl
                      && ((repl->_source == _source && repl->_target == _target)
                          || (repl->_source == _target && repl->_target == _source)) ) {
@@ -127,7 +127,7 @@ namespace litecore { namespace REST {
             return _message;
         }
 
-        virtual void writeDescription(fleece::JSONEncoder &json) override {
+        virtual void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
 
             json.writeKey("type"_sl);
@@ -177,7 +177,7 @@ namespace litecore { namespace REST {
             }
         }
 
-        void writeErrorInfo(JSONEncoder &json) {
+        void writeErrorInfo(JSONEncoder& json) {
             Lock lock(_mutex);
             json.beginDict();
             json.writeKey("error"_sl);
@@ -210,7 +210,7 @@ namespace litecore { namespace REST {
 
 
       private:
-        void onReplStateChanged(const C4ReplicatorStatus &status) {
+        void onReplStateChanged(const C4ReplicatorStatus& status) {
             {
                 Lock lock(_mutex);
                 _status  = status;
@@ -241,7 +241,7 @@ namespace litecore { namespace REST {
 
 #pragma mark - HTTP HANDLER:
 
-    void RESTListener::handleReplicate(litecore::REST::RequestResponse &rq) {
+    void RESTListener::handleReplicate(litecore::REST::RequestResponse& rq) {
         // Parse the JSON body:
         auto params = rq.bodyAsJSON().asDict();
         if ( !params )
@@ -303,7 +303,7 @@ namespace litecore { namespace REST {
             task->unregisterTask();
         }
 
-        auto &json = rq.jsonEncoder();
+        auto& json = rq.jsonEncoder();
         if ( statusCode == HTTPStatus::OK ) {
             json.beginDict();
             json.writeKey("ok"_sl);
@@ -320,7 +320,7 @@ namespace litecore { namespace REST {
         rq.setStatus(statusCode, message.c_str());
     }
 
-    void RESTListener::handleSync(RequestResponse &rq, C4Database *) {
+    void RESTListener::handleSync(RequestResponse& rq, C4Database*) {
         rq.setStatus(HTTPStatus::NotImplemented, nullptr);
     }
 

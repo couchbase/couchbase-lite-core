@@ -34,12 +34,12 @@ namespace litecore {
         , public fleece::InstanceCountedIn<C4QueryEnumerator>
         , C4Base {
       public:
-        C4QueryEnumeratorImpl(DatabaseImpl *database, Query *query, QueryEnumerator *e)
+        C4QueryEnumeratorImpl(DatabaseImpl* database, Query* query, QueryEnumerator* e)
             : _database(database), _query(query), _enum(e), _hasFullText(_enum->hasFullText()) {
             clearPublicFields();
         }
 
-        QueryEnumerator *enumerator() const {
+        QueryEnumerator* enumerator() const {
             if ( !_enum ) error::_throw(error::InvalidParameter, "Query enumerator has been closed");
             return _enum;
         }
@@ -62,22 +62,22 @@ namespace litecore {
                 clearPublicFields();
         }
 
-        void clearPublicFields() { ::memset((C4QueryEnumerator *)this, 0, sizeof(C4QueryEnumerator)); }
+        void clearPublicFields() { ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator)); }
 
         void populatePublicFields() {
             static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
                           "C4FullTextMatch does not match Query::FullTextTerm");
-            (Array::iterator &)columns = _enum->columns();
-            missingColumns             = _enum->missingColumns();
+            (Array::iterator&)columns = _enum->columns();
+            missingColumns            = _enum->missingColumns();
             if ( _hasFullText ) {
-                auto &ft           = _enum->fullTextTerms();
-                fullTextMatches    = (const C4FullTextMatch *)ft.data();
+                auto& ft           = _enum->fullTextTerms();
+                fullTextMatches    = (const C4FullTextMatch*)ft.data();
                 fullTextMatchCount = (uint32_t)ft.size();
             }
         }
 
-        C4QueryEnumeratorImpl *C4NULLABLE refresh() {
-            QueryEnumerator *newEnum = enumerator()->refresh(_query);
+        C4QueryEnumeratorImpl* C4NULLABLE refresh() {
+            QueryEnumerator* newEnum = enumerator()->refresh(_query);
             if ( newEnum ) return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
             else
                 return nullptr;
@@ -85,7 +85,7 @@ namespace litecore {
 
         void close() noexcept { _enum = nullptr; }
 
-        bool usesEnumerator(QueryEnumerator *e) const { return e == _enum; }
+        bool usesEnumerator(QueryEnumerator* e) const { return e == _enum; }
 
       private:
         Retained<DatabaseImpl>    _database;
@@ -94,12 +94,12 @@ namespace litecore {
         bool                      _hasFullText;
     };
 
-    static inline C4QueryEnumeratorImpl *asInternal(C4QueryEnumerator *e) { return (C4QueryEnumeratorImpl *)e; }
+    static inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator* e) { return (C4QueryEnumeratorImpl*)e; }
 
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
       public:
-        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
+        C4QueryObserverImpl(C4Query* query, C4Query::ObserverCallback callback)
             : C4QueryObserver(query), _callback(move(callback)) {}
 
         ~C4QueryObserverImpl() {
@@ -109,7 +109,7 @@ namespace litecore {
         void setEnabled(bool enabled) override { _query->enableObserver(this, enabled); }
 
         // called on a background thread
-        void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
+        void notify(C4QueryEnumeratorImpl* e, C4Error err) noexcept {
             {
                 LOCK(_mutex);
                 _currentEnumerator = e;
@@ -118,7 +118,7 @@ namespace litecore {
             _callback(this);
         }
 
-        Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error *C4NULLABLE outError) {
+        Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error* C4NULLABLE outError) {
             LOCK(_mutex);
             if ( outError ) *outError = _currentError;
             if ( forget ) return std::move(_currentEnumerator);
@@ -139,7 +139,7 @@ namespace litecore {
         Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     };
 
-    static inline C4QueryObserverImpl *asInternal(C4QueryObserver *obs) { return (C4QueryObserverImpl *)obs; }
+    static inline C4QueryObserverImpl* asInternal(C4QueryObserver* obs) { return (C4QueryObserverImpl*)obs; }
 
 }  // namespace litecore
 

@@ -50,11 +50,11 @@ namespace litecore { namespace crypto {
     }
 
     alloc_slice Key::publicKeyDERData() {
-        return allocDER(4096, [&](uint8_t *buf, size_t size) { return mbedtls_pk_write_pubkey_der(_pk, buf, size); });
+        return allocDER(4096, [&](uint8_t* buf, size_t size) { return mbedtls_pk_write_pubkey_der(_pk, buf, size); });
     }
 
     alloc_slice Key::publicKeyRawData() {
-        return allocDER(4096, [&](uint8_t *buf, size_t size) {
+        return allocDER(4096, [&](uint8_t* buf, size_t size) {
             auto pos = buf + size;
             return mbedtls_pk_write_pubkey(&pos, buf, _pk);
         });
@@ -85,8 +85,8 @@ namespace litecore { namespace crypto {
 
     PrivateKey::PrivateKey(slice data, slice password) {
         if ( password.size == 0 ) password = nullslice;  // interpret empty password as 'no password'
-        parsePEMorDER(data, "private key", [&](const uint8_t *bytes, size_t size) {
-            return mbedtls_pk_parse_key(context(), bytes, size, (const uint8_t *)password.buf, password.size);
+        parsePEMorDER(data, "private key", [&](const uint8_t* bytes, size_t size) {
+            return mbedtls_pk_parse_key(context(), bytes, size, (const uint8_t*)password.buf, password.size);
         });
     }
 
@@ -105,7 +105,7 @@ namespace litecore { namespace crypto {
             case KeyFormat::DER:
             case KeyFormat::PEM:
                 {
-                    auto result = allocDER(4096, [&](uint8_t *buf, size_t size) {
+                    auto result = allocDER(4096, [&](uint8_t* buf, size_t size) {
                         return mbedtls_pk_write_key_der(context(), buf, size);
                     });
                     if ( format == KeyFormat::PEM ) {
@@ -127,27 +127,27 @@ namespace litecore { namespace crypto {
         // _decrypt, _sign, and publicKeyRawData methods, all of which are implemented by the
         // platform-specific subclass.
 
-        auto decryptFunc = [](void *ctx, int mode, size_t *olen, const unsigned char *input, unsigned char *output,
+        auto decryptFunc = [](void* ctx, int mode, size_t* olen, const unsigned char* input, unsigned char* output,
                               size_t output_max_len) -> int {
-            return ((ExternalPrivateKey *)ctx)->_decrypt(input, output, output_max_len, olen);
+            return ((ExternalPrivateKey*)ctx)->_decrypt(input, output, output_max_len, olen);
         };
 
-        auto signFunc = [](void *ctx, int (*f_rng)(void *, unsigned char *, size_t), void *p_rng, int mode,
-                           mbedtls_md_type_t md_alg, unsigned int hashlen, const unsigned char *hash,
-                           unsigned char *sig) -> int {
-            return ((ExternalPrivateKey *)ctx)->_sign(md_alg, slice(hash, hashlen), sig);
+        auto signFunc = [](void* ctx, int (*f_rng)(void*, unsigned char*, size_t), void* p_rng, int mode,
+                           mbedtls_md_type_t md_alg, unsigned int hashlen, const unsigned char* hash,
+                           unsigned char* sig) -> int {
+            return ((ExternalPrivateKey*)ctx)->_sign(md_alg, slice(hash, hashlen), sig);
         };
 
-        auto keyLengthFunc = [](void *ctx) -> size_t { return ((ExternalPrivateKey *)ctx)->_keyLength; };
+        auto keyLengthFunc = [](void* ctx) -> size_t { return ((ExternalPrivateKey*)ctx)->_keyLength; };
 
-        auto writeKeyFunc = [](void *ctx, uint8_t **p, uint8_t *start) -> int {
+        auto writeKeyFunc = [](void* ctx, uint8_t** p, uint8_t* start) -> int {
             try {
-                alloc_slice keyData = ((ExternalPrivateKey *)ctx)->publicKeyRawData();
+                alloc_slice keyData = ((ExternalPrivateKey*)ctx)->publicKeyRawData();
                 if ( keyData.size > *p - start ) return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
                 memcpy(*p - keyData.size, keyData.buf, keyData.size);
                 *p -= keyData.size;
                 return int(keyData.size);
-            } catch ( const std::exception &x ) {
+            } catch ( const std::exception& x ) {
                 LogWarn(TLSLogDomain, "Unable to get data of public key: %s", x.what());
                 return MBEDTLS_ERR_PK_FILE_IO_ERROR;
             }

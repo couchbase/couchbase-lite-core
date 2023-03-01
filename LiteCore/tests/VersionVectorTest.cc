@@ -23,15 +23,15 @@ namespace litecore {
 
     /** Writes an ASCII representation of a Version to a stream.
      Note: This does not replace "*" with the local author's ID! */
-    static inline std::ostream &operator<<(std::ostream &o, const Version &v) { return o << v.asASCII(); }
+    static inline std::ostream& operator<<(std::ostream& o, const Version& v) { return o << v.asASCII(); }
 
     /** Writes an ASCII representation of a VersionVector to a stream.
      Note: This does not replace "*" with the local author's ID! */
-    static inline std::ostream &operator<<(std::ostream &o, const VersionVector &vv) {
+    static inline std::ostream& operator<<(std::ostream& o, const VersionVector& vv) {
         return o << string(vv.asASCII());
     }
 
-    static inline std::ostream &operator<<(std::ostream &o, const optional<VersionVector> &vv) {
+    static inline std::ostream& operator<<(std::ostream& o, const optional<VersionVector>& vv) {
         if ( vv ) return o << *vv;
         else
             return o << "nullopt";
@@ -44,7 +44,7 @@ namespace litecore {
 //}
 
 // `_vv` suffix after a string literal makes it a VersionVector
-static VersionVector operator"" _vv(const char *str NONNULL, size_t length) {
+static VersionVector operator"" _vv(const char* str NONNULL, size_t length) {
     if ( length == 0 ) return VersionVector();
     return VersionVector::fromASCII(slice(str, length));
 }
@@ -195,10 +195,10 @@ TEST_CASE("VersionVector deltas", "[RevIDs]") {
 #pragma mark - REVID:
 
 struct DigestTestCase {
-    const char *str;
+    const char* str;
     uint64_t    gen;
     slice       digest;
-    const char *hex;
+    const char* hex;
 };
 
 TEST_CASE("RevID Parsing", "[RevIDs]") {
@@ -252,10 +252,10 @@ TEST_CASE("RevID Parsing", "[RevIDs]") {
 }
 
 struct VersionTestCase {
-    const char *str;
+    const char* str;
     uint64_t    gen;
     uint64_t    peer;
-    const char *hex;
+    const char* hex;
 };
 
 TEST_CASE("RevID Version Parsing", "[RevIDs]") {

@@ -23,8 +23,8 @@ namespace litecore {
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
     class C4IncomingReplicator final : public C4ReplicatorImpl {
       public:
-        C4IncomingReplicator(C4Database *db NONNULL, const C4ReplicatorParameters &params,
-                             WebSocket *openSocket NONNULL)
+        C4IncomingReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params,
+                             WebSocket* openSocket NONNULL)
             : C4ReplicatorImpl(db, params), _openSocket(openSocket) {}
 
         virtual alloc_slice URL() const noexcept override { return _openSocket->url(); }
@@ -40,7 +40,7 @@ namespace litecore {
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
-            _logVerbose("C4IncomingRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
+            _logVerbose("C4IncomingRepl %p created Repl %p", (Logging*)this, (Logging*)_replicator.get());
             _openSocket = nullptr;
         }
 
@@ -50,7 +50,7 @@ namespace litecore {
         }
 
       private:
-        WebSocket *_openSocket;
+        WebSocket* _openSocket;
     };
 
 }  // namespace litecore

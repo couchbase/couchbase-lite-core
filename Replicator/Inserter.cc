@@ -31,12 +31,12 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    Inserter::Inserter(Replicator *repl, CollectionIndex coll)
+    Inserter::Inserter(Replicator* repl, CollectionIndex coll)
         : Worker(repl, "Insert", coll)
         , _revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow, tuning::kInsertionDelay,
                         tuning::kInsertionBatchSize) {}
 
-    void Inserter::insertRevision(RevToInsert *rev) { _revsToInsert.push(rev); }
+    void Inserter::insertRevision(RevToInsert* rev) { _revsToInsert.push(rev); }
 
     // Inserts all the revisions queued for insertion.
     void Inserter::_insertRevisionsNow(int gen) {
@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
             // of them apply to the docs we're updating:
             _db->markRevsSyncedNow();
 
-            for ( RevToInsert *rev : *revs ) {
+            for ( RevToInsert* rev : *revs ) {
                 C4Error docErr;
                 bool    docSaved = insertRevisionNow(rev, &docErr);
                 rev->trimBody();  // don't need body any more
@@ -81,7 +81,7 @@ namespace litecore { namespace repl {
         }
 
         // Notify owners of all revs that didn't already fail:
-        for ( auto &rev : *revs ) {
+        for ( auto& rev : *revs ) {
             if ( rev->error.code == 0 ) {
                 rev->error = transactionErr;
                 rev->owner->revisionInserted();
@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
     }
 
     // Inserts one revision. Returns only C4Errors, never throws exceptions.
-    bool Inserter::insertRevisionNow(RevToInsert *rev, C4Error *outError) {
+    bool Inserter::insertRevisionNow(RevToInsert* rev, C4Error* outError) {
         try {
             if ( rev->flags & kRevPurged ) {
                 // Server says the document is no longer accessible, i.e. it's been
@@ -128,9 +128,9 @@ namespace litecore { namespace repl {
                     bodyForDB            = move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
                     put.deltaCB
-                            = [](void *context, C4Document *doc, C4Slice delta, C4Error *outError) -> C4SliceResult {
+                            = [](void* context, C4Document* doc, C4Slice delta, C4Error* outError) -> C4SliceResult {
                         try {
-                            return ((Inserter *)context)->applyDeltaCallback(doc, delta, outError);
+                            return ((Inserter*)context)->applyDeltaCallback(doc, delta, outError);
                         } catch ( ... ) {
                             *outError = C4Error::fromCurrentException();
                             return {};
@@ -147,11 +147,11 @@ namespace litecore { namespace repl {
                     if ( bodyForDB.size >= tuning::kMinBodySizeForDelta && !_options->disableDeltaSupport() )
                         put.revFlags |= kRevKeepBody;
                 }
-                put.allocedBody = {(void *)bodyForDB.buf, bodyForDB.size};
+                put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
                 Retained<C4Document> doc
-                        = _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database *db) {
+                        = _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
                               return insertionCollection()->putDocument(put, nullptr, outError);
                           });
                 if ( !doc ) return false;
@@ -176,7 +176,7 @@ namespace litecore { namespace repl {
     }
 
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
-    C4SliceResult Inserter::applyDeltaCallback(C4Document *c4doc, C4Slice deltaJSON, C4Error *outError) {
+    C4SliceResult Inserter::applyDeltaCallback(C4Document* c4doc, C4Slice deltaJSON, C4Error* outError) {
         Doc         doc  = _db->applyDelta(c4doc, deltaJSON, true);
         alloc_slice body = doc.allocedData();
 
@@ -197,7 +197,7 @@ namespace litecore { namespace repl {
         return C4SliceResult(body);
     }
 
-    C4Collection *Inserter::insertionCollection() {
+    C4Collection* Inserter::insertionCollection() {
         if ( _insertionCollection ) return _insertionCollection;
 
         auto c4db = _db->insertionDB().useLocked();

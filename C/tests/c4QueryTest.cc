@@ -20,7 +20,7 @@ using namespace std;
 
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) { return memcmp(&a, &b, sizeof(a)) == 0; }
 
-static ostream &operator<<(ostream &o, C4FullTextMatch match) {
+static ostream& operator<<(ostream& o, C4FullTextMatch match) {
     return o << "{ds " << match.dataSource << ", prop " << match.property << ", term " << match.term << ", "
              << "bytes " << match.start << " + " << match.length << "}";
 }
@@ -282,7 +282,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     CHECK(run() == (vector<string>{"0000015", "0000099"}));
 }
 
-static bool lookForIndex(C4Database *db, slice name) {
+static bool lookForIndex(C4Database* db, slice name) {
     bool found = false;
     Doc  info(alloc_slice(c4db_getIndexesInfo(db, nullptr)));
     for ( Array::iterator i(info.asArray()); i; ++i ) {
@@ -319,7 +319,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
         TransactionHelper t(db);
 
         C4Error     c4err;
-        C4Document *doc = c4doc_get(db, C4STR("0000015"), true, ERROR_INFO(&c4err));
+        C4Document* doc = c4doc_get(db, C4STR("0000015"), true, ERROR_INFO(&c4err));
         REQUIRE(doc);
         C4DocPutRequest rq     = {};
         rq.docID               = C4STR("0000015");
@@ -327,7 +327,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
         rq.historyCount        = 1;
         rq.revFlags            = kRevDeleted;
         rq.save                = true;
-        C4Document *updatedDoc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
+        C4Document* updatedDoc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(updatedDoc != nullptr);
         c4doc_release(doc);
         c4doc_release(updatedDoc);
@@ -354,7 +354,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Column titles", "[Query][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Missing columns", "[Query][C]") {
-    const char *query           = nullptr;
+    const char* query           = nullptr;
     uint64_t    expectedMissing = 0;
     SECTION("None missing1") {
         query           = "['SELECT', {'WHAT': [['.name'], ['.gender']], 'LIMIT': 1}]";
@@ -366,7 +366,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Missing columns", "[Query][C]") {
     }
     if ( query ) {
         compileSelect(json5(query));
-        auto results = runCollecting<uint64_t>(nullptr, [=](C4QueryEnumerator *e) { return e->missingColumns; });
+        auto results = runCollecting<uint64_t>(nullptr, [=](C4QueryEnumerator* e) { return e->missingColumns; });
         CHECK(results == vector<uint64_t>{expectedMissing});
     }
 }
@@ -379,14 +379,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Blob access", "[Query][Blob][C]") {
         keys = addDocWithAttachments("doc1"_sl, vector<string>{blob}, "text/plain");
     }
     compileSelect(json5("['SELECT', {WHAT: [['BLOB', '.attached[0]']], WHERE: ['=', ['._id'], 'doc1']}]"));
-    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator* e) {
         return string(slice(FLValue_AsData(FLArrayIterator_GetValueAt(&e->columns, 0))));
     });
     CHECK(results == vector<string>{blob});
 
     // Same as above, but wrap the blob in an array when returning it from the query:
     compileSelect(json5("['SELECT', {WHAT: [['[]', ['BLOB', '.attached[0]']]], WHERE: ['=', ['._id'], 'doc1']}]"));
-    results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+    results = runCollecting<string>(nullptr, [=](C4QueryEnumerator* e) {
         FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
         FLValue item   = FLArray_Get(FLValue_AsArray(result), 0);
         return string(slice(FLValue_AsData(item)));
@@ -398,7 +398,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
     compileSelect(json5(
             "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}"));
 
-    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator* e) {
         FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
         return string(alloc_slice(FLValue_ToJSON5(result)));
     });
@@ -864,14 +864,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     C4Error error;
 
     struct State {
-        C4Query                 *query;
+        C4Query*                 query;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
 
-    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+    auto callback = [](C4QueryObserver* obs, C4Query* query, void* context) {
         C4Log("---- Query observer called!");
-        auto state = (State *)context;
+        auto state = (State*)context;
         CHECK(query == state->query);
         CHECK(obs == state->obs);
         CHECK(state->count == 0);
@@ -947,14 +947,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parame
     C4Error error;
 
     struct State {
-        C4Query                 *query;
+        C4Query*                 query;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
 
-    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+    auto callback = [](C4QueryObserver* obs, C4Query* query, void* context) {
         C4Log("---- Query observer called!");
-        auto state = (State *)context;
+        auto state = (State*)context;
         CHECK(query == state->query);
         CHECK(obs == state->obs);
         CHECK(state->count == 0);
@@ -971,7 +971,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parame
 
     auto explain = c4query_explain(query);
     CHECK(explain);
-    C4Log("Explain = %.*s", (int)explain.size, (char *)explain.buf);
+    C4Log("Explain = %.*s", (int)explain.size, (char*)explain.buf);
 
     State state;
     state.query = query;
@@ -1130,7 +1130,7 @@ class CollectionTest : public C4QueryTest {
     CollectionTest() : C4QueryTest(0, "") {}
 
     void populate(C4CollectionSpec spec, std::string filename) {
-        C4Collection *coll = c4db_createCollection(db, spec, ERROR_INFO());
+        C4Collection* coll = c4db_createCollection(db, spec, ERROR_INFO());
         REQUIRE(coll);
         importJSONLines(sFixturesDir + filename, coll);
     }
@@ -1172,8 +1172,8 @@ TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C]
         populate({"wiki"_sl}, "wikipedia_100.json");
         populate({"names"_sl, "namedscope"_sl}, "names_100.json");
     }
-    C4Collection *wiki  = c4db_createCollection(db, {"wiki"_sl}, ERROR_INFO());
-    C4Collection *names = c4db_createCollection(db, {"names"_sl, "namedscope"_sl}, ERROR_INFO());
+    C4Collection* wiki  = c4db_createCollection(db, {"wiki"_sl}, ERROR_INFO());
+    C4Collection* names = c4db_createCollection(db, {"names"_sl, "namedscope"_sl}, ERROR_INFO());
     REQUIRE(wiki);
     REQUIRE(names);
 
@@ -1200,14 +1200,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
     C4Error error;
 
     struct State {
-        C4Query                 *query;
+        C4Query*                 query;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
 
-    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+    auto callback = [](C4QueryObserver* obs, C4Query* query, void* context) {
         C4Log("---- Query observer called!");
-        auto state = (State *)context;
+        auto state = (State*)context;
         CHECK(query == state->query);
         CHECK(obs == state->obs);
         CHECK(state->count == 0);

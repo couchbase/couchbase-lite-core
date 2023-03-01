@@ -22,28 +22,28 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    static inline slice ReadUTF8(slice &str) {
+    static inline slice ReadUTF8(slice& str) {
         slice retVal = NextUTF8(str);
         str.moveStart(retVal.size);
         return retVal;
     }
 
-    void RegisterSQLiteUnicodeCollations(sqlite3 *dbHandle, CollationContextVector &contexts) {
-        sqlite3_collation_needed(dbHandle, &contexts, [](void *pContexts, sqlite3 *db, int textRep, const char *name) {
+    void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle, CollationContextVector& contexts) {
+        sqlite3_collation_needed(dbHandle, &contexts, [](void* pContexts, sqlite3* db, int textRep, const char* name) {
             // Callback from SQLite when it needs a collation:
             try {
                 Collation coll;
                 if ( coll.readSQLiteName(name) ) {
                     auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
-                    if ( ctx ) (*(CollationContextVector *)pContexts).push_back(move(ctx));
+                    if ( ctx ) (*(CollationContextVector*)pContexts).push_back(move(ctx));
                 }
-            } catch ( std::runtime_error &x ) {
+            } catch ( std::runtime_error& x ) {
                 Warn("Exception registering a collator: %s", x.what());
             } catch ( ... ) { Warn("Unexpected unknown exception registering a collator"); }
         });
     }
 
-    __hot bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+    __hot bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext& ctx) {
         auto current = substr;
         while ( str.size > 0 ) {
             size_t nextStrSize    = NextUTF8Length(str);
@@ -64,7 +64,7 @@ namespace litecore {
         return false;
     }
 
-    __hot int LikeUTF8(slice comparand, slice pattern, const CollationContext &col) {
+    __hot int LikeUTF8(slice comparand, slice pattern, const CollationContext& col) {
         // Based on SQLite's 'patternCompare' function (simplified)
         slice c, c2; /* Next pattern and input string chars */
         slice matchOne = "_"_sl;
@@ -127,7 +127,7 @@ namespace litecore {
         }
     }
 
-    bool Collation::readSQLiteName(const char *name) {
+    bool Collation::readSQLiteName(const char* name) {
         // This only has to support the Unicode-aware names, since BINARY and NOCASE are built in
         char caseFlag, diacFlag;
         char locale[20] = "";
@@ -189,7 +189,7 @@ namespace litecore {
     }
 
     template <class CHAR>
-    __hot int CompareASCII(int len1, const CHAR *chars1, int len2, const CHAR *chars2, bool caseSensitive) {
+    __hot int CompareASCII(int len1, const CHAR* chars1, int len2, const CHAR* chars2, bool caseSensitive) {
         int  tieBreaker = 0;
         auto cp1 = chars1, cp2 = chars2;
         for ( size_t n = std::min(len1, len2); n > 0; --n ) {
@@ -218,7 +218,7 @@ namespace litecore {
     }
 
     // Explicitly instantiate the template for 8- and 16-bit chars:
-    template int CompareASCII(int len1, const uint8_t *chars1, int len2, const uint8_t *chars2, bool caseSensitive);
-    template int CompareASCII(int len1, const char16_t *chars1, int len2, const char16_t *chars2, bool caseSensitive);
+    template int CompareASCII(int len1, const uint8_t* chars1, int len2, const uint8_t* chars2, bool caseSensitive);
+    template int CompareASCII(int len1, const char16_t* chars1, int len2, const char16_t* chars2, bool caseSensitive);
 
 }  // namespace litecore

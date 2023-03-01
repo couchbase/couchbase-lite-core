@@ -36,7 +36,7 @@ class C4QueryTest : public C4Test {
 
     ~C4QueryTest() { c4query_release(query); }
 
-    void compileSelect(const std::string &queryStr) {
+    void compileSelect(const std::string& queryStr) {
         INFO("Query = " << queryStr);
         C4Error error{};
         c4query_release(query);
@@ -44,8 +44,8 @@ class C4QueryTest : public C4Test {
         REQUIRE(query);
     }
 
-    void compile(const std::string &whereExpr, const std::string &sortExpr = "", bool addOffsetLimit = false,
-                 const std::string &whatExpr = "", const std::string &fromExpr = "") {
+    void compile(const std::string& whereExpr, const std::string& sortExpr = "", bool addOffsetLimit = false,
+                 const std::string& whatExpr = "", const std::string& fromExpr = "") {
         std::stringstream json;
         json << "[\"SELECT\", {\"WHAT\": ";
         json << (whatExpr.empty() ? "[[\"._id\"]]" : whatExpr) << ", \"WHERE\": " << whereExpr;
@@ -64,7 +64,7 @@ class C4QueryTest : public C4Test {
 
     // Runs query, invoking callback for each row and collecting its return values into a vector
     template <class Collected>
-    std::vector<Collected> runCollecting(const char *bindings, std::function<Collected(C4QueryEnumerator *)> callback) {
+    std::vector<Collected> runCollecting(const char* bindings, std::function<Collected(C4QueryEnumerator*)> callback) {
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error        error;
@@ -77,8 +77,8 @@ class C4QueryTest : public C4Test {
     }
 
     // Runs query, returning vector of doc IDs (or whatever 1st result col is)
-    std::vector<std::string> run(const char *bindings = nullptr) {
-        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator *e) {
+    std::vector<std::string> run(const char* bindings = nullptr) {
+        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator* e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
             if ( e->missingColumns & 1 ) return std::string("MISSING");
             FLValue             val = FLArrayIterator_GetValueAt(&e->columns, 0);
@@ -91,8 +91,8 @@ class C4QueryTest : public C4Test {
     }
 
     // Runs query, returning vector of doc IDs
-    std::vector<std::string> run2(const char *bindings = nullptr) {
-        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator *e) {
+    std::vector<std::string> run2(const char* bindings = nullptr) {
+        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator* e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) >= 2);
             fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
             fleece::alloc_slice c2 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 1));
@@ -103,20 +103,20 @@ class C4QueryTest : public C4Test {
     }
 
     // Runs query, returning vectors of FTS matches (one vector per row)
-    std::vector<std::vector<C4FullTextMatch>> runFTS(const char *bindings = nullptr) {
-        return runCollecting<std::vector<C4FullTextMatch>>(bindings, [&](C4QueryEnumerator *e) {
+    std::vector<std::vector<C4FullTextMatch>> runFTS(const char* bindings = nullptr) {
+        return runCollecting<std::vector<C4FullTextMatch>>(bindings, [&](C4QueryEnumerator* e) {
             return std::vector<C4FullTextMatch>(&e->fullTextMatches[0], &e->fullTextMatches[e->fullTextMatchCount]);
         });
     }
 
-    void checkColumnTitles(const std::vector<std::string> &expectedTitles) {
+    void checkColumnTitles(const std::vector<std::string>& expectedTitles) {
         size_t                   n = c4query_columnCount(query);
         std::vector<std::string> titles;
         for ( unsigned i = 0; i < n; ++i ) titles.push_back(std::string(slice(c4query_columnTitle(query, i))));
         CHECK(titles == expectedTitles);
     }
 
-    void addPersonInState(const char *docID, const char *state, const char *firstName = nullptr) {
+    void addPersonInState(const char* docID, const char* state, const char* firstName = nullptr) {
         TransactionHelper t(db);
 
         C4Error   c4err;
@@ -152,14 +152,14 @@ class C4QueryTest : public C4Test {
         rq.docID           = slice(docID);
         rq.allocedBody     = body;
         rq.save            = true;
-        C4Document *doc    = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
+        C4Document* doc    = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);
     }
 
   protected:
-    C4Query *query{nullptr};
+    C4Query* query{nullptr};
 };
 
 class PathsQueryTest : public C4QueryTest {

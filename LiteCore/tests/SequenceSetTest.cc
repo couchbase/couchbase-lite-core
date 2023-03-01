@@ -18,7 +18,7 @@
 using namespace std;
 using namespace litecore;
 
-static void checkEmpty(const SequenceSet &s) {
+static void checkEmpty(const SequenceSet& s) {
     CHECK(s.empty());
     CHECK(s.size() == 0);
     CHECK(s.first() == 0);

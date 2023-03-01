@@ -459,8 +459,8 @@ typedef enum UScriptCode {
  * @return The number of script codes filled in the buffer passed in 
  * @stable ICU 2.4
  */
-U_STABLE int32_t U_EXPORT2 uscript_getCode(const char *nameOrAbbrOrLocale, UScriptCode *fillIn, int32_t capacity,
-                                           UErrorCode *err);
+U_STABLE int32_t U_EXPORT2 uscript_getCode(const char* nameOrAbbrOrLocale, UScriptCode* fillIn, int32_t capacity,
+                                           UErrorCode* err);
 
 /**
  * Returns the long Unicode script name, if there is one.
@@ -472,7 +472,7 @@ U_STABLE int32_t U_EXPORT2 uscript_getCode(const char *nameOrAbbrOrLocale, UScri
  * or NULL if scriptCode is invalid
  * @stable ICU 2.4
  */
-U_STABLE const char *U_EXPORT2 uscript_getName(UScriptCode scriptCode);
+U_STABLE const char* U_EXPORT2 uscript_getName(UScriptCode scriptCode);
 
 /**
  * Returns the 4-letter ISO 15924 script code,
@@ -483,7 +483,7 @@ U_STABLE const char *U_EXPORT2 uscript_getName(UScriptCode scriptCode);
  * @return short script name (4-letter code), or NULL if scriptCode is invalid
  * @stable ICU 2.4
  */
-U_STABLE const char *U_EXPORT2 uscript_getShortName(UScriptCode scriptCode);
+U_STABLE const char* U_EXPORT2 uscript_getShortName(UScriptCode scriptCode);
 
 /**
  * Gets the script code associated with the given codepoint.
@@ -493,7 +493,7 @@ U_STABLE const char *U_EXPORT2 uscript_getShortName(UScriptCode scriptCode);
  * @return The UScriptCode, or 0 if codepoint is invalid 
  * @stable ICU 2.4
  */
-U_STABLE UScriptCode U_EXPORT2 uscript_getScript(UChar32 codepoint, UErrorCode *err);
+U_STABLE UScriptCode U_EXPORT2 uscript_getScript(UChar32 codepoint, UErrorCode* err);
 
 /**
  * Do the Script_Extensions of code point c contain script sc?
@@ -543,8 +543,8 @@ U_STABLE UBool U_EXPORT2 uscript_hasScript(UChar32 c, UScriptCode sc);
  *         written to scripts unless U_BUFFER_OVERFLOW_ERROR indicates insufficient capacity
  * @stable ICU 49
  */
-U_STABLE int32_t U_EXPORT2 uscript_getScriptExtensions(UChar32 c, UScriptCode *scripts, int32_t capacity,
-                                                       UErrorCode *errorCode);
+U_STABLE int32_t U_EXPORT2 uscript_getScriptExtensions(UChar32 c, UScriptCode* scripts, int32_t capacity,
+                                                       UErrorCode* errorCode);
 
 /**
  * Script usage constants.
@@ -580,8 +580,8 @@ typedef enum UScriptUsage {
  * @return the string length, even if U_BUFFER_OVERFLOW_ERROR
  * @stable ICU 51
  */
-U_STABLE int32_t U_EXPORT2 uscript_getSampleString(UScriptCode script, UChar *dest, int32_t capacity,
-                                                   UErrorCode *pErrorCode);
+U_STABLE int32_t U_EXPORT2 uscript_getSampleString(UScriptCode script, UChar* dest, int32_t capacity,
+                                                   UErrorCode* pErrorCode);
 
 #if U_SHOW_CPLUSPLUS_API
 

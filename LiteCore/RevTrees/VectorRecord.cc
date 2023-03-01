@@ -93,7 +93,7 @@ namespace litecore {
 
     VersionVector Revision::versionVector() const { return VersionVector::fromBinary(revID); }
 
-    VectorRecord::VectorRecord(KeyStore &store, Versioning versioning, const Record &rec)
+    VectorRecord::VectorRecord(KeyStore& store, Versioning versioning, const Record& rec)
         : _store(store)
         , _docID(rec.key())
         , _sequence(rec.sequence())
@@ -115,15 +115,15 @@ namespace litecore {
         }
     }
 
-    VectorRecord::VectorRecord(KeyStore &store, Versioning v, slice docID, ContentOption whichContent)
+    VectorRecord::VectorRecord(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
         : VectorRecord(store, v, store.get(docID, whichContent)) {}
 
-    VectorRecord::VectorRecord(const VectorRecord &other)
+    VectorRecord::VectorRecord(const VectorRecord& other)
         : VectorRecord(other._store, other._versioning, other.originalRecord()) {}
 
     VectorRecord::~VectorRecord() = default;
 
-    void VectorRecord::readRecordBody(const alloc_slice &body) {
+    void VectorRecord::readRecordBody(const alloc_slice& body) {
         if ( body ) {
             _bodyDoc            = newLinkedFleeceDoc(body);
             _current.properties = _bodyDoc.asDict();
@@ -138,7 +138,7 @@ namespace litecore {
         _currentProperties = _current.properties;  // retains it
     }
 
-    void VectorRecord::readRecordExtra(const alloc_slice &extra) {
+    void VectorRecord::readRecordExtra(const alloc_slice& extra) {
         if ( extra ) {
             _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
         } else
@@ -259,7 +259,7 @@ namespace litecore {
     }
 
     // Updates a revision. (Local changes, e.g. setRevID and setFlags, go through this too.)
-    void VectorRecord::setRemoteRevision(RemoteID remote, const optional<Revision> &optRev) {
+    void VectorRecord::setRemoteRevision(RemoteID remote, const optional<Revision>& optRev) {
         if ( remote == RemoteID::Local ) {
             Assert(optRev);
             return setCurrentRevision(*optRev);
@@ -267,7 +267,7 @@ namespace litecore {
 
         mustLoadRemotes();
         bool changedFlags = false;
-        if ( auto &newRev = *optRev; optRev ) {
+        if ( auto& newRev = *optRev; optRev ) {
             // Creating/updating a remote revision:
             Assert((uint8_t(newRev.flags) & ~0x7) == 0);  // only deleted/attachments/conflicted are legal
             MutableDict revDict = mutableRevisionDict(remote);
@@ -309,7 +309,7 @@ namespace litecore {
         return _bodyDoc.data();
     }
 
-    void VectorRecord::setCurrentRevision(const Revision &rev) {
+    void VectorRecord::setCurrentRevision(const Revision& rev) {
         setRevID(rev.revID);
         setProperties(rev.properties);
         setFlags(rev.flags);
@@ -413,7 +413,7 @@ namespace litecore {
 
 #pragma mark - SAVING:
 
-    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction &transaction) {
+    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction) {
         requireRemotes();
         auto [props, revID, flags] = currentRevision();
         props                      = nullptr;  // unused
@@ -522,7 +522,7 @@ namespace litecore {
 
 #pragma mark - TESTING:
 
-    void VectorRecord::dump(ostream &out) const {
+    void VectorRecord::dump(ostream& out) const {
         out << "\"" << (string)docID() << "\" #" << uint64_t(sequence()) << " ";
         int nRevs = _revisions.count();
         for ( int i = 0; i < nRevs; ++i ) {
@@ -566,20 +566,20 @@ namespace litecore {
     // VectorRecord that owns the Doc.
     class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
       public:
-        LinkedFleeceDoc(const alloc_slice &fleeceData, fleece::impl::SharedKeys *sk, VectorRecord *document_)
+        LinkedFleeceDoc(const alloc_slice& fleeceData, fleece::impl::SharedKeys* sk, VectorRecord* document_)
             : fleece::impl::Doc(fleeceData, Doc::kTrusted, sk), document(document_) {}
 
-        VectorRecord *const document;
+        VectorRecord* const document;
     };
 
     FLSharedKeys VectorRecord::sharedKeys() const { return (FLSharedKeys)_store.dataFile().documentKeys(); }
 
-    Doc VectorRecord::newLinkedFleeceDoc(const alloc_slice &body) {
+    Doc VectorRecord::newLinkedFleeceDoc(const alloc_slice& body) {
         auto sk = _store.dataFile().documentKeys();
         return (FLDoc) new LinkedFleeceDoc(body, sk, this);
     }
 
-    VectorRecord *VectorRecord::containing(Value value) {
+    VectorRecord* VectorRecord::containing(Value value) {
         if ( value.isMutable() ) {
             // Scope doesn't know about mutable Values (they're in the heap), but the mutable
             // Value may be a mutable copy of a Value with scope...
@@ -589,9 +589,9 @@ namespace litecore {
             if ( !value ) return nullptr;
         }
 
-        const impl::Scope *scope = impl::Scope::containing((const impl::Value *)(FLValue)value);
+        const impl::Scope* scope = impl::Scope::containing((const impl::Value*)(FLValue)value);
         if ( !scope ) return nullptr;
-        auto versScope = dynamic_cast<const LinkedFleeceDoc *>(scope);
+        auto versScope = dynamic_cast<const LinkedFleeceDoc*>(scope);
         if ( !versScope ) return nullptr;
         return versScope->document;
     }
@@ -600,18 +600,18 @@ namespace litecore {
         stringstream out;
         if ( _bodyDoc ) {
             slice data = _bodyDoc.allocedData();
-            out << "---BODY: " << data.size << " bytes at " << (const void *)data.buf << ":\n";
+            out << "---BODY: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         if ( _extraDoc ) {
             slice data = _extraDoc.allocedData();
-            out << "---EXTRA: " << data.size << " bytes at " << (const void *)data.buf << ":\n";
+            out << "---EXTRA: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         return out.str();
     }
 
-    /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate &rec, const ForAllRevIDsCallback &callback) {
+    /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
         if ( rec.extra.size > 0 ) {
             fleece::impl::Scope scope(rec.extra, nullptr, rec.body);

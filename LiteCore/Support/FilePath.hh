@@ -38,14 +38,14 @@ namespace litecore {
         FilePath();
 
         /** Constructs a FilePath from a directory name and a filename in that directory. */
-        FilePath(std::string &&dirName, std::string &&fileName);
+        FilePath(std::string&& dirName, std::string&& fileName);
         FilePath(std::string_view dirName, std::string_view fileName);
-        FilePath(const char *dirName, const char *fileName);
+        FilePath(const char* dirName, const char* fileName);
 
         /** Returns a folder with a predefined name that serves as a location for temporary
             files.  
          */
-        static FilePath sharedTempDirectory(const std::string &location);
+        static FilePath sharedTempDirectory(const std::string& location);
 
         static const std::string kSeparator;
 
@@ -55,9 +55,9 @@ namespace litecore {
 
         FilePath dir() const { return FilePath(_dir, ""); }
 
-        const std::string &dirName() const { return _dir; }
+        const std::string& dirName() const { return _dir; }
 
-        const std::string &fileName() const { return _file; }
+        const std::string& fileName() const { return _file; }
 
         std::string fileOrDirName() const;
 
@@ -82,26 +82,26 @@ namespace litecore {
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */
-        FilePath addingExtension(const std::string &ext) const;
+        FilePath addingExtension(const std::string& ext) const;
 
         /** Adds a filename extension only if there is none already. */
-        FilePath withExtensionIfNone(const std::string &ext) const;
+        FilePath withExtensionIfNone(const std::string& ext) const;
 
         /** Replaces the filename extension, or removes it if `ext` is empty.
             Cannot be called on directories. */
-        FilePath withExtension(const std::string &ext) const;
+        FilePath withExtension(const std::string& ext) const;
 
-        FilePath appendingToName(const std::string &suffix) const;
+        FilePath appendingToName(const std::string& suffix) const;
 
         //////// NAVIGATION:
 
         /** Adds a path component to a directory. Can ONLY be called on directories!
             If `name` ends in a separator it is assumed to be a directory, so the result will be
             a directory. */
-        FilePath operator[](const std::string &name) const;
+        FilePath operator[](const std::string& name) const;
 
-        FilePath fileNamed(const std::string &filename) const;
-        FilePath subdirectoryNamed(const std::string &dirname) const;
+        FilePath fileNamed(const std::string& filename) const;
+        FilePath subdirectoryNamed(const std::string& dirname) const;
 
         /** Returns the parent directory. If the current path is root, the root directory
             will be returned. An exception will be thrown if the parent directory cannot
@@ -125,7 +125,7 @@ namespace litecore {
 
         /** Creates an empty temporary file by appending a random 6-letter/digit string.
             If the `outHandle` parameter is non-null, it will be set to a writeable file handle. */
-        FilePath mkTempFile(FILE **outHandle = nullptr) const;
+        FilePath mkTempFile(FILE** outHandle = nullptr) const;
 
         /** Creates an empty temporary directory by appending a random 6-letter/digit string. */
         FilePath mkTempDir() const;
@@ -140,33 +140,33 @@ namespace litecore {
         /** Moves this file/directory to a different path.
              An existing file or empty directory at the destination path will be replaced.
              A non-empty directory at the destination triggers an error. */
-        void moveTo(const FilePath &to) const { moveTo(to.path()); }
+        void moveTo(const FilePath& to) const { moveTo(to.path()); }
 
-        void moveTo(const std::string &) const;
+        void moveTo(const std::string&) const;
 
         /** Like moveTo, but can replace a non-empty directory.
              First moves the destination dir aside to the temp directory,
              then moves the source into place,
              then deletes the moved-aside dir (asynchronously if that flag is set.) */
-        void moveToReplacingDir(const FilePath &to, bool asyncCleanup) const;
+        void moveToReplacingDir(const FilePath& to, bool asyncCleanup) const;
 
         /** Copies this file (or directory, recursively) to a different path. */
-        void copyTo(const FilePath &to) const { copyTo(to.path()); }
+        void copyTo(const FilePath& to) const { copyTo(to.path()); }
 
-        void copyTo(const std::string &) const;
+        void copyTo(const std::string&) const;
 
         void setReadOnly(bool readOnly) const;
 
         /** Calls fn for each file in this FilePath's directory. */
-        void forEachFile(fleece::function_ref<void(const FilePath &)> fn) const;
+        void forEachFile(fleece::function_ref<void(const FilePath&)> fn) const;
 
         /** Calls fn for each item in the directory whose name begins with this path's name.
             If this path's name is empty (i.e. the path is a directory), fn is called for every
             item in the directory. */
-        void forEachMatch(fleece::function_ref<void(const FilePath &)> fn) const;
+        void forEachMatch(fleece::function_ref<void(const FilePath&)> fn) const;
 
         static std::pair<std::string, std::string> splitPath(std::string_view path);
-        static std::pair<std::string, std::string> splitExtension(const std::string &filename);
+        static std::pair<std::string, std::string> splitExtension(const std::string& filename);
 
       private:
         std::string _dir;   // Directory; always non-empty, always ends with separator ('/')

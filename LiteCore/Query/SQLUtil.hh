@@ -30,17 +30,17 @@ namespace litecore {
     struct quotedSlice {
         explicit quotedSlice(slice s) : _raw(s) {}
 
-        quotedSlice(const quotedSlice &) = delete;
-        quotedSlice(quotedSlice &&)      = delete;
+        quotedSlice(const quotedSlice&) = delete;
+        quotedSlice(quotedSlice&&)      = delete;
 
         slice const _raw;
     };
 
     template <char QUOTE, char ESC>
-    std::ostream &operator<<(std::ostream &out, const quotedSlice<QUOTE, ESC> &str) {
+    std::ostream& operator<<(std::ostream& out, const quotedSlice<QUOTE, ESC>& str) {
         // SQL strings ('') are always quoted; identifiers ("") only when necessary.
         if ( QUOTE == '"' && ESC == '"' && isValidIdentifier(str._raw) ) {
-            out.write((const char *)str._raw.buf, str._raw.size);
+            out.write((const char*)str._raw.buf, str._raw.size);
         } else {
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
             // (GCC 7.4 does not have std::quoted(string_view) for some reason, though GCC 9 does)

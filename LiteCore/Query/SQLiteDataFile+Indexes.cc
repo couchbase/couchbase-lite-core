@@ -53,17 +53,17 @@ namespace litecore {
               " keyStore TEXT NOT NULL, expression TEXT, indexTableName TEXT)");
         ensureSchemaVersionAtLeast(SchemaVersion::WithIndexTable);  // Backward-incompatible with version 2.0/2.1
 
-        for ( auto &spec : getIndexesOldStyle() ) registerIndex(spec, spec.keyStoreName, spec.indexTableName);
+        for ( auto& spec : getIndexesOldStyle() ) registerIndex(spec, spec.keyStoreName, spec.indexTableName);
     }
 
-    void SQLiteDataFile::registerIndex(const litecore::IndexSpec &spec, const string &keyStoreName,
-                                       const string &indexTableName) {
+    void SQLiteDataFile::registerIndex(const litecore::IndexSpec& spec, const string& keyStoreName,
+                                       const string& indexTableName) {
         SQLite::Statement stmt(*this, "INSERT INTO indexes (name, type, keyStore, expression, indexTableName) "
                                       "VALUES (?, ?, ?, ?, ?)");
         stmt.bindNoCopy(1, spec.name);
         stmt.bind(2, spec.type);
         stmt.bindNoCopy(3, keyStoreName);
-        stmt.bindNoCopy(4, (char *)spec.expression.buf, (int)spec.expression.size);
+        stmt.bindNoCopy(4, (char*)spec.expression.buf, (int)spec.expression.size);
         if ( spec.type != IndexSpec::kValue ) stmt.bindNoCopy(5, indexTableName);
         LogStatement(stmt);
         stmt.exec();
@@ -71,15 +71,15 @@ namespace litecore {
 
     void SQLiteDataFile::unregisterIndex(slice indexName) {
         SQLite::Statement stmt(*this, "DELETE FROM indexes WHERE name=?");
-        stmt.bindNoCopy(1, (char *)indexName.buf, (int)indexName.size);
+        stmt.bindNoCopy(1, (char*)indexName.buf, (int)indexName.size);
         LogStatement(stmt);
         stmt.exec();
     }
 
 #pragma mark - CREATING INDEXES:
 
-    bool SQLiteDataFile::createIndex(const litecore::IndexSpec &spec, SQLiteKeyStore *keyStore,
-                                     const string &indexTableName, const string &indexSQL) {
+    bool SQLiteDataFile::createIndex(const litecore::IndexSpec& spec, SQLiteKeyStore* keyStore,
+                                     const string& indexTableName, const string& indexSQL) {
         ensureIndexTableExists();
         if ( auto existingSpec = getIndex(spec.name) ) {
             if ( existingSpec->type == spec.type && existingSpec->keyStoreName == keyStore->name() ) {
@@ -101,7 +101,7 @@ namespace litecore {
 
 #pragma mark - DELETING INDEXES:
 
-    void SQLiteDataFile::deleteIndex(const SQLiteIndexSpec &spec) {
+    void SQLiteDataFile::deleteIndex(const SQLiteIndexSpec& spec) {
         ensureIndexTableExists();
         LogTo(QueryLog, "Deleting %s index '%s'", spec.typeName(), spec.name.c_str());
         unregisterIndex(spec.name);
@@ -110,7 +110,7 @@ namespace litecore {
     }
 
     // Drops unnested-array tables that no longer have any indexes on them.
-    void SQLiteDataFile::garbageCollectIndexTable(const string &tableName) {
+    void SQLiteDataFile::garbageCollectIndexTable(const string& tableName) {
         {
             SQLite::Statement stmt(*this, "SELECT name FROM indexes WHERE indexTableName=?");
             stmt.bind(1, tableName);
@@ -121,7 +121,7 @@ namespace litecore {
         exec(CONCAT("DROP TABLE " << sqlIdentifier(tableName) << ""));
 
         stringstream       sql;
-        static const char *kTriggerSuffixes[] = {"ins", "del", "upd", "preupdate", "postupdate", nullptr};
+        static const char* kTriggerSuffixes[] = {"ins", "del", "upd", "preupdate", "postupdate", nullptr};
         for ( int i = 0; kTriggerSuffixes[i]; ++i ) {
             sql << "DROP TRIGGER IF EXISTS \"" << tableName << "::" << kTriggerSuffixes[i] << "\";";
         }
@@ -130,7 +130,7 @@ namespace litecore {
 
 #pragma mark - GETTING INDEX INFO:
 
-    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore *store) {
+    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) {
         if ( indexTableExists() ) {
             vector<SQLiteIndexSpec> indexes;
             SQLite::Statement       stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
@@ -146,7 +146,7 @@ namespace litecore {
     }
 
     // Finds the indexes the old 2.0/2.1 way, without using the 'indexes' table.
-    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexesOldStyle(const KeyStore *store) {
+    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexesOldStyle(const KeyStore* store) {
         vector<SQLiteIndexSpec> indexes;
         // value indexes:
         SQLite::Statement getIndex(*this, "SELECT name, tbl_name FROM sqlite_master "
@@ -184,20 +184,20 @@ namespace litecore {
         if ( !indexTableExists() ) return nullopt;
         SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
                                       "FROM indexes WHERE name=?");
-        stmt.bindNoCopy(1, (char *)name.buf, (int)name.size);
+        stmt.bindNoCopy(1, (char*)name.buf, (int)name.size);
         if ( stmt.executeStep() ) return specFromStatement(stmt);
         else
             return nullopt;
     }
 
-    SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement &stmt) {
+    SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
         alloc_slice expressionJSON;
         if ( string col = stmt.getColumn(2).getString(); !col.empty() ) expressionJSON = col;
         return SQLiteIndexSpec(stmt.getColumn(0).getString(), (IndexSpec::Type)stmt.getColumn(1).getInt(),
                                expressionJSON, stmt.getColumn(3).getString(), stmt.getColumn(4).getString());
     }
 
-    void SQLiteDataFile::inspectIndex(slice name, int64_t &outRowCount, alloc_slice *outRows) {
+    void SQLiteDataFile::inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows) {
         /* See  https://sqlite.org/imposter.html
            "Unlike all other SQLite APIs, sqlite3_test_control() interface is subject to incompatible
             changes from one release to the next, and so the mechanism described below is not

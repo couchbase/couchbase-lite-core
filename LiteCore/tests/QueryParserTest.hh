@@ -30,7 +30,7 @@ class QueryParserTest
     void   mustFail(string json);
 
   protected:
-    virtual string collectionTableName(const string &collection, DeletionStatus type) const override {
+    virtual string collectionTableName(const string& collection, DeletionStatus type) const override {
         // This is a simplified version of SQLiteDataFile::collectionTableName()
         CHECK(!hasPrefix(collection, "kv_"));  // make sure I didn't get passed a table name
         string table;
@@ -47,19 +47,19 @@ class QueryParserTest
         return table;
     }
 
-    virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {
+    virtual std::string FTSTableName(const string& onTable, const std::string& property) const override {
         return onTable + "::" + property;
     }
 
-    virtual std::string unnestedTableName(const string &onTable, const std::string &property) const override {
+    virtual std::string unnestedTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":unnest:" + property;
     }
 
-    virtual bool tableExists(const string &tableName) const override {
+    virtual bool tableExists(const string& tableName) const override {
         return ((string_view)tableName).substr(0, 4) == "all_" || tableNames.count(tableName) > 0;
     }
 #ifdef COUCHBASE_ENTERPRISE
-    virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
+    virtual std::string predictiveTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":predict:" + property;
     }
 #endif

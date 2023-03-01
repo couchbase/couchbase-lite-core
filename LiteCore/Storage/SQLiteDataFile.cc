@@ -46,14 +46,14 @@ extern "C" {
 // These definitions were removed from the public SQLite header
 // in 3.32.0, and Xcode doesn't like to alter header search paths
 // between configurations, so as a compromise just lay them out here:
-SQLITE_API int sqlite3_key_v2(sqlite3    *db,            /* Database to be rekeyed */
-                              const char *zDbName,       /* Name of the database */
-                              const void *pKey, int nKey /* The key */
+SQLITE_API int sqlite3_key_v2(sqlite3*    db,            /* Database to be rekeyed */
+                              const char* zDbName,       /* Name of the database */
+                              const void* pKey, int nKey /* The key */
 );
 
-SQLITE_API int sqlite3_rekey_v2(sqlite3    *db,            /* Database to be rekeyed */
-                                const char *zDbName,       /* Name of the database */
-                                const void *pKey, int nKey /* The new key */
+SQLITE_API int sqlite3_rekey_v2(sqlite3*    db,            /* Database to be rekeyed */
+                                const char* zDbName,       /* Name of the database */
+                                const void* pKey, int nKey /* The new key */
 );
 #endif
 }
@@ -103,9 +103,9 @@ namespace litecore {
 
     LogDomain SQL("SQL", LogLevel::Warning);
 
-    void LogStatement(const SQLite::Statement &st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
+    void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
-    static void sqlite3_log_callback(void *pArg, int errCode, const char *msg) {
+    static void sqlite3_log_callback(void* pArg, int errCode, const char* msg) {
         if ( errCode == SQLITE_NOTICE_RECOVER_WAL ) return;  // harmless "recovered __ frames from WAL file" message
         int baseCode = errCode & 0xFF;
         if ( baseCode == SQLITE_SCHEMA )
@@ -120,7 +120,7 @@ namespace litecore {
         }
     }
 
-    UsingStatement::UsingStatement(SQLite::Statement &stmt) noexcept : _stmt(stmt) { LogStatement(stmt); }
+    UsingStatement::UsingStatement(SQLite::Statement& stmt) noexcept : _stmt(stmt) { LogStatement(stmt); }
 
     UsingStatement::~UsingStatement() {
         try {
@@ -128,20 +128,20 @@ namespace litecore {
         } catch ( ... ) {}
     }
 
-    slice getColumnAsSlice(SQLite::Statement &stmt, int colIndex) {
+    slice getColumnAsSlice(SQLite::Statement& stmt, int colIndex) {
         auto col = stmt.getColumn(colIndex);
         auto buf = col.getBlob();
         return slice(buf, col.getBytes());
     }
 
-    SQLiteDataFile::Factory &SQLiteDataFile::sqliteFactory() {
+    SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
         static SQLiteDataFile::Factory s;
         return s;
     }
 
     SQLiteDataFile::Factory::Factory() {
         // One-time initialization at startup:
-        SQLite::Exception::logger = [](const SQLite::Exception &x) {
+        SQLite::Exception::logger = [](const SQLite::Exception& x) {
             LogError(SQL, "%s (%d/%d)", x.what(), x.getErrorCode(), x.getExtendedErrorCode());
         };
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
@@ -159,12 +159,12 @@ namespace litecore {
 #endif
     }
 
-    SQLiteDataFile *SQLiteDataFile::Factory::openFile(const FilePath &path, DataFile::Delegate *delegate,
-                                                      const Options *options) {
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath& path, DataFile::Delegate* delegate,
+                                                      const Options* options) {
         return new SQLiteDataFile(path, delegate, options);
     }
 
-    bool SQLiteDataFile::Factory::_deleteFile(const FilePath &path, const Options *) {
+    bool SQLiteDataFile::Factory::_deleteFile(const FilePath& path, const Options*) {
         LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
         bool ok = path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
@@ -172,7 +172,7 @@ namespace litecore {
         return ok;
     }
 
-    SQLiteDataFile::SQLiteDataFile(const FilePath &path, DataFile::Delegate *delegate, const Options *options)
+    SQLiteDataFile::SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options* options)
         : DataFile(path, delegate, options) {
         reopen();
     }
@@ -229,7 +229,7 @@ namespace litecore {
 
             if ( !upgradeSchema(SchemaVersion::WithNewDocs, "Adding `extra` column", [&] {
                      // Add the 'extra' column to every KeyStore:
-                     for ( string &name : allKeyStoreNames() ) {
+                     for ( string& name : allKeyStoreNames() ) {
                          if ( name.find("::") == string::npos ) {
                              // CBL-1741: Only update data tables, not FTS index tables
                              _exec("ALTER TABLE \"kv_" + name + "\" ADD COLUMN extra BLOB;");
@@ -271,8 +271,8 @@ namespace litecore {
         });
     }
 
-    bool SQLiteDataFile::upgradeSchema(SchemaVersion minVersion, const char *what, function_ref<void()> upgrade) {
-        auto logUpgrade = [&](const char *msg) {
+    bool SQLiteDataFile::upgradeSchema(SchemaVersion minVersion, const char* what, function_ref<void()> upgrade) {
+        auto logUpgrade = [&](const char* msg) {
             logInfo("SCHEMA UPGRADE (%d-%d) %-s", (int)_schemaVersion, (int)minVersion, msg);
         };
 
@@ -293,7 +293,7 @@ namespace litecore {
                 inTransaction = true;
                 upgrade();
                 _exec(format("PRAGMA user_version=%d; END", (int)minVersion));
-            } catch ( const SQLite::Exception &x ) {
+            } catch ( const SQLite::Exception& x ) {
                 // Recover if the db file itself is read-only (but not opened with writeable=false)
                 if ( x.getErrorCode() == SQLITE_READONLY ) {
                     logUpgrade("skipped; cannot upgrade read-only file");
@@ -352,7 +352,7 @@ namespace litecore {
                 // collected objects owning those enumerators, which won't release them until their
                 // finalizers run. (Couchbase Lite Java has this issue.)
                 // We'll log info about the statements so this situation can be detected from logs.
-                _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
+                _sqlDb->withOpenStatements([=](const char* sql, bool busy) {
                     _log((forDelete ? LogLevel::Warning : LogLevel::Info),
                          "SQLite::Database %p close deferred due to %s sqlite_stmt: %s", _sqlDb.get(),
                          (busy ? "busy" : "open"), sql);
@@ -410,7 +410,7 @@ namespace litecore {
 #ifdef COUCHBASE_ENTERPRISE
     // Returns true on success, false if key is not valid; other errors thrown as exceptions.
     bool SQLiteDataFile::_decrypt(EncryptionAlgorithm alg, slice key) {
-        static const char *kAlgorithmName[3] = {"no encryption", "AES256", "AES128"};
+        static const char* kAlgorithmName[3] = {"no encryption", "AES256", "AES128"};
         // Calling sqlite3_key_v2 even with a null key (no encryption) reserves space in the db
         // header for a nonce, which will enable secure rekeying in the future.
         int rc = sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
@@ -474,7 +474,7 @@ namespace litecore {
 #endif
     }
 
-    KeyStore *SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
+    KeyStore* SQLiteDataFile::newKeyStore(const string& name, KeyStore::Capabilities options) {
         Assert(!hasPrefix(name, kDeletedKeyStorePrefix));  // can't access deleted stores directly
         auto keyStore = new SQLiteKeyStore(*this, name, options);
         if ( options.sequences && _schemaVersion >= SchemaVersion::WithDeletedTable
@@ -491,7 +491,7 @@ namespace litecore {
             //            deletedStore->tableName() == kv_del_<tableName>
             //            all_<cname>               == all_<tableName>
             string      tableName = keyStore->tableName().substr(3);  // remove prefix "kv_"
-            const char *cname     = tableName.c_str();
+            const char* cname     = tableName.c_str();
             _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
                          "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
                          "SELECT " COLUMNS " from \"kv_del_%s\"",
@@ -505,21 +505,21 @@ namespace litecore {
         }
     }
 
-    SQLiteKeyStore *SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) {
-        if ( auto both = dynamic_cast<BothKeyStore *>(ks) ) ks = both->liveStore();
-        auto sqlks = dynamic_cast<SQLiteKeyStore *>(ks);
+    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore* ks) {
+        if ( auto both = dynamic_cast<BothKeyStore*>(ks) ) ks = both->liveStore();
+        auto sqlks = dynamic_cast<SQLiteKeyStore*>(ks);
         Assert(sqlks, "Unexpected type of KeyStore");
         return sqlks;
     }
 
-    void SQLiteDataFile::_beginTransaction(ExclusiveTransaction *) {
+    void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
         _exec("BEGIN");
     }
 
-    void SQLiteDataFile::_endTransaction(ExclusiveTransaction *t, bool commit) {
+    void SQLiteDataFile::_endTransaction(ExclusiveTransaction* t, bool commit) {
         // Notify key-stores so they can save state:
-        forOpenKeyStores([commit](KeyStore &ks) { ks.transactionWillEnd(commit); });
+        forOpenKeyStores([commit](KeyStore& ks) { ks.transactionWillEnd(commit); });
 
         exec(commit ? "COMMIT" : "ROLLBACK");
     }
@@ -531,11 +531,11 @@ namespace litecore {
 
     void SQLiteDataFile::endReadOnlyTransaction() { _exec("RELEASE SAVEPOINT roTransaction"); }
 
-    int SQLiteDataFile::_exec(const string &sql) {
+    int SQLiteDataFile::_exec(const string& sql) {
         LogTo(SQL, "%s", sql.c_str());
         try {
             return _sqlDb->exec(sql);
-        } catch ( const SQLite::Exception &x ) {
+        } catch ( const SQLite::Exception& x ) {
             if ( x.getErrorCode() == SQLITE_ERROR ) {
                 // Should we also require that the message contains "syntax error"?
                 throw SQLite::Exception(string(x.what()) + " -- " + sql, x.getErrorCode(), x.getExtendedErrorCode());
@@ -545,43 +545,43 @@ namespace litecore {
         }
     }
 
-    int SQLiteDataFile::exec(const string &sql) {
+    int SQLiteDataFile::exec(const string& sql) {
         if ( !inTransaction() ) error::_throw(error::NotInTransaction);
         return _exec(sql);
     }
 
-    int SQLiteDataFile::execWithLock(const string &sql) {
+    int SQLiteDataFile::execWithLock(const string& sql) {
         checkOpen();
         int result;
         withFileLock([&] { result = _exec(sql); });
         return result;
     }
 
-    int64_t SQLiteDataFile::intQuery(const char *query) {
+    int64_t SQLiteDataFile::intQuery(const char* query) {
         SQLite::Statement st(*_sqlDb, query);
         LogStatement(st);
         return st.executeStep() ? st.getColumn(0) : 0;
     }
 
-    unique_ptr<SQLite::Statement> SQLiteDataFile::compile(const char *sql) const {
+    unique_ptr<SQLite::Statement> SQLiteDataFile::compile(const char* sql) const {
         checkOpen();
         try {
             LogTo(SQL, "Compiling SQL \"%s\"", sql);
             return make_unique<SQLite::Statement>(*_sqlDb, sql, true);
-        } catch ( const SQLite::Exception &x ) {
+        } catch ( const SQLite::Exception& x ) {
             warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
             throw;
         }
     }
 
-    void SQLiteDataFile::compileCached(unique_ptr<SQLite::Statement> &ref, const char *sql) const {
+    void SQLiteDataFile::compileCached(unique_ptr<SQLite::Statement>& ref, const char* sql) const {
         if ( ref == nullptr ) ref = compile(sql);
         else
             checkOpen();
     }
 
-    bool SQLiteDataFile::getSchema(const string &name, const string &type, const string &tableName,
-                                   string &outSQL) const {
+    bool SQLiteDataFile::getSchema(const string& name, const string& type, const string& tableName,
+                                   string& outSQL) const {
         SQLite::Statement check(*_sqlDb, "SELECT sql FROM sqlite_master "
                                          "WHERE name = ? AND type = ? AND tbl_name = ?");
         check.bind(1, name);
@@ -593,8 +593,8 @@ namespace litecore {
         return true;
     }
 
-    bool SQLiteDataFile::tableExists(const string &name) const {
-        const string *checkName = &name;
+    bool SQLiteDataFile::tableExists(const string& name) const {
+        const string* checkName = &name;
         string        deletedTableName;
         if ( ((string_view)name).substr(0, 4) == "all_" ) {
             // "all_xxx" is a TEMP VIEW that is not visible to getSchema. Let's
@@ -610,8 +610,8 @@ namespace litecore {
 
     // Returns true if an index/table exists in the database with the given type and SQL schema OR
     // Returns true if the given sql is empty and the schema doesn't exist.
-    bool SQLiteDataFile::schemaExistsWithSQL(const string &name, const string &type, const string &tableName,
-                                             const string &sql) {
+    bool SQLiteDataFile::schemaExistsWithSQL(const string& name, const string& type, const string& tableName,
+                                             const string& sql) {
         string existingSQL;
         bool   existed = getSchema(name, type, tableName, existingSQL);
         if ( !sql.empty() ) return existed && existingSQL == sql;
@@ -619,7 +619,7 @@ namespace litecore {
             return !existed;
     }
 
-    sequence_t SQLiteDataFile::lastSequence(const string &keyStoreName) const {
+    sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0_seq;
         compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         UsingStatement u(_getLastSeqStmt);
@@ -628,7 +628,7 @@ namespace litecore {
         return seq;
     }
 
-    void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
+    void SQLiteDataFile::setLastSequence(SQLiteKeyStore& store, sequence_t seq) {
         compileCached(_setLastSeqStmt, "INSERT INTO kvmeta (name, lastSeq) VALUES (?, ?) "
                                        "ON CONFLICT (name) "
                                        "DO UPDATE SET lastSeq = excluded.lastSeq");
@@ -638,7 +638,7 @@ namespace litecore {
         _setLastSeqStmt->exec();
     }
 
-    uint64_t SQLiteDataFile::purgeCount(const std::string &keyStoreName) const {
+    uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
         uint64_t purgeCnt = 0;
         if ( _schemaVersion >= SchemaVersion::WithPurgeCount ) {
             compileCached(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
@@ -649,7 +649,7 @@ namespace litecore {
         return purgeCnt;
     }
 
-    void SQLiteDataFile::setPurgeCount(SQLiteKeyStore &store, uint64_t count) {
+    void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
         Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
         compileCached(_setPurgeCntStmt, "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
                                         "ON CONFLICT (name) "
@@ -678,7 +678,7 @@ namespace litecore {
     }
 
     namespace {
-        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string &collectionPath) {
+        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
             auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
             alloc_slice scope;
             alloc_slice collection;
@@ -704,7 +704,7 @@ namespace litecore {
     //    means we don't have to imply that CBL 3.0 supports collections.
     // 2. The name of the database also refers to the default collection, because people are
     //    used to using "FROM bucket_name" in Server queries.
-    string SQLiteDataFile::collectionTableName(const string &collection, DeletionStatus type) const {
+    string SQLiteDataFile::collectionTableName(const string& collection, DeletionStatus type) const {
         // This is legal, but in unit tests it indicates I was passed a table name by mistake:
         DebugAssert(!hasPrefix(collection, "kv_"));
 
@@ -746,16 +746,16 @@ namespace litecore {
         return name;
     }
 
-    string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
+    string SQLiteDataFile::FTSTableName(const string& onTable, const string& property) const {
         return onTable + string(KeyStore::kIndexSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
-    string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
+    string SQLiteDataFile::unnestedTableName(const string& onTable, const string& property) const {
         return onTable + string(KeyStore::kUnnestSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
 #ifdef COUCHBASE_ENTERPRISE
-    string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
+    string SQLiteDataFile::predictiveTableName(const string& onTable, const std::string& property) const {
         return onTable + string(KeyStore::kPredictSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 #endif
@@ -786,7 +786,7 @@ namespace litecore {
     void SQLiteDataFile::optimize() noexcept {
         try {
             _optimize();
-        } catch ( const SQLite::Exception &x ) { warn("Caught SQLite exception while optimizing: %s", x.what()); }
+        } catch ( const SQLite::Exception& x ) { warn("Caught SQLite exception while optimizing: %s", x.what()); }
     }
 
     void SQLiteDataFile::_vacuum(bool always) {
@@ -831,7 +831,7 @@ namespace litecore {
     void SQLiteDataFile::vacuum(bool always) noexcept {
         try {
             _vacuum(always);
-        } catch ( const SQLite::Exception &x ) { warn("Caught SQLite exception while vacuuming: %s", x.what()); }
+        } catch ( const SQLite::Exception& x ) { warn("Caught SQLite exception while vacuuming: %s", x.what()); }
     }
 
     void SQLiteDataFile::integrityCheck() {
@@ -882,7 +882,7 @@ namespace litecore {
         }
     }
 
-    alloc_slice SQLiteDataFile::rawQuery(const string &query) {
+    alloc_slice SQLiteDataFile::rawQuery(const string& query) {
         SQLite::Statement stmt(*_sqlDb, query);
         int               nCols = stmt.getColumnCount();
         fleece::Encoder   enc;

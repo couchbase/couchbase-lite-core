@@ -141,28 +141,28 @@ typedef struct C4Error {
 #ifdef __cplusplus
     // C4Error C++ API:
     static C4Error make(C4ErrorDomain, int code, fleece::slice message = {});
-    static C4Error printf(C4ErrorDomain, int code, const char *format, ...) __printflike(3, 4);
-    static C4Error vprintf(C4ErrorDomain, int code, const char *format, va_list args) __printflike(3, 0);
-    static void set(C4Error *C4NULLABLE, C4ErrorDomain, int code, const char *format = nullptr, ...) __printflike(4, 5);
+    static C4Error printf(C4ErrorDomain, int code, const char* format, ...) __printflike(3, 4);
+    static C4Error vprintf(C4ErrorDomain, int code, const char* format, va_list args) __printflike(3, 0);
+    static void set(C4Error* C4NULLABLE, C4ErrorDomain, int code, const char* format = nullptr, ...) __printflike(4, 5);
 
-    static void set(C4ErrorDomain domain, int code, fleece::slice message, C4Error *C4NULLABLE outError) {
+    static void set(C4ErrorDomain domain, int code, fleece::slice message, C4Error* C4NULLABLE outError) {
         if ( outError ) *outError = make(domain, code, message);
     }
 
-    static C4Error fromException(const std::exception &e) noexcept;
+    static C4Error fromException(const std::exception& e) noexcept;
     static C4Error fromCurrentException() noexcept;
 
-    static void fromException(const std::exception &e, C4Error *C4NULLABLE outError) noexcept {
+    static void fromException(const std::exception& e, C4Error* C4NULLABLE outError) noexcept {
         if ( outError ) *outError = fromException(e);
     }
 
-    static void fromCurrentException(C4Error *C4NULLABLE outError) noexcept {
+    static void fromCurrentException(C4Error* C4NULLABLE outError) noexcept {
         if ( outError ) *outError = fromCurrentException();
     }
 
-    static void warnCurrentException(const char *inFunction) noexcept;
+    static void warnCurrentException(const char* inFunction) noexcept;
 
-    [[noreturn]] static void raise(C4ErrorDomain, int code, const char *C4NULLABLE format = nullptr, ...)
+    [[noreturn]] static void raise(C4ErrorDomain, int code, const char* C4NULLABLE format = nullptr, ...)
             __printflike(3, 4);
 
     [[noreturn]] static void raise(C4Error e) { e.raise(); }
@@ -172,9 +172,9 @@ typedef struct C4Error {
 
     [[noreturn]] void raise() const;
 
-    bool operator==(const C4Error &b) const { return code == b.code && (code == 0 || domain == b.domain); }
+    bool operator==(const C4Error& b) const { return code == b.code && (code == 0 || domain == b.domain); }
 
-    bool operator!=(const C4Error &b) const { return !(*this == b); }
+    bool operator!=(const C4Error& b) const { return !(*this == b); }
 
     explicit operator bool() const { return code != 0; }
 
@@ -206,7 +206,7 @@ CBL_CORE_API FLSliceResult c4error_getDescription(C4Error error) C4API;
     @param outBuffer  Where to write the C string to
     @param bufferSize  The size of the buffer
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
-CBL_CORE_API char *c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
+CBL_CORE_API char* c4error_getDescriptionC(C4Error error, char* outBuffer, size_t bufferSize) C4API;
 
 /** If set to `true`, then when a C4Error is created the current thread's stack backtrace will
     be captured along with it, and can later be examined by calling \ref c4error_getBacktrace.
@@ -225,15 +225,15 @@ CBL_CORE_API C4Error c4error_make(C4ErrorDomain domain, int code, FLString messa
 
 /** Creates a C4Error struct with the given domain and code, formats the message as with
     `printf`, and associates the message with the error. */
-CBL_CORE_API C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) C4API __printflike(3, 4);
+CBL_CORE_API C4Error c4error_printf(C4ErrorDomain domain, int code, const char* format, ...) C4API __printflike(3, 4);
 
 /** Same as \ref c4error_printf, but with a premade `va_list`. */
-CBL_CORE_API C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) C4API
+CBL_CORE_API C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) C4API
         __printflike(3, 0);
 
 /** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the
     LiteCore error reporting convention of taking a `C4Error *outError` parameter. */
-CBL_CORE_API void c4error_return(C4ErrorDomain domain, int code, FLString message, C4Error *C4NULLABLE outError) C4API;
+CBL_CORE_API void c4error_return(C4ErrorDomain domain, int code, FLString message, C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns true if this is a network error that may be transient,

@@ -19,7 +19,7 @@ namespace litecore {
 
     LogDomain QueryLog("Query");
 
-    Query::Query(DataFile &dataFile, slice expression, QueryLanguage language)
+    Query::Query(DataFile& dataFile, slice expression, QueryLanguage language)
         : Logging(QueryLog), _dataFile(&dataFile), _expression(expression), _language(language) {
         _dataFile->registerQuery(this);
     }
@@ -31,12 +31,12 @@ namespace litecore {
 
     std::string Query::loggingIdentifier() const { return string(_expression); }
 
-    DataFile &Query::dataFile() const {
+    DataFile& Query::dataFile() const {
         if ( !_dataFile ) error::_throw(error::NotOpen);
         return *_dataFile;
     }
 
-    Query::parseError::parseError(const char *message, int errPos)
+    Query::parseError::parseError(const char* message, int errPos)
         : error(error::LiteCore, error::InvalidQuery, format("%s near character %d", message, errPos + 1))
         , errorPosition(errPos) {}
 

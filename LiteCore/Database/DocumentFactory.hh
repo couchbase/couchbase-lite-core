@@ -26,24 +26,24 @@ namespace litecore {
         using ContentOption = litecore::ContentOption;
         using Record        = litecore::Record;
 
-        DocumentFactory(C4Collection *coll) : _coll(coll) {}
+        DocumentFactory(C4Collection* coll) : _coll(coll) {}
 
         virtual ~DocumentFactory() = default;
 
-        C4Collection *collection() const { return _coll; }
+        C4Collection* collection() const { return _coll; }
 
         virtual bool isFirstGenRevID(slice revID) const { return false; }
 
         virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
-        virtual Retained<C4Document> newDocumentInstance(const Record &)             = 0;
+        virtual Retained<C4Document> newDocumentInstance(const Record&)              = 0;
 
-        virtual std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
-                                                       const std::vector<slice> &revIDs, unsigned maxAncestors,
+        virtual std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs,
+                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,
                                                        bool mustHaveBodies, C4RemoteID remoteDBID)
                 = 0;
 
       private:
-        C4Collection *const _coll;  // Unretained, to avoid ref-cycle
+        C4Collection* const _coll;  // Unretained, to avoid ref-cycle
     };
 
 }  // namespace litecore

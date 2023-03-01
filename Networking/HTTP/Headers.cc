@@ -26,21 +26,21 @@ namespace litecore { namespace websocket {
 
     Headers::Headers(Dict dict) { readFrom(dict); }
 
-    Headers::Headers(const Headers &other) { *this = other; }
+    Headers::Headers(const Headers& other) { *this = other; }
 
-    Headers::Headers(Headers &&other)
+    Headers::Headers(Headers&& other)
         : _map(std::move(other._map))
         , _backingStore(std::move(other._backingStore))
         , _writer(std::move(other._writer)) {}
 
-    Headers &Headers::operator=(const Headers &other) {
+    Headers& Headers::operator=(const Headers& other) {
         clear();
         if ( other._writer.length() == 0 ) {
             _map          = other._map;
             _backingStore = other._backingStore;
         } else {
             setBackingStore(other._backingStore);
-            for ( auto &entry : other._map ) add(entry.first, entry.second);
+            for ( auto& entry : other._map ) add(entry.first, entry.second);
         }
         return *this;
     }

@@ -32,7 +32,7 @@ namespace litecore {
 
         SequenceTracker(slice name);
         ~SequenceTracker();
-        SequenceTracker(SequenceTracker &&) noexcept;
+        SequenceTracker(SequenceTracker&&) noexcept;
 
         slice name() const { return _name; }
 
@@ -48,7 +48,7 @@ namespace litecore {
 
         /** Registers that a document has been changed. Must be called within a transaction.
             This may call change notifier callbacks. */
-        void documentChanged(const alloc_slice &docID, const alloc_slice &revID, sequence_t sequence, uint64_t bodySize,
+        void documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence, uint64_t bodySize,
                              RevisionFlags flags);
 
         /** Registers that the document has been purged. Must be called within a transaction.
@@ -60,7 +60,7 @@ namespace litecore {
             This tracker MUST NOT be in a transaction.
             The other tracker MUST be in a transaction.
             The database MUST have just committed its transaction. */
-        void addExternalTransaction(const SequenceTracker &from);
+        void addExternalTransaction(const SequenceTracker& from);
 
         /** The last sequence number seen. */
         sequence_t lastSequence() const { return _lastSequence; }
@@ -100,12 +100,12 @@ namespace litecore {
         /** Returns the end of the Entry list. */
         const_iterator end() const;
 
-        const_iterator addPlaceholderAfter(CollectionChangeNotifier *obs NONNULL, sequence_t);
+        const_iterator addPlaceholderAfter(CollectionChangeNotifier* obs NONNULL, sequence_t);
         void           removePlaceholder(const_iterator);
         bool           hasChangesAfterPlaceholder(const_iterator) const;
-        size_t         readChanges(const_iterator placeholder, Change changes[], size_t maxChanges, bool &external);
-        const_iterator addDocChangeNotifier(slice docID, DocChangeNotifier *NONNULL);
-        void           removeDocChangeNotifier(const_iterator, DocChangeNotifier *NONNULL);
+        size_t         readChanges(const_iterator placeholder, Change changes[], size_t maxChanges, bool& external);
+        const_iterator addDocChangeNotifier(slice docID, DocChangeNotifier* NONNULL);
+        void           removeDocChangeNotifier(const_iterator, DocChangeNotifier* NONNULL);
         void           removeObsoleteEntries();
 
       private:
@@ -113,13 +113,13 @@ namespace litecore {
         friend class DocChangeNotifier;
         friend class SequenceTrackerTest;
 
-        void           _documentChanged(const alloc_slice &docID, const alloc_slice &revID, sequence_t sequence,
+        void           _documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence,
                                         uint64_t bodySize, RevisionFlags flags);
         const_iterator _since(sequence_t s) const;
         slice          _docIDAt(sequence_t) const;  // for tests only
 
-        SequenceTracker(const SequenceTracker &)            = delete;
-        SequenceTracker &operator=(const SequenceTracker &) = delete;
+        SequenceTracker(const SequenceTracker&)            = delete;
+        SequenceTracker& operator=(const SequenceTracker&) = delete;
 
         alloc_slice const                    _name;
         std::list<Entry>                     _changes;
@@ -135,23 +135,23 @@ namespace litecore {
     /** Tracks changes to a single document and calls a client callback. */
     class DocChangeNotifier {
       public:
-        using Callback = std::function<void(DocChangeNotifier &, slice docID, sequence_t)>;
+        using Callback = std::function<void(DocChangeNotifier&, slice docID, sequence_t)>;
 
-        DocChangeNotifier(SequenceTracker *t, slice docID, Callback cb);
+        DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb);
         ~DocChangeNotifier();
 
-        SequenceTracker *tracker;
+        SequenceTracker* tracker;
         Callback const   callback;
 
         slice      docID() const;
         sequence_t sequence() const;
 
       protected:
-        void notify(const SequenceTracker::Entry *entry) noexcept;
+        void notify(const SequenceTracker::Entry* entry) noexcept;
 
       private:
-        DocChangeNotifier(const DocChangeNotifier &)            = delete;
-        DocChangeNotifier &operator=(const DocChangeNotifier &) = delete;
+        DocChangeNotifier(const DocChangeNotifier&)            = delete;
+        DocChangeNotifier& operator=(const DocChangeNotifier&) = delete;
 
         friend class SequenceTracker;
         SequenceTracker::const_iterator const _docEntry;
@@ -162,13 +162,13 @@ namespace litecore {
       public:
         /** A callback that will be invoked _once_ when new changes arrive. After that, calling
             \ref readChanges will reset the state so the callback can be called again. */
-        using Callback = std::function<void(CollectionChangeNotifier &)>;
+        using Callback = std::function<void(CollectionChangeNotifier&)>;
 
-        CollectionChangeNotifier(SequenceTracker *, Callback, sequence_t afterSeq = sequence_t::Max);
+        CollectionChangeNotifier(SequenceTracker*, Callback, sequence_t afterSeq = sequence_t::Max);
 
         ~CollectionChangeNotifier();
 
-        SequenceTracker *tracker;
+        SequenceTracker* tracker;
         Callback const   callback;
 
         /** Returns true if there are new changes, i.e. if `readChanges` would return nonzero. */
@@ -179,14 +179,14 @@ namespace litecore {
             setting the `external` flag to indicate which.
             To get all the changes, you need to keep calling this method until it returns 0.
             Only after that will the notifier reset so the callback can be called again. */
-        size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool &external);
+        size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool& external);
 
       protected:
         void notify() noexcept;
 
       private:
-        CollectionChangeNotifier(const CollectionChangeNotifier &)            = delete;
-        CollectionChangeNotifier &operator=(const CollectionChangeNotifier &) = delete;
+        CollectionChangeNotifier(const CollectionChangeNotifier&)            = delete;
+        CollectionChangeNotifier& operator=(const CollectionChangeNotifier&) = delete;
 
         friend class SequenceTracker;
 

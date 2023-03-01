@@ -26,9 +26,9 @@ namespace litecore {
 
 #pragma mark - BLOB READ STREAM:
 
-    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile, EncryptionAlgorithm algorithm,
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath& blobFile, EncryptionAlgorithm algorithm,
                                                       slice encryptionKey) {
-        SeekableReadStream *reader = new FileReadStream(blobFile);
+        SeekableReadStream* reader = new FileReadStream(blobFile);
         if ( algorithm != EncryptionAlgorithm::kNoEncryption )
             reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader), algorithm, encryptionKey);
         return unique_ptr<SeekableReadStream>{reader};
@@ -36,8 +36,8 @@ namespace litecore {
 
 #pragma mark - BLOB WRITE STREAM:
 
-    BlobWriteStream::BlobWriteStream(const string &blobsDir, EncryptionAlgorithm algorithm, slice encryptionKey) {
-        FILE *file;
+    BlobWriteStream::BlobWriteStream(const string& blobsDir, EncryptionAlgorithm algorithm, slice encryptionKey) {
+        FILE* file;
         _tmpPath = FilePath(blobsDir, "incoming_").mkTempFile(&file);
         _writer  = shared_ptr<WriteStream>{new FileWriteStream(file)};
         if ( algorithm != EncryptionAlgorithm::kNoEncryption )
@@ -70,7 +70,7 @@ namespace litecore {
         return *_blobKey;
     }
 
-    void BlobWriteStream::install(const FilePath &dstPath) {
+    void BlobWriteStream::install(const FilePath& dstPath) {
         close();
         if ( !dstPath.exists() ) {
             _tmpPath.setReadOnly(true);

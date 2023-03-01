@@ -46,7 +46,7 @@ namespace litecore { namespace blip {
 
         /** Reads data from `input` and writes transformed data to `output`.
             Each slice's buf pointer is moved forwards past the consumed data. */
-        virtual void write(slice_istream &input, slice_ostream &output, Mode = Mode::Default) = 0;
+        virtual void write(slice_istream& input, slice_ostream& output, Mode = Mode::Default) = 0;
 
         /** Number of bytes buffered in the codec that haven't been written to
             the output yet for lack of space. */
@@ -56,15 +56,15 @@ namespace litecore { namespace blip {
 
         /** Writes the codec's current checksum to the output slice.
             This is a CRC32 checksum of all the unencoded data processed so far. */
-        void writeChecksum(slice_ostream &output) const;
+        void writeChecksum(slice_ostream& output) const;
 
         /** Reads a checksum from the input slice and compares it with the codec's current one.
             If they aren't equal, throws an exception. */
-        void readAndVerifyChecksum(slice_istream &input) const;
+        void readAndVerifyChecksum(slice_istream& input) const;
 
       protected:
         void addToChecksum(slice data);
-        void _writeRaw(slice_istream &input, slice_ostream &output);
+        void _writeRaw(slice_istream& input, slice_ostream& output);
 
         uint32_t _checksum{0};
     };
@@ -72,11 +72,11 @@ namespace litecore { namespace blip {
     /** Abstract base class of Zlib-based codecs Deflater and Inflater */
     class ZlibCodec : public Codec {
       protected:
-        using FlateFunc = int (*)(z_stream *, int);
+        using FlateFunc = int (*)(z_stream*, int);
 
         ZlibCodec(FlateFunc flate) : _flate(flate) {}
 
-        void _write(const char *operation, slice_istream &input, slice_ostream &output, Mode,
+        void _write(const char* operation, slice_istream& input, slice_ostream& output, Mode,
                     size_t maxInput = SIZE_MAX);
         void check(int) const;
 
@@ -97,11 +97,11 @@ namespace litecore { namespace blip {
         Deflater(CompressionLevel = DefaultCompression);
         ~Deflater();
 
-        void     write(slice_istream &input, slice_ostream &output, Mode = Mode::Default) override;
+        void     write(slice_istream& input, slice_ostream& output, Mode = Mode::Default) override;
         unsigned unflushedBytes() const override;
 
       private:
-        void _writeAndFlush(slice_istream &input, slice_ostream &output);
+        void _writeAndFlush(slice_istream& input, slice_ostream& output);
     };
 
     /** Decompressing codec that performs a zlib/gzip "inflate". */
@@ -110,7 +110,7 @@ namespace litecore { namespace blip {
         Inflater();
         ~Inflater();
 
-        void write(slice_istream &input, slice_ostream &output, Mode = Mode::Default) override;
+        void write(slice_istream& input, slice_ostream& output, Mode = Mode::Default) override;
     };
 
 }}  // namespace litecore::blip

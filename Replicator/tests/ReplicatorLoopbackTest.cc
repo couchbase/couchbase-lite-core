@@ -444,13 +444,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     validateCheckpoints(db2, db, "{\"local\":100}");
 }
 
-static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array,
+static Replicator::Options pushOptionsWithProperty(const char* property, vector<string> array,
                                                    C4CollectionSpec collSpec = kC4DefaultCollectionSpec) {
     fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(slice(property));
     enc.beginArray();
-    for ( const string &item : array ) enc << item;
+    for ( const string& item : array ) enc << item;
     enc.endArray();
     enc.endDict();
     auto opts                         = Replicator::Options::pushing(kC4OneShot, collSpec);
@@ -734,7 +734,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
     // Test case for issue #354
     alloc_slice       image       = readFile(sFixturesDir + "for#354.jpg");
-    vector<string>    attachments = {string((const char *)image.buf, image.size)};
+    vector<string>    attachments = {string((const char*)image.buf, image.size)};
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
@@ -852,9 +852,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     atomic<int> validationCount{0};
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
     pullOptions.collectionOpts[0].pullFilter      = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
-                                                  C4RevisionFlags flags, FLDict body, void *context) -> bool {
+                                                  C4RevisionFlags flags, FLDict body, void* context) -> bool {
         assert_always(flags == 0);  // can't use CHECK on a bg thread
-        ++(*(atomic<int> *)context);
+        ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
     };
     _expectedDocPushErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
@@ -975,7 +975,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][Conflict][NoConflicts]") {
     static constexpr slice kTreeRevs[7] = {"", "1-1111", "2-2222", "3-3333", "4-4444", "5-5555", "6-6666"};
     static constexpr slice kVersions[7] = {"", "1@*", "2@*", "1@*", "2@*", "3@*", "4@*"};
-    const slice           *kRevIDs      = isRevTrees() ? kTreeRevs : kVersions;
+    const slice*           kRevIDs      = isRevTrees() ? kTreeRevs : kVersions;
 
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
@@ -1408,8 +1408,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
 
 #pragma mark - DELTA:
 
-static void mutateDoc(C4Collection *collection, slice docID, function<void(Dict, Encoder &)> mutator) {
-    C4Database         *db = c4coll_getDatabase(collection);
+static void mutateDoc(C4Collection* collection, slice docID, function<void(Dict, Encoder&)> mutator) {
+    C4Database*         db = c4coll_getDatabase(collection);
     TransactionHelper   t(db);
     C4Error             error;
     c4::ref<C4Document> doc = c4coll_getDoc(collection, docID, false, kDocGetAll, ERROR_INFO(error));
@@ -1432,15 +1432,15 @@ static void mutateDoc(C4Collection *collection, slice docID, function<void(Dict,
     CHECK(doc);
 }
 
-static void mutateDoc(C4Collection *collection, slice docID, function<void(MutableDict)> mutator) {
-    mutateDoc(collection, docID, [&](Dict props, Encoder &enc) {
+static void mutateDoc(C4Collection* collection, slice docID, function<void(MutableDict)> mutator) {
+    mutateDoc(collection, docID, [&](Dict props, Encoder& enc) {
         MutableDict newProps = props.mutableCopy(kFLDeepCopyImmutables);
         mutator(newProps);
         enc.writeValue(newProps);
     });
 }
 
-static void mutationsForDelta(C4Collection *collection) {
+static void mutationsForDelta(C4Collection* collection) {
     constexpr size_t bufSize = 20;
     for ( int i = 1; i <= 100; i += 7 ) {
         char docID[bufSize];
@@ -1470,13 +1470,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     atomic<int> validationCount{0};
     SECTION("No filter") {}
     SECTION("With filter") {
-        Options::CollectionOptions &collOpts = serverOpts.collectionOpts[0];
+        Options::CollectionOptions& collOpts = serverOpts.collectionOpts[0];
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
         collOpts.callbackContext = &validationCount;
         collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
-                                 FLDict body, void *context) -> bool {
+                                 FLDict body, void* context) -> bool {
             assert_always(flags == 0);  // can't use CHECK on a bg thread
-            ++(*(atomic<int> *)context);
+            ++(*(atomic<int>*)context);
             return true;
         };
     }
@@ -1518,7 +1518,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
         TransactionHelper t(db);
         for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
             string docID = format("doc-%03d", docNo);
-            mutateDoc(_collDB1, slice(docID), [](Dict doc, Encoder &enc) {
+            mutateDoc(_collDB1, slice(docID), [](Dict doc, Encoder& enc) {
                 enc.beginDict();
                 for ( Dict::iterator i(doc); i; ++i ) {
                     enc.writeKey(i.key());
@@ -1869,20 +1869,20 @@ struct TestEncryptorContext {
     bool  called;
 };
 
-static C4SliceResult testEncryptor(void *rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4StringResult *outAlgorithm,
-                                   C4StringResult *outKeyID, C4Error *outError) {
-    auto context    = (TestEncryptorContext *)rawCtx;
+static C4SliceResult testEncryptor(void* rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
+                                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
+                                   C4StringResult* outKeyID, C4Error* outError) {
+    auto context    = (TestEncryptorContext*)rawCtx;
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
 }
 
-static C4SliceResult testDecryptor(void *rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
+static C4SliceResult testDecryptor(void* rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
                                    C4String keyPath, C4Slice input, C4String algorithm, C4String keyID,
-                                   C4Error *outError) {
-    auto context    = (TestEncryptorContext *)rawCtx;
+                                   C4Error* outError) {
+    auto context    = (TestEncryptorContext*)rawCtx;
     context->called = true;
     CHECK(documentID == context->docID);
     CHECK(keyPath == context->keyPath);

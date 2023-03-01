@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
         }
 
         /** Removes the sequence if it's in the set. Returns true if it was the earliest. */
-        void remove(const RemoteSequence &s, bool &wasEarliest, uint64_t &outBodySize) {
+        void remove(const RemoteSequence& s, bool& wasEarliest, uint64_t& outBodySize) {
             auto i = _sequences.find(s);
             if ( i == _sequences.end() ) {
                 outBodySize = 0;
@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        uint64_t bodySizeOfSequence(const RemoteSequence &s) {
+        uint64_t bodySizeOfSequence(const RemoteSequence& s) {
             auto i = _sequences.find(s);
             return (i == _sequences.end()) ? 0 : i->second.bodySize;
         }

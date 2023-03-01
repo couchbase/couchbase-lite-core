@@ -51,7 +51,7 @@ using namespace fleece;
 using namespace litecore;
 
 #ifdef __linux__
-static int copyfile(const char *from, const char *to) {
+static int copyfile(const char* from, const char* to) {
     int         read_fd, write_fd;
     off_t       offset = 0;
     struct stat stat_buf;
@@ -111,9 +111,9 @@ static int copyfile(const char *from, const char *to) {
     return 0;
 }
 #elif defined(_MSC_VER)
-typedef HRESULT(WINAPI *CopyFileFunc)(_In_ PCWSTR, _In_ PCWSTR, _In_opt_ COPYFILE2_EXTENDED_PARAMETERS *);
+typedef HRESULT(WINAPI* CopyFileFunc)(_In_ PCWSTR, _In_ PCWSTR, _In_opt_ COPYFILE2_EXTENDED_PARAMETERS*);
 
-static int copyfile(const char *from, const char *to) {
+static int copyfile(const char* from, const char* to) {
     CA2WEX<256> wideFrom(from, CP_UTF8);
     CA2WEX<256> wideTo(to, CP_UTF8);
     int         err = CopyFile2(wideFrom, wideTo, nullptr);
@@ -131,24 +131,24 @@ namespace litecore {
     static const char      kSeparatorChar       = '\\';
     static const char      kBackupSeparatorChar = '/';
     static const char      kQuotedSeparatorChar = ':';
-    static const char     *kCurrentDir          = ".\\";
+    static const char*     kCurrentDir          = ".\\";
     typedef struct _stat64 lc_stat_t;
 #else
     const string        FilePath::kSeparator = "/";
     static const char   kSeparatorChar       = '/';
     static const char   kBackupSeparatorChar = '\\';
     static const char   kQuotedSeparatorChar = ':';
-    static const char  *kCurrentDir          = "./";
+    static const char*  kCurrentDir          = "./";
     typedef struct stat lc_stat_t;
 #endif
 
 
-    static string &appendSeparatorTo(string &str) {
+    static string& appendSeparatorTo(string& str) {
         if ( str.empty() || str[str.size() - 1] != kSeparatorChar ) str += kSeparatorChar;
         return str;
     }
 
-    FilePath::FilePath(string &&dirName, string &&fileName) : _dir(move(dirName)), _file(move(fileName)) {
+    FilePath::FilePath(string&& dirName, string&& fileName) : _dir(move(dirName)), _file(move(fileName)) {
         if ( _dir.empty() ) _dir = kCurrentDir;
         else if ( _dir[_dir.size() - 1] == kBackupSeparatorChar )
             _dir[_dir.size() - 1] = kSeparatorChar;
@@ -158,7 +158,7 @@ namespace litecore {
 
     FilePath::FilePath(string_view dir, string_view file) : FilePath(string(dir), string(file)) {}
 
-    FilePath::FilePath(const char *dir, const char *file) : FilePath(string(dir), string(file)) {}
+    FilePath::FilePath(const char* dir, const char* file) : FilePath(string(dir), string(file)) {}
 
     FilePath::FilePath() : _dir(kCurrentDir), _file() {}
 
@@ -177,7 +177,7 @@ namespace litecore {
         return {string(path.substr(0, slash + 1)), string(path.substr(slash + 1))};
     }
 
-    pair<string, string> FilePath::splitExtension(const string &file) {
+    pair<string, string> FilePath::splitExtension(const string& file) {
         auto dot       = file.rfind('.');
         auto lastSlash = file.rfind(kSeparatorChar);
         if ( dot == string::npos || (lastSlash != string::npos && dot < lastSlash) ) return {file, ""};
@@ -186,7 +186,7 @@ namespace litecore {
     }
 
     string FilePath::sanitizedFileName(string name) {
-        for ( auto &c : name ) {
+        for ( auto& c : name ) {
             if ( c == kSeparatorChar ) c = kQuotedSeparatorChar;
         }
         return name;
@@ -197,18 +197,18 @@ namespace litecore {
     FilePath::operator alloc_slice() const {
         auto        dirSize = _dir.size(), fileSize = _file.size();
         alloc_slice result(dirSize + fileSize);
-        memcpy((void *)result.offset(0), _dir.data(), dirSize);
-        memcpy((void *)result.offset(dirSize), _file.data(), fileSize);
+        memcpy((void*)result.offset(0), _dir.data(), dirSize);
+        memcpy((void*)result.offset(dirSize), _file.data(), fileSize);
         return result;
     }
 
     string FilePath::extension() const { return splitExtension(fileOrDirName()).second; }
 
-    static string addExtension(const string &name, const string &ext) {
+    static string addExtension(const string& name, const string& ext) {
         return (ext[0] == '.') ? name + ext : name + "." + ext;
     }
 
-    FilePath FilePath::withExtension(const string &ext) const {
+    FilePath FilePath::withExtension(const string& ext) const {
         Assert(!isDir());
         auto name = unextendedName();
         if ( ext.empty() ) return FilePath(_dir, name);
@@ -216,20 +216,20 @@ namespace litecore {
             return FilePath(_dir, addExtension(name, ext));
     }
 
-    FilePath FilePath::withExtensionIfNone(const string &ext) const {
+    FilePath FilePath::withExtensionIfNone(const string& ext) const {
         if ( extension().empty() ) return addingExtension(ext);
         else
             return *this;
     }
 
-    FilePath FilePath::addingExtension(const string &ext) const {
+    FilePath FilePath::addingExtension(const string& ext) const {
         Assert(!isDir());
         if ( ext.empty() ) return *this;
         else
             return FilePath(_dir, addExtension(_file, ext));
     }
 
-    FilePath FilePath::appendingToName(const std::string &suffix) const {
+    FilePath FilePath::appendingToName(const std::string& suffix) const {
         if ( isDir() )
             // Cut off the trailing slash, it will get added back in the constructor
             return FilePath(_dir.substr(0, _dir.size() - 1) + suffix, _file);
@@ -237,7 +237,7 @@ namespace litecore {
             return FilePath(_dir, _file + suffix);
     }
 
-    FilePath FilePath::operator[](const string &name) const {
+    FilePath FilePath::operator[](const string& name) const {
         Assert(isDir());
         if ( name.empty() ) return *this;
         else if ( name[name.size() - 1] == kSeparatorChar || name[name.size() - 1] == kBackupSeparatorChar )
@@ -258,9 +258,9 @@ namespace litecore {
         return split.second;
     }
 
-    FilePath FilePath::fileNamed(const std::string &filename) const { return FilePath(_dir, filename); }
+    FilePath FilePath::fileNamed(const std::string& filename) const { return FilePath(_dir, filename); }
 
-    FilePath FilePath::subdirectoryNamed(const std::string &dirname) const { return FilePath(_dir + dirname, ""); }
+    FilePath FilePath::subdirectoryNamed(const std::string& dirname) const { return FilePath(_dir + dirname, ""); }
 
     FilePath FilePath::parentDir() const {
         if ( !isDir() ) return dir();
@@ -282,7 +282,7 @@ namespace litecore {
         return FilePath(parentDir, "");
     }
 
-    /* static */ FilePath FilePath::sharedTempDirectory(const string &location) {
+    /* static */ FilePath FilePath::sharedTempDirectory(const string& location) {
         FilePath alternate(location);
         alternate = alternate.dir();
 
@@ -295,12 +295,12 @@ namespace litecore {
     string FilePath::canonicalPath() const {
 #ifdef _MSC_VER
         // Windows 10 has a new file path length limit of 32,767 chars (optionally)
-        const auto        wcanon  = (wchar_t *)malloc(sizeof(wchar_t) * 32768);
+        const auto        wcanon  = (wchar_t*)malloc(sizeof(wchar_t) * 32768);
         auto              pathVal = path();
         const CA2WEX<256> wpath(pathVal.c_str(), CP_UTF8);
         const DWORD       copied = GetFullPathNameW(wpath, 32768, wcanon, nullptr);
         wcanon[copied]           = 0;
-        char *canon              = nullptr;
+        char* canon              = nullptr;
         if ( copied == 0 ) {
             const DWORD err = GetLastError();
             if ( err == ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND ) {
@@ -312,13 +312,13 @@ namespace litecore {
             const CW2AEX<256> converted(wcanon, CP_UTF8);
 
             // Arbitrarily large to account for unforseen whacky UTF-8 names (4 bytes per wide char)
-            canon = (char *)malloc(32767 * 4 + 1);
+            canon = (char*)malloc(32767 * 4 + 1);
             strcpy_s(canon, 32767 * 4 + 1, converted.m_psz);
         }
 
         free(wcanon);
 #else
-        char *canon = ::realpath(path().c_str(), nullptr);
+        char* canon = ::realpath(path().c_str(), nullptr);
 #endif
 
         if ( !canon ) {
@@ -336,7 +336,7 @@ namespace litecore {
 
 #pragma mark - ENUMERATION:
 
-    static bool is_dir(const struct dirent *entry, const string &basePath) {
+    static bool is_dir(const struct dirent* entry, const string& basePath) {
         bool isDir = false;
 #ifdef _DIRENT_HAVE_D_TYPE
         if ( entry->d_type != DT_UNKNOWN && entry->d_type != DT_LNK ) {
@@ -352,12 +352,12 @@ namespace litecore {
         return isDir;
     }
 
-    void FilePath::forEachMatch(function_ref<void(const FilePath &)> fn) const {
+    void FilePath::forEachMatch(function_ref<void(const FilePath&)> fn) const {
         auto dir = opendir(_dir.c_str());
         if ( !dir ) error::_throwErrno();
         try {
             while ( 1 ) {
-                struct dirent *result = readdir(dir);
+                struct dirent* result = readdir(dir);
                 if ( !result ) break;
                 string name(result->d_name);
                 if ( _file.empty() || name.find(_file) == 0 ) {
@@ -376,7 +376,7 @@ namespace litecore {
         closedir(dir);
     }
 
-    void FilePath::forEachFile(function_ref<void(const FilePath &)> fn) const { dir().forEachMatch(fn); }
+    void FilePath::forEachFile(function_ref<void(const FilePath&)> fn) const { dir().forEachMatch(fn); }
 
 #pragma mark - OPERATIONS:
 
@@ -428,14 +428,14 @@ namespace litecore {
 
     static constexpr size_t kPathBufSize = 1024;  // MAXPATHLEN
 
-    static void makePathTemplate(const FilePath *fp, char *pathBuf) {
+    static void makePathTemplate(const FilePath* fp, char* pathBuf) {
         string      path     = fp->path();
-        const char *basePath = path.c_str();
+        const char* basePath = path.c_str();
         Assert(strlen(basePath) + 6 < kPathBufSize - 1);
         snprintf(pathBuf, kPathBufSize, "%sXXXXXX", basePath);
     }
 
-    FilePath FilePath::mkTempFile(FILE **outHandle) const {
+    FilePath FilePath::mkTempFile(FILE** outHandle) const {
         char pathBuf[kPathBufSize];
         makePathTemplate(this, pathBuf);
         int fd = mkstemp(pathBuf);
@@ -465,7 +465,7 @@ namespace litecore {
 
     bool FilePath::del() const {
         std::string pathStr  = path();
-        const char *pathCStr = pathStr.c_str();
+        const char* pathCStr = pathStr.c_str();
 
         auto result = isDir() ? rmdir_u8(pathCStr) : unlink_u8(pathCStr);
         if ( result == 0 ) return true;
@@ -483,13 +483,13 @@ namespace litecore {
         error::_throwErrno("Couldn't delete file %s", pathCStr);
     }
 
-    static void _delRecursive(const FilePath &path) {
+    static void _delRecursive(const FilePath& path) {
         if ( path.isDir() ) {
 #if 1
-            path.forEachFile([](const FilePath &f) { f.delRecursive(); });
+            path.forEachFile([](const FilePath& f) { f.delRecursive(); });
 #else
             vector<FilePath> children;
-            path.forEachFile([&](const FilePath &f) { children.push_back(f); });
+            path.forEachFile([&](const FilePath& f) { children.push_back(f); });
             for ( auto child : children ) child.delRecursive();
 #endif
         }
@@ -502,7 +502,7 @@ namespace litecore {
         return true;
     }
 
-    void FilePath::copyTo(const string &to) const {
+    void FilePath::copyTo(const string& to) const {
         std::string from        = path();
         const char *fromPathStr = from.c_str(), *toPathStr = to.c_str();
         int         result = 0;
@@ -513,7 +513,7 @@ namespace litecore {
         if ( isDir() ) {
             FilePath toPath(to);
             toPath.mkdir();
-            forEachFile([&toPath](const FilePath &f) { f.copyTo(toPath[f.fileOrDirName() + (f.isDir() ? "/" : "")]); });
+            forEachFile([&toPath](const FilePath& f) { f.copyTo(toPath[f.fileOrDirName() + (f.isDir() ? "/" : "")]); });
         } else {
             result = copyfile(fromPathStr, toPathStr);
         }
@@ -521,7 +521,7 @@ namespace litecore {
         if ( result != 0 ) { error::_throwErrno("Couldn't copy file from %s to %s", fromPathStr, toPathStr); }
     }
 
-    void FilePath::moveTo(const string &to) const {
+    void FilePath::moveTo(const string& to) const {
         int result = rename_u8(path().c_str(), to.c_str());
 #ifdef _MSC_VER
         // While unix will automatically overwrite the target,
@@ -546,7 +546,7 @@ namespace litecore {
         check(result);
     }
 
-    void FilePath::moveToReplacingDir(const FilePath &to, bool asyncCleanup) const {
+    void FilePath::moveToReplacingDir(const FilePath& to, bool asyncCleanup) const {
 #ifdef _MSC_VER
         bool overwriting = to.exists();
 #else

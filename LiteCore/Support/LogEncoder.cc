@@ -38,10 +38,10 @@ namespace litecore {
     // ...or when this many seconds have elapsed since the previous save:
     static const uint64_t kSaveInterval = 1 * kTicksPerSec;
 
-    LogEncoder::LogEncoder(ostream &out, LogLevel level)
+    LogEncoder::LogEncoder(ostream& out, LogLevel level)
         : _out(out), _flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this))), _level(level) {
         _writer.write(&LogDecoder::kMagicNumber, 4);
-        uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void *)};
+        uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void*)};
         _writer.write(&header, sizeof(header));
         auto now = LogDecoder::now();
         _writeUVarInt(now.secs);
@@ -67,8 +67,8 @@ namespace litecore {
 
 #pragma mark - LOGGING:
 
-    void LogEncoder::log(const char *domain, const std::map<unsigned, std::string> &objectMap, ObjectRef object,
-                         const char *format, ...) {
+    void LogEncoder::log(const char* domain, const std::map<unsigned, std::string>& objectMap, ObjectRef object,
+                         const char* format, ...) {
         va_list args;
         va_start(args, format);
         vlog(domain, objectMap, object, format, args);
@@ -77,8 +77,8 @@ namespace litecore {
 
     int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
-    void LogEncoder::vlog(const char *domain, const map<unsigned, string> &objectMap, ObjectRef object,
-                          const char *format, va_list args) {
+    void LogEncoder::vlog(const char* domain, const map<unsigned, string>& objectMap, ObjectRef object,
+                          const char* format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -107,7 +107,7 @@ namespace litecore {
         _writeStringToken(format);
 
         // Parse the format string looking for substitutions:
-        for ( const char *c = format; *c != '\0'; ++c ) {
+        for ( const char* c = format; *c != '\0'; ++c ) {
             if ( *c == '%' ) {
                 bool minus   = false;
                 bool dotStar = false;
@@ -181,13 +181,13 @@ namespace litecore {
                         }
                     case 's':
                         {
-                            const char *str;
+                            const char* str;
                             size_t      size;
                             if ( dotStar ) {
                                 size = va_arg(args, int);
-                                str  = va_arg(args, const char *);
+                                str  = va_arg(args, const char*);
                             } else {
-                                str  = va_arg(args, const char *);
+                                str  = va_arg(args, const char*);
                                 size = strlen(str);
                             }
                             if ( minus && !dotStar ) {
@@ -246,7 +246,7 @@ namespace litecore {
         _writer.write(buf, PutUVarInt(buf, n));
     }
 
-    void LogEncoder::_writeStringToken(const char *token) {
+    void LogEncoder::_writeStringToken(const char* token) {
         const auto name = _formats.find((size_t)token);
         if ( name == _formats.end() ) {
             const auto n = (unsigned)_formats.size();

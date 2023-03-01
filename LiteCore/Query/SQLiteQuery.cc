@@ -45,7 +45,7 @@ namespace litecore {
     enum { kFTSRowidCol, kFTSOffsetsCol };
 
     namespace {
-        bool hasKeyCaseEquivalent(const Dict *dict, slice key) {
+        bool hasKeyCaseEquivalent(const Dict* dict, slice key) {
             for ( Dict::iterator i(dict); i; ++i ) {
                 if ( i.key()->asString().caseEquivalent(key) ) { return true; }
             }
@@ -55,9 +55,9 @@ namespace litecore {
 
     class SQLiteQuery : public Query {
       public:
-        SQLiteQuery(SQLiteDataFile &dataFile, slice queryStr, QueryLanguage language, SQLiteKeyStore *defaultKeyStore)
+        SQLiteQuery(SQLiteDataFile& dataFile, slice queryStr, QueryLanguage language, SQLiteKeyStore* defaultKeyStore)
             : Query(dataFile, queryStr, language) {
-            static constexpr const char *kLanguageName[] = {"JSON", "N1QL"};
+            static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
 
             switch ( language ) {
@@ -72,11 +72,11 @@ namespace litecore {
 
                         if ( !result ) {
                             throw Query::parseError("N1QL syntax error", errPos);
-                        } else if ( !hasKeyCaseEquivalent((MutableDict *)result, "from") ) {
+                        } else if ( !hasKeyCaseEquivalent((MutableDict*)result, "from") ) {
                             throw error(error::LiteCore, error::InvalidQuery,
                                         format("%s", "N1QL error: missing the FROM clause"));
                         }
-                        _json = ((MutableDict *)result)->toJSON(true);
+                        _json = ((MutableDict*)result)->toJSON(true);
                         logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
                         break;
                     }
@@ -88,7 +88,7 @@ namespace litecore {
             logInfo("Compiled as %s", sql.c_str());
 
             // Collect the KeyStores read by this query:
-            for ( const string &table : qp.collectionTablesUsed() )
+            for ( const string& table : qp.collectionTablesUsed() )
                 _keyStores.push_back(&dataFile.keyStoreFromTable(table));
 
             // Collect the (required) query parameters:
@@ -101,7 +101,7 @@ namespace litecore {
 
             // Collect the FTS tables used:
             _ftsTables = qp.ftsTablesUsed();
-            for ( auto &ftsTable : _ftsTables ) {
+            for ( auto& ftsTable : _ftsTables ) {
                 if ( !dataFile.tableExists(ftsTable) )
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
@@ -130,23 +130,23 @@ namespace litecore {
             // return the total last-sequence of all used KeyStores
             return std::accumulate(
                     _keyStores.begin(), _keyStores.end(), 0_seq,
-                    [](sequence_t total, const KeyStore *ks) { return total + uint64_t(ks->lastSequence()); });
+                    [](sequence_t total, const KeyStore* ks) { return total + uint64_t(ks->lastSequence()); });
         }
 
         uint64_t purgeCount() const {
             // This number is just used for before/after comparisons, so
             // return the total purge-count of all used KeyStores
             return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
-                                   [](uint64_t total, const KeyStore *ks) { return total + ks->purgeCount(); });
+                                   [](uint64_t total, const KeyStore* ks) { return total + ks->purgeCount(); });
         }
 
-        alloc_slice getMatchedText(const FullTextTerm &term) override {
+        alloc_slice getMatchedText(const FullTextTerm& term) override {
             // Get the expression that generated the text
             if ( _ftsTables.size() == 0 ) error::_throw(error::NoSuchIndex);
             string expr = _ftsTables[0];  // TODO: Support for multiple matches in a query
 
             if ( !_matchedTextStatement ) {
-                auto  &df  = (SQLiteDataFile &)dataFile();
+                auto&  df  = (SQLiteDataFile&)dataFile();
                 string sql = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
                 _matchedTextStatement.reset(new SQLite::Statement(df, sql, true));
             }
@@ -165,7 +165,7 @@ namespace litecore {
             return statement()->getColumnCount() - _1stCustomResultColumn;
         }
 
-        virtual const vector<string> &columnTitles() const noexcept override { return _columnTitles; }
+        virtual const vector<string>& columnTitles() const noexcept override { return _columnTitles; }
 
         string explain() override {
             stringstream result;
@@ -174,7 +174,7 @@ namespace litecore {
             result << query << "\n\n";
 
             string            sql = "EXPLAIN QUERY PLAN " + query;
-            auto             &df  = (SQLiteDataFile &)dataFile();
+            auto&             df  = (SQLiteDataFile&)dataFile();
             SQLite::Statement x(df, sql);
             while ( x.executeStep() ) {
                 for ( int i = 0; i < 3; ++i ) result << x.getColumn(i).getInt() << "|";
@@ -185,7 +185,7 @@ namespace litecore {
             return result.str();
         }
 
-        QueryEnumerator *createEnumerator(const Options *options) override;
+        QueryEnumerator* createEnumerator(const Options* options) override;
 
         shared_ptr<SQLite::Statement> statement() const {
             if ( !_statement ) error::_throw(error::NotOpen);
@@ -208,7 +208,7 @@ namespace litecore {
         shared_ptr<SQLite::Statement> _statement;             // Compiled SQLite statement
         unique_ptr<SQLite::Statement> _matchedTextStatement;  // Gets the matched text
         vector<string>                _columnTitles;          // Titles of columns
-        vector<KeyStore *>            _keyStores;
+        vector<KeyStore*>             _keyStores;
     };
 
 #pragma mark - QUERY ENUMERATOR:
@@ -219,8 +219,8 @@ namespace litecore {
         : public QueryEnumerator
         , Logging {
       public:
-        SQLiteQueryEnumerator(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence,
-                              uint64_t purgeCount, Doc *recording, unsigned long long rowCount, double elapsedTime)
+        SQLiteQueryEnumerator(SQLiteQuery* query, const Query::Options* options, sequence_t lastSequence,
+                              uint64_t purgeCount, Doc* recording, unsigned long long rowCount, double elapsedTime)
             : QueryEnumerator(options, lastSequence, purgeCount)
             , Logging(QueryLog)
             , _recording(recording)
@@ -274,9 +274,9 @@ namespace litecore {
 
         uint64_t missingColumns() const noexcept override { return _iter[1u]->asUnsigned(); }
 
-        virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
+        virtual bool obsoletedBy(const QueryEnumerator* otherE) override {
             if ( !otherE ) return false;
-            auto other = dynamic_cast<const SQLiteQueryEnumerator *>(otherE);
+            auto other = dynamic_cast<const SQLiteQueryEnumerator*>(otherE);
             if ( !other || other->purgeCount() != _purgeCount ) {
                 // If other is null for some weird reason all bets are off.  Otherwise
                 // a purge will make changes that are unrecognizable to either lastSequence
@@ -295,11 +295,11 @@ namespace litecore {
             }
         }
 
-        QueryEnumerator *refresh(Query *query) override {
+        QueryEnumerator* refresh(Query* query) override {
             auto                              newOptions  = _options.after(_lastSequence).withPurgeCount(_purgeCount);
-            auto                              sqliteQuery = (SQLiteQuery *)query;
+            auto                              sqliteQuery = (SQLiteQuery*)query;
             unique_ptr<SQLiteQueryEnumerator> newEnum(
-                    (SQLiteQueryEnumerator *)sqliteQuery->createEnumerator(&newOptions));
+                    (SQLiteQueryEnumerator*)sqliteQuery->createEnumerator(&newOptions));
             if ( obsoletedBy(newEnum.get()) ) {
                 // Results have changed, so return new enumerator:
                 return newEnum.release();
@@ -307,8 +307,8 @@ namespace litecore {
             return nullptr;
         }
 
-        QueryEnumerator *clone() override {
-            SQLiteQueryEnumerator *clon
+        QueryEnumerator* clone() override {
+            SQLiteQueryEnumerator* clon
                     = new SQLiteQueryEnumerator(&_options, _lastSequence.load(), _purgeCount.load(), _recording.get());
             clon->_1stCustomResultColumn = this->_1stCustomResultColumn;
             clon->_hasFullText           = this->_hasFullText;
@@ -317,16 +317,16 @@ namespace litecore {
 
         bool hasFullText() const override { return _hasFullText; }
 
-        const FullTextTerms &fullTextTerms() override {
+        const FullTextTerms& fullTextTerms() override {
             _fullTextTerms.clear();
             uint64_t dataSource = _iter->asArray()->get(kFTSRowidCol)->asInt();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
             string      offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
-            const char *termStr = offsets.c_str();
+            const char* termStr = offsets.c_str();
             while ( *termStr ) {
                 uint32_t n[4];
                 for ( int i = 0; i < 4; ++i ) {
-                    char *next;
+                    char* next;
                     n[i]    = (uint32_t)strtol(termStr, &next, 10);
                     termStr = next;
                 }
@@ -340,8 +340,8 @@ namespace litecore {
         string loggingClassName() const override { return "QueryEnum"; }
 
       private:
-        SQLiteQueryEnumerator(const Query::Options *options, sequence_t lastSequence, uint64_t purgeCount,
-                              Doc *recording)
+        SQLiteQueryEnumerator(const Query::Options* options, sequence_t lastSequence, uint64_t purgeCount,
+                              Doc* recording)
             : QueryEnumerator(options, lastSequence, purgeCount)
             , Logging(QueryLog)
             , _recording(recording)
@@ -358,7 +358,7 @@ namespace litecore {
     // which is then used as the data source of a SQLiteQueryEnum.
     class SQLiteQueryRunner {
       public:
-        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence,
+        SQLiteQueryRunner(SQLiteQuery* query, const Query::Options* options, sequence_t lastSequence,
                           uint64_t purgeCount)
             : _query(query)
             , _lastSequence(lastSequence)
@@ -371,7 +371,7 @@ namespace litecore {
             if ( options && options->paramBindings.buf ) bindParameters(options->paramBindings);
             if ( !_unboundParameters.empty() ) {
                 stringstream msg;
-                for ( const string &param : _unboundParameters ) msg << " $" << param;
+                for ( const string& param : _unboundParameters ) msg << " $" << param;
                 Warn("Some query parameters were left unbound and will have value `MISSING`:%s", msg.str().c_str());
             }
 
@@ -389,13 +389,13 @@ namespace litecore {
             if ( json[0] == '{' && json[json.size - 1] == '}' ) fleeceData = JSONConverter::convertJSON(json);
             else
                 fleeceData = json;
-            const Dict *root = Value::fromData(fleeceData)->asDict();
+            const Dict* root = Value::fromData(fleeceData)->asDict();
             if ( !root ) error::_throw(error::InvalidParameter);
             for ( Dict::iterator it(root); it; ++it ) {
                 auto key = (string)it.keyString();
                 _unboundParameters.erase(key);
                 auto         sqlKey = string("$_") + key;
-                const Value *val    = it.value();
+                const Value* val    = it.value();
                 try {
                     switch ( val->type() ) {
                         case kNull:
@@ -420,7 +420,7 @@ namespace litecore {
                                 break;
                             }
                     }
-                } catch ( const SQLite::Exception &x ) {
+                } catch ( const SQLite::Exception& x ) {
                     if ( x.getErrorCode() == SQLITE_RANGE )
                         error::_throw(error::InvalidQueryParam, "Unknown query property '%s'", key.c_str());
                     else
@@ -429,7 +429,7 @@ namespace litecore {
             }
         }
 
-        bool encodeColumn(Encoder &enc, int i) {
+        bool encodeColumn(Encoder& enc, int i) {
             SQLite::Column col = _statement->getColumn(i);
             switch ( col.getType() ) {
                 case SQLITE_NULL:
@@ -446,7 +446,7 @@ namespace litecore {
                         if ( i >= _query->_1stCustomResultColumn ) {
                             slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
                             Scope        fleeceScope(fleeceData, _sk);
-                            const Value *value = Value::fromTrustedData(fleeceData);
+                            const Value* value = Value::fromTrustedData(fleeceData);
                             if ( !value )
                                 error::_throw(error::CorruptRevisionData,
                                               "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
@@ -464,7 +464,7 @@ namespace litecore {
 
         // Collects all the (remaining) rows into a Fleece array of arrays,
         // and returns an enumerator impl that will replay them.
-        SQLiteQueryEnumerator *fastForward() {
+        SQLiteQueryEnumerator* fastForward() {
             fleece::Stopwatch st;
             int               nCols    = _statement->getColumnCount();
             uint64_t          rowCount = 0;
@@ -511,18 +511,18 @@ namespace litecore {
         uint64_t                      _purgeCount;    // DB's purgeCount at the time the query ran
         shared_ptr<SQLite::Statement> _statement;
         set<string>                   _unboundParameters;
-        SharedKeys                   *_sk;
+        SharedKeys*                   _sk;
     };
 
     // The factory method that creates a SQLite Query.
-    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language, KeyStore *keyStore) {
+    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language, KeyStore* keyStore) {
         if ( !keyStore ) keyStore = &defaultKeyStore();
         return new SQLiteQuery(*this, selectorExpression, language, asSQLiteKeyStore(keyStore));
     }
 
     // The factory method that creates a SQLite QueryEnumerator, but only if the database has
     // changed since lastSeq.
-    QueryEnumerator *SQLiteQuery::createEnumerator(const Options *options) {
+    QueryEnumerator* SQLiteQuery::createEnumerator(const Options* options) {
         // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
         // consistent with the query results.
         ReadOnlyTransaction t(dataFile());

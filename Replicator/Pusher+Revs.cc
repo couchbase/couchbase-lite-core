@@ -133,7 +133,7 @@ namespace litecore::repl {
             } else if ( root.empty() ) {
                 msg.write("{}"_sl);
             } else {
-                auto &bodyEncoder = msg.jsonBody();
+                auto& bodyEncoder = msg.jsonBody();
                 if ( sendLegacyAttachments )
                     _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
                                                         C4Document::getRevIDGeneration(request->revID));
@@ -165,7 +165,7 @@ namespace litecore::repl {
     }
 
     // "rev" message progress callback:
-    void Pusher::onRevProgress(Retained<RevToSend> rev, const MessageProgress &progress) {
+    void Pusher::onRevProgress(Retained<RevToSend> rev, const MessageProgress& progress) {
         switch ( progress.state ) {
             case MessageProgress::kDisconnected:
                 doneWithRev(rev, false, false);
@@ -241,14 +241,14 @@ namespace litecore::repl {
 
     // If sending a rev that's been obsoleted by a newer one, mark the sequence as complete and send
     // a 410 Gone error. (Common subroutine of sendRevision & shouldRetryConflictWithNewerAncestor.)
-    void Pusher::revToSendIsObsolete(const RevToSend &request, C4Error *c4err) {
+    void Pusher::revToSendIsObsolete(const RevToSend& request, C4Error* c4err) {
         logInfo("Revision '%.*s' #%.*s is obsolete; not sending it", SPLAT(request.docID), SPLAT(request.revID));
         if ( !passive() ) _checkpointer.completedSequence(request.sequence);
         if ( c4err ) *c4err = {WebSocketDomain, 410};  // Gone
     }
 
     // Attempt to delta-compress the revision; returns JSON delta or a null slice.
-    alloc_slice Pusher::createRevisionDelta(C4Document *doc, RevToSend *request, Dict root, size_t revisionSize,
+    alloc_slice Pusher::createRevisionDelta(C4Document* doc, RevToSend* request, Dict root, size_t revisionSize,
                                             bool sendLegacyAttachments) {
         alloc_slice delta;
         if ( !request->deltaOK || revisionSize < tuning::kMinBodySizeForDelta || _options->disableDeltaSupport() )
@@ -313,7 +313,7 @@ namespace litecore::repl {
     // Finished sending a revision (successfully or not.)
     // `completed` - whether to mark the sequence as completed in the checkpointer
     // `synced` - whether the revision was successfully stored on the peer
-    void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
+    void Pusher::doneWithRev(RevToSend* rev, bool completed, bool synced) {
         if ( !passive() ) {
             logDebug("** doneWithRev %.*s #%.*s", SPLAT(rev->docID), SPLAT(rev->revID));  //TEMP
             addProgress({rev->bodySize, 0});
@@ -325,7 +325,7 @@ namespace litecore::repl {
                     logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
                 _lastSequenceLogged = lastSeq;
             }
-            if ( synced ) _db->markRevSynced(const_cast<RevToSend *>(rev));
+            if ( synced ) _db->markRevSynced(const_cast<RevToSend*>(rev));
         }
 
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:

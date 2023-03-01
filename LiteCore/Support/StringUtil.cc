@@ -36,7 +36,7 @@ namespace litecore {
 #endif  // defined(__ANDROID__) || defined(__GLIBC__)
 
 
-    std::string format(const char *fmt, ...) {
+    std::string format(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         std::string result = vformat(fmt, args);
@@ -57,8 +57,8 @@ namespace litecore {
 
 #pragma GCC diagnostic pop
 
-    std::string vformat(const char *fmt, va_list args) {
-        char *cstr = nullptr;
+    std::string vformat(const char* fmt, va_list args) {
+        char* cstr = nullptr;
         if ( vasprintf(&cstr, fmt, args) < 0 ) throw bad_alloc();
         std::string result(cstr);
         free(cstr);
@@ -76,36 +76,36 @@ namespace litecore {
         callback(str.substr(pos));
     }
 
-    stringstream &join(stringstream &s, const std::vector<std::string> &strings, const char *separator) {
+    stringstream& join(stringstream& s, const std::vector<std::string>& strings, const char* separator) {
         int n = 0;
-        for ( const string &str : strings ) {
+        for ( const string& str : strings ) {
             if ( n++ && separator ) s << separator;
             s << str;
         }
         return s;
     }
 
-    std::string join(const std::vector<std::string> &strings, const char *separator) {
+    std::string join(const std::vector<std::string>& strings, const char* separator) {
         stringstream s;
         return join(s, strings, separator).str();
     }
 
-    void chop(std::string &str) noexcept {
+    void chop(std::string& str) noexcept {
         auto sz = str.size();
         if ( sz > 0 ) str.resize(sz - 1);
     }
 
-    void chomp(std::string &str, char ending) noexcept {
+    void chomp(std::string& str, char ending) noexcept {
         auto sz = str.size();
         if ( sz > 0 && str[sz - 1] == ending ) str.resize(sz - 1);
     }
 
-    void replace(std::string &str, char oldChar, char newChar) {
-        for ( char &c : str )
+    void replace(std::string& str, char oldChar, char newChar) {
+        for ( char& c : str )
             if ( c == oldChar ) c = newChar;
     }
 
-    void replace(std::string &str, string_view oldStr, string_view newStr) {
+    void replace(std::string& str, string_view oldStr, string_view newStr) {
         string::size_type pos = 0;
         while ( string::npos != (pos = str.find(oldStr, pos)) ) {
             str.replace(pos, oldStr.size(), newStr);
@@ -127,16 +127,16 @@ namespace litecore {
                && strncasecmp(&str.data()[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
-    int compareIgnoringCase(const std::string &a, const std::string &b) { return strcasecmp(a.c_str(), b.c_str()); }
+    int compareIgnoringCase(const std::string& a, const std::string& b) { return strcasecmp(a.c_str(), b.c_str()); }
 
-    void toLowercase(std::string &str) {
-        for ( char &c : str ) c = (char)tolower(c);
+    void toLowercase(std::string& str) {
+        for ( char& c : str ) c = (char)tolower(c);
     }
 
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c
     bool isValidUTF8(fleece::slice sl) noexcept {
-        auto s = (const uint8_t *)sl.buf;
+        auto s = (const uint8_t*)sl.buf;
         for ( auto e = s + sl.size; s != e; ) {
             while ( !(*s & 0x80) ) {
                 if ( ++s == e ) { return true; }
@@ -165,7 +165,7 @@ namespace litecore {
     }
 
     bool hasNoControlCharacters(fleece::slice sl) noexcept {
-        auto s = (const uint8_t *)sl.buf;
+        auto s = (const uint8_t*)sl.buf;
         for ( auto e = s + sl.size; s != e; ++s ) {
             if ( _usuallyFalse(*s < 32) ) return false;
             else if ( _usuallyFalse(*s == 0xC0 && s + 1 != e && s[1] == 0x80) )  // UTF-8 encoded NUL
@@ -192,7 +192,7 @@ namespace litecore {
     size_t NextUTF8Length(slice str) noexcept {
         if ( str.size == 0 ) { return 0; }
 
-        uint8_t c = *(const uint8_t *)str.buf;
+        uint8_t c = *(const uint8_t*)str.buf;
         if ( _usuallyTrue((c & 0x80) == 0) ) return 1;
 
         if ( _usuallyTrue((c & 0xE0) == 0xC0) ) return _usuallyTrue(str.size > 1) ? 2 : 0;
@@ -222,7 +222,7 @@ namespace litecore {
                    || c == 0x2029 || c == 0x205F || c == 0x3000;
     }
 
-    void UTF16Trim(const char16_t *&chars, size_t &count, int side) noexcept {
+    void UTF16Trim(const char16_t*& chars, size_t& count, int side) noexcept {
         if ( side <= 0 ) {
             while ( count > 0 && UTF16IsSpace(*chars) ) {
                 ++chars;
@@ -246,7 +246,7 @@ namespace litecore {
         auto        size = str.size;
         alloc_slice result(size);
         for ( size_t i = 0; i < size; i++ )
-            (uint8_t &)(result[i])
+            (uint8_t&)(result[i])
                     = (uint8_t)toUppercase ? toupper((char)str[i], locale()) : tolower((char)str[i], locale());
         return result;
     }
@@ -262,31 +262,31 @@ namespace litecore {
 #    include "NumConversion.hh"
 
 namespace std {
-    std::string to_string(const double &n) {
+    std::string to_string(const double& n) {
         std::ostringstream s;
         s << n;
         return s.str();
     }
 
-    std::string to_string(const long long &n) {
+    std::string to_string(const long long& n) {
         std::ostringstream s;
         s << n;
         return s.str();
     }
 
-    std::string to_string(const unsigned long long &n) {
+    std::string to_string(const unsigned long long& n) {
         std::ostringstream s;
         s << n;
         return s.str();
     }
 
-    std::string to_string(const uint16_t &n) {
+    std::string to_string(const uint16_t& n) {
         std::ostringstream s;
         s << n;
         return s.str();
     }
 
-    std::string to_string(const size_t &n) {
+    std::string to_string(const size_t& n) {
         std::ostringstream s;
         s << n;
         return s.str();

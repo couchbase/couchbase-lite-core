@@ -32,15 +32,15 @@ namespace litecore {
         The API is thread-safe. */
     class LogEncoder {
       public:
-        LogEncoder(std::ostream &out, LogLevel level);
+        LogEncoder(std::ostream& out, LogLevel level);
         ~LogEncoder();
 
         enum ObjectRef : unsigned { None = 0 };
 
-        void vlog(const char *domain, const std::map<unsigned, std::string> &, ObjectRef, const char *format,
+        void vlog(const char* domain, const std::map<unsigned, std::string>&, ObjectRef, const char* format,
                   va_list args) __printflike(5, 0);
 
-        void log(const char *domain, const std::map<unsigned, std::string> &, ObjectRef, const char *format, ...)
+        void log(const char* domain, const std::map<unsigned, std::string>&, ObjectRef, const char* format, ...)
                 __printflike(5, 6);
 
         void flush();
@@ -64,14 +64,14 @@ namespace litecore {
       private:
         int64_t _timeElapsed() const;
         void    _writeUVarInt(uint64_t);
-        void    _writeStringToken(const char *token);
+        void    _writeStringToken(const char* token);
         void    _flush();
         void    _scheduleFlush();
         void    performScheduledFlush();
 
         std::mutex                           _mutex;
         fleece::Writer                       _writer;
-        std::ostream                        &_out;
+        std::ostream&                        _out;
         std::unique_ptr<actor::Timer>        _flushTimer;
         fleece::Stopwatch                    _st;
         int64_t                              _lastElapsed{0};

@@ -70,25 +70,25 @@ namespace litecore {
         sequence_t        sequence{0};
 
         // Document entry (when docID != nullslice):
-        sequence_t                               committedSequence{0};
-        alloc_slice                              revID;
-        mutable std::vector<DocChangeNotifier *> documentObservers;
-        uint32_t                                 bodySize;
-        RevisionFlags                            flags;
-        bool                                     idle : 1;
-        bool                                     external : 1;
+        sequence_t                              committedSequence{0};
+        alloc_slice                             revID;
+        mutable std::vector<DocChangeNotifier*> documentObservers;
+        uint32_t                                bodySize;
+        RevisionFlags                           flags;
+        bool                                    idle : 1;
+        bool                                    external : 1;
 
         // Placeholder entry (when docID == nullslice):
-        CollectionChangeNotifier *const databaseObserver{nullptr};
+        CollectionChangeNotifier* const databaseObserver{nullptr};
 
-        Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
+        Entry(const alloc_slice& d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
             : docID(d), revID(r), sequence(s), bodySize(bs), flags(flags), idle(false), external(false) {
             DebugAssert(docID != nullslice);
         }
 
-        explicit Entry(const alloc_slice &d) : Entry(d, nullslice, 0_seq, 0, {}) {}
+        explicit Entry(const alloc_slice& d) : Entry(d, nullslice, 0_seq, 0, {}) {}
 
-        explicit Entry(CollectionChangeNotifier *o NONNULL) : databaseObserver(o) {}  // placeholder
+        explicit Entry(CollectionChangeNotifier* o NONNULL) : databaseObserver(o) {}  // placeholder
 
         bool isPlaceholder() const { return docID.buf == nullptr; }
 
@@ -96,14 +96,14 @@ namespace litecore {
 
         bool isIdle() const { return idle && !isPlaceholder(); }
 
-        Entry(const Entry &)            = delete;
-        Entry &operator=(const Entry &) = delete;
+        Entry(const Entry&)            = delete;
+        Entry& operator=(const Entry&) = delete;
     };
 
     SequenceTracker::SequenceTracker(slice name) : Logging(ChangesLog), _name(name) {}
 
 #if defined(_MSC_VER) && _MSC_VER < 1920
-    SequenceTracker::SequenceTracker(SequenceTracker &&other) noexcept
+    SequenceTracker::SequenceTracker(SequenceTracker&& other) noexcept
         : Logging(ChangesLog)
         , _name(std::move(other._name))
         , _changes(std::move(other._changes))
@@ -116,7 +116,7 @@ namespace litecore {
         , _preTransactionLastSequence(other._preTransactionLastSequence) {}
 #else
     // Another compiler bug that I assume Microsoft is not going to fix in 2017
-    SequenceTracker::SequenceTracker(SequenceTracker &&) noexcept = default;
+    SequenceTracker::SequenceTracker(SequenceTracker&&) noexcept = default;
 #endif
 
 
@@ -148,8 +148,8 @@ namespace litecore {
             // Bump their committedSequences:
             for ( auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry ) {
                 if ( !entry->isPlaceholder() ) {
-                    const_cast<Entry &>(*entry).committedSequence = entry->sequence;
-                    housekeeping                                  = true;
+                    const_cast<Entry&>(*entry).committedSequence = entry->sequence;
+                    housekeeping                                 = true;
                 }
             }
 
@@ -178,7 +178,7 @@ namespace litecore {
         if ( housekeeping ) removeObsoleteEntries();
     }
 
-    void SequenceTracker::documentChanged(const alloc_slice &docID, const alloc_slice &revID, sequence_t sequence,
+    void SequenceTracker::documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence,
                                           uint64_t bodySize, RevisionFlags flags) {
         Assert(inTransaction());
         Assert(docID && revID && sequence > _lastSequence);
@@ -194,13 +194,13 @@ namespace litecore {
         _documentChanged(alloc_slice(docID), {}, 0_seq, 0, {});
     }
 
-    void SequenceTracker::_documentChanged(const alloc_slice &docID, const alloc_slice &revID, sequence_t sequence,
+    void SequenceTracker::_documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence,
                                            uint64_t bodySize, RevisionFlags flags) {
         logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx", SPLAT(docID), SPLAT(revID), sequence,
                  bodySize, flags);
         auto   shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool   listChanged   = true;
-        Entry *entry;
+        Entry* entry;
         auto   i = _byDocID.find(docID);
         if ( i != _byDocID.end() ) {
             // Move existing entry to the end of the list:
@@ -251,7 +251,7 @@ namespace litecore {
         }
     }
 
-    void SequenceTracker::addExternalTransaction(const SequenceTracker &other) {
+    void SequenceTracker::addExternalTransaction(const SequenceTracker& other) {
         Assert(!inTransaction());
         Assert(other.inTransaction());
         if ( !_changes.empty() || _numDocObservers > 0 ) {
@@ -292,7 +292,7 @@ namespace litecore {
 
     slice SequenceTracker::_docIDAt(sequence_t seq) const { return _since(seq)->docID; }
 
-    SequenceTracker::const_iterator SequenceTracker::addPlaceholderAfter(CollectionChangeNotifier *obs,
+    SequenceTracker::const_iterator SequenceTracker::addPlaceholderAfter(CollectionChangeNotifier* obs,
                                                                          sequence_t                seq) {
         Assert(obs);
         ++_numPlaceholders;
@@ -313,7 +313,7 @@ namespace litecore {
     }
 
     size_t SequenceTracker::readChanges(const_iterator placeholder, Change changes[], size_t maxChanges,
-                                        bool &external) {
+                                        bool& external) {
         external = false;
         size_t n = 0;
         auto   i = next(placeholder);
@@ -340,7 +340,7 @@ namespace litecore {
         // Any changes before the first placeholder aren't going to be seen, so remove them:
         size_t nRemoved = 0;
         while ( _changes.size() > kMinChangesToKeep + _numPlaceholders && !_changes.front().isPlaceholder() ) {
-            auto &entry = _changes.front();
+            auto& entry = _changes.front();
             if ( entry.documentObservers.empty() ) {
                 // Remove entry entirely if it has no observers
                 _byDocID.erase(entry.docID);
@@ -356,7 +356,7 @@ namespace litecore {
                    _idle.size(), _byDocID.size());
     }
 
-    SequenceTracker::const_iterator SequenceTracker::addDocChangeNotifier(slice docID, DocChangeNotifier *notifier) {
+    SequenceTracker::const_iterator SequenceTracker::addDocChangeNotifier(slice docID, DocChangeNotifier* notifier) {
         Assert(docID);
         iterator entry;
         // Find the entry for the document:
@@ -374,8 +374,8 @@ namespace litecore {
         return entry;
     }
 
-    void SequenceTracker::removeDocChangeNotifier(const_iterator entry, DocChangeNotifier *notifier) {
-        auto &observers = entry->documentObservers;
+    void SequenceTracker::removeDocChangeNotifier(const_iterator entry, DocChangeNotifier* notifier) {
+        auto& observers = entry->documentObservers;
         auto  i         = find(observers.begin(), observers.end(), notifier);
         Assert(i != observers.end(), "unknown DocChangeNotifier");
         observers.erase(i);
@@ -418,7 +418,7 @@ namespace litecore {
 
 #pragma mark - DOC CHANGE NOTIFIER:
 
-    DocChangeNotifier::DocChangeNotifier(SequenceTracker *t, slice docID, Callback cb)
+    DocChangeNotifier::DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb)
         : tracker(t), _docEntry(tracker->addDocChangeNotifier(docID, this)), callback(move(cb)) {
         t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
@@ -434,13 +434,13 @@ namespace litecore {
 
     sequence_t DocChangeNotifier::sequence() const { return _docEntry->sequence; }
 
-    void DocChangeNotifier::notify(const SequenceTracker::Entry *entry) noexcept {
+    void DocChangeNotifier::notify(const SequenceTracker::Entry* entry) noexcept {
         if ( callback ) callback(*this, entry->docID, entry->sequence);
     }
 
 #pragma mark - DATABASE CHANGE NOTIFIER:
 
-    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker *t, Callback cb, sequence_t afterSeq)
+    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker* t, Callback cb, sequence_t afterSeq)
         : Logging(ChangesLog)
         , tracker(t)
         , callback(move(cb))
@@ -461,7 +461,7 @@ namespace litecore {
         }
     }
 
-    size_t CollectionChangeNotifier::readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool &external) {
+    size_t CollectionChangeNotifier::readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool& external) {
         size_t n = tracker->readChanges(_placeholder, changes, maxChanges, external);
         logInfo("readChanges(%zu) -> %zu changes", maxChanges, n);
         return n;

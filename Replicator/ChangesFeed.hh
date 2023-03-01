@@ -45,10 +45,10 @@ namespace litecore::repl {
             virtual void dbHasNewChanges() = 0;
             /** Called if `getMoreChanges` encounters an error reading a document while deciding
                 whether to include it.*/
-            virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) = 0;
+            virtual void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) = 0;
         };
 
-        ChangesFeed(Delegate &, const Options *NONNULL, DBAccess &db, Checkpointer *);
+        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess& db, Checkpointer*);
         ~ChangesFeed();
 
         // Setup:
@@ -84,26 +84,26 @@ namespace litecore::repl {
         bool caughtUp() const { return _caughtUp; }
 
         /** Returns true if the given rev matches the push filters. */
-        virtual bool shouldPushRev(RevToSend *NONNULL) const MUST_USE_RESULT;
+        virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
 
       protected:
         std::string  loggingClassName() const override;
-        virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
+        virtual bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const;
 
       private:
-        void                getHistoricalChanges(Changes &, unsigned limit);
-        void                getObservedChanges(Changes &, unsigned limit);
+        void                getHistoricalChanges(Changes&, unsigned limit);
+        void                getObservedChanges(Changes&, unsigned limit);
         void                _dbChanged();
-        Retained<RevToSend> makeRevToSend(C4DocumentInfo &, C4DocEnumerator *);
-        bool                shouldPushRev(RevToSend *, C4DocEnumerator *) const;
+        Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*);
+        bool                shouldPushRev(RevToSend*, C4DocEnumerator*) const;
 
       protected:
-        Delegate              &_delegate;
+        Delegate&              _delegate;
         RetainedConst<Options> _options;
-        DBAccess              &_db;
+        DBAccess&              _db;
         bool                   _getForeignAncestors{false};  // True in propose-changes mode
       private:
-        Checkpointer                       *_checkpointer;
+        Checkpointer*                       _checkpointer;
         DocIDSet                            _docIDs;                   // Doc IDs to filter to, or null
         std::unique_ptr<C4DatabaseObserver> _changeObserver;           // Used in continuous push mode
         C4SequenceNumber                    _maxSequence{0};           // Latest sequence I've read
@@ -119,14 +119,14 @@ namespace litecore::repl {
 
     class ReplicatorChangesFeed final : public ChangesFeed {
       public:
-        ReplicatorChangesFeed(Delegate &delegate, const Options *options, DBAccess &db, Checkpointer *cp);
+        ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* cp);
 
         void setFindForeignAncestors(bool use) { _getForeignAncestors = use; }
 
         virtual Changes getMoreChanges(unsigned limit) override MUST_USE_RESULT;
 
       protected:
-        bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const override;
+        bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const override;
 
       private:
         const bool _usingVersionVectors;

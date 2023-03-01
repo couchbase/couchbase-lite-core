@@ -21,7 +21,7 @@ class BlobStoreTest : public C4Test {
   public:
     BlobStoreTest(int option) : C4Test(option), encrypted(isEncrypted()), store(c4db_getBlobStore(db, nullptr)) {}
 
-    C4BlobStore *store{nullptr};
+    C4BlobStore* store{nullptr};
     const bool   encrypted;
 
     C4BlobKey bogusKey;
@@ -31,7 +31,7 @@ TEST_CASE("parse blob keys", "[blob][C]") {
     C4BlobKey key1;
     memset(key1.bytes, 0x55, sizeof(key1.bytes));
     alloc_slice str = c4blob_keyToString(key1);
-    CHECK(string((char *)str.buf, str.size) == "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=");
+    CHECK(string((char*)str.buf, str.size) == "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=");
 
     C4BlobKey key2;
     CHECK(c4blob_keyFromString(C4Slice{str.buf, str.size}, &key2));
@@ -74,7 +74,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, WITH_ERROR(&error)));
 
     alloc_slice str = c4blob_keyToString(key);
-    CHECK(string((char *)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
+    CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
     CHECK(memcmp(c4blob_computeKey(blobToStore).bytes, key.bytes, 20) == 0);
 
     // Read it back and compare
@@ -97,7 +97,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     } else {
         alloc_slice p = c4blob_getFilePath(store, key, &error);
         REQUIRE(p);
-        string path((char *)p.buf, p.size);
+        string path((char*)p.buf, p.size);
         string filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";
         CHECK(path.find(filename) == path.size() - filename.size());
     }
@@ -117,7 +117,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "delete blobs", "[blob][Encryption][C]") {
     REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, WITH_ERROR(&error)));
 
     alloc_slice str = c4blob_keyToString(key);
-    CHECK(string((char *)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
+    CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
 
     // Delete it
     REQUIRE(c4blob_delete(store, key, WITH_ERROR(&error)));
@@ -206,7 +206,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][Encryptio
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encryption][C]") {
     // Write the blob:
     C4Error        error;
-    C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
+    C4WriteStream* stream = c4blob_openWriteStream(store, ERROR_INFO(error));
     REQUIRE(stream);
     CHECK(c4stream_bytesWritten(stream) == 0);
 
@@ -227,7 +227,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     c4stream_closeWriter(nullptr);
 
     C4SliceResult keyStr = c4blob_keyToString(key);
-    CHECK(string((char *)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
+    CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
     c4slice_free(keyStr);
 
     // Read it back using the key:
@@ -236,7 +236,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     c4slice_free(contents);
 
     // Read it back random-access:
-    C4ReadStream *reader = c4blob_openReadStream(store, key, ERROR_INFO(error));
+    C4ReadStream* reader = c4blob_openReadStream(store, key, ERROR_INFO(error));
     REQUIRE(reader);
     static const int increment = 3 * 3 * 3 * 3;
     int              line      = increment;
@@ -263,10 +263,10 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][Encry
         INFO("Testing " << size << "-byte blob");
         // Write the blob:
         C4Error        error;
-        C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
+        C4WriteStream* stream = c4blob_openWriteStream(store, ERROR_INFO(error));
         REQUIRE(stream);
 
-        const char *chars = "ABCDEFGHIJKLMNOPQRSTUVWXY";
+        const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXY";
         for ( int i = 0; i < size; i++ ) {
             int c = i % strlen(chars);
             REQUIRE(c4stream_write(stream, &chars[c], 1, WITH_ERROR(&error)));
@@ -280,7 +280,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][Encry
         // Read it back using the key:
         C4SliceResult contents = c4blob_getContents(store, key, ERROR_INFO(error));
         CHECK(contents.size == size);
-        for ( int i = 0; i < size; i++ ) CHECK(((const char *)contents.buf)[i] == chars[i % strlen(chars)]);
+        for ( int i = 0; i < size; i++ ) CHECK(((const char*)contents.buf)[i] == chars[i % strlen(chars)]);
         c4slice_free(contents);
     }
 }
@@ -288,10 +288,10 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][Encry
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][Encryption][C]") {
     // Write the blob:
     C4Error        error;
-    C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
+    C4WriteStream* stream = c4blob_openWriteStream(store, ERROR_INFO(error));
     REQUIRE(stream);
 
-    const char *buf = "This is line oops\n";
+    const char* buf = "This is line oops\n";
     CHECK(c4stream_write(stream, buf, strlen(buf), WITH_ERROR(&error)));
 
     c4stream_closeWriter(stream);
@@ -310,9 +310,9 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
 
     C4Error        error;
     const int      streamCount = 2;
-    C4WriteStream *streams[streamCount];
+    C4WriteStream* streams[streamCount];
     for ( int iter = 0; iter < streamCount; iter++ ) {
-        C4WriteStream *stream = c4blob_openWriteStream(store, ERROR_INFO(error));
+        C4WriteStream* stream = c4blob_openWriteStream(store, ERROR_INFO(error));
         REQUIRE(stream);
         CHECK(c4stream_bytesWritten(stream) == 0);
         streams[iter]            = stream;
@@ -329,7 +329,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
         if ( iter > 0 ) {
             alloc_slice path = c4blob_getFilePath(store, key, ERROR_INFO(error));
             REQUIRE(path.buf != nullptr);
-            auto pathStr = string((char *)path.buf, path.size);
+            auto pathStr = string((char*)path.buf, path.size);
 
             // Simulate the file being in use
             ifstream fin(pathStr);
@@ -339,7 +339,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
         }
 
         C4SliceResult keyStr = c4blob_keyToString(key);
-        CHECK(string((char *)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
+        CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
         c4slice_free(keyStr);
 
         // Read it back using the key:
@@ -348,5 +348,5 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
         c4slice_free(contents);
     }
 
-    for ( auto &stream : streams ) { c4stream_closeWriter(stream); }
+    for ( auto& stream : streams ) { c4stream_closeWriter(stream); }
 }

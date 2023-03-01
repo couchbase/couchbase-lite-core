@@ -64,7 +64,7 @@
  *   
  * @stable ICU 2.0
  */
-U_STABLE const char *U_EXPORT2 u_getDataDirectory(void);
+U_STABLE const char* U_EXPORT2 u_getDataDirectory(void);
 
 
 /** 
@@ -86,7 +86,7 @@ U_STABLE const char *U_EXPORT2 u_getDataDirectory(void);
  * @see u_init
  * @stable ICU 2.0
  */
-U_STABLE void U_EXPORT2 u_setDataDirectory(const char *directory);
+U_STABLE void U_EXPORT2 u_setDataDirectory(const char* directory);
 
 #ifndef U_HIDE_INTERNAL_API
 /**
@@ -97,7 +97,7 @@ U_STABLE void U_EXPORT2 u_setDataDirectory(const char *directory);
   * @return the time zone data override directory.
   * @internal
   */
-U_INTERNAL const char *U_EXPORT2 u_getTimeZoneFilesDirectory(UErrorCode *status);
+U_INTERNAL const char* U_EXPORT2 u_getTimeZoneFilesDirectory(UErrorCode* status);
 
 /**
   * Set the time zone files override directory.
@@ -107,7 +107,7 @@ U_INTERNAL const char *U_EXPORT2 u_getTimeZoneFilesDirectory(UErrorCode *status)
   *   will access the time zone data.
   * @internal
   */
-U_INTERNAL void U_EXPORT2 u_setTimeZoneFilesDirectory(const char *path, UErrorCode *status);
+U_INTERNAL void U_EXPORT2 u_setTimeZoneFilesDirectory(const char* path, UErrorCode* status);
 #endif /* U_HIDE_INTERNAL_API */
 
 
@@ -153,7 +153,7 @@ U_INTERNAL void U_EXPORT2 u_setTimeZoneFilesDirectory(const char *path, UErrorCo
  * @see U_CHARSET_FAMILY
  * @stable ICU 2.0
  */
-U_STABLE void U_EXPORT2 u_charsToUChars(const char *cs, UChar *us, int32_t length);
+U_STABLE void U_EXPORT2 u_charsToUChars(const char* cs, UChar* us, int32_t length);
 
 /**
  * Convert UChar characters to char characters.
@@ -174,6 +174,6 @@ U_STABLE void U_EXPORT2 u_charsToUChars(const char *cs, UChar *us, int32_t lengt
  * @see U_CHARSET_FAMILY
  * @stable ICU 2.0
  */
-U_STABLE void U_EXPORT2 u_UCharsToChars(const UChar *us, char *cs, int32_t length);
+U_STABLE void U_EXPORT2 u_UCharsToChars(const UChar* us, char* cs, int32_t length);
 
 #endif

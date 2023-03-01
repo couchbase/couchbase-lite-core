@@ -29,24 +29,24 @@ namespace litecore { namespace repl {
 
     // Operations on C4Progress objects:
 
-    static inline bool operator==(const C4Progress &p1, const C4Progress &p2) {
+    static inline bool operator==(const C4Progress& p1, const C4Progress& p2) {
         return p1.unitsCompleted == p2.unitsCompleted && p1.unitsTotal == p2.unitsTotal
                && p1.documentCount == p2.documentCount;
     }
 
-    static inline bool operator!=(const C4Progress &p1, const C4Progress &p2) { return !(p1 == p2); }
+    static inline bool operator!=(const C4Progress& p1, const C4Progress& p2) { return !(p1 == p2); }
 
-    static inline C4Progress operator+(const C4Progress &p1, const C4Progress &p2) {
+    static inline C4Progress operator+(const C4Progress& p1, const C4Progress& p2) {
         return C4Progress{p1.unitsCompleted + p2.unitsCompleted, p1.unitsTotal + p2.unitsTotal,
                           p1.documentCount + p2.documentCount};
     }
 
-    static inline C4Progress operator-(const C4Progress &p1, const C4Progress &p2) {
+    static inline C4Progress operator-(const C4Progress& p1, const C4Progress& p2) {
         return C4Progress{p1.unitsCompleted - p2.unitsCompleted, p1.unitsTotal - p2.unitsTotal,
                           p1.documentCount - p2.documentCount};
     }
 
-    static inline C4Progress &operator+=(C4Progress &p1, const C4Progress &p2) {
+    static inline C4Progress& operator+=(C4Progress& p1, const C4Progress& p2) {
         p1 = p1 + p2;
         return p1;
     }
@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
         bool                                      deltaOK{false};            // Can send a delta
         int8_t                                    retryCount{0};  // Number of times this revision has been retried
 
-        RevToSend(const C4DocumentInfo &info, C4CollectionSpec, void *);
+        RevToSend(const C4DocumentInfo& info, C4CollectionSpec, void*);
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
@@ -74,7 +74,7 @@ namespace litecore { namespace repl {
 
         void trim() override;
 
-        alloc_slice historyString(C4Document *);
+        alloc_slice historyString(C4Document*);
 
       protected:
         ~RevToSend() = default;
@@ -93,11 +93,11 @@ namespace litecore { namespace repl {
         alloc_slice           deltaSrc;
         alloc_slice           deltaSrcRevID;  // Source revision if body is a delta
 
-        RevToInsert(IncomingRev *owner, slice docID, slice revID, slice historyBuf, bool deleted, bool noConflicts,
-                    C4CollectionSpec, void *);
+        RevToInsert(IncomingRev* owner, slice docID, slice revID, slice historyBuf, bool deleted, bool noConflicts,
+                    C4CollectionSpec, void*);
 
         /// Constructor for a revoked document
-        RevToInsert(slice docID, slice revID, RevocationMode, C4CollectionSpec, void *);
+        RevToInsert(slice docID, slice revID, RevocationMode, C4CollectionSpec, void*);
 
         Dir dir() const override { return Dir::kPulling; }
 

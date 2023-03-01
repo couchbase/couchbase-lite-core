@@ -47,10 +47,10 @@ namespace litecore::crypto {
     /*
      * Like memcmp, but case-insensitive and always returns -1 if different
      */
-    static int x509_memcasecmp(const void *s1, const void *s2, size_t len) {
+    static int x509_memcasecmp(const void* s1, const void* s2, size_t len) {
         size_t        i;
         unsigned char diff;
-        auto         *n1 = (const unsigned char *)s1, *n2 = (const unsigned char *)s2;
+        auto *        n1 = (const unsigned char*)s1, *n2 = (const unsigned char*)s2;
 
         for ( i = 0; i < len; i++ ) {
             diff = n1[i] ^ n2[i];
@@ -71,7 +71,7 @@ namespace litecore::crypto {
      *
      * Return 0 if equal, -1 otherwise.
      */
-    static int x509_string_cmp(const mbedtls_x509_buf *a, const mbedtls_x509_buf *b) {
+    static int x509_string_cmp(const mbedtls_x509_buf* a, const mbedtls_x509_buf* b) {
         if ( a->tag == b->tag && a->len == b->len && memcmp(a->p, b->p, b->len) == 0 ) { return (0); }
 
         if ( (a->tag == MBEDTLS_ASN1_UTF8_STRING || a->tag == MBEDTLS_ASN1_PRINTABLE_STRING)
@@ -93,7 +93,7 @@ namespace litecore::crypto {
      *
      * Return 0 if equal, -1 otherwise.
      */
-    int x509_name_cmp(const mbedtls_x509_name *a, const mbedtls_x509_name *b) {
+    int x509_name_cmp(const mbedtls_x509_name* a, const mbedtls_x509_name* b) {
         /* Avoid recursion, it might not be optimised by the compiler */
         while ( a != NULL || b != NULL ) {
             if ( a == NULL || b == NULL ) return (-1);
@@ -120,12 +120,12 @@ namespace litecore::crypto {
     /*
      * Check the signature of a certificate by its parent
      */
-    int x509_crt_check_signature(const mbedtls_x509_crt *child, mbedtls_x509_crt *parent,
-                                 mbedtls_x509_crt_restart_ctx *rs_ctx) {
+    int x509_crt_check_signature(const mbedtls_x509_crt* child, mbedtls_x509_crt* parent,
+                                 mbedtls_x509_crt_restart_ctx* rs_ctx) {
         unsigned char hash[MBEDTLS_MD_MAX_SIZE];
         size_t        hash_len;
 #if !defined(MBEDTLS_USE_PSA_CRYPTO)
-        const mbedtls_md_info_t *md_info;
+        const mbedtls_md_info_t* md_info;
         md_info  = mbedtls_md_info_from_type(child->sig_md);
         hash_len = mbedtls_md_get_size(md_info);
 

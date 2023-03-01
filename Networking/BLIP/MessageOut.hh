@@ -26,10 +26,10 @@ namespace litecore { namespace blip {
         friend class Connection;
         friend class BLIPIO;
 
-        MessageOut(Connection *connection, FrameFlags flags, alloc_slice payload, MessageDataSource &&dataSource,
+        MessageOut(Connection* connection, FrameFlags flags, alloc_slice payload, MessageDataSource&& dataSource,
                    MessageNo number);
 
-        MessageOut(Connection *connection, MessageBuilder &builder, MessageNo number)
+        MessageOut(Connection* connection, MessageBuilder& builder, MessageNo number)
             : MessageOut(connection, (FrameFlags)0, builder.finish(), std::move(builder.dataSource), number) {
             _flags      = builder.flags();  // finish() may update the flags, so set them after
             _onProgress = std::move(builder.onProgress);
@@ -37,18 +37,18 @@ namespace litecore { namespace blip {
 
         void dontCompress() { _flags = (FrameFlags)(_flags & ~kCompressed); }
 
-        void nextFrameToSend(Codec &codec, fleece::slice_ostream &dst, FrameFlags &outFlags);
+        void nextFrameToSend(Codec& codec, fleece::slice_ostream& dst, FrameFlags& outFlags);
         void receivedAck(uint32_t byteCount);
 
         bool needsAck() { return _unackedBytes >= kMaxUnackedBytes; }
 
-        MessageIn *createResponse();
+        MessageIn* createResponse();
         void       disconnected();
 
         // for debugging/logging:
         std::string description();
-        void        dump(std::ostream &out, bool withBody);
-        const char *findProperty(const char *propertyName);
+        void        dump(std::ostream& out, bool withBody);
+        const char* findProperty(const char* propertyName);
 
       private:
         using slice_istream = fleece::slice_istream;
@@ -61,7 +61,7 @@ namespace litecore { namespace blip {
         class Contents {
           public:
             Contents(alloc_slice payload, MessageDataSource dataSource);
-            slice_istream          &dataToSend();
+            slice_istream&          dataToSend();
             bool                    hasMoreDataToSend() const;
             std::pair<slice, slice> getPropsAndBody() const;
 
@@ -77,7 +77,7 @@ namespace litecore { namespace blip {
             slice_istream     _unsentDataBuffer;  // Unsent subrange of _dataBuffer
         };
 
-        Connection *const _connection;                // My BLIP connection
+        Connection* const _connection;                // My BLIP connection
         Contents          _contents;                  // Message data
         uint32_t          _uncompressedBytesSent{0};  // Number of bytes of the data sent so far
         uint32_t          _bytesSent{0};              // Number of bytes transmitted (after compression)

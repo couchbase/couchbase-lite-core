@@ -68,13 +68,13 @@ class ReplicatorAPITest : public C4Test {
         C4Address address{kDefaultAddress};
         // Environment variables can also override the default address above:
         if ( getenv("REMOTE_TLS") || getenv("REMOTE_SSL") ) address.scheme = kC4Replicator2TLSScheme;
-        const char *hostname = getenv("REMOTE_HOST");
+        const char* hostname = getenv("REMOTE_HOST");
         if ( hostname ) address.hostname = c4str(hostname);
-        const char *portStr = getenv("REMOTE_PORT");
+        const char* portStr = getenv("REMOTE_PORT");
         if ( portStr ) address.port = (uint16_t)strtol(portStr, nullptr, 10);
-        const char *remoteDB = getenv("REMOTE_DB");
+        const char* remoteDB = getenv("REMOTE_DB");
         if ( remoteDB ) _sg.remoteDBName = c4str(remoteDB);
-        const char *proxyURL = getenv("REMOTE_PROXY");
+        const char* proxyURL = getenv("REMOTE_PROXY");
         if ( proxyURL ) { _sg.proxy = std::make_shared<ProxySpec>(Address(slice(proxyURL))); }
 
         _sg.address = address;
@@ -165,14 +165,14 @@ class ReplicatorAPITest : public C4Test {
         }
     }
 
-    void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
+    void stateChanged(C4Replicator* r, C4ReplicatorStatus s) {
         std::unique_lock<std::mutex> lock(_mutex);
 
         logState(s);
         if ( r != _repl ) {
             WARN("Stray stateChange received, check C4Log for details!");
             C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)", r,
-                   (C4Replicator *)_repl);
+                   (C4Replicator*)_repl);
             return;
         }
 
@@ -226,13 +226,13 @@ class ReplicatorAPITest : public C4Test {
         _stateChangedCondition.notify_all();
     }
 
-    static void onStateChanged(C4Replicator *replicator, C4ReplicatorStatus status, void *context) {
-        ((ReplicatorAPITest *)context)->stateChanged(replicator, status);
+    static void onStateChanged(C4Replicator* replicator, C4ReplicatorStatus status, void* context) {
+        ((ReplicatorAPITest*)context)->stateChanged(replicator, status);
     }
 
-    static void onDocsEnded(C4Replicator *repl, bool pushing, size_t nDocs, const C4DocumentEnded *docs[],
-                            void *context) {
-        auto                         test = (ReplicatorAPITest *)context;
+    static void onDocsEnded(C4Replicator* repl, bool pushing, size_t nDocs, const C4DocumentEnded* docs[],
+                            void* context) {
+        auto                         test = (ReplicatorAPITest*)context;
         std::unique_lock<std::mutex> lock(test->_mutex);
 
         char message[256];
@@ -256,20 +256,20 @@ class ReplicatorAPITest : public C4Test {
     }
 
     using PushPull       = std::pair<C4ReplicatorMode, C4ReplicatorMode>;
-    using C4ParamsSetter = std::function<void(C4ReplicatorParameters &)>;
+    using C4ParamsSetter = std::function<void(C4ReplicatorParameters&)>;
 
-    bool startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error *err) {
+    bool startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error* err) {
         if ( !_prepareReplicator(varParams, err) ) { return false; }
         c4repl_start(_repl, false);
         return true;
     }
 
-    bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
+    bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error* err) {
         std::variant<PushPull, C4ParamsSetter> varParams = std::make_pair(push, pull);
         return startReplicator(varParams, err);
     }
 
-    bool _prepareReplicator(const std::variant<PushPull, C4ParamsSetter> &varParams, C4Error *err) {
+    bool _prepareReplicator(const std::variant<PushPull, C4ParamsSetter>& varParams, C4Error* err) {
         std::scoped_lock<std::mutex> lock(_mutex);
 
         _callbackStatus = {};
@@ -335,13 +335,13 @@ class ReplicatorAPITest : public C4Test {
         _waitForStatus(lock, level, timeout);
     }
 
-    void _waitForStatus(std::unique_lock<std::mutex> &lock, C4ReplicatorActivityLevel level,
+    void _waitForStatus(std::unique_lock<std::mutex>& lock, C4ReplicatorActivityLevel level,
                         std::chrono::milliseconds timeout = kDefaultWaitTimeout) {
         _stateChangedCondition.wait_for(lock, timeout, [&] { return _numCallbacksWithLevel[level] > 0; });
         if ( _numCallbacksWithLevel[level] == 0 ) FAIL("Timed out waiting for a status callback of level " << level);
     }
 
-    void replicate(ReplParams &params, bool expectSuccess = true) { replicate(params.paramSetter(), expectSuccess); }
+    void replicate(ReplParams& params, bool expectSuccess = true) { replicate(params.paramSetter(), expectSuccess); }
 
     void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess = true) {
         if ( !startReplicator(params, &_errorBeforeStart) ) {
@@ -392,20 +392,20 @@ class ReplicatorAPITest : public C4Test {
 
     static std::vector<std::string> asVector(const std::set<std::string> strings) {
         std::vector<std::string> out;
-        for ( const std::string &s : strings ) out.push_back(s);
+        for ( const std::string& s : strings ) out.push_back(s);
         return out;
     }
 
-    c4::ref<C4Database>                          db2;
-    AllocedDict                                  _options;
-    bool                                         _enableDocProgressNotifications{false};
-    C4ReplicatorValidationFunction               _pushFilter{nullptr};
-    C4ReplicatorValidationFunction               _pullFilter{nullptr};
-    C4ReplicatorDocumentsEndedCallback           _onDocsEnded{nullptr};
-    std::function<void(const C4DocumentEnded *)> _conflictHandler{nullptr};
-    C4SocketFactory                             *_socketFactory{nullptr};
-    bool                                         _flushedScratch{false};
-    c4::ref<C4Replicator>                        _repl;
+    c4::ref<C4Database>                         db2;
+    AllocedDict                                 _options;
+    bool                                        _enableDocProgressNotifications{false};
+    C4ReplicatorValidationFunction              _pushFilter{nullptr};
+    C4ReplicatorValidationFunction              _pullFilter{nullptr};
+    C4ReplicatorDocumentsEndedCallback          _onDocsEnded{nullptr};
+    std::function<void(const C4DocumentEnded*)> _conflictHandler{nullptr};
+    C4SocketFactory*                            _socketFactory{nullptr};
+    bool                                        _flushedScratch{false};
+    c4::ref<C4Replicator>                       _repl;
 
     std::mutex              _mutex;
     std::condition_variable _stateChangedCondition;

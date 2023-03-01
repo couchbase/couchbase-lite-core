@@ -11,7 +11,7 @@
 #include "Error.hh"
 #include "HTTPLogic.hh"
 
-std::unique_ptr<REST::Response> SG::createRequest(const std::string &method, C4CollectionSpec collectionSpec,
+std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4CollectionSpec collectionSpec,
                                                   std::string path, slice body, bool admin, double timeout,
                                                   bool logRequests) const {
     auto port = uint16_t(address.port + admin);
@@ -56,8 +56,8 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string &method, C4C
     return r;
 }
 
-alloc_slice SG::runRequest(const std::string &method, C4CollectionSpec collectionSpec, const std::string &path,
-                           slice body, bool admin, C4Error *outError, HTTPStatus *outStatus, double timeout,
+alloc_slice SG::runRequest(const std::string& method, C4CollectionSpec collectionSpec, const std::string& path,
+                           slice body, bool admin, C4Error* outError, HTTPStatus* outStatus, double timeout,
                            bool logRequests) const {
     auto r = createRequest(method, collectionSpec, path, body, admin, timeout, logRequests);
     if ( r->run() ) {
@@ -77,19 +77,19 @@ alloc_slice SG::runRequest(const std::string &method, C4CollectionSpec collectio
     }
 }
 
-alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::string> &channelIDs) {
+alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::string>& channelIDs) {
     MutableDict dict{FLMutableDict_NewFromJSON(json, nullptr)};
     if ( !dict ) {
         C4Log("ERROR: MutableDict is null, likely your JSON is bad.");
         return nullslice;
     }
     MutableArray arr = MutableArray::newArray();
-    for ( const auto &chID : channelIDs ) { arr.append(chID); }
+    for ( const auto& chID : channelIDs ) { arr.append(chID); }
     dict.set(ckey, arr);
     return dict.toJSON();
 }
 
-alloc_slice SG::addRevToJSON(slice json, const string &revID) {
+alloc_slice SG::addRevToJSON(slice json, const string& revID) {
     MutableDict dict{FLMutableDict_NewFromJSON(json, nullptr)};
     if ( !dict ) {
         C4Log("ERROR: MutableDict is null, likely your JSON is bad.");
@@ -99,7 +99,7 @@ alloc_slice SG::addRevToJSON(slice json, const string &revID) {
     return dict.toJSON();
 }
 
-bool SG::createUser(const std::string &username, const std::string &password) const {
+bool SG::createUser(const std::string& username, const std::string& password) const {
     std::string body = R"({"name":")" + username + R"(","password":")" + password + "\"}";
     HTTPStatus  status;
     // Delete the user incase they already exist
@@ -108,16 +108,16 @@ bool SG::createUser(const std::string &username, const std::string &password) co
     return status == HTTPStatus::Created;
 }
 
-bool SG::deleteUser(const string &username) const {
+bool SG::deleteUser(const string& username) const {
     HTTPStatus status;
     runRequest("DELETE", {}, "_user/"s + username, nullslice, true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
-bool SG::assignUserChannel(const std::string &username, const std::vector<C4CollectionSpec> &collectionSpecs,
-                           const std::vector<std::string> &channelIDs) const {
+bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs,
+                           const std::vector<std::string>& channelIDs) const {
     std::multimap<slice, slice> specsMap;
-    for ( const auto &spec : collectionSpecs ) { specsMap.insert({spec.scope, spec.name}); }
+    for ( const auto& spec : collectionSpecs ) { specsMap.insert({spec.scope, spec.name}); }
 
     Encoder enc;
     enc.beginDict();
@@ -136,7 +136,7 @@ bool SG::assignUserChannel(const std::string &username, const std::vector<C4Coll
                 enc.writeKey("admin_channels"_sl);
                 {
                     enc.beginArray();
-                    for ( const auto &chID : channelIDs ) { enc.writeString(chID); }
+                    for ( const auto& chID : channelIDs ) { enc.writeString(chID); }
                     enc.endArray();
                 }
                 enc.endDict();  // collection
@@ -154,8 +154,8 @@ bool SG::assignUserChannel(const std::string &username, const std::vector<C4Coll
     return status == HTTPStatus::OK;
 }
 
-bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string &docID, slice body,
-                   const std::vector<std::string> &channelIDs, C4Error *err) const {
+bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
+                   const std::vector<std::string>& channelIDs, C4Error* err) const {
     // Only add the "channels" field if channelIDs is not empty
     alloc_slice bodyWithChannel;
     if ( !channelIDs.empty() ) {
@@ -170,13 +170,13 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string &docID, sl
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
-bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string &docID, const string &revID, slice body,
-                   const std::vector<std::string> &channelIDs, C4Error *err) const {
+bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string& docID, const string& revID, slice body,
+                   const std::vector<std::string>& channelIDs, C4Error* err) const {
     return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
 }
 
-bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string &docID, slice body,
-                                    C4Error *err) const {
+bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string& docID, slice body,
+                                    C4Error* err) const {
     alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, {});
     if ( !bodyWithChannel ) {  // body had invalid JSON
         return false;
@@ -203,15 +203,15 @@ bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, d
     return status == HTTPStatus::Created;
 }
 
-alloc_slice SG::getDoc(const std::string &docID, C4CollectionSpec collectionSpec) const {
+alloc_slice SG::getDoc(const std::string& docID, C4CollectionSpec collectionSpec) const {
     HTTPStatus status;
     auto       result = runRequest("GET", collectionSpec, docID, nullslice, false, nullptr, &status);
     Assert(status == HTTPStatus::OK);
     return result;
 }
 
-alloc_slice SG::sendRemoteRequest(const std::string &method, C4CollectionSpec collectionSpec, std::string path,
-                                  HTTPStatus *outStatus, C4Error *outError, slice body, bool admin, bool logRequests) {
+alloc_slice SG::sendRemoteRequest(const std::string& method, C4CollectionSpec collectionSpec, std::string path,
+                                  HTTPStatus* outStatus, C4Error* outError, slice body, bool admin, bool logRequests) {
     if ( method != "GET" ) Assert(slice(remoteDBName).hasPrefix("scratch"_sl));
 
     auto r = createRequest(method, collectionSpec, std::move(path), body, admin, logRequests);
@@ -228,7 +228,7 @@ alloc_slice SG::sendRemoteRequest(const std::string &method, C4CollectionSpec co
     }
 }
 
-alloc_slice SG::sendRemoteRequest(const std::string &method, C4CollectionSpec collectionSpec, std::string path,
+alloc_slice SG::sendRemoteRequest(const std::string& method, C4CollectionSpec collectionSpec, std::string path,
                                   slice body, bool admin, HTTPStatus expectedStatus, bool logRequests) {
     if ( method == "PUT" && expectedStatus == HTTPStatus::OK ) expectedStatus = HTTPStatus::Created;
     HTTPStatus  status;

@@ -187,7 +187,7 @@
 #    ifdef __cplusplus
 #        define NULL 0
 #    else
-#        define NULL ((void *)0)
+#        define NULL ((void*)0)
 #    endif
 #endif
 
@@ -414,8 +414,8 @@ typedef double UDate;
  * Crashes intentionally.
  * @internal
  */
-inline void *operator new(size_t /*size*/) {
-    char *q = NULL;
+inline void* operator new(size_t /*size*/) {
+    char* q = NULL;
     *q      = 5; /* break it */
     return q;
 }
@@ -429,9 +429,9 @@ _Ret_bytecap_(_Size)
  * Crashes intentionally.
  * @internal
  */
-        inline void *
+        inline void*
         operator new[](size_t /*size*/) {
-    char *q = NULL;
+    char* q = NULL;
     *q      = 5; /* break it */
     return q;
 }
@@ -441,8 +441,8 @@ _Ret_bytecap_(_Size)
  * Crashes intentionally.
  * @internal
  */
-inline void operator delete(void * /*p*/) {
-    char *q = NULL;
+inline void operator delete(void* /*p*/) {
+    char* q = NULL;
     *q      = 5; /* break it */
 }
 
@@ -451,8 +451,8 @@ inline void operator delete(void * /*p*/) {
  * Crashes intentionally.
  * @internal
  */
-inline void operator delete[](void * /*p*/) {
-    char *q = NULL;
+inline void operator delete[](void* /*p*/) {
+    char* q = NULL;
     *q      = 5; /* break it */
 }
 
@@ -736,7 +736,7 @@ static inline UBool U_FAILURE(UErrorCode code) { return (UBool)(code > U_ZERO_ER
  * in the UErrorCode enum above.
  * @stable ICU 2.0
  */
-U_STABLE const char *U_EXPORT2 u_errorName(UErrorCode code);
+U_STABLE const char* U_EXPORT2 u_errorName(UErrorCode code);
 
 
 #endif /* _UTYPES */

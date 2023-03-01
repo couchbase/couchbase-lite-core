@@ -34,7 +34,7 @@ using namespace std;
 // this not part of Couchbase Lite directly anyway, but used in the cblite CLI
 // which is 64-bit only on Windows.
 
-static string to_str(FLSlice s) { return string((char *)s.buf, s.size); }
+static string to_str(FLSlice s) { return string((char*)s.buf, s.size); }
 
 static string to_str(Value v) { return to_str(v.asString()); }
 
@@ -63,8 +63,8 @@ class C4RESTTest
 
 #    ifdef COUCHBASE_ENTERPRISE
     void setupCertAuth() {
-        auto callback = [](C4Listener *listener, C4Slice clientCertData, void *context) -> bool {
-            auto self              = (C4RESTTest *)context;
+        auto callback = [](C4Listener* listener, C4Slice clientCertData, void* context) -> bool {
+            auto self              = (C4RESTTest*)context;
             self->receivedCertAuth = clientCertData;
             return self->allowClientCert;
         };
@@ -75,15 +75,15 @@ class C4RESTTest
 
     void setupHTTPAuth() {
         config.callbackContext  = this;
-        config.httpAuthCallback = [](C4Listener *listener, C4Slice authHeader, void *context) {
-            auto self                          = (C4RESTTest *)context;
+        config.httpAuthCallback = [](C4Listener* listener, C4Slice authHeader, void* context) {
+            auto self                          = (C4RESTTest*)context;
             self->receivedHTTPAuthFromListener = listener;
             self->receivedHTTPAuthHeader       = authHeader;
             return self->allowHTTPConnection;
         };
     }
 
-    void forEachURL(C4Database *db, C4ListenerAPIs api, function_ref<void(string_view)> callback) {
+    void forEachURL(C4Database* db, C4ListenerAPIs api, function_ref<void(string_view)> callback) {
         MutableArray urls(c4listener_getURLs(listener(), db, api, nullptr));
         FLMutableArray_Release(urls);
         REQUIRE(urls);
@@ -94,7 +94,7 @@ class C4RESTTest
                                  HTTPStatus expectedStatus) {
         Encoder enc;
         enc.beginDict();
-        for ( auto &h : headersMap ) {
+        for ( auto& h : headersMap ) {
             enc.writeKey(h.first);
             enc.writeString(h.second);
         }
@@ -162,7 +162,7 @@ class C4RESTTest
     alloc_slice directory;
     string      requestHostname{"localhost"};
 
-    C4Listener           *receivedHTTPAuthFromListener = nullptr;
+    C4Listener*           receivedHTTPAuthFromListener = nullptr;
     optional<alloc_slice> receivedHTTPAuthHeader;
     bool                  allowHTTPConnection = true;
 
@@ -170,7 +170,7 @@ class C4RESTTest
 #    ifdef COUCHBASE_ENTERPRISE
     c4::ref<C4Cert> rootCerts;
 
-    C4Listener           *receivedCertAuthFromListener = nullptr;
+    C4Listener*           receivedCertAuthFromListener = nullptr;
     optional<alloc_slice> receivedCertAuth;
     bool                  allowClientCert = true;
 #    endif
@@ -180,11 +180,11 @@ class C4RESTTest
 
 TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
     vector<string> interfaces;
-    for ( auto &i : Interface::all() ) interfaces.push_back(i.name);
+    for ( auto& i : Interface::all() ) interfaces.push_back(i.name);
     vector<string> addresses;
-    for ( auto &addr : Interface::allAddresses() ) addresses.push_back(string(addr));
+    for ( auto& addr : Interface::allAddresses() ) addresses.push_back(string(addr));
     vector<string> primaryAddresses;
-    for ( auto &addr : Interface::primaryAddresses() ) primaryAddresses.push_back(string(addr));
+    for ( auto& addr : Interface::primaryAddresses() ) primaryAddresses.push_back(string(addr));
     auto hostname = GetMyHostName();
     C4Log("Interface names = {%s}", join(interfaces, ", ").c_str());
     C4Log("IP addresses =    {%s}", join(addresses, ", ").c_str());
@@ -225,9 +225,9 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
     string              intfAddress;
     SECTION("All interfaces") {
         C4Log("Here are all the IP interfaces and their addresses:");
-        for ( auto &i : Interface::all() ) {
+        for ( auto& i : Interface::all() ) {
             C4Log("  - %s (%.02x, routable=%d) :", i.name.c_str(), i.flags, i.isRoutable());
-            for ( auto &addr : i.addresses ) C4Log("    - %s", string(addr).c_str());
+            for ( auto& addr : i.addresses ) C4Log("    - %s", string(addr).c_str());
         }
     }
     SECTION("Specific interface") {
@@ -259,7 +259,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
             requestHostname           = string(slice(address.hostname));
             bool foundAddrInInterface = false;
             bool addrIsIPv6           = false;
-            for ( auto &addr : intf->addresses ) {
+            for ( auto& addr : intf->addresses ) {
                 if ( string(addr) == requestHostname ) {
                     foundAddrInInterface = true;
                     addrIsIPv6           = addr.isIPv6();
@@ -468,7 +468,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     alloc_slice          docID;
 
     string        dbPath;
-    C4Collection *coll;
+    C4Collection* coll;
     bool          inCollection = GENERATE(false, true);
     if ( inCollection ) {
         Log("---- Using collection 'coll'");

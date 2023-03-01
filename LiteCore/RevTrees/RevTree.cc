@@ -28,17 +28,17 @@
 namespace litecore {
     using namespace fleece;
 
-    static bool compareRevs(const Rev *rev1, const Rev *rev2);
+    static bool compareRevs(const Rev* rev1, const Rev* rev2);
 
     RevTree::RevTree(slice body, slice extra, sequence_t seq) { decode(body, extra, seq); }
 
-    RevTree::RevTree(const RevTree &other)
+    RevTree::RevTree(const RevTree& other)
         : _sorted(other._sorted), _changed(other._changed), _unknown(other._unknown), _pruneDepth(other._pruneDepth) {
         // It's important to have _revs in the same order as other._revs.
         // That means we can't just copy other._revsStorage to _revsStorage;
         // we have to copy _revs in order:
         _revs.reserve(other._revs.size());
-        for ( const Rev *otherRev : other._revs ) {
+        for ( const Rev* otherRev : other._revs ) {
             // We need to keep the data in _insertedData alive that is referenced
             // by Rev.revID and Rev._body of the Revs we copy.
             // Because Revs can be purged and bodies can be removed from parent Revs,
@@ -49,11 +49,11 @@ namespace litecore {
             // Otherwise, when a document is repeatedly updated, data would accumulate,
             // occupying memory and requiring copying + reference counting.
             if ( otherRev->_hasInsertedRevID ) {
-                auto revID = (alloc_slice *)&(otherRev->revID);
+                auto revID = (alloc_slice*)&(otherRev->revID);
                 _insertedData.push_back(*revID);
             }
             if ( otherRev->_hasInsertedBody ) {
-                auto body = (alloc_slice *)&otherRev->_body;
+                auto body = (alloc_slice*)&otherRev->_body;
                 _insertedData.push_back(*body);
             }
 
@@ -61,12 +61,12 @@ namespace litecore {
             _revs.push_back(&_revsStorage.back());
         }
         // Fix up the newly copied Revs so they point to me (and my other Revs), not other:
-        for ( Rev *rev : _revs ) {
+        for ( Rev* rev : _revs ) {
             if ( rev->parent ) rev->parent = _revs[rev->parent->index()];
             rev->owner = this;
         }
         // Copy _remoteRevs:
-        for ( auto &i : other._remoteRevs ) { _remoteRevs[i.first] = _revs[i.second->index()]; }
+        for ( auto& i : other._remoteRevs ) { _remoteRevs[i.first] = _revs[i.second->index()]; }
     }
 
     void RevTree::decode(slice body, slice extra, sequence_t seq) {
@@ -86,7 +86,7 @@ namespace litecore {
     void RevTree::initRevs() {
         _revs.resize(_revsStorage.size());
         auto i = _revs.begin();
-        for ( Rev &rev : _revsStorage ) {
+        for ( Rev& rev : _revsStorage ) {
             *i = &rev;
             ++i;
         }
@@ -94,7 +94,7 @@ namespace litecore {
 
     pair<slice, alloc_slice> RevTree::encode() {
         sort();
-        const Rev *cur = currentRevision();
+        const Rev* cur = currentRevision();
         slice      curBody;
         if ( cur ) {
             curBody = cur->body();
@@ -106,7 +106,7 @@ namespace litecore {
     }
 
 #if DEBUG
-    void Rev::dump(std::ostream &out) {
+    void Rev::dump(std::ostream& out) {
         out << "(" << uint64_t(sequence) << ") " << (std::string)revID.expanded() << "  ";
         if ( isLeaf() ) out << " leaf";
         if ( isDeleted() ) out << " del";
@@ -117,28 +117,28 @@ namespace litecore {
 
 #pragma mark - ACCESSORS:
 
-    const Rev *RevTree::currentRevision() const {
+    const Rev* RevTree::currentRevision() const {
         Assert(!_unknown);
-        const_cast<RevTree *>(this)->sort();
+        const_cast<RevTree*>(this)->sort();
         return _revs.empty() ? nullptr : _revs[0];
     }
 
-    const Rev *RevTree::get(unsigned index) const {
+    const Rev* RevTree::get(unsigned index) const {
         Assert(!_unknown);
         Assert(index < _revs.size());
         return _revs[index];
     }
 
-    const Rev *RevTree::get(revid revID) const {
-        for ( Rev *rev : _revs ) {
+    const Rev* RevTree::get(revid revID) const {
+        for ( Rev* rev : _revs ) {
             if ( rev->revID == revID ) return rev;
         }
         Assert(!_unknown);
         return nullptr;
     }
 
-    const Rev *RevTree::getBySequence(sequence_t seq) const {
-        for ( Rev *rev : _revs ) {
+    const Rev* RevTree::getBySequence(sequence_t seq) const {
+        for ( Rev* rev : _revs ) {
             if ( rev->sequence == seq ) return rev;
         }
         Assert(!_unknown);
@@ -153,7 +153,7 @@ namespace litecore {
             return _revs[1]->isActive();
         } else {
             unsigned nActive = 0;
-            for ( Rev *rev : _revs ) {
+            for ( Rev* rev : _revs ) {
                 if ( rev->isActive() ) {
                     if ( ++nActive > 1 ) return true;
                 }
@@ -178,8 +178,8 @@ namespace litecore {
         slice body = _body;
         if ( (size_t)body.buf & 1 ) {
             // Fleece data must be 2-byte-aligned, so we have to copy body to the heap:
-            auto xthis              = const_cast<Rev *>(this);
-            auto xowner             = const_cast<RevTree *>(owner);
+            auto xthis              = const_cast<Rev*>(this);
+            auto xowner             = const_cast<RevTree*>(owner);
             xthis->_hasInsertedBody = true;
             body = xthis->_body = (slice)xowner->copyBody(_body);
         }
@@ -187,24 +187,24 @@ namespace litecore {
     }
 
     unsigned Rev::index() const {
-        auto &revs = owner->_revs;
+        auto& revs = owner->_revs;
         auto  i    = find(revs.begin(), revs.end(), this);
         Assert(i != revs.end());
         return (unsigned)(i - revs.begin());
     }
 
-    const Rev *Rev::next() const {
+    const Rev* Rev::next() const {
         auto i = index() + 1;
         return i < owner->size() ? owner->get(i) : nullptr;
     }
 
-    std::vector<const Rev *> Rev::history() const {
-        std::vector<const Rev *> h;
-        for ( const Rev *rev = this; rev; rev = rev->parent ) h.push_back(rev);
+    std::vector<const Rev*> Rev::history() const {
+        std::vector<const Rev*> h;
+        for ( const Rev* rev = this; rev; rev = rev->parent ) h.push_back(rev);
         return h;
     }
 
-    bool Rev::isAncestorOf(const Rev *rev) const {
+    bool Rev::isAncestorOf(const Rev* rev) const {
         do {
             if ( rev == this ) return true;
             rev = rev->parent;
@@ -214,21 +214,21 @@ namespace litecore {
 
     bool Rev::isLatestRemoteRevision() const { return owner->isLatestRemoteRevision(this); }
 
-    bool RevTree::isBodyOfRevisionAvailable(const Rev *rev) const {
+    bool RevTree::isBodyOfRevisionAvailable(const Rev* rev) const {
         return rev->_body.buf != nullptr;  // RevTreeRecord overrides this
     }
 
-    bool RevTree::confirmLeaf(Rev *testRev) {
-        for ( Rev *rev : _revs )
+    bool RevTree::confirmLeaf(Rev* testRev) {
+        for ( Rev* rev : _revs )
             if ( rev->parent == testRev ) return false;
         testRev->addFlag(Rev::kLeaf);
         return true;
     }
 
-    pair<Rev *, int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history, bool allowConflict) {
+    pair<Rev*, int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history, bool allowConflict) {
         Assert(history.size() > 0);
         unsigned lastGen      = 0;
-        Rev     *parent       = nullptr;
+        Rev*     parent       = nullptr;
         size_t   historyCount = history.size();
         int      i            = 0;
         for ( i = 0; i < historyCount; i++ ) {
@@ -247,7 +247,7 @@ namespace litecore {
             }
             lastGen = gen;
 
-            parent = (Rev *)get(history[i]);
+            parent = (Rev*)get(history[i]);
             if ( parent ) break;
         }
 
@@ -265,14 +265,14 @@ namespace litecore {
         return _insertedData.back();
     }
 
-    alloc_slice RevTree::copyBody(const alloc_slice &body) {
+    alloc_slice RevTree::copyBody(const alloc_slice& body) {
         if ( body.size == 0 ) return body;
         _insertedData.push_back(body);
         return body;
     }
 
     // Lowest-level insert method. Does no sanity checking, always inserts.
-    Rev *RevTree::_insert(revid unownedRevID, const alloc_slice &body, Rev *parentRev, Rev::Flags revFlags,
+    Rev* RevTree::_insert(revid unownedRevID, const alloc_slice& body, Rev* parentRev, Rev::Flags revFlags,
                           bool markConflict) {
         revFlags = Rev::Flags(revFlags & (Rev::kDeleted | Rev::kClosed | Rev::kHasAttachments | Rev::kKeepBody));
         Assert(!((revFlags & Rev::kClosed) && !(revFlags & Rev::kDeleted)));
@@ -283,7 +283,7 @@ namespace litecore {
         revid revID = revid(_insertedData.back());
 
         _revsStorage.emplace_back();
-        Rev *newRev               = &_revsStorage.back();
+        Rev* newRev               = &_revsStorage.back();
         newRev->_hasInsertedRevID = true;
         newRev->_hasInsertedBody  = true;
         newRev->owner             = this;
@@ -311,8 +311,8 @@ namespace litecore {
         return newRev;
     }
 
-    const Rev *RevTree::insert(revid revID, const alloc_slice &body, Rev::Flags revFlags, const Rev *parent,
-                               bool allowConflict, bool markConflict, int &httpStatus) {
+    const Rev* RevTree::insert(revid revID, const alloc_slice& body, Rev::Flags revFlags, const Rev* parent,
+                               bool allowConflict, bool markConflict, int& httpStatus) {
         // Make sure the given revID is valid:
         uint32_t newGen = revID.generation();
         if ( newGen == 0 ) {
@@ -349,12 +349,12 @@ namespace litecore {
 
         // Finally, insert:
         httpStatus = (revFlags & Rev::kDeleted) ? 200 : 201;
-        return _insert(revID, body, (Rev *)parent, revFlags, markConflict);
+        return _insert(revID, body, (Rev*)parent, revFlags, markConflict);
     }
 
-    const Rev *RevTree::insert(revid revID, const alloc_slice &body, Rev::Flags revFlags, revid parentRevID,
-                               bool allowConflict, bool markConflict, int &httpStatus) {
-        const Rev *parent = nullptr;
+    const Rev* RevTree::insert(revid revID, const alloc_slice& body, Rev::Flags revFlags, revid parentRevID,
+                               bool allowConflict, bool markConflict, int& httpStatus) {
+        const Rev* parent = nullptr;
         if ( parentRevID.buf ) {
             parent = get(parentRevID);
             if ( !parent ) {
@@ -365,7 +365,7 @@ namespace litecore {
         return insert(revID, body, revFlags, parent, allowConflict, markConflict, httpStatus);
     }
 
-    int RevTree::insertHistory(const std::vector<revidBuffer> &history, const alloc_slice &body, Rev::Flags revFlags,
+    int RevTree::insertHistory(const std::vector<revidBuffer>& history, const alloc_slice& body, Rev::Flags revFlags,
                                bool allowConflict, bool markConflict) {
         auto [parent, commonAncestorIndex] = findCommonAncestor(history, allowConflict);
         if ( commonAncestorIndex > 0 && body ) {
@@ -377,9 +377,9 @@ namespace litecore {
         return commonAncestorIndex;
     }
 
-    void RevTree::markBranchAsNotConflict(const Rev *branch, bool winningBranch) {
+    void RevTree::markBranchAsNotConflict(const Rev* branch, bool winningBranch) {
         bool keepBodies = winningBranch;
-        for ( auto rev = const_cast<Rev *>(branch); rev; rev = const_cast<Rev *>(rev->parent) ) {
+        for ( auto rev = const_cast<Rev*>(branch); rev; rev = const_cast<Rev*>(rev->parent) ) {
             if ( rev->isConflict() ) {
                 rev->clearFlag(Rev::kIsConflict);
                 _changed = true;
@@ -397,34 +397,34 @@ namespace litecore {
         }
     }
 
-    void RevTree::resetConflictSequence(const Rev *winningRev) {
-        auto rev      = const_cast<Rev *>(winningRev);
+    void RevTree::resetConflictSequence(const Rev* winningRev) {
+        auto rev      = const_cast<Rev*>(winningRev);
         rev->sequence = 0_seq;
     }
 
 #pragma mark - REMOVAL (prune / purge / compact):
 
-    void RevTree::keepBody(const Rev *rev_in) {
-        auto rev = const_cast<Rev *>(rev_in);
+    void RevTree::keepBody(const Rev* rev_in) {
+        auto rev = const_cast<Rev*>(rev_in);
         rev->addFlag(Rev::kKeepBody);
 
         // Only one rev in a branch can have the keepBody flag
         bool conflict = rev->isConflict();
         for ( auto ancestor = rev->parent; ancestor; ancestor = ancestor->parent ) {
             if ( conflict && !ancestor->isConflict() ) break;  // stop at end of a conflict branch
-            const_cast<Rev *>(ancestor)->clearFlag(Rev::kKeepBody);
+            const_cast<Rev*>(ancestor)->clearFlag(Rev::kKeepBody);
         }
         _changed = true;
     }
 
-    void RevTree::removeBody(const Rev *rev) {
+    void RevTree::removeBody(const Rev* rev) {
         if ( rev->body() ) {
-            const_cast<Rev *>(rev)->removeBody();
+            const_cast<Rev*>(rev)->removeBody();
             _changed = true;
         }
     }
 
-    void RevTree::removeBodiesOnBranch(const Rev *rev) {
+    void RevTree::removeBodiesOnBranch(const Rev* rev) {
         do {
             removeBody(rev);
             rev = rev->parent;
@@ -433,7 +433,7 @@ namespace litecore {
 
     // Remove bodies of already-saved revs that are no longer leaves:
     void RevTree::removeNonLeafBodies() {
-        for ( Rev *rev : _revs ) {
+        for ( Rev* rev : _revs ) {
             if ( rev->_body.size > 0 && !(rev->flags & (Rev::kLeaf | Rev::kNew | Rev::kKeepBody)) ) {
                 rev->removeBody();
                 _changed = true;
@@ -447,11 +447,11 @@ namespace litecore {
 
         // First find all the leaves, and walk from each one down to its root:
         int numPruned = 0;
-        for ( auto &rev : _revs ) {
+        for ( auto& rev : _revs ) {
             if ( rev->isLeaf() ) {
                 // Starting from a leaf rev, trace its ancestry to find its depth:
                 unsigned depth = 0;
-                for ( Rev *anc = rev; anc; anc = (Rev *)anc->parent ) {
+                for ( Rev* anc = rev; anc; anc = (Rev*)anc->parent ) {
                     if ( ++depth > maxDepth && !anc->keepBody() ) {
                         // Mark revs that are too far away:
                         anc->addFlag(Rev::kPurge);
@@ -466,9 +466,9 @@ namespace litecore {
         if ( numPruned == 0 ) return 0;
 
         // Don't prune current remote revisions:
-        for ( auto &r : _remoteRevs ) {
+        for ( auto& r : _remoteRevs ) {
             if ( r.second->isMarkedForPurge() ) {
-                const_cast<Rev *>(r.second)->clearFlag(Rev::kPurge);
+                const_cast<Rev*>(r.second)->clearFlag(Rev::kPurge);
                 --numPruned;
             }
         }
@@ -476,7 +476,7 @@ namespace litecore {
         if ( numPruned == 0 ) return 0;
 
         // Clear parent links that point to revisions being pruned:
-        for ( auto &rev : _revs ) {
+        for ( auto& rev : _revs ) {
             if ( !rev->isMarkedForPurge() ) {
                 while ( rev->parent && rev->parent->isMarkedForPurge() ) rev->parent = rev->parent->parent;
             }
@@ -487,14 +487,14 @@ namespace litecore {
 
     int RevTree::purge(revid leafID) {
         int  nPurged = 0;
-        Rev *rev     = (Rev *)get(leafID);
+        Rev* rev     = (Rev*)get(leafID);
         if ( !rev || !rev->isLeaf() ) return 0;
         do {
             nPurged++;
             rev->addFlag(Rev::kPurge);
-            const Rev *parent = (Rev *)rev->parent;
+            const Rev* parent = (Rev*)rev->parent;
             rev->parent       = nullptr;  // unlink from parent
-            rev               = (Rev *)parent;
+            rev               = (Rev*)parent;
         } while ( rev && confirmLeaf(rev) );
         compact();
         checkForResolvedConflict();
@@ -522,7 +522,7 @@ namespace litecore {
 
         // Remove purged revs from _remoteRevs:
         auto tempRemoteRevs = _remoteRevs;
-        for ( auto &e : tempRemoteRevs ) {
+        for ( auto& e : tempRemoteRevs ) {
             if ( e.second->isMarkedForPurge() ) _remoteRevs.erase(e.first);
         }
 
@@ -533,7 +533,7 @@ namespace litecore {
 
     // Sort comparison function for an array of Revisions. Higher priority comes _first_, so this
     // is a descending sort. The function returns true if rev1 is higher priority than rev2.
-    __hot static bool compareRevs(const Rev *rev1, const Rev *rev2) {
+    __hot static bool compareRevs(const Rev* rev1, const Rev* rev2) {
         // Leaf revs go before non-leaves.
         int delta = rev2->isLeaf() - rev1->isLeaf();
         if ( delta ) return delta < 0;
@@ -563,14 +563,14 @@ namespace litecore {
     }
 
     bool RevTree::hasNewRevisions() const {
-        for ( Rev *rev : _revs ) {
+        for ( Rev* rev : _revs ) {
             if ( rev->isNew() || rev->sequence == 0_seq ) return true;
         }
         return false;
     }
 
     void RevTree::saved(sequence_t newSequence) {
-        for ( Rev *rev : _revs ) {
+        for ( Rev* rev : _revs ) {
             rev->clearFlag(Rev::kNew);
             if ( rev->sequence == 0_seq ) { rev->sequence = newSequence; }
         }
@@ -578,21 +578,21 @@ namespace litecore {
 
 #pragma mark - ETC.
 
-    bool RevTree::isLatestRemoteRevision(const Rev *rev) const {
-        for ( auto &r : _remoteRevs ) {
+    bool RevTree::isLatestRemoteRevision(const Rev* rev) const {
+        for ( auto& r : _remoteRevs ) {
             if ( r.second == rev ) return true;
         }
         return false;
     }
 
-    const Rev *RevTree::latestRevisionOnRemote(RemoteID remote) {
+    const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {
         Assert(remote != kNoRemoteID);
         auto i = _remoteRevs.find(remote);
         if ( i == _remoteRevs.end() ) return nullptr;
         return i->second;
     }
 
-    void RevTree::setLatestRevisionOnRemote(RemoteID remote, const Rev *rev) {
+    void RevTree::setLatestRevisionOnRemote(RemoteID remote, const Rev* rev) {
         Assert(remote != kNoRemoteID);
         if ( rev ) {
             _remoteRevs[remote] = rev;
@@ -606,13 +606,13 @@ namespace litecore {
 #if DEBUG
     void RevTree::dump() { dump(std::cerr); }
 
-    void RevTree::dump(std::ostream &out) {
+    void RevTree::dump(std::ostream& out) {
         int i = 0;
-        for ( Rev *rev : _revs ) {
+        for ( Rev* rev : _revs ) {
             out << "\t" << (++i) << ": ";
             rev->dump(out);
 
-            for ( auto &e : _remoteRevs ) {
+            for ( auto& e : _remoteRevs ) {
                 if ( e.second == rev ) out << " <--remote#" << e.first;
             }
 

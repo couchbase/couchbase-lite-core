@@ -42,7 +42,7 @@ namespace litecore::net {
             "%a %b %d %T %Y"  // ANSI C asctime() format
     };
 
-    static time_t parse_gmt_time(const char *timeStr) {
+    static time_t parse_gmt_time(const char* timeStr) {
         sys_seconds tp;
         // Go through each of the `dateFormats` and attempt to parse the date given
         for ( int i = 0; i < size(dateFormats); ++i ) {
@@ -76,7 +76,7 @@ namespace litecore::net {
 
 #pragma mark - COOKIE:
 
-    Cookie::Cookie(const string &header, const string &fromHost, const string &fromPath, bool acceptParentDomain)
+    Cookie::Cookie(const string& header, const string& fromHost, const string& fromPath, bool acceptParentDomain)
         : domain(fromHost), created(time(nullptr)) {
         // Default path is the request path minus its last component:
         auto slash = fromPath.rfind('/');
@@ -117,7 +117,7 @@ namespace litecore::net {
                     if ( expires == 0 ) { return; }
                 }
             } else if ( key == "max-age" ) {
-                char *valEnd = &val[val.size()];
+                char* valEnd = &val[val.size()];
                 long  maxAge = strtol(&val[0], &valEnd, 10);
                 if ( valEnd != &val[val.size()] || val.size() == 0 ) {
                     Warn("Couldn't parse Max-Age in cookie");
@@ -145,22 +145,22 @@ namespace litecore::net {
         if ( domain.empty() || expires == 0 || created == 0 ) name.clear();  // invalidate
     }
 
-    bool Cookie::matches(const Cookie &c) const {
+    bool Cookie::matches(const Cookie& c) const {
         return name == c.name && compareIgnoringCase(domain, c.domain) == 0 && path == c.path;
     }
 
-    bool Cookie::sameValueAs(const Cookie &c) const {
+    bool Cookie::sameValueAs(const Cookie& c) const {
         return value == c.value && expires == c.expires && secure == c.secure;
     }
 
-    bool Cookie::matches(const C4Address &addr) const {
+    bool Cookie::matches(const C4Address& addr) const {
         return Address::domainContains(domain, addr.hostname) && Address::pathContains(path, addr.path)
                && (!secure || Address::isSecure(addr));
     }
 
-    ostream &operator<<(ostream &out, const Cookie &cookie) { return out << cookie.name << '=' << cookie.value; }
+    ostream& operator<<(ostream& out, const Cookie& cookie) { return out << cookie.name << '=' << cookie.value; }
 
-    fleece::Encoder &operator<<(fleece::Encoder &enc, const Cookie &cookie) {
+    fleece::Encoder& operator<<(fleece::Encoder& enc, const Cookie& cookie) {
         Assert(cookie.persistent());
         enc.beginDict(6);
         enc.writeKey("name"_sl);
@@ -208,26 +208,26 @@ namespace litecore::net {
         lock_guard<mutex> lock(_mutex);
         Encoder           enc;
         enc.beginArray(_cookies.size());
-        for ( CookiePtr &cookie : _cookies ) {
+        for ( CookiePtr& cookie : _cookies ) {
             if ( cookie->persistent() && !cookie->expired() ) enc << *cookie;
         }
         enc.endArray();
         return enc.finish();
     }
 
-    vector<const Cookie *> CookieStore::cookies() const {
-        lock_guard<mutex>      lock(_mutex);
-        vector<const Cookie *> cookies;
+    vector<const Cookie*> CookieStore::cookies() const {
+        lock_guard<mutex>     lock(_mutex);
+        vector<const Cookie*> cookies;
         cookies.reserve(_cookies.size());
-        for ( const CookiePtr &cookie : _cookies ) cookies.push_back(cookie.get());
+        for ( const CookiePtr& cookie : _cookies ) cookies.push_back(cookie.get());
         return cookies;
     }
 
-    string CookieStore::cookiesForRequest(const C4Address &addr) const {
+    string CookieStore::cookiesForRequest(const C4Address& addr) const {
         lock_guard<mutex> lock(_mutex);
         stringstream      s;
         int               n = 0;
-        for ( const CookiePtr &cookie : _cookies ) {
+        for ( const CookiePtr& cookie : _cookies ) {
             if ( cookie->matches(addr) && !cookie->expired() ) {
                 if ( n++ ) s << "; ";
                 s << *cookie;
@@ -236,7 +236,7 @@ namespace litecore::net {
         return s.str();
     }
 
-    bool CookieStore::setCookie(const string &headerValue, const string &fromHost, const string &path,
+    bool CookieStore::setCookie(const string& headerValue, const string& fromHost, const string& path,
                                 bool acceptParentDomain) {
         auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path, acceptParentDomain);
         if ( !newCookie->valid() ) {
@@ -252,12 +252,12 @@ namespace litecore::net {
     void CookieStore::merge(slice data) {
         CookieStore       other(data);
         lock_guard<mutex> lock(_mutex);
-        for ( CookiePtr &cookie : other._cookies ) _addCookie(move(cookie));
+        for ( CookiePtr& cookie : other._cookies ) _addCookie(move(cookie));
     }
 
     void CookieStore::_addCookie(CookiePtr newCookie) {
         for ( auto i = _cookies.begin(); i != _cookies.end(); ++i ) {
-            const Cookie *oldCookie = i->get();
+            const Cookie* oldCookie = i->get();
             if ( newCookie->matches(*oldCookie) ) {
                 if ( newCookie->created < oldCookie->created ) {
                     LogVerbose(kC4Cpp_DefaultLog, "CookieStore::_addCookie: ignoring obsolete cookie...");

@@ -34,17 +34,17 @@ using namespace litecore;
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {};
 
-C4Query::C4Query(C4Collection *coll, C4QueryLanguage language, slice queryExpression)
+C4Query::C4Query(C4Collection* coll, C4QueryLanguage language, slice queryExpression)
     : _database(asInternal(coll)->dbImpl())
     , _query(_database->dataFile()->compileQuery(queryExpression, (QueryLanguage)language,
                                                  &asInternal(coll)->keyStore())) {}
 
 C4Query::~C4Query() = default;
 
-Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language, slice expr, int *outErrorPos) {
+Retained<C4Query> C4Query::newQuery(C4Collection* coll, C4QueryLanguage language, slice expr, int* outErrorPos) {
     try {
         return retained(new C4Query(coll, language, expr));
-    } catch ( Query::parseError &x ) {
+    } catch ( Query::parseError& x ) {
         if ( outErrorPos ) { *outErrorPos = x.errorPosition; }
         throw;
     } catch ( ... ) {
@@ -53,21 +53,21 @@ Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language
     }
 }
 
-Retained<C4Query> C4Query::newQuery(C4Database *db, C4QueryLanguage language, slice expr, int *outErrorPos) {
+Retained<C4Query> C4Query::newQuery(C4Database* db, C4QueryLanguage language, slice expr, int* outErrorPos) {
     return newQuery(db->getDefaultCollection(), language, expr, outErrorPos);
 }
 
 unsigned C4Query::columnCount() const noexcept { return _query->columnCount(); }
 
 slice C4Query::columnTitle(unsigned column) const {
-    auto &titles = _query->columnTitles();
+    auto& titles = _query->columnTitles();
     return (column < titles.size()) ? titles[column] : slice{};
 }
 
 alloc_slice C4Query::explain() const { return alloc_slice(_query->explain()); }
 
-alloc_slice C4Query::fullTextMatched(const C4FullTextMatch &term) {
-    return _query->getMatchedText((Query::FullTextTerm &)term);
+alloc_slice C4Query::fullTextMatched(const C4FullTextMatch& term) {
+    return _query->getMatchedText((Query::FullTextTerm&)term);
 }
 
 alloc_slice C4Query::parameters() const noexcept {
@@ -84,30 +84,30 @@ void C4Query::setParameters(slice parameters) {
 
 #pragma mark - ENUMERATOR:
 
-Retained<QueryEnumerator> C4Query::_createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
+Retained<QueryEnumerator> C4Query::_createEnumerator(const C4QueryOptions* c4options, slice encodedParameters) {
     Query::Options options(encodedParameters ? encodedParameters : parameters());
     return _query->createEnumerator(&options);
 }
 
-Retained<C4QueryEnumeratorImpl> C4Query::wrapEnumerator(QueryEnumerator *e) {
+Retained<C4QueryEnumeratorImpl> C4Query::wrapEnumerator(QueryEnumerator* e) {
     return e ? new C4QueryEnumeratorImpl(_database, _query, e) : nullptr;
 }
 
-C4Query::Enumerator C4Query::run(const C4QueryOptions *C4NULLABLE opt, slice params) {
+C4Query::Enumerator C4Query::run(const C4QueryOptions* C4NULLABLE opt, slice params) {
     return Enumerator(this, opt, params);
 }
 
-C4QueryEnumerator *C4Query::createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
+C4QueryEnumerator* C4Query::createEnumerator(const C4QueryOptions* c4options, slice encodedParameters) {
     auto e = _createEnumerator(c4options, encodedParameters);
     return wrapEnumerator(e).detach();
 }
 
-C4Query::Enumerator::Enumerator(C4Query *query, const C4QueryOptions *c4options, slice encodedParameters)
+C4Query::Enumerator::Enumerator(C4Query* query, const C4QueryOptions* c4options, slice encodedParameters)
     : _enum(query->_createEnumerator(c4options, encodedParameters)), _query(query->_query) {}
 
 C4Query::Enumerator::Enumerator(Retained<litecore::QueryEnumerator> e) : _enum(std::move(e)) {}
 
-C4Query::Enumerator::Enumerator(Enumerator &&c4e) : _enum(std::move(c4e._enum)), _query(std::move(c4e._query)) {}
+C4Query::Enumerator::Enumerator(Enumerator&& c4e) : _enum(std::move(c4e._enum)), _query(std::move(c4e._query)) {}
 
 C4Query::Enumerator::~Enumerator() = default;
 
@@ -134,7 +134,7 @@ FLArrayIterator C4Query::Enumerator::columns() const {
     // (FLArrayIterator is binary-compatible with Array::iterator)
     static_assert(sizeof(FLArrayIterator) == sizeof(Array::iterator));
     auto cols = _enum->columns();
-    return (FLArrayIterator &)cols;
+    return (FLArrayIterator&)cols;
 }
 
 FLValue C4Query::Enumerator::column(unsigned i) const {
@@ -147,17 +147,17 @@ unsigned C4Query::Enumerator::fullTextMatchCount() const { return (unsigned)_enu
 C4FullTextMatch C4Query::Enumerator::fullTextMatch(unsigned i) const {
     // (C4FullTextMatch is binary-compatible with Query::FullTextTerm)
     static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm));
-    return (C4FullTextMatch &)_enum->fullTextTerms()[i];
+    return (C4FullTextMatch&)_enum->fullTextTerms()[i];
 }
 
 #pragma mark - OBSERVER:
 
 class C4Query::LiveQuerierDelegate : public LiveQuerier::Delegate {
   public:
-    LiveQuerierDelegate(C4Query *query) : _query(query) {}
+    LiveQuerierDelegate(C4Query* query) : _query(query) {}
 
     // called on a background thread!
-    void liveQuerierUpdated(QueryEnumerator *qe, C4Error err) override { _query->liveQuerierUpdated(qe, err); }
+    void liveQuerierUpdated(QueryEnumerator* qe, C4Error err) override { _query->liveQuerierUpdated(qe, err); }
 
     void liveQuerierStopped() override {
         // There is circular retain ref between LiveQuerierDelegate and C4Query object.
@@ -176,11 +176,11 @@ class C4Query::LiveQuerierDelegate : public LiveQuerier::Delegate {
     Retained<C4Query> _query;
 };
 
-std::unique_ptr<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver *)> callback) {
+std::unique_ptr<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
     return make_unique<C4QueryObserverImpl>(this, callback);
 }
 
-void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
+void C4Query::enableObserver(C4QueryObserverImpl* obs, bool enable) {
     LOCK(_mutex);
     if ( enable ) {
         _observers.insert(obs);
@@ -205,8 +205,8 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
             if ( _pendingObservers.size() > 1 ) return;
 
             // Note: the callback is called from the _bgQuerier's queue.
-            _bgQuerier->getCurrentResult([&](QueryEnumerator *qe, C4Error err) {
-                set<C4QueryObserverImpl *> observers;
+            _bgQuerier->getCurrentResult([&](QueryEnumerator* qe, C4Error err) {
+                set<C4QueryObserverImpl*> observers;
                 {
                     LOCK(_mutex);
                     if ( qe || err.code > 0 )  // Have a result to notify
@@ -223,8 +223,8 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
     }
 }
 
-void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
-    set<C4QueryObserverImpl *> observers;
+void C4Query::liveQuerierUpdated(QueryEnumerator* qe, C4Error err) {
+    set<C4QueryObserverImpl*> observers;
     {
         LOCK(_mutex);
         if ( !_bgQuerier ) { return; }
@@ -254,8 +254,8 @@ void C4Query::liveQuerierStopped() {
     _bgQuerierDelegate = nullptr;
 }
 
-void C4Query::notifyObservers(const set<C4QueryObserverImpl *> &observers, QueryEnumerator *qe, C4Error err) {
-    for ( auto &obs : observers ) {
+void C4Query::notifyObservers(const set<C4QueryObserverImpl*>& observers, QueryEnumerator* qe, C4Error err) {
+    for ( auto& obs : observers ) {
         Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe == nullptr ? nullptr : qe->clone());
         obs->notify(c4e, err);
     }

@@ -27,35 +27,35 @@ namespace litecore { namespace actor {
         Available on Apple platforms, or elsewhere if libdispatch is installed. */
     class GCDMailbox {
       public:
-        GCDMailbox(Actor *a, const std::string &name = "", GCDMailbox *parentMailbox = nullptr);
+        GCDMailbox(Actor* a, const std::string& name = "", GCDMailbox* parentMailbox = nullptr);
         ~GCDMailbox();
 
         std::string name() const;
 
-        Scheduler *scheduler() const { return nullptr; }
+        Scheduler* scheduler() const { return nullptr; }
 
-        void setScheduler(Scheduler *s) {}
+        void setScheduler(Scheduler* s) {}
 
         unsigned eventCount() const { return _eventCount; }
 
         //void enqueue(std::function<void()> f);
-        void enqueue(const char *name, void (^block)());
-        void enqueueAfter(delay_t delay, const char *name, void (^block)());
+        void enqueue(const char* name, void (^block)());
+        void enqueueAfter(delay_t delay, const char* name, void (^block)());
 
-        static void startScheduler(Scheduler *) {}
+        static void startScheduler(Scheduler*) {}
 
         void logStats() const;
 
-        static Actor *currentActor();
+        static Actor* currentActor();
 
-        static void runAsyncTask(void (*task)(void *), void *context);
+        static void runAsyncTask(void (*task)(void*), void* context);
 
       private:
         void runEvent(void (^block)());
         void afterEvent();
         void safelyCall(void (^block)()) const;
 
-        Actor               *_actor;
+        Actor*               _actor;
         dispatch_queue_t     _queue;
         std::atomic<int32_t> _eventCount{0};
 

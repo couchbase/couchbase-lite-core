@@ -29,7 +29,7 @@ namespace litecore { namespace net {
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](string certStr, string &rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [this](string certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #endif
 
         // Set up mbedTLS logging. mbedTLS log levels are numbered:
@@ -42,7 +42,7 @@ namespace litecore { namespace net {
         if ( auto logLevel = TLSLogDomain.effectiveLevel(); logLevel == LogLevel::Verbose ) mbedLogLevel = 2;
         else if ( logLevel == LogLevel::Debug )
             mbedLogLevel = 4;
-        _context->set_logger(mbedLogLevel, [=](int level, const char *filename, int line, const char *message) {
+        _context->set_logger(mbedLogLevel, [=](int level, const char* filename, int line, const char* message) {
             static const LogLevel kLogLevels[]
                     = {LogLevel::Error, LogLevel::Error, LogLevel::Verbose, LogLevel::Verbose, LogLevel::Debug};
             size_t len = strlen(message);
@@ -61,16 +61,16 @@ namespace litecore { namespace net {
         }
     }
 
-    void TLSContext::setRootCerts(crypto::Cert *cert) { setRootCerts(cert->data()); }
+    void TLSContext::setRootCerts(crypto::Cert* cert) { setRootCerts(cert->data()); }
 
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
-    bool TLSContext::findSigningRootCert(const string &certStr, string &rootStr) {
+    bool TLSContext::findSigningRootCert(const string& certStr, string& rootStr) {
         try {
             Retained<Cert> cert = new Cert(certStr);
             Retained<Cert> root = cert->findSigningRootCert();
             if ( root ) rootStr = string(root->dataOfChain());
             return true;
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             Warn("Unable to find a root cert: %s", x.what());
             return false;
         }
@@ -89,19 +89,19 @@ namespace litecore { namespace net {
         }
     }
 
-    void TLSContext::allowOnlyCert(crypto::Cert *cert) { allowOnlyCert(cert->data()); }
+    void TLSContext::allowOnlyCert(crypto::Cert* cert) { allowOnlyCert(cert->data()); }
 
     void TLSContext::allowOnlySelfSigned(bool onlySelfSigned) {
         if ( _onlySelfSigned == onlySelfSigned ) { return; }
 
         _onlySelfSigned = onlySelfSigned;
         if ( onlySelfSigned ) {
-            _context->set_root_cert_locator([](string certStr, string &rootStr) {
+            _context->set_root_cert_locator([](string certStr, string& rootStr) {
                 // Don't return any CA certs, have those all fail
                 return true;
             });
 
-            _context->set_auth_callback([](const string &certData) {
+            _context->set_auth_callback([](const string& certData) {
                 Retained<Cert> cert = new Cert(slice(certData));
                 return cert->isSelfSigned();
             });
@@ -111,12 +111,12 @@ namespace litecore { namespace net {
     }
 
     void TLSContext::setCertAuthCallback(std::function<bool(fleece::slice)> callback) {
-        _context->set_auth_callback([=](const string &certData) { return callback(slice(certData)); });
+        _context->set_auth_callback([=](const string& certData) { return callback(slice(certData)); });
 
         resetRootCertFinder();
     }
 
-    void TLSContext::setIdentity(crypto::Identity *id) {
+    void TLSContext::setIdentity(crypto::Identity* id) {
         _context->set_identity(id->cert->context(), id->privateKey->context());
         _identity = id;
     }
@@ -128,7 +128,7 @@ namespace litecore { namespace net {
     void TLSContext::resetRootCertFinder() {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](string certStr, string &rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [this](string certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #else
         _context->set_root_cert_locator(nullptr);
 #endif

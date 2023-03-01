@@ -33,17 +33,17 @@ namespace litecore {
         : public C4Document
         , public InstanceCountedIn<VectorDocument> {
       public:
-        VectorDocument(C4Collection *coll, slice docID, ContentOption whichContent)
+        VectorDocument(C4Collection* coll, slice docID, ContentOption whichContent)
             : C4Document(coll, alloc_slice(docID)), _doc(keyStore(), Versioning::Vectors, docID, whichContent) {
             _initialize();
         }
 
-        VectorDocument(C4Collection *coll, const Record &doc)
+        VectorDocument(C4Collection* coll, const Record& doc)
             : C4Document(coll, doc.key()), _doc(keyStore(), Versioning::Vectors, doc) {
             _initialize();
         }
 
-        VectorDocument(const VectorDocument &other) : C4Document(other), _doc(other._doc), _remoteID(other._remoteID) {}
+        VectorDocument(const VectorDocument& other) : C4Document(other), _doc(other._doc), _remoteID(other._remoteID) {}
 
         Retained<C4Document> copy() const override { return new VectorDocument(*this); }
 
@@ -118,7 +118,7 @@ namespace litecore {
             }
         }
 
-        bool _selectRemote(RemoteID remote, Revision &rev) {
+        bool _selectRemote(RemoteID remote, Revision& rev) {
             _remoteID          = remote;
             _selectedRevID     = _expandRevID(rev.revID);
             _selected.revID    = _selectedRevID;
@@ -217,7 +217,7 @@ namespace litecore {
         bool exists() const override { return _doc.exists(); }
 
         bool loadRevisions() const override MUST_USE_RESULT {
-            return _doc.contentAvailable() >= kEntireBody || const_cast<VectorRecord &>(_doc).loadData(kEntireBody);
+            return _doc.contentAvailable() >= kEntireBody || const_cast<VectorRecord&>(_doc).loadData(kEntireBody);
         }
 
         bool revisionsLoaded() const noexcept override { return _doc.contentAvailable() >= kEntireBody; }
@@ -227,7 +227,7 @@ namespace litecore {
         bool loadRevisionBody() const override MUST_USE_RESULT {
             if ( !_remoteID ) return false;
             auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
-            return const_cast<VectorRecord &>(_doc).loadData(which);
+            return const_cast<VectorRecord&>(_doc).loadData(which);
         }
 
 #pragma mark - UPDATING:
@@ -244,7 +244,7 @@ namespace litecore {
             return docFlags;
         }
 
-        fleece::Doc _newProperties(const C4DocPutRequest &rq, C4Error *outError) {
+        fleece::Doc _newProperties(const C4DocPutRequest& rq, C4Error* outError) {
             alloc_slice body;
             if ( rq.deltaCB == nullptr ) {
                 body = (rq.allocedBody.buf) ? alloc_slice(rq.allocedBody) : alloc_slice(rq.body);
@@ -281,7 +281,7 @@ namespace litecore {
 
         // Handles `c4doc_put` when `rq.existingRevision` is false (a regular save.)
         // The caller has already done most of the checking, incl. MVCC.
-        bool putNewRevision(const C4DocPutRequest &rq, C4Error *outError) override {
+        bool putNewRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             // Update the flags:
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
@@ -309,7 +309,7 @@ namespace litecore {
         }
 
         // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
-        int32_t putExistingRevision(const C4DocPutRequest &rq, C4Error *outError) override {
+        int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
             Doc fldoc    = _newProperties(rq, outError);
@@ -318,7 +318,7 @@ namespace litecore {
 
             // Parse the history array:
             VersionVector newVers;
-            newVers.readHistory((slice *)rq.history, rq.historyCount, myPeerID());
+            newVers.readHistory((slice*)rq.history, rq.historyCount, myPeerID());
             alloc_slice newVersBinary = newVers.asBinary();
             newRev.revID              = revid(newVersBinary);
 
@@ -334,7 +334,7 @@ namespace litecore {
             // Log the update. Normally verbose, but a conflict is info (if from the replicator)
             // or error (if local).
             if ( DBLog.willLog(LogLevel::Verbose) || order == kConflicting ) {
-                static constexpr const char *kOrderName[4] = {"same", "older", "newer", "conflict"};
+                static constexpr const char* kOrderName[4] = {"same", "older", "newer", "conflict"};
                 alloc_slice                  newVersStr    = newVers.asASCII();
                 alloc_slice                  oldVersStr    = _currentVersionVector().asASCII();
                 if ( order != kConflicting )
@@ -385,7 +385,7 @@ namespace litecore {
             return commonAncestor;
         }
 
-        bool _saveNewRev(const C4DocPutRequest &rq, const Revision &newRev, C4Error *outError) {
+        bool _saveNewRev(const C4DocPutRequest& rq, const Revision& newRev, C4Error* outError) {
             if ( rq.save && !save() ) {
                 c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
                 return false;
@@ -500,17 +500,17 @@ namespace litecore {
         return new VectorDocument(collection(), docID, c);
     }
 
-    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(const Record &record) {
+    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(const Record& record) {
         return new VectorDocument(collection(), record);
     }
 
-    C4Document *VectorDocumentFactory::documentContaining(FLValue value) {
-        if ( auto nuDoc = VectorRecord::containing(value); nuDoc ) return (VectorDocument *)nuDoc->owner;
+    C4Document* VectorDocumentFactory::documentContaining(FLValue value) {
+        if ( auto nuDoc = VectorRecord::containing(value); nuDoc ) return (VectorDocument*)nuDoc->owner;
         else
             return nullptr;
     }
 
-    vector<alloc_slice> VectorDocumentFactory::findAncestors(const vector<slice> &docIDs, const vector<slice> &revIDs,
+    vector<alloc_slice> VectorDocumentFactory::findAncestors(const vector<slice>& docIDs, const vector<slice>& revIDs,
                                                              unsigned maxAncestors, bool mustHaveBodies,
                                                              C4RemoteID remoteDBID) {
         // Map docID->revID for faster lookup in the callback:
@@ -529,7 +529,7 @@ namespace litecore {
             return localVec.compareTo(requestedVec);
         };
 
-        auto callback = [&](const RecordUpdate &rec) -> alloc_slice {
+        auto callback = [&](const RecordUpdate& rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each existing requested docID, in arbitrary order ---
 

@@ -33,7 +33,7 @@ namespace litecore {
         , public fleece::InstanceCountedIn<DataFile::Shared>
         , Logging {
       public:
-        static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {
+        static Retained<Shared> forPath(const FilePath& path, DataFile* dataFile) {
             string             pathStr = path.canonicalPath();
             unique_lock<mutex> lock(sFileMapMutex);
             Retained<Shared>   file = sFileMap[pathStr];
@@ -50,26 +50,26 @@ namespace litecore {
             return file;
         }
 
-        static size_t openCountOnPath(const FilePath &path) {
+        static size_t openCountOnPath(const FilePath& path) {
             string pathStr = path.canonicalPath();
 
             unique_lock<mutex> lock(sFileMapMutex);
-            Shared            *file = sFileMap[pathStr];
+            Shared*            file = sFileMap[pathStr];
             return file ? file->openCount() : 0;
         }
 
         const string path;  // The filesystem path
 
-        ExclusiveTransaction *transaction() { return _transaction; }
+        ExclusiveTransaction* transaction() { return _transaction; }
 
-        void addDataFile(DataFile *dataFile) {
+        void addDataFile(DataFile* dataFile) {
             unique_lock<mutex> lock(_mutex);
             mustNotBeCondemned();
             if ( find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end() )
                 _dataFiles.push_back(dataFile);
         }
 
-        bool removeDataFile(DataFile *dataFile) {
+        bool removeDataFile(DataFile* dataFile) {
             unique_lock<mutex> lock(_mutex);
             logDebug("Remove DataFile %p", dataFile);
             auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
@@ -79,7 +79,7 @@ namespace litecore {
             return true;
         }
 
-        void forOpenDataFiles(DataFile *except, function_ref<void(DataFile *)> fn) {
+        void forOpenDataFiles(DataFile* except, function_ref<void(DataFile*)> fn) {
             unique_lock<mutex> lock(_mutex);
             for ( auto df : _dataFiles )
                 if ( df != except && !df->isClosing() ) fn(df);
@@ -101,28 +101,28 @@ namespace litecore {
             _condemned = condemn;
         }
 
-        void setTransaction(ExclusiveTransaction *t) {
+        void setTransaction(ExclusiveTransaction* t) {
             Assert(t);
             unique_lock<mutex> lock(_transactionMutex);
             while ( _transaction != nullptr ) _transactionCond.wait(lock);
             _transaction = t;
         }
 
-        void unsetTransaction(ExclusiveTransaction *t) {
+        void unsetTransaction(ExclusiveTransaction* t) {
             unique_lock<mutex> lock(_transactionMutex);
             Assert(t && _transaction == t);
             _transaction = nullptr;
             _transactionCond.notify_one();
         }
 
-        Retained<RefCounted> sharedObject(const string &key) {
+        Retained<RefCounted> sharedObject(const string& key) {
             lock_guard<mutex> lock(_mutex);
             auto              i = _sharedObjects.find(key);
             if ( i == _sharedObjects.end() ) return nullptr;
             return i->second;
         }
 
-        Retained<RefCounted> addSharedObject(const string &key, RefCounted *object) {
+        Retained<RefCounted> addSharedObject(const string& key, RefCounted* object) {
             lock_guard<mutex> lock(_mutex);
             auto              e = _sharedObjects.emplace(key, object);
             return e.first->second;
@@ -130,7 +130,7 @@ namespace litecore {
 
 
       protected:
-        Shared(const string &p) : Logging(DBLog), path(p) { logDebug("instantiated on %s", p.c_str()); }
+        Shared(const string& p) : Logging(DBLog), path(p) { logDebug("instantiated on %s", p.c_str()); }
 
         ~Shared() {
             logDebug("destructing");
@@ -146,14 +146,14 @@ namespace litecore {
       private:
         mutex                                       _transactionMutex;      // Mutex for transactions
         condition_variable                          _transactionCond;       // For waiting on the mutex
-        ExclusiveTransaction                       *_transaction{nullptr};  // Currently active Transaction object
-        vector<DataFile *>                          _dataFiles;             // Open DataFiles on this File
+        ExclusiveTransaction*                       _transaction{nullptr};  // Currently active Transaction object
+        vector<DataFile*>                           _dataFiles;             // Open DataFiles on this File
         unordered_map<string, Retained<RefCounted>> _sharedObjects;
         bool                                        _condemned{false};  // Prevents db from being opened or deleted
         mutex                                       _mutex;             // Mutex for non-transaction state
 
-        static unordered_map<string, Shared *> sFileMap;
-        static mutex                           sFileMapMutex;
+        static unordered_map<string, Shared*> sFileMap;
+        static mutex                          sFileMapMutex;
     };
 
 }  // namespace litecore

@@ -25,16 +25,16 @@ namespace litecore {
         if ( length > SIZE_MAX )  // overflow check for 32-bit
             throw bad_alloc();
         auto contents = alloc_slice((size_t)length);
-        contents.shorten(read((void *)contents.buf, contents.size));
+        contents.shorten(read((void*)contents.buf, contents.size));
         return contents;
     }
 
-    static void checkErr(FILE *file) {
+    static void checkErr(FILE* file) {
         int err = ferror(file);
         if ( _usuallyFalse(err != 0) ) error::_throw(error::POSIX, err);
     }
 
-    FileReadStream::FileReadStream(const FilePath &path, const char *mode) {
+    FileReadStream::FileReadStream(const FilePath& path, const char* mode) {
         _file = fopen_u8(path.path().c_str(), mode);
         if ( !_file ) error::_throwErrno();
     }
@@ -70,7 +70,7 @@ namespace litecore {
         checkErr(_file);
     }
 
-    size_t FileReadStream::read(void *dst, size_t count) {
+    size_t FileReadStream::read(void* dst, size_t count) {
         if ( !_file ) { return 0; }
 
         size_t bytesRead = fread(dst, 1, count, _file);

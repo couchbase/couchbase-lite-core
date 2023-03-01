@@ -61,14 +61,14 @@ namespace litecore {
       public:
         EncryptedReadStream(std::shared_ptr<SeekableReadStream> input, EncryptionAlgorithm alg, slice encryptionKey);
         uint64_t getLength() const override;
-        size_t   read(void *dst NONNULL, size_t count) override;
+        size_t   read(void* dst NONNULL, size_t count) override;
         void     seek(uint64_t pos) override;
         void     close() override;
         uint64_t tell() const;
 
       private:
         size_t readBlockFromFile(fleece::mutable_slice);
-        void   readFromBuffer(fleece::slice_ostream &dst);
+        void   readFromBuffer(fleece::slice_ostream& dst);
         void   fillBuffer();
         void   findLength();
 

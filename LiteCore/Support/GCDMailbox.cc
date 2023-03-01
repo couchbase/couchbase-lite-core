@@ -43,7 +43,7 @@ namespace litecore { namespace actor {
     thread_local shared_ptr<ChannelManifest> GCDMailbox::sQueueManifest = nullptr;
 #endif
 
-    GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox) : _actor(a) {
+    GCDMailbox::GCDMailbox(Actor* a, const std::string& name, GCDMailbox* parentMailbox) : _actor(a) {
         dispatch_queue_t targetQueue;
         if ( parentMailbox ) targetQueue = parentMailbox->_queue;
         else
@@ -60,15 +60,15 @@ namespace litecore { namespace actor {
 
     std::string GCDMailbox::name() const { return dispatch_queue_get_label(_queue); }
 
-    Actor *GCDMailbox::currentActor() {
-        auto mailbox = (GCDMailbox *)dispatch_get_specific(&kQueueMailboxSpecificKey);
+    Actor* GCDMailbox::currentActor() {
+        auto mailbox = (GCDMailbox*)dispatch_get_specific(&kQueueMailboxSpecificKey);
         return mailbox ? mailbox->_actor : nullptr;
     }
 
     void GCDMailbox::safelyCall(void (^block)()) const {
         try {
             block();
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             _actor->caughtException(x);
 #if ACTORS_USE_MANIFESTS
             stringstream manifest;
@@ -82,7 +82,7 @@ namespace litecore { namespace actor {
         }
     }
 
-    void GCDMailbox::enqueue(const char *name, void (^block)()) {
+    void GCDMailbox::enqueue(const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);
@@ -110,7 +110,7 @@ namespace litecore { namespace actor {
         dispatch_async(_queue, wrappedBlock);
     }
 
-    void GCDMailbox::enqueueAfter(delay_t delay, const char *name, void (^block)()) {
+    void GCDMailbox::enqueueAfter(delay_t delay, const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);
@@ -163,7 +163,7 @@ namespace litecore { namespace actor {
 #endif
     }
 
-    void GCDMailbox::runAsyncTask(void (*task)(void *), void *context) {
+    void GCDMailbox::runAsyncTask(void (*task)(void*), void* context) {
         static dispatch_queue_t sAsyncTaskQueue;
         static once_flag        once;
         call_once(once, [] {

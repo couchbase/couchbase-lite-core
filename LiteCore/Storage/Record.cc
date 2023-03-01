@@ -45,7 +45,7 @@ namespace litecore {
 
     RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_) : key(key_), body(body_), flags(flags_) {}
 
-    RecordUpdate::RecordUpdate(const Record &rec) : RecordUpdate(rec.key(), rec.body(), rec.flags()) {
+    RecordUpdate::RecordUpdate(const Record& rec) : RecordUpdate(rec.key(), rec.body(), rec.flags()) {
         version     = rec.version();
         extra       = rec.extra();
         sequence    = rec.sequence();

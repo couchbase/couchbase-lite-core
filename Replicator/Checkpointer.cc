@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
 
 #pragma mark - CHECKPOINT ACCESSORS:
 
-    Checkpointer::Checkpointer(const Options *opt, fleece::slice remoteURL, C4Collection *collection)
+    Checkpointer::Checkpointer(const Options* opt, fleece::slice remoteURL, C4Collection* collection)
         : _options(opt), _remoteURL(remoteURL), _collection(collection) {}
 
     Checkpointer::~Checkpointer() = default;
@@ -56,12 +56,12 @@ namespace litecore { namespace repl {
         return _checkpoint->remoteMinSequence();
     }
 
-    void Checkpointer::setRemoteMinSequence(const RemoteSequence &s) {
+    void Checkpointer::setRemoteMinSequence(const RemoteSequence& s) {
         LOCK();
         if ( _checkpoint->setRemoteMinSequence(s) ) saveSoon();
     }
 
-    bool Checkpointer::validateWith(const Checkpoint &remote) {
+    bool Checkpointer::validateWith(const Checkpoint& remote) {
         LOCK();
         if ( _checkpoint->validateWith(remote) ) return true;
         saveSoon();
@@ -74,14 +74,14 @@ namespace litecore { namespace repl {
         saveSoon();
     }
 
-    void Checkpointer::addPendingSequences(const std::vector<C4SequenceNumber> &sequences,
+    void Checkpointer::addPendingSequences(const std::vector<C4SequenceNumber>& sequences,
                                            C4SequenceNumber firstInRange, C4SequenceNumber lastInRange) {
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 
-    void Checkpointer::addPendingSequences(RevToSendList &sequences, C4SequenceNumber firstInRange,
+    void Checkpointer::addPendingSequences(RevToSendList& sequences, C4SequenceNumber firstInRange,
                                            C4SequenceNumber lastInRange) {
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
@@ -169,7 +169,7 @@ namespace litecore { namespace repl {
 
 #pragma mark - CHECKPOINT DOC ID:
 
-    slice Checkpointer::remoteDocID(C4Database *db) {
+    slice Checkpointer::remoteDocID(C4Database* db) {
         if ( !_docID ) _docID = docIDForUUID(db->getPrivateUUID(), URLTransformStrategy::AsIs);
         return _docID;
     }
@@ -177,7 +177,7 @@ namespace litecore { namespace repl {
     slice Checkpointer::remoteDBIDString() const { return _options->remoteDBIDString(_remoteURL); }
 
     // Writes a Value to an Encoder, substituting null if the value is an empty array.
-    static void writeValueOrNull(fleece::Encoder &enc, Value val) {
+    static void writeValueOrNull(fleece::Encoder& enc, Value val) {
         auto a = val.asArray();
         if ( !val || (a && a.empty()) ) enc.writeNull();
         else
@@ -185,7 +185,7 @@ namespace litecore { namespace repl {
     }
 
     // Computes the ID of the checkpoint document.
-    string Checkpointer::docIDForUUID(const C4UUID &localUUID, URLTransformStrategy urlStrategy) {
+    string Checkpointer::docIDForUUID(const C4UUID& localUUID, URLTransformStrategy urlStrategy) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
         Array       channels     = _options->channels(collectionIndex());
         Value       filter       = _options->properties[kC4ReplicatorOptionFilter];
@@ -235,7 +235,7 @@ namespace litecore { namespace repl {
 #pragma mark - READING THE CHECKPOINT:
 
     // Reads the local checkpoint
-    bool Checkpointer::read(C4Database *db, bool reset) {
+    bool Checkpointer::read(C4Database* db, bool reset) {
         if ( _checkpoint ) return true;
 
         alloc_slice body;
@@ -247,14 +247,14 @@ namespace litecore { namespace repl {
             body          = _read(db, _initialDocID);
             if ( !body ) {
                 // Look for a prior database UUID:
-                db->getRawDocument(C4Database::kInfoStore, constants::kPreviousPrivateUUIDKey, [&](C4RawDocument *doc) {
+                db->getRawDocument(C4Database::kInfoStore, constants::kPreviousPrivateUUIDKey, [&](C4RawDocument* doc) {
                     if ( doc ) {
                         // If there is one, derive a doc ID from that and look for a checkpoint there
                         for ( URLTransformStrategy strategy = URLTransformStrategy::AddPort;
                               strategy <= URLTransformStrategy::RemovePort; ++strategy ) {
                             // CBL-1515: Make sure to account for platform inconsistencies in the format
                             // (some have been forcing the port for standard ports and others were omitting it)
-                            _initialDocID = docIDForUUID(*(C4UUID *)doc->body.buf, strategy);
+                            _initialDocID = docIDForUUID(*(C4UUID*)doc->body.buf, strategy);
                             if ( !_initialDocID ) { continue; }
 
                             body = _read(db, _initialDocID);
@@ -278,15 +278,15 @@ namespace litecore { namespace repl {
     }
 
     // subroutine that actually reads the checkpoint doc from the db
-    alloc_slice Checkpointer::_read(C4Database *db, slice checkpointID) {
+    alloc_slice Checkpointer::_read(C4Database* db, slice checkpointID) {
         alloc_slice body;
-        db->getRawDocument(constants::kLocalCheckpointStore, checkpointID, [&](C4RawDocument *doc) {
+        db->getRawDocument(constants::kLocalCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
             if ( doc ) body = alloc_slice(doc->body);
         });
         return body;
     }
 
-    void Checkpointer::write(C4Database *db, slice data) {
+    void Checkpointer::write(C4Database* db, slice data) {
         const auto checkpointID = remoteDocID(db);
         db->putRawDocument(constants::kLocalCheckpointStore, {checkpointID, nullslice, data});
         // Now that we've saved, use the real checkpoint ID for any future reads:
@@ -309,7 +309,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    bool Checkpointer::isDocumentAllowed(C4Document *doc) {
+    bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         CollectionIndex i = collectionIndex();
         return isDocumentIDAllowed(doc->docID())
                && (!_options->pushFilter(i)
@@ -325,7 +325,7 @@ namespace litecore { namespace repl {
 
 #pragma mark - PENDING DOCUMENTS:
 
-    void Checkpointer::pendingDocumentIDs(C4Database *db, PendingDocCallback callback) {
+    void Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback) {
         if ( !_options->isActive() ) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
@@ -375,7 +375,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    bool Checkpointer::isDocumentPending(C4Database *db, slice docId) {
+    bool Checkpointer::isDocumentPending(C4Database* db, slice docId) {
         if ( !_options->isActive() ) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
@@ -388,9 +388,9 @@ namespace litecore { namespace repl {
 
 #pragma mark - STORING PEER CHECKPOINTS:
 
-    bool Checkpointer::getPeerCheckpoint(C4Database *db, slice checkpointID, alloc_slice &outBody,
-                                         alloc_slice &outRevID) {
-        return db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument *doc) {
+    bool Checkpointer::getPeerCheckpoint(C4Database* db, slice checkpointID, alloc_slice& outBody,
+                                         alloc_slice& outRevID) {
+        return db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
             if ( doc ) {
                 outBody  = alloc_slice(doc->body);
                 outRevID = alloc_slice(doc->meta);
@@ -398,14 +398,14 @@ namespace litecore { namespace repl {
         });
     }
 
-    bool Checkpointer::savePeerCheckpoint(C4Database *db, slice checkpointID, slice body, slice revID,
-                                          alloc_slice &newRevID) {
+    bool Checkpointer::savePeerCheckpoint(C4Database* db, slice checkpointID, slice body, slice revID,
+                                          alloc_slice& newRevID) {
         C4Database::Transaction t(db);
 
         // Get the existing raw doc so we can check its revID:
         alloc_slice   actualRev;
         unsigned long generation = 0;
-        db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument *doc) {
+        db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
             if ( doc ) {
                 generation = C4Document::getRevIDGeneration(doc->meta);
                 if ( generation > 0 ) actualRev = doc->meta;

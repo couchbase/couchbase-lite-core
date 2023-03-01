@@ -45,14 +45,14 @@ namespace litecore { namespace REST {
 
         std::string path(int i) const;
 
-        std::string query(const char *param) const;
-        int64_t     intQuery(const char *param, int64_t defaultValue = 0) const;
-        bool        boolQuery(const char *param, bool defaultValue = false) const;
+        std::string query(const char* param) const;
+        int64_t     intQuery(const char* param, int64_t defaultValue = 0) const;
+        bool        boolQuery(const char* param, bool defaultValue = false) const;
 
       protected:
         friend class Server;
 
-        Request(Method, const std::string &path, const std::string &queries, websocket::Headers headers,
+        Request(Method, const std::string& path, const std::string& queries, websocket::Headers headers,
                 fleece::alloc_slice body);
         Request() = default;
 
@@ -68,10 +68,10 @@ namespace litecore { namespace REST {
       public:
         // Response status:
 
-        void respondWithStatus(HTTPStatus, const char *message = nullptr);
+        void respondWithStatus(HTTPStatus, const char* message = nullptr);
         void respondWithError(C4Error);
 
-        void setStatus(HTTPStatus status, const char *message);
+        void setStatus(HTTPStatus status, const char* message);
 
         HTTPStatus status() const { return _status; }
 
@@ -79,9 +79,9 @@ namespace litecore { namespace REST {
 
         // Response headers:
 
-        void setHeader(const char *header, const char *value);
+        void setHeader(const char* header, const char* value);
 
-        void setHeader(const char *header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
+        void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
 
         void addHeaders(std::map<std::string, std::string>);
 
@@ -92,13 +92,13 @@ namespace litecore { namespace REST {
 
         void write(fleece::slice);
 
-        void write(const char *content) { write(fleece::slice(content)); }
+        void write(const char* content) { write(fleece::slice(content)); }
 
-        void printf(const char *format, ...) __printflike(2, 3);
+        void printf(const char* format, ...) __printflike(2, 3);
 
-        fleece::JSONEncoder &jsonEncoder();
+        fleece::JSONEncoder& jsonEncoder();
 
-        void writeStatusJSON(HTTPStatus status, const char *message = nullptr);
+        void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);
 
         // Must be called after everything's written:
@@ -108,16 +108,16 @@ namespace litecore { namespace REST {
 
         bool isValidWebSocketRequest();
 
-        void sendWebSocketResponse(const std::string &protocol);
+        void sendWebSocketResponse(const std::string& protocol);
 
-        void onClose(std::function<void()> &&callback);
+        void onClose(std::function<void()>&& callback);
 
         std::unique_ptr<net::ResponderSocket> extractSocket();
 
         std::string peerAddress();
 
       protected:
-        RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket>);
+        RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
         void sendStatus();
         void sendHeaders();
         void handleSocketError();

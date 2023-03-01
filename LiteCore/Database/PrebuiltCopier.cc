@@ -22,7 +22,7 @@
 namespace litecore {
     using namespace std;
 
-    void CopyPrebuiltDB(const litecore::FilePath &from, const litecore::FilePath &to, const C4DatabaseConfig *config) {
+    void CopyPrebuiltDB(const litecore::FilePath& from, const litecore::FilePath& to, const C4DatabaseConfig* config) {
         if ( !from.exists() ) {
             Warn("No database exists at %s, cannot copy!", from.path().c_str());
             error::_throw(error::Domain::LiteCore, kC4ErrorNotFound);
@@ -44,7 +44,7 @@ namespace litecore {
             Retained<C4Database> db;
             try {
                 db = C4Database::openAtPath(temp.path(), config->flags, &config->encryptionKey);
-            } catch ( const error &x ) {
+            } catch ( const error& x ) {
                 if ( x.domain == error::LiteCore && x.code == error::NotADatabaseFile ) {
                     Warn("Cannot open the copied database with the given encryption key. "
                          "The given encryption key needs to be matched with the encryption key "

@@ -113,7 +113,7 @@ U_CFUNC U_IMPORT const uint8_t /* U_IMPORT2? */ /*U_IMPORT*/
  * functions are hidden (otherwise public macros would fail to compile).
  * @internal
  */
-U_STABLE UChar32 U_EXPORT2 utf8_nextCharSafeBody(const uint8_t *s, int32_t *pi, int32_t length, UChar32 c,
+U_STABLE UChar32 U_EXPORT2 utf8_nextCharSafeBody(const uint8_t* s, int32_t* pi, int32_t length, UChar32 c,
                                                  UBool strict);
 
 /**
@@ -125,7 +125,7 @@ U_STABLE UChar32 U_EXPORT2 utf8_nextCharSafeBody(const uint8_t *s, int32_t *pi, 
  * functions are hidden (otherwise public macros would fail to compile).
  * @internal
  */
-U_STABLE int32_t U_EXPORT2 utf8_appendCharSafeBody(uint8_t *s, int32_t i, int32_t length, UChar32 c, UBool *pIsError);
+U_STABLE int32_t U_EXPORT2 utf8_appendCharSafeBody(uint8_t* s, int32_t i, int32_t length, UChar32 c, UBool* pIsError);
 
 /**
  * Function for handling "previous code point" with error-checking.
@@ -136,7 +136,7 @@ U_STABLE int32_t U_EXPORT2 utf8_appendCharSafeBody(uint8_t *s, int32_t i, int32_
  * functions are hidden (otherwise public macros would fail to compile).
  * @internal
  */
-U_STABLE UChar32 U_EXPORT2 utf8_prevCharSafeBody(const uint8_t *s, int32_t start, int32_t *pi, UChar32 c, UBool strict);
+U_STABLE UChar32 U_EXPORT2 utf8_prevCharSafeBody(const uint8_t* s, int32_t start, int32_t* pi, UChar32 c, UBool strict);
 
 /**
  * Function for handling "skip backward one code point" with error-checking.
@@ -147,7 +147,7 @@ U_STABLE UChar32 U_EXPORT2 utf8_prevCharSafeBody(const uint8_t *s, int32_t start
  * functions are hidden (otherwise public macros would fail to compile).
  * @internal
  */
-U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t *s, int32_t start, int32_t i);
+U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t* s, int32_t start, int32_t i);
 
 /* single-code point definitions -------------------------------------------- */
 
@@ -356,7 +356,7 @@ U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t *s, int32_t start, i
                 ++(i);                                                                                                 \
             } else {                                                                                                   \
                 /* function call for "complicated" and error cases */                                                  \
-                (c) = utf8_nextCharSafeBody((const uint8_t *)s, &(i), (length), c, -1);                                \
+                (c) = utf8_nextCharSafeBody((const uint8_t*)s, &(i), (length), c, -1);                                 \
             }                                                                                                          \
         }                                                                                                              \
     }
@@ -403,7 +403,7 @@ U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t *s, int32_t start, i
                 ++(i);                                                                                                 \
             } else {                                                                                                   \
                 /* function call for "complicated" and error cases */                                                  \
-                (c) = utf8_nextCharSafeBody((const uint8_t *)s, &(i), (length), c, -3);                                \
+                (c) = utf8_nextCharSafeBody((const uint8_t*)s, &(i), (length), c, -3);                                 \
             }                                                                                                          \
         }                                                                                                              \
     }
@@ -662,7 +662,7 @@ U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t *s, int32_t start, i
 #define U8_PREV(s, start, i, c)                                                                                        \
     {                                                                                                                  \
         (c) = (uint8_t)(s)[--(i)];                                                                                     \
-        if ( (c) >= 0x80 ) { (c) = utf8_prevCharSafeBody((const uint8_t *)s, start, &(i), c, -1); }                    \
+        if ( (c) >= 0x80 ) { (c) = utf8_prevCharSafeBody((const uint8_t*)s, start, &(i), c, -1); }                     \
     }
 
 /**
@@ -692,7 +692,7 @@ U_STABLE int32_t U_EXPORT2 utf8_back1SafeBody(const uint8_t *s, int32_t start, i
 #define U8_PREV_OR_FFFD(s, start, i, c)                                                                                \
     {                                                                                                                  \
         (c) = (uint8_t)(s)[--(i)];                                                                                     \
-        if ( (c) >= 0x80 ) { (c) = utf8_prevCharSafeBody((const uint8_t *)s, start, &(i), c, -3); }                    \
+        if ( (c) >= 0x80 ) { (c) = utf8_prevCharSafeBody((const uint8_t*)s, start, &(i), c, -3); }                     \
     }
 
 /**

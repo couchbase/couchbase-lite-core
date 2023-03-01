@@ -43,7 +43,7 @@ class QueryTest : public DataFileTestFixture {
     static unsigned alter3;
 
     QueryTest(int option) {
-        static const char *kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
+        static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
         logSection(kSectionNames[option]);
         unsigned jump;
         switch ( option ) {
@@ -62,10 +62,10 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
-    void logSection(const string &name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
+    void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
 
     string numberString(int n) {
-        static const char *kDigit[10]
+        static const char* kDigit[10]
                 = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
         string str;
         do {
@@ -76,8 +76,8 @@ class QueryTest : public DataFileTestFixture {
         return str;
     }
 
-    sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction &t, DocumentFlags flags = DocumentFlags::kNone) {
-        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
+    sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction& t, DocumentFlags flags = DocumentFlags::kNone) {
+        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(i);
             enc.writeKey("type");
@@ -99,8 +99,8 @@ class QueryTest : public DataFileTestFixture {
         QueryLog.setLevel(level);
     }
 
-    sequence_t writeArrayDoc(int i, ExclusiveTransaction &t, DocumentFlags flags = DocumentFlags::kNone) {
-        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
+    sequence_t writeArrayDoc(int i, ExclusiveTransaction& t, DocumentFlags flags = DocumentFlags::kNone) {
+        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder& enc) {
             enc.writeKey("numbers");
             enc.beginArray();
             for ( int j = std::max(i - 5, 1); j <= i; j++ ) enc.writeString(numberString(j));
@@ -116,25 +116,25 @@ class QueryTest : public DataFileTestFixture {
         t.commit();
     }
 
-    void writeMultipleTypeDocs(ExclusiveTransaction &t) {
-        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    void writeMultipleTypeDocs(ExclusiveTransaction& t) {
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.beginArray();
             enc.writeInt(1);
             enc.endArray();
         });
 
-        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeString("cool value");
         });
 
-        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeDouble(4.5);
         });
 
-        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.beginDictionary(1);
             enc.writeKey("subvalue");
@@ -142,26 +142,26 @@ class QueryTest : public DataFileTestFixture {
             enc.endDictionary();
         });
 
-        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeBool(true);
         });
     }
 
-    void writeFalselyDocs(ExclusiveTransaction &t) {
-        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+    void writeFalselyDocs(ExclusiveTransaction& t) {
+        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.beginArray();
             enc.endArray();
         });
 
-        writeDoc("doc7"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc7"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.beginDictionary();
             enc.endDictionary();
         });
 
-        writeDoc("doc81"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        writeDoc("doc81"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("value");
             enc.writeBool(false);
         });
@@ -191,7 +191,7 @@ class QueryTest : public DataFileTestFixture {
 
     std::vector<std::string> extractIndexes(std::vector<IndexSpec> indexes) {
         std::set<std::string> retVal;
-        for ( auto &i : indexes ) retVal.insert(i.name);
+        for ( auto& i : indexes ) retVal.insert(i.name);
         return std::vector<std::string>(retVal.begin(), retVal.end());
     }
 
@@ -201,13 +201,13 @@ class QueryTest : public DataFileTestFixture {
         return e->getRowCount();
     }
 
-    void testExpressions(const std::vector<std::pair<std::string, std::string>> &tests) {
+    void testExpressions(const std::vector<std::pair<std::string, std::string>>& tests) {
         {
             ExclusiveTransaction t(store->dataFile());
             writeNumberedDoc(1, nullslice, t);
             t.commit();
         }
-        for ( auto &test : tests ) {
+        for ( auto& test : tests ) {
             INFO("Testing " << test.first);
             auto                      query = store->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
             Retained<QueryEnumerator> e(query->createEnumerator());
@@ -217,14 +217,14 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
-    void checkOptimized(Query *query, bool expectOptimized = true) {
+    void checkOptimized(Query* query, bool expectOptimized = true) {
         string explanation = query->explain();
         Log("Query:\n%s", explanation.c_str());
         auto optimized = (explanation.find("SCAN") == string::npos);
         CHECK(optimized == expectOptimized);
     }
 
-    string queryWhat(const char *what) {
+    string queryWhat(const char* what) {
         auto                      query = store->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
         Retained<QueryEnumerator> e(query->createEnumerator());
         REQUIRE(e->next());

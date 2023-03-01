@@ -196,7 +196,7 @@ namespace litecore {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-        C4Cert *getPeerTLSCertificate() const {
+        C4Cert* getPeerTLSCertificate() const {
             LOCK(_mutex);
             if ( !_peerTLSCertificate && _peerTLSCertificateData ) {
                 _peerTLSCertificate     = C4Cert::fromData(_peerTLSCertificateData);
@@ -209,7 +209,7 @@ namespace litecore {
 
       protected:
         // base constructor
-        C4ReplicatorImpl(C4Database *db NONNULL, const C4ReplicatorParameters &params)
+        C4ReplicatorImpl(C4Database* db NONNULL, const C4ReplicatorParameters& params)
             : Logging(SyncLog)
             , _database(db)
             , _options(new Options(params))
@@ -281,7 +281,7 @@ namespace litecore {
             if ( !_replicator ) {
                 try {
                     createReplicator();
-                } catch ( exception &x ) {
+                } catch ( exception& x ) {
                     _status.error = C4Error::fromException(x);
                     _replicator   = nullptr;
                     return false;
@@ -315,8 +315,8 @@ namespace litecore {
 
 
         // Replicator::Delegate method, notifying that the WebSocket has connected.
-        virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                               const websocket::Headers &headers) override {
+        virtual void replicatorGotHTTPResponse(Replicator* repl, int status,
+                                               const websocket::Headers& headers) override {
             LOCK(_mutex);
             if ( repl == _replicator ) {
                 Assert(!_responseHeaders);
@@ -333,7 +333,7 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying that the status level or progress have changed.
-        virtual void replicatorStatusChanged(Replicator *repl, const Replicator::Status &newStatus) override {
+        virtual void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override {
             Retained<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
 
             bool stopped, resume = false;
@@ -371,12 +371,12 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying that document(s) have finished.
-        virtual void replicatorDocumentsEnded(Replicator                                 *repl,
-                                              const std::vector<Retained<ReplicatedRev>> &revs) override {
+        virtual void replicatorDocumentsEnded(Replicator*                                 repl,
+                                              const std::vector<Retained<ReplicatedRev>>& revs) override {
             if ( repl != _replicator ) return;
 
-            auto                                 nRevs = revs.size();
-            std::vector<const C4DocumentEnded *> docsEnded;
+            auto                                nRevs = revs.size();
+            std::vector<const C4DocumentEnded*> docsEnded;
             docsEnded.reserve(nRevs);
             for ( int pushing = 0; pushing <= 1; ++pushing ) {
                 docsEnded.clear();
@@ -392,7 +392,7 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying of blob up/download progress.
-        virtual void replicatorBlobProgress(Replicator *repl, const Replicator::BlobProgress &p) override {
+        virtual void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
             if ( repl != _replicator ) return;
             auto onBlob = _onBlobProgress.load();
             if ( onBlob )
@@ -438,7 +438,7 @@ namespace litecore {
 
         class PendingDocuments {
           public:
-            PendingDocuments(const C4ReplicatorImpl *repl, C4CollectionSpec spec) : collectionSpec(spec) {
+            PendingDocuments(const C4ReplicatorImpl* repl, C4CollectionSpec spec) : collectionSpec(spec) {
                 // Lock the replicator and copy the necessary state now, so I don't have to lock while
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
@@ -449,7 +449,7 @@ namespace litecore {
                 // pending document ID function now returning a boolean success, isDocumentPending returning
                 // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
                 // returns nullopt, the checkpointer is fallen back on
-                C4Collection *collection = nullptr;
+                C4Collection* collection = nullptr;
                 // The collection must be included in the replicator's config options.
                 auto it = repl->_options->collectionSpecToIndex().find(collectionSpec);
                 if ( it != repl->_options->collectionSpecToIndex().end() ) {
@@ -470,7 +470,7 @@ namespace litecore {
                 Encoder enc;
                 enc.beginArray();
                 bool any      = false;
-                auto callback = [&](const C4DocumentInfo &info) {
+                auto callback = [&](const C4DocumentInfo& info) {
                     enc.writeString(info.docID);
                     any = true;
                 };
@@ -494,7 +494,7 @@ namespace litecore {
 
           private:
             Retained<Replicator> replicator;
-            Checkpointer        *checkpointer{nullptr};  // assigned in the constructor
+            Checkpointer*        checkpointer{nullptr};  // assigned in the constructor
             Retained<C4Database> database;
             C4CollectionSpec     collectionSpec;
         };

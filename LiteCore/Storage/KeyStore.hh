@@ -45,9 +45,9 @@ namespace litecore {
         static constexpr Capabilities withSequences = {true};
         static constexpr Capabilities noSequences   = {false};
 
-        DataFile &dataFile() const { return _db; }
+        DataFile& dataFile() const { return _db; }
 
-        const std::string &name() const { return _name; }
+        const std::string& name() const { return _name; }
 
         Capabilities capabilities() const { return _capabilities; }
 
@@ -55,7 +55,7 @@ namespace litecore {
         virtual sequence_t lastSequence() const                           = 0;
         virtual uint64_t   purgeCount() const                             = 0;
 
-        virtual void shareSequencesWith(KeyStore &) = 0;
+        virtual void shareSequencesWith(KeyStore&) = 0;
 
         //////// Collections/Scopes:
 
@@ -87,18 +87,18 @@ namespace litecore {
         //////// Keys/values:
 
         /** Reads the rest of a record whose key() or sequence() is already set. */
-        virtual bool read(Record &rec, ReadBy = ReadBy::Key, ContentOption = kEntireBody) const = 0;
+        virtual bool read(Record& rec, ReadBy = ReadBy::Key, ContentOption = kEntireBody) const = 0;
 
         Record get(slice key, ContentOption = kEntireBody) const;
         Record get(sequence_t, ContentOption = kEntireBody) const;
 
-        using WithDocBodyCallback = function_ref<alloc_slice(const RecordUpdate &)>;
+        using WithDocBodyCallback = function_ref<alloc_slice(const RecordUpdate&)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
             The return value is the collected strings, in the same order as the docIDs.
             If a docID doesn't exist in the database, the corresponding result will be nullslice. */
-        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs, WithDocBodyCallback callback)
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback)
                 = 0;
 
         //////// Writing:
@@ -114,14 +114,14 @@ namespace litecore {
                         will be incremented.
             @param transaction  The active transaction.
             @return  The record's new sequence number, or 0 if there is a conflict. */
-        virtual sequence_t set(const RecordUpdate &rec, bool updateSequence,
-                               ExclusiveTransaction &transaction) MUST_USE_RESULT
+        virtual sequence_t set(const RecordUpdate& rec, bool updateSequence,
+                               ExclusiveTransaction& transaction) MUST_USE_RESULT
                 = 0;
 
         /** Alternative `set` that takes a `Record` directly.
             It updates the `sequence` property, instead of returning the new sequence.
             It throws a Conflict exception on conflict. */
-        void set(Record &rec, bool updateSequence, ExclusiveTransaction &transaction);
+        void set(Record& rec, bool updateSequence, ExclusiveTransaction& transaction);
 
         /** Core setter for KeyStores _without_ sequences.
             There is no MVCC; whatever's stored at that key is overwritten.
@@ -129,24 +129,24 @@ namespace litecore {
             @param version  Version metadata.
             @param value  The record's value (body).
             @param transaction  The current transaction. */
-        virtual void setKV(slice key, slice version, slice value, ExclusiveTransaction &transaction) = 0;
+        virtual void setKV(slice key, slice version, slice value, ExclusiveTransaction& transaction) = 0;
 
-        void setKV(slice key, slice value, ExclusiveTransaction &t) { setKV(key, nullslice, value, t); }
+        void setKV(slice key, slice value, ExclusiveTransaction& t) { setKV(key, nullslice, value, t); }
 
-        void setKV(Record &, ExclusiveTransaction &);
+        void setKV(Record&, ExclusiveTransaction&);
 
-        virtual bool del(slice key, ExclusiveTransaction &, sequence_t replacingSequence = {},
+        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence = {},
                          std::optional<uint64_t> replacingSubsequence = std::nullopt)
                 = 0;
 
-        bool del(const Record &rec, ExclusiveTransaction &t) { return del(rec.key(), t); }
+        bool del(const Record& rec, ExclusiveTransaction& t) { return del(rec.key(), t); }
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction &) = 0;
+        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) = 0;
 
         /** Copies record with given key to another KeyStore, with a new sequence and possibly a
             new key, then deletes it from this KeyStore. */
-        virtual void moveTo(slice key, KeyStore &dst, ExclusiveTransaction &, slice newKey = nullslice) = 0;
+        virtual void moveTo(slice key, KeyStore& dst, ExclusiveTransaction&, slice newKey = nullslice) = 0;
 
         virtual void transactionWillEnd(bool commit) {}
 
@@ -186,12 +186,12 @@ namespace litecore {
 
         virtual bool supportsIndexes(IndexSpec::Type) const { return false; }
 
-        virtual bool createIndex(const IndexSpec &) = 0;
+        virtual bool createIndex(const IndexSpec&) = 0;
         bool createIndex(slice name, slice expression, QueryLanguage queryLanguage, IndexSpec::Type = IndexSpec::kValue,
-                         const IndexSpec::Options * = nullptr);  // convenience method
+                         const IndexSpec::Options* = nullptr);  // convenience method
 
         bool createIndex(slice name, slice expression, IndexSpec::Type type = IndexSpec::kValue,
-                         const IndexSpec::Options *options = nullptr)  // convenience method
+                         const IndexSpec::Options* options = nullptr)  // convenience method
         {
             return createIndex(name, expression, QueryLanguage::kJSON, type, options);
         }
@@ -203,23 +203,23 @@ namespace litecore {
         virtual ~KeyStore() = default;
 
       protected:
-        KeyStore(DataFile &db, const std::string &name, Capabilities capabilities)
+        KeyStore(DataFile& db, const std::string& name, Capabilities capabilities)
             : _db(db), _name(name), _capabilities(capabilities) {}
 
         virtual void reopen() {}
 
         virtual void close() {}
 
-        virtual RecordEnumerator::Impl *newEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options)
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options)
                 = 0;
 
-        DataFile          &_db;            // The DataFile I'm contained in
+        DataFile&          _db;            // The DataFile I'm contained in
         const std::string  _name;          // My name
         const Capabilities _capabilities;  // Do I support sequences or soft deletes?
 
       private:
-        KeyStore(const KeyStore &)            = delete;  // not copyable
-        KeyStore &operator=(const KeyStore &) = delete;
+        KeyStore(const KeyStore&)            = delete;  // not copyable
+        KeyStore& operator=(const KeyStore&) = delete;
 
         friend class BothKeyStore;
         friend class BothEnumeratorImpl;

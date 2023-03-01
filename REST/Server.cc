@@ -37,15 +37,15 @@ namespace litecore { namespace REST {
     using namespace litecore::net;
     using namespace sockpp;
 
-    static bool isAnyAddress(const sock_address_any &addr) {
-        if ( addr.family() == AF_INET ) { return ((const inet_address &)addr).address() == 0; }
+    static bool isAnyAddress(const sock_address_any& addr) {
+        if ( addr.family() == AF_INET ) { return ((const inet_address&)addr).address() == 0; }
 
         if ( addr.family() == AF_INET6 ) {
-            auto rawAddr = ((const inet6_address &)addr).address();
+            auto rawAddr = ((const inet6_address&)addr).address();
 
             // The differences in naming for each platform are annoying for this struct
             // It's 128-bits, for crying out loud so let's just see if they are all zero...
-            uint64_t *ptr = (uint64_t *)&rawAddr;
+            uint64_t* ptr = (uint64_t*)&rawAddr;
             return ptr[0] == 0 && ptr[1] == 0;
         }
 
@@ -79,7 +79,7 @@ namespace litecore { namespace REST {
             // Not bound to any address, so it's listening on all interfaces.
             // Add the hostname if known:
             if ( auto hostname = GetMyHostName(); hostname ) addresses.push_back(*hostname);
-            for ( auto &addr : Interface::allAddresses() ) { addresses.push_back(string(addr)); }
+            for ( auto& addr : Interface::allAddresses() ) { addresses.push_back(string(addr)); }
         }
         return addresses;
     }
@@ -90,7 +90,7 @@ namespace litecore { namespace REST {
         optional<IPAddress> addr = IPAddress::parse(string(networkInterface));
         if ( !addr ) {
             // Or is it an interface name?
-            for ( auto &intf : Interface::all() ) {
+            for ( auto& intf : Interface::all() ) {
                 if ( slice(intf.name) == networkInterface ) {
                     addr = intf.primaryAddress();
                     break;
@@ -101,7 +101,7 @@ namespace litecore { namespace REST {
         return addr->sockppAddress(port);
     }
 
-    void Server::start(uint16_t port, slice networkInterface, TLSContext *tlsContext) {
+    void Server::start(uint16_t port, slice networkInterface, TLSContext* tlsContext) {
         TCPSocket::initialize();  // make sure sockpp lib is initialized
 
         auto ifAddr = interfaceToAddress(networkInterface, port);
@@ -159,14 +159,14 @@ namespace litecore { namespace REST {
                 });
                 handleThread.detach();
             }
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
         }
         // Start another async accept:
         awaitConnection();
     }
 
-    void Server::handleConnection(sockpp::stream_socket &&sock) {
+    void Server::handleConnection(sockpp::stream_socket&& sock) {
         auto responder = make_unique<ResponderSocket>(_tlsContext);
         if ( !responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS()) ) {
             c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
@@ -188,27 +188,27 @@ namespace litecore { namespace REST {
         }
     }
 
-    void Server::setExtraHeaders(const std::map<std::string, std::string> &headers) {
+    void Server::setExtraHeaders(const std::map<std::string, std::string>& headers) {
         lock_guard<mutex> lock(_mutex);
         _extraHeaders = headers;
     }
 
-    void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
+    void Server::addHandler(Methods methods, const string& patterns, const Handler& handler) {
         lock_guard<mutex> lock(_mutex);
         split(patterns, "|", [&](string_view pattern) {
             _rules.push_back({methods, string(pattern), regex(pattern.data(), pattern.size()), handler});
         });
     }
 
-    Server::URIRule *Server::findRule(Method method, const string &path) {
+    Server::URIRule* Server::findRule(Method method, const string& path) {
         //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
-        for ( auto &rule : _rules ) {
+        for ( auto& rule : _rules ) {
             if ( (rule.methods & method) && regex_match(path.c_str(), rule.regex) ) return &rule;
         }
         return nullptr;
     }
 
-    void Server::dispatchRequest(RequestResponse *rq) {
+    void Server::dispatchRequest(RequestResponse* rq) {
         Method method = rq->method();
         if ( method == Method::GET && rq->header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
 
@@ -245,7 +245,7 @@ namespace litecore { namespace REST {
                 else
                     rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             }
-        } catch ( const std::exception &x ) {
+        } catch ( const std::exception& x ) {
             c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
             rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }

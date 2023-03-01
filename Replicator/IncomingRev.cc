@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
     // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
 
-    IncomingRev::IncomingRev(Puller *puller) : Worker(puller, "inc", puller->collectionIndex()), _puller(puller) {
+    IncomingRev::IncomingRev(Puller* puller) : Worker(puller, "inc", puller->collectionIndex()), _puller(puller) {
         _importance = false;
         static atomic<uint32_t> sRevSignpostCount{0};
         _serialNumber = ++sRevSignpostCount;
@@ -52,7 +52,7 @@ namespace litecore { namespace repl {
 
     // Read the 'rev' message, then parse either synchronously or asynchronously.
     // This runs on the caller's (Puller's) thread.
-    void IncomingRev::handleRev(blip::MessageIn *msg, uint64_t bodySize) {
+    void IncomingRev::handleRev(blip::MessageIn* msg, uint64_t bodySize) {
         reinitialize();
         _bodySize = bodySize;
 
@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
     }
 
     // We've lost access to this doc on the server; it should be purged.
-    void IncomingRev::handleRevokedDoc(RevToInsert *rev) {
+    void IncomingRev::handleRevokedDoc(RevToInsert* rev) {
         reinitialize();
         _rev       = rev;
         rev->owner = this;
@@ -230,7 +230,7 @@ namespace litecore { namespace repl {
 
         // Check for blobs, and queue up requests for any I don't have yet:
         if ( _mayContainBlobs ) {
-            _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+            _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey& key) {
                 _rev->flags |= kRevHasAttachments;
                 _pendingBlobs.push_back({_rev->docID, alloc_slice(FLDeepIterator_GetPathString(i)), key,
                                          blob["length"_sl].asUnsigned(), C4Blob::isLikelyCompressible(blob)});

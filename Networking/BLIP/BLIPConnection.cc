@@ -42,7 +42,7 @@ namespace litecore { namespace blip {
 
     static const auto kDefaultCompressionLevel = (Deflater::CompressionLevel)6;
 
-    const char *const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?", "ACKREQ", "AKRES", "?6?", "?7?"};
+    const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?", "ACKREQ", "AKRES", "?6?", "?7?"};
 
     LogDomain        BLIPLog("BLIP", LogLevel::Warning);
     static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::None);
@@ -54,10 +54,10 @@ namespace litecore { namespace blip {
 
         MessageQueue(size_t rsrv) { reserve(rsrv); }
 
-        bool contains(MessageOut *msg) const { return find(begin(), end(), msg) != end(); }
+        bool contains(MessageOut* msg) const { return find(begin(), end(), msg) != end(); }
 
-        MessageOut *findMessage(MessageNo msgNo, bool isResponse) const {
-            auto i = find_if(begin(), end(), [&](const Retained<MessageOut> &msg) {
+        MessageOut* findMessage(MessageNo msgNo, bool isResponse) const {
+            auto i = find_if(begin(), end(), [&](const Retained<MessageOut>& msg) {
                 return msg->number() == msgNo && msg->isResponse() == isResponse;
             });
             if ( i == end() ) return nullptr;
@@ -71,7 +71,7 @@ namespace litecore { namespace blip {
             return msg;
         }
 
-        bool remove(MessageOut *msg) {
+        bool remove(MessageOut* msg) {
             auto i = find(begin(), end(), msg);
             if ( i == end() ) return false;
             erase(i);
@@ -111,7 +111,7 @@ namespace litecore { namespace blip {
         Retained<WeakHolder<Delegate>>                  _weakThis{new WeakHolder<Delegate>(this)};
 
       public:
-        BLIPIO(Connection *connection, WebSocket *webSocket, Deflater::CompressionLevel compressionLevel)
+        BLIPIO(Connection* connection, WebSocket* webSocket, Deflater::CompressionLevel compressionLevel)
             : Actor(BLIPLog, string("BLIP[") + connection->name() + "]")
             , _connection(connection)
             , _webSocket(webSocket)
@@ -133,7 +133,7 @@ namespace litecore { namespace blip {
             }
         }
 
-        void queueMessage(MessageOut *msg) {
+        void queueMessage(MessageOut* msg) {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_queueMessage), Retained<MessageOut>(msg));
         }
 
@@ -145,7 +145,7 @@ namespace litecore { namespace blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_close), closeCode, alloc_slice(message));
         }
 
-        WebSocket *webSocket() const { return _webSocket; }
+        WebSocket* webSocket() const { return _webSocket; }
 
         virtual std::string loggingIdentifier() const override {
             return _connection ? _connection->name() : Logging::loggingIdentifier();
@@ -162,7 +162,7 @@ namespace litecore { namespace blip {
             logStats();
         }
 
-        virtual void onWebSocketGotHTTPResponse(int status, const websocket::Headers &headers) override {
+        virtual void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {
             _connection->gotHTTPResponse(status, headers);
         }
 
@@ -181,7 +181,7 @@ namespace litecore { namespace blip {
 
         virtual void onWebSocketWriteable() override { enqueue(FUNCTION_TO_QUEUE(BLIPIO::_onWebSocketWriteable)); }
 
-        virtual void onWebSocketMessage(websocket::Message *message) override {
+        virtual void onWebSocketMessage(websocket::Message* message) override {
             if ( message->binary ) _incomingFrames.push(message);
             else
                 warn("Ignoring non-binary WebSocket message");
@@ -199,7 +199,7 @@ namespace litecore { namespace blip {
             if ( _webSocket && !_closingWithError ) { _webSocket->close(closeCode, message); }
         }
 
-        void _closeWithError(const error &x) {
+        void _closeWithError(const error& x) {
             if ( !_webSocket ) {
                 warn("_closeWithError received error with null websocket");
             } else if ( _closingWithError ) {
@@ -256,7 +256,7 @@ namespace litecore { namespace blip {
         }
 
         /** Adds a message to the outgoing queue */
-        void requeue(MessageOut *msg, bool andWrite = false) {
+        void requeue(MessageOut* msg, bool andWrite = false) {
             DebugAssert(!_outbox.contains(msg));
             auto i = _outbox.end();
             if ( msg->urgent() && _outbox.size() > 1 ) {
@@ -281,7 +281,7 @@ namespace litecore { namespace blip {
         }
 
         /** Adds an outgoing message to the icebox (until an ACK arrives.) */
-        void freezeMessage(MessageOut *msg) {
+        void freezeMessage(MessageOut* msg) {
             logVerbose("Freezing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
             DebugAssert(!_outbox.contains(msg));
             DebugAssert(!_icebox.contains(msg));
@@ -289,7 +289,7 @@ namespace litecore { namespace blip {
         }
 
         /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
-        void thawMessage(MessageOut *msg) {
+        void thawMessage(MessageOut* msg) {
             logVerbose("Thawing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
             LITECORE_UNUSED bool removed = _icebox.remove(msg);
             DebugAssert(removed);
@@ -329,7 +329,7 @@ namespace litecore { namespace blip {
                     if ( !_frameBuf ) _frameBuf.reset(new uint8_t[kMaxVarintLen64 + 1 + 4 + kBigFrameSize]);
                     slice_ostream out(_frameBuf.get(), maxSize);
                     out.writeUVarInt(msg->_number);
-                    auto flagsPos = (FrameFlags *)out.next();
+                    auto flagsPos = (FrameFlags*)out.next();
                     out.advance(1);
 
                     // Ask the MessageOut to write data to fill the buffer:
@@ -358,7 +358,7 @@ namespace litecore { namespace blip {
                     if ( !msg->isAck() ) {
                         logVerbose("Finished sending %s", msg->description().c_str());
                         // Add its response message to _pendingResponses:
-                        MessageIn *response = msg->createResponse();
+                        MessageIn* response = msg->createResponse();
                         if ( response ) _pendingResponses.emplace(response->number(), response);
                     }
                 }
@@ -378,7 +378,7 @@ namespace litecore { namespace blip {
             }
 
             try {
-                for ( auto &wsMessage : *messages ) {
+                for ( auto& wsMessage : *messages ) {
                     if ( _closingWithError ) {
                         warn("Cancelling onWebSocketMessages loop due to closing with error");
                         return;
@@ -458,7 +458,7 @@ namespace litecore { namespace blip {
                     wsMessage = nullptr;  // free the frame
                 }
 
-            } catch ( const std::exception &x ) {
+            } catch ( const std::exception& x ) {
                 logError("Caught exception handling incoming BLIP message: %s", x.what());
                 _closeWithError(error::convertException(x));
             }
@@ -533,15 +533,15 @@ namespace litecore { namespace blip {
             return msg;
         }
 
-        void cancelAll(MessageQueue &queue) {  // either _outbox or _icebox
+        void cancelAll(MessageQueue& queue) {  // either _outbox or _icebox
             if ( !queue.empty() ) logInfo("Notifying %zd outgoing messages they're canceled", queue.size());
-            for ( auto &msg : queue ) msg->disconnected();
+            for ( auto& msg : queue ) msg->disconnected();
             queue.clear();
         }
 
-        void cancelAll(MessageMap &pending) {  // either _pendingResponses or _pendingRequests
+        void cancelAll(MessageMap& pending) {  // either _pendingResponses or _pendingRequests
             if ( !pending.empty() ) logInfo("Notifying %zd incoming messages they're canceled", pending.size());
-            for ( auto &item : pending ) item.second->disconnected();
+            for ( auto& item : pending ) item.second->disconnected();
             pending.clear();
         }
 
@@ -552,9 +552,9 @@ namespace litecore { namespace blip {
                 _requestHandlers.erase(key);
         }
 
-        void handleRequestBeginning(MessageIn *request) {}
+        void handleRequestBeginning(MessageIn* request) {}
 
-        void handleRequestReceived(MessageIn *request, MessageIn::ReceiveState state) {
+        void handleRequestReceived(MessageIn* request, MessageIn::ReceiveState state) {
             try {
                 if ( state == MessageIn::kOther ) {
                     warn("handleRequestReceived received a message in a suspicious state (kOther)");
@@ -585,7 +585,7 @@ namespace litecore { namespace blip {
 
 #pragma mark - CONNECTION:
 
-    Connection::Connection(WebSocket *webSocket, const fleece::AllocedDict &options,
+    Connection::Connection(WebSocket* webSocket, const fleece::AllocedDict& options,
                            Retained<WeakHolder<ConnectionDelegate>> weakDelegate)
         : Logging(BLIPLog), _name(webSocket->name()), _role(webSocket->role()), _weakDelegate(weakDelegate) {
         if ( _role == Role::Server ) logInfo("Accepted connection");
@@ -610,14 +610,14 @@ namespace litecore { namespace blip {
     }
 
     /** Public API to send a new request. */
-    void Connection::sendRequest(MessageBuilder &mb) {
+    void Connection::sendRequest(MessageBuilder& mb) {
         Retained<MessageOut> message = new MessageOut(this, mb, 0);
         DebugAssert(message->type() == kRequestType);
         send(message);
     }
 
     /** Internal API to send an outgoing message (a request, response, or ACK.) */
-    void Connection::send(MessageOut *msg) {
+    void Connection::send(MessageOut* msg) {
         if ( _compressionLevel == 0 ) msg->dontCompress();
         if ( BLIPMessagesLog.effectiveLevel() <= LogLevel::Info ) {
             stringstream dump;
@@ -633,7 +633,7 @@ namespace litecore { namespace blip {
         _io->setRequestHandler(profile, atBeginning, handler);
     }
 
-    void Connection::gotHTTPResponse(int status, const websocket::Headers &headers) {
+    void Connection::gotHTTPResponse(int status, const websocket::Headers& headers) {
         delegateWeak()->invoke(&ConnectionDelegate::onHTTPResponse, status, headers);
     }
 
@@ -666,6 +666,6 @@ namespace litecore { namespace blip {
         _io = nullptr;
     }
 
-    websocket::WebSocket *Connection::webSocket() const { return _io->webSocket(); }
+    websocket::WebSocket* Connection::webSocket() const { return _io->webSocket(); }
 
 }}  // namespace litecore::blip

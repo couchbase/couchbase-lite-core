@@ -56,9 +56,9 @@ namespace litecore { namespace net {
         call_once(f, [=] { socket::initialize(); });
     }
 
-#define WSLog (*(LogDomain *)kC4WebSocketLog)
+#define WSLog (*(LogDomain*)kC4WebSocketLog)
 
-    TCPSocket::TCPSocket(bool isClient, TLSContext *tls) : _tlsContext(tls), _isClient(isClient) { initialize(); }
+    TCPSocket::TCPSocket(bool isClient, TLSContext* tls) : _tlsContext(tls), _isClient(isClient) { initialize(); }
 
     TCPSocket::~TCPSocket() {
         _socket.reset();  // Make sure socket closes before _tlsContext does
@@ -73,7 +73,7 @@ namespace litecore { namespace net {
         return true;
     }
 
-    TLSContext *TCPSocket::tlsContext() { return _tlsContext; }
+    TLSContext* TCPSocket::tlsContext() { return _tlsContext; }
 
     bool TCPSocket::wrapTLS(slice hostname) {
         if ( !_tlsContext ) _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
@@ -95,9 +95,9 @@ namespace litecore { namespace net {
         }
     }
 
-    sockpp::stream_socket *TCPSocket::actualSocket() const {
+    sockpp::stream_socket* TCPSocket::actualSocket() const {
         if ( auto socket = _socket.get(); !socket || !socket->is_open() ) return nullptr;
-        else if ( auto tlsSock = dynamic_cast<tls_socket *>(socket); tlsSock )
+        else if ( auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock )
             return &tlsSock->stream();
         else
             return socket;
@@ -116,7 +116,7 @@ namespace litecore { namespace net {
     }
 
     string TCPSocket::peerTLSCertificateData() {
-        auto tlsSock = dynamic_cast<tls_socket *>(_socket.get());
+        auto tlsSock = dynamic_cast<tls_socket*>(_socket.get());
         return tlsSock ? tlsSock->peer_certificate() : "";
     }
 
@@ -127,9 +127,9 @@ namespace litecore { namespace net {
 
 #pragma mark - CLIENT SOCKET:
 
-    ClientSocket::ClientSocket(TLSContext *tls) : TCPSocket(true, tls) {}
+    ClientSocket::ClientSocket(TLSContext* tls) : TCPSocket(true, tls) {}
 
-    bool ClientSocket::connect(const Address &addr) {
+    bool ClientSocket::connect(const Address& addr) {
         string hostname(slice(addr.hostname));
 
         optional<IPAddress> ipAddr = IPAddress::parse(hostname);
@@ -151,11 +151,11 @@ namespace litecore { namespace net {
 
             auto interface = networkInterface(sockAddr->family());
             socket->connect(*sockAddr, secsToMicrosecs(timeout()), interface);
-        } catch ( const sockpp::sys_error &sx ) {
+        } catch ( const sockpp::sys_error& sx ) {
             auto e = error::convertException(sx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
-        } catch ( const sockpp::getaddrinfo_error &gx ) {
+        } catch ( const sockpp::getaddrinfo_error& gx ) {
             auto e = error::convertException(gx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
@@ -177,11 +177,11 @@ namespace litecore { namespace net {
                                   "with the server's address family");
         }
 
-        for ( auto &intf : Interface::all() ) {
+        for ( auto& intf : Interface::all() ) {
             if ( inAddr ) {
                 // The given _interface is an IP Address. Find the interface that has the
                 // same IP Address:
-                for ( auto &address : intf.addresses ) {
+                for ( auto& address : intf.addresses ) {
                     if ( address == *inAddr ) {
                         if ( family == AF_INET ) {
                             return sockpp::Interface(intf.name, address.addr4());
@@ -194,7 +194,7 @@ namespace litecore { namespace net {
                 // The given _interface is an interface name. Find the interface that has
                 // the same name with matched IP address's family:
                 if ( slice(intf.name) == _interface ) {
-                    for ( auto &address : intf.addresses ) {
+                    for ( auto& address : intf.addresses ) {
                         if ( address.family() == family ) {
                             if ( family == AF_INET ) {
                                 return sockpp::Interface(intf.name, address.addr4());
@@ -213,9 +213,9 @@ namespace litecore { namespace net {
 
 #pragma mark - RESPONDER SOCKET:
 
-    ResponderSocket::ResponderSocket(TLSContext *tls) : TCPSocket(false, tls) {}
+    ResponderSocket::ResponderSocket(TLSContext* tls) : TCPSocket(false, tls) {}
 
-    bool ResponderSocket::acceptSocket(stream_socket &&s) { return setSocket(make_unique<tcp_socket>(move(s))); }
+    bool ResponderSocket::acceptSocket(stream_socket&& s) { return setSocket(make_unique<tcp_socket>(move(s))); }
 
     bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) { return setSocket(move(socket)); }
 
@@ -243,13 +243,13 @@ namespace litecore { namespace net {
         return written;
     }
 
-    ssize_t TCPSocket::write(vector<slice> &ioByteRanges) {
+    ssize_t TCPSocket::write(vector<slice>& ioByteRanges) {
         // We are going to cast slice[] to iovec[] since they are identical structs,
         // but make sure they are actualy identical:
         static_assert(sizeof(iovec) == sizeof(slice) && sizeof(iovec::iov_base) == sizeof(slice::buf)
                               && sizeof(iovec::iov_len) == sizeof(slice::size),
                       "iovec and slice are incompatible");
-        ssize_t written = _socket->write(reinterpret_cast<vector<iovec> &>(ioByteRanges));
+        ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
         if ( written < 0 ) {
             if ( !checkReadWriteStreamError() ) written = 0;
             else
@@ -274,7 +274,7 @@ namespace litecore { namespace net {
 
     // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
     // Assumes EWOULDBLOCK is not an error, since it happens normally in non-blocking reads.
-    ssize_t TCPSocket::_read(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::_read(void* dst, size_t byteCount) {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if ( n < 0 ) {
@@ -289,18 +289,18 @@ namespace litecore { namespace net {
     void TCPSocket::pushUnread(slice data) {
         if ( _usuallyFalse(data.size == 0) ) return;
         if ( _usuallyTrue(_unreadLen + data.size > _unread.size) ) _unread.resize(_unreadLen + data.size);
-        memmove((void *)_unread.offset(data.size), _unread.offset(0), _unreadLen);
-        memcpy((void *)_unread.offset(0), data.buf, data.size);
+        memmove((void*)_unread.offset(data.size), _unread.offset(0), _unreadLen);
+        memcpy((void*)_unread.offset(0), data.buf, data.size);
         _unreadLen += data.size;
     }
 
     // Read from the socket, or from the unread buffer if it exists
-    ssize_t TCPSocket::read(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::read(void* dst, size_t byteCount) {
         if ( _usuallyFalse(_unreadLen > 0) ) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
             memcpy(dst, _unread.offset(0), n);
-            memmove((void *)_unread.offset(0), _unread.offset(n), _unreadLen - n);
+            memmove((void*)_unread.offset(0), _unread.offset(n), _unreadLen - n);
             _unreadLen -= n;
             if ( _unreadLen == 0 ) _unread = nullslice;
             return n;
@@ -310,7 +310,7 @@ namespace litecore { namespace net {
     }
 
     // Read exactly `byteCount` bytes from the socket (or the unread buffer)
-    ssize_t TCPSocket::readExactly(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::readExactly(void* dst, size_t byteCount) {
         ssize_t remaining = byteCount;
         while ( remaining > 0 ) {
             auto n = read(dst, remaining);
@@ -332,7 +332,7 @@ namespace litecore { namespace net {
 
         while ( true ) {
             // Read more bytes:
-            ssize_t n = read((void *)result.end(), alloced.size - result.size);
+            ssize_t n = read((void*)result.end(), alloced.size - result.size);
             if ( n < 0 ) return nullslice;
             if ( n == 0 ) {
                 setError(WebSocketDomain, 400, "Unexpected EOF"_sl);
@@ -367,7 +367,7 @@ namespace litecore { namespace net {
         body.resize(1024);
         size_t length = 0;
         while ( true ) {
-            ssize_t n = read((void *)&body[length], body.size - length);
+            ssize_t n = read((void*)&body[length], body.size - length);
             if ( n < 0 ) {
                 body.reset();
                 return nullslice;
@@ -396,7 +396,7 @@ namespace litecore { namespace net {
             if ( chunkLength > 0 ) {
                 auto start = body.size;
                 body.resize(start + chunkLength);
-                if ( readExactly((void *)&body[start], chunkLength) < chunkLength ) return nullslice;
+                if ( readExactly((void*)&body[start], chunkLength) < chunkLength ) return nullslice;
             }
             char crlf[2];
             if ( readExactly(crlf, 2) < 2 ) return nullslice;
@@ -408,13 +408,13 @@ namespace litecore { namespace net {
         return body;
     }
 
-    bool TCPSocket::readHTTPBody(const Headers &headers, alloc_slice &body) {
+    bool TCPSocket::readHTTPBody(const Headers& headers, alloc_slice& body) {
         int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
         if ( contentLength >= 0 ) {
             // Read exactly Content-Length bytes:
             body.resize(size_t(contentLength));
             if ( contentLength > 0 ) {
-                if ( readExactly((void *)body.buf, (size_t)contentLength) < contentLength ) body.reset();
+                if ( readExactly((void*)body.buf, (size_t)contentLength) < contentLength ) body.reset();
             }
 
         } else if ( slice xfer = headers["Transfer-Encoding"]; xfer ) {
@@ -474,7 +474,7 @@ namespace litecore { namespace net {
 
     void TCPSocket::onDisconnect(function<void()> listener) { addListener(Poller::kDisconnected, move(listener)); }
 
-    void TCPSocket::addListener(int event, function<void()> &&listener) {
+    void TCPSocket::addListener(int event, function<void()>&& listener) {
         if ( int fd = fileDescriptor(); fd >= 0 )
             Poller::instance().addListener(fd, Poller::Event(event), move(listener));
     }
@@ -497,7 +497,7 @@ namespace litecore { namespace net {
         int err = _socket->last_error();
         if ( err == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED ) {
             // Some more specific errors for certificate validation failures, based on flags:
-            auto     tlsSocket = (tls_socket *)_socket.get();
+            auto     tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags     = tlsSocket->peer_certificate_status();
             LogError(WSLog, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if ( flags != 0 && flags != UINT32_MAX ) {

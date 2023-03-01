@@ -30,13 +30,13 @@ namespace litecore {
 
     class SQLiteEnumerator : public RecordEnumerator::Impl {
       public:
-        SQLiteEnumerator(SQLite::Statement *stmt, ContentOption content) : _stmt(stmt), _content(content) {
+        SQLiteEnumerator(SQLite::Statement* stmt, ContentOption content) : _stmt(stmt), _content(content) {
             LogTo(SQL, "Enumerator: %s", _stmt->getQuery().c_str());
         }
 
         virtual bool next() override { return _stmt->executeStep(); }
 
-        virtual bool read(Record &rec) const override {
+        virtual bool read(Record& rec) const override {
             rec.setExpiration(expiration_t(int64_t(_stmt->getColumn(RecordColumn::Expiration))));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content, true, true);
             return true;
@@ -51,7 +51,7 @@ namespace litecore {
         ContentOption                 _content;
     };
 
-    RecordEnumerator::Impl *SQLiteKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
                                                               RecordEnumerator::Options options) {
         if ( _db.options().writeable ) {
             if ( bySequence ) createSequenceIndex();
@@ -75,7 +75,7 @@ namespace litecore {
             if ( !options.includeDeleted || options.onlyBlobs || options.onlyConflicts ) sql << " WHERE ";
         }
 
-        auto writeFlagTest = [&](DocumentFlags flag, const char *test) {
+        auto writeFlagTest = [&](DocumentFlags flag, const char* test) {
             if ( writeAnd ) sql << " AND ";
             else
                 writeAnd = true;

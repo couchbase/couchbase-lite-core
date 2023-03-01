@@ -52,10 +52,10 @@ namespace litecore {
     }
 
     alloc_slice VersionVector::asBinary(peerID myID) const {
-        auto result = slice_ostream::alloced(1 + _vers.size() * 2 * kMaxVarintLen64, [&](slice_ostream &out) {
+        auto result = slice_ostream::alloced(1 + _vers.size() * 2 * kMaxVarintLen64, [&](slice_ostream& out) {
             if ( !out.writeByte(0) )  // leading 0 byte distinguishes it from a `revid`
                 return false;
-            for ( auto &v : _vers )
+            for ( auto& v : _vers )
                 if ( !v.writeBinary(out, myID) ) return false;
             return true;
         });
@@ -65,9 +65,9 @@ namespace litecore {
 
     size_t VersionVector::maxASCIILen() const { return _vers.size() * (Version::kMaxASCIILength + 1); }
 
-    bool VersionVector::writeASCII(slice_ostream &out, peerID myID) const {
+    bool VersionVector::writeASCII(slice_ostream& out, peerID myID) const {
         int n = 0;
-        for ( auto &v : _vers ) {
+        for ( auto& v : _vers ) {
             if ( n++ && !out.writeByte(',') ) return false;
             if ( !v.writeASCII(out, myID) ) return false;
         }
@@ -76,7 +76,7 @@ namespace litecore {
 
     alloc_slice VersionVector::asASCII(peerID myID) const {
         if ( empty() ) return nullslice;
-        auto result = slice_ostream::alloced(maxASCIILen(), [&](slice_ostream &out) { return writeASCII(out, myID); });
+        auto result = slice_ostream::alloced(maxASCIILen(), [&](slice_ostream& out) { return writeASCII(out, myID); });
         Assert(result);
         return result;
     }
@@ -96,7 +96,7 @@ namespace litecore {
     void VersionVector::readASCII(slice str, peerID myPeerID) {
         reset();
         while ( str.size > 0 ) {
-            const void *comma = str.findByteOrEnd(',');
+            const void* comma = str.findByteOrEnd(',');
             _vers.emplace_back(str.upTo(comma), myPeerID);
             str = str.from(comma);
             if ( str.size > 0 ) str.moveStart(1);  // skip comma
@@ -126,7 +126,7 @@ namespace litecore {
 
 #pragma mark - OPERATIONS:
 
-    versionOrder VersionVector::compareTo(const Version &v) const {
+    versionOrder VersionVector::compareTo(const Version& v) const {
         auto mine = findPeerIter(v.author());
         if ( mine == _vers.end() ) return kOlder;
         else if ( mine->gen() < v.gen() )
@@ -137,7 +137,7 @@ namespace litecore {
             return kNewer;
     }
 
-    versionOrder Version::compareTo(const VersionVector &vv) const {
+    versionOrder Version::compareTo(const VersionVector& vv) const {
         versionOrder o = vv.compareTo(*this);
         if ( o == kOlder ) return kNewer;
         else if ( o == kNewer )
@@ -146,7 +146,7 @@ namespace litecore {
             return o;
     }
 
-    versionOrder VersionVector::compareTo(const VersionVector &other) const {
+    versionOrder VersionVector::compareTo(const VersionVector& other) const {
         // First check if either or both are empty:
         auto myCount = count(), otherCount = other.count();
         if ( myCount == 0 ) return otherCount == 0 ? kSame : kOlder;
@@ -162,7 +162,7 @@ namespace litecore {
             return kSame;  // first revs are identical so vectors are equal
 
         //OPT: This is O(n^2), since the `for` loop calls `other[ ]`, which is a linear search.
-        for ( auto &v : _vers ) {
+        for ( auto& v : _vers ) {
             auto othergen = other[v.author()];
             if ( v.gen() < othergen ) {
                 o = versionOrder(o | kOlder);
@@ -179,15 +179,15 @@ namespace litecore {
         return o;
     }
 
-    bool VersionVector::isNewerIgnoring(peerID ignoring, const VersionVector &other) const {
-        for ( const Version &v : _vers ) {
+    bool VersionVector::isNewerIgnoring(peerID ignoring, const VersionVector& other) const {
+        for ( const Version& v : _vers ) {
             if ( v.author() != ignoring && v.gen() > other[v.author()] ) return true;
         }
         return false;
     }
 
     vec::iterator VersionVector::findPeerIter(peerID author) const {
-        auto &vers = const_cast<VersionVector *>(this)->_vers;
+        auto& vers = const_cast<VersionVector*>(this)->_vers;
         auto  v    = vers.begin();
         for ( ; v != vers.end(); ++v ) {
             if ( v->author() == author ) break;
@@ -196,7 +196,7 @@ namespace litecore {
     }
 
     generation VersionVector::genOfAuthor(peerID author) const {
-        auto v = const_cast<VersionVector *>(this)->findPeerIter(author);
+        auto v = const_cast<VersionVector*>(this)->findPeerIter(author);
         return (v != _vers.end()) ? v->gen() : 0;
     }
 
@@ -224,7 +224,7 @@ namespace litecore {
         return true;
     }
 
-    void VersionVector::push_back(const Version &vers) {
+    void VersionVector::push_back(const Version& vers) {
         if ( genOfAuthor(vers.author()) > 0 )
             error::_throw(error::BadRevisionID, "Adding duplicate ID to version vector");
         _vers.push_back(vers);
@@ -263,12 +263,12 @@ namespace litecore {
     // A hash table mapping peerID->generation, as an optimization for versionVector operations
     class versionMap {
       public:
-        versionMap(const vec &vec) {
+        versionMap(const vec& vec) {
             _map.reserve(vec.size());
-            for ( auto &v : vec ) add(v);
+            for ( auto& v : vec ) add(v);
         }
 
-        void add(const Version &vers) { _map[vers.author().id] = vers.gen(); }
+        void add(const Version& vers) { _map[vers.author().id] = vers.gen(); }
 
         generation operator[](peerID author) {
             auto i = _map.find(author.id);
@@ -279,7 +279,7 @@ namespace litecore {
         unordered_map<uint64_t, generation> _map;
     };
 
-    VersionVector VersionVector::mergedWith(const VersionVector &other) const {
+    VersionVector VersionVector::mergedWith(const VersionVector& other) const {
         // Walk through the two vectors in parallel, adding the current component from each if it's
         // newer than the corresponding component in the other. This isn't going to produce the
         // optimal ordering, but it should be pretty close.
@@ -288,10 +288,10 @@ namespace litecore {
         size_t        mySize = _vers.size(), itsSize = other._vers.size(), maxSize = max(mySize, itsSize);
         for ( size_t i = 0; i < maxSize; ++i ) {
             if ( i < mySize ) {
-                if ( auto &vers = _vers[i]; vers.gen() >= otherMap[vers.author()] ) result.push_back(vers);
+                if ( auto& vers = _vers[i]; vers.gen() >= otherMap[vers.author()] ) result.push_back(vers);
             }
             if ( i < itsSize ) {
-                if ( auto &vers = other._vers[i]; vers.gen() > myMap[vers.author()] ) result.push_back(vers);
+                if ( auto& vers = other._vers[i]; vers.gen() > myMap[vers.author()] ) result.push_back(vers);
             }
         }
         return result;
@@ -300,7 +300,7 @@ namespace litecore {
     /*  A delta from A to B is a prefix of B,
         containing all the versions in B that are newer than in A. */
 
-    optional<VersionVector> VersionVector::deltaFrom(const VersionVector &src) const {
+    optional<VersionVector> VersionVector::deltaFrom(const VersionVector& src) const {
         if ( src.empty() ) return *this;  // a delta from nothing is the same as me
         else if ( src.count() > count() )
             return nullopt;  // src must be newer if it has more versions; fail
@@ -317,12 +317,12 @@ namespace litecore {
         return VersionVector(_vers.begin(), i);
     }
 
-    VersionVector VersionVector::byApplyingDelta(const VersionVector &delta) const {
+    VersionVector VersionVector::byApplyingDelta(const VersionVector& delta) const {
         // Reconstruct the target vector by appending to `delta` all components of myself that
         // don't appear in it.
         VersionVector result = delta;
         result._vers.reserve(_vers.size());
-        for ( auto &vers : _vers ) {
+        for ( auto& vers : _vers ) {
             if ( auto genInDelta = delta[vers.author()]; genInDelta == 0 ) result._vers.push_back(vers);
             else if ( genInDelta < vers.gen() )
                 error::_throw(error::BadRevisionID, "Invalid VersionVector delta");

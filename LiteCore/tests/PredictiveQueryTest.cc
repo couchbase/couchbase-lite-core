@@ -23,17 +23,17 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
   public:
-    EightBall(DataFile *db) : db(db) {}
+    EightBall(DataFile* db) : db(db) {}
 
-    DataFile *const db;
+    DataFile* const db;
     bool            allowCalls{true};
 
-    virtual alloc_slice prediction(const Dict *input, DataFile::Delegate *delegate,
-                                   C4Error *outError) noexcept override {
+    virtual alloc_slice prediction(const Dict* input, DataFile::Delegate* delegate,
+                                   C4Error* outError) noexcept override {
         //        Log("8-ball input: %s", input->toJSONString().c_str());
         CHECK(allowCalls);
         CHECK(delegate == db->delegate());
-        const Value *param = input->get("number"_sl);
+        const Value* param = input->get("number"_sl);
         if ( !param || param->type() != kNumber ) {
             Log("8-ball: No 'number' property; returning MISSING");
             return {};
@@ -61,7 +61,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Pred
     ExpectException(error::SQLite, 1, [&] { Retained<QueryEnumerator> e(query->createEnumerator()); });
 }
 
-static void testResults(Query *query) {
+static void testResults(Query* query) {
     Retained<QueryEnumerator> e(query->createEnumerator());
     int                       docNo = 0;
     while ( e->next() ) {

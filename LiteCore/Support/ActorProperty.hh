@@ -24,20 +24,20 @@ namespace litecore { namespace actor {
     template <class T>
     class PropertyImpl {
       public:
-        explicit PropertyImpl(Actor *owner) : _owner(*owner) {}
+        explicit PropertyImpl(Actor* owner) : _owner(*owner) {}
 
-        explicit PropertyImpl(Actor *owner, T t) : _owner(*owner), _value(t) {}
+        explicit PropertyImpl(Actor* owner, T t) : _owner(*owner), _value(t) {}
 
         T get() const { return _value; }
 
         operator T() const { return _value; }
 
-        PropertyImpl &operator=(const T &t);
+        PropertyImpl& operator=(const T& t);
 
-        void addObserver(Observer<T> &observer);
+        void addObserver(Observer<T>& observer);
 
       private:
-        Actor                   &_owner;
+        Actor&                   _owner;
         T                        _value{};
         std::vector<Observer<T>> _observers;
     };
@@ -54,7 +54,7 @@ namespace litecore { namespace actor {
       private:
         void receiveValue(T t) { _value = t; }
 
-        Retained<Actor> &_provider;
+        Retained<Actor>& _provider;
         T                _value;
     };
 
@@ -62,16 +62,16 @@ namespace litecore { namespace actor {
     template <class T>
     class Property {
       public:
-        explicit Property(PropertyImpl<T> &prop) : _impl(prop) {}
+        explicit Property(PropertyImpl<T>& prop) : _impl(prop) {}
 
         using Observer = std::function<void(T)>;
 
-        void addObserver(Observer &observer) { _impl.addObserver(observer); }
+        void addObserver(Observer& observer) { _impl.addObserver(observer); }
 
-        void removeObserver(Actor &a);
+        void removeObserver(Actor& a);
 
       private:
-        PropertyImpl<T> &_impl;
+        PropertyImpl<T>& _impl;
     };
 
 }}  // namespace litecore::actor

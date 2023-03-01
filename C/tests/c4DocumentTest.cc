@@ -115,7 +115,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Get With Invalid ID", "[Document][C]") 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error     error;
-    C4Document *doc;
+    C4Document* doc;
     doc = c4doc_get(db, kDocID, true, &error);
     REQUIRE(!doc);
     REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
@@ -219,7 +219,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
 
     // Reload the doc:
     C4Error     error;
-    C4Document *doc = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
+    C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     CHECK(doc->flags == kDocExists);
     CHECK(doc->docID == kDocID);
@@ -439,7 +439,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
     C4Error     error;
-    C4Document *doc = nullptr;
+    C4Document* doc = nullptr;
     size_t      commonAncestorIndex;
     alloc_slice revID;
 
@@ -542,7 +542,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         C4DocPutRequest rq   = rqTemplate;
         auto            body = json2fleece("{'ok':'again'}");
         rq.body              = body;
-        rq.history           = (C4Slice *)&revID;
+        rq.history           = (C4Slice*)&revID;
         rq.historyCount      = 1;
         doc                  = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
@@ -576,7 +576,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Document][
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     C4Log("Begin test");
     C4Error     error;
-    C4Document *doc;
+    C4Document* doc;
 
     {
         C4Log("Begin create");
@@ -1031,7 +1031,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Document][C]") {
     const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
 
-    C4Document *doc = c4doc_get(db, kDocID, true, nullptr);
+    C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
     REQUIRE(doc);
     FLValue root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
@@ -1051,7 +1051,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
 
-    C4Document *doc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, nullptr);
+    C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kRevID);
     FLValue root = FLValue(c4doc_getProperties(doc));
@@ -1171,9 +1171,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][Blob]
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Global Rev ID", "[Document][C]") {
     createRev(kDocID, kRevID, kFleeceBody);
-    C4Document *doc   = c4doc_get(db, kDocID, true, nullptr);
+    C4Document* doc   = c4doc_get(db, kDocID, true, nullptr);
     alloc_slice revID = c4doc_getSelectedRevIDGlobalForm(doc);
-    C4Log("Global rev ID = %.*s", (int)revID.size, (char *)revID.buf);
+    C4Log("Global rev ID = %.*s", (int)revID.size, (char*)revID.buf);
     CHECK(revID.findByte('*') == nullptr);
     c4doc_release(doc);
 }

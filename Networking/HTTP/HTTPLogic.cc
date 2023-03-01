@@ -35,20 +35,20 @@ namespace litecore { namespace net {
 
     optional<ProxySpec> HTTPLogic::sDefaultProxy;
 
-    HTTPLogic::HTTPLogic(const Address &address, bool handleRedirects)
+    HTTPLogic::HTTPLogic(const Address& address, bool handleRedirects)
         : _address(address)
         , _handleRedirects(handleRedirects)
         , _isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
         , _proxy(sDefaultProxy) {}
 
-    HTTPLogic::HTTPLogic(const Address &address, const websocket::Headers &requestHeaders, bool handleRedirects)
+    HTTPLogic::HTTPLogic(const Address& address, const websocket::Headers& requestHeaders, bool handleRedirects)
         : HTTPLogic(address, handleRedirects) {
         _requestHeaders = requestHeaders;
     }
 
     HTTPLogic::~HTTPLogic() = default;
 
-    void HTTPLogic::setHeaders(const websocket::Headers &requestHeaders) {
+    void HTTPLogic::setHeaders(const websocket::Headers& requestHeaders) {
         Assert(_requestHeaders.empty());
         _requestHeaders = requestHeaders;
     }
@@ -60,11 +60,11 @@ namespace litecore { namespace net {
             _proxyAddress.reset();
     }
 
-    const Address &HTTPLogic::directAddress() { return _proxy ? *_proxyAddress : _address; }
+    const Address& HTTPLogic::directAddress() { return _proxy ? *_proxyAddress : _address; }
 
     bool HTTPLogic::connectingToProxy() { return _proxy && _isWebSocket && _lastDisposition != kContinue; }
 
-    static void addHeader(stringstream &rq, const char *key, slice value) {
+    static void addHeader(stringstream& rq, const char* key, slice value) {
         if ( value ) rq << key << ": " << string(value) << "\r\n";
     }
 
@@ -196,7 +196,7 @@ namespace litecore { namespace net {
         }
     }
 
-    bool HTTPLogic::parseStatusLine(slice_istream &responseData) {
+    bool HTTPLogic::parseStatusLine(slice_istream& responseData) {
         slice    version = responseData.readToDelimiter(" "_sl);
         uint64_t status  = responseData.readDecimal();
         if ( !version.hasPrefix("HTTP/"_sl) || status == 0 || status > INT_MAX ) return false;
@@ -210,16 +210,16 @@ namespace litecore { namespace net {
     }
 
     // Reads HTTP headers out of `responseData`. Assumes data ends with CRLFCRLF.
-    bool HTTPLogic::parseHeaders(slice_istream &responseData, Headers &headers) {
+    bool HTTPLogic::parseHeaders(slice_istream& responseData, Headers& headers) {
         while ( true ) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
             if ( !line ) return false;
             if ( line.size == 0 ) break;  // empty line
-            const uint8_t *colon = line.findByte(':');
+            const uint8_t* colon = line.findByte(':');
             if ( !colon ) return false;
             slice name(line.buf, colon);
             line.setStart(colon + 1);
-            const uint8_t *nonSpace = line.findByteNotIn(" "_sl);
+            const uint8_t* nonSpace = line.findByteNotIn(" "_sl);
             if ( !nonSpace ) return false;
             slice value(nonSpace, line.end());
             headers.add(name, value);
@@ -292,7 +292,7 @@ namespace litecore { namespace net {
         return kSuccess;
     }
 
-    string HTTPLogic::webSocketKeyResponse(const string &nonce) {
+    string HTTPLogic::webSocketKeyResponse(const string& nonce) {
         SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
         return digest.asBase64();
     }
@@ -303,7 +303,7 @@ namespace litecore { namespace net {
         return kFailure;
     }
 
-    HTTPLogic::Disposition HTTPLogic::failure(ClientSocket &socket) {
+    HTTPLogic::Disposition HTTPLogic::failure(ClientSocket& socket) {
         _error = socket.error();
         Assert(_error.code != 0);
         return kFailure;
@@ -311,7 +311,7 @@ namespace litecore { namespace net {
 
     HTTPLogic::Disposition HTTPLogic::failure() { return failure(WebSocketDomain, int(_httpStatus), _statusMessage); }
 
-    HTTPLogic::Disposition HTTPLogic::sendNextRequest(ClientSocket &socket, slice body) {
+    HTTPLogic::Disposition HTTPLogic::sendNextRequest(ClientSocket& socket, slice body) {
         bool connected;
         if ( _lastDisposition == kContinue ) {
             Assert(socket.connected());
@@ -355,7 +355,7 @@ namespace litecore { namespace net {
             if ( !first ) s << '\n';
             first = false;
             s << '\t';
-            s.write((const char *)line.buf, line.size);
+            s.write((const char*)line.buf, line.size);
         }
         return s.str();
     }

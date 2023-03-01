@@ -35,9 +35,9 @@ namespace litecore { namespace crypto {
         };
 
         /** Creates a subjectName from a list of key/value strings. */
-        DistinguishedName(const Entry *begin NONNULL, const Entry *end NONNULL);
+        DistinguishedName(const Entry* begin NONNULL, const Entry* end NONNULL);
 
-        DistinguishedName(const std::vector<Entry> &);
+        DistinguishedName(const std::vector<Entry>&);
 
         DistinguishedName(std::initializer_list<Entry> entries)
             : DistinguishedName(std::vector<Entry>(entries.begin(), entries.end())) {}
@@ -82,13 +82,13 @@ namespace litecore { namespace crypto {
         static fleece::slice      nameOfTag(Tag);
 
         SubjectAltNames() = default;
-        explicit SubjectAltNames(::mbedtls_asn1_sequence *);
+        explicit SubjectAltNames(::mbedtls_asn1_sequence*);
 
         fleece::alloc_slice encode() const;
 
         fleece::alloc_slice operator[](Tag) const;
 
-        const SubjectAltName &operator[](size_t i) const { return vector<SubjectAltName>::operator[](i); }
+        const SubjectAltName& operator[](size_t i) const { return vector<SubjectAltName>::operator[](i); }
     };
 
     enum NSCertType : uint8_t {
@@ -140,7 +140,7 @@ namespace litecore { namespace crypto {
 
         virtual bool isSigned() { return false; }
 
-        virtual fleece::alloc_slice summary(const char *indent = "");
+        virtual fleece::alloc_slice summary(const char* indent = "");
 
         virtual DistinguishedName subjectName()     = 0;
         virtual unsigned          keyUsage()        = 0;
@@ -152,7 +152,7 @@ namespace litecore { namespace crypto {
 
       protected:
         virtual fleece::slice derData()                                                = 0;
-        virtual int           writeInfo(char *buf, size_t bufSize, const char *indent) = 0;
+        virtual int           writeInfo(char* buf, size_t bufSize, const char* indent) = 0;
     };
 
     /** A signed X.509 certificate. */
@@ -164,13 +164,13 @@ namespace litecore { namespace crypto {
         explicit Cert(fleece::slice data);
 
         /** Creates and self-signs a certificate with the given options. */
-        Cert(const SubjectParameters &, const IssuerParameters &, PrivateKey *keyPair NONNULL);
+        Cert(const SubjectParameters&, const IssuerParameters&, PrivateKey* keyPair NONNULL);
 
         /** Loads a certificate from persistent storage with the given subject public key. */
-        static fleece::Retained<Cert> load(PublicKey *);
+        static fleece::Retained<Cert> load(PublicKey*);
 
         /** Check if a certificate with the given subject public key exists in the persistent storage. */
-        static bool exists(PublicKey *);
+        static bool exists(PublicKey*);
 
         virtual bool isSigned() override { return true; }
 
@@ -179,29 +179,29 @@ namespace litecore { namespace crypto {
         unsigned                    keyUsage() override;
         NSCertType                  nsCertType() override;
         SubjectAltNames             subjectAltNames() override;
-        virtual fleece::alloc_slice summary(const char *indent = "") override;
+        virtual fleece::alloc_slice summary(const char* indent = "") override;
 
         /** Returns the cert's creation and expiration times. */
         std::pair<time_t, time_t> validTimespan();
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
         /** Save the certificate chain to a persistent key store with the persistent ID */
-        void save(const std::string &persistentID, bool entireChain);
+        void save(const std::string& persistentID, bool entireChain);
 
         /** Load the certificate chain from a persistent key store with the persistent ID */
-        static fleece::Retained<Cert> loadCert(const std::string &persistentID);
+        static fleece::Retained<Cert> loadCert(const std::string& persistentID);
 
         /** Check if a certificate with the given persistent ID exists in the persistent key store */
-        static bool exists(const std::string &persistentID);
+        static bool exists(const std::string& persistentID);
 
         /** Delete the certificate chain with the persistent ID */
-        static void deleteCert(const std::string &persistentID);
+        static void deleteCert(const std::string& persistentID);
 
         /** Loads the private key from persistent storage, if available. */
         fleece::Retained<PersistentPrivateKey> loadPrivateKey();
 #endif
 
-        struct ::mbedtls_x509_crt *context() { return _cert; }
+        struct ::mbedtls_x509_crt* context() { return _cert; }
 
         //---- Certificate chains
 
@@ -212,7 +212,7 @@ namespace litecore { namespace crypto {
         fleece::Retained<Cert> next();
 
         /** Appends a cert to the end of the chain. */
-        void append(Cert *NONNULL);
+        void append(Cert* NONNULL);
 
         /** Converts the entire chain into a series of certs in PEM format. */
         fleece::alloc_slice dataOfChain();
@@ -230,26 +230,26 @@ namespace litecore { namespace crypto {
 
       protected:
         virtual fleece::slice                derData() override;
-        virtual int                          writeInfo(char *buf, size_t bufSize, const char *indent) override;
-        virtual struct ::mbedtls_pk_context *keyContext() override;
+        virtual int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
+        virtual struct ::mbedtls_pk_context* keyContext() override;
 
       private:
         friend class CertSigningRequest;
 
-        Cert(Cert *prev NONNULL, mbedtls_x509_crt *);
+        Cert(Cert* prev NONNULL, mbedtls_x509_crt*);
         ~Cert();
-        static fleece::alloc_slice create(const SubjectParameters &, PublicKey *subjectKey    NONNULL,
-                                          const IssuerParameters &, PrivateKey *issuerKeyPair NONNULL,
-                                          Cert *issuerCert = nullptr);
+        static fleece::alloc_slice create(const SubjectParameters&, PublicKey* subjectKey    NONNULL,
+                                          const IssuerParameters&, PrivateKey* issuerKeyPair NONNULL,
+                                          Cert* issuerCert = nullptr);
 
-        struct ::mbedtls_x509_crt *_cert;           // mbedTLS parsed cert object
+        struct ::mbedtls_x509_crt* _cert;           // mbedTLS parsed cert object
         fleece::Retained<Cert>     _prev;           // Previous Cert in chain (strong ref)
-        Cert                      *_next{nullptr};  // Next Cert in chain (weak ref)
+        Cert*                      _next{nullptr};  // Next Cert in chain (weak ref)
     };
 
     /** A certificate with its matching private key. */
     struct Identity : public fleece::RefCounted {
-        Identity(Cert *NONNULL, PrivateKey *NONNULL);
+        Identity(Cert* NONNULL, PrivateKey* NONNULL);
 
         fleece::Retained<Cert> const       cert;
         fleece::Retained<PrivateKey> const privateKey;
@@ -260,7 +260,7 @@ namespace litecore { namespace crypto {
     class CertSigningRequest final : public CertBase {
       public:
         /** Creates a Certificate Signing Request, to be sent to a CA that will sign it. */
-        CertSigningRequest(const Cert::SubjectParameters &params, PrivateKey *subjectKey);
+        CertSigningRequest(const Cert::SubjectParameters& params, PrivateKey* subjectKey);
 
         /** Instantiates a request from pre-encoded DER or PEM data. */
         explicit CertSigningRequest(fleece::slice data);
@@ -273,20 +273,20 @@ namespace litecore { namespace crypto {
         SubjectAltNames subjectAltNames() override;
 
         /** Signs the request, returning the completed Cert. */
-        fleece::Retained<Cert> sign(const Cert::IssuerParameters &, PrivateKey *issuerKeyPair NONNULL,
-                                    Cert *issuerCert = nullptr);
+        fleece::Retained<Cert> sign(const Cert::IssuerParameters&, PrivateKey* issuerKeyPair NONNULL,
+                                    Cert* issuerCert = nullptr);
 
       protected:
         CertSigningRequest();
         ~CertSigningRequest();
-        virtual struct ::mbedtls_pk_context *keyContext() override;
+        virtual struct ::mbedtls_pk_context* keyContext() override;
         virtual fleece::slice                derData() override;
-        virtual int                          writeInfo(char *buf, size_t bufSize, const char *indent) override;
+        virtual int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
 
       private:
-        static fleece::alloc_slice create(const Cert::SubjectParameters &, PrivateKey *subjectKey);
+        static fleece::alloc_slice create(const Cert::SubjectParameters&, PrivateKey* subjectKey);
 
-        struct ::mbedtls_x509_csr *context() { return _csr.get(); }
+        struct ::mbedtls_x509_csr* context() { return _csr.get(); }
 
         std::unique_ptr<struct ::mbedtls_x509_csr> _csr;
     };

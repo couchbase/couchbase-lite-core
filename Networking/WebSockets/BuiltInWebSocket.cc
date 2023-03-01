@@ -30,7 +30,7 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     C4SocketImpl::registerInternalFactory(
-            [](websocket::URL url, fleece::alloc_slice options, C4Database *database) -> WebSocketImpl * {
+            [](websocket::URL url, fleece::alloc_slice options, C4Database* database) -> WebSocketImpl* {
                 return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options), database);
             });
 }
@@ -48,19 +48,19 @@ namespace litecore { namespace websocket {
 
 
         // private shared constructor
-        BuiltInWebSocket::BuiltInWebSocket(const URL &url, Role role, const Parameters &parameters)
+        BuiltInWebSocket::BuiltInWebSocket(const URL& url, Role role, const Parameters& parameters)
             : WebSocketImpl(url, role, true, parameters), _readBuffer(kReadBufferSize) {
             TCPSocket::initialize();
         }
 
         // client constructor
-        BuiltInWebSocket::BuiltInWebSocket(const URL &url, const Parameters &parameters, C4Database *database)
+        BuiltInWebSocket::BuiltInWebSocket(const URL& url, const Parameters& parameters, C4Database* database)
             : BuiltInWebSocket(url, Role::Client, parameters) {
             _database = database;
         }
 
         // server constructor
-        BuiltInWebSocket::BuiltInWebSocket(const URL &url, unique_ptr<net::ResponderSocket> socket)
+        BuiltInWebSocket::BuiltInWebSocket(const URL& url, unique_ptr<net::ResponderSocket> socket)
             : BuiltInWebSocket(url, Role::Server, Parameters()) {
             _socket = move(socket);
         }
@@ -102,7 +102,7 @@ namespace litecore { namespace websocket {
                     }
 
                     _socket = move(socket);
-                } catch ( const std::exception &x ) {
+                } catch ( const std::exception& x ) {
                     closeWithException(x, "while connecting");
                     return;
                 }
@@ -261,13 +261,13 @@ namespace litecore { namespace websocket {
                     return false;
 #endif
                 }
-            } catch ( const std::exception &x ) {
+            } catch ( const std::exception& x ) {
                 closeWithException(x, "configuring TLS client certificate");
                 return false;
             }
         }
 
-        bool BuiltInWebSocket::configureAuthHeader(HTTPLogic &logic, Dict auth) {
+        bool BuiltInWebSocket::configureAuthHeader(HTTPLogic& logic, Dict auth) {
             slice username = auth[kC4ReplicatorAuthUserName].asString();
             slice password = auth[kC4ReplicatorAuthPassword].asString();
             if ( username && password ) {
@@ -277,7 +277,7 @@ namespace litecore { namespace websocket {
             return false;
         }
 
-        bool BuiltInWebSocket::configureProxy(HTTPLogic &logic, Dict proxyOpt) {
+        bool BuiltInWebSocket::configureProxy(HTTPLogic& logic, Dict proxyOpt) {
             if ( !proxyOpt ) return true;
             slice typeStr = proxyOpt[kC4ReplicatorProxyType].asString();
             if ( typeStr == nullslice || typeStr == slice(kC4ProxyTypeNone) ) {
@@ -302,7 +302,7 @@ namespace litecore { namespace websocket {
             return true;
         }
 
-        alloc_slice BuiltInWebSocket::cookiesForRequest(const Address &addr) {
+        alloc_slice BuiltInWebSocket::cookiesForRequest(const Address& addr) {
             alloc_slice cookies(_database->getCookies(addr));
 
             slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
@@ -319,7 +319,7 @@ namespace litecore { namespace websocket {
             return cookies;
         }
 
-        void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
+        void BuiltInWebSocket::setCookie(const Address& addr, slice cookieHeader) {
             bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
             _database->setCookie(cookieHeader, addr.hostname, addr.path, acceptParentDomain);
         }
@@ -347,7 +347,7 @@ namespace litecore { namespace websocket {
                     return;
                 }
 
-                ssize_t n = _socket->read((void *)_readBuffer.buf, min(_readBuffer.size, _curReadCapacity.load()));
+                ssize_t n = _socket->read((void*)_readBuffer.buf, min(_readBuffer.size, _curReadCapacity.load()));
                 logDebug("Received %zd bytes from socket", n);
                 if ( _usuallyFalse(n < 0) ) {
                     closeWithError(_socket->error());
@@ -371,7 +371,7 @@ namespace litecore { namespace websocket {
 
                 // Pass data to WebSocket parser:
                 onReceive(slice(_readBuffer.buf, n));
-            } catch ( const exception &x ) { closeWithException(x, "during I/O"); }
+            } catch ( const exception& x ) { closeWithException(x, "during I/O"); }
         }
 
         // WebSocket API -- client wants to send a message
@@ -430,12 +430,12 @@ namespace litecore { namespace websocket {
                          outboxSnapshot.size() + nRemoved);
                 if ( moreToWrite ) awaitWriteable();
                 onWriteComplete(n);
-            } catch ( const exception &x ) { closeWithException(x, "during I/O"); }
+            } catch ( const exception& x ) { closeWithException(x, "during I/O"); }
         }
 
 #pragma mark - ERRORS:
 
-        void BuiltInWebSocket::closeWithException(const exception &x, const char *where) {
+        void BuiltInWebSocket::closeWithException(const exception& x, const char* where) {
             // Convert exception to CloseStatus:
             logError("caught exception %s: %s", where, x.what());
             error e = error::convertException(x);

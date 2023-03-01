@@ -25,7 +25,7 @@ namespace litecore::REST {
 
     CertRequest::CertRequest() {}
 
-    void CertRequest::start(CertSigningRequest *csr, const Address &address, AllocedDict netConfig,
+    void CertRequest::start(CertSigningRequest* csr, const Address& address, AllocedDict netConfig,
                             CompletionRoutine onComplete) {
         Assert(!_response);
         _response.reset(new Response(address, net::POST));
@@ -87,7 +87,7 @@ namespace litecore::REST {
                         error = c4error_make(LiteCoreDomain, kC4ErrorRemoteError,
                                              "Certificate from server does not match requested"_sl);
                     }
-                } catch ( const litecore::error &x ) {
+                } catch ( const litecore::error& x ) {
                     error = c4error_make(LiteCoreDomain, kC4ErrorRemoteError,
                                          "Invalid certificate data in server response"_sl);
                 }

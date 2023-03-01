@@ -29,7 +29,7 @@
 
 using namespace std;
 
-static C4Document *c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
 }
 
@@ -37,14 +37,14 @@ class C4DatabaseTest : public C4Test {
   public:
     C4DatabaseTest(int testOption) : C4Test(testOption) {}
 
-    void assertMessage(C4ErrorDomain domain, int code, const char *expectedDomainAndType, const char *expectedMsg) {
+    void assertMessage(C4ErrorDomain domain, int code, const char* expectedDomainAndType, const char* expectedMsg) {
         C4SliceResult msg = c4error_getMessage({domain, code});
-        CHECK(std::string((char *)msg.buf, msg.size) == std::string(expectedMsg));
+        CHECK(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
         c4slice_free(msg);
 
         string expectedDesc = string(expectedDomainAndType) + ", \"" + expectedMsg + "\"";
         char   buf[256];
-        char  *cmsg = c4error_getDescriptionC({domain, code}, buf, sizeof(buf));
+        char*  cmsg = c4error_getDescriptionC({domain, code}, buf, sizeof(buf));
         CHECK(std::string(cmsg) == expectedDesc);
         CHECK(cmsg == &buf[0]);
     }
@@ -65,7 +65,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][Err
     REQUIRE(msg == "No error"_sl);
 
     char  buf[256];
-    char *cmsg = c4error_getDescriptionC({LiteCoreDomain, 0}, buf, sizeof(buf));
+    char* cmsg = c4error_getDescriptionC({LiteCoreDomain, 0}, buf, sizeof(buf));
     REQUIRE(cmsg == &buf[0]);
     REQUIRE(strcmp(cmsg, "No error") == 0);
 
@@ -164,7 +164,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Data
     // external handles open during a delete will be a fast-fail
 
     C4Error     err;
-    C4Database *otherConnection = c4db_openAgain(db, &err);
+    C4Database* otherConnection = c4db_openAgain(db, &err);
     REQUIRE(otherConnection);
     c4db_close(otherConnection, &err);
 #ifdef FAIL_FAST
@@ -222,7 +222,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Doc", "[Database][Docume
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
     CHECK(c4db_getDocumentCount(db) == 1);
 
-    C4Document *doc = REQUIRED(c4doc_get(db, kDocID, true, WITH_ERROR()));
+    C4Document* doc = REQUIRED(c4doc_get(db, kDocID, true, WITH_ERROR()));
     CHECK(doc->docID == kDocID);
     CHECK(doc->revID == kRevID);
     CHECK(doc->sequence == 1);
@@ -261,7 +261,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
     REQUIRE(c4raw_put(db, c4str("test"), key, meta, kFleeceBody, WITH_ERROR()));
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
 
-    C4RawDocument *doc = REQUIRED(c4raw_get(db, c4str("test"), key, WITH_ERROR()));
+    C4RawDocument* doc = REQUIRED(c4raw_get(db, c4str("test"), key, WITH_ERROR()));
     REQUIRE(doc->key == key);
     REQUIRE(doc->meta == meta);
     REQUIRE(doc->body == kFleeceBody);
@@ -275,7 +275,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
     REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
     REQUIRE(c4raw_put(db, c4str("test"), key, kC4SliceNull, kC4SliceNull, WITH_ERROR()));
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
-    REQUIRE(c4raw_get(db, c4str("test"), key, &error) == (C4RawDocument *)nullptr);
+    REQUIRE(c4raw_get(db, c4str("test"), key, &error) == (C4RawDocument*)nullptr);
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
@@ -283,7 +283,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Document][Enumerator][C]") {
     setupAllDocs();
     C4Error          error;
-    C4DocEnumerator *e;
+    C4DocEnumerator* e;
 
     REQUIRE(c4db_getDocumentCount(db) == 99);
 
@@ -325,7 +325,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Docume
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {
     setupAllDocs();
     C4Error          error;
-    C4DocEnumerator *e;
+    C4DocEnumerator* e;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     e                           = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
@@ -353,7 +353,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Databa
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Database][Enumerator][C]") {
     if ( isRevTrees() ) return;
 
-    C4DocEnumerator *e;
+    C4DocEnumerator* e;
 
     createRev("doc-100"_sl, "1@*"_sl, kFleeceBody);
     createRev("doc-100"_sl, "1@d00d"_sl, kFleeceBody);
@@ -382,8 +382,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
     createNumberedDocs(99);
 
     C4Error          error;
-    C4DocEnumerator *e;
-    C4Document      *doc;
+    C4DocEnumerator* e;
+    C4Document*      doc;
 
     // Since start:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -443,7 +443,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
 static constexpr int secs = 1000;
 static constexpr int ms   = 1;
 
-static bool docExists(C4Database *db, slice docID) {
+static bool docExists(C4Database* db, slice docID) {
     C4Error err;
     auto    doc = c4::make_ref(c4doc_get(db, docID, true, &err));
     if ( doc ) return true;
@@ -666,7 +666,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while deleting collecti
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]") {
-    C4BlobStore *blobs = c4db_getBlobStore(db, ERROR_INFO());
+    C4BlobStore* blobs = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(blobs != nullptr);
 }
 
@@ -698,7 +698,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C][Blob]"
         key3       = addDocWithAttachments(doc3ID, atts, "text/plain", &names)[0];  // legacy
     }
 
-    C4BlobStore *store = c4db_getBlobStore(db, ERROR_INFO());
+    C4BlobStore* store = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(store);
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) > 0);
@@ -823,18 +823,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
     REQUIRE(error.code == 0);
     CHECK(!c4db_exists(slice(db2Name), config.parentDirectory));
-    C4Database *db2 = c4db_openNamed(slice(db2Name), &config, ERROR_INFO());
+    C4Database* db2 = c4db_openNamed(slice(db2Name), &config, ERROR_INFO());
     REQUIRE(db2);
     alloc_slice db2Path = c4db_getPath(db2);
     CHECK(c4db_exists(slice(db2Name), config.parentDirectory));
 
     C4ExtraInfo xtra = {};
     xtra.pointer     = this;
-    static void *sExpectedPointer;
+    static void* sExpectedPointer;
     static bool  sXtraDestructed;
     sExpectedPointer = this;
     sXtraDestructed  = false;
-    xtra.destructor  = [](void *ptr) {
+    xtra.destructor  = [](void* ptr) {
         REQUIRE(ptr == sExpectedPointer);
         REQUIRE(!sXtraDestructed);
         sXtraDestructed = true;
@@ -914,7 +914,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
     C4Log("New fixture is at %s", string(fixturePath).c_str());
 }
 
-static void testOpeningOlderDBFixture(const string &dbPath, C4DatabaseFlags withFlags, int expectedErrorCode = 0) {
+static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags withFlags, int expectedErrorCode = 0) {
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2   config = {slice(TempDir()), withFlags};
     C4Error             error;
@@ -944,7 +944,7 @@ static void testOpeningOlderDBFixture(const string &dbPath, C4DatabaseFlags with
     for ( unsigned i = 1; i <= 100; i++ ) {
         snprintf(docID, bufSize, "doc-%03u", i);
         INFO("Checking docID " << docID);
-        C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
+        C4Document* doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
         CHECK(((doc->flags & kDocDeleted) != 0) == (i > 50));
         Dict body = c4doc_getProperties(doc);
@@ -1058,7 +1058,7 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
         c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
         REQUIRE(e);
         unsigned    count         = 0;
-        const char *fl_names[][2] = {{"fName", "lName"}, {"john", "foo"}};
+        const char* fl_names[][2] = {{"fName", "lName"}, {"john", "foo"}};
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
             auto iter = e->columns;
             auto cc   = FLArrayIterator_GetCount(&iter);
@@ -1074,8 +1074,8 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
     }
 }
 
-static void setRemoteRev(C4Database *db, slice docID, slice revID, C4RemoteID remote) {
-    C4Document *doc = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO());
+static void setRemoteRev(C4Database* db, slice docID, slice revID, C4RemoteID remote) {
+    C4Document* doc = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
     REQUIRE(c4doc_setRemoteAncestor(doc, remote, revID, WITH_ERROR()));
     REQUIRE(c4doc_save(doc, 0, WITH_ERROR()));
@@ -1124,7 +1124,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // If/when that's changed (in Database+Upgrade.cc), those checks will break.
 
     // Check doc 1:
-    C4Document *doc;
+    C4Document* doc;
     doc = c4db_getDoc(db, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
     CHECK(slice(doc->revID) == "2@*");

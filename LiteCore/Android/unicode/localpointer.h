@@ -68,7 +68,7 @@ class LocalPointerBase {
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalPointerBase(T *p = NULL) : ptr(p) {}
+    explicit LocalPointerBase(T* p = NULL) : ptr(p) {}
 
     /**
      * Destructor deletes the object it owns.
@@ -99,7 +99,7 @@ class LocalPointerBase {
      * @return true if this pointer value equals other
      * @stable ICU 4.4
      */
-    bool operator==(const T *other) const { return ptr == other; }
+    bool operator==(const T* other) const { return ptr == other; }
 
     /**
      * Comparison with a simple pointer, so that existing code
@@ -108,28 +108,28 @@ class LocalPointerBase {
      * @return true if this pointer value differs from other
      * @stable ICU 4.4
      */
-    bool operator!=(const T *other) const { return ptr != other; }
+    bool operator!=(const T* other) const { return ptr != other; }
 
     /**
      * Access without ownership change.
      * @return the pointer value
      * @stable ICU 4.4
      */
-    T *getAlias() const { return ptr; }
+    T* getAlias() const { return ptr; }
 
     /**
      * Access without ownership change.
      * @return the pointer value as a reference
      * @stable ICU 4.4
      */
-    T &operator*() const { return *ptr; }
+    T& operator*() const { return *ptr; }
 
     /**
      * Access without ownership change.
      * @return the pointer value
      * @stable ICU 4.4
      */
-    T *operator->() const { return ptr; }
+    T* operator->() const { return ptr; }
 
     /**
      * Gives up ownership; the internal pointer becomes NULL.
@@ -137,8 +137,8 @@ class LocalPointerBase {
      *         caller becomes responsible for deleting the object
      * @stable ICU 4.4
      */
-    T *orphan() {
-        T *p = ptr;
+    T* orphan() {
+        T* p = ptr;
         ptr  = NULL;
         return p;
     }
@@ -150,7 +150,7 @@ class LocalPointerBase {
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         // delete ptr;
         ptr = p;
     }
@@ -160,20 +160,20 @@ class LocalPointerBase {
      * Actual pointer.
      * @internal
      */
-    T *ptr;
+    T* ptr;
 
   private:
     // No comparison operators with other LocalPointerBases.
-    bool operator==(const LocalPointerBase &other);
-    bool operator!=(const LocalPointerBase &other);
+    bool operator==(const LocalPointerBase& other);
+    bool operator!=(const LocalPointerBase& other);
     // No ownership transfer: No copy constructor, no assignment operator.
-    LocalPointerBase(const LocalPointerBase &other);
-    void operator=(const LocalPointerBase &other);
+    LocalPointerBase(const LocalPointerBase& other);
+    void operator=(const LocalPointerBase& other);
     // No heap allocation. Use only on the stack.
-    static void *U_EXPORT2 operator new(size_t size);
-    static void *U_EXPORT2 operator new[](size_t size);
+    static void* U_EXPORT2 operator new(size_t size);
+    static void* U_EXPORT2 operator new[](size_t size);
 #    if U_HAVE_PLACEMENT_NEW
-    static void *U_EXPORT2 operator new(size_t, void *ptr);
+    static void* U_EXPORT2 operator new(size_t, void* ptr);
 #    endif
 };
 
@@ -203,7 +203,7 @@ class LocalPointer : public LocalPointerBase<T> {
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalPointer(T *p = NULL) : LocalPointerBase<T>(p) {}
+    explicit LocalPointer(T* p = NULL) : LocalPointerBase<T>(p) {}
 #    ifndef U_HIDE_DRAFT_API
     /**
      * Constructor takes ownership and reports an error if NULL.
@@ -218,7 +218,7 @@ class LocalPointer : public LocalPointerBase<T> {
      *     if p==NULL and no other failure code had been set
      * @draft ICU 55
      */
-    LocalPointer(T *p, UErrorCode &errorCode) : LocalPointerBase<T>(p) {
+    LocalPointer(T* p, UErrorCode& errorCode) : LocalPointerBase<T>(p) {
         if ( p == NULL && U_SUCCESS(errorCode) ) { errorCode = U_MEMORY_ALLOCATION_ERROR; }
     }
 #    endif /* U_HIDE_DRAFT_API */
@@ -234,7 +234,7 @@ class LocalPointer : public LocalPointerBase<T> {
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         delete LocalPointerBase<T>::ptr;
         LocalPointerBase<T>::ptr = p;
     }
@@ -254,7 +254,7 @@ class LocalPointer : public LocalPointerBase<T> {
      *     if p==NULL and no other failure code had been set
      * @draft ICU 55
      */
-    void adoptInsteadAndCheckErrorCode(T *p, UErrorCode &errorCode) {
+    void adoptInsteadAndCheckErrorCode(T* p, UErrorCode& errorCode) {
         if ( U_SUCCESS(errorCode) ) {
             delete LocalPointerBase<T>::ptr;
             LocalPointerBase<T>::ptr = p;
@@ -292,7 +292,7 @@ class LocalArray : public LocalPointerBase<T> {
      * @param p simple pointer to an array of T objects that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalArray(T *p = NULL) : LocalPointerBase<T>(p) {}
+    explicit LocalArray(T* p = NULL) : LocalPointerBase<T>(p) {}
 
     /**
      * Destructor deletes the array it owns.
@@ -306,7 +306,7 @@ class LocalArray : public LocalPointerBase<T> {
      * @param p simple pointer to an array of T objects that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         delete[] LocalPointerBase<T>::ptr;
         LocalPointerBase<T>::ptr = p;
     }
@@ -318,7 +318,7 @@ class LocalArray : public LocalPointerBase<T> {
      * @return reference to the array item
      * @stable ICU 4.4
      */
-    T &operator[](ptrdiff_t i) const { return LocalPointerBase<T>::ptr[i]; }
+    T& operator[](ptrdiff_t i) const { return LocalPointerBase<T>::ptr[i]; }
 };
 
 /**
@@ -347,9 +347,9 @@ class LocalArray : public LocalPointerBase<T> {
 #    define U_DEFINE_LOCAL_OPEN_POINTER(LocalPointerClassName, Type, closeFunction)                                    \
         class LocalPointerClassName : public LocalPointerBase<Type> {                                                  \
           public:                                                                                                      \
-            explicit LocalPointerClassName(Type *p = NULL) : LocalPointerBase<Type>(p) {}                              \
+            explicit LocalPointerClassName(Type* p = NULL) : LocalPointerBase<Type>(p) {}                              \
             ~LocalPointerClassName() { closeFunction(ptr); }                                                           \
-            void adoptInstead(Type *p) {                                                                               \
+            void adoptInstead(Type* p) {                                                                               \
                 closeFunction(ptr);                                                                                    \
                 ptr = p;                                                                                               \
             }                                                                                                          \

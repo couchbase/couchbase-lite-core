@@ -37,7 +37,7 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Replicator *replicator, CollectionIndex coll)
+    Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
 #if __APPLE__
         , _revMailbox(nullptr, "Puller revisions")
@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
 
         auto docIDs = _options->docIDs(collectionIndex());
         if ( docIDs ) {
-            auto &enc = msg.jsonBody();
+            auto& enc = msg.jsonBody();
             enc.beginDict();
             enc.writeKey("docIDs"_sl);
             enc.writeValue(docIDs);
@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
 
     // Called by the RevFinder to tell the Puller what revs it's requested from the peer.
     void Puller::_expectSequences(vector<RevFinder::ChangeSequence> sequences) {
-        for ( auto &change : sequences ) {
+        for ( auto& change : sequences ) {
             if ( !passive() ) {
                 // Add sequence to _missingSequences:
                 _missingSequences.add(change.sequence, change.bodySize);
@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
 
     // We lost access to some documents; they need to be purged locally.
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
-        for ( auto &rev : revs ) {
+        for ( auto& rev : revs ) {
             Retained<IncomingRev> inc = makeIncomingRev();
             if ( inc ) inc->handleRevokedDoc(rev);
         }
@@ -175,7 +175,7 @@ namespace litecore { namespace repl {
     }
 
     // Actually process an incoming "rev" now:
-    void Puller::startIncomingRev(MessageIn *msg) {
+    void Puller::startIncomingRev(MessageIn* msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
         Retained<IncomingRev> inc = makeIncomingRev();
@@ -229,7 +229,7 @@ namespace litecore { namespace repl {
 
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
-    void Puller::revWasHandled(IncomingRev *inc) {
+    void Puller::revWasHandled(IncomingRev* inc) {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the IncomingRev's thread, NOT the Puller's! Thus, it needs
         // to pay attention to thread-safety.
@@ -239,7 +239,7 @@ namespace litecore { namespace repl {
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
         if ( !revs ) { return; }
-        for ( IncomingRev *inc : *revs ) {
+        for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
             if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
@@ -274,7 +274,7 @@ namespace litecore { namespace repl {
     }
 
     // Records that a sequence has been successfully pulled.
-    void Puller::completedSequence(const RemoteSequence &sequence, bool withTransientError,
+    void Puller::completedSequence(const RemoteSequence& sequence, bool withTransientError,
                                    bool shouldUpdateLastSequence) {
         uint64_t bodySize;
         if ( withTransientError ) {
@@ -300,7 +300,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    void Puller::insertRevision(RevToInsert *rev) { _inserter->insertRevision(rev); }
+    void Puller::insertRevision(RevToInsert* rev) { _inserter->insertRevision(rev); }
 
 #pragma mark - STATUS / PROGRESS:
 

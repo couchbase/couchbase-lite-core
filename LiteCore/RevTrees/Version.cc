@@ -29,7 +29,7 @@ namespace litecore {
         if ( _author == myPeerID ) _author = kMePeerID;  // Abbreviate my ID
     }
 
-    Version::Version(slice_istream &data) {
+    Version::Version(slice_istream& data) {
         optional<uint64_t> gen = data.readUVarInt(), id = data.readUVarInt();
         if ( !gen || !id ) throwBadBinary();
         _gen       = *gen;
@@ -62,12 +62,12 @@ namespace litecore {
         if ( _gen == 0 ) error::_throw(error::BadRevisionID);
     }
 
-    bool Version::writeBinary(slice_ostream &out, peerID myID) const {
+    bool Version::writeBinary(slice_ostream& out, peerID myID) const {
         uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
         return out.writeUVarInt(_gen) && out.writeUVarInt(id);
     }
 
-    bool Version::writeASCII(slice_ostream &out, peerID myID) const {
+    bool Version::writeASCII(slice_ostream& out, peerID myID) const {
         if ( !out.writeHex(_gen) || !out.writeByte('@') ) return false;
         auto author = (_author != kMePeerID) ? _author : myID;
         if ( author != kMePeerID ) return out.writeHex(author.id);
@@ -77,7 +77,7 @@ namespace litecore {
 
     alloc_slice Version::asASCII(peerID myID) const {
         auto result
-                = slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream &out) { return writeASCII(out, myID); });
+                = slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream& out) { return writeASCII(out, myID); });
         Assert(result);
         return result;
     }

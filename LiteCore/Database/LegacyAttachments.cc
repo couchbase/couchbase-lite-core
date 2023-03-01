@@ -25,18 +25,18 @@ namespace litecore { namespace legacy_attachments {
     bool isOldMetaProperty(slice key) { return (key.size > 0 && key[0] == '_'); }
 
     // Returns true if a Fleece Dict contains any top-level keys that begin with an underscore.
-    bool hasOldMetaProperties(const Dict *root) {
+    bool hasOldMetaProperties(const Dict* root) {
         for ( Dict::iterator i(root); i; ++i ) {
             if ( isOldMetaProperty(i.keyString()) ) return true;
         }
         return false;
     }
 
-    alloc_slice encodeStrippingOldMetaProperties(const Dict *root, SharedKeys *sk) {
+    alloc_slice encodeStrippingOldMetaProperties(const Dict* root, SharedKeys* sk) {
         if ( !root ) return {};
 
-        unordered_set<const Value *>               removeThese;  // Values to remove from doc
-        unordered_map<const Value *, const Dict *> fixBlobs;     // blob -> attachment
+        unordered_set<const Value*>              removeThese;  // Values to remove from doc
+        unordered_map<const Value*, const Dict*> fixBlobs;     // blob -> attachment
 
         // Flag all "_" properties (including _attachments) for removal:
         for ( Dict::iterator i(root); i; ++i ) {
@@ -51,7 +51,7 @@ namespace litecore { namespace legacy_attachments {
                 auto  attachment = Value::asDict(i.value());
                 if ( !attachment ) continue;
                 auto        attDigest = attachment->get(C4Blob::kDigestProperty);
-                const Dict *blob      = nullptr;
+                const Dict* blob      = nullptr;
 
                 if ( key.hasPrefix("blob_"_sl) && attachment ) {
                     slice pointer = key.from(5);
@@ -82,7 +82,7 @@ namespace litecore { namespace legacy_attachments {
         // Now re-encode, substituting the contents of the altered blobs:
         Encoder enc;
         enc.setSharedKeys(sk);
-        enc.writeValue(root, [&](const Value *key, const Value *value) {
+        enc.writeValue(root, [&](const Value* key, const Value* value) {
             if ( removeThese.find(value) != removeThese.end() ) {
                 // remove this entirely
                 return true;
@@ -91,7 +91,7 @@ namespace litecore { namespace legacy_attachments {
             if ( b != fixBlobs.end() ) {
                 // Fix up this blob with the digest from the attachment:
                 if ( key ) enc.writeKey(key);
-                auto blob       = (Dict *)value;
+                auto blob       = (Dict*)value;
                 auto attachment = b->second;
                 enc.beginDictionary(blob->count());
                 for ( Dict::iterator i(blob); i; ++i ) {

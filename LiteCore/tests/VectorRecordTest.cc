@@ -22,25 +22,25 @@
 #include <iostream>
 
 namespace fleece {
-    static inline std::ostream &operator<<(std::ostream &out, fleece::Array array) {
+    static inline std::ostream& operator<<(std::ostream& out, fleece::Array array) {
         return out << array.toJSONString();
     }
 
-    static inline std::ostream &operator<<(std::ostream &out, fleece::Dict dict) { return out << dict.toJSONString(); }
+    static inline std::ostream& operator<<(std::ostream& out, fleece::Dict dict) { return out << dict.toJSONString(); }
 
-    static inline std::ostream &operator<<(std::ostream &out, const litecore::VectorRecord &doc) {
+    static inline std::ostream& operator<<(std::ostream& out, const litecore::VectorRecord& doc) {
         doc.dump(out);
         return out;
     }
 }  // namespace fleece
 
 namespace litecore {
-    static inline std::ostream &operator<<(std::ostream &out, const litecore::Revision &rev) {
+    static inline std::ostream& operator<<(std::ostream& out, const litecore::Revision& rev) {
         return out << "Revision{" << rev.revID.str() << ", " << int(rev.flags) << ", " << rev.properties.toJSONString()
                    << "}";
     }
 
-    static inline bool operator==(const litecore::Revision &a, const litecore::Revision &b) {
+    static inline bool operator==(const litecore::Revision& a, const litecore::Revision& b) {
         return a.revID == b.revID && a.flags == b.flags && a.properties.isEqual(b.properties);
     }
 }  // namespace litecore

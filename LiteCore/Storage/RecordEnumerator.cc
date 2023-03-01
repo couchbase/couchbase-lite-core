@@ -24,14 +24,14 @@ namespace litecore {
 
 
     // By-key constructor
-    RecordEnumerator::RecordEnumerator(KeyStore &store, Options options) : _store(&store) {
+    RecordEnumerator::RecordEnumerator(KeyStore& store, Options options) : _store(&store) {
         LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", this, store.name().c_str(), options.includeDeleted,
                    options.onlyConflicts, options.onlyBlobs, options.sortOption);
         _impl.reset(_store->newEnumeratorImpl(false, 0_seq, options));
     }
 
     // By-sequence constructor
-    RecordEnumerator::RecordEnumerator(KeyStore &store, sequence_t since, Options options) : _store(&store) {
+    RecordEnumerator::RecordEnumerator(KeyStore& store, sequence_t since, Options options) : _store(&store) {
         LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", this, store.name().c_str(),
                    (unsigned long long)since, options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
                    options.sortOption);

@@ -25,10 +25,10 @@ namespace litecore::repl {
 
     class BlobDataSource : public IMessageDataSource {
       public:
-        BlobDataSource(Pusher *pusher, unique_ptr<C4ReadStream> &&blob, const Replicator::BlobProgress &progress)
+        BlobDataSource(Pusher* pusher, unique_ptr<C4ReadStream>&& blob, const Replicator::BlobProgress& progress)
             : _pusher(pusher), _repl(pusher->replicator()), _blob(move(blob)), _progress(progress) {}
 
-        int operator()(void *buf, size_t capacity) override {
+        int operator()(void* buf, size_t capacity) override {
             // Callback to read bytes from the blob into the BLIP message:
             // For performance reasons this is NOT run on my actor thread, so it can't access
             // my state directly; instead it calls _attachmentSent() at the end.
@@ -58,7 +58,7 @@ namespace litecore::repl {
         }
 
       private:
-        Pusher                         *_pusher;
+        Pusher*                         _pusher;
         Retained<Replicator>            _repl;
         unique_ptr<C4ReadStream>        _blob;
         Replicator::BlobProgress        _progress;
@@ -66,8 +66,8 @@ namespace litecore::repl {
     };
 
     // Reads the "digest" property from a BLIP message and opens a read stream on that blob.
-    unique_ptr<C4ReadStream> Pusher::readBlobFromRequest(MessageIn *req, slice &digestStr,
-                                                         Replicator::BlobProgress &progress) {
+    unique_ptr<C4ReadStream> Pusher::readBlobFromRequest(MessageIn* req, slice& digestStr,
+                                                         Replicator::BlobProgress& progress) {
         try {
             digestStr = req->property("digest"_sl);
             progress  = {Dir::kPushing};

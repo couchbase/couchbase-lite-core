@@ -27,11 +27,11 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec& spec) {
         auto expressions = spec.what();
         if ( expressions->count() != 1 )
             error::_throw(error::InvalidQuery, "Predictive index requires exactly one expression");
-        const Array *expression = expressions->get(0)->asArray();
+        const Array* expression = expressions->get(0)->asArray();
         if ( !expression ) error::_throw(error::InvalidQuery, "Predictive index requires a PREDICT() expression");
 
         // Create a table of the PREDICTION results:
@@ -55,7 +55,7 @@ namespace litecore {
         return createIndex(spec, predTableName, i);
     }
 
-    string SQLiteKeyStore::createPredictionTable(const Value *expression, const IndexSpec::Options *options) {
+    string SQLiteKeyStore::createPredictionTable(const Value* expression, const IndexSpec::Options* options) {
         // Derive the table name from the expression (path) it unnests:
         auto        kvTableName   = tableName();
         auto        q_kvTableName = quotedTableName();

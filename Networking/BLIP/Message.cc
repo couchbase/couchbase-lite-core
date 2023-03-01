@@ -37,7 +37,7 @@ namespace litecore { namespace blip {
     static const size_t kIncomingAckThreshold = 50000;
 
     void Message::sendProgress(MessageProgress::State state, MessageSize bytesSent, MessageSize bytesReceived,
-                               MessageIn *reply) {
+                               MessageIn* reply) {
         if ( _onProgress ) _onProgress({state, bytesSent, bytesReceived, reply});
     }
 
@@ -45,16 +45,16 @@ namespace litecore { namespace blip {
 
     // Writes a slice to a stream. If it contains non-ASCII characters, it will be written as hex
     // inside "<<...>>". If empty, it's written as "<<>>".
-    static ostream &dumpSlice(ostream &o, fleece::slice s) {
+    static ostream& dumpSlice(ostream& o, fleece::slice s) {
         if ( s.size == 0 ) return o << "<<>>";
-        auto buf = (const uint8_t *)s.buf;
+        auto buf = (const uint8_t*)s.buf;
         for ( size_t i = 0; i < s.size; i++ ) {
             if ( buf[i] < 32 || buf[i] > 126 ) return o << "<<" << s.hexString() << ">>";
         }
         return o << s;
     }
 
-    void Message::dumpHeader(std::ostream &out) {
+    void Message::dumpHeader(std::ostream& out) {
         out << kMessageTypeNames[type()];
         out << " #" << _number << ' ';
         if ( _flags & kUrgent ) out << 'U';
@@ -62,20 +62,20 @@ namespace litecore { namespace blip {
         if ( _flags & kCompressed ) out << 'Z';
     }
 
-    void Message::writeDescription(slice payload, std::ostream &out) {
+    void Message::writeDescription(slice payload, std::ostream& out) {
         if ( type() == kRequestType ) {
-            const char *profile = findProperty(payload, "Profile");
+            const char* profile = findProperty(payload, "Profile");
             if ( profile ) out << "'" << profile << "' ";
         }
         dumpHeader(out);
     }
 
-    void Message::dump(slice payload, slice body, std::ostream &out) {
+    void Message::dump(slice payload, slice body, std::ostream& out) {
         dumpHeader(out);
         if ( type() != kAckRequestType && type() != kAckResponseType ) {
             out << " {";
-            auto key = (const char *)payload.buf;
-            auto end = (const char *)payload.end();
+            auto key = (const char*)payload.buf;
+            auto end = (const char*)payload.end();
             while ( key < end ) {
                 auto endOfKey = key + strlen(key);
                 auto val      = endOfKey + 1;
@@ -96,9 +96,9 @@ namespace litecore { namespace blip {
         }
     }
 
-    const char *Message::findProperty(slice payload, const char *propertyName) {
-        auto key = (const char *)payload.buf;
-        auto end = (const char *)payload.end();
+    const char* Message::findProperty(slice payload, const char* propertyName) {
+        auto key = (const char*)payload.buf;
+        auto end = (const char*)payload.end();
         while ( key < end ) {
             auto endOfKey = key + strlen(key);
             auto val      = endOfKey + 1;
@@ -114,13 +114,13 @@ namespace litecore { namespace blip {
 
     MessageIn::~MessageIn() = default;
 
-    MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n, MessageProgressCallback onProgress,
+    MessageIn::MessageIn(Connection* connection, FrameFlags flags, MessageNo n, MessageProgressCallback onProgress,
                          MessageSize outgoingSize)
         : Message(flags, n), _connection(connection), _outgoingSize(outgoingSize), _propertiesRemaining(nullptr, 0) {
         _onProgress = onProgress;
     }
 
-    MessageIn::ReceiveState MessageIn::receivedFrame(Codec &codec, slice entireFrame, FrameFlags frameFlags) {
+    MessageIn::ReceiveState MessageIn::receivedFrame(Codec& codec, slice entireFrame, FrameFlags frameFlags) {
         ReceiveState state = kOther;
         MessageSize  bodyBytesReceived;
         {
@@ -136,7 +136,7 @@ namespace litecore { namespace blip {
 
             // Copy and remove the checksum from the end of the frame:
             uint8_t checksum[Codec::kChecksumSize];
-            auto    trailer = (void *)&frame[frame.size - Codec::kChecksumSize];
+            auto    trailer = (void*)&frame[frame.size - Codec::kChecksumSize];
             memcpy(checksum, trailer, Codec::kChecksumSize);
             if ( mode == Codec::Mode::SyncFlush ) {
                 // Replace checksum with the untransmitted deflate empty-block trailer,
@@ -247,7 +247,7 @@ namespace litecore { namespace blip {
         }
     }
 
-    void MessageIn::readFrame(Codec &codec, int mode, slice_istream &frame, bool finalFrame) {
+    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, bool finalFrame) {
         uint8_t buffer[4096];
         while ( frame.size > 0 ) {
             slice_ostream output(buffer, sizeof(buffer));
@@ -302,7 +302,7 @@ namespace litecore { namespace blip {
 
 #pragma mark - RESPONSES:
 
-    void MessageIn::respond(MessageBuilder &mb) {
+    void MessageIn::respond(MessageBuilder& mb) {
         if ( noReply() ) {
             _connection->warn("Ignoring attempt to respond to a noReply message");
             return;
@@ -338,8 +338,8 @@ namespace litecore { namespace blip {
         // receivedFrame() method has already verified that _properties ends with a zero byte.
         // OPT: This lookup isn't very efficient. If it turns out to be a hot-spot, we could cache
         // the starting point of every property string.
-        auto key = (const char *)_properties.buf;
-        auto end = (const char *)_properties.end();
+        auto key = (const char*)_properties.buf;
+        auto end = (const char*)_properties.end();
         while ( key < end ) {
             auto endOfKey = key + strlen(key);
             auto val      = endOfKey + 1;
@@ -354,7 +354,7 @@ namespace litecore { namespace blip {
     long MessageIn::intProperty(slice name, long defaultValue) const {
         string value = property(name).asString();
         if ( value.empty() ) return defaultValue;
-        char *end;
+        char* end;
         long  result = strtol(value.c_str(), &end, 10);
         if ( *end != '\0' ) return defaultValue;
         return result;

@@ -28,7 +28,7 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer, CollectionIndex collIndex)
+    Pusher::Pusher(Replicator* replicator, Checkpointer& checkpointer, CollectionIndex collIndex)
         : Worker(replicator, "Push", collIndex)
         , _continuous(_options->push(collectionIndex()) == kC4Continuous)
         , _checkpointer(checkpointer)
@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
             logInfo("Found 0 changes up to #%" PRIu64, (uint64_t)changes.lastSequence);
         } else {
             uint64_t bodySize = 0;
-            for ( auto &change : changes.revs ) bodySize += change->bodySize;
+            for ( auto& change : changes.revs ) bodySize += change->bodySize;
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
@@ -149,7 +149,7 @@ namespace litecore { namespace repl {
                     (uint64_t)changes.revs.back()->sequence);
 #if DEBUG
             if ( willLog(LogLevel::Debug) ) {
-                for ( auto &change : changes.revs )
+                for ( auto& change : changes.revs )
                     logDebug("    - %.4" PRIu64 ": '%.*s' #%.*s (remote #%.*s)",
                              static_cast<uint64_t>(change->sequence), SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
@@ -200,7 +200,7 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING A "CHANGES" MESSAGE & HANDLING RESPONSE:
 
     // Sends a "changes" or "proposeChanges" message.
-    void Pusher::sendChanges(RevToSendList &changes) {
+    void Pusher::sendChanges(RevToSendList& changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
         assignCollectionToMsg(req, collectionIndex());
         if ( _proposeChanges ) { req[kConflictIncludesRevProperty] = "true"_sl; }
@@ -209,9 +209,9 @@ namespace litecore { namespace repl {
         req.compressed = !changes.empty();
 
         // Generate the JSON array of changes:
-        auto &enc = req.jsonBody();
+        auto& enc = req.jsonBody();
         enc.beginArray();
-        for ( RevToSend *change : changes ) {
+        for ( RevToSend* change : changes ) {
             // Write the info array for this change:
             enc.beginArray();
             if ( _proposeChanges ) {
@@ -251,14 +251,14 @@ namespace litecore { namespace repl {
         });
     }
 
-    void Pusher::encodeRevID(Encoder &enc, slice revID) {
+    void Pusher::encodeRevID(Encoder& enc, slice revID) {
         if ( _db->usingVersionVectors() && revID.findByte('*') ) enc << _db->convertVersionToAbsolute(revID);
         else
             enc << revID;
     }
 
     // Handles the peer's response to a "changes" or "proposeChanges" message:
-    void Pusher::handleChangesResponse(RevToSendList &changes, MessageIn *reply, bool proposedChanges) {
+    void Pusher::handleChangesResponse(RevToSendList& changes, MessageIn* reply, bool proposedChanges) {
         // Got reply to the "changes" or "proposeChanges":
         if ( !changes.empty() ) {
             logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")", changes.size(),
@@ -277,7 +277,7 @@ namespace litecore { namespace repl {
                     sendChanges(changes);
                 } else {
                     logError("Server does not allow '%s'; giving up", (_proposeChanges ? "proposeChanges" : "changes"));
-                    for ( RevToSend *change : changes ) doneWithRev(change, false, false);
+                    for ( RevToSend* change : changes ) doneWithRev(change, false, false);
                     gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
                                            "Incompatible with server replication protocol (changes)"_sl));
                 }
@@ -290,7 +290,7 @@ namespace litecore { namespace repl {
         maybeGetMoreChanges();
 
         if ( reply->isError() ) {
-            for ( RevToSend *change : changes ) doneWithRev(change, false, false);
+            for ( RevToSend* change : changes ) doneWithRev(change, false, false);
             gotError(reply);
             return;
         }
@@ -305,7 +305,7 @@ namespace litecore { namespace repl {
 
         // The response body consists of an array that parallels the `changes` array I sent:
         Array::iterator iResponse(reply->JSONBody().asArray());
-        for ( RevToSend *change : changes ) {
+        for ( RevToSend* change : changes ) {
             change->maxHistory        = maxHistory;
             change->legacyAttachments = legacyAttachments;
             change->deltaOK           = _deltasOK;
@@ -321,7 +321,7 @@ namespace litecore { namespace repl {
     }
 
     // Handles peer's response to a single rev in a "changes" message. Returns true if queued.
-    bool Pusher::handleChangeResponse(RevToSend *change, Value response) {
+    bool Pusher::handleChangeResponse(RevToSend* change, Value response) {
         if ( Array ancestorArray = response.asArray(); ancestorArray ) {
             // Array of the peer's known ancestors:
             for ( Value a : ancestorArray ) change->addRemoteAncestor(a.asString());
@@ -338,7 +338,7 @@ namespace litecore { namespace repl {
     }
 
     // Handles peer's response to a single rev in a "proposeChanges" message. Returns true if queued.
-    bool Pusher::handleProposedChangeResponse(RevToSend *change, Value response) {
+    bool Pusher::handleProposedChangeResponse(RevToSend* change, Value response) {
         bool completed = true, synced = false;
         // Entry in "proposeChanges" response is a status code, with 0 for OK:
         int   status      = 0;
@@ -401,7 +401,7 @@ namespace litecore { namespace repl {
 
     // Called after a proposed revision gets a 409 Conflict response from the server.
     // Check the document's current remote rev, and retry if it's different now.
-    bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend *rev, slice receivedRevID) {
+    bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend* rev, slice receivedRevID) {
         if ( !_proposeChanges ) return false;
         try {
             Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetAll);
@@ -462,7 +462,7 @@ namespace litecore { namespace repl {
             // See if the doc is unchanged, by getting it by sequence:
             Retained<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
-            auto                *collection = getCollection();
+            auto*                collection = getCollection();
             Retained<C4Document> doc        = _db->useCollection(collection)->getDocumentBySequence(rev->sequence);
             if ( !doc || !C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 // Local document has changed, so stop working on this revision:
@@ -488,7 +488,7 @@ namespace litecore { namespace repl {
     }
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
-    void Pusher::gotOutOfOrderChange(RevToSend *change) {
+    void Pusher::gotOutOfOrderChange(RevToSend* change) {
         if ( !connected() ) return;
         logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
                 SPLAT(change->docID), SPLAT(change->revID), SPLAT(change->remoteAncestorRevID),
@@ -508,7 +508,7 @@ namespace litecore { namespace repl {
             // OK, now I must report these as conflicts:
             _conflictsIMightRetry.clear();
             C4Error error = C4Error::make(WebSocketDomain, 409, "conflicts with server document"_sl);
-            for ( auto &entry : conflicts ) finishedDocumentWithError(entry.second, error, false);
+            for ( auto& entry : conflicts ) finishedDocumentWithError(entry.second, error, false);
         }
 
         Worker::_connectionClosed();
@@ -558,7 +558,7 @@ namespace litecore { namespace repl {
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
         if ( immediate ) {
-            for ( const auto &revToRetry : revsToRetry ) {
+            for ( const auto& revToRetry : revsToRetry ) {
                 _pushingDocs.insert({revToRetry->docID, revToRetry});
                 addProgress({0, revToRetry->bodySize});
             }

@@ -27,7 +27,7 @@
 #    include <poll.h>
 #endif
 
-#define WSLog (*(LogDomain *)kC4WebSocketLog)
+#define WSLog (*(LogDomain*)kC4WebSocketLog)
 
 namespace litecore { namespace net {
         using namespace std;
@@ -76,8 +76,8 @@ namespace litecore { namespace net {
             }
         }
 
-        /*static*/ Poller &Poller::instance() {
-            static Poller *sInstance = new Poller(true);
+        /*static*/ Poller& Poller::instance() {
+            static Poller* sInstance = new Poller(true);
             return *sInstance;
         }
 
@@ -101,7 +101,7 @@ namespace litecore { namespace net {
                 lock_guard<mutex> lock(_mutex);
                 auto              i = _listeners.find(fd);
                 if ( i == _listeners.end() ) return;
-                auto &lref = i->second[event];
+                auto& lref = i->second[event];
                 if ( !lref ) return;
                 listener = move(lref);
                 lref     = nullptr;
@@ -112,14 +112,14 @@ namespace litecore { namespace net {
 
         void Poller::_interrupt(int message) {
 #ifdef WIN32
-            if ( ::send(_interruptWriteFD, (const char *)&message, sizeof(message), 0) < 0 )
+            if ( ::send(_interruptWriteFD, (const char*)&message, sizeof(message), 0) < 0 )
 #else
             if ( ::write(_interruptWriteFD, &message, sizeof(message)) < 0 )
 #endif
                 throwSocketError();
         }
 
-        Poller &Poller::start() {
+        Poller& Poller::start() {
             _thread = thread([=] {
                 SetThreadName("CBL Networking");
                 while ( poll() )
@@ -155,7 +155,7 @@ namespace litecore { namespace net {
                 FD_ZERO(&fds_write);
 
                 lock_guard<mutex> lock(_mutex);
-                for ( auto &src : _listeners ) {
+                for ( auto& src : _listeners ) {
                     bool included = false;
                     if ( src.second[kReadable] ) {
                         FD_SET(src.first, &fds_read);
@@ -194,7 +194,7 @@ namespace litecore { namespace net {
             bool result = true;
             if ( FD_ISSET(_interruptReadFD, &fds_read) ) {
                 int message;
-                ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
+                ::recv(_interruptReadFD, (char*)&message, sizeof(message), 0);
                 LogDebug(WSLog, "Poller: interruption %d", message);
                 if ( message < 0 ) {
                     // Receiving a negative message aborts the loop

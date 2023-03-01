@@ -452,7 +452,7 @@ TEST_CASE("Cert concatenation", "[Certs]") {
 }
 
 TEST_CASE("Cert request parsing", "[Certs]") {
-    const char *kCSR = "-----BEGIN CERTIFICATE REQUEST-----\n"
+    const char* kCSR = "-----BEGIN CERTIFICATE REQUEST-----\n"
                        "MIICzzCCAbcCAQAwNzEQMA4GA1UEAwwHUHVwc2hhdzESMBAGA1UECgwJQ291Y2hi\n"
                        "YXNlMQ8wDQYDVQQLDAZNb2JpbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\n"
                        "AoIBAQC7hY5Q7zi49HKBL4iG0kmefWMvIEknUnCkour86HNxQhckePISyeHtXWgu\n"

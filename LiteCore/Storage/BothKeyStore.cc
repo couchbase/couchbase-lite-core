@@ -23,7 +23,7 @@
 namespace litecore {
     using namespace std;
 
-    BothKeyStore::BothKeyStore(KeyStore *liveStore, KeyStore *deadStore)
+    BothKeyStore::BothKeyStore(KeyStore* liveStore, KeyStore* deadStore)
         : KeyStore(liveStore->dataFile(), liveStore->name(), liveStore->capabilities())
         , _liveStore(liveStore)
         , _deadStore(deadStore) {
@@ -36,7 +36,7 @@ namespace litecore {
         return count;
     }
 
-    sequence_t BothKeyStore::set(const RecordUpdate &rec, bool updateSequence, ExclusiveTransaction &t) {
+    sequence_t BothKeyStore::set(const RecordUpdate& rec, bool updateSequence, ExclusiveTransaction& t) {
         bool deleting = (rec.flags & DocumentFlags::kDeleted);
         auto target   = (deleting ? _deadStore : _liveStore).get();  // the store to update
         auto other    = (deleting ? _liveStore : _deadStore).get();
@@ -64,7 +64,7 @@ namespace litecore {
         return seq;
     }
 
-    std::vector<alloc_slice> BothKeyStore::withDocBodies(const std::vector<slice> &docIDs,
+    std::vector<alloc_slice> BothKeyStore::withDocBodies(const std::vector<slice>& docIDs,
                                                          WithDocBodyCallback       callback) {
         // First, delegate to the live store:
         size_t nDocs  = docIDs.size();
@@ -111,8 +111,8 @@ namespace litecore {
     // always returning the lowest-sorting record (basically a merge-sort.)
     class BothEnumeratorImpl : public RecordEnumerator::Impl {
       public:
-        BothEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options options, KeyStore *liveStore,
-                           KeyStore *deadStore)
+        BothEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
+                           KeyStore* deadStore)
             : _liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
             , _deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
             , _bySequence(bySequence)
@@ -151,7 +151,7 @@ namespace litecore {
             return true;
         }
 
-        virtual bool read(Record &record) const override { return _current->read(record); }
+        virtual bool read(Record& record) const override { return _current->read(record); }
 
         virtual slice key() const override { return _current->key(); }
 
@@ -159,12 +159,12 @@ namespace litecore {
 
       private:
         unique_ptr<RecordEnumerator::Impl> _liveImpl, _deadImpl;      // Real enumerators
-        RecordEnumerator::Impl            *_current{nullptr};         // Enumerator w/lowest key
+        RecordEnumerator::Impl*            _current{nullptr};         // Enumerator w/lowest key
         int                                _cmp{0};                   // Comparison of live to dead
         bool                               _bySequence, _descending;  // Sorting by sequence?
     };
 
-    RecordEnumerator::Impl *BothKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
+    RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
                                                             RecordEnumerator::Options options) {
         if ( options.includeDeleted ) {
             if ( options.sortOption == kUnsorted ) options.sortOption = kAscending;  // we need ordering to merge

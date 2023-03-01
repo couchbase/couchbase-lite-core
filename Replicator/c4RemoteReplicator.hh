@@ -41,7 +41,7 @@ namespace litecore {
         // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
         static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
-        C4RemoteReplicator(C4Database *db NONNULL, const C4ReplicatorParameters &params, const C4Address &serverAddress,
+        C4RemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params, const C4Address& serverAddress,
                            C4String remoteDatabaseName)
             : C4ReplicatorImpl(db, params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
@@ -119,7 +119,7 @@ namespace litecore {
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
-            _logVerbose("C4RemoteRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
+            _logVerbose("C4RemoteRepl %p created Repl %p", (Logging*)this, (Logging*)_replicator.get());
         }
 
         // Both `start` and `retry` end up calling this.
@@ -214,7 +214,7 @@ namespace litecore {
 
       private:
         alloc_slice const      _url;
-        const C4SocketFactory *_socketFactory{nullptr};
+        const C4SocketFactory* _socketFactory{nullptr};
         C4SocketFactory        _customSocketFactory{};  // Storage for *_socketFactory if non-null
         litecore::actor::Timer _retryTimer;
         unsigned               _retryCount{0};

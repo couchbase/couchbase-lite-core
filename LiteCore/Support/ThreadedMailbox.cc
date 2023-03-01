@@ -45,19 +45,19 @@ namespace litecore { namespace actor {
         struct RunAsyncActor : Actor {
             RunAsyncActor() : Actor(kC4Cpp_DefaultLog, "runAsync") {}
 
-            void runAsync(void (*task)(void *), void *context) {
+            void runAsync(void (*task)(void*), void* context) {
                 enqueue(FUNCTION_TO_QUEUE(RunAsyncActor::_runAsync), task, context);
             }
 
           private:
-            void _runAsync(void (*task)(void *), void *context) { task(context); }
+            void _runAsync(void (*task)(void*), void* context) { task(context); }
         };
 
-        static Scheduler    *sScheduler;
+        static Scheduler*    sScheduler;
         static random_device rd;
         static mt19937       sRandGen(rd());
 
-        Scheduler *Scheduler::sharedScheduler() {
+        Scheduler* Scheduler::sharedScheduler() {
             if ( !sScheduler ) {
                 sScheduler = new Scheduler;
                 sScheduler->start();
@@ -79,7 +79,7 @@ namespace litecore { namespace actor {
         void Scheduler::stop() {
             LogTo(ActorLog, "Stopping Scheduler<%p>...", this);
             _queue.close();
-            for ( auto &t : _threadPool ) { t.join(); }
+            for ( auto& t : _threadPool ) { t.join(); }
             LogTo(ActorLog, "Scheduler<%p> has stopped", this);
             _started.clear();
         }
@@ -90,7 +90,7 @@ namespace litecore { namespace actor {
             char             name[bufSize];
             snprintf(name, bufSize, "CBL Scheduler#%u", taskID);
             SetThreadName(name);
-            ThreadedMailbox *mailbox;
+            ThreadedMailbox* mailbox;
             while ( (mailbox = _queue.pop()) != nullptr ) {
                 LogVerbose(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
                 mailbox->performNextMessage();
@@ -99,29 +99,29 @@ namespace litecore { namespace actor {
             LogTo(ActorLog, "   task %d finished", taskID);
         }
 
-        void Scheduler::schedule(ThreadedMailbox *mbox) { sScheduler->_queue.push(mbox); }
+        void Scheduler::schedule(ThreadedMailbox* mbox) { sScheduler->_queue.push(mbox); }
 
 
         // Explicitly instantiate the Channel specializations we need; this corresponds to the
         // "extern template..." declarations at the bottom of Actor.hh
-        template class Channel<ThreadedMailbox *>;
+        template class Channel<ThreadedMailbox*>;
         template class Channel<std::function<void()>>;
 
 
 #    pragma mark - MAILBOX:
 
-        thread_local Actor *ThreadedMailbox::sCurrentActor;
+        thread_local Actor* ThreadedMailbox::sCurrentActor;
 
 #    if ACTORS_USE_MANIFESTS
         thread_local shared_ptr<ChannelManifest> ThreadedMailbox::sThreadManifest;
 #    endif
 
-        ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)
+        ThreadedMailbox::ThreadedMailbox(Actor* a, const std::string& name, ThreadedMailbox* parent)
             : _actor(a), _name(name) {
             Scheduler::sharedScheduler()->start();
         }
 
-        void ThreadedMailbox::enqueue(const char *name, const std::function<void()> &f) {
+        void ThreadedMailbox::enqueue(const char* name, const std::function<void()>& f) {
             beginLatency();
             retain(_actor);
 
@@ -149,7 +149,7 @@ namespace litecore { namespace actor {
             if ( push(wrappedBlock) ) reschedule();
         }
 
-        void ThreadedMailbox::enqueueAfter(delay_t delay, const char *name, const std::function<void()> &f) {
+        void ThreadedMailbox::enqueueAfter(delay_t delay, const char* name, const std::function<void()>& f) {
             if ( delay <= delay_t::zero() ) return enqueue(name, f);
 
             beginLatency();
@@ -186,10 +186,10 @@ namespace litecore { namespace actor {
             timer->fireAfter(chrono::duration_cast<Timer::duration>(delay));
         }
 
-        void ThreadedMailbox::safelyCall(const std::function<void()> &f) const {
+        void ThreadedMailbox::safelyCall(const std::function<void()>& f) const {
             try {
                 f();
-            } catch ( std::exception &x ) {
+            } catch ( std::exception& x ) {
                 _actor->caughtException(x);
 #    if ACTORS_USE_MANIFESTS
                 stringstream manifest;
@@ -219,7 +219,7 @@ namespace litecore { namespace actor {
             LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
             DebugAssert(++_active == 1);  // Fail-safe check to detect 'impossible' re-entrant call
             sCurrentActor = _actor;
-            auto &fn      = front();
+            auto& fn      = front();
             fn();
             sCurrentActor = nullptr;
 
@@ -241,8 +241,8 @@ namespace litecore { namespace actor {
 #    endif
         }
 
-        void ThreadedMailbox::runAsyncTask(void (*task)(void *), void *context) {
-            static RunAsyncActor *sRunAsyncActor
+        void ThreadedMailbox::runAsyncTask(void (*task)(void*), void* context) {
+            static RunAsyncActor* sRunAsyncActor
                     = retain(new RunAsyncActor());  // I grant unto thee the gift of eternal life
             sRunAsyncActor->runAsync(task, context);
         }

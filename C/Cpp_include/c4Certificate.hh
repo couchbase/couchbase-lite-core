@@ -65,18 +65,18 @@ struct C4Cert final
     // Certificate signing requests:
 
     static Retained<C4Cert> createRequest(std::vector<C4CertNameComponent> nameComponents, C4CertUsage certUsages,
-                                          C4KeyPair *subjectKey);
+                                          C4KeyPair* subjectKey);
 
     static Retained<C4Cert> requestFromData(slice certRequestData);
 
     bool isSigned();
 
-    using SigningCallback = std::function<void(C4Cert *, C4Error)>;
+    using SigningCallback = std::function<void(C4Cert*, C4Error)>;
 
-    void sendSigningRequest(const C4Address &address, slice optionsDictFleece, const SigningCallback &callback);
+    void sendSigningRequest(const C4Address& address, slice optionsDictFleece, const SigningCallback& callback);
 
-    Retained<C4Cert> signRequest(const C4CertIssuerParameters &params, C4KeyPair *issuerPrivateKey,
-                                 C4Cert *C4NULLABLE issuerCert);
+    Retained<C4Cert> signRequest(const C4CertIssuerParameters& params, C4KeyPair* issuerPrivateKey,
+                                 C4Cert* C4NULLABLE issuerCert);
 
     // Persistence:
 
@@ -90,15 +90,15 @@ struct C4Cert final
 
     // Internal:
 
-    litecore::crypto::Cert *assertSignedCert();
+    litecore::crypto::Cert* assertSignedCert();
 
   private:
-    explicit C4Cert(litecore::crypto::CertBase *);
+    explicit C4Cert(litecore::crypto::CertBase*);
     ~C4Cert();
-    litecore::crypto::CertSigningRequest *assertUnsignedCert();
+    litecore::crypto::CertSigningRequest* assertUnsignedCert();
 
 #endif  // COUCHBASE_ENTERPRISE
-    litecore::crypto::Cert *C4NULLABLE   asSignedCert();
+    litecore::crypto::Cert* C4NULLABLE   asSignedCert();
     Retained<litecore::crypto::CertBase> _impl;
 };
 
@@ -127,25 +127,25 @@ struct C4KeyPair final
 
     bool isPersistent();
 
-    static Retained<C4KeyPair> persistentWithPublicKey(C4KeyPair *);
+    static Retained<C4KeyPair> persistentWithPublicKey(C4KeyPair*);
 
     void removePersistent();
 
     // Externally-Implemented Key-Pairs:
 
-    static Retained<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void *externalKey,
-                                            const C4ExternalKeyCallbacks &callbacks);
+    static Retained<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
+                                            const C4ExternalKeyCallbacks& callbacks);
 
     // Internal:
-    litecore::crypto::PrivateKey *C4NULLABLE getPrivateKey();
+    litecore::crypto::PrivateKey* C4NULLABLE getPrivateKey();
 
   private:
     friend struct C4Cert;
 
-    explicit C4KeyPair(litecore::crypto::Key *);
+    explicit C4KeyPair(litecore::crypto::Key*);
     ~C4KeyPair();
     Retained<litecore::crypto::PublicKey>   getPublicKey();
-    litecore::crypto::PersistentPrivateKey *getPersistentPrivateKey();
+    litecore::crypto::PersistentPrivateKey* getPersistentPrivateKey();
 
     Retained<litecore::crypto::Key> _impl;
 };

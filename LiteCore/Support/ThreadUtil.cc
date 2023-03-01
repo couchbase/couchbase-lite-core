@@ -40,7 +40,7 @@
 
 namespace litecore {
 
-    void SetThreadName(const char *name) {
+    void SetThreadName(const char* name) {
 #    ifdef __APPLE__
         pthread_setname_np(name);
 #    else
@@ -108,7 +108,7 @@ namespace litecore {
     // Sometimes these functions are only available this way, according to the docs:
     // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreaddescription#remarks
     typedef HRESULT (*SetThreadNameCall)(HANDLE, PCWSTR);
-    typedef HRESULT (*GetThreadNameCall)(HANDLE, PWSTR *);
+    typedef HRESULT (*GetThreadNameCall)(HANDLE, PWSTR*);
 
     static HINSTANCE kernelLib() {
         // Defer the LoadLibrary call from static-init time, until it's actually needed:
@@ -120,7 +120,7 @@ namespace litecore {
         return sKernelLib;
     }
 
-    static bool TryNewSetThreadName(const char *name) {
+    static bool TryNewSetThreadName(const char* name) {
         bool valid = false;
         if ( kernelLib() != NULL ) {
             static SetThreadNameCall setThreadNameCall
@@ -135,7 +135,7 @@ namespace litecore {
         return valid;
     }
 
-    void SetThreadName(const char *name) {
+    void SetThreadName(const char* name) {
         if ( !TryNewSetThreadName(name) ) { return; }
 
         THREADNAME_INFO info;
@@ -145,7 +145,7 @@ namespace litecore {
         info.dwFlags    = 0;
 
         __try {
-            RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR *)&info);
+            RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
         } __except (EXCEPTION_EXECUTE_HANDLER) {}
     }
 
@@ -157,7 +157,7 @@ namespace litecore {
             static GetThreadNameCall getThreadNameCall
                     = (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
             if ( getThreadNameCall != NULL ) {
-                wchar_t *buf;
+                wchar_t* buf;
                 HRESULT  r = getThreadNameCall(GetCurrentThread(), &buf);
                 if ( SUCCEEDED(r) ) {
                     CW2AEX<256> mb(buf, CP_UTF8);

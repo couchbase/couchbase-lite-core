@@ -48,7 +48,7 @@ namespace litecore::repl {
 
         uint64_t intValue() const FLPURE { return *std::get_if<uint64_t>(&_value); }
 
-        const fleece::alloc_slice &sliceValue() const FLPURE { return *std::get_if<fleece::alloc_slice>(&_value); }
+        const fleece::alloc_slice& sliceValue() const FLPURE { return *std::get_if<fleece::alloc_slice>(&_value); }
 
         fleece::alloc_slice toJSON() const {
             if ( isInt() ) {
@@ -67,11 +67,11 @@ namespace litecore::repl {
                 return string(sliceValue());
         }
 
-        bool operator==(const RemoteSequence &other) const noexcept FLPURE { return _value == other._value; }
+        bool operator==(const RemoteSequence& other) const noexcept FLPURE { return _value == other._value; }
 
-        bool operator!=(const RemoteSequence &other) const noexcept FLPURE { return _value != other._value; }
+        bool operator!=(const RemoteSequence& other) const noexcept FLPURE { return _value != other._value; }
 
-        bool operator<(const RemoteSequence &other) const noexcept FLPURE {
+        bool operator<(const RemoteSequence& other) const noexcept FLPURE {
             if ( isInt() ) return !other.isInt() || intValue() < other.intValue();
             else
                 return !other.isInt() && sliceValue() < other.sliceValue();

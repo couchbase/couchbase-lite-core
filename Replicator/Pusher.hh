@@ -26,9 +26,9 @@ namespace litecore { namespace repl {
         : public Worker
         , public ChangesFeed::Delegate {
       public:
-        static constexpr const char *kConflictIncludesRevProperty = "conflictIncludesRev";
+        static constexpr const char* kConflictIncludesRevProperty = "conflictIncludesRev";
 
-        Pusher(Replicator *replicator NONNULL, Checkpointer &, CollectionIndex);
+        Pusher(Replicator* replicator NONNULL, Checkpointer&, CollectionIndex);
 
         // Starts an active push
         void start() { enqueue(FUNCTION_TO_QUEUE(Pusher::_start)); }
@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
 
         virtual void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
 
-        virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {
+        virtual void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {
             finishedDocumentWithError(rev, error, transient);
         }
 
@@ -64,13 +64,13 @@ namespace litecore { namespace repl {
         bool isBusy() const;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
-        void gotOutOfOrderChange(RevToSend *NONNULL);
-        void encodeRevID(Encoder &enc, slice revID);
-        void sendChanges(RevToSendList &);
-        void handleChangesResponse(RevToSendList &, blip::MessageIn *, bool proposedChanges);
-        bool handleChangeResponse(RevToSend *change, Value response);
-        bool handleProposedChangeResponse(RevToSend *change, Value response);
-        bool handlePushConflict(RevToSend *change);
+        void gotOutOfOrderChange(RevToSend* NONNULL);
+        void encodeRevID(Encoder& enc, slice revID);
+        void sendChanges(RevToSendList&);
+        void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
+        bool handleChangeResponse(RevToSend* change, Value response);
+        bool handleProposedChangeResponse(RevToSend* change, Value response);
+        bool handlePushConflict(RevToSend* change);
 
         void maybeGetMoreChanges() { enqueue(FUNCTION_TO_QUEUE(Pusher::_maybeGetMoreChanges)); }
 
@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
         void gotChanges(ChangesFeed::Changes);
         void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
-        bool shouldRetryConflictWithNewerAncestor(RevToSend *NONNULL, slice receivedRevID);
+        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL, slice receivedRevID);
         void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
 
         bool getForeignAncestors() const { return _proposeChanges || !_proposeChangesKnown; }
@@ -87,18 +87,18 @@ namespace litecore { namespace repl {
         void                     handleGetAttachment(Retained<blip::MessageIn>);
         void                     handleProveAttachment(Retained<blip::MessageIn>);
         void                     _attachmentSent();
-        unique_ptr<C4ReadStream> readBlobFromRequest(blip::MessageIn *req NONNULL, slice &outDigest,
-                                                     Replicator::BlobProgress &outProgress);
+        unique_ptr<C4ReadStream> readBlobFromRequest(blip::MessageIn* req NONNULL, slice& outDigest,
+                                                     Replicator::BlobProgress& outProgress);
         // Pusher+Revs.cc:
         void        maybeSendMoreRevs();
         void        retryRevs(RevToSendList, bool immediate);
         void        sendRevision(Retained<RevToSend>);
-        void        onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress &);
-        void        couldntSendRevision(RevToSend *NONNULL);
-        void        doneWithRev(RevToSend *, bool successful, bool pushed);
-        alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL, fleece::Dict root,
+        void        onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
+        void        couldntSendRevision(RevToSend* NONNULL);
+        void        doneWithRev(RevToSend*, bool successful, bool pushed);
+        alloc_slice createRevisionDelta(C4Document* doc NONNULL, RevToSend* request NONNULL, fleece::Dict root,
                                         size_t revSize, bool sendLegacyAttachments);
-        void        revToSendIsObsolete(const RevToSend &request, C4Error *c4err = nullptr);
+        void        revToSendIsObsolete(const RevToSend& request, C4Error* c4err = nullptr);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 
@@ -110,7 +110,7 @@ namespace litecore { namespace repl {
         DocIDToRevMap         _conflictsIMightRetry;
         C4SequenceNumber      _lastSequenceRead{0};    // Last sequence read from db
         C4SequenceNumber      _lastSequenceLogged{0};  // Checkpointed last-sequence
-        Checkpointer         &_checkpointer;           // Tracks checkpoints & pending sequences
+        Checkpointer&         _checkpointer;           // Tracks checkpoints & pending sequences
         bool                  _started{false};
         bool                  _caughtUp{false};                // Received backlog of pre-existing changes?
         bool                  _continuousCaughtUp{true};       // Caught up with change notifications?

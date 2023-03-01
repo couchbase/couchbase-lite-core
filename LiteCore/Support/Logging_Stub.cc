@@ -19,7 +19,7 @@
 
 namespace litecore {
 
-    void LogDomain::log(LogLevel level, const char *fmt, ...) {
+    void LogDomain::log(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         c4vlog(kC4DefaultLog, (C4LogLevel)level, fmt, args);

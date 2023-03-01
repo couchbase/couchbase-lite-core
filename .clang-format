@@ -25,7 +25,7 @@ BreakStringLiterals: true
 ColumnLimit: 120
 CompactNamespaces: true
 ContinuationIndentWidth: 8
-DerivePointerAlignment: true
+DerivePointerAlignment: false
 IncludeBlocks: Merge
 IndentAccessModifiers: false
 IndentCaseBlocks: true
@@ -36,7 +36,7 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: All
 PackConstructorInitializers: NextLine
-PointerAlignment: Right
+PointerAlignment: Left
 ReflowComments: false
 SeparateDefinitionBlocks: Always
 SortIncludes: Never

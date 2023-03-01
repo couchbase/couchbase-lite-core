@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
             // (sequence, length) pairs in an array, omitting the 'infinity' at the end of the last.
             enc.writeKey("localCompleted"_sl);
             enc.beginArray();
-            for ( auto &range : _completed ) {
+            for ( auto& range : _completed ) {
                 enc.writeUInt(uint64_t(range.first));
                 enc.writeUInt(uint64_t(range.second - range.first));
             };
@@ -104,7 +104,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    bool Checkpoint::validateWith(const Checkpoint &remoteSequences) {
+    bool Checkpoint::validateWith(const Checkpoint& remoteSequences) {
         bool match = true;
         if ( _completed != remoteSequences._completed ) {
             LogTo(SyncLog, "Local sequence mismatch: I had completed: %s, remote had %s",
@@ -135,7 +135,7 @@ namespace litecore { namespace repl {
         // Count the gaps between the ranges:
         size_t           count = 0;
         C4SequenceNumber end   = 0_seq;
-        for ( auto &range : _completed ) {
+        for ( auto& range : _completed ) {
             count += range.first - end;
             end = range.second;
         }
@@ -143,7 +143,7 @@ namespace litecore { namespace repl {
         return count;
     }
 
-    bool Checkpoint::setRemoteMinSequence(const RemoteSequence &s) {
+    bool Checkpoint::setRemoteMinSequence(const RemoteSequence& s) {
         if ( s == _remote ) return false;
         _remote = s;
         return true;
@@ -159,7 +159,7 @@ std::string SequenceSet::to_string() const {
     std::stringstream str;
     str << "[";
     int n = 0;
-    for ( auto &range : _sequences ) {
+    for ( auto& range : _sequences ) {
         if ( n++ > 0 ) str << ", ";
         str << uint64_t(range.first);
         if ( range.second != range.first + 1 ) str << "-" << uint64_t((range.second - 1));
