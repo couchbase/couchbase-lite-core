@@ -86,7 +86,7 @@ macro(generate_edition)
         endif()
 
         execute_process(
-            COMMAND ${GIT_EXECUTABLE} branch --show-current
+            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
             WORKING_DIRECTORY ${CBLITE_CE_DIR} 
             OUTPUT_VARIABLE BRANCH
             RESULT_VARIABLE SUCCESS
