@@ -46,6 +46,7 @@ endif()
 # Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../Replicator/tests/data/cert.pem DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
+file(COPY ../../Replicator/tests/data/cert DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/Tests/*.json5" "../../vendor/fleece/Tests/*.fleece" "../../vendor/fleece/Tests/*.txt")
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
@@ -83,7 +84,11 @@ add_executable(
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
+    ${TOP}Replicator/tests/ReplicatorWalrusTest.cc
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
+    ${TOP}Replicator/tests/ReplParams.cc
+    ${TOP}Replicator/tests/SG.cc
+    ${TOP}Replicator/tests/SGTestUser.cc
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}REST/Response.cc

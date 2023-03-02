@@ -18,6 +18,7 @@
 #include "c4Private.h"
 #include "function_ref.hh"
 #include <vector>
+#include <thread>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
 // in the `c4` namespace. Check it out!
@@ -227,6 +228,8 @@ public:
     static void deleteAndRecreateDB(C4Database*&);
     static alloc_slice copyFixtureDB(const std::string &name);
 
+    int addDocs(C4Database* db, int total, const std::string& idPrefix = "");
+
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
@@ -242,6 +245,18 @@ public:
                                      C4Slice newRevID,
                                      C4Slice body =kFleeceBody,
                                      C4RevisionFlags flags =0);
+
+    // Makeshift of c++20 jthread, automatically rejoins on destruction
+    struct Jthread {
+        std::thread thread;
+        Jthread(std::thread&& thread_)
+                : thread(move(thread_))
+        {}
+        Jthread() = default;
+        ~Jthread() {
+            thread.join();
+        }
+    };
 
     void createNumberedDocs(unsigned numberOfDocs);
 
@@ -263,9 +278,9 @@ public:
                             std::string idPrefix ="",
                             double timeout =0.0,
                             bool verbose =false);
-    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>);
+    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
-                             C4Database* database = nullptr);
+                             C4Database* database = nullptr, size_t maxLines = 0, const std::string& idPrefix = "");
 
 
     bool docBodyEquals(C4Document *doc NONNULL, slice fleece);

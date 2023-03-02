@@ -302,6 +302,19 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     return alloc_slice(dbPath.unextendedName());
 }
 
+int C4Test::addDocs(C4Database *database, int total, const std::string &idPrefix) {
+    int docNo = 1;
+    constexpr size_t bufSize = 80;
+    for (int i = 1; docNo <= total; i++) {
+        C4Log("-------- Creating %d docs --------", i);
+        TransactionHelper t(database);
+        char docID[bufSize];
+        snprintf(docID, bufSize, "%s%d", idPrefix.c_str(), docNo++);
+        createRev(database, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+    }
+    C4Log("-------- Done creating docs --------");
+    return docNo - 1;
+}
 
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Test::createRev(db, docID, revID, body, flags);
@@ -510,37 +523,42 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 
 
 // Reads a file into memory.
-fleece::alloc_slice C4Test::readFile(std::string path) {
-    INFO("Opening file " << path);
-    FILE *fd = fopen(path.c_str(), "rb");
-    REQUIRE(fd != nullptr);
-    fseeko(fd, 0, SEEK_END);
-    auto size = (size_t)ftello(fd);
-    fseeko(fd, 0, SEEK_SET);
-    fleece::alloc_slice result(size);
-    ssize_t bytesRead = fread((void*)result.buf, 1, size, fd);
-    REQUIRE(bytesRead == size);
-    fclose(fd);
+fleece::alloc_slice C4Test::readFile(std::string filepath) {
+    std::ifstream inFile(filepath);
+    REQUIRE(inFile.is_open());
+    std::stringstream outData;
+    try { // The << operator can throw if an I/O error occured
+        inFile.exceptions(std::ifstream::failbit);
+        outData << inFile.rdbuf();
+    } catch(const std::ios_base::failure& f) {
+        REQUIRE(false);
+    }
+    alloc_slice result { outData.str() };
     return result;
 }
 
 
-bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback) {
+bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
     vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
+    size_t lineCount = 0;
     while (fd.good()) {
+        if (maxLines > 0 && lineCount == maxLines) {
+            break;
+        }
         fd.getline(buf.data(), buf.capacity());
         auto len = fd.gcount();
         if (len <= 0)
             break;
+        ++lineCount;
         REQUIRE(buf[len-1] == '\0');
         --len;
         if (!callback({buf.data(), (size_t)len}))
             return false;
     }
-    REQUIRE(fd.eof());
+    REQUIRE((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
     return true;
 }
 
@@ -594,7 +612,8 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database) {
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database,
+                                 size_t maxLines, const string& idPrefix) {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
     if(database == nullptr) {
@@ -610,9 +629,9 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, ERROR_INFO());
             REQUIRE(body.buf);
 
-            constexpr size_t bufSize = 20;
+            constexpr size_t bufSize = 100;
             char docID[bufSize];
-            snprintf(docID, bufSize, "%07u", numDocs+1);
+            snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs+1);
 
             // Save document:
             C4DocPutRequest rq = {};
@@ -630,7 +649,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             if (verbose && numDocs % 100000 == 0)
                 C4Log("%u  ", numDocs);
             return true;
-        });
+        }, maxLines);
         C4Log("Committing...");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");

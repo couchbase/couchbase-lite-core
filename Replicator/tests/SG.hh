@@ -1,0 +1,113 @@
+//
+// Created by Callum Birks on 24/01/2023.
+//
+/**
+ * This class is used in tests to:
+ *     - Hold the connection config for SGW
+ *     - Perform REST requests on the SGW
+ * The REST requests have been abstracted into higher-level functions to make tests less convoluted and
+ * reduce re-used code.
+ * The TestUser class's definition can be found in SGTestUser.hh/.cc
+ */
+
+#pragma once
+
+#include "c4Certificate.hh"
+#include "c4CppUtils.hh"
+#include "c4Replicator.h"
+#include "Response.hh"
+#include <fleece/Fleece.hh>
+#include <fleece/Mutable.hh>
+#include <fleece/slice.hh>
+#include <utility>
+#include <vector>
+#include <memory>
+
+using namespace fleece;
+using namespace litecore;
+using namespace litecore::net;
+
+class SG {
+public:
+    class TestUser;
+
+    SG(): address(), remoteDBName() {
+        c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName);
+    }
+
+    SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
+    // Will return nullslice if your json was invalid
+    static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string> &channelIDs);
+    static alloc_slice addRevToJSON(slice json, const std::string& revID);
+    slice getServerName() const;
+    // Flush should only be used with Walrus
+    void flushDatabase() const;
+    bool createUser(const std::string& username, const std::string& password) const;
+    bool deleteUser(const std::string& username) const;
+    // Assign given channels to the user with given username, in the given collections
+    bool assignUserChannel(const std::string& username, const std::vector<std::string>& channelIDs) const;
+
+    bool upsertDoc(const std::string& docID, slice body, const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
+    bool upsertDoc(const std::string& docID, const std::string& revID, slice body,
+                   const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
+    bool insertBulkDocs(slice docsDict, double timeout = 30.0) const;
+
+    alloc_slice getDoc(const std::string& docID) const;
+
+    void setAdminCredentials(const std::string& username, const std::string& password) { adminUsername = username;
+        adminPassword = password; }
+
+    // sendRemoteRequest functions
+    // Not used within this class, to be deprecated
+    alloc_slice sendRemoteRequest(
+            const std::string &method,
+            std::string path,
+            HTTPStatus *outStatus NONNULL,
+            C4Error *outError NONNULL,
+            slice body =nullslice,
+            bool admin =false,
+            bool logRequests =true);
+
+    alloc_slice sendRemoteRequest(
+            const std::string &method,
+            std::string path,
+            slice body =nullslice,
+            bool admin =false,
+            HTTPStatus expectedStatus = HTTPStatus::OK,
+            bool logRequests =true);
+// Connection spec
+    C4Address address;
+    C4String remoteDBName;
+    alloc_slice authHeader{nullslice};
+    alloc_slice pinnedCert{nullslice};
+    std::shared_ptr<ProxySpec> proxy{nullptr};
+    alloc_slice networkInterface{nullslice};
+    // Can modify this to fit config of your CBS/SGW
+    std::string adminUsername { "Administrator" };
+    std::string adminPassword { "password" };
+#ifdef COUCHBASE_ENTERPRISE
+    c4::ref<C4Cert> remoteCert{nullptr};
+    c4::ref<C4Cert> identityCert{nullptr};
+    c4::ref<C4KeyPair> identityKey{nullptr};
+#endif
+
+private:
+    std::unique_ptr<REST::Response> createRequest(
+            const std::string &method,
+            std::string path,
+            slice body = nullslice,
+            bool admin = false,
+            double timeout = 5.0,
+            bool logRequests = true
+    ) const;
+    alloc_slice runRequest(
+            const std::string &method,
+            const std::string& path,
+            slice body = nullslice,
+            bool admin = false,
+            C4Error *outError = nullptr,
+            HTTPStatus *outStatus = nullptr,
+            double timeout = 5.0,
+            bool logRequests = true
+    ) const;
+};

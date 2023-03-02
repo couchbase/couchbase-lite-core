@@ -1347,14 +1347,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
 
     atomic_int completed {0};
     unique_ptr<thread> thread1( runInParallel([&]() {
-        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false, "db");
         if (++completed == 2) {
             sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }
     }));
     unique_ptr<thread> thread2( runInParallel([&]() {
-        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false, "db2");
         if (++completed == 2) {
             sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();

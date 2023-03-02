@@ -146,9 +146,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    _remoteDBName = "something"_sl;
+    _sg.remoteDBName = "something"_sl;
 
-    _repl = c4repl_new(db, _address, _remoteDBName, params, ERROR_INFO(err));
+    _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, ERROR_INFO(err));
     CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
@@ -158,9 +158,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
 // Test invalid URL scheme:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _address.scheme = "http"_sl;
+    _sg.address.scheme = "http"_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -170,16 +170,16 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") 
 // Test missing or invalid database name:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
-    _remoteDBName = ""_sl;
+    _sg.remoteDBName = ""_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
 
-    _remoteDBName = "Invalid Name"_sl;
+    _sg.remoteDBName = "Invalid Name"_sl;
     err = {};
-    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);
     CHECK(err.code == kC4NetErrInvalidURL);
@@ -189,8 +189,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("localhost");
-    _address.port = 1;  // wrong port!
+    _sg.address.hostname = C4STR("localhost");
+    _sg.address.port = 1;  // wrong port!
     _mayGoOffline = true;
 
     {
@@ -218,7 +218,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
     ExpectingExceptions x;
-    _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    _sg.address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrUnknownHost);
@@ -291,7 +291,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
-    _address.hostname = C4STR("localhost");
+    _sg.address.hostname = C4STR("localhost");
     struct Context {
         int factoryCalls = 0;
         C4Socket* socket = nullptr;

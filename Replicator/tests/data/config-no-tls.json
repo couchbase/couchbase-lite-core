@@ -5,12 +5,6 @@
     "password": "password",
     "use_tls_server": false
   },
-  "api": {
-    "https": {
-      "tls_cert_path": "cert/sg_cert.pem",
-      "tls_key_path": "cert/sg_key.pem"
-    }
-  },
   "logging": {
     "console": {
       "log_level": "info",
