@@ -194,12 +194,7 @@ namespace litecore { namespace websocket {
         if (!foundUserAgent) {
             string ua = "couchbase-lite-core/";
             alloc_slice ver = c4_getVersion();
-            auto sp = ver.findByte(' ');
-            slice verslice = ver;
-            if (sp != nullptr) {
-                verslice = ver.upTo(sp);
-            }
-            ua += verslice.asString();
+            ua += ver.asString();
             logic.setUserAgent(slice(ua));
         }
 
