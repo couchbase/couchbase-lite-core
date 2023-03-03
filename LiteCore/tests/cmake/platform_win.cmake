@@ -4,4 +4,9 @@ function(setup_build)
         CppTests PRIVATE
         ${TOP}MSVC
     )
+
+    target_compile_definitions(
+        CppTests PRIVATE
+        -DLITECORE_USES_ICU=1
+    )
 endfunction()

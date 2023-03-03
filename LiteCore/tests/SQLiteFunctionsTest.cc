@@ -352,7 +352,7 @@ TEST_CASE("Unicode string functions", "[Query]") {
     CHECK(UTF8ChangeCase("E"_sl, true) == "E"_sl);
     CHECK(UTF8ChangeCase("-"_sl, true) == "-"_sl);
     CHECK(UTF8ChangeCase("Z•rGMai2"_sl, true) == "Z•RGMAI2"_sl);
-#if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU
+#if __APPLE__ || LITECORE_USES_ICU
     CHECK(UTF8ChangeCase("Zérgmåī2"_sl, true) == "ZÉRGMÅĪ2"_sl);
 #endif
     CHECK(UTF8ChangeCase("😀"_sl, true) == "😀"_sl);
@@ -362,7 +362,7 @@ TEST_CASE("Unicode string functions", "[Query]") {
     CHECK(UTF8ChangeCase("e"_sl, false) == "e"_sl);
     CHECK(UTF8ChangeCase("-"_sl, false) == "-"_sl);
     CHECK(UTF8ChangeCase("Z•rGMai2"_sl, false) == "z•rgmai2"_sl);
-#if __APPLE__ || defined(_MSC_VER)|| LITECORE_USES_ICU
+#if __APPLE__ || LITECORE_USES_ICU
     CHECK(UTF8ChangeCase("zÉRGMÅĪ2"_sl, false) == "zérgmåī2"_sl);
 #endif
     CHECK(UTF8ChangeCase("😀"_sl, false) == "😀"_sl);
@@ -411,7 +411,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_blob", "[Query]") {
 #pragma mark - COLLATION:
 
 
-#if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU
+#if __APPLE__ || LITECORE_USES_ICU
 TEST_CASE("Unicode collation", "[Query][Collation]") {
     struct {slice a; slice b; int result; bool caseSensitive; bool diacriticSensitive;} tests[] = {
         //---- First, test just ASCII:

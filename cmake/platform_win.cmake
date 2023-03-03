@@ -15,11 +15,11 @@ function(set_litecore_source)
     set(
         ${WIN_SSS_RESULT}
         ${BASE_LITECORE_FILES}
-        LiteCore/Storage/UnicodeCollator_winapi.cc
+        LiteCore/Storage/UnicodeCollator_ICU.cc
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
-        LiteCore/Support/StringUtil_winapi.cc
+        LiteCore/Support/StringUtil_icu.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
     )
@@ -57,6 +57,7 @@ function(setup_litecore_build_win)
         -D_USE_MATH_DEFINES     # Define math constants like PI
         -DWIN32                 # Identify as WIN32
         -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+        -DLITECORE_USES_ICU=1
     )
 
     target_compile_definitions(
@@ -84,6 +85,7 @@ function(setup_litecore_build_win)
         Ws2_32
         ncrypt
         crypt32
+        icu
     )
 
     # Compile string literals as UTF-8,

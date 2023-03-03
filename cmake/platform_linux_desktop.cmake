@@ -62,7 +62,7 @@ function(set_litecore_source)
      set(
          ${LINUX_SSS_RESULT}
          ${BASE_LITECORE_FILES}
-         LiteCore/Unix/icu_shim.c
+         LiteCore/Support/icu_shim.c
          PARENT_SCOPE
      )
  endfunction()
