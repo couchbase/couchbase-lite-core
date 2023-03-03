@@ -36,12 +36,18 @@ namespace litecore { namespace actor {
 
     
     static char kQueueMailboxSpecificKey;
+    static char kQueueManifestKey;
+
+    static std::shared_ptr<ChannelManifest> get_queue_manifest(dispatch_queue_t queue) {
+        auto* existing = (std::shared_ptr<ChannelManifest>*)dispatch_queue_get_specific(queue, &kQueueManifestKey);
+        if(existing) {
+            return *existing;
+        }
+        
+        return make_shared<ChannelManifest>();
+    }
 
     static const qos_class_t kQOS = QOS_CLASS_UTILITY;
-
-#if ACTORS_USE_MANIFESTS
-    thread_local shared_ptr<ChannelManifest> GCDMailbox::sQueueManifest = nullptr;
-#endif
 
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
     :_actor(a)
@@ -84,7 +90,8 @@ namespace litecore { namespace actor {
 #if ACTORS_USE_MANIFESTS
             stringstream manifest;
             manifest << "Queue Manifest History:" << endl;
-            sQueueManifest->dump(manifest);
+            auto queueManifest = get_queue_manifest(_queue);
+            queueManifest->dump(manifest);
             manifest << endl << "Actor Manifest History:" << endl;
             _localManifest.dump(manifest);
             const auto dumped = manifest.str();
@@ -100,7 +107,9 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
-        auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
+        // Either queueManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueue and a new queueManifest needs to be created
+        auto queueManifest = get_queue_manifest(_queue);
         queueManifest->addEnqueueCall(_actor, name);
         _localManifest.addEnqueueCall(_actor, name);
 #endif
@@ -108,7 +117,10 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
             queueManifest->addExecution(_actor, name);
-            sQueueManifest = queueManifest;
+
+            // Set the captured queue manifest to be the current queue manifest so that
+            // any calls to enqueue inside of safelyCall() will use the same one (see above)
+            dispatch_queue_set_specific(_queue, &kQueueManifestKey, (void *)&queueManifest, nullptr);
             _localManifest.addExecution(_actor, name);
 #endif
             endLatency();
@@ -116,7 +128,7 @@ namespace litecore { namespace actor {
             safelyCall(block);
             afterEvent();
 #if ACTORS_USE_MANIFESTS
-            sQueueManifest.reset();
+            dispatch_queue_set_specific(_queue, &kQueueManifestKey, nullptr, nullptr);
 #endif
         };
         dispatch_async(_queue, wrappedBlock);
@@ -129,7 +141,9 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
-        auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
+        // Either queueManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueueAfter and a new queueManifest needs to be created
+        auto queueManifest = get_queue_manifest(_queue);
         queueManifest->addEnqueueCall(_actor, name, delay.count());
         _localManifest.addEnqueueCall(_actor, name, delay.count());
 #endif
@@ -137,7 +151,10 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
             queueManifest->addExecution(_actor, name);
-            sQueueManifest = queueManifest;
+
+            // Set the captured queue manifest to be the queue manifest so that
+            // any calls to enqueue inside of safelyCall() will use the same one (see above)
+            dispatch_queue_set_specific(_queue, &kQueueManifestKey, (void *)&queueManifest, nullptr);
             _localManifest.addExecution(_actor, name);
 #endif
             endLatency();
@@ -145,7 +162,7 @@ namespace litecore { namespace actor {
             safelyCall(block);
             afterEvent();
 #if ACTORS_USE_MANIFESTS
-            sQueueManifest.reset();
+            dispatch_queue_set_specific(_queue, &kQueueManifestKey, nullptr, nullptr);
 #endif
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
