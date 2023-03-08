@@ -22,6 +22,7 @@
 #include "date/date.h"
 #include "ParseDate.hh"
 #include <functional>
+#include <iomanip>
 
 using namespace fleece::impl;
 using namespace std;
@@ -1875,6 +1876,29 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now)) };
         
         Retained<QueryEnumerator> e(query->createEnumerator(&options));
+        CHECK(e->next());
+        CHECK(e->columns()[0]->asString() == "rec-001"_sl);
+        CHECK(!e->next());
+    }
+}
+
+TEST_CASE_METHOD(QueryTest, "Query expiration II", "[Query]") {
+    addNumberedDocs(1, 1);
+    expiration_t now = KeyStore::now();
+    
+    {
+        double nowSeconds = (double)now / 1000.0;
+        double expiryTime = nowSeconds + 120.0;
+        store->setExpiration("rec-001"_sl, (expiration_t)(expiryTime * 1000));
+        double earlier = (expiryTime - 180.0) * 1000;
+        //1678240653603.293
+        earlier += 0.293;
+        stringstream q;
+        q << std::setprecision(3) << std::fixed;
+        q << "{WHAT: ['._id'], WHERE: ['>', ['._expiration']," << earlier << "]}";
+        Retained<Query> query{ store->compileQuery(json5(q.str())) };
+
+        Retained<QueryEnumerator> e(query->createEnumerator(nullptr));
         CHECK(e->next());
         CHECK(e->columns()[0]->asString() == "rec-001"_sl);
         CHECK(!e->next());
