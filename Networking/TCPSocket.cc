@@ -592,11 +592,11 @@ namespace litecore { namespace net {
             int mbed0;
             int mbed1;
             int net;
-        } kMbedToNetErr[]
-                = {{MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
-                   {-0x3000, -0x2000, kNetErrTLSCertUntrusted},
-                   {-0x7FFF, -0x6000, kNetErrTLSHandshakeFailed},
-                   {0, 0, 0}};
+        } kMbedToNetErr[] = {
+                {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
+                {-0x3000, -0x2000, kNetErrTLSCertUntrusted},
+                {-0x7FFF, -0x6000, kNetErrTLSHandshakeFailed},
+                {0, 0, 0}};
 
         for ( int i = 0; kMbedToNetErr[i].mbed0 != 0; ++i ) {
             if ( kMbedToNetErr[i].mbed0 <= err && err <= kMbedToNetErr[i].mbed1 ) return kMbedToNetErr[i].net;

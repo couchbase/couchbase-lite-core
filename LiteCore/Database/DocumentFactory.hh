@@ -39,8 +39,7 @@ namespace litecore {
 
         virtual std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs,
                                                        const std::vector<slice>& revIDs, unsigned maxAncestors,
-                                                       bool mustHaveBodies, C4RemoteID remoteDBID)
-                = 0;
+                                                       bool mustHaveBodies, C4RemoteID remoteDBID) = 0;
 
       private:
         C4Collection* const _coll;  // Unretained, to avoid ref-cycle

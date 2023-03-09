@@ -68,8 +68,8 @@ class ReplicatorSGTest : public ReplicatorAPITest {
                                                    sReplicatorFixturesDir + "ca_key.pem", "Couchbase");
             // The Common Name in the client cert has to be the email address of a user account
             // in Sync Gateway, or you only get guest access.
-            Identity id = CertHelper::createIdentity(false, kC4CertUsage_TLSClient, "Pupshaw", "pupshaw@couchbase.org",
-                                                     &ca);
+            Identity id =
+                    CertHelper::createIdentity(false, kC4CertUsage_TLSClient, "Pupshaw", "pupshaw@couchbase.org", &ca);
             _sg.identityCert = id.cert;
             _sg.identityKey  = id.key;
 #else
@@ -416,10 +416,10 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     _sg.remoteDBName = "scratch_allows_conflicts"_sl;
     flushScratchDatabase();
 
-    const std::array<string, 4> bodies
-            = {R"({"_rev":"1-aaaa","foo":1})", R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
-               R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
-               R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})"};
+    const std::array<string, 4> bodies = {R"({"_rev":"1-aaaa","foo":1})",
+                                          R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
+                                          R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
+                                          R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})"};
 
     for ( const string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", slice(body)); }
 
@@ -470,9 +470,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    const std::array<string, 3> bodies
-            = {R"({"count":2, "_rev":"1-1111"})", R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
-               R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"};
+    const std::array<string, 3> bodies = {R"({"count":2, "_rev":"1-1111"})",
+                                          R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
+                                          R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"};
 
     for ( const string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc", slice(body)); }
 
@@ -735,8 +735,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
                 enc.endDict();
 
                 FLError     flError;
-                alloc_slice res
-                        = _sg.sendRemoteRequest("PUT", docID, enc.finish(), false, HTTPStatus::OK, logRemoteRequests);
+                alloc_slice res =
+                        _sg.sendRemoteRequest("PUT", docID, enc.finish(), false, HTTPStatus::OK, logRemoteRequests);
                 fleece::Doc fdoc = Doc::fromJSON(res, &flError);
                 REQUIRE(flError == kFLNoError);
                 Dict resDict = fdoc.root().asDict();

@@ -68,9 +68,9 @@ namespace litecore::crypto {
     }
 
     static PCCERT_CONTEXT toWinCert(Cert* cert) {
-        PCCERT_CONTEXT resultCert
-                = CertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, (const BYTE*)cert->data().buf,
-                                               narrow_cast<DWORD>(cert->data().size));
+        PCCERT_CONTEXT resultCert =
+                CertCreateCertificateContext(X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, (const BYTE*)cert->data().buf,
+                                             narrow_cast<DWORD>(cert->data().size));
 
         if ( !resultCert ) { throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); }
 
@@ -80,16 +80,16 @@ namespace litecore::crypto {
     DWORD getBlockSize(NCRYPT_KEY_HANDLE hKey) {
         DWORD      blockSize;
         DWORD      dummy = sizeof(DWORD);
-        const auto blockSizeResult
-                = NCryptGetProperty(hKey, NCRYPT_BLOCK_LENGTH_PROPERTY, PBYTE(&blockSize), sizeof(DWORD), &dummy, 0);
+        const auto blockSizeResult =
+                NCryptGetProperty(hKey, NCRYPT_BLOCK_LENGTH_PROPERTY, PBYTE(&blockSize), sizeof(DWORD), &dummy, 0);
 
         checkSecurityStatus(blockSizeResult, "NCryptGetProperty", "Couldn't get block size of key");
         return blockSize;
     }
 
     PCCERT_CONTEXT getWinCert(const string& id) {
-        auto* store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER,
-                                    "CA");
+        auto* store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
         if ( !store ) { throwWincryptError(GetLastError(), "CertOpenStore", "Couldn't open system store"); }
 
@@ -141,11 +141,11 @@ namespace litecore::crypto {
 
         CRYPT_HASH_BLOB hashBlob{16, hash};
 
-        auto* const store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL,
-                                          CERT_SYSTEM_STORE_CURRENT_USER, "CA");
+        auto* const store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
-        auto winCert = CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PUBKEY_MD5_HASH, &hashBlob,
-                                                  nullptr);
+        auto winCert =
+                CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PUBKEY_MD5_HASH, &hashBlob, nullptr);
 
         CertCloseStore(store, 0);
 
@@ -211,8 +211,8 @@ namespace litecore::crypto {
                                      NCRYPT_SILENT_FLAG);
             checkSecurityStatus(result, "NCryptExportKey", "Couldn't get public key");
 
-            BOOL encodeResult
-                    = CryptEncodeObject(X509_ASN_ENCODING, CNG_RSA_PUBLIC_KEY_BLOB, pkInfo, nullptr, &bytesNeeded);
+            BOOL encodeResult =
+                    CryptEncodeObject(X509_ASN_ENCODING, CNG_RSA_PUBLIC_KEY_BLOB, pkInfo, nullptr, &bytesNeeded);
             checkWincryptBool(encodeResult, "CryptEncodeObject", "Couldn't get bytes needed for ASN1");
 
             alloc_slice retVal(bytesNeeded);
@@ -287,9 +287,9 @@ namespace litecore::crypto {
             BCRYPT_PKCS1_PADDING_INFO padding = {digestAlgorithm};
 
             DWORD      dummy = _keyLength;
-            const auto result
-                    = NCryptSignHash(_keyPair, &padding, PBYTE(inputData.buf), narrow_cast<DWORD>(inputData.size),
-                                     PBYTE(outSignature), _keyLength, &dummy, BCRYPT_PAD_PKCS1);
+            const auto result =
+                    NCryptSignHash(_keyPair, &padding, PBYTE(inputData.buf), narrow_cast<DWORD>(inputData.size),
+                                   PBYTE(outSignature), _keyLength, &dummy, BCRYPT_PAD_PKCS1);
             if ( result != ERROR_SUCCESS ) {
                 LogError(TLSLogDomain, "NCryptSignHash failed to sign data (%d)", static_cast<int>(result));
                 return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
@@ -307,8 +307,8 @@ namespace litecore::crypto {
         LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair in Keychain", keySizeInBits);
         char         timestr[100] = "LiteCore ";
         wchar_t      wtimestr[100];
-        const time_t now
-                = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
+        const time_t now =
+                chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
         FormatISO8601Date(timestr + strlen(timestr), now, false);
         const auto len = MultiByteToWideChar(CP_UTF8, 0, timestr, -1, wtimestr, 100);
         wtimestr[len]  = 0;
@@ -394,8 +394,8 @@ namespace litecore::crypto {
                                 "A certificate already exists with the same persistentID");
         }
 
-        auto* const store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL,
-                                          CERT_SYSTEM_STORE_CURRENT_USER, "CA");
+        auto* const store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
         if ( !store ) { throwWincryptError(GetLastError(), "CertOpenSystemStore", "Couldn't open system store"); }
 
@@ -473,8 +473,8 @@ namespace litecore::crypto {
         const auto* const winCert = getWinCert(persistentID);
         if ( !winCert ) { return; }
 
-        auto* const store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL,
-                                          CERT_SYSTEM_STORE_CURRENT_USER, "CA");
+        auto* const store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
         const auto* const winChain = getCertChain(winCert);
         DEFER {

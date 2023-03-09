@@ -187,8 +187,7 @@ struct C4Database
     static constexpr slice kInfoStore = "info";  /// Raw-document store used for db metadata.
 
     virtual bool getRawDocument(slice storeName, slice key,
-                                fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback)
-            = 0;
+                                fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback) = 0;
 
     virtual void putRawDocument(slice storeName, const C4RawDocument&) = 0;
 

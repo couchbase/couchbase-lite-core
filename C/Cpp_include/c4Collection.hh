@@ -48,7 +48,8 @@ struct C4Collection
 
     C4CollectionSpec getSpec() const noexcept { return {_name, _scope}; }
 
-    C4Database*       getDatabase();
+    C4Database* getDatabase();
+
     const C4Database* getDatabase() const;
 
     virtual uint64_t getDocumentCount() const = 0;
@@ -64,17 +65,15 @@ struct C4Collection
     static C4Document* documentContainingValue(FLValue) noexcept;
 
     virtual Retained<C4Document> getDocument(slice docID, bool mustExist = true,
-                                             C4DocContentLevel content = kDocGetCurrentRev) const
-            = 0;
+                                             C4DocContentLevel content = kDocGetCurrentRev) const = 0;
 
     virtual Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const = 0;
 
     virtual Retained<C4Document> putDocument(const C4DocPutRequest& rq, size_t* C4NULLABLE outCommonAncestorIndex,
-                                             C4Error* outError)
-            = 0;
+                                             C4Error* outError) = 0;
 
-    virtual Retained<C4Document> createDocument(slice docID, slice revBody, C4RevisionFlags revFlags, C4Error* outError)
-            = 0;
+    virtual Retained<C4Document> createDocument(slice docID, slice revBody, C4RevisionFlags revFlags,
+                                                C4Error* outError) = 0;
 
     // Moves a document to another collection
     virtual void moveDocument(slice docID, C4Collection* toCollection, slice newDocID = fleece::nullslice) = 0;
@@ -95,8 +94,7 @@ struct C4Collection
     Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpr, int* outErrorPos) const;
 
     virtual void createIndex(slice name, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
-                             const C4IndexOptions* C4NULLABLE indexOptions = nullptr)
-            = 0;
+                             const C4IndexOptions* C4NULLABLE indexOptions = nullptr) = 0;
 
     virtual void deleteIndex(slice name) = 0;
 
@@ -107,8 +105,8 @@ struct C4Collection
     // Observers:
 
     using CollectionObserverCallback = std::function<void(C4CollectionObserver*)>;
-    using DocumentObserverCallback
-            = std::function<void(C4DocumentObserver*, C4Collection*, slice docID, C4SequenceNumber)>;
+    using DocumentObserverCallback =
+            std::function<void(C4DocumentObserver*, C4Collection*, slice docID, C4SequenceNumber)>;
 
     virtual std::unique_ptr<C4CollectionObserver> observe(CollectionObserverCallback) = 0;
 
@@ -120,8 +118,7 @@ struct C4Collection
 
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs,
                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,
-                                                      bool mustHaveBodies, C4RemoteID remoteDBID) const
-            = 0;
+                                                      bool mustHaveBodies, C4RemoteID remoteDBID) const       = 0;
     virtual bool markDocumentSynced(slice docID, slice revID, C4SequenceNumber sequence, C4RemoteID remoteID) = 0;
 
     virtual void findBlobReferences(const fleece::function_ref<bool(FLDict)>&) = 0;

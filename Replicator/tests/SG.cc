@@ -233,8 +233,8 @@ alloc_slice SG::sendRemoteRequest(const std::string& method, C4CollectionSpec co
     if ( method == "PUT" && expectedStatus == HTTPStatus::OK ) expectedStatus = HTTPStatus::Created;
     HTTPStatus  status;
     C4Error     error;
-    alloc_slice response
-            = sendRemoteRequest(method, collectionSpec, std::move(path), &status, &error, body, admin, logRequests);
+    alloc_slice response =
+            sendRemoteRequest(method, collectionSpec, std::move(path), &status, &error, body, admin, logRequests);
     if ( error.code ) FAIL("Error: " << c4error_descriptionStr(error));
     INFO("Status: " << (int)status);
     Assert(status == expectedStatus);

@@ -764,8 +764,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, Continuous", "[REST][Listener
     body << "{source: 'db',"
          << "target: 'ws://localhost:4984/" << targetDb << "',"
          << "continuous: true}";
-    shared_ptr<Response> r
-            = request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
+    shared_ptr<Response> r =
+            request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
     CHECK(wait(r, kC4Idle, 5));
 
     std::stringstream newss;
@@ -799,8 +799,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
          << "user: 'pupshaw',"
          << "password: 'frank',"
          << "continuous: true}";
-    shared_ptr<Response> r
-            = request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
+    shared_ptr<Response> r =
+            request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
     CHECK(wait(r, kC4Idle, 5));
 
     std::stringstream newss;

@@ -47,8 +47,8 @@ namespace litecore { namespace repl {
         DebugAssert(_checkpointer);
 
         // JIM: This breaks tons of encapsulation, and should be reworked
-        _collectionIndex
-                = (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
+        _collectionIndex =
+                (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
         _continuous = _options->push(_collectionIndex) == kC4Continuous;
         filterByDocIDs(_options->docIDs(_collectionIndex));
     }

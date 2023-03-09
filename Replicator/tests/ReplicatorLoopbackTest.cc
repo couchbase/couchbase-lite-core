@@ -1649,8 +1649,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     {
         TransactionHelper t(db);
         vector<string>    legacyNames{"attachment1", "attachment2", "attachment3"};
-        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain", &legacyNames,
-                                         kRevKeepBody);
+        blobKeys =
+                addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain", &legacyNames, kRevKeepBody);
         _expectedDocumentCount = 1;
     }
     Log("-------- Pull To db2 --------");

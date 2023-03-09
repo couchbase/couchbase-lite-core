@@ -253,9 +253,9 @@ namespace litecore {
                 slice delta = (rq.allocedBody.buf) ? slice(rq.allocedBody) : slice(rq.body);
                 if ( !rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true) ) {
                     if ( outError )
-                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                                   "Missing source revision '%.*s' for delta",
-                                                   SPLAT(rq.deltaSourceRevID));
+                        *outError =
+                                c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                               "Missing source revision '%.*s' for delta", SPLAT(rq.deltaSourceRevID));
                     return nullptr;
                 } else if ( !getRevisionBody() ) {
                     if ( outError )

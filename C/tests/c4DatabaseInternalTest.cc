@@ -543,9 +543,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     // Insert a conflict:
     _remoteID                           = 1;  // Treat insertions as coming from a remote db by the replicator
     const size_t   conflictHistoryCount = 5;
-    const C4String conflictHistory[conflictHistoryCount]
-            = {C4STR("5-5555"), C4STR("4-4545"), C4STR("3-3030"), C4STR("2-2222"), C4STR("1-1111")};
-    alloc_slice conflictBody = json2fleece("{'message':'yo'}");
+    const C4String conflictHistory[conflictHistoryCount] = {C4STR("5-5555"), C4STR("4-4545"), C4STR("3-3030"),
+                                                            C4STR("2-2222"), C4STR("1-1111")};
+    alloc_slice    conflictBody                          = json2fleece("{'message':'yo'}");
     forceInsert(docID, conflictHistory, conflictHistoryCount, conflictBody);
     _remoteID = 0;
 

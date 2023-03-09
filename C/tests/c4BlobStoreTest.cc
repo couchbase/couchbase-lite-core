@@ -256,8 +256,8 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][Encryption][C]") {
     // The interesting sizes for encrypted blobs are right around the file block size (4096)
     // and the cipher block size (16).
-    const vector<size_t> kSizes
-            = {0, 1, 15, 16, 17, 4095, 4096, 4097, 4096 + 15, 4096 + 16, 4096 + 17, 8191, 8192, 8193};
+    const vector<size_t> kSizes = {0,    1,         15,        16,        17,   4095, 4096,
+                                   4097, 4096 + 15, 4096 + 16, 4096 + 17, 8191, 8192, 8193};
     for ( size_t size : kSizes ) {
         //Log("---- %lu-byte blob", size);
         INFO("Testing " << size << "-byte blob");

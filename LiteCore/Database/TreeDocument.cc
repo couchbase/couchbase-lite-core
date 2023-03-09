@@ -417,9 +417,9 @@ namespace litecore {
                 // Apply a delta via a callback:
                 if ( !rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true) ) {
                     if ( outError )
-                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                                   "Missing source revision '%.*s' for delta",
-                                                   SPLAT(rq.deltaSourceRevID));
+                        *outError =
+                                c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                               "Missing source revision '%.*s' for delta", SPLAT(rq.deltaSourceRevID));
                 } else if ( !getRevisionBody() ) {
                     if ( outError )
                         *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,

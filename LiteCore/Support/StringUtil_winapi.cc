@@ -29,8 +29,8 @@ namespace litecore {
         MultiByteToWideChar(CP_UTF8, 0, (const char*)str.buf, narrow_cast<DWORD>(str.size), wstr, length);
 
         DWORD flags = toUppercase ? LCMAP_UPPERCASE : LCMAP_LOWERCASE;
-        int   resultLength
-                = LCMapStringEx(LOCALE_NAME_USER_DEFAULT, flags, wstr, length, nullptr, 0, nullptr, nullptr, 0);
+        int   resultLength =
+                LCMapStringEx(LOCALE_NAME_USER_DEFAULT, flags, wstr, length, nullptr, 0, nullptr, nullptr, 0);
         if ( resultLength == 0 ) { return {}; }
 
         TempArray(mapped, wchar_t, resultLength);

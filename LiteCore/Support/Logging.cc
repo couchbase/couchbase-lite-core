@@ -463,8 +463,8 @@ namespace litecore {
         string tag("LiteCore");
         string domainName(domain.name());
         if ( !domainName.empty() ) tag += " [" + domainName + "]";
-        static const int androidLevels[5]
-                = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO, ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
+        static const int androidLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO, ANDROID_LOG_WARN,
+                                             ANDROID_LOG_ERROR};
         __android_log_vprint(androidLevels[(int)level], tag.c_str(), fmt, args);
 #else
         auto name = domain.name();

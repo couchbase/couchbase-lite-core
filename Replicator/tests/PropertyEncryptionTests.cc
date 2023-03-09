@@ -158,20 +158,20 @@ class PropDecryptionTest {
 };
 
 LITECORE_UNUSED
-static constexpr slice kDecryptedOneProperty
-        = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})",
-        kEncryptedOneProperty
-        = R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})",
+static constexpr slice
+        kDecryptedOneProperty = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})",
+        kEncryptedOneProperty =
+                R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})",
         kDecryptedCustomAlg = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})",
-        kEncryptedCustomAlg
-        = R"({"encrypted$SSN":{"alg":"Rot13","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg=","kid":"Schlage"}})",
+        kEncryptedCustomAlg =
+                R"({"encrypted$SSN":{"alg":"Rot13","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg=","kid":"Schlage"}})",
         kDecryptedNested = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"encryptable","value":"123-45-6789"}},3,4]})",
-        kEncryptedNested
-        = R"({"foo":1234,"nested":[0,1,{"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}},3,4]})",
-        kDecryptedTwoProps
-        = R"({"SSN1":{"@type":"encryptable","value":"123-45-6789"},"SSN2":{"@type":"encryptable","value":"123-45-6789"}})",
-        kEncryptedTwoProps
-        = R"({"encrypted$SSN1":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="},"encrypted$SSN2":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})";
+        kEncryptedNested =
+                R"({"foo":1234,"nested":[0,1,{"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}},3,4]})",
+        kDecryptedTwoProps =
+                R"({"SSN1":{"@type":"encryptable","value":"123-45-6789"},"SSN2":{"@type":"encryptable","value":"123-45-6789"}})",
+        kEncryptedTwoProps =
+                R"({"encrypted$SSN1":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="},"encrypted$SSN2":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})";
 
 
 #pragma mark - ENCRYPTION TESTS:

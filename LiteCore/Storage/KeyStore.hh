@@ -69,8 +69,8 @@ namespace litecore {
         /// Character separating the scope from the collection name in a KeyStore:
         static constexpr char kScopeCollectionSeparator = '.';
         /// Set of characters allowed in a collection or scope name:
-        static constexpr slice kCollectionNameCharacterSet
-                = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
+        static constexpr slice kCollectionNameCharacterSet =
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
         // Separator for an FTI keystore (i.e. <scope>.<collection>::<index>
         static constexpr slice kIndexSeparator   = "::";
         static constexpr slice kPredictSeparator = ":predict:";
@@ -98,8 +98,8 @@ namespace litecore {
             The callback is given the docID, body and sequence, and returns a string.
             The return value is the collected strings, in the same order as the docIDs.
             If a docID doesn't exist in the database, the corresponding result will be nullslice. */
-        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback)
-                = 0;
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs,
+                                                       WithDocBodyCallback       callback) = 0;
 
         //////// Writing:
 
@@ -115,8 +115,7 @@ namespace litecore {
             @param transaction  The active transaction.
             @return  The record's new sequence number, or 0 if there is a conflict. */
         virtual sequence_t set(const RecordUpdate& rec, bool updateSequence,
-                               ExclusiveTransaction& transaction) MUST_USE_RESULT
-                = 0;
+                               ExclusiveTransaction& transaction) MUST_USE_RESULT = 0;
 
         /** Alternative `set` that takes a `Record` directly.
             It updates the `sequence` property, instead of returning the new sequence.
@@ -136,8 +135,7 @@ namespace litecore {
         void setKV(Record&, ExclusiveTransaction&);
 
         virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence = {},
-                         std::optional<uint64_t> replacingSubsequence = std::nullopt)
-                = 0;
+                         std::optional<uint64_t> replacingSubsequence = std::nullopt) = 0;
 
         bool del(const Record& rec, ExclusiveTransaction& t) { return del(rec.key(), t); }
 
@@ -210,8 +208,8 @@ namespace litecore {
 
         virtual void close() {}
 
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options)
-                = 0;
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
+                                                          RecordEnumerator::Options) = 0;
 
         DataFile&          _db;            // The DataFile I'm contained in
         const std::string  _name;          // My name

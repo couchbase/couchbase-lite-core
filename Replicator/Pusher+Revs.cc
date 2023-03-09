@@ -119,8 +119,8 @@ namespace litecore::repl {
             if ( history.hasPrefix(fullRevID) && history.size > fullRevID.size )
                 msg["history"_sl] = history.from(fullRevID.size + 1);
 
-            bool sendLegacyAttachments = (request->legacyAttachments && (revisionFlags & kRevHasAttachments)
-                                          && !_db->disableBlobSupport());
+            bool sendLegacyAttachments =
+                    (request->legacyAttachments && (revisionFlags & kRevHasAttachments) && !_db->disableBlobSupport());
 
             // Delta compression (unless we encrypted properties):
             alloc_slice deltaJSON;

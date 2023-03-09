@@ -1535,8 +1535,8 @@ namespace litecore {
 
         bool postCondition = (iType != _aliases.end());
         if ( !postCondition ) {
-            string message
-                    = format("property '%s' does not begin with a declared 'AS' alias", string(property).c_str());
+            string message =
+                    format("property '%s' does not begin with a declared 'AS' alias", string(property).c_str());
             if ( error == nullptr ) {
                 fail("%s", message.c_str());
                 // no-return

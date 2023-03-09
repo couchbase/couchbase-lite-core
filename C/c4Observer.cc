@@ -53,8 +53,8 @@ namespace litecore {
                           "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
             return _collection->sequenceTracker().useLocked<C4CollectionObservation>([&](SequenceTracker& st) {
                 bool outExternal;
-                auto retVal = (uint32_t)_notifier->readChanges((SequenceTracker::Change*)outChanges, maxChanges,
-                                                               outExternal);
+                auto retVal =
+                        (uint32_t)_notifier->readChanges((SequenceTracker::Change*)outChanges, maxChanges, outExternal);
 
                 return C4CollectionObservation{retVal, outExternal, _collection};
             });

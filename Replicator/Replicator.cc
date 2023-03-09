@@ -44,12 +44,12 @@ namespace litecore { namespace repl {
     };
 
     // Errors treated specially by onError()
-    static constexpr StoppingErrorEntry StoppingErrors[]
-            = {{{LiteCoreDomain, kC4ErrorUnexpectedError, 0}, true, "An exception was thrown"_sl},
-               {{WebSocketDomain, 400, 0}, true, "Unrecognized collection"_sl},
-               {{WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
-               {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
-               {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
+    static constexpr StoppingErrorEntry StoppingErrors[] = {
+            {{LiteCoreDomain, kC4ErrorUnexpectedError, 0}, true, "An exception was thrown"_sl},
+            {{WebSocketDomain, 400, 0}, true, "Unrecognized collection"_sl},
+            {{WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
+            {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
+            {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
 
     std::string Replicator::ProtocolName() {
         stringstream result;
@@ -752,9 +752,9 @@ namespace litecore { namespace repl {
                     Dict           dict     = checkpointArray[i].asDict();
                     if ( !dict ) {
                         // Make it fatal error, UnexpectedError.
-                        auto error = C4Error::printf(WebSocketDomain, 404,
-                                                     "Collection '%.*s' is not found on the remote server",
-                                                     SPLAT(collPath));
+                        auto error =
+                                C4Error::printf(WebSocketDomain, 404,
+                                                "Collection '%.*s' is not found on the remote server", SPLAT(collPath));
                         gotError(error);
                         _stop();
                         return;

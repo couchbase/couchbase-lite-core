@@ -184,8 +184,8 @@ static alloc_slice digest(slice body, slice parentRevID, bool deleted) {
     // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
     uint8_t        revLen  = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
     uint8_t        delByte = deleted;
-    litecore::SHA1 sha1
-            = (litecore::SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << body).finish();
+    litecore::SHA1 sha1 =
+            (litecore::SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << body).finish();
     alloc_slice d = slice_ostream::alloced(100, [&sha1](slice_ostream& out) { return out.writeHex(sha1.asSlice()); });
     return d;
 }
@@ -193,8 +193,8 @@ static alloc_slice digest(slice body, slice parentRevID, bool deleted) {
 N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
     if ( !isRevTrees() ) { return; }
 
-    static constexpr slice kEncryptable
-            = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"encryptable","value":"123-45-6789"}},3,4]})",
+    static constexpr slice
+            kEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"encryptable","value":"123-45-6789"}},3,4]})",
             kNotEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"type":"encryptable","value":"123-45-6789"}},3,4]})";
 
     slice json;

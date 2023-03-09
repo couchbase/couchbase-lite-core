@@ -38,8 +38,8 @@ namespace C4Blob {
 static constexpr slice kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
         kBlobFilenameSuffix                    = ".blob";  // suffix of blob files in the store
 
-static constexpr size_t kBlobDigestStringLength
-        = ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4,  // Length of base64 w/o prefix
+static constexpr size_t kBlobDigestStringLength =
+                                ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4,  // Length of base64 w/o prefix
         kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
 
 static SHA1& digest(C4BlobKey& key) { return (SHA1&)key.bytes; }
@@ -313,8 +313,8 @@ bool C4Blob::findAttachmentReferences(FLDict docRoot, const FindBlobCallback& ca
 // See <http://www.iana.org/assignments/media-types/media-types.xhtml>
 
 // These substrings in a MIME type mean it's definitely not compressible:
-static constexpr slice kCompressedTypeSubstrings[]
-        = {"zip"_sl, "zlib"_sl, "pkcs"_sl, "mpeg"_sl, "mp4"_sl, "crypt"_sl, ".rar"_sl, "-rar"_sl, {}};
+static constexpr slice kCompressedTypeSubstrings[] = {"zip"_sl,   "zlib"_sl, "pkcs"_sl, "mpeg"_sl, "mp4"_sl,
+                                                      "crypt"_sl, ".rar"_sl, "-rar"_sl, {}};
 
 // These substrings mean it is compressible:
 static constexpr slice kGoodTypeSubstrings[] = {"json"_sl, "html"_sl, "xml"_sl, "yaml"_sl, {}};

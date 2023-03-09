@@ -127,8 +127,8 @@ namespace litecore { namespace repl {
                     // If this is a delta, put the JSON delta in the put-request:
                     bodyForDB            = move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
-                    put.deltaCB
-                            = [](void* context, C4Document* doc, C4Slice delta, C4Error* outError) -> C4SliceResult {
+                    put.deltaCB          = [](void* context, C4Document* doc, C4Slice delta,
+                                     C4Error* outError) -> C4SliceResult {
                         try {
                             return ((Inserter*)context)->applyDeltaCallback(doc, delta, outError);
                         } catch ( ... ) {
@@ -150,10 +150,10 @@ namespace litecore { namespace repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                Retained<C4Document> doc
-                        = _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
-                              return insertionCollection()->putDocument(put, nullptr, outError);
-                          });
+                Retained<C4Document> doc =
+                        _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
+                            return insertionCollection()->putDocument(put, nullptr, outError);
+                        });
                 if ( !doc ) return false;
                 auto collPath = _options->collectionPath(collectionIndex());
                 logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64, SPLAT(rev->docID), SPLAT(collPath),

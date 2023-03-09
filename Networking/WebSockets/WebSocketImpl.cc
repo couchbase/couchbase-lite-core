@@ -552,8 +552,8 @@ namespace litecore { namespace websocket {
                             else if ( !_closeMessage )
                                 status.code = kCodeNormal;
                             else {
-                                auto msg       = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
-                                                                                   _closeMessage.size);
+                                auto msg =
+                                        ClientProtocol::parseClosePayload((char*)_closeMessage.buf, _closeMessage.size);
                                 status.code    = msg.code ? msg.code : kCodeStatusCodeExpected;
                                 status.message = slice(msg.message, msg.length);
                             }

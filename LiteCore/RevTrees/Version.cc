@@ -76,8 +76,8 @@ namespace litecore {
     }
 
     alloc_slice Version::asASCII(peerID myID) const {
-        auto result
-                = slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream& out) { return writeASCII(out, myID); });
+        auto result =
+                slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream& out) { return writeASCII(out, myID); });
         Assert(result);
         return result;
     }

@@ -348,9 +348,9 @@ __cold bool C4Error::mayBeTransient() const noexcept {
                                            websocket::kCodeAbnormal,
                                            websocket::kCloseAppTransient,
                                            0};
-    static ErrorSet kTransient
-            = {// indexed by C4ErrorDomain
-               nullptr, nullptr, kTransientPOSIX, nullptr, nullptr, kTransientNetwork, kTransientWebSocket};
+    static ErrorSet kTransient          = {// indexed by C4ErrorDomain
+                                  nullptr, nullptr,           kTransientPOSIX,    nullptr,
+                                  nullptr, kTransientNetwork, kTransientWebSocket};
     return errorIsInSet(*this, kTransient);
 }
 
@@ -361,22 +361,22 @@ __cold bool C4Error::mayBeNetworkDependent() const noexcept {
 #endif
                                          EHOSTUNREACH, EADDRNOTAVAIL, EPIPE,    0};
 
-    static CodeList kUnreachableNetwork
-            = {kC4NetErrDNSFailure,
-               kC4NetErrUnknownHost,  // Result may change if user logs into VPN or moves to intranet
-               kC4NetErrNetworkDown,
-               kC4NetErrNetworkUnreachable,
-               kC4NetErrNotConnected,
-               kC4NetErrTimeout,
-               kC4NetErrHostDown,
-               kC4NetErrHostUnreachable,
-               kC4NetErrAddressNotAvailable,
-               kC4NetErrBrokenPipe,
-               kC4NetErrUnknownInterface,
-               0};
-    static ErrorSet kUnreachable
-            = {// indexed by C4ErrorDomain
-               nullptr, nullptr, kUnreachablePOSIX, nullptr, nullptr, kUnreachableNetwork, nullptr};
+    static CodeList kUnreachableNetwork = {
+            kC4NetErrDNSFailure,
+            kC4NetErrUnknownHost,  // Result may change if user logs into VPN or moves to intranet
+            kC4NetErrNetworkDown,
+            kC4NetErrNetworkUnreachable,
+            kC4NetErrNotConnected,
+            kC4NetErrTimeout,
+            kC4NetErrHostDown,
+            kC4NetErrHostUnreachable,
+            kC4NetErrAddressNotAvailable,
+            kC4NetErrBrokenPipe,
+            kC4NetErrUnknownInterface,
+            0};
+    static ErrorSet kUnreachable = {// indexed by C4ErrorDomain
+                                    nullptr, nullptr, kUnreachablePOSIX, nullptr, nullptr, kUnreachableNetwork,
+                                    nullptr};
     return errorIsInSet(*this, kUnreachable);
 }
 

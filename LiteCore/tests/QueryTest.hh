@@ -65,9 +65,9 @@ class QueryTest : public DataFileTestFixture {
     void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
 
     string numberString(int n) {
-        static const char* kDigit[10]
-                = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
-        string str;
+        static const char* kDigit[10] = {"zero", "one", "two",   "three", "four",
+                                         "five", "six", "seven", "eight", "nine"};
+        string             str;
         do {
             str = string(kDigit[n % 10]) + str;
             n /= 10;

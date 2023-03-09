@@ -207,9 +207,9 @@ namespace litecore {
 #endif
 
             // c.f. C4_ENUM(uint32_t, C4DatabaseTag) in DataFile.hh
-            const char* const kDatabaseTags[]
-                    = {"appOpened",          "dbAccess",           "c4RemoteReplicator", "c4IncomingReplicator",
-                       "c4LocalReplicator1", "c4LocalReplicator2", "backgroundDB",       "RESTListener"};
+            const char* const kDatabaseTags[] = {
+                    "appOpened",          "dbAccess",           "c4RemoteReplicator", "c4IncomingReplicator",
+                    "c4LocalReplicator1", "c4LocalReplicator2", "backgroundDB",       "RESTListener"};
             static_assert(sizeof(kDatabaseTags) / sizeof(const char*) == kDatabaseTag_RESTListener + 1);
 
             // Wait for other connections to close -- in multithreaded setups there may be races where

@@ -163,8 +163,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Bad Configurations SG", "[.SyncSer
         replParams.collections[1].pull = kC4OneShot;
         replParams.collections[2].push = kC4Continuous;
         expectedError                  = {LiteCoreDomain, kC4ErrorInvalidParameter};
-        expectedErrorMsg
-                = "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed in one replicator."_sl;
+        expectedErrorMsg =
+                "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed in one replicator."_sl;
     }
 
     SECTION("Both Sync Directions Disabled") {
@@ -179,8 +179,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Bad Configurations SG", "[.SyncSer
         replParams.collections[1].push = kC4OneShot;
         replParams.collections[2].pull = kC4OneShot;
         expectedError                  = {LiteCoreDomain, kC4ErrorInvalidParameter};
-        expectedErrorMsg
-                = "Invalid replicator configuration: the collection list includes both passive and active ReplicatorMode"_sl;
+        expectedErrorMsg =
+                "Invalid replicator configuration: the collection list includes both passive and active ReplicatorMode"_sl;
     }
 
     SECTION("Duplicated CollectionSpecs") {
@@ -546,8 +546,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "%s-%03d", docIDPref.c_str(), docNo);
             C4Error             error;
-            c4::ref<C4Document> doc
-                    = c4coll_getDoc(_collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            c4::ref<C4Document> doc =
+                    c4coll_getDoc(_collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -1566,13 +1566,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
     Assert(3 == _collectionCount);
 
     // Setup pull filter:
-    C4ReplicatorValidationFunction pullFilter
-            = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict, void* context) {
-                  auto ctx = (CBContext*)context;
-                  ctx->pullFilterTotal++;
-                  if ( (flags & kRevPurged) == kRevPurged ) { ctx->pullFilterPurge++; }
-                  return true;
-              };
+    C4ReplicatorValidationFunction pullFilter = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict,
+                                                   void* context) {
+        auto ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ( (flags & kRevPurged) == kRevPurged ) { ctx->pullFilterPurge++; }
+        return true;
+    };
 
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
@@ -1656,17 +1656,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     };
 
     // Setup pull filter:
-    C4ReplicatorValidationFunction pullFilter
-            = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void* context) {
-                  CBContext* ctx = (CBContext*)context;
-                  ctx->pullFilterTotal++;
-                  if ( (flags & kRevPurged) == kRevPurged ) {
-                      ctx->pullFilterPurge++;
-                      Dict body(flbody);
-                      CHECK(body.count() == 0);
-                  }
-                  return true;
-              };
+    C4ReplicatorValidationFunction pullFilter = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags,
+                                                   FLDict flbody, void* context) {
+        CBContext* ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ( (flags & kRevPurged) == kRevPurged ) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -1770,18 +1770,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
     } cbContext;
 
     // Setup pull filter to filter the _removed rev:
-    C4ReplicatorValidationFunction pullFilter
-            = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags, FLDict flbody, void* context) {
-                  auto ctx = (CBContext*)context;
-                  ctx->pullFilterTotal++;
-                  if ( (flags & kRevPurged) == kRevPurged ) {
-                      ctx->pullFilterPurge++;
-                      Dict body(flbody);
-                      CHECK(body.count() == 0);
-                      return false;
-                  }
-                  return true;
-              };
+    C4ReplicatorValidationFunction pullFilter = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags,
+                                                   FLDict flbody, void* context) {
+        auto ctx = (CBContext*)context;
+        ctx->pullFilterTotal++;
+        if ( (flags & kRevPurged) == kRevPurged ) {
+            ctx->pullFilterPurge++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
 
     // Setup onDocsEnded:
     _enableDocProgressNotifications = true;
@@ -2075,8 +2075,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             char docID[docBufSize];
             snprintf(docID, docBufSize, "%s%07u", idPrefix.c_str(), docNo + 1);
             C4Error             error;
-            c4::ref<C4Document> doc
-                    = c4coll_getDoc(_collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
+            c4::ref<C4Document> doc =
+                    c4coll_getDoc(_collections[i], slice(docID), false, kDocGetAll, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 

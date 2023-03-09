@@ -47,16 +47,16 @@ class C4AllDocsPerformanceTest : public C4Test {
             C4SliceResult body = c4db_encodeJSON(db, c4str(json), ERROR_INFO(error));
             REQUIRE(body.buf);
 
-            C4Slice history[1]
-                    = {isRevTrees() ? c4str("1-deadbeefcafebabe80081e50") : c4str("1@deadbeefcafebabe80081e50")};
-            C4DocPutRequest rq  = {};
-            rq.existingRevision = true;
-            rq.docID            = c4str(docID);
-            rq.history          = history;
-            rq.historyCount     = 1;
-            rq.body             = (C4Slice)body;
-            rq.save             = true;
-            auto doc            = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
+            C4Slice         history[1] = {isRevTrees() ? c4str("1-deadbeefcafebabe80081e50")
+                                                       : c4str("1@deadbeefcafebabe80081e50")};
+            C4DocPutRequest rq         = {};
+            rq.existingRevision        = true;
+            rq.docID                   = c4str(docID);
+            rq.history                 = history;
+            rq.historyCount            = 1;
+            rq.body                    = (C4Slice)body;
+            rq.save                    = true;
+            auto doc                   = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
             REQUIRE(doc);
             c4doc_release(doc);
             c4slice_free(body);

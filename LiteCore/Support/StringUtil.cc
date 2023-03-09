@@ -246,8 +246,8 @@ namespace litecore {
         auto        size = str.size;
         alloc_slice result(size);
         for ( size_t i = 0; i < size; i++ )
-            (uint8_t&)(result[i])
-                    = (uint8_t)toUppercase ? toupper((char)str[i], locale()) : tolower((char)str[i], locale());
+            (uint8_t&)(result[i]) =
+                    (uint8_t)toUppercase ? toupper((char)str[i], locale()) : tolower((char)str[i], locale());
         return result;
     }
 

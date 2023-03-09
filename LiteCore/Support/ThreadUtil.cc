@@ -123,8 +123,8 @@ namespace litecore {
     static bool TryNewSetThreadName(const char* name) {
         bool valid = false;
         if ( kernelLib() != NULL ) {
-            static SetThreadNameCall setThreadNameCall
-                    = (SetThreadNameCall)GetProcAddress(kernelLib(), "SetThreadDescription");
+            static SetThreadNameCall setThreadNameCall =
+                    (SetThreadNameCall)GetProcAddress(kernelLib(), "SetThreadDescription");
             if ( setThreadNameCall != NULL ) {
                 CA2WEX<256> wide(name, CP_UTF8);
                 setThreadNameCall(GetCurrentThread(), wide);
@@ -154,8 +154,8 @@ namespace litecore {
         std::stringstream s;
 
         if ( kernelLib() != NULL ) {
-            static GetThreadNameCall getThreadNameCall
-                    = (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
+            static GetThreadNameCall getThreadNameCall =
+                    (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
             if ( getThreadNameCall != NULL ) {
                 wchar_t* buf;
                 HRESULT  r = getThreadNameCall(GetCurrentThread(), &buf);

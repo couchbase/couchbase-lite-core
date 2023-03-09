@@ -137,8 +137,7 @@ namespace litecore { namespace crypto {
             @param outSignature  Write the signature here; length must be _keyLength.
             @return  0 on success, or an mbedTLS error code on failure. */
         virtual int _sign(int /*mbedtls_md_type_t*/ digestAlgorithm, fleece::slice inputData,
-                          void* outSignature) noexcept
-                = 0;
+                          void* outSignature) noexcept = 0;
 
         /** Key length, in _bytes_ not bits. */
         unsigned const _keyLength;

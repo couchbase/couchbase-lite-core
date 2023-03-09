@@ -235,8 +235,8 @@ namespace uWS {
         char          opStack     = -1;    // remove this too
         char          lastFin     = true;  // hold in state!
         unsigned char spill[LONG_MESSAGE_HEADER - 1];
-        unsigned int  remainingBytes
-                = 0;  // denna kan hålla spillLength om state är READ_HEAD, och remainingBytes när state är annat?
+        unsigned int  remainingBytes =
+                0;  // denna kan hålla spillLength om state är READ_HEAD, och remainingBytes när state är annat?
         char   mask[isServer ? 4 : 1];
         OpCode opCode[2];
 

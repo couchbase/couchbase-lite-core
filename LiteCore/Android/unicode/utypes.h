@@ -487,27 +487,27 @@ typedef enum UErrorCode {
 
     U_ERROR_WARNING_START = -128, /**< Start of information results (semantically successful) */
 
-    U_USING_DEFAULT_WARNING
-    = -127, /**< A resource bundle lookup returned a result from the root locale (not an error) */
+    U_USING_DEFAULT_WARNING =
+            -127, /**< A resource bundle lookup returned a result from the root locale (not an error) */
 
     U_SAFECLONE_ALLOCATED_WARNING = -126, /**< A SafeClone operation required allocating memory (informational only) */
 
-    U_STATE_OLD_WARNING
-    = -125, /**< ICU has to use compatibility layer to construct the service. Expect performance/memory usage degradation. Consider upgrading */
+    U_STATE_OLD_WARNING =
+            -125, /**< ICU has to use compatibility layer to construct the service. Expect performance/memory usage degradation. Consider upgrading */
 
-    U_STRING_NOT_TERMINATED_WARNING
-    = -124, /**< An output string could not be NUL-terminated because output length==destCapacity. */
+    U_STRING_NOT_TERMINATED_WARNING =
+            -124, /**< An output string could not be NUL-terminated because output length==destCapacity. */
 
-    U_SORT_KEY_TOO_SHORT_WARNING
-    = -123, /**< Number of levels requested in getBound is higher than the number of levels in the sort key */
+    U_SORT_KEY_TOO_SHORT_WARNING =
+            -123, /**< Number of levels requested in getBound is higher than the number of levels in the sort key */
 
     U_AMBIGUOUS_ALIAS_WARNING = -122, /**< This converter alias can go to different converter implementations */
 
-    U_DIFFERENT_UCA_VERSION
-    = -121, /**< ucol_open encountered a mismatch between UCA version and collator image version, so the collator was constructed from rules. No impact to further function */
+    U_DIFFERENT_UCA_VERSION =
+            -121, /**< ucol_open encountered a mismatch between UCA version and collator image version, so the collator was constructed from rules. No impact to further function */
 
-    U_PLUGIN_CHANGED_LEVEL_WARNING
-    = -120, /**< A plugin caused a level change. May not be an error, but later plugins may not load. */
+    U_PLUGIN_CHANGED_LEVEL_WARNING =
+            -120, /**< A plugin caused a level change. May not be an error, but later plugins may not load. */
 
     U_ERROR_WARNING_LIMIT, /**< This must always be the last warning value to indicate the limit for UErrorCode warnings (last warning code +1) */
 
@@ -523,8 +523,8 @@ typedef enum UErrorCode {
     U_MEMORY_ALLOCATION_ERROR = 7, /**< Memory allocation error */
     U_INDEX_OUTOFBOUNDS_ERROR = 8, /**< Trying to access the index that is out of bounds */
     U_PARSE_ERROR             = 9, /**< Equivalent to Java ParseException */
-    U_INVALID_CHAR_FOUND
-    = 10, /**< Character conversion: Unmappable input sequence. In other APIs: Invalid character. */
+    U_INVALID_CHAR_FOUND =
+            10, /**< Character conversion: Unmappable input sequence. In other APIs: Invalid character. */
     U_TRUNCATED_CHAR_FOUND        = 11, /**< Character conversion: Incomplete input sequence. */
     U_ILLEGAL_CHAR_FOUND          = 12, /**< Character conversion: Illegal input sequence/combination of input units. */
     U_INVALID_TABLE_FORMAT        = 13, /**< Conversion table file found, but corrupted */
@@ -595,23 +595,23 @@ typedef enum UErrorCode {
     U_UNEXPECTED_TOKEN      = 0x10100, /**< Syntax error in format pattern */
     U_FMT_PARSE_ERROR_START = 0x10100, /**< Start of format library errors */
     U_MULTIPLE_DECIMAL_SEPARATORS,     /**< More than one decimal separator in number pattern */
-    U_MULTIPLE_DECIMAL_SEPERATORS
-    = U_MULTIPLE_DECIMAL_SEPARATORS, /**< Typo: kept for backward compatibility. Use U_MULTIPLE_DECIMAL_SEPARATORS */
-    U_MULTIPLE_EXPONENTIAL_SYMBOLS,  /**< More than one exponent symbol in number pattern */
-    U_MALFORMED_EXPONENTIAL_PATTERN, /**< Grouping symbol in exponent pattern */
-    U_MULTIPLE_PERCENT_SYMBOLS,      /**< More than one percent symbol in number pattern */
-    U_MULTIPLE_PERMILL_SYMBOLS,      /**< More than one permill symbol in number pattern */
-    U_MULTIPLE_PAD_SPECIFIERS,       /**< More than one pad symbol in number pattern */
-    U_PATTERN_SYNTAX_ERROR,          /**< Syntax error in format pattern */
-    U_ILLEGAL_PAD_POSITION,          /**< Pad symbol misplaced in number pattern */
-    U_UNMATCHED_BRACES,              /**< Braces do not match in message pattern */
-    U_UNSUPPORTED_PROPERTY,          /**< UNUSED as of ICU 2.4 */
-    U_UNSUPPORTED_ATTRIBUTE,         /**< UNUSED as of ICU 2.4 */
-    U_ARGUMENT_TYPE_MISMATCH,        /**< Argument name and argument index mismatch in MessageFormat functions */
-    U_DUPLICATE_KEYWORD,             /**< Duplicate keyword in PluralFormat */
-    U_UNDEFINED_KEYWORD,             /**< Undefined Plural keyword */
-    U_DEFAULT_KEYWORD_MISSING,       /**< Missing DEFAULT rule in plural rules */
-    U_DECIMAL_NUMBER_SYNTAX_ERROR,   /**< Decimal number syntax error */
+    U_MULTIPLE_DECIMAL_SEPERATORS =
+            U_MULTIPLE_DECIMAL_SEPARATORS, /**< Typo: kept for backward compatibility. Use U_MULTIPLE_DECIMAL_SEPARATORS */
+    U_MULTIPLE_EXPONENTIAL_SYMBOLS,        /**< More than one exponent symbol in number pattern */
+    U_MALFORMED_EXPONENTIAL_PATTERN,       /**< Grouping symbol in exponent pattern */
+    U_MULTIPLE_PERCENT_SYMBOLS,            /**< More than one percent symbol in number pattern */
+    U_MULTIPLE_PERMILL_SYMBOLS,            /**< More than one permill symbol in number pattern */
+    U_MULTIPLE_PAD_SPECIFIERS,             /**< More than one pad symbol in number pattern */
+    U_PATTERN_SYNTAX_ERROR,                /**< Syntax error in format pattern */
+    U_ILLEGAL_PAD_POSITION,                /**< Pad symbol misplaced in number pattern */
+    U_UNMATCHED_BRACES,                    /**< Braces do not match in message pattern */
+    U_UNSUPPORTED_PROPERTY,                /**< UNUSED as of ICU 2.4 */
+    U_UNSUPPORTED_ATTRIBUTE,               /**< UNUSED as of ICU 2.4 */
+    U_ARGUMENT_TYPE_MISMATCH,              /**< Argument name and argument index mismatch in MessageFormat functions */
+    U_DUPLICATE_KEYWORD,                   /**< Duplicate keyword in PluralFormat */
+    U_UNDEFINED_KEYWORD,                   /**< Undefined Plural keyword */
+    U_DEFAULT_KEYWORD_MISSING,             /**< Missing DEFAULT rule in plural rules */
+    U_DECIMAL_NUMBER_SYNTAX_ERROR,         /**< Decimal number syntax error */
     U_FORMAT_INEXACT_ERROR, /**< Cannot format a number exactly and rounding mode is ROUND_UNNECESSARY @stable ICU 4.8 */
     U_FMT_PARSE_ERROR_LIMIT, /**< The limit for format library errors */
 
@@ -656,18 +656,18 @@ typedef enum UErrorCode {
 #ifndef U_HIDE_DEPRECATED_API
     U_REGEX_OCTAL_TOO_BIG, /**< Octal character constants must be <= 0377. @deprecated ICU 54. This error cannot occur. */
 #endif                     /* U_HIDE_DEPRECATED_API */
-    U_REGEX_MISSING_CLOSE_BRACKET
-    = U_REGEX_SET_CONTAINS_STRING + 2, /**< Missing closing bracket on a bracket expression. */
-    U_REGEX_INVALID_RANGE,             /**< In a character range [x-y], x is greater than y.   */
-    U_REGEX_STACK_OVERFLOW,            /**< Regular expression backtrack stack overflow.       */
-    U_REGEX_TIME_OUT,                  /**< Maximum allowed match time exceeded                */
-    U_REGEX_STOPPED_BY_CALLER,         /**< Matching operation aborted by user callback fn.    */
+    U_REGEX_MISSING_CLOSE_BRACKET =
+            U_REGEX_SET_CONTAINS_STRING + 2, /**< Missing closing bracket on a bracket expression. */
+    U_REGEX_INVALID_RANGE,                   /**< In a character range [x-y], x is greater than y.   */
+    U_REGEX_STACK_OVERFLOW,                  /**< Regular expression backtrack stack overflow.       */
+    U_REGEX_TIME_OUT,                        /**< Maximum allowed match time exceeded                */
+    U_REGEX_STOPPED_BY_CALLER,               /**< Matching operation aborted by user callback fn.    */
 #ifndef U_HIDE_DRAFT_API
     U_REGEX_PATTERN_TOO_BIG,            /**< Pattern exceeds limits on size or complexity. @draft ICU 55 */
     U_REGEX_INVALID_CAPTURE_GROUP_NAME, /**< Invalid capture group name. @draft ICU 55 */
 #endif                                  /* U_HIDE_DRAFT_API */
-    U_REGEX_ERROR_LIMIT
-    = U_REGEX_STOPPED_BY_CALLER + 3, /**< This must always be the last value to indicate the limit for regexp errors */
+    U_REGEX_ERROR_LIMIT = U_REGEX_STOPPED_BY_CALLER
+                          + 3, /**< This must always be the last value to indicate the limit for regexp errors */
 
     /*
      * The error code in the range 0x10400-0x104ff are reserved for IDNA related error codes
@@ -698,8 +698,8 @@ typedef enum UErrorCode {
     U_PLUGIN_DIDNT_SET_LEVEL,       /**< The plugin didn't call uplug_setPlugLevel in response to a QUERY */
     U_PLUGIN_ERROR_LIMIT,           /**< This must always be the last value to indicate the limit for plugin errors */
 
-    U_ERROR_LIMIT
-    = U_PLUGIN_ERROR_LIMIT /**< This must always be the last value to indicate the limit for UErrorCode (last error code +1) */
+    U_ERROR_LIMIT =
+            U_PLUGIN_ERROR_LIMIT /**< This must always be the last value to indicate the limit for UErrorCode (last error code +1) */
 } UErrorCode;
 
 /* Use the following to determine if an UErrorCode represents */

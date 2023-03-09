@@ -38,9 +38,9 @@ namespace litecore {
         DebugAssert(key.size == kCCKeySizeAES256);
         DebugAssert(iv.buf == nullptr || iv.size == kCCBlockSizeAES128, "IV is wrong size");
         size_t          outSize;
-        CCCryptorStatus status
-                = CCCrypt((encrypt ? kCCEncrypt : kCCDecrypt), kCCAlgorithmAES, (padding ? kCCOptionPKCS7Padding : 0),
-                          key.buf, key.size, iv.buf, src.buf, src.size, dst.buf, dst.size, &outSize);
+        CCCryptorStatus status =
+                CCCrypt((encrypt ? kCCEncrypt : kCCDecrypt), kCCAlgorithmAES, (padding ? kCCOptionPKCS7Padding : 0),
+                        key.buf, key.size, iv.buf, src.buf, src.size, dst.buf, dst.size, &outSize);
         if ( status != kCCSuccess ) {
             Assert(status != kCCParamError && status != kCCBufferTooSmall && status != kCCUnimplemented);
             error::_throw(error::CryptoError);

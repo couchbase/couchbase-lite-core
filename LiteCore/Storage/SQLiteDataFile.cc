@@ -361,8 +361,8 @@ namespace litecore {
                 // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
                 // (after the last statement is freed), as that can have disastrous effects if the
                 // db has since been deleted and re-created: see issue #381 for gory details.
-                int noCheckpointResult
-                        = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
+                int noCheckpointResult =
+                        sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
                 Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
             }
             // Finally, delete the SQLite::Database instance:

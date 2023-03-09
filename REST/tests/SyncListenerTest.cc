@@ -92,8 +92,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Li
 
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push][Listener][TLS][C]") {
     ::Identity caIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLS_CA, kCAName, nullptr, nullptr, true);
-    ::Identity endIdentity
-            = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
+    ::Identity endIdentity =
+            CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
     C4NetworkErrorCode expectedError = (C4NetworkErrorCode)0;
     slice              expectedMessage{};
 
@@ -138,8 +138,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener][TLS][C]") {
     // CA without the CA-bits sit
     Identity caIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kCAName, nullptr, nullptr, true);
-    Identity endIdentity
-            = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
+    Identity endIdentity =
+            CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
 
     _sg.address.scheme = kC4Replicator2TLSScheme;
     useServerIdentity(endIdentity);

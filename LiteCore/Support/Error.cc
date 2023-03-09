@@ -293,38 +293,38 @@ namespace litecore {
     }
 
     __cold static const char* network_errstr(int code) {
-        static const char* kNetworkMessages[]
-                = {// These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
-                   // The wording is from a client's perspective, i.e. the peer is referred to as "server";
-                   // these errors do occur on the server side but are not reported by C4Listener.
-                   "no error",  // 0
-                   "DNS error",
-                   "unknown hostname",
-                   "connection timed out",
-                   "invalid URL",
-                   "too many redirects",
-                   "TLS handshake failed",
-                   "server TLS certificate expired",
-                   "server TLS certificate untrusted",
-                   "server requires a TLS client certificate",
-                   "server rejected the TLS client certificate",
-                   "server TLS certificate is self-signed or has unknown root cert",
-                   "redirected to an invalid URL",
-                   "unknown network error",
-                   "server TLS certificate has been revoked",
-                   "server TLS certificate name mismatch",
-                   "network subsystem was reset",
-                   "connection aborted",
-                   "connection reset",
-                   "connection refused",
-                   "network subsystem down",
-                   "network unreachable",
-                   "socket not connected",
-                   "host reported not available",
-                   "host not reachable",
-                   "address not available",
-                   "broken pipe",
-                   "unknown interface"};
+        static const char* kNetworkMessages[] = {
+                // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
+                // The wording is from a client's perspective, i.e. the peer is referred to as "server";
+                // these errors do occur on the server side but are not reported by C4Listener.
+                "no error",  // 0
+                "DNS error",
+                "unknown hostname",
+                "connection timed out",
+                "invalid URL",
+                "too many redirects",
+                "TLS handshake failed",
+                "server TLS certificate expired",
+                "server TLS certificate untrusted",
+                "server requires a TLS client certificate",
+                "server rejected the TLS client certificate",
+                "server TLS certificate is self-signed or has unknown root cert",
+                "redirected to an invalid URL",
+                "unknown network error",
+                "server TLS certificate has been revoked",
+                "server TLS certificate name mismatch",
+                "network subsystem was reset",
+                "connection aborted",
+                "connection reset",
+                "connection refused",
+                "network subsystem down",
+                "network unreachable",
+                "socket not connected",
+                "host reported not available",
+                "host not reachable",
+                "address not available",
+                "broken pipe",
+                "unknown interface"};
         const char* str = nullptr;
         if ( code < sizeof(kNetworkMessages) / sizeof(char*) ) str = kNetworkMessages[code];
         if ( !str ) str = "(unknown network error)";
@@ -408,8 +408,8 @@ namespace litecore {
 
     __cold const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
-        static const char* kDomainNames[]
-                = {"0", "LiteCore", "POSIX", "SQLite", "Fleece", "Network", "WebSocket", "mbedTLS"};
+        static const char* kDomainNames[] = {"0",      "LiteCore", "POSIX",     "SQLite",
+                                             "Fleece", "Network",  "WebSocket", "mbedTLS"};
         static_assert(sizeof(kDomainNames) / sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                       "Incomplete domain name table");
 

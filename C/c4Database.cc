@@ -204,8 +204,8 @@ bool C4Database::setCookie(slice setCookieHeader, slice fromHost, slice fromPath
     checkOpen();
 
     litecore::repl::DatabaseCookies cookies(this);
-    bool ok = cookies.setCookie(setCookieHeader.asString(), fromHost.asString(), fromPath.asString(),
-                                acceptParentDomain);
+    bool                            ok =
+            cookies.setCookie(setCookieHeader.asString(), fromHost.asString(), fromPath.asString(), acceptParentDomain);
     if ( ok ) cookies.saveChanges();
     return ok;
 }

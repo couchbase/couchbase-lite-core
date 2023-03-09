@@ -242,8 +242,8 @@ namespace litecore { namespace actor {
         }
 
         void ThreadedMailbox::runAsyncTask(void (*task)(void*), void* context) {
-            static RunAsyncActor* sRunAsyncActor
-                    = retain(new RunAsyncActor());  // I grant unto thee the gift of eternal life
+            static RunAsyncActor* sRunAsyncActor =
+                    retain(new RunAsyncActor());  // I grant unto thee the gift of eternal life
             sRunAsyncActor->runAsync(task, context);
         }
 

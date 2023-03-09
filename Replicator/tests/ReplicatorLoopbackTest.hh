@@ -121,13 +121,13 @@ class ReplicatorLoopbackTest
         // Create client (active) and server (passive) replicators:
         try {
             if ( _updateClientOptions ) { optsRef1 = make_retained<repl::Options>(_updateClientOptions(*optsRef1)); }
-            _replClient = new Replicator(dbClient,
-                                         new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
-                                         *this, optsRef1);
+            _replClient =
+                    new Replicator(dbClient, new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
+                                   *this, optsRef1);
 
-            _replServer = new Replicator(dbServer,
-                                         new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
-                                         *this, optsRef2);
+            _replServer =
+                    new Replicator(dbServer, new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
+                                   *this, optsRef2);
 
             Log("Client replicator is %s", _replClient->loggingName().c_str());
 

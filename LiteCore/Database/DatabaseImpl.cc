@@ -128,8 +128,8 @@ namespace litecore {
                 }
         };
 
-        FilePath dataFilePath
-                = findOrCreateBundle(bundlePath, (_configV1.flags & kC4DB_Create) != 0, _configV1.storageEngine);
+        FilePath dataFilePath =
+                findOrCreateBundle(bundlePath, (_configV1.flags & kC4DB_Create) != 0, _configV1.storageEngine);
         // Set up DataFile options:
         DataFile::Options options{};
         options.keyStores.sequences = true;
@@ -140,8 +140,8 @@ namespace litecore {
         options.encryptionAlgorithm = (EncryptionAlgorithm)_config.encryptionKey.algorithm;
         if ( options.encryptionAlgorithm != kNoEncryption ) {
 #ifdef COUCHBASE_ENTERPRISE
-            options.encryptionKey
-                    = alloc_slice(_config.encryptionKey.bytes, kEncryptionKeySize[options.encryptionAlgorithm]);
+            options.encryptionKey =
+                    alloc_slice(_config.encryptionKey.bytes, kEncryptionKeySize[options.encryptionAlgorithm]);
 #else
             error::_throw(error::UnsupportedEncryption);
 #endif

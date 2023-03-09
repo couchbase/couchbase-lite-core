@@ -308,8 +308,8 @@ namespace litecore {
         }
 
         QueryEnumerator* clone() override {
-            SQLiteQueryEnumerator* clon
-                    = new SQLiteQueryEnumerator(&_options, _lastSequence.load(), _purgeCount.load(), _recording.get());
+            SQLiteQueryEnumerator* clon =
+                    new SQLiteQueryEnumerator(&_options, _lastSequence.load(), _purgeCount.load(), _recording.get());
             clon->_1stCustomResultColumn = this->_1stCustomResultColumn;
             clon->_hasFullText           = this->_hasFullText;
             return clon;

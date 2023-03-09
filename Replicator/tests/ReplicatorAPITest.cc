@@ -291,15 +291,15 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string>            docIDs;
-    params.pull            = kC4OneShot;
-    int overall            = 0;
-    int perCollection      = 0;
-    params.callbackContext = &overall;
-    params.onDocumentsEnded
-            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
-                  *((int*)context) = 42;
-                  if ( docs[0]->collectionContext ) { *((int*)docs[0]->collectionContext) = 24; }
-              };
+    params.pull             = kC4OneShot;
+    int overall             = 0;
+    int perCollection       = 0;
+    params.callbackContext  = &overall;
+    params.onDocumentsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[],
+                                 void* context) {
+        *((int*)context) = 42;
+        if ( docs[0]->collectionContext ) { *((int*)docs[0]->collectionContext) = 24; }
+    };
 
     int expectedOverall       = 0;
     int expectedPerCollection = 0;
@@ -864,12 +864,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string>            docIDs;
-    params.pull = kC4OneShot;
-    params.onDocumentsEnded
-            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
-                  auto docIDs = (std::vector<std::string>*)context;
-                  for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
-              };
+    params.pull             = kC4OneShot;
+    params.onDocumentsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[],
+                                 void* context) {
+        auto docIDs = (std::vector<std::string>*)context;
+        for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
+    };
 
     params.callbackContext     = &docIDs;
     c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
@@ -925,12 +925,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
     std::vector<std::string>            docIDs;
-    params.pull = kC4OneShot;
-    params.onDocumentsEnded
-            = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
-                  auto docIDs = (std::vector<std::string>*)context;
-                  for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
-              };
+    params.pull             = kC4OneShot;
+    params.onDocumentsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[],
+                                 void* context) {
+        auto docIDs = (std::vector<std::string>*)context;
+        for ( size_t i = 0; i < numDocs; i++ ) { docIDs->emplace_back(slice(docs[i]->docID)); }
+    };
 
     params.callbackContext = &docIDs;
 

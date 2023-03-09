@@ -125,8 +125,8 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
     static once_flag f;
     call_once(f, [=] { unique = chrono::milliseconds(time(nullptr)); });
 
-    const char* trimmedExtension
-            = !extension.empty() && extension[0] == '.' ? extension.c_str() + 1 : extension.c_str();
+    const char* trimmedExtension =
+            !extension.empty() && extension[0] == '.' ? extension.c_str() + 1 : extension.c_str();
     const size_t bufSize = name.size() + 32;
     TempArray(folderName, char, bufSize);
     snprintf(folderName, bufSize, "%s%" PRIms ".%s", name.c_str(), unique.count(), trimmedExtension);

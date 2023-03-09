@@ -219,8 +219,8 @@ namespace litecore {
                         auto subtype = sqlite3_value_subtype(arg);
                         if ( subtype == kFleeceIntBoolean ) {
                             // A tagged boolean:
-                            slice encoded
-                                    = sqlite3_value_int(arg) ? Encoder::kPreEncodedTrue : Encoder::kPreEncodedFalse;
+                            slice encoded =
+                                    sqlite3_value_int(arg) ? Encoder::kPreEncodedTrue : Encoder::kPreEncodedFalse;
                             sqlite3_result_blob(ctx, encoded.buf, int(encoded.size), SQLITE_STATIC);
                             return;
                         } else if ( subtype == kFleeceIntUnsigned ) {

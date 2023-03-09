@@ -104,8 +104,10 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         error.log("Customer", dummy, LogEncoder::None, "This isn't what I asked for!");
     }
 
-    static const vector<string> expectedDomains[]
-            = {{"Paint"}, {"Draw", "Draw", "Draw", "Paint"}, {"Draw"}, {"Customer"}};
+    static const vector<string> expectedDomains[] = {{"Paint"},
+                                                     {"Draw", "Draw", "Draw", "Paint"},
+                                                     {"Draw"},
+                                                     {"Customer"}};
 
     for ( int i = 0; i < 4; i++ ) {
         string encoded = out[i].str();

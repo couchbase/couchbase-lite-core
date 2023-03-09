@@ -24,8 +24,8 @@ namespace litecore {
     // Since the "unregister" callback potentially calls into managed code
     // (i.e. C#, etc) it will cause errors if the runtime has already been
     // unloaded (which is the case during atexit)
-    static unordered_map<string, Retained<PredictiveModel>>* sRegistry
-            = new unordered_map<string, Retained<PredictiveModel>>;
+    static unordered_map<string, Retained<PredictiveModel>>* sRegistry =
+            new unordered_map<string, Retained<PredictiveModel>>;
     static mutex sRegistryMutex;
 
     void PredictiveModel::registerAs(const std::string& name) {

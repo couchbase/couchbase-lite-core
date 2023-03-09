@@ -41,8 +41,8 @@ class C4EncryptionTest : public C4Test {
 };
 
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    bool (*c4key_setPasswordFunc)(C4EncryptionKey * encryptionKey, C4String password, C4EncryptionAlgorithm alg)
-            = nullptr;
+    bool (*c4key_setPasswordFunc)(C4EncryptionKey * encryptionKey, C4String password, C4EncryptionAlgorithm alg) =
+            nullptr;
     string          expectedKey;
     C4EncryptionKey key{};
     SECTION("SHA256") {

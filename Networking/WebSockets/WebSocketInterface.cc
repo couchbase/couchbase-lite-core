@@ -40,8 +40,8 @@ namespace litecore { namespace websocket {
     }
 
     const char* CloseStatus::reasonName() const {
-        static const char* kReasonNames[]
-                = {"WebSocket/HTTP status", "errno", "Network error", "Exception", "Unknown error"};
+        static const char* kReasonNames[] = {"WebSocket/HTTP status", "errno", "Network error", "Exception",
+                                             "Unknown error"};
         DebugAssert(reason < CloseReason(5));
         return kReasonNames[reason];
     }

@@ -110,8 +110,8 @@ namespace litecore { namespace repl {
         if ( _revMessage->noReply() ) _revMessage = nullptr;
 
         _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
-        _mayContainEncryptedProperties
-                = !_options->disablePropertyDecryption() && MayContainPropertiesToDecrypt(jsonBody);
+        _mayContainEncryptedProperties =
+                !_options->disablePropertyDecryption() && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobs

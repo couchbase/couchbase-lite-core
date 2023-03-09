@@ -24,16 +24,16 @@ using namespace fleece::impl;
 
 class FTSTest : public DataFileTestFixture {
   public:
-    static constexpr const char* const kStrings[]
-            = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database "
-               "applications.",
-               "In their most elementary form, full-text search engines allow the user to efficiently search a large "
-               "collection of documents for the subset that contain one or more instances of a search term.",
-               "The search functionality provided to world wide web users by Google is, among other things, a "
-               "full-text search engine, as it allows users to search for all documents on the web that contain, for "
-               "example, the term \"fts5\".",
-               "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
-               "Looking for things, searching for things, going on adventures..."};
+    static constexpr const char* const kStrings[] = {
+            "FTS5 is an SQLite virtual table module that provides full-text search functionality to database "
+            "applications.",
+            "In their most elementary form, full-text search engines allow the user to efficiently search a large "
+            "collection of documents for the subset that contain one or more instances of a search term.",
+            "The search functionality provided to world wide web users by Google is, among other things, a "
+            "full-text search engine, as it allows users to search for all documents on the web that contain, for "
+            "example, the term \"fts5\".",
+            "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
+            "Looking for things, searching for things, going on adventures..."};
 
     vector<string> _stringsInDB;
 

@@ -86,8 +86,8 @@ namespace litecore {
         ++_blockID;
         uint8_t       cipherBuf[kFileBlockSize + kAESBlockSize];
         mutable_slice ciphertext(cipherBuf, sizeof(cipherBuf));
-        ciphertext.size
-                = AES256(true, slice(&_key, sizeof(_key)), slice(iv, sizeof(iv)), finalBlock, ciphertext, plaintext);
+        ciphertext.size =
+                AES256(true, slice(&_key, sizeof(_key)), slice(iv, sizeof(iv)), finalBlock, ciphertext, plaintext);
         _output->write(ciphertext);
         LogVerbose(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
                    (unsigned long long)(_blockID - 1), (unsigned long long)plaintext.size, finalBlock,
