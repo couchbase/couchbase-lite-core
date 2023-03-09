@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 51;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -22,6 +22,17 @@
 			);
 			name = All;
 			productName = All;
+		};
+		EAE4736829BA112E00C28D49 /* Run Clang-Format */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = EAE4736929BA113000C28D49 /* Build configuration list for PBXAggregateTarget "Run Clang-Format" */;
+			buildPhases = (
+				EAE4736E29BA113A00C28D49 /* Run Formatting Script */,
+			);
+			dependencies = (
+			);
+			name = "Run Clang-Format";
+			productName = "Run Clang-Format";
 		};
 /* End PBXAggregateTarget section */
 
@@ -1655,6 +1666,8 @@
 		EAA0126F29687CBD001B04E0 /* SG.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SG.hh; sourceTree = "<group>"; };
 		EAA0127029687CBD001B04E0 /* SGTestUser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SGTestUser.hh; sourceTree = "<group>"; };
 		EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorCollectionSGTest.hh; sourceTree = "<group>"; };
+		EAE4735C29BA0A8700C28D49 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		EAE4736729BA0AC500C28D49 /* run-clang-format.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "run-clang-format.sh"; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2206,6 +2219,7 @@
 				2763011E1F338B77004A1592 /* wiki */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
 				275BF36A1F5F671C0051374A /* Scripts */,
+				EAE4735B29BA0A8700C28D49 /* Run Clang-Format */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
 			);
@@ -2426,6 +2440,7 @@
 		275BF36A1F5F671C0051374A /* Scripts */ = {
 			isa = PBXGroup;
 			children = (
+				EAE4736729BA0AC500C28D49 /* run-clang-format.sh */,
 				275BF36B1F5F671C0051374A /* get_repo_version.sh */,
 			);
 			name = Scripts;
@@ -3236,6 +3251,14 @@
 			path = mbedtls;
 			sourceTree = "<group>";
 		};
+		EAE4735B29BA0A8700C28D49 /* Run Clang-Format */ = {
+			isa = PBXGroup;
+			children = (
+				EAE4735C29BA0A8700C28D49 /* main.cpp */,
+			);
+			path = "Run Clang-Format";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -3695,6 +3718,9 @@
 					720EA3DB1BA7EAD9002B8416 = {
 						DevelopmentTeam = N2Q372V7W2;
 					};
+					EAE4736829BA112E00C28D49 = {
+						CreatedOnToolsVersion = 14.1;
+					};
 				};
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
@@ -3731,6 +3757,7 @@
 				27A924931D9B316D00086206 /* LiteCore-iOS shell */,
 				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
 				27B7E0F118F8FB4700044EBA /* All */,
+				EAE4736829BA112E00C28D49 /* Run Clang-Format */,
 			);
 		};
 /* End PBXProject section */
@@ -3863,7 +3890,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
 			showEnvVarsInLog = 0;
 		};
 		275BF3731F5F6CA20051374A /* Generate repo_version.h */ = {
@@ -3943,6 +3970,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
 			shellScript = "DST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/C/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../C/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/LiteCore/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../LiteCore/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/Replicator/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../Replicator/tests/data\" \"$DST\"\n";
+		};
+		EAE4736E29BA113A00C28D49 /* Run Formatting Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../build_cmake/scripts/run-clang-format.sh",
+			);
+			name = "Run Formatting Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -5626,6 +5673,38 @@
 			};
 			name = Release;
 		};
+		EAE4736A29BA113000C28D49 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		EAE4736B29BA113000C28D49 /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_EE;
+		};
+		EAE4736C29BA113000C28D49 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		EAE4736D29BA113000C28D49 /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release_EE;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -5801,6 +5880,17 @@
 				2791EA1D2032745700BD813C /* Debug_EE */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
 				2791EA312032746700BD813C /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EAE4736929BA113000C28D49 /* Build configuration list for PBXAggregateTarget "Run Clang-Format" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAE4736A29BA113000C28D49 /* Debug */,
+				EAE4736B29BA113000C28D49 /* Debug_EE */,
+				EAE4736C29BA113000C28D49 /* Release */,
+				EAE4736D29BA113000C28D49 /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
