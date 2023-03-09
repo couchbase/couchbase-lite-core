@@ -695,12 +695,20 @@ namespace litecore { namespace crypto {
     fleece::Retained<Cert> Cert::findSigningRootCert() {
         @autoreleasepool {
             auto policy = SecPolicyCreateBasicX509();
-            SecCertificateRef thisCert = toSecCert(this);
-            LogTo(TLSLogDomain, "findSigningRootCert: Evaluating %s ...", describe(thisCert).c_str());
-            CFAutorelease(policy);
+            
+            // Create trust with a cert chain including all intermediates:
+            NSMutableArray* certChain = [NSMutableArray array];
+            for (Retained<Cert> crt = this; crt; crt = crt->next()) {
+                [certChain addObject: (__bridge id)(toSecCert(crt))];
+            }
+            
+            LogTo(TLSLogDomain, "findSigningRootCert: Evaluating %s ...",
+                  describe((__bridge SecCertificateRef)certChain.firstObject).c_str());
+            
             SecTrustRef trust;
-            checkOSStatus(SecTrustCreateWithCertificates(thisCert, policy, &trust),
+            checkOSStatus(SecTrustCreateWithCertificates((__bridge CFArrayRef)certChain, policy, &trust),
                           "SecTrustCreateWithCertificates", "Couldn't validate certificate");
+            CFAutorelease(policy);
             CFAutorelease(trust);
             
             SecTrustResultType result;
