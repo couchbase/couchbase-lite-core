@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4ListenerTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -31,7 +32,7 @@ struct C4Listener final
 
     explicit C4Listener(C4ListenerConfig config);
 
-    ~C4Listener();
+    ~C4Listener() override;
 
     bool shareDB(slice name, C4Database* db);
 
@@ -41,17 +42,19 @@ struct C4Listener final
 
     bool unshareCollection(slice name, C4Collection* coll);
 
-    uint16_t port() const;
+    [[nodiscard]] uint16_t port() const;
 
-    std::pair<unsigned, unsigned> connectionStatus() const;
+    [[nodiscard]] std::pair<unsigned, unsigned> connectionStatus() const;
 
     std::vector<std::string> URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) const;
 
     static std::string URLNameFromPath(slice path);
 
-  private:
     C4Listener(const C4Listener&) = delete;
-    C4Listener(C4Listener&&);
+
+  private:
+    // For some reason, MSVC on Jenkins will not compile this with noexcept (everything else will)
+    C4Listener(C4Listener&&);  // NOLINT(performance-noexcept-move-constructor)
 
     Retained<litecore::REST::RESTListener> _impl;
     C4ListenerHTTPAuthCallback C4NULLABLE  _httpAuthCallback;

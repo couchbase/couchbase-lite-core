@@ -14,8 +14,7 @@
 #include "c4Base.hh"
 #include "c4DocumentTypes.h"
 #include "c4DocumentStruct.h"
-#include "fleece/function_ref.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 #if !LITECORE_CPP_API
 #    error "c4DocumentTypes.h was included before Base.hh"
@@ -78,6 +77,13 @@ struct C4Document
 
     // Selecting revisions:
 
+    /**
+* Default arguments on virtual methods are strongly argued against by the C++ standards, Google goes so far as to
+* prohibit them. The reasons why can be found here: https://google.github.io/styleguide/cppguide.html#Default_Arguments
+* We should be safe to use them here, as our method calls are usually using the handle of the base class.
+*/
+    // NOLINTBEGIN(google-default-arguments)
+
     virtual bool selectCurrentRevision() noexcept                  = 0;
     virtual bool selectRevision(slice revID, bool withBody = true) = 0;  // returns false if not found
 
@@ -111,6 +117,7 @@ struct C4Document
 
     // Conflicts:
 
+    // pruneLosingBranch is not exposed to the API, so it will probably always be true
     void resolveConflict(slice winningRevID, slice losingRevID, FLDict C4NULLABLE mergedProperties,
                          C4RevisionFlags mergedFlags, bool pruneLosingBranch = true);
 
@@ -129,6 +136,7 @@ struct C4Document
     /** Saves changes to the document. Returns false on conflict. */
     virtual bool save(unsigned maxRevTreeDepth = 0) = 0;
 
+    // NOLINTEND(google-default-arguments)
 
     // Static utility functions:
 
@@ -180,7 +188,7 @@ struct C4Document
 
     C4Document(C4Collection*, alloc_slice docID_);
     C4Document(const C4Document&);
-    virtual ~C4Document();
+    ~C4Document() override;
 
     litecore::KeyStore& keyStore() const;
 

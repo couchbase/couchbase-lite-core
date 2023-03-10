@@ -34,10 +34,14 @@ namespace litecore {
         , public fleece::InstanceCountedIn<C4QueryEnumerator>
         , C4Base {
       public:
+        // clearPublicFields() sets C4QueryEnumerator's fields to 0, so we can ignore this warning
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         C4QueryEnumeratorImpl(DatabaseImpl* database, Query* query, QueryEnumerator* e)
             : _database(database), _query(query), _enum(e), _hasFullText(_enum->hasFullText()) {
             clearPublicFields();
         }
+
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
         QueryEnumerator* enumerator() const {
             if ( !_enum ) error::_throw(error::InvalidParameter, "Query enumerator has been closed");
@@ -100,9 +104,9 @@ namespace litecore {
     class C4QueryObserverImpl : public C4QueryObserver {
       public:
         C4QueryObserverImpl(C4Query* query, C4Query::ObserverCallback callback)
-            : C4QueryObserver(query), _callback(move(callback)) {}
+            : C4QueryObserver(query), _callback(std::move(callback)) {}
 
-        ~C4QueryObserverImpl() {
+        ~C4QueryObserverImpl() override {
             if ( _query ) _query->enableObserver(this, false);
         }
 
@@ -130,7 +134,7 @@ namespace litecore {
             if ( _currentError.code ) _currentError.raise();
             Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
             if ( forget ) _currentEnumerator = nullptr;
-            return C4Query::Enumerator(move(e));
+            return C4Query::Enumerator(std::move(e));
         }
 
       private:

@@ -16,6 +16,7 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/RefCounted.hh"
 #include <functional>
@@ -64,6 +65,13 @@ struct C4Collection
 
     static C4Document* documentContainingValue(FLValue) noexcept;
 
+    /**
+ * Default arguments on virtual methods are strongly argued against by the C++ standards, Google goes so far as to
+ * prohibit them. The reasons why can be found here: https://google.github.io/styleguide/cppguide.html#Default_Arguments
+ * We should be safe to use them here, as our method calls are usually using the handle of the base class.
+ */
+    // NOLINTBEGIN(google-default-arguments)
+
     virtual Retained<C4Document> getDocument(slice docID, bool mustExist = true,
                                              C4DocContentLevel content = kDocGetCurrentRev) const = 0;
 
@@ -100,6 +108,8 @@ struct C4Collection
 
     virtual alloc_slice getIndexesInfo(bool fullInfo = true) const = 0;
 
+    // NOLINTEND(google-default-arguments)
+
     virtual alloc_slice getIndexRows(slice name) const = 0;
 
     // Observers:
@@ -114,7 +124,7 @@ struct C4Collection
 
     // Internal use only:
 
-    virtual ~C4Collection() = default;
+    ~C4Collection() override = default;
 
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs,
                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,

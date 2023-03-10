@@ -435,6 +435,11 @@ namespace litecore {
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
 
+    __cold error::error(error::Domain d, int c, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace)
+        : runtime_error(what), domain(d), code(getPrimaryCode(d, c)), backtrace(btrace) {
+        if ( sCaptureBacktraces ) captureBacktrace(3);
+    }
+
     __cold error& error::operator=(const error& e) {
         // This has to be hacked, since `domain` and `code` are marked `const`.
         this->~error();

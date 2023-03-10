@@ -12,17 +12,11 @@
 
 #include "c4DocEnumerator.hh"
 #include "CollectionImpl.hh"
-#include "c4Document.hh"
-#include "c4Internal.hh"
-#include "DatabaseImpl.hh"
-#include "DocumentFactory.hh"
-#include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
 #include "VersionVector.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "fleece/InstanceCounted.hh"
 
 using namespace litecore;

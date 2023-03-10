@@ -32,7 +32,7 @@ struct C4Replicator
 
     static void validateRemote(const C4Address& addr, slice dbName);
 
-    virtual void start(bool reset = false) noexcept = 0;
+    virtual void start(bool reset = false) noexcept = 0;  // NOLINT(google-default-arguments)
     virtual void stop() noexcept                    = 0;
     bool         retry();
 

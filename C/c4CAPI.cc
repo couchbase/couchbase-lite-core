@@ -11,21 +11,24 @@
 //
 
 #include "c4BlobStore.hh"
+#include "c4BlobStore.h"
 #include "c4Certificate.hh"
+#include "c4Certificate.h"
 #include "c4Collection.hh"
+#include "c4Collection.h"
 #include "c4Database.hh"
-#include "c4Document.hh"
+#include "c4Database.h"
+#include "c4DocEnumerator.h"
+#include "c4Document+Fleece.h"
+#include "c4Index.h"
 #include "c4DocEnumerator.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Observer.hh"
-#include "c4Query.hh"
+#include "c4Observer.h"
+#include "c4Query.h"
 #include "c4QueryImpl.hh"
-#include "c4Replicator.hh"
-
-#include "c4.h"
+#include "c4Replicator.h"
 #include "c4Private.h"
-#include "Delimiter.hh"
-#include "fleece/Mutable.hh"
 #include <sstream>
 
 using namespace std;
@@ -35,7 +38,8 @@ using namespace litecore;
 
 #define returnIfCollectionInvalid(c, err, ret)                                                                         \
     if ( _usuallyFalse(!c4coll_isValid(c)) ) {                                                                         \
-        *err = c4error_make(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed"_sl);   \
+        *(err) = c4error_make(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed"_sl); \
+                                                                                                                       \
         return ret;                                                                                                    \
     }
 
@@ -147,7 +151,9 @@ size_t c4stream_read(C4ReadStream* stream, void* buffer, size_t maxBytes, C4Erro
 
 int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
     try {
-        return stream->getLength();
+        uint64_t streamLength = stream->getLength();
+        DebugAssert(streamLength < std::numeric_limits<int64_t>::max());
+        return static_cast<int64_t>(streamLength);
     }
     catchError(outError) return -1;
 }
@@ -254,7 +260,7 @@ C4Document* c4coll_getDoc(C4Collection* coll, C4String docID, bool mustExist, C4
     return tryCatch<C4Document*>(outError, [&] {
         Retained<C4Document> doc = coll->getDocument(docID, mustExist, content);
         if ( !doc ) c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -264,7 +270,7 @@ C4Document* c4coll_getDocBySequence(C4Collection* coll, C4SequenceNumber sequenc
     return tryCatch<C4Document*>(outError, [&] {
         auto doc = coll->getDocumentBySequence(sequence);
         if ( !doc ) c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -641,9 +647,10 @@ bool c4doc_selectNextRevision(C4Document* doc) noexcept {
     return tryCatch<bool>(nullptr, [=] { return doc->selectNextRevision(); });
 }
 
+// The withBody parameter is hardcoded in CBL to 'true', so we probably don't know the effects of using 'false'
 bool c4doc_selectNextLeafRevision(C4Document* doc, bool includeDeleted, bool withBody, C4Error* outError) noexcept {
     return tryCatch<bool>(outError, [&] {
-        if ( doc->selectNextLeafRevision(includeDeleted) ) return true;
+        if ( doc->selectNextLeafRevision(includeDeleted, withBody) ) return true;
         clearError(outError);  // normal failure
         return false;
     });
@@ -710,7 +717,7 @@ C4Document* c4doc_update(C4Document* doc, C4Slice revBody, C4RevisionFlags revFl
     return tryCatch<C4Document*>(outError, [&] {
         Retained<C4Document> updated = doc->update(revBody, revFlags);
         if ( !updated ) c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-        return move(updated).detach();
+        return std::move(updated).detach();
     });
 }
 
@@ -849,7 +856,7 @@ C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
     return tryCatch<C4Document*>(outError, [&] {
         Retained<C4Document> doc = e->getDocument();
         if ( !doc ) clearError(outError);  // end of iteration is not an error
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -929,10 +936,9 @@ void c4query_setParameters(C4Query* query, C4String encodedParameters) noexcept 
     query->setParameters(encodedParameters);
 }
 
-C4QueryEnumerator* c4query_run(C4Query* query, const C4QueryOptions* c4options, C4Slice encodedParameters,
-                               C4Error* outError) noexcept {
-    return tryCatch<C4QueryEnumerator*>(outError,
-                                        [&] { return query->createEnumerator(c4options, encodedParameters); });
+C4QueryEnumerator* c4query_run(C4Query* query, C4UNUSED const C4QueryOptions* C4NULLABLE options,
+                               C4Slice encodedParameters, C4Error* outError) noexcept {
+    return tryCatch<C4QueryEnumerator*>(outError, [&] { return query->createEnumerator(encodedParameters); });
 }
 
 C4StringResult c4query_explain(C4Query* query) noexcept {
@@ -1034,8 +1040,8 @@ C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID a
 bool c4cert_subjectNameAtIndex(C4Cert* cert, unsigned index, C4CertNameInfo* outInfo) noexcept {
     auto info = cert->getSubjectNameAtIndex(index);
     if ( !info.id ) return false;
-    outInfo->id    = FLSliceResult(move(info.id));
-    outInfo->value = FLSliceResult(move(info.value));
+    outInfo->id    = FLSliceResult(std::move(info.id));
+    outInfo->value = FLSliceResult(std::move(info.value));
     return true;
 }
 

@@ -14,7 +14,7 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
-#    include "c4Database.hh"
+#    include "c4Database.hh"  // IWYU pragma: keep - We need the definition of C4Database for the dynamic cast
 #    include "PredictiveModel.hh"
 
 using namespace litecore;
@@ -23,10 +23,9 @@ using namespace fleece::impl;
 
 class C4PredictiveModelInternal : public PredictiveModel {
   public:
-    C4PredictiveModelInternal(const C4PredictiveModel& model) : _c4Model(model) {}
+    explicit C4PredictiveModelInternal(const C4PredictiveModel& model) : _c4Model(model) {}
 
-    virtual alloc_slice prediction(const Dict* input, DataFile::Delegate* dfDelegate,
-                                   C4Error* outError) noexcept override {
+    alloc_slice prediction(const Dict* input, DataFile::Delegate* dfDelegate, C4Error* outError) noexcept override {
         try {
             return _c4Model.prediction(_c4Model.context, (FLDict)input, dynamic_cast<C4Database*>(dfDelegate),
                                        outError);
@@ -37,7 +36,7 @@ class C4PredictiveModelInternal : public PredictiveModel {
     }
 
   protected:
-    virtual ~C4PredictiveModelInternal() {
+    ~C4PredictiveModelInternal() override {
         if ( _c4Model.unregistered ) _c4Model.unregistered(_c4Model.context);
     }
 
