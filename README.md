@@ -167,6 +167,14 @@ Open the Visual Studio 2022 Developer Command Prompt and navigate to the repo ro
     
 This will create `LiteCore.sln` in the directory that you can open with Visual Studio.  Swap `x64` with `ARM64` in the above to get a 64-bit ARM build.  `Win32` and `ARM` will also build but are no longer supported.  
 
+# Git Blame
+
+If you are inspecting the Blame of this project, you may find it useful to run:
+```shell
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+This will ignore any commits that we have marked as such in that file (formatting, etc.)
+
 # Documentation
 
 ## API
