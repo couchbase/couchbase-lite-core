@@ -21,9 +21,8 @@ struct C4Collection;
 namespace litecore {
     class BackgroundDB;
 
-
     class Housekeeper : public actor::Actor {
-    public:
+      public:
         /// Creates a Housekeeper for a Collection.
         explicit Housekeeper(C4Collection* NONNULL);
 
@@ -37,15 +36,15 @@ namespace litecore {
         /// reschedule its next expiration for earlier if necessary.
         void documentExpirationChanged(expiration_t exp);
 
-    private:
+      private:
         void _start();
         void _stop();
         void _scheduleExpiration(bool onlyIfEarlier);
         void _doExpiration();
 
-        alloc_slice   _keyStoreName;
-        BackgroundDB* _bgdb{ nullptr };
-        actor::Timer  _expiryTimer;
-        fleece::Retained<C4Collection> _collection; // Used for initialization only
+        alloc_slice                    _keyStoreName;
+        BackgroundDB*                  _bgdb{nullptr};
+        actor::Timer                   _expiryTimer;
+        fleece::Retained<C4Collection> _collection;  // Used for initialization only
     };
-}
+}  // namespace litecore

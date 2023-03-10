@@ -16,7 +16,6 @@
 #include "Error.hh"
 #include "Logging.hh"
 
-
 namespace litecore {
     using namespace std;
     using namespace fleece;
@@ -27,39 +26,27 @@ namespace litecore {
 
 #pragma mark - BLOB READ STREAM:
 
-
-    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile,
-                                                      EncryptionAlgorithm algorithm,
-                                                      slice encryptionKey)
-    {
-        SeekableReadStream *reader = new FileReadStream(blobFile);
-        if (algorithm != EncryptionAlgorithm::kNoEncryption)
-            reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
-                                             algorithm, encryptionKey);
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath& blobFile, EncryptionAlgorithm algorithm,
+                                                      slice encryptionKey) {
+        SeekableReadStream* reader = new FileReadStream(blobFile);
+        if ( algorithm != EncryptionAlgorithm::kNoEncryption )
+            reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader), algorithm, encryptionKey);
         return unique_ptr<SeekableReadStream>{reader};
     }
 
-
 #pragma mark - BLOB WRITE STREAM:
 
-
-    BlobWriteStream::BlobWriteStream(const string &blobsDir,
-                                     EncryptionAlgorithm algorithm,
-                                     slice encryptionKey)
-    {
-        FILE *file;
+    BlobWriteStream::BlobWriteStream(const string& blobsDir, EncryptionAlgorithm algorithm, slice encryptionKey) {
+        FILE* file;
         _tmpPath = FilePath(blobsDir, "incoming_").mkTempFile(&file);
-        _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
-        if (algorithm != EncryptionAlgorithm::kNoEncryption)
+        _writer  = shared_ptr<WriteStream>{new FileWriteStream(file)};
+        if ( algorithm != EncryptionAlgorithm::kNoEncryption )
             _writer = make_shared<EncryptedWriteStream>(_writer, algorithm, encryptionKey);
     }
 
-
     BlobWriteStream::~BlobWriteStream() {
-        if (!_installed)
-            deleteTempFile();
+        if ( !_installed ) deleteTempFile();
     }
-
 
     void BlobWriteStream::write(slice data) {
         Assert(!_blobKey, "Attempted to write after computing digest");
@@ -69,24 +56,23 @@ namespace litecore {
     }
 
     void BlobWriteStream::close() {
-        if (_writer) {
+        if ( _writer ) {
             _writer->close();
             _writer = nullptr;
         }
     }
 
     C4BlobKey BlobWriteStream::computeKey() noexcept {
-        if (!_blobKey) {
+        if ( !_blobKey ) {
             _blobKey.emplace();
             _sha1ctx.finish(&_blobKey->bytes, sizeof(_blobKey->bytes));
         }
         return *_blobKey;
     }
 
-
-    void BlobWriteStream::install(const FilePath &dstPath) {
+    void BlobWriteStream::install(const FilePath& dstPath) {
         close();
-        if (!dstPath.exists()) {
+        if ( !dstPath.exists() ) {
             _tmpPath.setReadOnly(true);
             _tmpPath.moveTo(dstPath);
         } else {
@@ -97,16 +83,13 @@ namespace litecore {
         _installed = true;
     }
 
-
     bool BlobWriteStream::deleteTempFile() {
         bool ok = false;
         try {
             ok = _tmpPath.del();
-        } catch (...) { }
-        if (!ok)
-            Warn("BlobWriteStream: unable to delete temporary file %s",
-                 _tmpPath.path().c_str());
+        } catch ( ... ) {}
+        if ( !ok ) Warn("BlobWriteStream: unable to delete temporary file %s", _tmpPath.path().c_str());
         return ok;
     }
 
-}
+}  // namespace litecore

@@ -25,40 +25,38 @@ C4API_BEGIN_DECLS
 
 
 /** Logging levels. */
-typedef C4_ENUM(int8_t, C4LogLevel) {
-    kC4LogDebug,    /// Super-verbose messages that are only enabled in debug builds of LiteCore
-    kC4LogVerbose,  /// More info than you normally want
-    kC4LogInfo,     /// Informational messages
-    kC4LogWarning,  /// Warnings about something unusual that might be a problem
-    kC4LogError,    /// Errors that occur; these might be handled internally
-    kC4LogNone      /// Setting this level will disable logging entirely
+typedef C4_ENUM(int8_t, C4LogLevel){
+        kC4LogDebug,    /// Super-verbose messages that are only enabled in debug builds of LiteCore
+        kC4LogVerbose,  /// More info than you normally want
+        kC4LogInfo,     /// Informational messages
+        kC4LogWarning,  /// Warnings about something unusual that might be a problem
+        kC4LogError,    /// Errors that occur; these might be handled internally
+        kC4LogNone      /// Setting this level will disable logging entirely
 };
 
 /** Reference to a _log domain_: a specific source of logs that can be enabled or disabled. */
-typedef struct c4LogDomain *C4LogDomain;
+typedef struct c4LogDomain* C4LogDomain;
 
 
 /** Subsystems that produce logs. Log levels can be configured for each, so you can focus your
     diagnostic efforts on the area of interest. */
-CBL_CORE_API extern const C4LogDomain
-    kC4DefaultLog,                  ///< The default log domain
-    kC4DatabaseLog,                 ///< Log domain for database operations
-    kC4QueryLog,                    ///< Log domain for query operations
-    kC4SyncLog,                     ///< Log domain for replication operations
-    kC4WebSocketLog;                ///< Log domain for WebSocket operations
+CBL_CORE_API extern const C4LogDomain kC4DefaultLog,  ///< The default log domain
+        kC4DatabaseLog,                               ///< Log domain for database operations
+        kC4QueryLog,                                  ///< Log domain for query operations
+        kC4SyncLog,                                   ///< Log domain for replication operations
+        kC4WebSocketLog;                              ///< Log domain for WebSocket operations
 
 
 #pragma mark - FILE LOGGING:
 
-
 /** Configuration for file-based logging. */
 typedef struct C4LogFileOptions {
-    C4LogLevel log_level;        ///< The minimum level of message to be logged
-    FLString   base_path;        ///< The path to the binary log file base name (other elements will be added)
-    int64_t    max_size_bytes;   ///< The maximum size of each log file (minimum 1024)
-    int32_t    max_rotate_count; ///< The maximum amount of old log files to keep
-    bool       use_plaintext;    ///< Disables binary encoding of the logs (not recommended)
-    FLString   header;           ///< Header text to print at the start of every log file
+    C4LogLevel log_level;         ///< The minimum level of message to be logged
+    FLString   base_path;         ///< The path to the binary log file base name (other elements will be added)
+    int64_t    max_size_bytes;    ///< The maximum size of each log file (minimum 1024)
+    int32_t    max_rotate_count;  ///< The maximum amount of old log files to keep
+    bool       use_plaintext;     ///< Disables binary encoding of the logs (not recommended)
+    FLString   header;            ///< Header text to print at the start of every log file
 } C4LogFileOptions;
 
 /** Causes log messages to be written to a file, overwriting any previous contents.
@@ -87,7 +85,7 @@ CBL_CORE_API void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
 
 
 /** A logging callback that the application can register. */
-typedef void (* C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt, va_list args);
+typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fmt, va_list args);
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
     Before this is called, a default callback is used that writes to stderr at the Info level.
@@ -117,7 +115,7 @@ CBL_CORE_API void c4log_setCallbackLevel(C4LogLevel level) C4API;
     @param name  The name of the domain, or NULL for the default domain.
     @param create  If true, the domain will be created if it doesn't exist.
     @return  The domain object, or NULL if not found. */
-CBL_CORE_API C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
+CBL_CORE_API C4LogDomain c4log_getDomain(const char* name, bool create) C4API;
 
 /** Returns the name of a log domain. (The default domain's name is an empty string.) */
 CBL_CORE_API const char* c4log_getDomainName(C4LogDomain) C4API;
@@ -168,24 +166,24 @@ CBL_CORE_API void c4log_enableFatalExceptionBacktrace(void) C4API;
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
-CBL_CORE_API void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API __printflike(3,4);
+CBL_CORE_API void c4log(C4LogDomain domain, C4LogLevel level, const char* fmt, ...) C4API __printflike(3, 4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
-CBL_CORE_API void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API
-    __printflike(3, 0);
+CBL_CORE_API void c4vlog(C4LogDomain domain, C4LogLevel level, const char* fmt, va_list args) C4API __printflike(3, 0);
 
 /** Same as c4log, except it accepts preformatted messages as FLSlices */
 CBL_CORE_API void c4slog(C4LogDomain domain, C4LogLevel level, FLString msg) C4API;
 
 // Convenient aliases for c4log:
-#define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
-        do {if (c4log_willLog(DOMAIN, LEVEL))   \
-            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);} while (false)
-#define C4Debug(FMT, ...)           C4LogToAt(kC4DefaultLog, kC4LogDebug,   FMT, ## __VA_ARGS__)
-#define C4Log(FMT, ...)             C4LogToAt(kC4DefaultLog, kC4LogInfo,    FMT, ## __VA_ARGS__)
-#define C4LogVerbose(FMT, ...)      C4LogToAt(kC4DefaultLog, kC4LogVerbose, FMT, ## __VA_ARGS__)
-#define C4Warn(FMT, ...)            C4LogToAt(kC4DefaultLog, kC4LogWarning, FMT, ## __VA_ARGS__)
-#define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
+#define C4LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                             \
+    do {                                                                                                               \
+        if ( c4log_willLog(DOMAIN, LEVEL) ) c4log(DOMAIN, LEVEL, FMT, ##__VA_ARGS__);                                  \
+    } while ( false )
+#define C4Debug(FMT, ...)      C4LogToAt(kC4DefaultLog, kC4LogDebug, FMT, ##__VA_ARGS__)
+#define C4Log(FMT, ...)        C4LogToAt(kC4DefaultLog, kC4LogInfo, FMT, ##__VA_ARGS__)
+#define C4LogVerbose(FMT, ...) C4LogToAt(kC4DefaultLog, kC4LogVerbose, FMT, ##__VA_ARGS__)
+#define C4Warn(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogWarning, FMT, ##__VA_ARGS__)
+#define C4WarnError(FMT, ...)  C4LogToAt(kC4DefaultLog, kC4LogError, FMT, ##__VA_ARGS__)
 
 
 /** @} */

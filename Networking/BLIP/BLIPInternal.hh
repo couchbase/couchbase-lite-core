@@ -16,5 +16,5 @@
 namespace litecore { namespace blip {
 
     extern LogDomain BLIPLog;
-    
-} }
+
+}}  // namespace litecore::blip

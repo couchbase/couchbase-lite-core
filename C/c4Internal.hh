@@ -14,29 +14,29 @@
 #include "c4Base.h"
 
 
-#define LOCK(MUTEX)     std::unique_lock<decltype(MUTEX)> _lock(MUTEX)
-#define UNLOCK()        _lock.unlock();
+#define LOCK(MUTEX) std::unique_lock<decltype(MUTEX)> _lock(MUTEX)
+#define UNLOCK()    _lock.unlock();
 
 #if defined(__clang__)
-    #define C4_START_WARNINGS_SUPPRESSION _Pragma( "clang diagnostic push" )
-    #define C4_STOP_WARNINGS_SUPPRESSION _Pragma( "clang diagnostic pop" )
-    #define C4_IGNORE_TAUTOLOGICAL _Pragma( "clang diagnostic ignored \"-Wtautological-pointer-compare\"" )
-    #define C4_IGNORE_NONNULL _Pragma( "clang diagnostic ignored \"-Wnonnull\"" )
+#    define C4_START_WARNINGS_SUPPRESSION _Pragma("clang diagnostic push")
+#    define C4_STOP_WARNINGS_SUPPRESSION  _Pragma("clang diagnostic pop")
+#    define C4_IGNORE_TAUTOLOGICAL        _Pragma("clang diagnostic ignored \"-Wtautological-pointer-compare\"")
+#    define C4_IGNORE_NONNULL             _Pragma("clang diagnostic ignored \"-Wnonnull\"")
 #elif defined(__GNUC__)
-    #define C4_START_WARNINGS_SUPPRESSION _Pragma( "GCC diagnostic push" )
-    #define C4_STOP_WARNINGS_SUPPRESSION _Pragma( "GCC diagnostic pop" )
-    #define C4_IGNORE_TAUTOLOGICAL
-    #define C4_IGNORE_NONNULL _Pragma( "GCC diagnostic ignored \"-Wnonnull\"" )
+#    define C4_START_WARNINGS_SUPPRESSION _Pragma("GCC diagnostic push")
+#    define C4_STOP_WARNINGS_SUPPRESSION  _Pragma("GCC diagnostic pop")
+#    define C4_IGNORE_TAUTOLOGICAL
+#    define C4_IGNORE_NONNULL _Pragma("GCC diagnostic ignored \"-Wnonnull\"")
 #elif defined(_MSC_VER)
-    #define C4_START_WARNINGS_SUPPRESSION __pragma( warning(push) )
-    #define C4_STOP_WARNINGS_SUPPRESSION __pragma( warning(pop) )
-    #define C4_IGNORE_TAUTOLOGICAL
-    #define C4_IGNORE_NONNULL
+#    define C4_START_WARNINGS_SUPPRESSION __pragma(warning(push))
+#    define C4_STOP_WARNINGS_SUPPRESSION  __pragma(warning(pop))
+#    define C4_IGNORE_TAUTOLOGICAL
+#    define C4_IGNORE_NONNULL
 #else
-    #define C4_START_WARNINGS_SUPPRESSION
-    #define C4_STOP_WARNINGS_SUPPRESSION
-    #define C4_IGNORE_TAUTOLOGICAL
-    #define C4_IGNORE_NONNULL
+#    define C4_START_WARNINGS_SUPPRESSION
+#    define C4_STOP_WARNINGS_SUPPRESSION
+#    define C4_IGNORE_TAUTOLOGICAL
+#    define C4_IGNORE_NONNULL
 #endif
 
 
@@ -58,4 +58,4 @@ namespace litecore {
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
 
-}
+}  // namespace litecore

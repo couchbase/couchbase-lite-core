@@ -54,6 +54,5 @@ namespace litecore::repl {
      * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
      *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
      */
-    alloc_slice transform_url(const alloc_slice &inputURL, URLTransformStrategy strategy);
-}
-
+    alloc_slice transform_url(const alloc_slice& inputURL, URLTransformStrategy strategy);
+}  // namespace litecore::repl

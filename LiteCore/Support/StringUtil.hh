@@ -30,39 +30,34 @@ namespace litecore {
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
 #ifndef _LIBCPP_VERSION
-    #define CONCAT(EXPR)   (static_cast<const std::stringstream&>(std::stringstream() << EXPR)).str()
+#    define CONCAT(EXPR) (static_cast<const std::stringstream&>(std::stringstream() << EXPR)).str()
 #else
-    #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
+#    define CONCAT(EXPR) (std::stringstream() << EXPR).str()
 #endif
 
     /** Writes a slice to a stream with the usual "<<" syntax */
-    static inline std::ostream& operator<< (std::ostream& o, fleece::slice s) {
+    static inline std::ostream& operator<<(std::ostream& o, fleece::slice s) {
         o.write((const char*)s.buf, s.size);
         return o;
     }
 
     /** Like sprintf(), but returns a std::string */
-    std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
+    std::string format(const char* fmt NONNULL, ...) __printflike(1, 2);
 
     std::string format(const std::string fmt, ...);
 
     /** Like vsprintf(), but returns a std::string */
-    std::string vformat(const char *fmt NONNULL, va_list) __printflike(1, 0);
+    std::string vformat(const char* fmt NONNULL, va_list) __printflike(1, 0);
 
-    void split(std::string_view str,
-               std::string_view separator,
-               fleece::function_ref<void(std::string_view)> callback);
+    void split(std::string_view str, std::string_view separator, fleece::function_ref<void(std::string_view)> callback);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */
-    std::string join(const std::vector<std::string>&,
-                     const char *separator =nullptr);
+    std::string join(const std::vector<std::string>&, const char* separator = nullptr);
 
     /** Concatenates the strings in the vector onto the stream,
         with the separator (if non-null) between them. */
-    std::stringstream& join(std::stringstream&,
-                            const std::vector<std::string>&,
-                            const char *separator =nullptr);
+    std::stringstream& join(std::stringstream&, const std::vector<std::string>&, const char* separator = nullptr);
 
     /** Removes last character from string (in place.) Does nothing if string is empty. */
     void chop(std::string&) noexcept;
@@ -71,10 +66,10 @@ namespace litecore {
     void chomp(std::string&, char ending) noexcept;
 
     /** Replaces all occurrences of `oldChar` with `newChar`. */
-    void replace(std::string &str, char oldChar, char newChar);
+    void replace(std::string& str, char oldChar, char newChar);
 
     /** Replaces all occurrences of `oldStr` with `newStr`. */
-    void replace(std::string &str, std::string_view oldStr, std::string_view newStr);
+    void replace(std::string& str, std::string_view oldStr, std::string_view newStr);
 
     /** Returns true if `str` begins with the string `prefix`. */
     bool hasPrefix(std::string_view str, std::string_view prefix) noexcept;
@@ -87,10 +82,10 @@ namespace litecore {
     bool hasSuffixIgnoringCase(std::string_view str, std::string_view suffix) noexcept;
 
     /** Compares strings, treating ASCII upper/lowercase letters equivalent. Returns -1, 0 or 1. */
-    int compareIgnoringCase(const std::string &a, const std::string &b);
+    int compareIgnoringCase(const std::string& a, const std::string& b);
 
     /** Converts an ASCII string to lowercase, in place. */
-    void toLowercase(std::string &);
+    void toLowercase(std::string&);
 
     static inline std::string lowercase(std::string str) {
         toLowercase(str);
@@ -103,7 +98,7 @@ namespace litecore {
     bool hasNoControlCharacters(fleece::slice) noexcept;
 
     /** Returns true if the UTF-8 encoded string contains no characters with code points < 32. */
-    static inline bool hasNoControlCharacters(const std::string &str) noexcept {
+    static inline bool hasNoControlCharacters(const std::string& str) noexcept {
         return hasNoControlCharacters(fleece::slice(str));
     }
 
@@ -111,9 +106,7 @@ namespace litecore {
     bool isValidUTF8(fleece::slice) noexcept;
 
     /** Returns true if the string contains valid UTF-8 encoded data. */
-    static inline bool isValidUTF8(const std::string &str) noexcept {
-        return isValidUTF8(fleece::slice(str));
-    }
+    static inline bool isValidUTF8(const std::string& str) noexcept { return isValidUTF8(fleece::slice(str)); }
 
     /** Returns the number of characters in a UTF-8 encoded string. */
     size_t UTF8Length(fleece::slice) noexcept;
@@ -133,14 +126,13 @@ namespace litecore {
     /** Trims Unicode whitespace characters from one or both ends of the string by updating
         `chars` and/or `count`.
         `onSide` should be negative for left, 0 for both sides, positive for right. */
-    void UTF16Trim(const char16_t* &chars, size_t &count, int onSide) noexcept;
+    void UTF16Trim(const char16_t*& chars, size_t& count, int onSide) noexcept;
 
     /** Returns true if `c` is a Unicode whitespace character. */
     bool UTF16IsSpace(char16_t c) noexcept;
 
-}
-
+}  // namespace litecore
 
 // Utility for using slice with printf-style formatting.
 // Use "%.*" in the format string; then for the corresponding argument put SPLAT(theslice).
-#define SPLAT(S)    (int)(S).size, (char *)(S).buf
+#define SPLAT(S) (int)(S).size, (char*)(S).buf

@@ -18,13 +18,13 @@ C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
 
-    /** \defgroup Observer  Collection (Database), Document, Query Observers
+/** \defgroup Observer  Collection (Database), Document, Query Observers
         @{ */
 
-    /** \name Collection Observer
+/** \name Collection Observer
         @{ */
 
-    /** Callback invoked by a collection/database observer.
+/** Callback invoked by a collection/database observer.
      
         CAUTION: This callback is called when a transaction is committed, even one made by a
         different connection (C4Database instance) on the same file. This means that, if your
@@ -38,23 +38,22 @@ C4API_BEGIN_DECLS
 
         @param observer  The observer that initiated the callback.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer,
-                                               void* C4NULLABLE context);
+typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer, void* C4NULLABLE context);
 
 
-    /** Creates a new collection observer, with a callback that will be invoked after one or more
+/** Creates a new collection observer, with a callback that will be invoked after one or more
         documents in the collection have changed.
         This is exactly like \ref c4dbobs_create, except that it acts on any collection.
         @param collection  The collection to observe.
         @param callback  The function to call after the collection changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collection* collection,
-                                                     C4CollectionObserverCallback callback,
-                                                     void* C4NULLABLE context,
-                                                     C4Error* C4NULLABLE error) C4API;
+CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collection*                collection,
+                                                              C4CollectionObserverCallback callback,
+                                                              void* C4NULLABLE             context,
+                                                              C4Error* C4NULLABLE          error) C4API;
 
-    /** Identifies which documents have changed in the collection since the last time this function
+/** Identifies which documents have changed in the collection since the last time this function
         was called, or since the observer was created. This function effectively "reads" changes
         from a stream, in whatever quantity the caller desires. Once all of the changes have been
         read, the observer is reset and ready to notify again.
@@ -73,37 +72,33 @@ C4API_BEGIN_DECLS
                             outChanges buffer.
         @return  Common information about the changes contained in outChanges (number of changes, 
                  external vs non-external, and the relevant collection) */
-    CBL_CORE_API C4CollectionObservation c4dbobs_getChanges(C4CollectionObserver *observer,
-                                         C4CollectionChange outChanges[C4NONNULL],
-                                         uint32_t maxChanges) C4API;
+CBL_CORE_API C4CollectionObservation c4dbobs_getChanges(C4CollectionObserver* observer,
+                                                        C4CollectionChange    outChanges[C4NONNULL],
+                                                        uint32_t              maxChanges) C4API;
 
-    /** Releases the memory used by the `C4CollectionChange` structs (to hold the docID and revID
+/** Releases the memory used by the `C4CollectionChange` structs (to hold the docID and revID
         strings.) This must be called after \ref c4dbobs_getChanges().
         @param changes  The same array of changes that was passed to \ref c4dbobs_getChanges.
         @param numChanges  The number of changes returned by \ref c4dbobs_getChanges, i.e. the number
                             of valid items in `changes`. */
-    CBL_CORE_API void c4dbobs_releaseChanges(C4CollectionChange changes[C4NONNULL],
-                                uint32_t numChanges) C4API;
+CBL_CORE_API void c4dbobs_releaseChanges(C4CollectionChange changes[C4NONNULL], uint32_t numChanges) C4API;
 
-    /** @} */
+/** @} */
 
 
-    /** \name Document Observer
+/** \name Document Observer
      @{ */
 
-    /** Callback invoked by a document observer.
+/** Callback invoked by a document observer.
         @param observer  The observer that initiated the callback.
         @param docID  The ID of the document that changed.
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
-                                               C4Collection* collection,
-                                               C4String docID,
-                                               C4SequenceNumber sequence,
-                                               void * C4NULLABLE context);
+typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer, C4Collection* collection, C4String docID,
+                                           C4SequenceNumber sequence, void* C4NULLABLE context);
 
 
-    /** Creates a new document observer, with a callback that will be invoked when the document
+/** Creates a new document observer, with a callback that will be invoked when the document
         changes.
         \note This is exactly like \ref c4docobs_create, except that it works on any collection.
         @param collection  The collection containing the document to observe.
@@ -111,16 +106,15 @@ C4API_BEGIN_DECLS
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    CBL_CORE_API C4DocumentObserver* c4docobs_createWithCollection(C4Collection *collection,
-                                                      C4String docID,
-                                                      C4DocumentObserverCallback callback,
-                                                      void* C4NULLABLE context,
-                                                      C4Error* C4NULLABLE error) C4API;
+CBL_CORE_API C4DocumentObserver* c4docobs_createWithCollection(C4Collection* collection, C4String docID,
+                                                               C4DocumentObserverCallback callback,
+                                                               void* C4NULLABLE           context,
+                                                               C4Error* C4NULLABLE        error) C4API;
 
-    /** @} */
+/** @} */
 
 
-    /** \name Query Observer
+/** \name Query Observer
         @{
         A query observer, also called a "live query", notifies the client when the query's result
         set changes. (Not just any time the database changes.)
@@ -159,7 +153,7 @@ C4API_BEGIN_DECLS
           (The specific times are not currently alterable; they're constants in LiveQuerier.cc.)
      */
 
-    /** Callback invoked by a query observer, notifying that the query results have changed.
+/** Callback invoked by a query observer, notifying that the query results have changed.
         The actual enumerator is not passed to the callback, but can be retrieved by calling
         \ref c4queryobs_getEnumerator.
         @warning  This function is called on a random background thread! Be careful of thread
@@ -168,30 +162,27 @@ C4API_BEGIN_DECLS
         @param observer  The observer triggering the callback.
         @param query  The C4Query that the observer belongs to.
         @param context  The `context` parameter you passed to \ref c4queryobs_create. */
-    typedef void (*C4QueryObserverCallback)(C4QueryObserver *observer,
-                                            C4Query *query,
-                                            void* C4NULLABLE context);
+typedef void (*C4QueryObserverCallback)(C4QueryObserver* observer, C4Query* query, void* C4NULLABLE context);
 
-    /** Creates a new query observer, with a callback that will be invoked when the query
+/** Creates a new query observer, with a callback that will be invoked when the query
         results change, with an enumerator containing the new results.
         \note The callback isn't invoked immediately after a change, and won't be invoked after
         every change, to avoid performance problems. Instead, there's a brief delay so multiple
         changes can be coalesced.
         \note The new observer needs to be enabled by calling \ref c4queryobs_setEnabled.*/
-    CBL_CORE_API C4QueryObserver* c4queryobs_create(C4Query *query,
-                                       C4QueryObserverCallback callback,
-                                       void* C4NULLABLE context) C4API;
+CBL_CORE_API C4QueryObserver* c4queryobs_create(C4Query* query, C4QueryObserverCallback callback,
+                                                void* C4NULLABLE context) C4API;
 
-    /** Enables a query observer so its callback can be called, or disables it to stop callbacks.
+/** Enables a query observer so its callback can be called, or disables it to stop callbacks.
 
         When a query observer is enabled, its callback will be called with the current results.
         If this is the first observer, the query has to run first (on a background thread) so
         the callback will take a little while; if there are already enabled observers, the
         callback will be pretty much instantaneous.
      */
-    CBL_CORE_API void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API;
+CBL_CORE_API void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) C4API;
 
-    /** Returns the current query results, if any.
+/** Returns the current query results, if any.
         When the observer is created, the results are initially NULL until the query finishes
         running in the background.
         Once the observer callback is called, the results are available.
@@ -203,13 +194,12 @@ C4API_BEGIN_DECLS
                     release the enumerator.
         @param error  If the last evaluation of the query failed, the error will be stored here.
         @return  The current query results, or NULL if the query hasn't run or has failed. */
-    CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryobs_getEnumerator(C4QueryObserver *obs,
-                                                           bool forget,
-                                                           C4Error* C4NULLABLE error) C4API;
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryobs_getEnumerator(C4QueryObserver* obs, bool forget,
+                                                                    C4Error* C4NULLABLE error) C4API;
 
-    /** @} */
+/** @} */
 
-    /** @} */
+/** @} */
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END

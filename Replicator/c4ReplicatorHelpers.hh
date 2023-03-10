@@ -19,38 +19,31 @@ namespace litecore { namespace repl {
     struct C4ReplParamsOneCollection : C4ReplicatorParameters {
         C4ReplicationCollection replCollection;
 
-        explicit C4ReplParamsOneCollection(
-                C4CollectionSpec collectionSpec
-        ):  C4ReplicatorParameters{ }
-            , replCollection { collectionSpec }
+        explicit C4ReplParamsOneCollection(C4CollectionSpec collectionSpec)
+            : C4ReplicatorParameters{}
+            , replCollection{collectionSpec}
             , push(replCollection.push)
             , pull(replCollection.pull)
             , pushFilter(replCollection.pushFilter)
-            , validationFunc(replCollection.pullFilter)
-        {
-            collections = &replCollection;
+            , validationFunc(replCollection.pullFilter) {
+            collections     = &replCollection;
             collectionCount = 1;
         }
 
-        C4ReplParamsOneCollection(
-                C4CollectionSpec collectionSpec
-            ,   C4ReplicatorMode pushMode
-            ,   C4ReplicatorMode pullMode
-        ): C4ReplParamsOneCollection(collectionSpec) {
+        C4ReplParamsOneCollection(C4CollectionSpec collectionSpec, C4ReplicatorMode pushMode, C4ReplicatorMode pullMode)
+            : C4ReplParamsOneCollection(collectionSpec) {
             push = pushMode;
             pull = pullMode;
         }
 
-        C4ReplicatorMode& push;
-        C4ReplicatorMode& pull;
-        C4ReplicatorValidationFunction C4NONNULL & pushFilter;
-        C4ReplicatorValidationFunction C4NONNULL & validationFunc;
+        C4ReplicatorMode&                         push;
+        C4ReplicatorMode&                         pull;
+        C4ReplicatorValidationFunction C4NONNULL& pushFilter;
+        C4ReplicatorValidationFunction C4NONNULL& validationFunc;
     };
 
-struct C4ReplParamsDefaultCollection : C4ReplParamsOneCollection {
-    C4ReplParamsDefaultCollection()
-            : C4ReplParamsOneCollection{kC4DefaultCollectionSpec }
-    {}
-};
+    struct C4ReplParamsDefaultCollection : C4ReplParamsOneCollection {
+        C4ReplParamsDefaultCollection() : C4ReplParamsOneCollection{kC4DefaultCollectionSpec} {}
+    };
 
-}}
+}}  // namespace litecore::repl

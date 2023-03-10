@@ -24,22 +24,20 @@
 #include <assert.h>
 #include <time.h>
 
-
 namespace litecore { namespace REST {
     using namespace std;
     using namespace fleece;
-    
 
     string URLDecode(slice src, bool isFormURLEncoded) {
         string dst;
         dst.reserve(src.size);
-        for (size_t i = 0; i < src.size; i++) {
-            if (i < src.size - 2 && src[i] == '%' && isxdigit(src[i + 1]) && isxdigit(src[i + 2])) {
+        for ( size_t i = 0; i < src.size; i++ ) {
+            if ( i < src.size - 2 && src[i] == '%' && isxdigit(src[i + 1]) && isxdigit(src[i + 2]) ) {
                 int a = digittoint(src[i + 1]);
                 int b = digittoint(src[i + 2]);
                 dst.push_back((char)((a << 4) | b));
                 i += 2;
-            } else if (isFormURLEncoded && src[i] == '+') {
+            } else if ( isFormURLEncoded && src[i] == '+' ) {
                 dst.push_back(' ');
             } else {
                 dst.push_back(src[i]);
@@ -48,22 +46,17 @@ namespace litecore { namespace REST {
         return dst;
     }
 
+    static void urlEncode(const unsigned char* src, size_t src_len, std::string& dst, bool append) {
+        static const char* dont_escape = "._-$,;~()";
+        static const char* hex         = "0123456789abcdef";
 
-    static void urlEncode(const unsigned char *src,
-                          size_t src_len,
-                          std::string &dst,
-                          bool append)
-    {
-        static const char *dont_escape = "._-$,;~()";
-        static const char *hex = "0123456789abcdef";
-
-        if (!append) {
+        if ( !append ) {
             dst.clear();
             dst.reserve(src_len);
         }
 
-        for (; src_len > 0; src++, src_len--) {
-            if (isalnum(*src) || strchr(dont_escape, *src) != NULL) {
+        for ( ; src_len > 0; src++, src_len-- ) {
+            if ( isalnum(*src) || strchr(dont_escape, *src) != NULL ) {
                 dst.push_back(*src);
             } else {
                 dst.push_back('%');
@@ -73,42 +66,31 @@ namespace litecore { namespace REST {
         }
     }
 
-
     string URLEncode(slice str) {
         string result;
         urlEncode((const unsigned char*)str.buf, str.size, result, false);
         return result;
     }
 
-
-    string getURLQueryParam(slice queries,
-                            const char *name,
-                            char delimiter,
-                            size_t occurrence)
-    {
-        auto data = (const char *)queries.buf;
-        size_t data_len = queries.size;
-        const char *end = data + data_len;
+    string getURLQueryParam(slice queries, const char* name, char delimiter, size_t occurrence) {
+        auto        data     = (const char*)queries.buf;
+        size_t      data_len = queries.size;
+        const char* end      = data + data_len;
 
         string dst;
-        if (data == NULL || name == NULL || data_len == 0) {
-            return dst;
-        }
+        if ( data == NULL || name == NULL || data_len == 0 ) { return dst; }
         size_t name_len = strlen(name);
 
         // data is "var1=val1&var2=val2...". Find variable first
-        for (const char *p = data; p + name_len < end; p++) {
-            if ((p == data || p[-1] == delimiter) && p[name_len] == '='
-                    && !strncasecmp(name, p, name_len) && 0 == occurrence--) {
-
+        for ( const char* p = data; p + name_len < end; p++ ) {
+            if ( (p == data || p[-1] == delimiter) && p[name_len] == '=' && !strncasecmp(name, p, name_len)
+                 && 0 == occurrence-- ) {
                 // Point p to variable value
                 p += name_len + 1;
 
                 // Point s to the end of the value
-                const char *s = (const char *)memchr(p, delimiter, (size_t)(end - p));
-                if (s == NULL) {
-                    s = end;
-                }
+                const char* s = (const char*)memchr(p, delimiter, (size_t)(end - p));
+                if ( s == NULL ) { s = end; }
                 assert(s >= p);
 
                 // Decode variable into destination buffer
@@ -118,8 +100,7 @@ namespace litecore { namespace REST {
         return dst;
     }
 
-} }
-
+}}  // namespace litecore::REST
 
 /* Copyright (c) 2013-2017 the Civetweb developers
  * Copyright (c) 2004-2013 Sergey Lyubka

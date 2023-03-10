@@ -16,6 +16,6 @@ struct C4DatabaseConfig;
 
 namespace litecore {
     class FilePath;
-    
+
     void CopyPrebuiltDB(const FilePath& from, const FilePath& to, const C4DatabaseConfig*);
-}
+}  // namespace litecore

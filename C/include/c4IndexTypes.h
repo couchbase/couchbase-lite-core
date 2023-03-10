@@ -23,13 +23,12 @@ C4API_BEGIN_DECLS
 
 
 /** Types of indexes. */
-typedef C4_ENUM(uint32_t, C4IndexType) {
-    kC4ValueIndex,         ///< Regular index of property value
-    kC4FullTextIndex,      ///< Full-text index
-    kC4ArrayIndex,         ///< Index of array values, for use with UNNEST
-    kC4PredictiveIndex,    ///< Index of prediction() results (Enterprise Edition only)
+typedef C4_ENUM(uint32_t, C4IndexType){
+        kC4ValueIndex,       ///< Regular index of property value
+        kC4FullTextIndex,    ///< Full-text index
+        kC4ArrayIndex,       ///< Index of array values, for use with UNNEST
+        kC4PredictiveIndex,  ///< Index of prediction() results (Enterprise Edition only)
 };
-
 
 /** Options for indexes; these each apply to specific types of indexes. */
 typedef struct {
@@ -64,7 +63,6 @@ typedef struct {
         separated by spaces. */
     const char* C4NULLABLE stopWords;
 } C4IndexOptions;
-
 
 /** @} */
 

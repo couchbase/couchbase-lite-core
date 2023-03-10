@@ -27,7 +27,7 @@
 #include "c4Document.hh"
 #include "c4DocEnumerator.hh"
 
-#define LOCK()  lock_guard<mutex> lock(_mutex)
+#define LOCK() lock_guard<mutex> lock(_mutex)
 
 namespace litecore { namespace repl {
     using namespace std;
@@ -36,22 +36,15 @@ namespace litecore { namespace repl {
 
 #pragma mark - CHECKPOINT ACCESSORS:
 
+    Checkpointer::Checkpointer(const Options* opt, fleece::slice remoteURL, C4Collection* collection)
+        : _options(opt), _remoteURL(remoteURL), _collection(collection) {}
 
-    Checkpointer::Checkpointer(const Options *opt, fleece::slice remoteURL, C4Collection* collection)
-    :_options(opt)
-    ,_remoteURL(remoteURL)
-    ,_collection(collection)
-    { }
-
-
-    Checkpointer::~Checkpointer() =default;
-
+    Checkpointer::~Checkpointer() = default;
 
     string Checkpointer::to_string() const {
         LOCK();
         return _checkpoint->completedSequences().to_string();
     }
-
 
     C4SequenceNumber Checkpointer::localMinSequence() const {
         LOCK();
@@ -63,22 +56,17 @@ namespace litecore { namespace repl {
         return _checkpoint->remoteMinSequence();
     }
 
-
-    void Checkpointer::setRemoteMinSequence(const RemoteSequence &s) {
+    void Checkpointer::setRemoteMinSequence(const RemoteSequence& s) {
         LOCK();
-        if (_checkpoint->setRemoteMinSequence(s))
-            saveSoon();
+        if ( _checkpoint->setRemoteMinSequence(s) ) saveSoon();
     }
 
-
-    bool Checkpointer::validateWith(const Checkpoint &remote) {
+    bool Checkpointer::validateWith(const Checkpoint& remote) {
         LOCK();
-        if (_checkpoint->validateWith(remote))
-            return true;
+        if ( _checkpoint->validateWith(remote) ) return true;
         saveSoon();
         return false;
     }
-
 
     void Checkpointer::addPendingSequence(C4SequenceNumber s) {
         LOCK();
@@ -86,17 +74,14 @@ namespace litecore { namespace repl {
         saveSoon();
     }
 
-    void Checkpointer::addPendingSequences(const std::vector<C4SequenceNumber> &sequences,
-                                           C4SequenceNumber firstInRange,
-                                           C4SequenceNumber lastInRange)
-    {
+    void Checkpointer::addPendingSequences(const std::vector<C4SequenceNumber>& sequences,
+                                           C4SequenceNumber firstInRange, C4SequenceNumber lastInRange) {
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 
-    void Checkpointer::addPendingSequences(RevToSendList &sequences,
-                                           C4SequenceNumber firstInRange,
+    void Checkpointer::addPendingSequences(RevToSendList& sequences, C4SequenceNumber firstInRange,
                                            C4SequenceNumber lastInRange) {
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
@@ -119,18 +104,15 @@ namespace litecore { namespace repl {
         return _checkpoint ? _checkpoint->pendingSequenceCount() : 0;
     }
 
-
 #pragma mark - AUTOSAVE:
-
 
     void Checkpointer::enableAutosave(duration saveTime, SaveCallback cb) {
         DebugAssert(saveTime > duration(0));
         LOCK();
         _saveCallback = cb;
-        _saveTime = saveTime;
-        _timer.reset( new actor::Timer( bind(&Checkpointer::save, this) ) );
+        _saveTime     = saveTime;
+        _timer.reset(new actor::Timer(bind(&Checkpointer::save, this)));
     }
-
 
     void Checkpointer::stopAutosave() {
         LOCK();
@@ -138,24 +120,20 @@ namespace litecore { namespace repl {
         _changed = false;
     }
 
-
     void Checkpointer::saveSoon() {
         // mutex must be locked
-        if (_timer) {
+        if ( _timer ) {
             _changed = true;
-            if (!_saving && !_timer->scheduled())
-                _timer->fireAfter(_saveTime);
+            if ( !_saving && !_timer->scheduled() ) _timer->fireAfter(_saveTime);
         }
     }
-
 
     bool Checkpointer::save() {
         alloc_slice json;
         {
             LOCK();
-            if (!_changed || !_timer)
-                return true;
-            if (_saving) {
+            if ( !_changed || !_timer ) return true;
+            if ( _saving ) {
                 // Can't save immediately because a save is still in progress.
                 // Remember that I'm in this state, so when save finishes I can re-save.
                 _overdueForSave = true;
@@ -163,81 +141,68 @@ namespace litecore { namespace repl {
             }
             Assert(_checkpoint);
             _changed = false;
-            _saving = true;
-            json = _checkpoint->toJSON();
+            _saving  = true;
+            json     = _checkpoint->toJSON();
         }
         _saveCallback(json);
         return true;
     }
 
-
     void Checkpointer::saveCompleted() {
         bool saveAgain = false;
         {
             LOCK();
-            if (_saving) {
+            if ( _saving ) {
                 _saving = false;
-                if (_overdueForSave)
-                    saveAgain = true;
-                else if (_changed)
+                if ( _overdueForSave ) saveAgain = true;
+                else if ( _changed )
                     _timer->fireAfter(_saveTime);
             }
         }
-        if (saveAgain)
-            save();
+        if ( saveAgain ) save();
     }
 
-    
     bool Checkpointer::isUnsaved() const {
         LOCK();
         return _changed || _saving;
     }
 
-
 #pragma mark - CHECKPOINT DOC ID:
 
-
-    slice Checkpointer::remoteDocID(C4Database *db) {
-        if(!_docID)
-            _docID = docIDForUUID(db->getPrivateUUID(), URLTransformStrategy::AsIs);
+    slice Checkpointer::remoteDocID(C4Database* db) {
+        if ( !_docID ) _docID = docIDForUUID(db->getPrivateUUID(), URLTransformStrategy::AsIs);
         return _docID;
     }
 
-
-    slice Checkpointer::remoteDBIDString() const {
-        return _options->remoteDBIDString(_remoteURL);
-    }
-
+    slice Checkpointer::remoteDBIDString() const { return _options->remoteDBIDString(_remoteURL); }
 
     // Writes a Value to an Encoder, substituting null if the value is an empty array.
-    static void writeValueOrNull(fleece::Encoder &enc, Value val) {
+    static void writeValueOrNull(fleece::Encoder& enc, Value val) {
         auto a = val.asArray();
-        if (!val || (a && a.empty()))
-            enc.writeNull();
+        if ( !val || (a && a.empty()) ) enc.writeNull();
         else
             enc.writeValue(val);
     }
 
-
     // Computes the ID of the checkpoint document.
-    string Checkpointer::docIDForUUID(const C4UUID &localUUID, URLTransformStrategy urlStrategy) {
+    string Checkpointer::docIDForUUID(const C4UUID& localUUID, URLTransformStrategy urlStrategy) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
-        Array channels = _options->channels(collectionIndex());
-        Value filter = _options->properties[kC4ReplicatorOptionFilter];
+        Array       channels     = _options->channels(collectionIndex());
+        Value       filter       = _options->properties[kC4ReplicatorOptionFilter];
         const Value filterParams = _options->properties[kC4ReplicatorOptionFilterParams];
-        Array docIDs = _options->docIDs(collectionIndex());
+        Array       docIDs       = _options->docIDs(collectionIndex());
 
         // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
         fleece::Encoder enc;
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
-        // Existing documents (prior to 3.1 upgrade) are considered in the 
-        // default collection and they should keep the same docID or current 
+        // Existing documents (prior to 3.1 upgrade) are considered in the
+        // default collection and they should keep the same docID or current
         // checkpointers would be inaccessible.  For this reason, the default
         // collection must remain unchanged.
         bool useSha1 = true;
-        if (_collection != nullptr && _collection->getSpec() != kC4DefaultCollectionSpec) {
-            auto spec = _collection->getSpec();
+        if ( _collection != nullptr && _collection->getSpec() != kC4DefaultCollectionSpec ) {
+            auto spec  = _collection->getSpec();
             auto index = _options->collectionSpecToIndex().at(spec);
             enc.writeString(spec.name);
             enc.writeString(spec.scope);
@@ -250,13 +215,11 @@ namespace litecore { namespace repl {
         }
 
         alloc_slice rawURL(remoteDBIDString());
-        auto encodedURL = transform_url(rawURL, urlStrategy);
-        if(!encodedURL) {
-            return "";
-        }
+        auto        encodedURL = transform_url(rawURL, urlStrategy);
+        if ( !encodedURL ) { return ""; }
 
         enc.writeString(encodedURL);
-        if (!channels.empty() || !docIDs.empty() || filter) {
+        if ( !channels.empty() || !docIDs.empty() || filter ) {
             // Optional stuff:
             writeValueOrNull(enc, channels);
             writeValueOrNull(enc, filter);
@@ -265,44 +228,37 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
 
-        auto hash = useSha1 ? SHA1(enc.finish()).asBase64()
-            : SHA256(enc.finish()).asBase64();
+        auto hash = useSha1 ? SHA1(enc.finish()).asBase64() : SHA256(enc.finish()).asBase64();
         return string("cp-") + hash;
     }
 
-
 #pragma mark - READING THE CHECKPOINT:
 
-
     // Reads the local checkpoint
-    bool Checkpointer::read(C4Database *db, bool reset) {
-        if (_checkpoint)
-            return true;
+    bool Checkpointer::read(C4Database* db, bool reset) {
+        if ( _checkpoint ) return true;
 
         alloc_slice body;
-        if (_initialDocID) {
+        if ( _initialDocID ) {
             body = _read(db, _initialDocID);
         } else {
             // By default, the local doc ID is the same as the remote one:
             _initialDocID = alloc_slice(remoteDocID(db));
-            body = _read(db, _initialDocID);
-            if (!body) {
+            body          = _read(db, _initialDocID);
+            if ( !body ) {
                 // Look for a prior database UUID:
-                db->getRawDocument(C4Database::kInfoStore, constants::kPreviousPrivateUUIDKey,
-                                   [&](C4RawDocument *doc) {
-                    if (doc) {
+                db->getRawDocument(C4Database::kInfoStore, constants::kPreviousPrivateUUIDKey, [&](C4RawDocument* doc) {
+                    if ( doc ) {
                         // If there is one, derive a doc ID from that and look for a checkpoint there
-                        for(URLTransformStrategy strategy = URLTransformStrategy::AddPort; strategy <= URLTransformStrategy::RemovePort; ++strategy) {
+                        for ( URLTransformStrategy strategy = URLTransformStrategy::AddPort;
+                              strategy <= URLTransformStrategy::RemovePort; ++strategy ) {
                             // CBL-1515: Make sure to account for platform inconsistencies in the format
                             // (some have been forcing the port for standard ports and others were omitting it)
                             _initialDocID = docIDForUUID(*(C4UUID*)doc->body.buf, strategy);
-                            if(!_initialDocID) {
-                                continue;
-                            }
+                            if ( !_initialDocID ) { continue; }
 
                             body = _read(db, _initialDocID);
-                            if (body)
-                                break;
+                            if ( body ) break;
                         }
                     }
                 });
@@ -312,7 +268,7 @@ namespace litecore { namespace repl {
         // Checkpoint doc is either read, or nonexistent:
         LOCK();
         _checkpoint.reset(new Checkpoint);
-        if (body && !reset) {
+        if ( body && !reset ) {
             _checkpoint->readJSON(body);
             _checkpointJSON = body;
             return true;
@@ -321,127 +277,106 @@ namespace litecore { namespace repl {
         }
     }
 
-
     // subroutine that actually reads the checkpoint doc from the db
-    alloc_slice Checkpointer::_read(C4Database *db, slice checkpointID) {
+    alloc_slice Checkpointer::_read(C4Database* db, slice checkpointID) {
         alloc_slice body;
-        db->getRawDocument(constants::kLocalCheckpointStore, checkpointID,
-                           [&](C4RawDocument *doc) {
-            if (doc)
-                body = alloc_slice(doc->body);
+        db->getRawDocument(constants::kLocalCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
+            if ( doc ) body = alloc_slice(doc->body);
         });
         return body;
     }
 
-
-    void Checkpointer::write(C4Database *db, slice data) {
+    void Checkpointer::write(C4Database* db, slice data) {
         const auto checkpointID = remoteDocID(db);
         db->putRawDocument(constants::kLocalCheckpointStore, {checkpointID, nullslice, data});
         // Now that we've saved, use the real checkpoint ID for any future reads:
-        _initialDocID = checkpointID;
+        _initialDocID   = checkpointID;
         _checkpointJSON = nullslice;
     }
 
-
 #pragma mark - DOC-ID FILTER:
-
 
     void Checkpointer::initializeDocIDs() {
         CollectionIndex idx = collectionIndex();
-        if(!_docIDs.empty() || !_options->docIDs(idx) || _options->docIDs(idx).empty()) {
-            return;
-        }
+        if ( !_docIDs.empty() || !_options->docIDs(idx) || _options->docIDs(idx).empty() ) { return; }
 
         Array::iterator i(_options->docIDs(idx));
-        while(i) {
+        while ( i ) {
             string docID = i.value().asString().asString();
-            if(!docID.empty()) {
-                _docIDs.insert(docID);
-            }
+            if ( !docID.empty() ) { _docIDs.insert(docID); }
 
             ++i;
         }
     }
 
-
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         CollectionIndex i = collectionIndex();
         return isDocumentIDAllowed(doc->docID())
-            && (!_options->pushFilter(i) ||
-                _options->pushFilter(i)(_collection->getSpec(),
-                                        doc->docID(),
-                                        doc->selectedRev().revID,
-                                        doc->selectedRev().flags,
-                                        doc->getProperties(),
-                                        _options->collectionCallbackContext(collectionIndex())));
+               && (!_options->pushFilter(i)
+                   || _options->pushFilter(i)(_collection->getSpec(), doc->docID(), doc->selectedRev().revID,
+                                              doc->selectedRev().flags, doc->getProperties(),
+                                              _options->collectionCallbackContext(collectionIndex())));
     }
-
 
     bool Checkpointer::isDocumentIDAllowed(slice docID) {
         initializeDocIDs();
         return _docIDs.empty() || _docIDs.find(string(docID)) != _docIDs.end();
     }
 
-
 #pragma mark - PENDING DOCUMENTS:
 
-
     void Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback) {
-        if (!_options->isActive()) {
+        if ( !_options->isActive() ) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }
 
         read(db, false);
-        const auto dbLastSequence = collection()->getLastSequence();
+        const auto dbLastSequence   = collection()->getLastSequence();
         const auto replLastSequence = this->localMinSequence();
-        if(replLastSequence >= dbLastSequence) {
+        if ( replLastSequence >= dbLastSequence ) {
             // No changes since the last checkpoint
             return;
         }
 
-        C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
-        CollectionIndex i = collectionIndex();
-        const auto hasDocIDs = bool(_options->docIDs(i));
-        if(!hasDocIDs && _options->pushFilter(i)) {
+        C4EnumeratorOptions opts{kC4IncludeNonConflicted | kC4IncludeDeleted};
+        CollectionIndex     i         = collectionIndex();
+        const auto          hasDocIDs = bool(_options->docIDs(i));
+        if ( !hasDocIDs && _options->pushFilter(i) ) {
             // docIDs has precedence over push filter
             opts.flags |= kC4IncludeBodies;
         }
 
         C4DocEnumerator e(collection(), replLastSequence, opts);
-        while(e.next()) {
+        while ( e.next() ) {
             C4DocumentInfo info = e.documentInfo();
 
-            if (_checkpoint->isSequenceCompleted(info.sequence))
-                continue;
+            if ( _checkpoint->isSequenceCompleted(info.sequence) ) continue;
 
-            if(!isDocumentIDAllowed(info.docID))
-                continue;
+            if ( !isDocumentIDAllowed(info.docID) ) continue;
 
-            if (!hasDocIDs && _options->pushFilter(i)) {
+            if ( !hasDocIDs && _options->pushFilter(i) ) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
                 Retained<C4Document> nextDoc = e.getDocument();
-                if(!nextDoc) {
+                if ( !nextDoc ) {
                     Warn("Got non-existent document during pending document IDs, skipping...");
                     continue;
                 }
 
-                if(!nextDoc->loadRevisionBody()) {
+                if ( !nextDoc->loadRevisionBody() ) {
                     Warn("Error loading revision body in pending document IDs");
                     continue;
                 }
 
-                if(!isDocumentAllowed(nextDoc))
-                    continue;
+                if ( !isDocumentAllowed(nextDoc) ) continue;
             }
 
             callback(info);
         }
     }
 
-
     bool Checkpointer::isDocumentPending(C4Database* db, slice docId) {
-        if (!_options->isActive()) {
+        if ( !_options->isActive() ) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }
@@ -451,52 +386,38 @@ namespace litecore { namespace repl {
         return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
     }
 
-
 #pragma mark - STORING PEER CHECKPOINTS:
 
-
-    bool Checkpointer::getPeerCheckpoint(C4Database* db,
-                                         slice checkpointID,
-                                         alloc_slice &outBody,
-                                         alloc_slice &outRevID)
-    {
-        return db->getRawDocument(constants::kPeerCheckpointStore, checkpointID,
-                                  [&](C4RawDocument *doc) {
-            if (doc) {
-                outBody = alloc_slice(doc->body);
+    bool Checkpointer::getPeerCheckpoint(C4Database* db, slice checkpointID, alloc_slice& outBody,
+                                         alloc_slice& outRevID) {
+        return db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
+            if ( doc ) {
+                outBody  = alloc_slice(doc->body);
                 outRevID = alloc_slice(doc->meta);
             }
         });
     }
 
-
-    bool Checkpointer::savePeerCheckpoint(C4Database* db,
-                                          slice checkpointID,
-                                          slice body,
-                                          slice revID,
-                                          alloc_slice &newRevID)
-    {
+    bool Checkpointer::savePeerCheckpoint(C4Database* db, slice checkpointID, slice body, slice revID,
+                                          alloc_slice& newRevID) {
         C4Database::Transaction t(db);
 
         // Get the existing raw doc so we can check its revID:
-        alloc_slice actualRev;
+        alloc_slice   actualRev;
         unsigned long generation = 0;
-        db->getRawDocument(constants::kPeerCheckpointStore, checkpointID,
-                                  [&](C4RawDocument *doc) {
-            if (doc) {
+        db->getRawDocument(constants::kPeerCheckpointStore, checkpointID, [&](C4RawDocument* doc) {
+            if ( doc ) {
                 generation = C4Document::getRevIDGeneration(doc->meta);
-                if (generation > 0)
-                    actualRev = doc->meta;
+                if ( generation > 0 ) actualRev = doc->meta;
             };
         });
 
         // Check for conflict:
-        if (revID != actualRev)
-            return false;
+        if ( revID != actualRev ) return false;
 
         // Generate new revID:
         constexpr size_t bufSize = 20;
-        char newRevBuf[bufSize];
+        char             newRevBuf[bufSize];
         newRevID = alloc_slice(newRevBuf, snprintf(newRevBuf, bufSize, "%lu-cc", ++generation));
 
         // Save:
@@ -506,4 +427,4 @@ namespace litecore { namespace repl {
     }
 
 
-} }
+}}  // namespace litecore::repl

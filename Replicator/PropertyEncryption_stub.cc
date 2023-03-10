@@ -19,40 +19,36 @@
 #include "PropertyEncryption.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
-    // NOTE: PropertyEncryption.cc is not in this repo, and is not open source.
-    // It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
-    // from Couchbase.
-    #include "../../../couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"
+// NOTE: PropertyEncryption.cc is not in this repo, and is not open source.
+// It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
+// from Couchbase.
+#    include "../../../couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"
 #else
 
 // Stubs for CE:
 
-#include "Error.hh"
-#include "fleece/Mutable.hh"
+#    include "Error.hh"
+#    include "fleece/Mutable.hh"
 
 namespace litecore::repl {
     using namespace fleece;
 
-    fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection,
-                                                  fleece::slice docID,
-                                                  fleece::Dict doc,
+    fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
                                                   C4ReplicatorPropertyEncryptionCallback callback,
-                                                  void *callbackContext,
-                                                  C4Error *outError) noexcept
-    {
+                                                  void* callbackContext, C4Error* outError) noexcept {
         // In CE, prevent any encryptable property from being accidentally pushed.
         // This may happen if a database was created and used with EE, and sensitive data added,
         // and then it's opened with a CE implementation.
         *outError = {};
-        for (DeepIterator i(doc); i; ++i) {
-            if (i.key() == C4Document::kObjectTypeProperty) {
-                if (i.value().asString() == C4Document::kObjectType_Encryptable) {
+        for ( DeepIterator i(doc); i; ++i ) {
+            if ( i.key() == C4Document::kObjectTypeProperty ) {
+                if ( i.value().asString() == C4Document::kObjectType_Encryptable ) {
                     alloc_slice path = i.pathString();
-                    if (outError)
+                    if ( outError )
                         *outError = c4error_printf(LiteCoreDomain, kC4ErrorCrypto,
-                                       "Encryptable document property `%.*s` requires"
-                                       " Couchbase Lite Enterprise Edition to encrypt",
-                                       FMTSLICE(path));
+                                                   "Encryptable document property `%.*s` requires"
+                                                   " Couchbase Lite Enterprise Edition to encrypt",
+                                                   FMTSLICE(path));
                     break;
                 }
                 i.skipChildren();
@@ -61,17 +57,12 @@ namespace litecore::repl {
         return nullptr;
     }
 
-
-    fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection,
-                                                  fleece::slice docID,
-                                                  fleece::Dict doc,
+    fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
                                                   C4ReplicatorPropertyDecryptionCallback callback,
-                                                  void *callbackContext,
-                                                  C4Error *outError) noexcept
-    {
+                                                  void* callbackContext, C4Error* outError) noexcept {
         *outError = {};
         return nullptr;
     }
-}
+}  // namespace litecore::repl
 
 #endif
