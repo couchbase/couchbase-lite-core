@@ -12,9 +12,9 @@
 //  the file licenses/APL2.txt.
 //
 
-#include "PredictiveModel.hh"
-#include <mutex>
-#include <unordered_map>
+#    include "PredictiveModel.hh"
+#    include <mutex>
+#    include <unordered_map>
 
 namespace litecore {
     using namespace std;
@@ -24,29 +24,28 @@ namespace litecore {
     // Since the "unregister" callback potentially calls into managed code
     // (i.e. C#, etc) it will cause errors if the runtime has already been
     // unloaded (which is the case during atexit)
-    static unordered_map<string, Retained<PredictiveModel>> *sRegistry 
-        = new unordered_map<string, Retained<PredictiveModel>>;
+    static unordered_map<string, Retained<PredictiveModel>>* sRegistry =
+            new unordered_map<string, Retained<PredictiveModel>>;
     static mutex sRegistryMutex;
 
-    void PredictiveModel::registerAs(const std::string &name) {
+    void PredictiveModel::registerAs(const std::string& name) {
         lock_guard<mutex> lock(sRegistryMutex);
         sRegistry->erase(name);
         sRegistry->insert({name, this});
     }
 
-    bool PredictiveModel::unregister(const std::string &name) {
+    bool PredictiveModel::unregister(const std::string& name) {
         lock_guard<mutex> lock(sRegistryMutex);
         return sRegistry->erase(name) > 0;
     }
 
-    Retained<PredictiveModel> PredictiveModel::named(const std::string &name) {
+    Retained<PredictiveModel> PredictiveModel::named(const std::string& name) {
         lock_guard<mutex> lock(sRegistryMutex);
-        auto i = sRegistry->find(name);
-        if (i == sRegistry->end())
-            return nullptr;
+        auto              i = sRegistry->find(name);
+        if ( i == sRegistry->end() ) return nullptr;
         return i->second;
     }
 
-}
+}  // namespace litecore
 
 #endif

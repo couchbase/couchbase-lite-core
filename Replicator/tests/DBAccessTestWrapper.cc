@@ -23,16 +23,13 @@
 using namespace std;
 using namespace litecore::repl;
 
-C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Database *db) {
+C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Database* db) {
     return unresolvedDocsEnumerator(db->getDefaultCollection());
 }
 
-C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Collection *coll) {
+C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Collection* coll) {
     std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(coll->getDatabase(), false);
     return acc->unresolvedDocsEnumerator(coll, true).release();
 }
 
-
-unsigned DBAccessTestWrapper::numDeltasApplied() {
-    return DBAccess::gNumDeltasApplied;
-}
+unsigned DBAccessTestWrapper::numDeltasApplied() { return DBAccess::gNumDeltasApplied; }

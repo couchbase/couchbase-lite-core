@@ -23,18 +23,18 @@ namespace litecore { namespace actor {
 
 
 #if ACTORS_TRACK_STATS
-#define beginLatency()  fleece::Stopwatch st
-#define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
-#define beginBusy()     _busy.start()
-#define endBusy()       _maxBusy = max(_maxBusy, _busy.lap())
+#    define beginLatency() fleece::Stopwatch st
+#    define endLatency()   _maxLatency = max(_maxLatency, (double)st.elapsed())
+#    define beginBusy()    _busy.start()
+#    define endBusy()      _maxBusy = max(_maxBusy, _busy.lap())
 #else
-#define beginLatency()  ({})
-#define endLatency()    ({})
-#define beginBusy()     ({})
-#define endBusy()       ({})
+#    define beginLatency() ({})
+#    define endLatency()   ({})
+#    define beginBusy()    ({})
+#    define endBusy()      ({})
 #endif
 
-    
+
     static char kQueueMailboxSpecificKey;
 
     static const qos_class_t kQOS = QOS_CLASS_UTILITY;
@@ -43,43 +43,32 @@ namespace litecore { namespace actor {
     thread_local shared_ptr<ChannelManifest> GCDMailbox::sQueueManifest = nullptr;
 #endif
 
-    GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
-    :_actor(a)
-    {
+    GCDMailbox::GCDMailbox(Actor* a, const std::string& name, GCDMailbox* parentMailbox) : _actor(a) {
         dispatch_queue_t targetQueue;
-        if (parentMailbox)
-            targetQueue = parentMailbox->_queue;
+        if ( parentMailbox ) targetQueue = parentMailbox->_queue;
         else
             targetQueue = dispatch_get_global_queue(kQOS, 0);
-        auto nameCstr = name.empty() ? nullptr : name.c_str();
-        dispatch_queue_attr_t attr = DISPATCH_QUEUE_SERIAL;
-        attr = dispatch_queue_attr_make_with_qos_class(attr, kQOS, 0);
-        attr = dispatch_queue_attr_make_with_autorelease_frequency(attr,
-                                                        DISPATCH_AUTORELEASE_FREQUENCY_NEVER);
+        auto                  nameCstr = name.empty() ? nullptr : name.c_str();
+        dispatch_queue_attr_t attr     = DISPATCH_QUEUE_SERIAL;
+        attr                           = dispatch_queue_attr_make_with_qos_class(attr, kQOS, 0);
+        attr   = dispatch_queue_attr_make_with_autorelease_frequency(attr, DISPATCH_AUTORELEASE_FREQUENCY_NEVER);
         _queue = dispatch_queue_create_with_target(nameCstr, attr, targetQueue);
         dispatch_queue_set_specific(_queue, &kQueueMailboxSpecificKey, this, nullptr);
     }
 
-    GCDMailbox::~GCDMailbox() {
-        dispatch_release(_queue);
-    }
+    GCDMailbox::~GCDMailbox() { dispatch_release(_queue); }
 
-
-    std::string GCDMailbox::name() const {
-        return dispatch_queue_get_label(_queue);
-    }
-
+    std::string GCDMailbox::name() const { return dispatch_queue_get_label(_queue); }
 
     Actor* GCDMailbox::currentActor() {
-        auto mailbox = (GCDMailbox*) dispatch_get_specific(&kQueueMailboxSpecificKey);
+        auto mailbox = (GCDMailbox*)dispatch_get_specific(&kQueueMailboxSpecificKey);
         return mailbox ? mailbox->_actor : nullptr;
     }
-
 
     void GCDMailbox::safelyCall(void (^block)()) const {
         try {
             block();
-        } catch (const std::exception &x) {
+        } catch ( const std::exception& x ) {
             _actor->caughtException(x);
 #if ACTORS_USE_MANIFESTS
             stringstream manifest;
@@ -93,7 +82,6 @@ namespace litecore { namespace actor {
         }
     }
 
-    
     void GCDMailbox::enqueue(const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
@@ -104,24 +92,23 @@ namespace litecore { namespace actor {
         queueManifest->addEnqueueCall(_actor, name);
         _localManifest.addEnqueueCall(_actor, name);
 #endif
-        
+
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
-            queueManifest->addExecution(_actor, name);
-            sQueueManifest = queueManifest;
-            _localManifest.addExecution(_actor, name);
+          queueManifest->addExecution(_actor, name);
+          sQueueManifest = queueManifest;
+          _localManifest.addExecution(_actor, name);
 #endif
-            endLatency();
-            beginBusy();
-            safelyCall(block);
-            afterEvent();
+          endLatency();
+          beginBusy();
+          safelyCall(block);
+          afterEvent();
 #if ACTORS_USE_MANIFESTS
-            sQueueManifest.reset();
+          sQueueManifest.reset();
 #endif
         };
         dispatch_async(_queue, wrappedBlock);
     }
-
 
     void GCDMailbox::enqueueAfter(delay_t delay, const char* name, void (^block)()) {
         beginLatency();
@@ -133,24 +120,23 @@ namespace litecore { namespace actor {
         queueManifest->addEnqueueCall(_actor, name, delay.count());
         _localManifest.addEnqueueCall(_actor, name, delay.count());
 #endif
-        
+
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
-            queueManifest->addExecution(_actor, name);
-            sQueueManifest = queueManifest;
-            _localManifest.addExecution(_actor, name);
+          queueManifest->addExecution(_actor, name);
+          sQueueManifest = queueManifest;
+          _localManifest.addExecution(_actor, name);
 #endif
-            endLatency();
-            beginBusy();
-            safelyCall(block);
-            afterEvent();
+          endLatency();
+          beginBusy();
+          safelyCall(block);
+          afterEvent();
 #if ACTORS_USE_MANIFESTS
-            sQueueManifest.reset();
+          sQueueManifest.reset();
 #endif
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
-        if (ns > 0)
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
+        if ( ns > 0 ) dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
         else
             dispatch_async(_queue, wrappedBlock);
     }
@@ -160,38 +146,34 @@ namespace litecore { namespace actor {
         endBusy();
 #if ACTORS_TRACK_STATS
         ++_callCount;
-        if (_eventCount > _maxEventCount) {
-            _maxEventCount = _eventCount;
-        }
+        if ( _eventCount > _maxEventCount ) { _maxEventCount = _eventCount; }
 #endif
         --_eventCount;
         release(_actor);
     }
 
-
     void GCDMailbox::logStats() const {
 #if ACTORS_TRACK_STATS
-        printf("%-25s handled %5d events; max queue depth was %3d; max latency was %10s; busy total %10s (%4.1f%%), max %10s\n",
-              _actor->actorName().c_str(), _callCount, _maxEventCount,
-              fleece::Stopwatch::formatTime(_maxLatency).c_str(),
-              fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(),
-              (_busy.elapsed() / _createdAt.elapsed())*100.0,
-              fleece::Stopwatch::formatTime(_maxBusy).c_str());
+        printf("%-25s handled %5d events; max queue depth was %3d; max latency was %10s; busy total %10s (%4.1f%%), "
+               "max %10s\n",
+               _actor->actorName().c_str(), _callCount, _maxEventCount,
+               fleece::Stopwatch::formatTime(_maxLatency).c_str(),
+               fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(), (_busy.elapsed() / _createdAt.elapsed()) * 100.0,
+               fleece::Stopwatch::formatTime(_maxBusy).c_str());
 #endif
     }
 
-
-    void GCDMailbox::runAsyncTask(void (*task)(void*), void *context) {
+    void GCDMailbox::runAsyncTask(void (*task)(void*), void* context) {
         static dispatch_queue_t sAsyncTaskQueue;
-        static once_flag once;
+        static once_flag        once;
         call_once(once, [] {
             dispatch_queue_attr_t attr = DISPATCH_QUEUE_CONCURRENT;
-            attr = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_BACKGROUND, 0);
-            sAsyncTaskQueue = dispatch_queue_create("CBL Async Tasks", attr);
+            attr                       = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_BACKGROUND, 0);
+            sAsyncTaskQueue            = dispatch_queue_create("CBL Async Tasks", attr);
         });
-        
+
         dispatch_async_f(sAsyncTaskQueue, context, task);
     }
 
 
-} }
+}}  // namespace litecore::actor

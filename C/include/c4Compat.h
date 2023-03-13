@@ -14,9 +14,9 @@
 #include "fleece/CompilerSupport.h"
 
 #ifdef _MSC_VER
-#  define C4INLINE __forceinline
+#    define C4INLINE __forceinline
 #else
-#  define C4INLINE inline
+#    define C4INLINE inline
 #endif
 
 // Non-null annotations, for function parameters and struct fields.
@@ -27,17 +27,17 @@
 //       unless annotated with C4_RETURNS_NONNULL.
 // NOTE: Only supported in Clang, so far.
 #if __has_feature(nullability)
-#  define C4_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
-#  define C4_ASSUME_NONNULL_END _Pragma("clang assume_nonnull end")
-#  define C4NULLABLE _Nullable
-#  define C4NONNULL _Nonnull
-#  define C4_RETURNS_NONNULL __attribute__((returns_nonnull))
+#    define C4_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
+#    define C4_ASSUME_NONNULL_END   _Pragma("clang assume_nonnull end")
+#    define C4NULLABLE              _Nullable
+#    define C4NONNULL               _Nonnull
+#    define C4_RETURNS_NONNULL      __attribute__((returns_nonnull))
 #else
-#  define C4_ASSUME_NONNULL_BEGIN
-#  define C4_ASSUME_NONNULL_END
-#  define C4NULLABLE
-#  define C4NONNULL
-#  define C4_RETURNS_NONNULL
+#    define C4_ASSUME_NONNULL_BEGIN
+#    define C4_ASSUME_NONNULL_END
+#    define C4NULLABLE
+#    define C4NONNULL
+#    define C4_RETURNS_NONNULL
 #endif
 
 // Macros for defining typed enumerations and option flags.
@@ -47,78 +47,99 @@
 //      typedef C4_OPTIONS(baseIntType, name) { ... };
 // These aren't just a convenience; they are required for Swift bindings.
 #if __has_attribute(enum_extensibility)
-#define __C4_ENUM_ATTRIBUTES __attribute__((enum_extensibility(open)))
-#define __C4_OPTIONS_ATTRIBUTES __attribute__((flag_enum,enum_extensibility(open)))
+#    define __C4_ENUM_ATTRIBUTES    __attribute__((enum_extensibility(open)))
+#    define __C4_OPTIONS_ATTRIBUTES __attribute__((flag_enum, enum_extensibility(open)))
 #else
-#define __C4_ENUM_ATTRIBUTES
-#define __C4_OPTIONS_ATTRIBUTES
+#    define __C4_ENUM_ATTRIBUTES
+#    define __C4_OPTIONS_ATTRIBUTES
 #endif
 
 #if __APPLE__
-    #include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
-    #define C4_ENUM CF_ENUM
-    #define C4_OPTIONS CF_OPTIONS
+#    include <CoreFoundation/CFBase.h> /* for CF_ENUM and CF_OPTIONS macros */
+#    define C4_ENUM    CF_ENUM
+#    define C4_OPTIONS CF_OPTIONS
 #elif DOXYGEN_PARSING
-    #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
-    #define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
+#    define C4_ENUM(_type, _name)                                                                                      \
+        enum _name : _type _name;                                                                                      \
+        enum _name : _type
+#    define C4_OPTIONS(_type, _name)                                                                                   \
+        enum _name : _type _name;                                                                                      \
+        enum _name : _type
 #else
-    #if (__cplusplus && _MSC_VER) || (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
-        #define C4_ENUM(_type, _name) int __C4_ENUM_ ## _name; enum __C4_ENUM_ATTRIBUTES _name : _type; typedef enum _name _name; enum _name : _type
-        #if (__cplusplus)
-            #define C4_OPTIONS(_type, _name) _type _name; enum __C4_OPTIONS_ATTRIBUTES : _type
-        #else
-            #define C4_OPTIONS(_type, _name) int __C4_OPTIONS_ ## _name; enum __C4_OPTIONS_ATTRIBUTES _name : _type; typedef enum _name _name; enum _name : _type
-        #endif
-    #else
-        #define C4_ENUM(_type, _name) _type _name; enum
-        #define C4_OPTIONS(_type, _name) _type _name; enum
-    #endif
+#    if ( __cplusplus && _MSC_VER )                                                                                    \
+            || (__cplusplus && __cplusplus >= 201103L                                                                  \
+                && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum)))                              \
+            || (!__cplusplus && __has_feature(objc_fixed_enum))
+#        define C4_ENUM(_type, _name)                                                                                  \
+            int                       __C4_ENUM_##_name;                                                               \
+            enum __C4_ENUM_ATTRIBUTES _name : _type;                                                                   \
+            typedef enum _name        _name;                                                                           \
+            enum _name : _type
+#        if ( __cplusplus )
+#            define C4_OPTIONS(_type, _name)                                                                           \
+                _type _name;                                                                                           \
+                enum __C4_OPTIONS_ATTRIBUTES : _type
+#        else
+#            define C4_OPTIONS(_type, _name)                                                                           \
+                int                          __C4_OPTIONS_##_name;                                                     \
+                enum __C4_OPTIONS_ATTRIBUTES _name : _type;                                                            \
+                typedef enum _name           _name;                                                                    \
+                enum _name : _type
+#        endif
+#    else
+#        define C4_ENUM(_type, _name)                                                                                  \
+            _type _name;                                                                                               \
+            enum
+#        define C4_OPTIONS(_type, _name)                                                                               \
+            _type _name;                                                                                               \
+            enum
+#    endif
 #endif
 
 
 // Suppresses warnings if an entity is unused.
 #if __has_attribute(unused)
-#   define C4UNUSED __attribute__((unused))
+#    define C4UNUSED __attribute__((unused))
 #else
-#   define C4UNUSED
+#    define C4UNUSED
 #endif
 
 
 // Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
-    #define C4API               noexcept
-    #define C4API_BEGIN_DECLS   extern "C" {
-    #define C4API_END_DECLS     }
+#    define C4API             noexcept
+#    define C4API_BEGIN_DECLS extern "C" {
+#    define C4API_END_DECLS   }
 #else
-    #define C4API
-    #define C4API_BEGIN_DECLS
-    #define C4API_END_DECLS
+#    define C4API
+#    define C4API_BEGIN_DECLS
+#    define C4API_END_DECLS
 #endif
 
 // Deprecating functions & types  (Note: In C++only code, can use standard `[[deprecated]]`)
 #ifdef _MSC_VER
-#  define C4_DEPRECATED(MSG) __declspec(deprecated(MSG))
+#    define C4_DEPRECATED(MSG) __declspec(deprecated(MSG))
 #else
-#  define C4_DEPRECATED(MSG) __attribute((deprecated(MSG)))
+#    define C4_DEPRECATED(MSG) __attribute((deprecated(MSG)))
 #endif
 
 // Export/import stuff:
 #ifdef _MSC_VER
-    #ifdef LITECORE_EXPORTS
-        #define CBL_CORE_API __declspec(dllexport)
-    #else
-        #define CBL_CORE_API __declspec(dllimport)
-    #endif
+#    ifdef LITECORE_EXPORTS
+#        define CBL_CORE_API __declspec(dllexport)
+#    else
+#        define CBL_CORE_API __declspec(dllimport)
+#    endif
 #else
-    #define CBL_CORE_API __attribute__((visibility("default")))
+#    define CBL_CORE_API __attribute__((visibility("default")))
 #endif
 
 
 // Type-checking for printf-style vararg functions:
 #ifdef _MSC_VER
-    #define __printflike(A, B)
+#    define __printflike(A, B)
 #else
-    #ifndef __printflike
-        #define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
-    #endif
+#    ifndef __printflike
+#        define __printflike(fmtarg, firstvararg) __attribute__((__format__(__printf__, fmtarg, firstvararg)))
+#    endif
 #endif

@@ -15,8 +15,8 @@
 
 namespace litecore {
 
-    void SetThreadName(const char *name);
+    void SetThreadName(const char* name);
 
     std::string GetThreadName();
 
-}
+}  // namespace litecore

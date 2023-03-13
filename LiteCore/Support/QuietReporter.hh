@@ -29,76 +29,61 @@
 #include <iostream>
 
 #ifdef _MSC_VER
-#include <atlbase.h>
+#    include <atlbase.h>
 #endif
 
 
 /** Custom Catch reporter that suppresses most LiteCore logging to the console, while logging verbosely to
     a binary file. If a test fails, the verbose logs from that test are copied to the console just before
     the Catch logs. */
-struct QuietReporter: public CaseListReporter {
+struct QuietReporter : public CaseListReporter {
+    static std::string getDescription() { return "Suppresses most LiteCore logging until a test assertion fails"; }
 
-    static std::string getDescription() {
-        return "Suppresses most LiteCore logging until a test assertion fails";
-    }
-
-    QuietReporter( Catch::ReporterConfig const& config )
-    :CaseListReporter(config)
-    {
+    QuietReporter(Catch::ReporterConfig const& config) : CaseListReporter(config) {
         InitTestLogging();
         litecore::error::setNotableExceptionHook([=]() { dumpBinaryLogs(); });
         sInstance = this;
     }
 
-
     virtual ~QuietReporter() {
-        if (sInstance == this)
-            sInstance = nullptr;
+        if ( sInstance == this ) sInstance = nullptr;
     }
-
 
     /** Immediately dumps the current test's logs.
         This is currently unused, but could be called by hand from a debugger. */
-    static void dumpLogsNow() {
-        sInstance->dumpBinaryLogs();
-    }
-
+    static void dumpLogsNow() { sInstance->dumpBinaryLogs(); }
 
     //---- Catch overrides
 
-    virtual void testCaseStarting( Catch::TestCaseInfo const& testInfo ) override {
+    virtual void testCaseStarting(Catch::TestCaseInfo const& testInfo) override {
         c4log_setCallbackLevel(kC4LogWarning);
         c4log_warnOnErrors(true);
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::testCaseStarting(testInfo);
     }
 
-
-    virtual void sectionStarting( Catch::SectionInfo const& sectionInfo ) override {
+    virtual void sectionStarting(Catch::SectionInfo const& sectionInfo) override {
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::sectionStarting(sectionInfo);
     }
 
-
-    virtual bool assertionEnded( Catch::AssertionStats const& assertionStats ) override {
-        if (!assertionStats.assertionResult.isOk())
-            dumpBinaryLogs();
+    virtual bool assertionEnded(Catch::AssertionStats const& assertionStats) override {
+        if ( !assertionStats.assertionResult.isOk() ) dumpBinaryLogs();
         return CaseListReporter::assertionEnded(assertionStats);
     }
 
 
-private:
+  private:
     void dumpBinaryLogs() {
         fleece::alloc_slice logPath = c4log_binaryFilePath();
-        if (logPath && c4log_binaryFileLevel() < c4log_callbackLevel()) {
+        if ( logPath && c4log_binaryFileLevel() < c4log_callbackLevel() ) {
             c4log_flushLogFiles();
 
             litecore::MultiLogDecoder multi;
-            litecore::FilePath logDir(std::string(logPath), "");
-            logDir.forEachFile([&](const litecore::FilePath &item) {
-                if (item.extension() == ".cbllog") {
-                    if (!multi.add(item.path()))
-                        C4Warn("QuietReporter: Can't open log file %s", item.path().c_str());
+            litecore::FilePath        logDir(std::string(logPath), "");
+            logDir.forEachFile([&](const litecore::FilePath& item) {
+                if ( item.extension() == ".cbllog" ) {
+                    if ( !multi.add(item.path()) ) C4Warn("QuietReporter: Can't open log file %s", item.path().c_str());
                 }
             });
 
@@ -108,11 +93,10 @@ private:
         _caseStartTime = litecore::LogIterator::now();
     }
 
-
-    static inline QuietReporter* sInstance {nullptr};
+    static inline QuietReporter* sInstance{nullptr};
 
     litecore::LogIterator::Timestamp _caseStartTime;
 };
 
 
-CATCH_REGISTER_REPORTER( "quiet", QuietReporter )
+CATCH_REGISTER_REPORTER("quiet", QuietReporter)

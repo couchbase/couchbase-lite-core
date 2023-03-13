@@ -22,42 +22,41 @@ namespace litecore {
     class DatabaseImpl;
     class SequenceTracker;
 
-
     class BackgroundDB final : private DataFile::Delegate {
-    public:
+      public:
         BackgroundDB(DatabaseImpl*);
         ~BackgroundDB();
 
         void close();
 
-        access_lock<DataFile*>& dataFile()              {return _dataFile;}
+        access_lock<DataFile*>& dataFile() { return _dataFile; }
 
         using TransactionTask = function_ref<bool(KeyStore&, SequenceTracker*)>;
 
         void useInTransaction(slice keyStoreName, TransactionTask task);
 
         class TransactionObserver {
-        public:
-            virtual ~TransactionObserver() =default;
+          public:
+            virtual ~TransactionObserver() = default;
             /// This method is called on some random thread, and while a BackgroundDB lock is held.
             /// The implementation must not do anything that might acquire a mutex,
             /// nor call back into BackgroundDB.
-            virtual void transactionCommitted() =0;
+            virtual void transactionCommitted() = 0;
         };
 
         void addTransactionObserver(TransactionObserver* NONNULL);
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
-    private:
-        string databaseName() const override;
+      private:
+        string      databaseName() const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
-        void externalTransactionCommitted(const SequenceTracker &sourceTracker) override;
-        void notifyTransactionObservers();
+        void        externalTransactionCommitted(const SequenceTracker& sourceTracker) override;
+        void        notifyTransactionObservers();
 
-        DatabaseImpl* _database;
-        access_lock<DataFile*> _dataFile;
+        DatabaseImpl*                     _database;
+        access_lock<DataFile*>            _dataFile;
         std::vector<TransactionObserver*> _transactionObservers;
-        std::mutex _transactionObserversMutex;
+        std::mutex                        _transactionObserversMutex;
     };
 
-}
+}  // namespace litecore

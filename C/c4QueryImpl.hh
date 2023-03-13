@@ -26,36 +26,28 @@ C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
     using namespace fleece::impl;
-    
 
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.
-    class C4QueryEnumeratorImpl : public RefCounted,
-                                  public C4QueryEnumerator,
-                                  public fleece::InstanceCountedIn<C4QueryEnumerator>,
-                                  C4Base
-    {
-    public:
-        C4QueryEnumeratorImpl(DatabaseImpl *database, Query *query, QueryEnumerator *e)
-        :_database(database)
-        ,_query(query)
-        ,_enum(e)
-        ,_hasFullText(_enum->hasFullText())
-        {
+    class C4QueryEnumeratorImpl
+        : public RefCounted
+        , public C4QueryEnumerator
+        , public fleece::InstanceCountedIn<C4QueryEnumerator>
+        , C4Base {
+      public:
+        C4QueryEnumeratorImpl(DatabaseImpl* database, Query* query, QueryEnumerator* e)
+            : _database(database), _query(query), _enum(e), _hasFullText(_enum->hasFullText()) {
             clearPublicFields();
         }
 
         QueryEnumerator* enumerator() const {
-            if (!_enum)
-                error::_throw(error::InvalidParameter, "Query enumerator has been closed");
+            if ( !_enum ) error::_throw(error::InvalidParameter, "Query enumerator has been closed");
             return _enum;
         }
 
-        int64_t getRowCount() const {
-            return enumerator()->getRowCount();
-        }
+        int64_t getRowCount() const { return enumerator()->getRowCount(); }
 
         bool next() {
-            if (!enumerator()->next()) {
+            if ( !enumerator()->next() ) {
                 clearPublicFields();
                 return false;
             }
@@ -65,114 +57,90 @@ namespace litecore {
 
         void seek(int64_t rowIndex) {
             enumerator()->seek(rowIndex);
-            if (rowIndex >= 0)
-                populatePublicFields();
+            if ( rowIndex >= 0 ) populatePublicFields();
             else
                 clearPublicFields();
         }
 
-        void clearPublicFields() {
-            ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));
-        }
+        void clearPublicFields() { ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator)); }
 
         void populatePublicFields() {
             static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
                           "C4FullTextMatch does not match Query::FullTextTerm");
             (Array::iterator&)columns = _enum->columns();
-            missingColumns = _enum->missingColumns();
-            if (_hasFullText) {
-                auto &ft = _enum->fullTextTerms();
-                fullTextMatches = (const C4FullTextMatch*)ft.data();
+            missingColumns            = _enum->missingColumns();
+            if ( _hasFullText ) {
+                auto& ft           = _enum->fullTextTerms();
+                fullTextMatches    = (const C4FullTextMatch*)ft.data();
                 fullTextMatchCount = (uint32_t)ft.size();
             }
         }
 
         C4QueryEnumeratorImpl* C4NULLABLE refresh() {
             QueryEnumerator* newEnum = enumerator()->refresh(_query);
-            if (newEnum)
-                return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
+            if ( newEnum ) return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
             else
                 return nullptr;
         }
 
-        void close() noexcept {
-            _enum = nullptr;
-        }
+        void close() noexcept { _enum = nullptr; }
 
-        bool usesEnumerator(QueryEnumerator *e) const {
-            return e == _enum;
-        }
+        bool usesEnumerator(QueryEnumerator* e) const { return e == _enum; }
 
-    private:
-        Retained<DatabaseImpl> _database;
-        Retained<Query> _query;
+      private:
+        Retained<DatabaseImpl>    _database;
+        Retained<Query>           _query;
         Retained<QueryEnumerator> _enum;
-        bool _hasFullText;
+        bool                      _hasFullText;
     };
 
-    
-    static inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {
-        return (C4QueryEnumeratorImpl*)e;
-    }
-
+    static inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator* e) { return (C4QueryEnumeratorImpl*)e; }
 
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
-    public:
-        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
-        :C4QueryObserver(query)
-        ,_callback(move(callback))
-        { }
+      public:
+        C4QueryObserverImpl(C4Query* query, C4Query::ObserverCallback callback)
+            : C4QueryObserver(query), _callback(move(callback)) {}
 
         ~C4QueryObserverImpl() {
-            if (_query)
-                _query->enableObserver(this, false);
+            if ( _query ) _query->enableObserver(this, false);
         }
 
-        void setEnabled(bool enabled) override {
-            _query->enableObserver(this, enabled);
-        }
+        void setEnabled(bool enabled) override { _query->enableObserver(this, enabled); }
 
         // called on a background thread
-        void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
+        void notify(C4QueryEnumeratorImpl* e, C4Error err) noexcept {
             {
                 LOCK(_mutex);
                 _currentEnumerator = e;
-                _currentError = err;
+                _currentError      = err;
             }
             _callback(this);
         }
 
         Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error* C4NULLABLE outError) {
             LOCK(_mutex);
-            if (outError)
-                *outError = _currentError;
-            if (forget)
-                return std::move(_currentEnumerator);
+            if ( outError ) *outError = _currentError;
+            if ( forget ) return std::move(_currentEnumerator);
             else
                 return _currentEnumerator;
         }
 
         C4Query::Enumerator getEnumerator(bool forget) override {
-            if (_currentError.code)
-                _currentError.raise();
+            if ( _currentError.code ) _currentError.raise();
             Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
-            if (forget)
-                _currentEnumerator = nullptr;
+            if ( forget ) _currentEnumerator = nullptr;
             return C4Query::Enumerator(move(e));
         }
 
-    private:
+      private:
         C4Query::ObserverCallback const _callback;
         mutable std::mutex              _mutex;
         Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     };
 
+    static inline C4QueryObserverImpl* asInternal(C4QueryObserver* obs) { return (C4QueryObserverImpl*)obs; }
 
-    static inline C4QueryObserverImpl* asInternal(C4QueryObserver *obs) {
-        return (C4QueryObserverImpl*)obs;
-    }
-
-}
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

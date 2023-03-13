@@ -27,93 +27,96 @@ namespace litecore { namespace REST {
     using fleece::Retained;
     class Server;
 
-
     /** Listener subclass that serves (some of) the venerable CouchDB REST API.
         The HTTP work is done by a Server object. */
     class RESTListener : public Listener {
-    public:
+      public:
         explicit RESTListener(const Config&);
         ~RESTListener();
 
         virtual void stop();
 
-        uint16_t port() const                       {return _server->port();}
+        uint16_t port() const { return _server->port(); }
 
         /** My root URL, or the URL of a database. */
-        virtual std::vector<net::Address> addresses(C4Database *dbOrNull =nullptr,
-                                                    C4ListenerAPIs api = kC4RESTAPI) const;
+        virtual std::vector<net::Address> addresses(C4Database*    dbOrNull = nullptr,
+                                                    C4ListenerAPIs api      = kC4RESTAPI) const;
 
         virtual int connectionCount() override;
-        virtual int activeConnectionCount() override    {return (int)tasks().size();}
+
+        virtual int activeConnectionCount() override { return (int)tasks().size(); }
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
-        bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
+        bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
         /** An asynchronous task (like a replication). */
         class Task : public RefCounted {
-        public:
-            explicit Task(RESTListener* listener)    :_listener(listener) { }
+          public:
+            explicit Task(RESTListener* listener) : _listener(listener) {}
 
-            RESTListener* listener() const  {return _listener;}
-            unsigned taskID() const     {return _taskID;}
-            time_t timeUpdated() const  {return _timeUpdated;}
-            virtual bool finished() const =0;
+            RESTListener* listener() const { return _listener; }
+
+            unsigned taskID() const { return _taskID; }
+
+            time_t timeUpdated() const { return _timeUpdated; }
+
+            virtual bool finished() const = 0;
             virtual void writeDescription(fleece::JSONEncoder&);
 
-            virtual void stop() =0;
+            virtual void stop() = 0;
 
             void registerTask();
             void unregisterTask();
 
-        protected:
-            virtual ~Task() =default;
+          protected:
+            virtual ~Task() = default;
 
-            time_t _timeUpdated {0};
-        private:
+            time_t _timeUpdated{0};
+
+          private:
             RESTListener* const _listener;
-            unsigned _taskID {0};
-            time_t _timeStarted {0};
+            unsigned            _taskID{0};
+            time_t              _timeStarted{0};
         };
 
         /** The currently-running tasks. */
         std::vector<Retained<Task>> tasks();
 
-    protected:
+      protected:
         friend class Task;
 
-        Retained<net::TLSContext> createTLSContext(const C4TLSConfig*);
+        Retained<net::TLSContext>  createTLSContext(const C4TLSConfig*);
         Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
-        
-        Server* server() const              {return _server.get();}
 
-        Retained<C4Database> getDatabase(RequestResponse &rq, const string &dbName);
+        Server* server() const { return _server.get(); }
+
+        Retained<C4Database> getDatabase(RequestResponse& rq, const string& dbName);
 
         /** Returns the database for this request, or null on error. */
         Retained<C4Database> databaseFor(RequestResponse&);
         /** Returns the collection for this request, or null on error */
-        std::pair<Retained<C4Database>,C4Collection*> collectionFor(RequestResponse&);
-        unsigned registerTask(Task*);
-        void unregisterTask(Task*);
+        std::pair<Retained<C4Database>, C4Collection*> collectionFor(RequestResponse&);
+        unsigned                                       registerTask(Task*);
+        void                                           unregisterTask(Task*);
 
-        using HandlerMethod = void(RESTListener::*)(RequestResponse&);
-        using DBHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Database*);
-        using CollectionHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Collection*);
+        using HandlerMethod           = void (RESTListener::*)(RequestResponse&);
+        using DBHandlerMethod         = void (RESTListener::*)(RequestResponse&, C4Database*);
+        using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse&, C4Collection*);
 
-        void addHandler(net::Method, const char *uri, HandlerMethod);
-        void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
-        void addCollectionHandler(net::Method, const char *uri, CollectionHandlerMethod);
-        
-        std::vector<net::Address> _addresses(C4Database *dbOrNull =nullptr,
-                                            C4ListenerAPIs api = kC4RESTAPI) const;
+        void addHandler(net::Method, const char* uri, HandlerMethod);
+        void addDBHandler(net::Method, const char* uri, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char* uri, CollectionHandlerMethod);
+
+        std::vector<net::Address> _addresses(C4Database* dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
 
         virtual void handleSync(RequestResponse&, C4Database*);
 
         static std::string serverNameAndVersion();
         static std::string kServerName;
 
-    private:
-        pair<string,C4CollectionSpec> parseKeySpace(slice keySpace);
-        bool collectionGiven(RequestResponse&);
+      private:
+        pair<string, C4CollectionSpec> parseKeySpace(slice keySpace);
+        bool                           collectionGiven(RequestResponse&);
 
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
@@ -129,21 +132,15 @@ namespace litecore { namespace REST {
         void handleModifyDoc(RequestResponse&, C4Collection*);
         void handleBulkDocs(RequestResponse&, C4Collection*);
 
-        bool modifyDoc(fleece::Dict body,
-                       std::string docID,
-                       std::string revIDQuery,
-                       bool deleting,
-                       bool newEdits,
-                       C4Collection *coll,
-                       fleece::JSONEncoder& json,
-                       C4Error *outError) noexcept;
+        bool modifyDoc(fleece::Dict body, std::string docID, std::string revIDQuery, bool deleting, bool newEdits,
+                       C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
 
-        std::unique_ptr<FilePath> _directory;
-        const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
+        std::unique_ptr<FilePath>  _directory;
+        const bool                 _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
         Retained<crypto::Identity> _identity;
-        Retained<Server> _server;
-        std::set<Retained<Task>> _tasks;
-        unsigned _nextTaskID {1};
+        Retained<Server>           _server;
+        std::set<Retained<Task>>   _tasks;
+        unsigned                   _nextTaskID{1};
     };
 
-} }
+}}  // namespace litecore::REST

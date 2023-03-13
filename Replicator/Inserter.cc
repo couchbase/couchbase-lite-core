@@ -28,31 +28,24 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-
 namespace litecore { namespace repl {
 
 
-    Inserter::Inserter(Replicator *repl, CollectionIndex coll)
-    :Worker(repl, "Insert", coll)
-    ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
-                   tuning::kInsertionDelay, tuning::kInsertionBatchSize)
-    { }
+    Inserter::Inserter(Replicator* repl, CollectionIndex coll)
+        : Worker(repl, "Insert", coll)
+        , _revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow, tuning::kInsertionDelay,
+                        tuning::kInsertionBatchSize) {}
 
-
-    void Inserter::insertRevision(RevToInsert *rev) {
-        _revsToInsert.push(rev);
-    }
-
+    void Inserter::insertRevision(RevToInsert* rev) { _revsToInsert.push(rev); }
 
     // Inserts all the revisions queued for insertion.
     void Inserter::_insertRevisionsNow(int gen) {
         auto revs = _revsToInsert.pop(gen);
-        if (!revs)
-            return;
+        if ( !revs ) return;
 
         logVerbose("Inserting %zu revs:", revs->size());
         Stopwatch st;
-        double commitTime = 0;
+        double    commitTime = 0;
 
         C4Error transactionErr = {};
         try {
@@ -61,59 +54,57 @@ namespace litecore { namespace repl {
             // of them apply to the docs we're updating:
             _db->markRevsSyncedNow();
 
-            for (RevToInsert *rev : *revs) {
+            for ( RevToInsert* rev : *revs ) {
                 C4Error docErr;
-                bool docSaved = insertRevisionNow(rev, &docErr);
-                rev->trimBody();                // don't need body any more
-                if (docSaved) {
+                bool    docSaved = insertRevisionNow(rev, &docErr);
+                rev->trimBody();  // don't need body any more
+                if ( docSaved ) {
                     rev->owner->revisionProvisionallyInserted();
                 } else {
                     // Notify owner of a rev that failed:
                     string desc = docErr.description();
-                    warn("Failed to insert '%.*s' #%.*s : %s",
-                         SPLAT(rev->docID), SPLAT(rev->revID), desc.c_str());
+                    warn("Failed to insert '%.*s' #%.*s : %s", SPLAT(rev->docID), SPLAT(rev->revID), desc.c_str());
                     rev->error = docErr;
-                    if (docErr == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
-                            || docErr == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta})
+                    if ( docErr == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
+                         || docErr == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta} )
                         rev->errorIsTransient = true;
-                    rev->owner->revisionInserted();     // Tell the IncomingRev
+                    rev->owner->revisionInserted();  // Tell the IncomingRev
                 }
             }
 
             Stopwatch stCommit;
             transaction.commit();
             commitTime = st.elapsed();
-        } catch (...) {
+        } catch ( ... ) {
             transactionErr = C4Error::fromCurrentException();
             warn("Transaction failed!");
         }
 
         // Notify owners of all revs that didn't already fail:
-        for (auto &rev : *revs) {
-            if (rev->error.code == 0) {
+        for ( auto& rev : *revs ) {
+            if ( rev->error.code == 0 ) {
                 rev->error = transactionErr;
                 rev->owner->revisionInserted();
             }
         }
 
-        if (transactionErr) {
+        if ( transactionErr ) {
             gotError(transactionErr);
         } else {
             double t = st.elapsed();
-            logInfo("Inserted %3zu revs in %6.2fms (%5.0f/sec) of which %4.1f%% was commit",
-                    revs->size(), t*1000, revs->size()/t, commitTime/t*100);
+            logInfo("Inserted %3zu revs in %6.2fms (%5.0f/sec) of which %4.1f%% was commit", revs->size(), t * 1000,
+                    revs->size() / t, commitTime / t * 100);
         }
     }
 
-
     // Inserts one revision. Returns only C4Errors, never throws exceptions.
-    bool Inserter::insertRevisionNow(RevToInsert *rev, C4Error *outError) {
+    bool Inserter::insertRevisionNow(RevToInsert* rev, C4Error* outError) {
         try {
-            if (rev->flags & kRevPurged) {
+            if ( rev->flags & kRevPurged ) {
                 // Server says the document is no longer accessible, i.e. it's been
                 // removed from all channels the client has access to. Purge it.
                 auto locked = _db->insertionDB().useLocked();
-                if (insertionCollection()->purgeDocument(rev->docID)) {
+                if ( insertionCollection()->purgeDocument(rev->docID) ) {
                     auto collPath = _options->collectionPath(collectionIndex());
                     logVerbose("    {'%.*s (%.*s)' removed (purged)}", SPLAT(rev->docID), SPLAT(collPath));
                 }
@@ -121,26 +112,26 @@ namespace litecore { namespace repl {
             } else {
                 // Set up the "put" parameter block:
                 vector<C4String> history = rev->history();
-                C4DocPutRequest put = {};
-                put.docID = rev->docID;
-                put.revFlags = rev->flags;
-                put.existingRevision = true;
-                put.allowConflict = !rev->noConflicts;
-                put.history = history.data();
-                put.historyCount = history.size();
-                put.remoteDBID = _db->remoteDBID();
-                put.save = true;
+                C4DocPutRequest  put     = {};
+                put.docID                = rev->docID;
+                put.revFlags             = rev->flags;
+                put.existingRevision     = true;
+                put.allowConflict        = !rev->noConflicts;
+                put.history              = history.data();
+                put.historyCount         = history.size();
+                put.remoteDBID           = _db->remoteDBID();
+                put.save                 = true;
 
                 alloc_slice bodyForDB;
-                if (rev->deltaSrc) {
+                if ( rev->deltaSrc ) {
                     // If this is a delta, put the JSON delta in the put-request:
-                    bodyForDB = move(rev->deltaSrc);
+                    bodyForDB            = move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
-                    put.deltaCB = [](void *context, C4Document *doc,
-                                     C4Slice delta, C4Error *outError) -> C4SliceResult {
+                    put.deltaCB          = [](void* context, C4Document* doc, C4Slice delta,
+                                     C4Error* outError) -> C4SliceResult {
                         try {
                             return ((Inserter*)context)->applyDeltaCallback(doc, delta, outError);
-                        } catch (...) {
+                        } catch ( ... ) {
                             *outError = C4Error::fromCurrentException();
                             return {};
                         }
@@ -151,78 +142,69 @@ namespace litecore { namespace repl {
                 } else {
                     // If not a delta, encode doc body using database's real sharedKeys:
                     bodyForDB = _db->reEncodeForDatabase(rev->doc);
-                    rev->doc = nullptr;
+                    rev->doc  = nullptr;
                     // Preserve rev body as the source of a future delta I may push back:
-                    if (bodyForDB.size >= tuning::kMinBodySizeForDelta
-                        && !_options->disableDeltaSupport())
+                    if ( bodyForDB.size >= tuning::kMinBodySizeForDelta && !_options->disableDeltaSupport() )
                         put.revFlags |= kRevKeepBody;
                 }
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                Retained<C4Document> doc = _db->insertionDB().useLocked<Retained<C4Document>>
-                ([outError, &put, this](C4Database* db) {
-                    return insertionCollection()->putDocument(put, nullptr, outError);
-                });
-                if (!doc)
-                    return false;
+                Retained<C4Document> doc =
+                        _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
+                            return insertionCollection()->putDocument(put, nullptr, outError);
+                        });
+                if ( !doc ) return false;
                 auto collPath = _options->collectionPath(collectionIndex());
-                logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64,
-                           SPLAT(rev->docID), SPLAT(collPath), SPLAT(rev->revID), SPLAT(rev->historyBuf),
-                           (uint64_t)doc->selectedRev().sequence);
+                logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64, SPLAT(rev->docID), SPLAT(collPath),
+                           SPLAT(rev->revID), SPLAT(rev->historyBuf), (uint64_t)doc->selectedRev().sequence);
                 rev->sequence = doc->selectedRev().sequence;
-                if (doc->selectedRev().flags & kRevIsConflict) {
+                if ( doc->selectedRev().flags & kRevIsConflict ) {
                     // Note that rev was inserted but caused a conflict:
-                    logInfo("Created conflict with '%.*s (%.*s)' #%.*s",
-                            SPLAT(rev->docID), SPLAT(collPath), SPLAT(rev->revID));
+                    logInfo("Created conflict with '%.*s (%.*s)' #%.*s", SPLAT(rev->docID), SPLAT(collPath),
+                            SPLAT(rev->revID));
                     rev->flags |= kRevIsConflict;
                     rev->isWarning = true;
                     DebugAssert(put.allowConflict);
                 }
                 return true;
             }
-        } catch (...) {
+        } catch ( ... ) {
             *outError = C4Error::fromCurrentException();
             return false;
         }
     }
 
-
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
-    C4SliceResult Inserter::applyDeltaCallback(C4Document *c4doc,
-                                               C4Slice deltaJSON,
-                                               C4Error *outError)
-    {
-        Doc doc = _db->applyDelta(c4doc, deltaJSON, true);
+    C4SliceResult Inserter::applyDeltaCallback(C4Document* c4doc, C4Slice deltaJSON, C4Error* outError) {
+        Doc         doc  = _db->applyDelta(c4doc, deltaJSON, true);
         alloc_slice body = doc.allocedData();
 
-        if (!_db->disableBlobSupport()) {
+        if ( !_db->disableBlobSupport() ) {
             // After applying the delta, remove legacy attachment properties and any other
             // "_"-prefixed top level properties:
             Dict root = doc.root().asDict();
-            if (C4Document::hasOldMetaProperties(root)) {
+            if ( C4Document::hasOldMetaProperties(root) ) {
                 body = nullslice;
                 try {
                     FLSharedKeys sk = _db->insertionDB().useLocked()->getFleeceSharedKeys();
-                    body = C4Document::encodeStrippingOldMetaProperties(root, sk);
-                } catchAndWarn();
-                if (!body)
-                    *outError = C4Error::make(WebSocketDomain, 500, "invalid legacy attachments");
+                    body            = C4Document::encodeStrippingOldMetaProperties(root, sk);
+                }
+                catchAndWarn();
+                if ( !body ) *outError = C4Error::make(WebSocketDomain, 500, "invalid legacy attachments");
             }
         }
         return C4SliceResult(body);
     }
 
     C4Collection* Inserter::insertionCollection() {
-        if (_insertionCollection)
-            return _insertionCollection;
-        
+        if ( _insertionCollection ) return _insertionCollection;
+
         auto c4db = _db->insertionDB().useLocked();
         auto coll = c4db->getCollection(getCollection()->getSpec());
-        if (!coll)
-            C4Error::raise({LiteCoreDomain, kC4ErrorNotOpen});
+        if ( !coll ) C4Error::raise({LiteCoreDomain, kC4ErrorNotOpen});
         _insertionCollection = coll;
         return _insertionCollection;
     }
 
-} }
+}}  // namespace litecore::repl

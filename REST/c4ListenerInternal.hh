@@ -17,12 +17,12 @@
 namespace litecore { namespace REST {
     class Listener;
 
-    
+
     extern C4LogDomain ListenerLog;
 
 
     extern const C4ListenerAPIs kListenerAPIs;
-    fleece::Retained<Listener> NewListener(const C4ListenerConfig *config);
-    
-    
-} }
+    fleece::Retained<Listener>  NewListener(const C4ListenerConfig* config);
+
+
+}}  // namespace litecore::REST

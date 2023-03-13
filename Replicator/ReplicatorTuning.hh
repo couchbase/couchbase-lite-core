@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
         /* Minimum document body size that will be considered for delta compression.
             (This is the size of the Fleece encoding, which is usually smaller than the JSON.)
            This is not declared `constexpr`, so that the delta-sync unit tests can change it. */
-        extern size_t kMinBodySizeForDelta; // = 200;
+        extern size_t kMinBodySizeForDelta;  // = 200;
 
         //// Puller:
 
@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
 
         /* Max desirable number of bytes of revisions that have been sent but not replied to
             yet. This is limited to avoid flooding the peer with too much JSON data. */
-        constexpr unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;
+        constexpr unsigned kMaxRevBytesAwaitingReply = 2 * 1024 * 1024;
 
         /* Number of changes to send in one "changes" msg */
         constexpr unsigned kDefaultChangeBatchSize = 200;
@@ -101,6 +101,6 @@ namespace litecore { namespace repl {
 
         /* How long to wait between delegate calls when only the progress % has changed. */
         constexpr auto kMinDelegateCallInterval = 200ms;
-    }
+    }  // namespace tuning
 
-} }
+}}  // namespace litecore::repl

@@ -13,7 +13,7 @@
 #pragma once
 
 #ifndef __cplusplus
-#error "This is C++ only"
+#    error "This is C++ only"
 #endif
 
 // ************************************************************************
