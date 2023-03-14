@@ -30,12 +30,14 @@ sleep 10
 
 echo $PROTOCOL
 
+sync='"sync":"function(doc,olddoc){channel(doc.channels)}"'
+
 curl -k --location --request PUT "$PROTOCOL://localhost:4985/scratch/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
  --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": 
-{\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, 
-\"lavenders\":{}}}}}"
+{\"flowers\": {\"collections\":{\"roses\":{${sync}}, \"tulips\":{${sync}}, 
+\"lavenders\":{${sync}}}}}}"
 
 curl -k --location --request POST "$PROTOCOL://localhost:4985/scratch/_user/" \
  --header "Content-Type: application/json" \
