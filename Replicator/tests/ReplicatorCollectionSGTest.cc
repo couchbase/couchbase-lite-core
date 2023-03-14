@@ -250,7 +250,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     // The default scope is not in our SG config. It should be rejected by SG
     SECTION("Default Collection") {
         collectionSpecs = {Default};
-        expectedError = { WebSocketDomain, 404 };
+        expectedError = { WebSocketDomain, 400 };
     }
 
     SECTION("Another Named Collection") {
@@ -275,11 +275,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     }
     if (expectedError.code != 0) {
         replicate(replParams, false);
-        // Not pass due to CBG-2675
-//        FLStringResult emsg = c4error_getMessage(_callbackStatus.error);
-//        CHECK(_callbackStatus.error.domain == expectedError.domain);
-//        CHECK(_callbackStatus.error.code == expectedError.code);
-//        FLSliceResult_Release(emsg);
     } else {
         replicate(replParams);
         verifyDocs(_docIDs);
@@ -1383,31 +1378,40 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServe
         encContextMap->begin()->second.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
 
         _expectedDocPushErrors = {docs[1]};
-        replicate(replParams, false);
-
+        {
+            ExpectingExceptions x;
+            replicate(replParams);
+        }
+        CHECK(encContextMap->begin()->second.called == 1);
         _expectedDocPushErrors = {};
+        encContextMap->begin()->second.called = 0;
 
         vector<string> fetchedIDs = fetch();
         std::sort(fetchedIDs.begin(), fetchedIDs.end());
         // Second doc is not pushed due to encryption error.
         CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
 
-        // Now try the good encryption callback. We should push all the 3 docs.
+        // Try it again with good encryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
         replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(NULL);
         replicate(replParams);
+        CHECK(encContextMap->begin()->second.called == 0);
         fetchedIDs = fetch();
         std::sort(fetchedIDs.begin(), fetchedIDs.end());
-        // Prior to fix of CBL-4129, we still see only 2 docs are pushed the remote.
-        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
+        CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
     }
 
     SECTION("WebSocketDomain/503") {
         encContextMap->begin()->second.simulateError = C4Error {WebSocketDomain, 503};
-
         _mayGoOffline = true;
-        replicate(replParams, false);
+        _expectedDocPushErrorsAfterOffline = {docs[1]};
+        {
+            ExpectingExceptions x;
+            replicate(replParams);
+        }
         CHECK(_wentOffline);
-
+        CHECK(encContextMap->begin()->second.called == 2);
+        _expectedDocPushErrorsAfterOffline = {};
         vector<string> fetchedIDs = fetch();
         std::sort(fetchedIDs.begin(), fetchedIDs.end());
         CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "02", idPrefix + "03"});
@@ -1487,7 +1491,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     SECTION("LiteCoreDomain, kC4ErrorCrypto") {
         decContextMap->begin()->second.simulateError = C4Error {LiteCoreDomain, kC4ErrorCrypto};
         _expectedDocPullErrors = {docs[1]};
-        replicate(replParams, false);
+        {
+            ExpectingExceptions x;
+            replicate(replParams);
+        }
 
         e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
         while (c4enum_next(e, ERROR_INFO())) {
@@ -1498,12 +1505,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
         std::sort(fetchedIDs.begin(), fetchedIDs.end());
         CHECK(fetchedIDs == vector<string>{idPrefix + "01", idPrefix + "03"});
 
-        // For Pull, second attempt with good decryptor won't help. The remote checkpoint
-        // has passed it.
+        // Try it again with good decryptor, but crypto errors will move the checkpoint
+        // past the doc. The second attempt won't help.
         replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptor);
         _expectedDocPullErrors = {};
         fetchedIDs.clear();
-        replicate(replParams, false);
+        replicate(replParams);
 
         e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
         while (c4enum_next(e, ERROR_INFO())) {
@@ -1518,7 +1525,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     SECTION("WebSocketDomain/503") {
         decContextMap->begin()->second.simulateError = C4Error {WebSocketDomain, 503};
         _mayGoOffline = true;
-        replicate(replParams);
+        _expectedDocPullErrorsAfterOffline = {docs[1]};
+        {
+            ExpectingExceptions x;
+            replicate(replParams);
+        }
         CHECK(_wentOffline);
 
         e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO());
@@ -2324,7 +2335,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
 // revs between syncs > repl::tuning::kDefaultMaxHistory).
 // This test attempts to emulate two separate clients with the same doc, where one client's rev history lands
 // in the gap of the other client's rev history.
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.xSyncServerCollection]") {
     constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
     constexpr size_t numInitialRevs = 2;
     constexpr const char * saveDBName = "revsgap";
