@@ -220,6 +220,12 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
         };
     }
 
+  protected:
+    ~ReplicatorCollectionTest() override {
+        // Use this to test binary log encoding/decoding is working (make sure you are running with '-r quiet')
+        if ( getenv("TEST_BINARY_LOGS") ) { CHECK(false); }
+    }
+
   private:
     vector<C4ReplicationCollection> replCollections(vector<CollectionSpec>& specs, C4ReplicatorMode pushMode,
                                                     C4ReplicatorMode pullMode) {
