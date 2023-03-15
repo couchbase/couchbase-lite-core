@@ -120,26 +120,26 @@ namespace litecore { namespace repl {
 
         // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
         // pass the collectionIndex manually for log calls
-        template <class ... Args>
-        inline void cLogInfo(CollectionIndex idx, const char* fmt, Args ... args) const {
-            const char *fmt_ = formatWithCollection(fmt);
+        template <class... Args>
+        inline void cLogInfo(CollectionIndex idx, const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
             Logging::logInfo(fmt_, idx, args...);
         }
 
-        template <class ... Args>
-        inline void cLogVerbose(CollectionIndex idx, const char* fmt, Args ... args) const {
-            const char *fmt_ = formatWithCollection(fmt);
+        template <class... Args>
+        inline void cLogVerbose(CollectionIndex idx, const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
             Logging::logVerbose(fmt_, idx, args...);
         }
 #if DEBUG
-        template <class ... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args ... args) const {
-            const char *fmt_ = formatWithCollection(fmt);
+        template <class... Args>
+        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
             Logging::logVerbose(fmt_, idx, args...);
         }
 #else
-        template <class ... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args ... args) const {}
+        template <class... Args>
+        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {}
 #endif
 
         // BLIP ConnectionDelegate API:
