@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
     extern LogDomain SyncBusyLog;
 
     // The log format string for logging a collection index
-    constexpr std::string_view kCollectionLogFormat = "{Coll#%i}";
+    constexpr const char* kCollectionLogFormat = "{Coll#%i}";
 
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
@@ -132,51 +132,50 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception& x) override;
 
-        virtual inline std::string formatWithCollection(const char* fmt) const {
-            return format(string(kCollectionLogFormat), collectionID()) + " " + string(fmt);
+        // Add the token for collection info to the format string
+        static inline const char* formatWithCollection(const char* fmt) {
+            const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
+            const auto        found  = std::find(_formatCache.begin(), _formatCache.end(), fmtStr);
+            if ( found == _formatCache.end() ) {
+                const auto& entry = _formatCache.emplace_back(fmtStr);
+                return entry.data();
+            }
+            return found->data();
         }
 
         // overrides for Logging functions which insert collection index to the format string
-        inline void logInfo(const char* fmt, ...) const override {
-            const std::string fmt_ = formatWithCollection(fmt);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Info, fmt_.c_str(), args);
-            va_end(args);
+        template <class... Args>
+        inline void logInfo(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logInfo(fmt_, collectionID(), args...);
         }
 
-        inline void logVerbose(const char* fmt, ...) const override {
-            const std::string fmt_ = formatWithCollection(fmt);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Verbose, fmt_.c_str(), args);
-            va_end(args);
+        template <class... Args>
+        inline void logVerbose(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logVerbose(fmt_, collectionID(), args...);
         }
 
 #if DEBUG
-        inline void logDebug(const char* fmt, ...) const override {
-            const std::string fmt_ = formatWithCollection(fmt);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Debug, fmt_.c_str(), args);
-            va_end(args);
+        template <class... Args>
+        inline void logDebug(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logDebug(fmt_, collectionID(), args...);
         }
 #else
-        virtual inline void logDebug(const char* fmt, ...) const override {}
+        template <class... Args>
+        inline void logDebug(const char* fmt, Args... args) const {}
 #endif
 
+        // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
         int32_t collectionID() const {
-            // DebugAssert that collection index is within range of int32_t (we expect so), so we can ignore narrowing conversion warning
+            // DebugAssert that collection index is within range of int32, so we can ignore narrowing conversion warning
             DebugAssert(_collectionIndex == kNotCollectionIndex
                         || _collectionIndex <= std::numeric_limits<int32_t>::max());
-            return _collectionIndex != kNotCollectionIndex ? _collectionIndex
-                                                           : -1;  // NOLINT(cppcoreguidelines-narrowing-conversions)
+            return _collectionIndex != kNotCollectionIndex ? _collectionIndex : -1;
         }
 
-        // Uniform collection logging
-        //        virtual void logWithCollection(LogLevel level, const std::string& fmt, ...) const;
-
-#define logInfoWithColl(FMT, ...) logInfo(CONCAT("{Coll#%i} " << FMT), this->collectionID(), ##__VA_ARGS__)
+        // NOLINTEND(cppcoreguidelines-narrowing-conversions)
 
 #pragma mark - BLIP:
 
@@ -293,11 +292,11 @@ namespace litecore { namespace repl {
         std::string               _loggingID;      // My name in the log
         uint8_t                   _importance{1};  // Higher values log more
       private:
-        Retained<blip::Connection> _connection;               // BLIP connection
-        int                        _pendingResponseCount{0};  // # of responses I'm awaiting
-        Status                     _status{kC4Idle};          // My status
-        bool                       _statusChanged{false};     // Status changed during this event
-        const CollectionIndex      _collectionIndex;
+        Retained<blip::Connection>      _connection;               // BLIP connection
+        int                             _pendingResponseCount{0};  // # of responses I'm awaiting
+        Status                          _status{kC4Idle};          // My status
+        bool                            _statusChanged{false};     // Status changed during this event
+        const CollectionIndex           _collectionIndex;
+        static std::vector<std::string> _formatCache;  // Cache for format strings that have collection info
     };
-
 }}  // namespace litecore::repl

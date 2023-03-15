@@ -118,41 +118,28 @@ namespace litecore { namespace repl {
       protected:
         virtual std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "repl"; }
 
-        // Override to just convert to string, as we don't want calls to Worker::logInfo to
-        // use our _collectionIndex, because it isn't used (it is always kNotCollectionIndex)
-        inline std::string formatWithCollection(const char* fmt) const override { return {fmt}; }
-
-        static inline std::string formatWithCollection(const char* fmt, CollectionIndex idx) {
-            return format(string(kCollectionLogFormat), idx) + " " + string(fmt);
-        }
-
         // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
         // pass the collectionIndex manually for log calls
-        inline void cLogInfo(CollectionIndex idx, const char* fmt, ...) const {
-            const std::string fmt_ = formatWithCollection(fmt, idx);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Info, fmt_.c_str(), args);
-            va_end(args);
+        template <class ... Args>
+        inline void cLogInfo(CollectionIndex idx, const char* fmt, Args ... args) const {
+            const char *fmt_ = formatWithCollection(fmt);
+            Logging::logInfo(fmt_, idx, args...);
         }
 
-        inline void cLogVerbose(CollectionIndex idx, const char* fmt, ...) const {
-            const std::string fmt_ = formatWithCollection(fmt, idx);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Verbose, fmt_.c_str(), args);
-            va_end(args);
+        template <class ... Args>
+        inline void cLogVerbose(CollectionIndex idx, const char* fmt, Args ... args) const {
+            const char *fmt_ = formatWithCollection(fmt);
+            Logging::logVerbose(fmt_, idx, args...);
         }
 #if DEBUG
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, ...) const {
-            const std::string fmt_ = formatWithCollection(fmt, idx);
-            va_list           args;
-            va_start(args, fmt);
-            _logAt(LogLevel::Debug, fmt_.c_str(), args);
-            va_end(args);
+        template <class ... Args>
+        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args ... args) const {
+            const char *fmt_ = formatWithCollection(fmt);
+            Logging::logVerbose(fmt_, idx, args...);
         }
 #else
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, ...) const {}
+        template <class ... Args>
+        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args ... args) const {}
 #endif
 
         // BLIP ConnectionDelegate API:

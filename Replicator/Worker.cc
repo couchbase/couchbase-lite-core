@@ -36,6 +36,8 @@ namespace litecore {
 
 namespace litecore { namespace repl {
 
+        std::vector<std::string> Worker::_formatCache {20}; // Allocate memory for _formatCache
+
         LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
         static void writeRedacted(Dict dict, stringstream& s) {
