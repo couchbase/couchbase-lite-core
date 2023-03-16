@@ -77,13 +77,6 @@ struct C4Document
 
     // Selecting revisions:
 
-    /**
-* Default arguments on virtual methods are strongly argued against by the C++ standards, Google goes so far as to
-* prohibit them. The reasons why can be found here: https://google.github.io/styleguide/cppguide.html#Default_Arguments
-* We should be safe to use them here, as our method calls are usually using the handle of the base class.
-*/
-    // NOLINTBEGIN(google-default-arguments)
-
     virtual bool selectCurrentRevision() noexcept                  = 0;
     virtual bool selectRevision(slice revID, bool withBody = true) = 0;  // returns false if not found
 
@@ -135,8 +128,6 @@ struct C4Document
 
     /** Saves changes to the document. Returns false on conflict. */
     virtual bool save(unsigned maxRevTreeDepth = 0) = 0;
-
-    // NOLINTEND(google-default-arguments)
 
     // Static utility functions:
 

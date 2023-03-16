@@ -146,7 +146,7 @@ struct C4QueryObserver
 
     /// Returns a new enumerator on the query results.
     /// If the query failed, throws that error as an exception.
-    virtual C4Query::Enumerator getEnumerator(bool forget = true) = 0;  // NOLINT(google-default-arguments)
+    virtual C4Query::Enumerator getEnumerator(bool forget = true) = 0;
 
   protected:
     explicit C4QueryObserver(C4Query* query) : _query(query) {}

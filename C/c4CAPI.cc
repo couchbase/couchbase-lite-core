@@ -29,6 +29,7 @@
 #include "c4QueryImpl.hh"
 #include "c4Replicator.h"
 #include "c4Private.h"
+#include "NumConversion.hh"
 #include <sstream>
 
 using namespace std;
@@ -152,8 +153,7 @@ size_t c4stream_read(C4ReadStream* stream, void* buffer, size_t maxBytes, C4Erro
 int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
     try {
         uint64_t streamLength = stream->getLength();
-        DebugAssert(streamLength < std::numeric_limits<int64_t>::max());
-        return static_cast<int64_t>(streamLength);
+        return narrow_cast<int64_t>(streamLength);
     }
     catchError(outError) return -1;
 }

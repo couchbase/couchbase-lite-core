@@ -65,13 +65,6 @@ struct C4Collection
 
     static C4Document* documentContainingValue(FLValue) noexcept;
 
-    /**
- * Default arguments on virtual methods are strongly argued against by the C++ standards, Google goes so far as to
- * prohibit them. The reasons why can be found here: https://google.github.io/styleguide/cppguide.html#Default_Arguments
- * We should be safe to use them here, as our method calls are usually using the handle of the base class.
- */
-    // NOLINTBEGIN(google-default-arguments)
-
     virtual Retained<C4Document> getDocument(slice docID, bool mustExist = true,
                                              C4DocContentLevel content = kDocGetCurrentRev) const = 0;
 
@@ -107,8 +100,6 @@ struct C4Collection
     virtual void deleteIndex(slice name) = 0;
 
     virtual alloc_slice getIndexesInfo(bool fullInfo = true) const = 0;
-
-    // NOLINTEND(google-default-arguments)
 
     virtual alloc_slice getIndexRows(slice name) const = 0;
 
