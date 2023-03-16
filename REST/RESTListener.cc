@@ -250,9 +250,9 @@ namespace litecore::REST {
     }
 
     void RESTListener::addDBHandler(Method method, const char* uri, DBHandlerMethod handler) {
-        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
-            Retained<C4Database> db = databaseFor(rq);
-            if ( db ) {
+        _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
+            Retained<C4Database> db = getDatabase(rq, rq.path(0));
+            if (db) {
                 db->lockClientMutex();
                 try {
                     (this->*handler)(rq, db);
@@ -304,16 +304,6 @@ namespace litecore::REST {
                 rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid databasename");
         }
         return db;
-    }
-
-    Retained<C4Database> RESTListener::databaseFor(RequestResponse& rq) {
-        string keySpace     = rq.path(0);
-        auto [dbName, spec] = parseKeySpace(keySpace);
-        if ( spec.name.buf || spec.scope.buf ) {
-            rq.respondWithStatus(HTTPStatus::BadRequest, "A collection ID is not valid here");
-            return nullptr;
-        }
-        return getDatabase(rq, dbName);
     }
 
     // returning the retained db is necessary because retaining a collection does not retain its db!
