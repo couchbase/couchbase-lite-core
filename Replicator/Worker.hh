@@ -135,12 +135,8 @@ namespace litecore { namespace repl {
         // Add the token for collection info to the format string
         static inline const char* formatWithCollection(const char* fmt) {
             const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-            const auto        found  = std::find(_formatCache.begin(), _formatCache.end(), fmtStr);
-            if ( found == _formatCache.end() ) {
-                const auto& entry = _formatCache.emplace_back(fmtStr);
-                return entry.data();
-            }
-            return found->data();
+            const auto        found  = _formatCache.insert({fmtStr, 0});
+            return found.first->first.data();
         }
 
         // overrides for Logging functions which insert collection index to the format string
@@ -292,11 +288,12 @@ namespace litecore { namespace repl {
         std::string               _loggingID;      // My name in the log
         uint8_t                   _importance{1};  // Higher values log more
       private:
-        Retained<blip::Connection>      _connection;               // BLIP connection
-        int                             _pendingResponseCount{0};  // # of responses I'm awaiting
-        Status                          _status{kC4Idle};          // My status
-        bool                            _statusChanged{false};     // Status changed during this event
-        const CollectionIndex           _collectionIndex;
-        static std::vector<std::string> _formatCache;  // Cache for format strings that have collection info
+        Retained<blip::Connection> _connection;               // BLIP connection
+        int                        _pendingResponseCount{0};  // # of responses I'm awaiting
+        Status                     _status{kC4Idle};          // My status
+        bool                       _statusChanged{false};     // Status changed during this event
+        const CollectionIndex      _collectionIndex;
+        static std::unordered_map<std::string, unsigned short> _formatCache;  // Using map as vector causes some weird
+                                                                              // memory issue on Windows
     };
 }}  // namespace litecore::repl
