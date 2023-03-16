@@ -137,7 +137,7 @@ namespace litecore { namespace repl {
         // Add the token for collection info to the format string
         static inline const char* formatWithCollection(const char* fmt) {
             const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-            const auto        found  = _formatCache.insert({fmtStr, 0});
+            const auto        found  = _formatCache.insert({fmtStr, 0}); // Will insert *if* it doesn't already exist
             return found.first->first.data();
         }
 
