@@ -3,7 +3,7 @@ function(setup_build)
     if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
         cmake_path(REMOVE_EXTENSION LITECORE_PREBUILT_LIB OUTPUT_VARIABLE FilesToCopy)
     else()
-        set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
+        set(FilesToCopy ${BIN_TOP}/\$$\(Configuration\)/LiteCore)
     endif()
 
     target_sources(
@@ -39,7 +39,7 @@ function(setup_build)
         TARGET C4Tests POST_BUILD
         COMMAND ${CMAKE_COMMAND}
         -DFilesToCopy="${FilesToCopy}"
-        -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
+        -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$$\(Configuration\)
         -P ${TOP}MSVC/copy_artifacts.cmake
     )
 endfunction()
