@@ -36,6 +36,8 @@ namespace litecore {
 
 namespace litecore { namespace repl {
 
+    std::unordered_map<std::string, unsigned short> Worker::_formatCache;
+
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
 
