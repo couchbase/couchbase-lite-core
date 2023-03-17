@@ -305,8 +305,8 @@ namespace litecore { namespace repl {
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
                 // Copy database's sharedKeys:
-                _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
+                _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 assert(_tempSharedKeys);
             }
             return _tempSharedKeys;
