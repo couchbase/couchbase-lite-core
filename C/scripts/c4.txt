@@ -13,6 +13,7 @@ c4log_setLevel
 c4slog
 c4log_writeToCallback
 c4log_writeToBinaryFile
+c4log_getCallback
 c4log_callbackLevel
 c4log_setCallbackLevel
 c4log_binaryFileLevel

@@ -124,6 +124,17 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C
     REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, WITH_ERROR()));
 }
 
+namespace testDbName {
+    string receivedWarning;
+    C4LogCallback savedcb = nullptr;
+
+    static void logCB(C4LogDomain dom, C4LogLevel lvl, const char *fmt, va_list nullArgs) {
+        if (lvl == kC4LogWarning && dom == kC4DefaultLog) {
+            receivedWarning = fmt;
+        }
+        savedcb(dom, lvl, fmt, nullArgs);
+    }
+}
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!throws]") {
     auto config = *c4db_getConfig2(db);
@@ -136,6 +147,27 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
         ExpectingExceptions x;
         CHECK(c4db_openNamed(""_sl, &config, &error) == nullptr);
         CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+    }
+
+    {
+        // Check invalid name warning
+        slice dbNameWithDot = "cbl_core.test"_sl;
+        if (!c4db_deleteNamed(dbNameWithDot, config.parentDirectory, &error))
+            REQUIRE(error.code == 0);
+
+        testDbName::savedcb = c4log_getCallback();
+        C4LogLevel savedLevel = c4log_callbackLevel();
+        c4log_writeToCallback(kC4LogWarning, testDbName::logCB, true);
+        testDbName::receivedWarning.clear();
+
+        auto bundle = c4db_openNamed(dbNameWithDot, &config, &error);
+        REQUIRE(bundle);
+
+        CHECK(testDbName::receivedWarning.find("\""s + dbNameWithDot.asString() + "\" is not a valid database name.") == 0);
+        c4log_writeToCallback(savedLevel, testDbName::savedcb, false);
+
+        REQUIRE(c4db_close(bundle, WITH_ERROR()));
+        c4db_release(bundle);
     }
 
     if (!c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error))

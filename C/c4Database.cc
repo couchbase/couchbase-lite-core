@@ -29,6 +29,7 @@
 #include "StringUtil.hh"
 #include <inttypes.h>
 #include <optional>
+#include <regex>
 
 
 // NOTE: Most of C4Database is implemented in its concrete subclass DatabaseImpl.
@@ -132,7 +133,24 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 }
 
 
+/*static*/ bool C4Database::isValidDbName(slice dbName) {
+    std::regex regex {"^[A-z0-9][-A-z0-9_]*"};
+    if (!dbName || dbName.size > 100) {
+        return false;
+    }
+    const char* nm = (const char*) dbName.buf;
+    return std::regex_match(nm, nm + dbName.size, regex);
+}
+
+constexpr const char* kInvalidDbNameMsgTemplate =
+    "\"%s\" is not a valid database name. A valid database name has a limit of 100 characters "
+    "and starts with a letter or digit, followed by letters, digits, dashes, "
+    "or underscores.";
+
 /*static*/ Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
+    if ( !(config.flags & kC4DB_ReadOnly) && !isValidDbName(name) ) {
+        Warn(kInvalidDbNameMsgTemplate, name.asString().c_str());
+    }
     ensureConfigDirExists(config);
     FilePath path = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
@@ -152,6 +170,9 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 
 
 /*static*/ void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config &config) {
+    if ( !isValidDbName(destinationName) ) {
+        Warn(kInvalidDbNameMsgTemplate, destinationName.asString().c_str());
+    }
     ensureConfigDirExists(config);
     FilePath from(sourcePath, "");
     FilePath to = dbPath(destinationName, config.parentDirectory);
