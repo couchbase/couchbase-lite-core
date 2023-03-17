@@ -134,11 +134,12 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 
 
 /*static*/ bool C4Database::isValidDbName(slice dbName) {
-    static std::regex regex {"^[A-z0-9][-A-z0-9_]*"};
+    std::regex regex {"^[A-z0-9][-A-z0-9_]*"};
     if (!dbName || dbName.size > 100) {
         return false;
     }
-    return std::regex_match(dbName.begin(), dbName.end(), regex);
+    const char* nm = (const char*) dbName.buf;
+    return std::regex_match(nm, nm + dbName.size, regex);
 }
 
 constexpr const char* kInvalidDbNameMsgTemplate =
