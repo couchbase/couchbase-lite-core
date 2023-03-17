@@ -14,6 +14,7 @@
 
 #include "c4Base.hh"
 #include "c4CertificateTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include <functional>
 #include <vector>
 
@@ -64,8 +65,8 @@ struct C4Cert final
 
     // Certificate signing requests:
 
-    static Retained<C4Cert> createRequest(std::vector<C4CertNameComponent> nameComponents, C4CertUsage certUsages,
-                                          C4KeyPair* subjectKey);
+    static Retained<C4Cert> createRequest(const std::vector<C4CertNameComponent>& nameComponents,
+                                          C4CertUsage certUsages, C4KeyPair* subjectKey);
 
     static Retained<C4Cert> requestFromData(slice certRequestData);
 
@@ -94,7 +95,7 @@ struct C4Cert final
 
   private:
     explicit C4Cert(litecore::crypto::CertBase*);
-    ~C4Cert();
+    ~C4Cert() override;
     litecore::crypto::CertSigningRequest* assertUnsignedCert();
 
 #endif  // COUCHBASE_ENTERPRISE
@@ -143,7 +144,7 @@ struct C4KeyPair final
     friend struct C4Cert;
 
     explicit C4KeyPair(litecore::crypto::Key*);
-    ~C4KeyPair();
+    ~C4KeyPair() override;
     Retained<litecore::crypto::PublicKey>   getPublicKey();
     litecore::crypto::PersistentPrivateKey* getPersistentPrivateKey();
 

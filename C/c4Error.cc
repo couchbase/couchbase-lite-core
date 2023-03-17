@@ -11,9 +11,7 @@
 //
 
 #include "c4Base.h"
-#include "c4Base.hh"
 #include "c4Internal.hh"
-#include "c4ExceptionUtils.hh"
 #include "Backtrace.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -72,7 +70,7 @@ namespace litecore {
                         _table.pop_front();
                         ++_tableStart;
                     }
-                    _table.emplace_back(move(info));
+                    _table.emplace_back(std::move(info));
                     error.internal_info = (uint32_t)(_tableStart + _table.size() - 1);
                 } catch ( ... ) {}
             }
@@ -88,7 +86,7 @@ namespace litecore {
                     info.message = vformat(format, args);
                 } catch ( ... ) {}
             }
-            return makeError(domain, code, move(info), skipStackFrames + 1);
+            return makeError(domain, code, std::move(info), skipStackFrames + 1);
         }
 
         /// Returns the ErrorInfo associated with a C4Error.
@@ -96,8 +94,10 @@ namespace litecore {
         __cold optional<ErrorInfo> copy(C4Error error) noexcept {
             if ( error.internal_info == 0 ) return nullopt;
             lock_guard<mutex> lock(_mutex);
-            int32_t           tableIndex = error.internal_info - _tableStart;
-            if ( tableIndex >= 0 && tableIndex < _table.size() ) return _table[tableIndex];
+            if ( int64_t(error.internal_info) - int64_t(_tableStart) < 0 )  // Ensure we won't escape range of uint32
+                return nullopt;
+            uint32_t tableIndex = error.internal_info - _tableStart;
+            if ( tableIndex < _table.size() ) return _table[tableIndex];
             else
                 return nullopt;
         }
@@ -161,7 +161,7 @@ __cold static const char* getErrorName(C4Error err) {
 __cold C4Error C4Error::make(C4ErrorDomain domain, int code, slice message) {
     ErrorInfo info;
     if ( message.size > 0 ) info.message = string(slice(message));
-    return ErrorTable::instance().makeError(domain, code, move(info));
+    return ErrorTable::instance().makeError(domain, code, std::move(info));
 }
 
 __cold C4Error C4Error::vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) {
@@ -211,9 +211,7 @@ __cold C4Error C4Error::fromCurrentException() noexcept {
 
 [[noreturn]] __cold void C4Error::raise() const {
     if ( auto info = ErrorTable::instance().copy(*this); info ) {
-        error e(error::Domain(domain), code, info->message);
-        e.backtrace = info->backtrace;
-        throw e;
+        throw error{error::Domain(domain), code, info->message, info->backtrace};
     } else {
         error::_throw(error::Domain(domain), code);
     }
@@ -261,7 +259,7 @@ __cold string C4Error::backtrace() const {
     return "";
 }
 
-__cold bool C4Error::getCaptureBacktraces(void) noexcept { return error::sCaptureBacktraces; }
+__cold bool C4Error::getCaptureBacktraces() noexcept { return error::sCaptureBacktraces; }
 
 __cold void C4Error::setCaptureBacktraces(bool c) noexcept { error::sCaptureBacktraces = c; }
 

@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4DocEnumeratorTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include <memory>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -44,19 +45,19 @@ struct C4DocEnumerator
     explicit C4DocEnumerator(C4Database*, C4SequenceNumber, const C4EnumeratorOptions& = kC4DefaultEnumeratorOptions);
 #endif
 
-    ~C4DocEnumerator();
+    ~C4DocEnumerator() override;
 
     /// Stores the current document's metadata into a struct,
     /// or returns false if the enumerator is finished.
     bool getDocumentInfo(C4DocumentInfo&) const noexcept;
 
     /// Returns the current document's metadata, or throws an exception if finished.
-    C4DocumentInfo documentInfo() const;
+    [[nodiscard]] C4DocumentInfo documentInfo() const;
 
     /// Returns the current document.
     /// \note If you use this, it's usually a good idea to set the `kC4IncludeBodies` option flag,
     /// so that the document bodies will be preloaded, saving a second database hit.
-    Retained<C4Document> getDocument() const;
+    [[nodiscard]] Retained<C4Document> getDocument() const;
 
     /// Steps to the next document. Returns false when it reaches the end.
     bool next();
@@ -66,9 +67,9 @@ struct C4DocEnumerator
     /// GC finalizer to run.)
     void close() noexcept;
 
-  private:
     C4DocEnumerator(const C4DocEnumerator&) = delete;
 
+  private:
     class Impl;
     std::unique_ptr<Impl> _impl;
 };

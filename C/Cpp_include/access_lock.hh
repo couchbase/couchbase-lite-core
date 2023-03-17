@@ -66,7 +66,7 @@ namespace litecore {
 
             REF get() { return _ref; }
 
-            operator REF() { return _ref; }
+            operator REF() { return _ref; }  // NOLINT(google-explicit-constructor) - making this explicit breaks things
 
             auto operator->() { return &_ref; }
 
@@ -101,7 +101,7 @@ namespace litecore {
 
             Retained<R>& get() { return _ref; }
 
-            operator R*() { return _ref; }
+            operator R*() { return _ref; }  // NOLINT(google-explicit-constructor) - making this explicit breaks things
 
             R* operator->() { return _ref; }
 
@@ -133,7 +133,7 @@ namespace litecore {
 
             auto get() { return _ref; }
 
-            operator const R*() { return _ref; }
+            operator const R*() { return _ref; }  // NOLINT(google-explicit-constructor) - making explicit breaks things
 
             auto operator*() { return _ref; }
 

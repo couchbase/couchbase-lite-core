@@ -12,7 +12,8 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4SocketTypes.h"
+#include "c4SocketTypes.h"  // IWYU pragma: keep - We need full definitions for the types
+#include "fleece/InstanceCounted.hh"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -31,7 +32,7 @@ C4_ASSUME_NONNULL_BEGIN
     C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
     stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
     `nativeHandle` field. */
-struct C4Socket
+struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay for nativeHandle to be null
     : public fleece::InstanceCounted
     , C4Base {
     /** One-time registration of socket callbacks. Must be called before using any socket-based
@@ -108,7 +109,7 @@ struct C4Socket
 
   protected:
     C4Socket() = default;
-    virtual ~C4Socket();
+    ~C4Socket() override;
 
     void* C4NULLABLE nativeHandle;  ///< for client's use
 };
