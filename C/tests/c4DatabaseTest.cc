@@ -126,10 +126,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C
 
 namespace testDbName {
     string receivedWarning;
-    static void logCB(C4LogDomain d, C4LogLevel l, const char *fmt, va_list) {
-        if (l == kC4LogWarning && d == kC4DefaultLog) {
+    C4LogCallback savedcb = nullptr;
+
+    static void logCB(C4LogDomain dom, C4LogLevel lvl, const char *fmt, va_list nullArgs) {
+        if (lvl == kC4LogWarning && dom == kC4DefaultLog) {
             receivedWarning = fmt;
         }
+        savedcb(dom, lvl, fmt, nullArgs);
     }
 }
 
@@ -152,7 +155,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
         if (!c4db_deleteNamed(dbNameWithDot, config.parentDirectory, &error))
             REQUIRE(error.code == 0);
 
-        C4LogCallback savedcb = c4log_getCallback();
+        testDbName::savedcb = c4log_getCallback();
         C4LogLevel savedLevel = c4log_callbackLevel();
         c4log_writeToCallback(kC4LogWarning, testDbName::logCB, true);
         testDbName::receivedWarning.clear();
@@ -161,7 +164,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
         REQUIRE(bundle);
 
         CHECK(testDbName::receivedWarning.find("\""s + dbNameWithDot.asString() + "\" is not a valid database name.") == 0);
-        c4log_writeToCallback(savedLevel, savedcb, false);
+        c4log_writeToCallback(savedLevel, testDbName::savedcb, false);
 
         REQUIRE(c4db_close(bundle, WITH_ERROR()));
         c4db_release(bundle);
