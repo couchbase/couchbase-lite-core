@@ -1,0 +1,60 @@
+---
+#################################
+#################################
+## Super Linter GitHub Actions ##
+#################################
+#################################
+name: Lint Code Base
+
+#############################
+# Start the job on all push #
+#############################
+on:
+  push:
+    branches: [master, dev, 'release/*']
+    # Remove the line above to run when pushing to master
+  pull_request:
+    branches: ['**']
+
+env:
+  BUILD_TYPE: Debug
+
+###############
+# Set the Job #
+###############
+jobs:
+  formatting-check:
+    # Name the Job
+    name: Formatting Check
+    # Set the agent to run on
+    runs-on: ubuntu-latest
+    # Set the paths to run on
+    strategy:
+      matrix:
+        path:
+          - check: '.'
+            exclude: '(cmake|docs|jenkins|licenses|modules|tools|vendor|wiki|Xcode)'
+
+    ##################
+    # Load all steps #
+    ##################
+    steps:
+      ##########################
+      # Checkout the code base #
+      ##########################
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      ################################
+      # Run Linter against code base #
+      ################################
+
+      - name: Lint Code Base
+        uses: jidicula/clang-format-action@v4.11.0
+        with:
+          clang-format-version: '15'
+          check-path: ${{ matrix.path['check'] }}
+          exclude-regex: ${{ matrix.path['exclude'] }}
