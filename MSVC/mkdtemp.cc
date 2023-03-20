@@ -26,33 +26,25 @@
 #include <io.h>
 #include <atlbase.h>
 
-char *mkdtemp(char *path)
-{
-    char		*start, *cp;
-    unsigned	 int tries;
+char* mkdtemp(char* path) {
+    char *       start, *cp;
+    unsigned int tries;
 
     start = strchr(path, '\0');
-    while (start > path && start[-1] == 'X') {
-        start--;
-    }
+    while ( start > path && start[-1] == 'X' ) { start--; }
 
-    for (tries = INT_MAX; tries; tries--) {
-        if (_mktemp(path) == NULL) {
+    for ( tries = INT_MAX; tries; tries-- ) {
+        if ( _mktemp(path) == NULL ) {
             errno = EEXIST;
             return NULL;
         }
 
         CA2WEX<256> wpath(path, CP_UTF8);
-        if (_wmkdir(wpath) == 0) {
-            return path;
-        }
+        if ( _wmkdir(wpath) == 0 ) { return path; }
 
-        if (errno != EEXIST) {
-            return NULL;
-        }
+        if ( errno != EEXIST ) { return NULL; }
 
-        for (cp = start; *cp != '\0'; cp++)
-            *cp = 'X';
+        for ( cp = start; *cp != '\0'; cp++ ) *cp = 'X';
     }
 
     errno = EEXIST;

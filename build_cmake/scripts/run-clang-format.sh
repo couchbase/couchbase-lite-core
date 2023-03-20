@@ -5,7 +5,7 @@
 # clang-format should either be installed by homebrew, or available to /bin/sh's path
 PATH=$PATH:/opt/homebrew/bin
 
-DIRS=("C" "Crypto" "LiteCore" "Networking" "Replicator" "REST")
+DIRS=("C" "Crypto" "LiteCore" "MSVC" "Networking" "Replicator" "REST")
 
 CURDIR=$(pwd)
 

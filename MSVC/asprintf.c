@@ -16,12 +16,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "asprintf.h"
 
-int asprintf(char **strp, const char *fmt, ...)
-{
-  int r;
-  va_list ap;
-  va_start(ap, fmt);
-  r = vasprintf(strp, fmt, ap);
-  va_end(ap);
-  return(r);
+int asprintf(char** strp, const char* fmt, ...) {
+    int     r;
+    va_list ap;
+    va_start(ap, fmt);
+    r = vasprintf(strp, fmt, ap);
+    va_end(ap);
+    return (r);
 }
