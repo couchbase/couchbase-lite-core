@@ -13,9 +13,9 @@
 #pragma once
 #include "c4Compat.h"
 #include "fleece/FLSlice.h"
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
+#include <cstdarg>
+
+#include <cstdint>
 
 #ifdef __cplusplus
 #    include "fleece/slice.hh"
@@ -180,12 +180,12 @@ typedef struct C4Error {
 
     bool operator!() const { return code == 0; }
 
-    std::string message() const;
-    std::string description() const;
-    std::string backtrace() const;
+    [[nodiscard]] std::string message() const;
+    [[nodiscard]] std::string description() const;
+    [[nodiscard]] std::string backtrace() const;
 
-    bool mayBeTransient() const noexcept;
-    bool mayBeNetworkDependent() const noexcept;
+    [[nodiscard]] bool mayBeTransient() const noexcept;
+    [[nodiscard]] bool mayBeNetworkDependent() const noexcept;
 #endif
 } C4Error;
 

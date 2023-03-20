@@ -12,16 +12,18 @@
 
 #pragma once
 
-#include "c4BlobStore.h"
-#include "c4Certificate.h"
-#include "c4Collection.h"
-#include "c4Database.h"
-#include "c4Document.h"
-#include "c4Document+Fleece.h"
-#include "c4DocEnumerator.h"
-#include "c4Index.h"
-#include "c4Listener.h"
-#include "c4Observer.h"
-#include "c4Query.h"
-#include "c4Replicator.h"
-#include "c4Socket.h"
+// Mark these includes as 'keep' so Clangd doesn't warn about them not being used in this file
+
+#include "c4BlobStore.h"        // IWYU pragma: keep
+#include "c4Certificate.h"      // IWYU pragma: keep
+#include "c4Collection.h"       // IWYU pragma: keep
+#include "c4Database.h"         // IWYU pragma: keep
+#include "c4Document.h"         // IWYU pragma: keep
+#include "c4Document+Fleece.h"  // IWYU pragma: keep
+#include "c4DocEnumerator.h"    // IWYU pragma: keep
+#include "c4Index.h"            // IWYU pragma: keep
+#include "c4Listener.h"         // IWYU pragma: keep
+#include "c4Observer.h"         // IWYU pragma: keep
+#include "c4Query.h"            // IWYU pragma: keep
+#include "c4Replicator.h"       // IWYU pragma: keep
+#include "c4Socket.h"           // IWYU pragma: keep

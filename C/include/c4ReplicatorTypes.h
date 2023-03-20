@@ -60,9 +60,9 @@ struct C4Address {
     C4String path;
 
 #if __cplusplus
-    bool                isValidRemote(fleece::slice withDbName, C4Error* C4NULLABLE = nullptr) const noexcept;
-    fleece::alloc_slice toURL() const;
-    static bool         fromURL(fleece::slice url, C4Address* outAddress, fleece::slice* C4NULLABLE outDBName);
+    bool isValidRemote(fleece::slice withDbName, C4Error* C4NULLABLE = nullptr) const noexcept;
+    [[nodiscard]] fleece::alloc_slice toURL() const;
+    static bool fromURL(fleece::slice url, C4Address* outAddress, fleece::slice* C4NULLABLE outDBName);
 #endif
 };
 
@@ -101,6 +101,8 @@ typedef struct {
     C4ReplicatorStatusFlags   flags;
 } C4ReplicatorStatus;
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** Information about a document that's been pushed or pulled. */
 typedef struct {
     C4CollectionSpec collectionSpec;
@@ -112,6 +114,8 @@ typedef struct {
     bool             errorIsTransient;
     void*            collectionContext;
 } C4DocumentEnded;
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */

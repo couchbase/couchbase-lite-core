@@ -190,7 +190,7 @@ CBL_CORE_API bool c4db_isInTransaction(C4Database* database) C4API;
 
 
 /** Frees the storage occupied by a raw document. */
-CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE rawDoc) C4API;
+CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE rawDoc) C4API;  // NOLINT(readability-redundant-declaration)
 
 /** Reads a raw document from the database. In Couchbase Lite the store named "info" is used
         for per-database key/value pairs, and the store "_local" is used for local documents. */

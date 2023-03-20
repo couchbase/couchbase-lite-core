@@ -47,11 +47,11 @@
 //      typedef C4_OPTIONS(baseIntType, name) { ... };
 // These aren't just a convenience; they are required for Swift bindings.
 #if __has_attribute(enum_extensibility)
-#    define __C4_ENUM_ATTRIBUTES    __attribute__((enum_extensibility(open)))
-#    define __C4_OPTIONS_ATTRIBUTES __attribute__((flag_enum, enum_extensibility(open)))
+#    define C4_ENUM_ATTRIBUTES    __attribute__((enum_extensibility(open)))
+#    define C4_OPTIONS_ATTRIBUTES __attribute__((flag_enum, enum_extensibility(open)))
 #else
-#    define __C4_ENUM_ATTRIBUTES
-#    define __C4_OPTIONS_ATTRIBUTES
+#    define C4_ENUM_ATTRIBUTES
+#    define C4_OPTIONS_ATTRIBUTES
 #endif
 
 #if __APPLE__
@@ -71,19 +71,19 @@
                 && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum)))                              \
             || (!__cplusplus && __has_feature(objc_fixed_enum))
 #        define C4_ENUM(_type, _name)                                                                                  \
-            int                       __C4_ENUM_##_name;                                                               \
-            enum __C4_ENUM_ATTRIBUTES _name : _type;                                                                   \
-            typedef enum _name        _name;                                                                           \
+            int                     __C4_ENUM_##_name;                                                                 \
+            enum C4_ENUM_ATTRIBUTES _name : _type;                                                                     \
+            typedef enum _name      _name;                                                                             \
             enum _name : _type
 #        if ( __cplusplus )
 #            define C4_OPTIONS(_type, _name)                                                                           \
                 _type _name;                                                                                           \
-                enum __C4_OPTIONS_ATTRIBUTES : _type
+                enum C4_OPTIONS_ATTRIBUTES : _type
 #        else
 #            define C4_OPTIONS(_type, _name)                                                                           \
-                int                          __C4_OPTIONS_##_name;                                                     \
-                enum __C4_OPTIONS_ATTRIBUTES _name : _type;                                                            \
-                typedef enum _name           _name;                                                                    \
+                int                        __C4_OPTIONS_##_name;                                                       \
+                enum C4_OPTIONS_ATTRIBUTES _name : _type;                                                              \
+                typedef enum _name         _name;                                                                      \
                 enum _name : _type
 #        endif
 #    else

@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4ListenerTypes.h"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -27,7 +27,7 @@ CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) C4API;
 CBL_CORE_API C4Listener* c4listener_start(const C4ListenerConfig* config, C4Error* C4NULLABLE error) C4API;
 
 /** Closes and disposes a listener. */
-CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE listener) C4API;
+CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE listener) C4API;  // NOLINT(readability-redundant-declaration)
 
 /** Makes a database available from the network.
         @param listener  The listener that should share the database.

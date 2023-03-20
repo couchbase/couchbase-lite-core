@@ -45,6 +45,8 @@ typedef struct {
     uint32_t length;      ///< *Byte* range length of the match in the full text
 } C4FullTextMatch;
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** A query result enumerator.
     Created by c4db_query. Must be freed with c4queryenum_release.
     The fields of this struct represent the current matched index row, and are valid until the
@@ -64,6 +66,8 @@ struct C4QueryEnumerator {
     /** Array with details of each full-text match */
     const C4FullTextMatch* C4NULLABLE fullTextMatches;
 };
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 /** @} */
 

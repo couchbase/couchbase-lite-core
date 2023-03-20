@@ -79,7 +79,7 @@ CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSo
         Does not stop the replicator -- if the replicator still has other internal references,
         it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
         \note This function is thread-safe. */
-CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;
+CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;  // NOLINT(readability-redundant-declaration)
 
 /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.

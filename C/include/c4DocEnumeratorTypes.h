@@ -46,6 +46,8 @@ typedef struct {
 /** Default all-docs enumeration options. (Equal to kC4IncludeNonConflicted | kC4IncludeBodies) */
 CBL_CORE_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** Metadata about a document (actually about its current revision.) */
 typedef struct C4DocumentInfo {
     C4DocumentFlags  flags;       ///< Document flags
@@ -56,6 +58,8 @@ typedef struct C4DocumentInfo {
     uint64_t         metaSize;    ///< Size in bytes of extra metadata
     C4Timestamp      expiration;  ///< Expiration time, or 0 if none
 } C4DocumentInfo;
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 /** @} */
 

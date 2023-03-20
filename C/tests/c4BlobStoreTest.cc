@@ -10,21 +10,21 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4BlobStore.h"
-#include "c4Private.h"
 #include <fstream>
 
 using namespace std;
 
 class BlobStoreTest : public C4Test {
   public:
-    BlobStoreTest(int option) : C4Test(option), encrypted(isEncrypted()), store(c4db_getBlobStore(db, nullptr)) {}
+    explicit BlobStoreTest(int option)
+        : C4Test(option), encrypted(isEncrypted()), store(c4db_getBlobStore(db, nullptr)) {}
 
     C4BlobStore* store{nullptr};
     const bool   encrypted;
 
-    C4BlobKey bogusKey;
+    C4BlobKey bogusKey{};
 };
 
 TEST_CASE("parse blob keys", "[blob][C]") {
@@ -175,9 +175,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][Encryptio
 
     char   buf[10000];
     size_t kReadSizes[5] = {1, 6, blob.size(), 4096, 10000};
-    for ( int i = 0; i < 5; i++ ) {
-        size_t readSize = kReadSizes[i];
-
+    for ( size_t readSize : kReadSizes ) {
         auto stream = c4blob_openReadStream(store, key, ERROR_INFO(error));
         REQUIRE(stream);
 
@@ -267,8 +265,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blobs of many sizes", "[blob][Encry
         REQUIRE(stream);
 
         const char* chars = "ABCDEFGHIJKLMNOPQRSTUVWXY";
-        for ( int i = 0; i < size; i++ ) {
-            int c = i % strlen(chars);
+        for ( size_t i = 0, c = 0; i < size; i++, c = i % strlen(chars) ) {
             REQUIRE(c4stream_write(stream, &chars[c], 1, WITH_ERROR(&error)));
         }
 

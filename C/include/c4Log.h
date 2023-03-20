@@ -14,7 +14,7 @@
 #include "c4Compat.h"
 #include "c4Error.h"
 #include "fleece/FLSlice.h"
-#include <stdarg.h>
+#include <cstdarg>
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS

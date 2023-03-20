@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Observer.h"
 #include "c4Collection.h"
 
@@ -18,7 +18,7 @@ class C4ObserverTest : public C4Test {
   public:
     slice kDocARev1, kDocBRev1, kDocCRev1, kDocDRev1, kDocERev1, kDocARev2, kDocBRev2, kDocBRev2History;
 
-    C4ObserverTest(int which) : C4Test(which) {
+    explicit C4ObserverTest(int which) : C4Test(which) {
         if ( isRevTrees() ) {
             kDocARev1        = "1-aa";
             kDocBRev1        = "1-bb";
@@ -64,7 +64,7 @@ class C4ObserverTest : public C4Test {
     }
 
     void checkChanges(C4Collection* expectedCollection, std::vector<slice> expectedDocIDs,
-                      std::vector<slice> expectedRevIDs, bool expectedExternal = false) {
+                      std::vector<slice> expectedRevIDs, bool expectedExternal = false) const {
         C4DatabaseChange changes[100];
         auto             observation = c4dbobs_getChanges(dbObserver, changes, 100);
         REQUIRE(observation.numChanges == expectedDocIDs.size());
@@ -85,7 +85,7 @@ class C4ObserverTest : public C4Test {
     unsigned            docCallbackCalls{0};
     alloc_slice         lastDocCallbackDocID;
     C4SequenceNumber    lastDocCallbackSequence = 0;
-    C4Collection*       lastCallbackCollection;
+    C4Collection*       lastCallbackCollection{nullptr};
 };
 
 static void dbObserverCallback(C4DatabaseObserver* obs, void* context) {
@@ -234,7 +234,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     createRev("A"_sl, kDocARev2, kFleeceBody);
     CHECK(dbCallbackCalls == 2);
 
-    c4db_close(otherdb, NULL);
+    c4db_close(otherdb, nullptr);
     c4db_release(otherdb);
 }
 

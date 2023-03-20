@@ -20,6 +20,8 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** Describes a version-controlled document. */
 struct
 #if !LITECORE_CPP_API  // C++ has a different declaration, in c4Document.hh
@@ -40,6 +42,8 @@ struct
 
     C4ExtraInfo extraInfo;  ///< For client use
 };
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
