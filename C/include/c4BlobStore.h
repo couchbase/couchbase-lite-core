@@ -13,7 +13,11 @@
 #pragma once
 #include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
-#include <cstdio>
+#ifdef __cplusplus
+#    include <cstdio>
+#else
+#    include <stdio.h>
+#endif
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS

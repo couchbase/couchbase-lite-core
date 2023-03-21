@@ -13,14 +13,16 @@
 #pragma once
 #include "c4Compat.h"
 #include "fleece/FLSlice.h"
-#include <cstdarg>
-
-#include <cstdint>
 
 #ifdef __cplusplus
 #    include "fleece/slice.hh"
 #    include <exception>
 #    include <string>
+#    include <cstdarg>
+#    include <cstdint>
+#else
+#    include <stdarg.h>
+#    include <stdint.h>
 #endif
 
 C4_ASSUME_NONNULL_BEGIN

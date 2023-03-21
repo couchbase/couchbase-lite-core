@@ -15,7 +15,11 @@
 #include "c4Error.h"
 #include "c4Log.h"
 #include "fleece/FLSlice.h"
-#include <cstdarg>
+#ifdef __cplusplus
+#    include <cstdarg>
+#else
+#    include <stdarg.h>
+#endif
 
 #if LITECORE_CPP_API
 #    include "c4EnumUtil.hh"
