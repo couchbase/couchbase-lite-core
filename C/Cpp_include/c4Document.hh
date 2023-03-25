@@ -101,6 +101,8 @@ struct C4Document
 
     virtual alloc_slice remoteAncestorRevID(C4RemoteID)                 = 0;
     virtual void        setRemoteAncestorRevID(C4RemoteID, slice revID) = 0;
+    virtual bool        isRevRejected()                                 = 0;
+    virtual void        revIsRejected(slice revID)                      = 0;
 
     // Purging:
 

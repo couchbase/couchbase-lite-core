@@ -31,9 +31,10 @@ namespace litecore { namespace repl {
         using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
-        // Note: The following fields must be compatible with the public C4DocumentEnded struct:
         const alloc_slice      collectionName = {};  // TODO: Collection aware
         const alloc_slice      scopeName      = {};
+        // Note: The following fields, up to collectionContext, must be compatible with the public
+        // C4DocumentEnded struct:
         const C4CollectionSpec collectionSpec = {collectionName, scopeName};
         const alloc_slice      docID;
         const alloc_slice      revID;
@@ -52,6 +53,7 @@ namespace litecore { namespace repl {
         }
 
         bool isWarning{false};
+        bool rejectedByRemote{false};
 
         virtual Dir dir() const = 0;
 

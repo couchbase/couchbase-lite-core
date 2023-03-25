@@ -15,6 +15,7 @@
 #include "ReplicatorCollectionSGTest.hh"
 #include "ReplicatorLoopbackTest.hh"
 #include "Base64.hh"
+#include <future>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run locally with the following environment.
@@ -2242,5 +2243,204 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
         REQUIRE(doc);
         auto revID = slice(doc->revID);
         REQUIRE(revID.hasPrefix(to_string(numRevs1 + numInitialRevs) + "-"));
+    }
+}
+
+// To run this test, the sync function for Tulips collection must be,
+// "tulips":{"sync":"function(doc,olddoc){if(doc.cbl_445==\"bad\")throw({\"forbidden\":\"read_only\"});channel(doc.channels)}"}
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    const string channelID = idPrefix + "ch";
+    initTest({ Tulips }, {channelID}, "user1");
+    SG::TestUser user2(_sg, "user2", {channelID}, { Tulips }, "password");
+
+    auto bodyOfNum = [&](bool good, int n) {
+        char buf[80];
+        snprintf(buf, 80, "{\"cbl_445\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}",
+                 good ? "good": "bad", n, channelID.c_str());
+        return alloc_slice(buf);
+    };
+
+    string docID = idPrefix + "doc01";
+    string rev1 = createFleeceRev(_collections[0], slice(docID), nullslice, bodyOfNum(true, 1));
+
+    ReplParams replParams {_collectionSpecs, kC4OneShot, kC4Disabled};
+    // Push a good revision of gen 1 to remote
+    replicate(replParams);
+
+    // Put a bad revision of gen 2 in the local db
+    string rev2_bad;
+    {
+        TransactionHelper t(db);
+        SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+        enc.convertJSON(bodyOfNum(false, 2));
+        fleece::alloc_slice fleeceBody = enc.finish();
+        rev2_bad = createNewRev(_collections[0], slice(docID), slice(rev1), fleeceBody);
+    }
+
+    auto getAllRevs = [](C4Document* doc) {
+        std::vector<string> ret;
+        do {
+            C4SliceResult j = c4doc_bodyAsJSON(doc, true, nullptr);
+            if (j.buf) {
+                ret.push_back(string(doc->selectedRev.revID) + "/" + string(j));
+            } else {
+                ret.push_back(string(doc->selectedRev.revID) + "/missing");
+            }
+        } while (c4doc_selectNextRevision(doc));
+        c4doc_selectCurrentRevision(doc);
+        return ret;
+    };
+
+    auto conflictResolver = [&](const C4DocumentEnded* docEndedWithConflict) {
+        C4Error error;
+        int     i = 0;
+        for ( ; i < _collectionCount; ++i ) {
+            if ( docEndedWithConflict->collectionSpec == _collectionSpecs[i] ) {
+                break;
+            }
+        }
+        Assert(i < _collectionCount, "Internal logical error");
+
+        TransactionHelper t(db);
+
+        slice docID = docEndedWithConflict->docID;
+        // Get the local doc. It is the current revision
+        c4::ref<C4Document> localDoc = c4coll_getDoc(_collections[i], docID, true, kDocGetAll, WITH_ERROR(error));
+        CHECK(error.code == 0);
+
+        bool wasRejected = c4doc_isRevRejected(localDoc);
+        CHECK(wasRejected);
+        // The current 2-gen is pushed but rejected. We are going to pick the remote rev as the winner
+
+        // Get the remote doc. It is the next leaf revision of the current revision.
+        c4::ref<C4Document> remoteDoc = c4coll_getDoc(_collections[i], docID, true, kDocGetAll, &error);
+        bool                succ      = c4doc_selectNextLeafRevision(remoteDoc, true, false, &error);
+        Assert(remoteDoc->selectedRev.revID == docEndedWithConflict->revID);
+        CHECK(error.code == 0);
+        CHECK(succ);
+
+        C4Document* resolvedDoc = remoteDoc;
+
+        FLDict          mergedBody  = c4doc_getProperties(resolvedDoc);
+        C4RevisionFlags mergedFlags = resolvedDoc->selectedRev.flags;
+        alloc_slice     winRevID    = resolvedDoc->selectedRev.revID;
+        alloc_slice lostRevID = (resolvedDoc == remoteDoc) ? localDoc->selectedRev.revID : remoteDoc->selectedRev.revID;
+        bool        result    = c4doc_resolveConflict2(localDoc, winRevID, lostRevID, mergedBody, mergedFlags, &error);
+        Assert(result, "conflictHandler: c4doc_resolveConflict2 failed for '%.*s' in '%.*s.%.*s'", SPLAT(docID),
+               SPLAT(_collectionSpecs[i].scope), SPLAT(_collectionSpecs[i].name));
+        Assert((localDoc->flags & kDocConflicted) == 0);
+
+        if ( !c4doc_save(localDoc, 0, &error) ) {
+            Assert(false, "conflictHandler: c4doc_save failed for '%.*s' in '%.*s.%.*s'", SPLAT(docID),
+                   SPLAT(_collectionSpecs[i].scope), SPLAT(_collectionSpecs[i].name));
+        }
+    };
+
+    c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    auto revsLocal = getAllRevs(doc);
+    // revsLocal has rev1 with good content, sync'ed to the remote,
+    // rev2 with bad content, not synced. The order is the same as in the rev tree.
+    // revsLocal = { 2-badContent, 1-goodContent }
+    CHECK(revsLocal.size() == 2);
+    CHECK(revsLocal[0].substr(0, 2) == "2-");
+    auto pos = revsLocal[0].find('/');
+    CHECK(revsLocal[0].substr(pos).find("bad") != string::npos);
+    CHECK(revsLocal[1].substr(0, 2) == "1-");
+    pos = revsLocal[1].find('/');
+    CHECK(revsLocal[1].substr(pos).find("good") != string::npos);
+
+    SECTION("Simultaneous push and pull") {
+        // Push the bad rev of 2-gen and pull a good rev of 2-gen
+        _callbackWhenIdle = [=]() {
+            auto seq = c4coll_getLastSequence(_collections[0]);
+            // seq 1 is the the good 1-gen rev
+            // seq 2 is the bad 2-gen rev
+            // The above are currently in the local db.
+            // seq 3 is the good 2-gen pulled from the remote
+            // seq 4 is new rev from the conflict resolution. It is 3-gen.
+            if (seq == 4) {
+                c4repl_stop(_repl);
+            }
+        };
+        _conflictHandler = conflictResolver;
+
+        replParams.setPushPull(kC4OneShot, kC4Continuous);
+        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
+        auto replAsync = std::async(std::launch::async, [&]() {
+            replicate(replParams);
+        });
+
+        bool waitForThePush = WaitUntil(2s, [&]() {
+            std::scoped_lock<std::mutex> lock(_mutex);
+            return _docPushErrors.size() > 0;
+        });
+        REQUIRE(waitForThePush);
+
+        // user2 sends a good revision of 2-gen to the remote
+        _sg.authHeader = user2.authHeader();
+        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        REQUIRE(succ);
+
+        // wait for pull getting the good 2-gen rev and conflict resolved.
+        replAsync.wait();
+
+        // Check it out
+        doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, nullptr);
+        REQUIRE(doc);
+
+        // revisions after pulling from the remote
+        auto revsLocal2 = getAllRevs(doc);
+        CHECK(revsLocal2.size() == 3);
+        // revsLocal2[] = { 3-goodMerged, 2-goodRemote, 1-goodContent }
+        CHECK(revsLocal2[0].substr(0, 2) == "3-");
+        auto pos2 = revsLocal2[0].find('/');
+        CHECK(revsLocal2[0].substr(pos2).find("good") != string::npos);
+        CHECK(revsLocal2[1].substr(0, 2) == "2-"); // This one is pulled from remote.
+        CHECK(revsLocal2[2].substr(0, 2) == "1-"); // This original local one.
+        pos2 = revsLocal2[2].find('/');
+        // The 1-gen rev is not changed after push&pull
+        CHECK(revsLocal2[2].substr(0, pos2) == revsLocal[1].substr(0, pos));
+    }
+
+    SECTION("Separate Push and Pull without Conflict Resolver") {
+        replParams.setPushPull(kC4OneShot, kC4Disabled);
+        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
+        replicate(replParams, false);
+        _expectedDocPushErrors = { };
+
+        // user2 sends a good revision of 2-gen to the remote
+        _sg.authHeader = user2.authHeader();
+        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        REQUIRE(succ);
+
+        _stopWhenIdle.store(true);
+        replParams.setPushPull(kC4Disabled, kC4Continuous);
+        _expectedDocPullErrors = { docID };
+        replicate(replParams, false);
+    }
+
+    SECTION("Separate Push and Pull with Conflict Resolver") {
+        replParams.setPushPull(kC4OneShot, kC4Disabled);
+        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
+        replicate(replParams, false);
+        _expectedDocPushErrors = { };
+
+        // user2 sends a good revision of 2-gen to the remote
+        _sg.authHeader = user2.authHeader();
+        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        REQUIRE(succ);
+
+        _callbackWhenIdle = [=]() {
+            auto seq = c4coll_getLastSequence(_collections[0]);
+            if (seq == 4) {
+                c4repl_stop(_repl);
+            }
+        };
+        _conflictHandler = conflictResolver;
+
+        replParams.setPushPull(kC4Disabled, kC4Continuous);
+        replicate(replParams);
     }
 }

@@ -216,7 +216,12 @@ namespace litecore::repl {
                         logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
                                  (completed ? "" : "transient "), SPLAT(rev->docID), SPLAT(rev->revID),
                                  (uint64_t)rev->sequence, SPLAT(err.domain), err.code, SPLAT(err.message));
+                        if (completed && c4err.code == 403) {
+                            rev->rejectedByRemote = true;
+                            _db->markRevSynced(rev);
+                        }
                         finishedDocumentWithError(rev, c4err, !completed);
+
                         // If this is a permanent failure, like a validation error or conflict,
                         // then I've completed my duty to push it.
                     }

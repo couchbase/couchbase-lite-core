@@ -292,6 +292,19 @@ namespace litecore {
             _revTree.setLatestRevisionOnRemote(remote, rev);
         }
 
+        bool isRevRejected() override {
+            mustLoadRevisions();
+            std::vector<const Rev*> rejected = _revTree.getRejectedRevs();
+            return std::find(rejected.begin(), rejected.end(), _selectedRev) != rejected.end();
+        }
+
+        void revIsRejected(slice revID) override {
+            mustLoadRevisions();
+            const Rev* rev = _revTree[revidBuffer(revID)];
+            if ( !rev ) error::_throw(error::NotFound);
+            _revTree.revIsRejected(rev);
+        }
+
         void updateFlags() {
             _flags = (C4DocumentFlags)_revTree.flags() | kDocExists;
             initRevID();

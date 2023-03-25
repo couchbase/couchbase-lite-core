@@ -43,7 +43,8 @@ namespace litecore {
         return false;  // Fell off end before finding end marker
     }
 
-    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap, RevTree* owner,
+    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap,
+                                            std::vector<const Rev*>& rejectedRevs, RevTree* owner,
                                             sequence_t curSeq) {
         const RawRevision* rawRev = (const RawRevision*)raw_tree.buf;
         if ( fleece::endian::dec32(rawRev->size_BE) > raw_tree.size )
@@ -64,9 +65,22 @@ namespace litecore {
         while ( entry < (const void*)raw_tree.end() ) {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto              revIndex = endian::dec16(entry->revIndex_BE);
+            if ( remoteID == 0 && revIndex == 0 ) {
+                ++entry;
+                break; // The zero mark
+            }
             if ( remoteID == 0 || revIndex >= count )
-                error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error");
+                error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error at remoteMap");
             remoteMap[remoteID] = &revs[revIndex];
+            ++entry;
+        }
+
+        while ( entry < (const void*)raw_tree.end() ) {
+            RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
+            auto              revIndex = endian::dec16(entry->revIndex_BE);
+            if ( remoteID != 0 || revIndex >= count )
+                error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error at rejectedRevs");
+            rejectedRevs.push_back(&revs[revIndex]);
             ++entry;
         }
 
@@ -76,11 +90,13 @@ namespace litecore {
         return revs;
     }
 
-    alloc_slice RawRevision::encodeTree(const vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap) {
+    alloc_slice RawRevision::encodeTree(const vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap,
+                                        const std::vector<const Rev*>& rejectedRevs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for ( Rev* rev : revs ) totalSize += sizeToWrite(*rev);
-        totalSize += remoteMap.size() * sizeof(RemoteEntry);
+        totalSize += (remoteMap.size() + 1   // a zero mark in the middle
+                      + rejectedRevs.size()) * sizeof(RemoteEntry);
 
         alloc_slice result(totalSize);
 
@@ -93,6 +109,15 @@ namespace litecore {
         for ( auto remote : remoteMap ) {
             entry->remoteDBID_BE = endian::enc16(uint16_t(remote.first));
             entry->revIndex_BE   = endian::enc16(uint16_t(remote.second->index()));
+            ++entry;
+        }
+        entry->remoteDBID_BE = endian::enc16(uint16_t(0));
+        entry->revIndex_BE   = endian::enc16(uint16_t(0));
+        ++entry;
+
+        for ( auto rejected : rejectedRevs ) {
+            entry->remoteDBID_BE = endian::enc16(uint16_t(0));
+            entry->revIndex_BE   = endian::enc16(uint16_t(rejected->index()));
             ++entry;
         }
 
