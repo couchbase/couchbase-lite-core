@@ -118,6 +118,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push 5000 Changes Collections 
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Nonexistent Collection SG", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
+    _sg.collectionsAtSG.emplace({Roses, Tulips, Lavenders});
     initTest({ Roses,
                Tulips,
                C4CollectionSpec{"dummy"_sl, FlowersScopeName}
@@ -249,6 +250,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
 
     // The default scope is not in our SG config. It should be rejected by SG
     SECTION("Default Collection") {
+        // Default collection is not in SG. Use _sg.collectionsAtSG to filter it out when assign
+        // the user channels.
+        _sg.collectionsAtSG.emplace({Roses, Tulips, Lavenders});
         collectionSpecs = {Default};
         expectedError = { WebSocketDomain, 400 };
     }
@@ -2335,7 +2339,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
 // revs between syncs > repl::tuning::kDefaultMaxHistory).
 // This test attempts to emulate two separate clients with the same doc, where one client's rev history lands
 // in the gap of the other client's rev history.
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.xSyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
     constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
     constexpr size_t numInitialRevs = 2;
     constexpr const char * saveDBName = "revsgap";

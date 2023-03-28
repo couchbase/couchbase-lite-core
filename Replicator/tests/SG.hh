@@ -22,6 +22,7 @@
 #include <fleece/Expert.hh>
 #include <fleece/Mutable.hh>
 #include <fleece/slice.hh>
+#include <optional>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -124,6 +125,7 @@ public:
     c4::ref<C4Cert> identityCert{nullptr};
     c4::ref<C4KeyPair> identityKey{nullptr};
 #endif
+    std::optional<std::vector<C4CollectionSpec>> collectionsAtSG;
 
 private:
     std::unique_ptr<REST::Response> createRequest(
