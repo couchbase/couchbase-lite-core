@@ -224,11 +224,21 @@ CBL_CORE_API void c4socket_release(C4Socket* C4NULLABLE) C4API;
 CBL_CORE_API void c4dbobs_free(C4CollectionObserver* C4NULLABLE) C4API;
 CBL_CORE_API void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
 CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
+/** Closes and disposes a listener. */
 CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
 CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
+/** Frees the storage occupied by a raw document. */
 CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
+/** Frees a replicator reference.
+        Does not stop the replicator -- if the replicator still has other internal references,
+        it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
+        \note This function is thread-safe. */
 CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE) C4API;
+/** Closes a read-stream. (A NULL parameter is allowed.) */
 CBL_CORE_API void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
+/** Closes a blob write-stream. If c4stream_install was not already called (or was called but
+        failed), the temporary file will be deleted without adding the blob to the store.
+        (A NULL parameter is allowed, and is a no-op.) */
 CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
