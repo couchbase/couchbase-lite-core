@@ -2246,13 +2246,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
     }
 }
 
-// To run this test, the sync function for Tulips collection must be,
-// "tulips":{"sync":"function(doc,olddoc){if(doc.cbl_445==\"bad\")throw({\"forbidden\":\"read_only\"});channel(doc.channels)}"}
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.SyncServerCollection]") {
+// This test uses collection, "cbl443", which has the following sync function:
+// "cbl445":{"sync":"function(doc,olddoc){if(doc.cbl_445==\"bad\")throw({\"forbidden\":\"read_only\"});channel(doc.channels)}"}
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.xSyncServerCollection]") {
+    constexpr C4CollectionSpec CBL445    = {"cbl445"_sl, FlowersScopeName};
     string idPrefix = timePrefix();
     const string channelID = idPrefix + "ch";
-    initTest({ Tulips }, {channelID}, "user1");
-    SG::TestUser user2(_sg, "user2", {channelID}, { Tulips }, "password");
+    initTest({ CBL445 }, {channelID}, "user1");
+    SG::TestUser user2(_sg, "user2", {channelID}, { CBL445 }, "password");
 
     auto bodyOfNum = [&](bool good, int n) {
         char buf[80];
