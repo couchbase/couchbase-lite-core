@@ -135,7 +135,7 @@ namespace litecore { namespace repl {
         // Add the token for collection info to the format string
         static inline const char* formatWithCollection(const char* fmt) {
             std::unique_lock<std::mutex> lock(_formatMutex);
-            std::string                  fmtStr = format("%s %s", kCollectionLogFormat, fmt);
+            const std::string            fmtStr = format("%s %s", kCollectionLogFormat, fmt);
             const auto                   found  = _formatCache.insert(fmtStr);
             return found.first->data();
         }
