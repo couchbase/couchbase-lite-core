@@ -52,7 +52,10 @@
  curl -k --location --request PUT "https://localhost:4985/scratch/" \
  --header "Content-Type: application/json" \
  --header "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" \
- --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": {\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, \"lavenders\":{}}}}}"
+ --data-raw "{\"num_index_replicas\": 0, \"bucket\": \"$1\", \"scopes\": {\"flowers\": {\"collections\":\
+ {\"roses\":{\"sync\":\"function(doc,olddoc){channel(doc.channels)}\"},\
+ \"tulips\":{\"sync\":\"function(doc,olddoc){if(doc.isRejected==\"true\")throw({\"forbidden\":\"read_only\"});channel(doc.channels)}"},\
+ \"lavenders\":{\"sync\":\"function(doc,olddoc){channel(doc.channels)}\"}}}}}"
  */
 //  config SG user:
 /*
@@ -2246,19 +2249,18 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
     }
 }
 
-// This test uses collection, "cbl443", which has the following sync function:
-// "cbl445":{"sync":"function(doc,olddoc){if(doc.cbl_445==\"bad\")throw({\"forbidden\":\"read_only\"});channel(doc.channels)}"}
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.xSyncServerCollection]") {
-    constexpr C4CollectionSpec CBL445    = {"cbl445"_sl, FlowersScopeName};
+// This test requires the sync function of the collection it uses contains the following statement,
+// "if(doc.isRejected == \"true\")throw({\"forbidden\":\"read_only\"})"
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.SyncServerCollection]") {
     string idPrefix = timePrefix();
     const string channelID = idPrefix + "ch";
-    initTest({ CBL445 }, {channelID}, "user1");
-    SG::TestUser user2(_sg, "user2", {channelID}, { CBL445 }, "password");
+    initTest({ Tulips }, {channelID}, "user1");
+    SG::TestUser user2(_sg, "user2", {channelID}, { Tulips }, "password");
 
     auto bodyOfNum = [&](bool good, int n) {
         char buf[80];
-        snprintf(buf, 80, "{\"cbl_445\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}",
-                 good ? "good": "bad", n, channelID.c_str());
+        snprintf(buf, 80, "{\"isRejected\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}",
+                 good ? "false": "true", n, channelID.c_str());
         return alloc_slice(buf);
     };
 
@@ -2347,10 +2349,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
     CHECK(revsLocal.size() == 2);
     CHECK(revsLocal[0].substr(0, 2) == "2-");
     auto pos = revsLocal[0].find('/');
-    CHECK(revsLocal[0].substr(pos).find("bad") != string::npos);
+    CHECK(revsLocal[0].substr(pos).find("\"isRejected\":\"true\"") != string::npos);
     CHECK(revsLocal[1].substr(0, 2) == "1-");
     pos = revsLocal[1].find('/');
-    CHECK(revsLocal[1].substr(pos).find("good") != string::npos);
+    CHECK(revsLocal[1].substr(pos).find("\"isRejected\":\"false\"") != string::npos);
 
     SECTION("Simultaneous push and pull") {
         // Push the bad rev of 2-gen and pull a good rev of 2-gen
@@ -2397,7 +2399,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
         // revsLocal2[] = { 3-goodMerged, 2-goodRemote, 1-goodContent }
         CHECK(revsLocal2[0].substr(0, 2) == "3-");
         auto pos2 = revsLocal2[0].find('/');
-        CHECK(revsLocal2[0].substr(pos2).find("good") != string::npos);
+        CHECK(revsLocal2[0].substr(pos2).find("\"isRejected\":\"false\"") != string::npos);
         CHECK(revsLocal2[1].substr(0, 2) == "2-"); // This one is pulled from remote.
         CHECK(revsLocal2[2].substr(0, 2) == "1-"); // This original local one.
         pos2 = revsLocal2[2].find('/');

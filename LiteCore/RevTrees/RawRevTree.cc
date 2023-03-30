@@ -65,6 +65,8 @@ namespace litecore {
         while ( entry < (const void*)raw_tree.end() ) {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto              revIndex = endian::dec16(entry->revIndex_BE);
+            // 0/0 is the zero mark that separates entries of remoteRevMap from entries of rejectedRevs
+            // c.f. the comment in encodeTree
             if ( remoteID == 0 && revIndex == 0 ) {
                 ++entry;
                 break; // The zero mark
@@ -111,6 +113,12 @@ namespace litecore {
             entry->revIndex_BE   = endian::enc16(uint16_t(remote.second->index()));
             ++entry;
         }
+
+        // Zero mark: in order to be binary compatibale, we cannot change the layout of the
+        // above entry. In order to separate the entries, we take the avantage of the fact
+        // that, with remoteRevMap, remote index must not be zero, and artificially prepend
+        // every entry of rejectedRevs by a zero. The first 0/0 separates the map and
+        // the vector.
         entry->remoteDBID_BE = endian::enc16(uint16_t(0));
         entry->revIndex_BE   = endian::enc16(uint16_t(0));
         ++entry;
