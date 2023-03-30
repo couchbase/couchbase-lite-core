@@ -637,7 +637,7 @@ namespace litecore {
     expiration_t SQLiteKeyStore::nextExpiration() {
         expiration_t next = expiration_t::None;
         if (mayHaveExpiration()) {
-            auto &stmt = compileCached("SELECT min(expiration) FROM kv_@");
+            auto &stmt = compileCached("SELECT min(expiration) FROM kv_@ WHERE expiration IS NOT NULL");
             UsingStatement u(stmt);
             if (!stmt.executeStep())
                 return next;
