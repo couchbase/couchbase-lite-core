@@ -167,16 +167,6 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         }
     }
 
-    // Returns unique prefix based on time.
-    static string timePrefix() {
-        auto              now     = std::chrono::high_resolution_clock::now();
-        auto              epoch   = now.time_since_epoch();
-        auto              seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
-        std::stringstream ss;
-        ss << std::hex << seconds << "_";
-        return ss.str();
-    }
-
     // map: docID -> rev generation
     static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
         std::unordered_map<alloc_slice, unsigned> ret;

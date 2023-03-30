@@ -134,9 +134,10 @@ namespace litecore { namespace repl {
 
         // Add the token for collection info to the format string
         static inline const char* formatWithCollection(const char* fmt) {
-            const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-            const auto        found  = _formatCache.insert({fmtStr, 0});
-            return found.first->first.data();
+            std::unique_lock<std::mutex> lock(_formatMutex);
+            std::string                  fmtStr = format("%s %s", kCollectionLogFormat, fmt);
+            const auto                   found  = _formatCache.insert(fmtStr);
+            return found.first->data();
         }
 
         // overrides for Logging functions which insert collection index to the format string
@@ -288,12 +289,12 @@ namespace litecore { namespace repl {
         std::string               _loggingID;      // My name in the log
         uint8_t                   _importance{1};  // Higher values log more
       private:
-        Retained<blip::Connection> _connection;               // BLIP connection
-        int                        _pendingResponseCount{0};  // # of responses I'm awaiting
-        Status                     _status{kC4Idle};          // My status
-        bool                       _statusChanged{false};     // Status changed during this event
-        const CollectionIndex      _collectionIndex;
-        static std::unordered_map<std::string, unsigned short> _formatCache;  // Using map as vector causes some weird
-                                                                              // memory issue on Windows
+        Retained<blip::Connection>             _connection;               // BLIP connection
+        int                                    _pendingResponseCount{0};  // # of responses I'm awaiting
+        Status                                 _status{kC4Idle};          // My status
+        bool                                   _statusChanged{false};     // Status changed during this event
+        const CollectionIndex                  _collectionIndex;
+        static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
+        static std::mutex                      _formatMutex;  // Ensure we don't hit a race condition in cache insert
     };
 }}  // namespace litecore::repl

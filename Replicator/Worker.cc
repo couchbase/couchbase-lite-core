@@ -34,9 +34,10 @@ namespace litecore {
     LogDomain SyncLog("Sync");
 }
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
-    std::unordered_map<std::string, unsigned short> Worker::_formatCache;
+    std::unordered_set<std::string> Worker::_formatCache;
+    std::mutex                      Worker::_formatMutex;
 
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
@@ -301,4 +302,4 @@ namespace litecore { namespace repl {
         Worker* nonConstThis = const_cast<Worker*>(this);
         return nonConstThis->replicator()->collection(collectionIndex());
     }
-}}  // namespace litecore::repl
+}  // namespace litecore::repl
