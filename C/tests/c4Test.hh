@@ -21,6 +21,7 @@
 #include <thread>
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 // c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
 // in the `c4` namespace. Check it out!
@@ -267,6 +268,16 @@ class C4Test {
 
     static void createConflictingRev(C4Database* db, C4Slice docID, C4Slice parentRevID, C4Slice newRevID,
                                      C4Slice body = kFleeceBody, C4RevisionFlags flags = 0);
+
+    // Returns unique prefix based on time.
+    static std::string timePrefix() {
+        auto              now     = std::chrono::high_resolution_clock::now();
+        auto              epoch   = now.time_since_epoch();
+        auto              seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
+        std::stringstream ss;
+        ss << std::hex << seconds << "_";
+        return ss.str();
+    }
 
     // Makeshift of c++20 jthread, automatically rejoins on destruction
     struct Jthread {
