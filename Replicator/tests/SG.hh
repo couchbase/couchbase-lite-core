@@ -125,6 +125,11 @@ public:
     c4::ref<C4Cert> identityCert{nullptr};
     c4::ref<C4KeyPair> identityKey{nullptr};
 #endif
+    // Most of time, our tests use only the collections that we know they exist on the
+    // SG's side. In some cases we test negative result, with collections that do not
+    // in SG. In this case, tests have to tell the test infrastructure the collections
+    // that SG actually knows with the following optional. Otherwise, the infrastructure
+    // may encounter unexpected errors.
     std::optional<std::vector<C4CollectionSpec>> collectionsAtSG;
 
 private:
