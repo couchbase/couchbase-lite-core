@@ -24,6 +24,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <shared_mutex>
 
 namespace litecore { namespace repl {
     using fleece::RetainedConst;
@@ -132,15 +133,19 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception& x) override;
 
-        // Add the token for collection info to the format string
+        // Add the token for collection info to the format string (and cache the string, returning the pointer)
+        // Concurrent read-write of cache is technically safe, but if a rehash occurs (capacity of _formatCache is
+        // exceeded), all iterators are invalidated. So we use a shared_mutex, with a shared_lock on reads and a
+        // unique_lock on writes - this allows multiple concurrent reads, but blocks reads when a write needs to occur
         static inline const char* formatWithCollection(const char* fmt) {
             const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-            const auto        found  = _formatCache.find(fmtStr);
-            if ( found == _formatCache.end() ) {  // Not found, attempt to insert and return
-                std::unique_lock<std::mutex> lock(_formatMutex);
-                return _formatCache.insert(fmtStr).first->data();
-            }  // Was found, return existing
-            return found->data();
+            {
+                std::shared_lock sharedLock(_formatMutex);  // Multiple threads can read concurrently
+                const auto       found = _formatCache.find(fmtStr);
+                if ( found != _formatCache.end() ) { return found->data(); }
+            }
+            std::unique_lock lock(_formatMutex);  // Block all other threads if we need to perform an insert
+            return _formatCache.insert(fmtStr).first->data();
         }
 
         // overrides for Logging functions which insert collection index to the format string
@@ -298,6 +303,6 @@ namespace litecore { namespace repl {
         bool                                   _statusChanged{false};     // Status changed during this event
         const CollectionIndex                  _collectionIndex;
         static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
-        static std::mutex                      _formatMutex;  // Ensure we don't hit a race condition in cache insert
+        static std::shared_mutex               _formatMutex;  // Ensure thread-safety for cache insert
     };
 }}  // namespace litecore::repl
