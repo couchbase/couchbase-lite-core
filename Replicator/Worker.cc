@@ -21,6 +21,7 @@
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include <sstream>
+#include <thread>
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #include <cxxabi.h>
@@ -36,7 +37,8 @@ namespace litecore {
 
 namespace litecore { namespace repl {
 
-    std::unordered_map<std::string, unsigned short> Worker::_formatCache;
+    std::unordered_set<std::string> Worker::_formatCache;
+    std::shared_mutex               Worker::_formatMutex;
 
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
@@ -102,7 +104,14 @@ namespace litecore { namespace repl {
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(parent ? parent->replicator()->loggingName() : connection->name())
     ,_collectionIndex(coll)
-    { }
+    {
+      static std::once_flag f_once;
+      std::call_once(f_once, [] {
+        // Reserve in the format-string cache greater than the number of unique
+        // collection log strings, so rehashing should almost never happen
+        _formatCache.reserve(300);
+      });
+    }
 
 
     Worker::Worker(Worker *parent, const char *namePrefix, CollectionIndex coll)
