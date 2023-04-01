@@ -148,7 +148,12 @@ public:
             _replServer->start();
 
             Log("Waiting for replication to complete...");
-            _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
+            static constexpr size_t timeoutMins = 5;  // Number of minutes to timeout after
+            _cond.wait_for(lock, std::chrono::minutes(timeoutMins),
+                           [&] { return _replicatorClientFinished && _replicatorServerFinished; });
+            if ( !(_replicatorClientFinished && _replicatorServerFinished) ) {
+              FAIL("Replication timed out after " << timeoutMins << " minutes...");
+            }
 
             Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
 
