@@ -812,6 +812,40 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
     CHECK(wait(r, kC4Stopped, 5));
 }
 
+// This test uses SG set up for [.SyncServerCollection], but without TLS. c.f ReplicatorCollectionSG.cc.
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)", "[REST][Listener][C][.SyncServerCollection]") {
+    constexpr C4CollectionSpec Roses     = {"roses"_sl,  "flowers"_sl};
+    constexpr C4CollectionSpec Tulips    = {"tulips"_sl, "flowers"_sl};
+    std::array<C4Collection*, 2> collections;
+    collections[0] = db->createCollection(Roses);
+    collections[1] = db->createCollection(Tulips);
+    string idPrefix = timePrefix();
+    for ( auto& coll : collections ) {
+        importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 0, idPrefix);
+    }
+
+    std::stringstream body;
+    string            targetDb = "scratch";
+    body << "{source: 'db',"
+         << "target: 'ws://localhost:4984/" << targetDb << "',"
+         << "user: 'pupshaw',"
+         << "password: 'frank',"
+         << "continuous: true,"
+         << "collections: ['flowers.roses','flowers.tulips']}";
+
+    shared_ptr<Response> r =
+            request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
+    CHECK(wait(r, kC4Idle, 5));
+
+    std::stringstream newss;
+    body.swap(newss);
+    body << "{source: 'db',"
+         << "target: 'ws://localhost:4984/" << targetDb << "',"
+         << "cancel: true}";
+    request("POST", "/_replicate", {{"Content-Type", "application/json"}}, json5(body.str()), HTTPStatus::OK);
+    CHECK(wait(r, kC4Stopped, 5));
+}
+
 // OneShot replication with authentication.
 TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listener][C][.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");

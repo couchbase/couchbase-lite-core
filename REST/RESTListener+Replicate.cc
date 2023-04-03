@@ -20,6 +20,7 @@
 #include "c4ReplicatorHelpers.hh"
 #include "Server.hh"
 #include "fleece/RefCounted.hh"
+#include "ReplicatorOptions.hh"
 #include "StringUtil.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <condition_variable>
@@ -42,7 +43,8 @@ namespace litecore { namespace REST {
             : Task(listener), _source(source), _target(target), _bidi(bidi), _continuous(continuous) {}
 
         void start(C4Database* localDB, C4String localDbName, const C4Address& remoteAddress, C4String remoteDbName,
-                   C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
+                   C4ReplicatorMode pushMode, C4ReplicatorMode pullMode,
+                   const std::vector<C4CollectionSpec>& collections = {kC4DefaultCollectionSpec}) {
             if ( findMatchingTask() ) C4Error::raise(WebSocketDomain, 409, "Equivalent replication already running");
 
             Lock lock(_mutex);
@@ -56,10 +58,16 @@ namespace litecore { namespace REST {
                       SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
                       SPLAT(remoteDbName), _bidi, _continuous);
 
-                repl::C4ReplParamsDefaultCollection params;
-                AllocedDict                         optionsDict;
-                params.push            = pushMode;
-                params.pull            = pullMode;
+                std::vector<C4ReplicationCollection> replCollections{collections.size()};
+                for (size_t i = 0; i < collections.size(); ++i) {
+                    replCollections[i].collection = collections[i];
+                    replCollections[i].push = pushMode;
+                    replCollections[i].pull = pullMode;
+                }
+                C4ReplicatorParameters params;
+                AllocedDict            optionsDict;
+                params.collectionCount = collections.size();
+                params.collections = replCollections.data();
                 params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
                     ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
@@ -256,6 +264,13 @@ namespace litecore { namespace REST {
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
+        Array collections = params["collections"].asArray();
+        std::vector<C4CollectionSpec> collSpecs;
+        for (Array::iterator iter(collections); iter; iter.next()) {
+            slice collPath = iter.value().asString();
+            collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+        }
+
         slice            localName;
         slice            remoteURL;
         C4ReplicatorMode pushMode, pullMode;
@@ -295,7 +310,7 @@ namespace litecore { namespace REST {
             slice psw = params["password"].asString();
             task->setAuth(user, psw);
         }
-        task->start(localDB, localName, remoteAddress, remoteDbName, pushMode, pullMode);
+        task->start(localDB, localName, remoteAddress, remoteDbName, pushMode, pullMode, collSpecs);
 
         HTTPStatus statusCode = HTTPStatus::OK;
         if ( !continuous ) {
