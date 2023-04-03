@@ -151,6 +151,13 @@ bool SG::deleteUser(const string &username) const {
 bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs, const std::vector<std::string> &channelIDs) const {
     std::multimap<slice, slice> specsMap;
     for(const auto& spec : collectionSpecs) {
+        // If collectionAtSG is assigned, we only assign the user channels on the remote collections.
+        if (collectionsAtSG &&
+            std::find_if(collectionsAtSG->begin(), collectionsAtSG->end(), [&](const auto& coll) {
+                return coll.scope == spec.scope && coll.name == spec.name;
+            }) == collectionsAtSG->end()) {
+            continue;
+        }
         specsMap.insert({spec.scope, spec.name });
     }
 
