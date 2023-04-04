@@ -354,9 +354,18 @@ namespace litecore {
 
 
     void QueryParser::writeWhereClause(const Value *where) {
+        _checkedDeleted = false;
         if (where) {
             _sql << " WHERE ";
             parseNode(where);
+        }
+        
+        // CBL-4377:
+        // If the query doesn't access the deleted meta property, add (flags & 1 = 0) test to
+        // the where clause when querying against the default collection.
+        if (!_checkedDeleted) {
+            bool needAnd = (where != NULL);
+            writeNotDeletionTestWhenQueryDefaultCollection(_dbAlias, needAnd, !needAnd, false);
         }
     }
 
@@ -578,10 +587,20 @@ namespace litecore {
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
                              << sqlIdentifier(entry.tableName)
                              << " AS " << sqlIdentifier(entry.alias);
+                        
+                        _checkedDeleted = false;
                         if (entry.on) {
                             _sql << " ON (";
                             parseNode(entry.on);
                             _sql << ")";
+                        }
+                        
+                        // CBL-4377:
+                        // If the join condition doesn't access the deleted meta property, add (flags & 1 = 0) test to
+                        // to the join condition when the joined collection is the default collection.
+                        if (!_checkedDeleted) {
+                            bool needAnd = (entry.on != NULL);
+                            writeNotDeletionTestWhenQueryDefaultCollection(entry.alias, needAnd, false, !needAnd);
                         }
                         break;
                     }
@@ -855,7 +874,12 @@ namespace litecore {
                 alias = ""_sl;
             auto type = kLiveDocs;
             if (findDeletedPropertyRefs(select, alias, aliasIters.size()==1)) {
-                if (where && matchesOnlyDeletedDocs(where, alias, aliasIters.size()==1)) {
+                // CBL-4377 :
+                // When accessing the deleted meta property on the non-default collection, the (only) deleted table
+                // will be used. But if accessing the deleted meta property on the default collection which could
+                // have the deleted docs in both live and deleted table, the liveAndDeleted (all_default) view
+                // will be used.
+                if (where && matchesOnlyDeletedDocs(where, alias, aliasIters.size()==1) && info.tableName != "kv_default") {
                     type = kDeletedDocs;
                     LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
                 } else {
@@ -882,6 +906,7 @@ namespace litecore {
 
 
     void QueryParser::writeDeletionTest(const string &alias) {
+        _checkedDeleted = true;
         switch (_aliases[alias].delStatus) {
             case kLiveDocs:
                 _sql << "false";
@@ -896,6 +921,33 @@ namespace litecore {
                 _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << " != 0)";
                 break;
         }
+    }
+
+    /** CBL-4377 : Add (flags & 1 = 0) to the SQL query that queries the default collection. */
+    void QueryParser::writeNotDeletionTestWhenQueryDefaultCollection(const string &alias, bool needAnd, bool needWhere,  bool needOn) {
+        Assert(!_checkedDeleted);
+        
+        auto aliasInfo = _aliases[alias];
+        if (aliasInfo.tableName != "kv_default") {
+            return;
+        }
+        
+        if (needWhere) {
+            Assert(!needAnd);
+            Assert(!needOn);
+            _sql << " WHERE ";
+        }
+        
+        if (needOn)
+            _sql << " ON ";
+        
+        if (needAnd)
+            _sql << " AND ";
+        
+        _sql << "(";
+        if (!alias.empty()) // Which case that the alias will be empty?
+            _sql << sqlIdentifier(alias) << '.';
+        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << " = 0)";
     }
 
 

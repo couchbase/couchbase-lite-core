@@ -174,6 +174,10 @@ namespace litecore {
 
         void lookForDeleted(const Dict *select);
         void writeDeletionTest(const string &alias);
+        
+        /** CBL-4377 : Add (flags & 1 = 0) to the SQL query that queries the default collection. */
+        void writeNotDeletionTestWhenQueryDefaultCollection(const string &alias, bool needAnd =false,
+                                                            bool needWhere =false, bool needOn =false);
         void writeWhereClause(const Value *where);
 
         void addDefaultAlias();
@@ -260,6 +264,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};          // Is this an aggregate query?
+        bool _checkedDeleted {false};            // CBL-4377: Has query accessed _deleted meta-property?
         bool _checkedExpiration {false};         // Has query accessed _expiration meta-property?
         Collation _collation;                    // Collation in use during parse
         bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?

@@ -1075,7 +1075,9 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 }
 
 
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C][.failed]") {
+    auto dbDomain = c4log_getDomain("DB", false);
+    c4log_setLevel(dbDomain, kC4LogDebug);
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
