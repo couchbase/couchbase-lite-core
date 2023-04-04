@@ -37,9 +37,11 @@ class CertHelper {
         : temporaryServerIdentity(createIdentity(false, kC4CertUsage_TLSServer, "LiteCore Listener Test"))
         , temporaryClientIdentity(createIdentity(false, kC4CertUsage_TLSClient, "LiteCore Client Test")) {}
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     ~CertHelper() {
         if ( _serverPersistentIdentity.key ) { _serverPersistentIdentity.key->removePersistent(); }
     }
+#endif
 
     Identity const temporaryServerIdentity;
 
