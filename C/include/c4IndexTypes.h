@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#include "c4Base.h"
 #include "c4QueryTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN

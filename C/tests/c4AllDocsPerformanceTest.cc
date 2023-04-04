@@ -10,9 +10,9 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "SecureRandomize.hh"
 #include <chrono>
 
@@ -25,7 +25,7 @@ static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError) no
 
 class C4AllDocsPerformanceTest : public C4Test {
   public:
-    C4AllDocsPerformanceTest(int testOption) : C4Test(testOption) {
+    explicit C4AllDocsPerformanceTest(int testOption) : C4Test(testOption) {
         char content[kSizeOfDocument];
         memset(content, 'a', sizeof(content) - 1);
         content[sizeof(content) - 1] = 0;
@@ -43,7 +43,7 @@ class C4AllDocsPerformanceTest : public C4Test {
             char revID[revBufSize];
             snprintf(revID, revBufSize, "1-deadbeefcafebabe80081e50");
             char json[jsonBufSize];
-            snprintf(json, jsonBufSize, "{\"content\":\"%s\"}", content);
+            snprintf(json, jsonBufSize, R"({"content":"%s"})", content);
             C4SliceResult body = c4db_encodeJSON(db, c4str(json), ERROR_INFO(error));
             REQUIRE(body.buf);
 

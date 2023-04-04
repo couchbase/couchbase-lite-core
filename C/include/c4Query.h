@@ -12,7 +12,6 @@
 
 #pragma once
 #include "c4QueryTypes.h"
-#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS

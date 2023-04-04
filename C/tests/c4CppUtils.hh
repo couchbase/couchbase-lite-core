@@ -86,7 +86,8 @@ namespace c4 {
       public:
         constexpr ref() noexcept : _obj(nullptr) {}
 
-        constexpr ref(T* t) noexcept : _obj(t) {}
+        // Ignore warning because making this explicit would break a bunch of code
+        constexpr ref(T* t) noexcept : _obj(t) {}  // NOLINT(google-explicit-constructor)
 
         constexpr ref(ref&& r) noexcept : _obj(r._obj) { r._obj = nullptr; }
 
@@ -96,7 +97,8 @@ namespace c4 {
 
         static ref retaining(T* t) { return ref(retainRef(t)); }
 
-        operator T*() const& noexcept FLPURE { return _obj; }
+        // Ignore warning because making this explicit would break a bunch of code
+        operator T*() const& noexcept FLPURE { return _obj; }  // NOLINT(google-explicit-constructor)
 
         T* operator->() const noexcept FLPURE { return _obj; }
 
@@ -112,7 +114,8 @@ namespace c4 {
             return *this;
         }
 
-        ref& operator=(const ref& r) noexcept {
+        // Ignore warning because replaceRef does handle self-assignment properly
+        ref& operator=(const ref& r) noexcept {  // NOLINT(bugprone-unhandled-self-assignment)
             replaceRef(retainRef(r._obj));
             return *this;
         }
@@ -153,7 +156,7 @@ namespace c4 {
         ended, it aborts the transaction. */
     class Transaction {
       public:
-        Transaction(C4Database* db) : _db(db) {}
+        explicit Transaction(C4Database* db) : _db(db) {}
 
         ~Transaction() {
             if ( _active ) abort(nullptr);
@@ -176,7 +179,7 @@ namespace c4 {
 
         bool abort(C4Error* error) { return end(false, error); }
 
-        bool active() const { return _active; }
+        [[nodiscard]] bool active() const { return _active; }
 
       private:
         C4Database* _db;

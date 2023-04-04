@@ -10,10 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Document+Fleece.h"
-#include "c4Private.h"
-#include "Benchmark.hh"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
@@ -439,7 +437,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
     C4Error     error;
-    C4Document* doc = nullptr;
+    C4Document* doc;
     size_t      commonAncestorIndex;
     alloc_slice revID;
 
@@ -1033,7 +1031,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Document][C]") {
 
     C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
     REQUIRE(doc);
-    FLValue root = FLValue(c4doc_getProperties(doc));
+    auto root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
     CHECK(c4doc_containingValue(root) == doc);
     FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
@@ -1054,7 +1052,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kRevID);
-    FLValue root = FLValue(c4doc_getProperties(doc));
+    auto root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
     CHECK(c4doc_containingValue(root) == doc);
     FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
@@ -1116,7 +1114,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Document][C]") 
     auto              sk   = c4db_getFLSharedKeys(db);
     auto              dict = json2dict("{_id:'foo', _rev:'1-2345', x:17}");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, nullptr);
     Doc         doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped) == "{x:17}");
 }
@@ -1130,7 +1128,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Document][Blob]
                                                     "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
                                                     "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, nullptr);
     Doc         doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped)
           == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:"
@@ -1148,7 +1146,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Document][Blob]
                          "'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
                          "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, nullptr);
     Doc         doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped)
           == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
@@ -1163,7 +1161,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][Blob]
                          "'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
                          "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, nullptr);
     Doc         doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped)
           == "{foo:[0,{\"@type\":\"blob\",content_type:\"text/plain\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");

@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4Base.h"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS

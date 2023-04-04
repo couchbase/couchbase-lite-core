@@ -13,7 +13,11 @@
 #pragma once
 #include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
-#include <stdio.h>
+#ifdef __cplusplus
+#    include <cstdio>
+#else
+#    include <stdio.h>
+#endif
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -137,9 +141,6 @@ CBL_CORE_API int64_t c4stream_getLength(C4ReadStream*, C4Error* C4NULLABLE) C4AP
         location. */
 CBL_CORE_API bool c4stream_seek(C4ReadStream*, uint64_t position, C4Error* C4NULLABLE) C4API;
 
-/** Closes a read-stream. (A NULL parameter is allowed.) */
-CBL_CORE_API void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
-
 /** @} */
 
 
@@ -167,11 +168,6 @@ CBL_CORE_API C4BlobKey c4stream_computeBlobKey(C4WriteStream*) C4API;
         c4stream_computeBlobKey beforehand to derive it, and pass NULL for expectedKey.)
         This function does not close the writer. */
 CBL_CORE_API bool c4stream_install(C4WriteStream*, const C4BlobKey* C4NULLABLE expectedKey, C4Error* C4NULLABLE) C4API;
-
-/** Closes a blob write-stream. If c4stream_install was not already called (or was called but
-        failed), the temporary file will be deleted without adding the blob to the store. 
-        (A NULL parameter is allowed, and is a no-op.) */
-CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
 /** @} */

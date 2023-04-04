@@ -70,19 +70,22 @@ std::ostream& operator<<(std::ostream& out, C4Error);
               implemented, the error check will happen too late, so the info won't be logged.*/
 class ERROR_INFO {
   public:
-    ERROR_INFO(C4Error* outError) : _error(outError) { *_error = {}; }
+    explicit ERROR_INFO(C4Error* outError) : _error(outError) {
+        *_error = {};
+    }  // NOLINT(cppcoreguidelines-pro-type-member-init)
 
-    ERROR_INFO(C4Error& outError) : ERROR_INFO(&outError) {}
+    explicit ERROR_INFO(C4Error& outError) : ERROR_INFO(&outError) {}
 
     ERROR_INFO() : ERROR_INFO(_buf) {}
 
     ~ERROR_INFO();
 
-    operator C4Error*() { return _error; }
+    // Disable 'operator should be explicit' warning because it breaks all our tests
+    operator C4Error*() { return _error; }  // NOLINT(google-explicit-constructor)
 
   private:
     C4Error* _error;
-    C4Error  _buf;
+    C4Error  _buf = {};
 };
 
 /** `WITH_ERROR` is just like `ERROR_INFO` except it's meant to be used _inside_ a CHECK() or
@@ -96,19 +99,22 @@ class ERROR_INFO {
 */
 class WITH_ERROR {
   public:
-    WITH_ERROR(C4Error* outError) : _error(outError) { *_error = {}; }
+    explicit WITH_ERROR(C4Error* outError) : _error(outError) {
+        *_error = {};
+    }  // NOLINT(cppcoreguidelines-pro-type-member-init)
 
-    WITH_ERROR(C4Error& outError) : WITH_ERROR(&outError) {}
+    explicit WITH_ERROR(C4Error& outError) : WITH_ERROR(&outError) {}
 
     WITH_ERROR() : WITH_ERROR(_buf) {}
 
     ~WITH_ERROR();
 
-    operator C4Error*() { return _error; }
+    // Disable 'operator should be explicit' warning because it breaks all our tests
+    operator C4Error*() { return _error; }  // NOLINT(google-explicit-constructor)
 
   private:
     C4Error* _error;
-    C4Error  _buf;
+    C4Error  _buf = {};
 };
 
 #pragma mark - OTHER TEST UTILITIES:
@@ -132,7 +138,7 @@ class WITH_ERROR {
 
 
 // Temporary directory to use for tests.
-#define TEMPDIR(PATH) c4str((TempDir() + PATH).c_str())
+#define TEMPDIR(PATH) c4str((TempDir() + (PATH)).c_str())
 
 const std::string& TempDir();
 
@@ -165,7 +171,7 @@ class TransactionHelper {
 // Calls the function, catches any exception it throws, and CHECKs that it's a C4Error
 // (or litecore::error) with the expected domain and code.
 // FAILs if no exception is thrown.
-void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()>);
+void C4ExpectException(C4ErrorDomain domain, int code, const std::function<void()>&);
 
 
 #pragma mark - C4TEST BASE CLASS:
@@ -198,32 +204,32 @@ class C4Test {
 
     static constexpr slice kDatabaseName = "cbl_core_test";
 #if SkipVersionVectorTest
-    C4Test(int testOption = RevTreeOption);
+    explicit C4Test(int testOption = RevTreeOption);
 #else
     C4Test(int testOption = VersionVectorOption);
 #endif
     ~C4Test();
 
-    alloc_slice databasePath() const { return alloc_slice(c4db_getPath(db)); }
+    [[nodiscard]] alloc_slice databasePath() const { return {c4db_getPath(db)}; }
 
     /// The database handle.
     C4Database* db;
 
-    const C4DatabaseConfig2& dbConfig() const { return _dbConfig; }
+    [[nodiscard]] const C4DatabaseConfig2& dbConfig() const { return _dbConfig; }
 
-    const C4StorageEngine storageType() const { return _storage; }
+    [[nodiscard]] C4StorageEngine storageType() const { return _storage; }
 
-    bool isSQLite() const { return storageType() == kC4SQLiteStorageEngine; }
+    [[nodiscard]] bool isSQLite() const { return storageType() == kC4SQLiteStorageEngine; }
 
-    bool isRevTrees() const { return (_dbConfig.flags & kC4DB_VersionVectors) == 0; }
+    [[nodiscard]] bool isRevTrees() const { return (_dbConfig.flags & kC4DB_VersionVectors) == 0; }
 
-    bool isEncrypted() const { return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone); }
+    [[nodiscard]] bool isEncrypted() const { return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone); }
 
     static bool isRevTrees(C4Database* database) {
         return (c4db_getConfig2(database)->flags & kC4DB_VersionVectors) == 0;
     }
 
-    C4String revOrVersID(slice revID, slice versID) const { return isRevTrees() ? revID : versID; }
+    [[nodiscard]] C4String revOrVersID(slice revID, slice versID) const { return isRevTrees() ? revID : versID; }
 
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
@@ -242,11 +248,11 @@ class C4Test {
 
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist = true);
-    int                  addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "");
-    int                  addDocs(C4Collection* collection, int total, std::string idprefix = "");
+    int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "") const;
+    int addDocs(C4Collection* collection, int total, const std::string& idprefix = "") const;
 
     // Creates a new document revision with the given revID as a child of the current rev
-    void               createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = 0);
+    void               createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = 0) const;
     static void        createRev(C4Database* db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = 0);
     static void        createRev(C4Collection* collection, C4Slice docID, C4Slice revID, C4Slice body,
                                  C4RevisionFlags flags = 0);
@@ -283,41 +289,46 @@ class C4Test {
     struct Jthread {
         std::thread thread;
 
-        Jthread(std::thread&& thread_) : thread(move(thread_)) {}
+        explicit Jthread(std::thread&& thread_) : thread(std::move(thread_)) {}
 
         Jthread() = default;
 
         ~Jthread() { thread.join(); }
     };
 
-    void createNumberedDocs(unsigned numberOfDocs);
+    void createNumberedDocs(unsigned numberOfDocs) const;
 
-    std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID, std::vector<std::string> attachments,
-                                                 const char*               contentType,
-                                                 std::vector<std::string>* legacyNames = nullptr,
-                                                 C4RevisionFlags           flags       = 0);
-    std::vector<C4BlobKey> addDocWithAttachments(C4Database* database, C4CollectionSpec collectionSpec, C4Slice docID,
-                                                 std::vector<std::string> attachments, const char* contentType,
-                                                 std::vector<std::string>* legacyNames = nullptr,
-                                                 C4RevisionFlags           flags       = 0);
-    void                   checkAttachment(C4Database* inDB, C4BlobKey blobKey, C4Slice expectedData);
-    void checkAttachments(C4Database* inDB, std::vector<C4BlobKey> blobKeys, std::vector<std::string> expectedData);
+    std::vector<C4BlobKey>        addDocWithAttachments(C4Slice docID, const std::vector<std::string>& attachments,
+                                                        const char*               contentType,
+                                                        std::vector<std::string>* legacyNames = nullptr,
+                                                        C4RevisionFlags           flags       = 0) const;
+    static std::vector<C4BlobKey> addDocWithAttachments(C4Database* database, C4CollectionSpec collectionSpec,
+                                                        C4Slice docID, const std::vector<std::string>& attachments,
+                                                        const char*               contentType,
+                                                        std::vector<std::string>* legacyNames = nullptr,
+                                                        C4RevisionFlags           flags       = 0);
+    static void                   checkAttachment(C4Database* inDB, C4BlobKey blobKey, C4Slice expectedData);
+    static void                   checkAttachments(C4Database* inDB, std::vector<C4BlobKey> blobKeys,
+                                                   std::vector<std::string> expectedData);
 
     static std::string getDocJSON(C4Database* inDB, C4Slice docID);
     static std::string getDocJSON(C4Collection* collection, C4Slice docID);
 
-    std::string listSharedKeys(std::string delimiter = ", ");
+    [[nodiscard]] std::string listSharedKeys(const std::string& delimiter = ", ") const;
 
-    static fleece::alloc_slice readFile(std::string path);
-    unsigned importJSONFile(std::string path, std::string idPrefix = "", double timeout = 0.0, bool verbose = false);
-    bool     readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
-    unsigned importJSONLines(std::string path, C4Collection*, double timeout = 0.0, bool verbose = false,
-                             size_t maxLines = 0, const std::string& idPrefix = "");
-    unsigned importJSONLines(std::string path, double timeout = 0.0, bool verbose = false,
-                             C4Database* database = nullptr, size_t maxLines = 0, const std::string& idPrefix = "");
+    static fleece::alloc_slice readFile(const std::string& path);
+    // NOLINTBEGIN(modernize-use-nodiscard)
+    unsigned importJSONFile(const std::string& path, const std::string& idPrefix = "", double timeout = 0.0,
+                            bool verbose = false) const;
+    // NOLINTEND(modernize-use-nodiscard)
+    static bool     readFileByLines(const std::string& path, function_ref<bool(FLSlice)>, size_t maxLines);
+    static unsigned importJSONLines(const std::string& path, C4Collection*, double timeout = 0.0, bool verbose = false,
+                                    size_t maxLines = 0, const std::string& idPrefix = "");
+    unsigned        importJSONLines(const std::string& path, double timeout = 0.0, bool verbose = false,
+                                    C4Database* database = nullptr, size_t maxLines = 0, const std::string& idPrefix = "");
 
 
-    bool docBodyEquals(C4Document* doc NONNULL, slice fleece);
+    bool docBodyEquals(C4Document* doc NONNULL, slice fleece) const;
 
     static std::string fleece2json(slice fleece) {
         auto value = ValueFromData(fleece);
@@ -325,7 +336,7 @@ class C4Test {
         return value.toJSON(true, true).asString();
     }
 
-    alloc_slice json2fleece(const char* json5str) {
+    alloc_slice json2fleece(const char* json5str) const {
         std::string       jsonStr = json5(json5str);
         TransactionHelper t(db);
         alloc_slice       encodedBody = c4db_encodeJSON(db, slice(jsonStr), nullptr);
@@ -333,7 +344,7 @@ class C4Test {
         return encodedBody;
     }
 
-    Doc json2dict(const char* json) { return Doc(json2fleece(json), kFLTrusted, c4db_getFLSharedKeys(db)); }
+    Doc json2dict(const char* json) const { return {json2fleece(json), kFLTrusted, c4db_getFLSharedKeys(db)}; }
 
     // Some handy constants to use
     static const C4Slice kDocID;  // "mydoc"

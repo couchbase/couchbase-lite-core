@@ -13,8 +13,7 @@
 #include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Collection.h"
-#include "c4Query.h"
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "Delimiter.hh"
 #include <sstream>
 #include <thread>
@@ -31,9 +30,9 @@ static bool docExists(C4Collection* coll, slice docID) {
 
 class C4CollectionTest : public C4Test {
   public:
-    C4CollectionTest(int testOption) : C4Test(testOption) {}
+    explicit C4CollectionTest(int testOption) : C4Test(testOption) {}
 
-    string getNames(FLMutableArray source) {
+    static string getNames(FLMutableArray source) {
         stringstream    result;
         delimiter       delim(", ");
         FLArrayIterator i;

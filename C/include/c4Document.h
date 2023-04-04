@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#define __C4DOCUMENT_H__
 #include "c4DocumentTypes.h"
 
 #if LITECORE_CPP_API

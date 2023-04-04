@@ -10,8 +10,6 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
-
 #ifdef COUCHBASE_ENTERPRISE
 
 #    include "c4Certificate.h"
