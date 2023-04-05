@@ -23,25 +23,6 @@ jobs:
     name: Formatting Check
     # Set the agent to run on
     runs-on: ubuntu-latest
-    # Set the paths to run on
-    strategy:
-      matrix:
-        path:
-          - check: 'C'
-            exclude: ''
-          - check: 'Crypto'
-            exclude: ''
-          - check: 'LiteCore'
-            exclude: ''
-          - check: 'MSVC'
-            exclude: ''
-          - check: 'Networking'
-            exclude: ''
-          - check: 'Replicator'
-            exclude: ''
-          - check: 'REST'
-            exclude: ''
-
     ##################
     # Load all steps #
     ##################
@@ -51,17 +32,12 @@ jobs:
       ##########################
       - name: Checkout Code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
       ################################
       # Run Linter against code base #
       ################################
-
       - name: Lint Code Base
         uses: jidicula/clang-format-action@v4.11.0
         with:
           clang-format-version: '15'
-          check-path: ${{ matrix.path['check'] }}
-          exclude-regex: ${{ matrix.path['exclude'] }}
+          check-path: '.'
+          exclude-regex: '(cmake|docs|jenkins|licenses|modules|tools|vendor|wiki|Xcode)'
