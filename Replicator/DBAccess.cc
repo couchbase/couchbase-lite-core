@@ -394,7 +394,8 @@ namespace litecore { namespace repl {
                              SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
                              static_cast<uint64_t>(rev->sequence), remoteDBID());
                     try {
-                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence, rev->rejectedByRemote ? 0 : remoteDBID());
+                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence,
+                                                       rev->rejectedByRemote ? 0 : remoteDBID());
                     } catch ( const exception& x ) {
                         C4Error error = C4Error::fromException(x);
                         warn("Unable to mark '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",

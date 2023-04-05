@@ -2252,22 +2252,22 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
 // This test requires the sync function of the collection it uses contains the following statement,
 // "if(doc.isRejected == \"true\")throw({\"forbidden\":\"read_only\"})"
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Conflict", "[.SyncServerCollection]") {
-    string idPrefix = timePrefix();
+    string       idPrefix  = timePrefix();
     const string channelID = idPrefix + "ch";
-    initTest({ Tulips }, {channelID}, "user1");
-    SG::TestUser user2(_sg, "user2", {channelID}, { Tulips }, "password");
+    initTest({Tulips}, {channelID}, "user1");
+    SG::TestUser user2(_sg, "user2", {channelID}, {Tulips}, "password");
 
     auto bodyOfNum = [&](bool good, int n) {
         char buf[80];
-        snprintf(buf, 80, "{\"isRejected\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}",
-                 good ? "false": "true", n, channelID.c_str());
+        snprintf(buf, 80, "{\"isRejected\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}", good ? "false" : "true", n,
+                 channelID.c_str());
         return alloc_slice(buf);
     };
 
     string docID = idPrefix + "doc01";
-    string rev1 = createFleeceRev(_collections[0], slice(docID), nullslice, bodyOfNum(true, 1));
+    string rev1  = createFleeceRev(_collections[0], slice(docID), nullslice, bodyOfNum(true, 1));
 
-    ReplParams replParams {_collectionSpecs, kC4OneShot, kC4Disabled};
+    ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
     // Push a good revision of gen 1 to remote
     replicate(replParams);
 
@@ -2275,22 +2275,22 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
     string rev2_bad;
     {
         TransactionHelper t(db);
-        SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+        SharedEncoder     enc(c4db_getSharedFleeceEncoder(db));
         enc.convertJSON(bodyOfNum(false, 2));
         fleece::alloc_slice fleeceBody = enc.finish();
-        rev2_bad = createNewRev(_collections[0], slice(docID), slice(rev1), fleeceBody);
+        rev2_bad                       = createNewRev(_collections[0], slice(docID), slice(rev1), fleeceBody);
     }
 
     auto getAllRevs = [](C4Document* doc) {
         std::vector<string> ret;
         do {
             C4SliceResult j = c4doc_bodyAsJSON(doc, true, nullptr);
-            if (j.buf) {
+            if ( j.buf ) {
                 ret.push_back(string(doc->selectedRev.revID) + "/" + string(j));
             } else {
                 ret.push_back(string(doc->selectedRev.revID) + "/missing");
             }
-        } while (c4doc_selectNextRevision(doc));
+        } while ( c4doc_selectNextRevision(doc) );
         c4doc_selectCurrentRevision(doc);
         return ret;
     };
@@ -2299,9 +2299,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
         C4Error error;
         int     i = 0;
         for ( ; i < _collectionCount; ++i ) {
-            if ( docEndedWithConflict->collectionSpec == _collectionSpecs[i] ) {
-                break;
-            }
+            if ( docEndedWithConflict->collectionSpec == _collectionSpecs[i] ) { break; }
         }
         Assert(i < _collectionCount, "Internal logical error");
 
@@ -2363,17 +2361,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
             // The above are currently in the local db.
             // seq 3 is the good 2-gen pulled from the remote
             // seq 4 is new rev from the conflict resolution. It is 3-gen.
-            if (seq == 4) {
-                c4repl_stop(_repl);
-            }
+            if ( seq == 4 ) { c4repl_stop(_repl); }
         };
         _conflictHandler = conflictResolver;
 
         replParams.setPushPull(kC4OneShot, kC4Continuous);
-        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
-        auto replAsync = std::async(std::launch::async, [&]() {
-            replicate(replParams);
-        });
+        _expectedDocPushErrors = {docID};  // rejected by the remote with error code 403
+        auto replAsync         = std::async(std::launch::async, [&]() { replicate(replParams); });
 
         bool waitForThePush = WaitUntil(2s, [&]() {
             std::scoped_lock<std::mutex> lock(_mutex);
@@ -2383,7 +2377,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
 
         // user2 sends a good revision of 2-gen to the remote
         _sg.authHeader = user2.authHeader();
-        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        bool succ      = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
         REQUIRE(succ);
 
         // wait for pull getting the good 2-gen rev and conflict resolved.
@@ -2400,8 +2394,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
         CHECK(revsLocal2[0].substr(0, 2) == "3-");
         auto pos2 = revsLocal2[0].find('/');
         CHECK(revsLocal2[0].substr(pos2).find("\"isRejected\":\"false\"") != string::npos);
-        CHECK(revsLocal2[1].substr(0, 2) == "2-"); // This one is pulled from remote.
-        CHECK(revsLocal2[2].substr(0, 2) == "1-"); // This original local one.
+        CHECK(revsLocal2[1].substr(0, 2) == "2-");  // This one is pulled from remote.
+        CHECK(revsLocal2[2].substr(0, 2) == "1-");  // This original local one.
         pos2 = revsLocal2[2].find('/');
         // The 1-gen rev is not changed after push&pull
         CHECK(revsLocal2[2].substr(0, pos2) == revsLocal[1].substr(0, pos));
@@ -2409,37 +2403,35 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
 
     SECTION("Separate Push and Pull without Conflict Resolver") {
         replParams.setPushPull(kC4OneShot, kC4Disabled);
-        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
+        _expectedDocPushErrors = {docID};  // rejected by the remote with error code 403
         replicate(replParams, false);
-        _expectedDocPushErrors = { };
+        _expectedDocPushErrors = {};
 
         // user2 sends a good revision of 2-gen to the remote
         _sg.authHeader = user2.authHeader();
-        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        bool succ      = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
         REQUIRE(succ);
 
         _stopWhenIdle.store(true);
         replParams.setPushPull(kC4Disabled, kC4Continuous);
-        _expectedDocPullErrors = { docID };
+        _expectedDocPullErrors = {docID};
         replicate(replParams, false);
     }
 
     SECTION("Separate Push and Pull with Conflict Resolver") {
         replParams.setPushPull(kC4OneShot, kC4Disabled);
-        _expectedDocPushErrors = { docID }; // rejected by the remote with error code 403
+        _expectedDocPushErrors = {docID};  // rejected by the remote with error code 403
         replicate(replParams, false);
-        _expectedDocPushErrors = { };
+        _expectedDocPushErrors = {};
 
         // user2 sends a good revision of 2-gen to the remote
         _sg.authHeader = user2.authHeader();
-        bool succ = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
+        bool succ      = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
         REQUIRE(succ);
 
         _callbackWhenIdle = [=]() {
             auto seq = c4coll_getLastSequence(_collections[0]);
-            if (seq == 4) {
-                c4repl_stop(_repl);
-            }
+            if ( seq == 4 ) { c4repl_stop(_repl); }
         };
         _conflictHandler = conflictResolver;
 

@@ -44,8 +44,7 @@ namespace litecore {
     }
 
     std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap,
-                                            std::vector<const Rev*>& rejectedRevs, RevTree* owner,
-                                            sequence_t curSeq) {
+                                            std::vector<const Rev*>& rejectedRevs, RevTree* owner, sequence_t curSeq) {
         const RawRevision* rawRev = (const RawRevision*)raw_tree.buf;
         if ( fleece::endian::dec32(rawRev->size_BE) > raw_tree.size )
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary error");
@@ -69,7 +68,7 @@ namespace litecore {
             // c.f. the comment in encodeTree
             if ( remoteID == 0 && revIndex == 0 ) {
                 ++entry;
-                break; // The zero mark
+                break;  // The zero mark
             }
             if ( remoteID == 0 || revIndex >= count )
                 error::_throw(error::CorruptRevisionData, "RawRevision dcodeTree revIndex error at remoteMap");
@@ -97,8 +96,9 @@ namespace litecore {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for ( Rev* rev : revs ) totalSize += sizeToWrite(*rev);
-        totalSize += (remoteMap.size() + 1   // a zero mark in the middle
-                      + rejectedRevs.size()) * sizeof(RemoteEntry);
+        totalSize += (remoteMap.size() + 1  // a zero mark in the middle
+                      + rejectedRevs.size())
+                     * sizeof(RemoteEntry);
 
         alloc_slice result(totalSize);
 

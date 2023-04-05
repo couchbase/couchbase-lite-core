@@ -31,8 +31,8 @@ namespace litecore { namespace repl {
         using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
-        const alloc_slice      collectionName = {};  // TODO: Collection aware
-        const alloc_slice      scopeName      = {};
+        const alloc_slice collectionName = {};  // TODO: Collection aware
+        const alloc_slice scopeName      = {};
         // Note: The following fields, up to collectionContext, must be compatible with the public
         // C4DocumentEnded struct:
         const C4CollectionSpec collectionSpec = {collectionName, scopeName};

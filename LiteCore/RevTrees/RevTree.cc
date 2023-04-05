@@ -593,8 +593,7 @@ namespace litecore {
 
     void RevTree::revIsRejected(const Rev* rev) {
         Assert(rev);
-        if (std::find(_rejectedRevs.begin(), _rejectedRevs.end(), rev)
-            == _rejectedRevs.end()) {
+        if ( std::find(_rejectedRevs.begin(), _rejectedRevs.end(), rev) == _rejectedRevs.end() ) {
             _rejectedRevs.push_back(rev);
             _changed = true;
         }
