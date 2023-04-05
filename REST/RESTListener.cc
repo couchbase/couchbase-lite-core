@@ -250,9 +250,9 @@ namespace litecore::REST {
     }
 
     void RESTListener::addDBHandler(Method method, const char* uri, DBHandlerMethod handler) {
-        _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
+        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
             Retained<C4Database> db = getDatabase(rq, rq.path(0));
-            if (db) {
+            if ( db ) {
                 db->lockClientMutex();
                 try {
                     (this->*handler)(rq, db);

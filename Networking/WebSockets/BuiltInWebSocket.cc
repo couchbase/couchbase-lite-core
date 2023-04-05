@@ -154,15 +154,15 @@ namespace litecore { namespace websocket {
             // Create the HTTPLogic object:
             Dict      headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
             HTTPLogic logic{Address(url()), Headers(headers)};
-            bool foundUserAgent = false;
-            for (auto iter = headers.begin(); iter != headers.end(); ++iter) {
-                if (iter.keyString().caseEquivalent("User-Agent")) {
+            bool      foundUserAgent = false;
+            for ( auto iter = headers.begin(); iter != headers.end(); ++iter ) {
+                if ( iter.keyString().caseEquivalent("User-Agent") ) {
                     foundUserAgent = true;
                     break;
                 }
             }
-            if (!foundUserAgent) {
-                string ua = "couchbase-lite-core/";
+            if ( !foundUserAgent ) {
+                string      ua  = "couchbase-lite-core/";
                 alloc_slice ver = c4_getVersion();
                 ua += ver.asString();
                 logic.setUserAgent(slice(ua));
