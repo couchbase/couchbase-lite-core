@@ -287,9 +287,6 @@ namespace litecore {
                 // Migrate deleted docs to separate table:
                 _schemaVersion = SchemaVersion::WithDeletedTable; // enable creating _del keystores
                 for(string keyStoreName : allKeyStoreNames()) {
-                    if (keyStoreName == "default") {
-                        continue;
-                    }
                     if (keyStoreNameIsCollection(keyStoreName)) {
                         Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
                         (void) getKeyStore(keyStoreName); // creates the `_del` keystore
