@@ -109,9 +109,15 @@ namespace litecore { namespace net {
             rq << "CONNECT " << string(slice(_address.hostname)) << ":" << _address.port;
         } else {
             rq << MethodName(_method) << " ";
-            if (_proxy && _proxy->type == ProxyType::HTTP)
-                rq << string(_address.url());
-            else
+            if (_proxy && _proxy->type == ProxyType::HTTP) {
+                if (_isWebSocket) {
+                    Address address = _address;
+                    address.scheme = address.scheme == "wss"_sl ? "https"_sl : "http"_sl;
+                    rq << string(Address::toURL(*(C4Address*)&address));
+                } else {
+                    rq << string(_address.url());
+                }
+            } else
                 rq << string(slice(_address.path));
         }
 
