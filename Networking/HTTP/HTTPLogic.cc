@@ -109,7 +109,10 @@ namespace litecore { namespace net {
             rq << "CONNECT " << string(slice(_address.hostname)) << ":" << _address.port;
         } else {
             rq << MethodName(_method) << " ";
-            if (_proxy && _proxy->type == ProxyType::HTTP) {
+            if (_proxy) {
+                // NOTE: There are ProxyType,HTTP and HTTPS, which is being handled the same here.
+                // If we add a new type in the future, this part needs to be revisit to see whether
+                // the new type can be handled the same way.
                 if (_isWebSocket) {
                     Address address = _address;
                     address.scheme = address.scheme == "wss"_sl ? "https"_sl : "http"_sl;
