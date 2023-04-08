@@ -1143,10 +1143,9 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     
     // Verify enumerating non-deleted documents:
     testEnumeratingDocsInOlderDB(db, true, false);
-    
+
     // Verify enumerating non-deleted documents in descending order:
-    // FAILED : ENABLE AFTER THE ISSUE IS FIXED
-    // testEnumeratingDocsInOlderDB(db, true, true);
+    testEnumeratingDocsInOlderDB(db, true, true);
     
     // Update deleted doc:
     testUpdateDocInOlderDB(db, "doc-051"_sl, {}, (kDocDeleted | kDocExists), kDocExists, 51);
@@ -1166,15 +1165,13 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     testEnumeratingDocsInOlderDB(db, true, false);
     
     // Verify enumerating all documents in descending order:
-    // FAILED : ENABLE AFTER THE ISSUE IS FIXED
-    // testEnumeratingDocsInOlderDB(db, true, true);
+    testEnumeratingDocsInOlderDB(db, true, true);
     
     // Verify enumerating non-deleted documents:
     testEnumeratingDocsInOlderDB(db, true, false);
     
     // Verify enumerating non-deleted documents in descending order:
-    // FAILED : ENABLE AFTER THE ISSUE IS FIXED
-    // testEnumeratingDocsInOlderDB(db, true, true);
+    testEnumeratingDocsInOlderDB(db, true, true);
 
     // Verify a query:
     {

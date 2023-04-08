@@ -171,7 +171,7 @@ namespace litecore {
                 return false;
             }
 
-            if (_descending and !oneLeft)
+            if (_descending && !oneLeft)
                 _cmp = -_cmp;
 
             // Pick the enumerator with the lowest key/sequence to be used next.
