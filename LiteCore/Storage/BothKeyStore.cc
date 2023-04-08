@@ -153,13 +153,12 @@ namespace litecore {
             }
 
             // Compare the enumerators' keys or sequences:
-            bool oneLeft = true;
             if (_liveImpl && _deadImpl) {
                 if (_bySequence)
                     _cmp = compare(_liveImpl->sequence(), _deadImpl->sequence());
                 else
                     _cmp = _liveImpl->key().compare(_deadImpl->key());
-                oneLeft = false;
+                if (_descending) _cmp = -_cmp;
             } else if (_liveImpl) {
                 _cmp = -1;
             } else if (_deadImpl) {
@@ -170,9 +169,6 @@ namespace litecore {
                 _current = nullptr;
                 return false;
             }
-
-            if (_descending && !oneLeft)
-                _cmp = -_cmp;
 
             // Pick the enumerator with the lowest key/sequence to be used next.
             // In case of a tie, pick the live one since it has priority.
