@@ -320,10 +320,50 @@ namespace litecore {
         return count;
     }
 
-    void QueryParser::writeWhereClause(const Value* where) {
-        if ( where ) {
+namespace {
+    bool canDefaultTableHaveDeleted() { return true; }
+
+    bool needPatchDeleteFlag(const string& table, QueryParser::DeletionStatus delStatus) {
+        auto pos = table.rfind('_');
+        if (pos == string::npos || table.substr(pos + 1) != "default") {
+            return false;
+        }
+        // We only need to patch the delete flag for kLiveDocs, because the other two
+        // DeletionStatus are deduced from the query itself, and they must explicitly
+        // appear in the query expression.
+        return canDefaultTableHaveDeleted() && delStatus == QueryParser::kLiveDocs;
+    }
+} // anonymous namespace
+
+    void QueryParser::writeWhereClause(const Value *where) {
+        auto& aliasInfo = _aliases[_dbAlias];
+        bool patchDeleteFlag = needPatchDeleteFlag(aliasInfo.tableName, aliasInfo.delStatus);
+
+        if (!where && !patchDeleteFlag) {
+            // We don't have where and don't need patch the delete flag.
+            return;
+        }
+
+        _checkedDeleted = false;
+        if (patchDeleteFlag) {
             _sql << " WHERE ";
+        }
+        if (where) {
+            if (patchDeleteFlag) {
+                _sql << "(";
+            } else {
+                _sql << " WHERE ";
+            }
             parseNode(where);
+            if (patchDeleteFlag) {
+                _sql << ")";
+            }
+        }
+        if (!_checkedDeleted && patchDeleteFlag) {
+            if (where) {
+                _sql << " AND ";
+            }
+            writeDeletionTest(_dbAlias);
         }
     }
 
@@ -511,15 +551,27 @@ namespace litecore {
                                 require(entry.on, "FROM item needs an ON clause to be a join");
                             }
 
-                            _sql << " " << kJoinTypeNames[joinType] << " JOIN " << sqlIdentifier(entry.tableName)
-                                 << " AS " << sqlIdentifier(entry.alias);
-                            if ( entry.on ) {
-                                _sql << " ON (";
-                                parseNode(entry.on);
-                                _sql << ")";
-                            }
-                            break;
+                        _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
+                             << sqlIdentifier(entry.tableName)
+                             << " AS " << sqlIdentifier(entry.alias);
+                        _checkedDeleted = false;
+                        if (entry.on) {
+                            _sql << " ON (";
+                            parseNode(entry.on);
+                            _sql << ")";
                         }
+                        bool patchDeleteFlag =
+                            needPatchDeleteFlag(entry.tableName, entry.delStatus);
+                        if (!_checkedDeleted && patchDeleteFlag) {
+                            if (entry.on) {
+                                _sql << " AND ";
+                            } else {
+                                _sql << " ON ";
+                            }
+                            writeDeletionTest(entry.alias);
+                        }
+                        break;
+                    }
                     default:
                         Assert(false, "Impossible alias type");
                         break;
@@ -778,11 +830,41 @@ namespace litecore {
                 // We altered the table, so re-check its existence.
                 DebugAssert(_delegate.tableExists(info.tableName));
             }
+
+            if ( !canDefaultTableHaveDeleted() ) {
+                return;
+            }
+
+            if ( info.tableName == "kv_del_default" ) {
+                // default collection is not completely separated, that is,
+                // this table does not contain all the deleted docs. We need to use "all_default."
+                info.delStatus = kLiveAndDeletedDocs;
+                info.tableName = _delegate.collectionTableName(info.collection, info.delStatus);
+                Assert(info.tableName == "all_default");
+                if (info.type == kDBAlias) {
+                    _defaultCollectionName = info.collection;
+                    _defaultTableName = info.tableName;
+                }
+                // We altered the table, so re-check its existence.
+                DebugAssert(_delegate.tableExists(info.tableName));
+            }
         }
     }
 
-    void QueryParser::writeDeletionTest(const string& alias) {
-        switch ( _aliases[alias].delStatus ) {
+
+    void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
+        auto& aliasInfo = _aliases[alias];
+        bool patchDeleteFlag = needPatchDeleteFlag(aliasInfo.tableName, aliasInfo.delStatus);
+
+        if (patchDeleteFlag) {
+            _sql << "(";
+            if (!alias.empty())
+                _sql << sqlIdentifier(alias) << '.';
+            _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << (isDeleted ? " != 0)" : " = 0)");
+            return;
+        }
+
+        switch (_aliases[alias].delStatus) {
             case kLiveDocs:
                 _sql << "false";
                 break;
@@ -1315,7 +1397,8 @@ namespace litecore {
                 writeMetaProperty(kValueFnName, tablePrefix, "key");
                 break;
             case mkDeleted:
-                writeDeletionTest(dbAlias);
+                writeDeletionTest(dbAlias, true);
+                _checkedDeleted = true;
                 break;
             case mkRevisionId:
                 _sql << kVersionFnName << "(" << tablePrefix << "version"
@@ -1700,7 +1783,8 @@ namespace litecore {
                 return;
             } else if ( meta == kDeletedProperty ) {
                 require(fn == kValueFnName, "can't use 'deleted' in this context");
-                writeDeletionTest(alias);
+                writeDeletionTest(alias, true);
+                _checkedDeleted = true;
                 return;
             } else if ( meta == kRevIDProperty ) {
                 _sql << kVersionFnName << "(" << tablePrefix << "version"

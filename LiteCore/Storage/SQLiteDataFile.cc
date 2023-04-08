@@ -253,11 +253,22 @@ namespace litecore {
                          if ( keyStoreNameIsCollection(keyStoreName) ) {
                              Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
                              (void)getKeyStore(keyStoreName);  // creates the `_del` keystore
-                             _exec(format("INSERT INTO \"kv_%s%s\" "
-                                          "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
-                                          "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
-                                          kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(), keyStoreName.c_str(),
-                                          keyStoreName.c_str()));
+
+                             // CBL-4377 :
+                             // Do not move the deleted docs from the default collection to the deleted table
+                             // as moving deleted doc operation could take several seconds or mins depending on
+                             // the database and platform. This means that the deleted docs of the default collection
+                             // could exists in both live an deleted keystore's table.
+                             //
+                             // Note: As we don't have collection support prior 3.1, this change only affects
+                             // the default collection.
+                             if ( keyStoreName != kDefaultKeyStoreName ) {
+                                 _exec(format("INSERT INTO \"kv_%s%s\" "
+                                              "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
+                                              "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
+                                              kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                                              keyStoreName.c_str(), keyStoreName.c_str()));
+                             }
                          }
                      }
                  }) ) {
