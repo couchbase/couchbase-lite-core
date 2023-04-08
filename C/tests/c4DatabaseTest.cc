@@ -1006,6 +1006,10 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         return;
     }
 
+    // There are 50 live documents. 50 deleted documents.
+    // getDocumentCount only counts live ones.
+    CHECK(50 == c4db_getDocumentCount(db));
+
     // These test databases contain 100 documents with IDs `doc1`...`doc100`.
     // Each doc has two properties: `n` whose integer value is the doc number (1..100)
     // and `even` whose boolean value is true iff `n` is even.
@@ -1044,6 +1048,27 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         CHECK(error == C4Error{});
         CHECK(i == 101);
     }
+
+    // Verify enumerating documents of live docs only
+    {
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags &= ~kC4IncludeDeleted;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+        REQUIRE(e);
+        unsigned i = 1;
+        while (c4enum_next(e, ERROR_INFO(&error))) {
+            INFO("Checking enumeration #" << i);
+            snprintf(docID, bufSize, "doc-%03u", i);
+            C4DocumentInfo info;
+            REQUIRE(c4enum_getDocumentInfo(e, &info));
+            CHECK(slice(info.docID) == slice(docID));
+            CHECK((info.flags & kDocDeleted) == 0);
+            ++i;
+        }
+        CHECK(error == C4Error{});
+        CHECK(i == 51);
+    }
+
 
     // Verify a query:
     {
