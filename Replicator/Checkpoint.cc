@@ -102,20 +102,32 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Checkpoint::validateWith(const Checkpoint &remoteSequences) {
+    bool Checkpoint::validateWith(const Checkpoint& remoteSequences) {
         bool match = true;
         if (_completed != remoteSequences._completed) {
-            LogTo(SyncLog, "Local sequence mismatch: I had completed: %s, remote had %s",
-                  _completed.to_string().c_str(),
-                  remoteSequences._completed.to_string().c_str());
-            resetLocal();
-            match = false;
+            LogTo(SyncLog, "Local sequence mismatch: I had completed: %s, remote had %s.",
+                _completed.to_string().c_str(),
+                remoteSequences._completed.to_string().c_str());
+            LogTo(SyncLog, "Rolling back to a failsafe, some redundant changes may be proposed...");
+            _completed = SequenceSet::intersection(_completed, remoteSequences._completed);
         }
         if (_remote && _remote != remoteSequences._remote) {
             LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'",
-                  _remote.toJSONString().c_str(), remoteSequences._remote.toJSONString().c_str());
-            _remote = {};
-            match = false;
+                _remote.toJSONString().c_str(), remoteSequences._remote.toJSONString().c_str());
+            if (_remote.isInt() && remoteSequences._remote.isInt()) {
+                if (_remote.intValue() > remoteSequences._remote.intValue()) {
+                    LogTo(SyncLog, "Rolling back to earlier remote sequence from server, some redundant changes may be proposed...");
+                    _remote = remoteSequences._remote;
+                }
+                else {
+                    LogTo(SyncLog, "Ignoring remote sequence on server since client side is older, some redundant changes may be proposed...");
+                }
+            }
+            else {
+                Warn("Non-numeric remote sequence detected, resetting replication back to start.  Redundant changes will be proposed...");
+                match = false;
+                _remote = {};
+            }
         }
         return match;
     }
