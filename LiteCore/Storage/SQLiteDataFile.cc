@@ -400,8 +400,10 @@ namespace litecore {
         _setPurgeCntStmt.reset();
         if (_sqlDb) {
             if (options().writeable) {
-                optimize();
-                vacuum(false);
+                withFileLock([this]() {
+                    optimize();
+                    vacuum(false);
+                });
             }
             // Close the SQLite database:
             if (!_sqlDb->closeUnlessStatementsOpen()) {
@@ -985,8 +987,10 @@ namespace litecore {
         checkOpen();
         switch (what) {
             case kCompact:
-                _optimize();
-                _vacuum(true);
+                withFileLock([this]() {
+                    _optimize();
+                    _vacuum(true);
+                });
                 break;
             case kReindex:
                 execWithLock("REINDEX");
