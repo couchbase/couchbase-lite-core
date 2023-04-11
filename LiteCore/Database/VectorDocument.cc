@@ -217,9 +217,7 @@ namespace litecore {
             return false;
         }
 
-        void revIsRejected(slice  revID) override {
-            Assert(false, "not implemented");
-        }
+        void revIsRejected(slice revID) override { Assert(false, "not implemented"); }
 
 #pragma mark - EXISTENCE / LOADING:
 

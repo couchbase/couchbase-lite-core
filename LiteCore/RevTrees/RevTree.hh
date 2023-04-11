@@ -185,8 +185,10 @@ namespace litecore {
 
         const Rev* latestRevisionOnRemote(RemoteID);
         void       setLatestRevisionOnRemote(RemoteID, const Rev*);
+
         const std::vector<const Rev*> getRejectedRevs() const FLPURE { return _rejectedRevs; }
-        void       revIsRejected(const Rev* rev);
+
+        void revIsRejected(const Rev* rev);
 
         const RemoteRevMap& remoteRevisions() const { return _remoteRevs; }
 

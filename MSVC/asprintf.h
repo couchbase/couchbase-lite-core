@@ -18,17 +18,20 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define INSANE_ASPRINTF_H
 
 #ifndef __cplusplus
-#include <stdarg.h>
+#    include <stdarg.h>
 #else
-#include <cstdarg>
-extern "C"
-{
+#    include <cstdarg>
+extern "C" {
 #endif
 
-#define insane_free(ptr) { free(ptr); ptr = 0; }
+#define insane_free(ptr)                                                                                               \
+    {                                                                                                                  \
+        free(ptr);                                                                                                     \
+        ptr = 0;                                                                                                       \
+    }
 
-int vasprintf(char **strp, const char *fmt, va_list ap);
-int asprintf(char **strp, const char *fmt, ...);
+int vasprintf(char** strp, const char* fmt, va_list ap);
+int asprintf(char** strp, const char* fmt, ...);
 
 #ifdef __cplusplus
 }
