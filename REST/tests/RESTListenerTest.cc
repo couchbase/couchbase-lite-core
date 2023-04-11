@@ -813,16 +813,15 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
 }
 
 // This test uses SG set up for [.SyncServerCollection], but without TLS. c.f ReplicatorCollectionSG.cc.
-TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)", "[REST][Listener][C][.SyncServerCollection]") {
-    constexpr C4CollectionSpec Roses     = {"roses"_sl,  "flowers"_sl};
-    constexpr C4CollectionSpec Tulips    = {"tulips"_sl, "flowers"_sl};
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)",
+                 "[REST][Listener][C][.SyncServerCollection]") {
+    constexpr C4CollectionSpec   Roses  = {"roses"_sl, "flowers"_sl};
+    constexpr C4CollectionSpec   Tulips = {"tulips"_sl, "flowers"_sl};
     std::array<C4Collection*, 2> collections;
-    collections[0] = db->createCollection(Roses);
-    collections[1] = db->createCollection(Tulips);
+    collections[0]  = db->createCollection(Roses);
+    collections[1]  = db->createCollection(Tulips);
     string idPrefix = timePrefix();
-    for ( auto& coll : collections ) {
-        importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 0, idPrefix);
-    }
+    for ( auto& coll : collections ) { importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 0, idPrefix); }
 
     std::stringstream body;
     string            targetDb = "scratch";
