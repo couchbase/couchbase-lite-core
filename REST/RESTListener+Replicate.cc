@@ -59,15 +59,15 @@ namespace litecore { namespace REST {
                       SPLAT(remoteDbName), _bidi, _continuous);
 
                 std::vector<C4ReplicationCollection> replCollections{collections.size()};
-                for (size_t i = 0; i < collections.size(); ++i) {
+                for ( size_t i = 0; i < collections.size(); ++i ) {
                     replCollections[i].collection = collections[i];
-                    replCollections[i].push = pushMode;
-                    replCollections[i].pull = pullMode;
+                    replCollections[i].push       = pushMode;
+                    replCollections[i].pull       = pullMode;
                 }
                 C4ReplicatorParameters params;
                 AllocedDict            optionsDict;
                 params.collectionCount = collections.size();
-                params.collections = replCollections.data();
+                params.collections     = replCollections.data();
                 params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
                     ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
@@ -264,9 +264,9 @@ namespace litecore { namespace REST {
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
-        Array collections = params["collections"].asArray();
+        Array                         collections = params["collections"].asArray();
         std::vector<C4CollectionSpec> collSpecs;
-        for (Array::iterator iter(collections); iter; iter.next()) {
+        for ( Array::iterator iter(collections); iter; iter.next() ) {
             slice collPath = iter.value().asString();
             collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
         }
