@@ -14,6 +14,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <algorithm>
 #include "betterassert.hh"
 
 namespace litecore {
