@@ -289,10 +289,20 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     key2->remove();
 }
 
+static std::string randomSerial() {
+    auto now     = std::chrono::high_resolution_clock::now();
+    auto epoch   = now.time_since_epoch();
+    auto seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
+    return std::to_string(seconds % 10000000);
+}
+
 TEST_CASE("Persistent cert chain", "[Certs]") {
+    const std::string              prefix  = randomSerial();
+    const std::vector<std::string> serials = {prefix + "0", prefix + "1", prefix + "2"};
     // Create a CA Cert:
     Retained<PrivateKey>   caKey = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters caIssuerParams;
+    caIssuerParams.serial = slice(serials[0]);
     caIssuerParams.is_ca  = true;
     Retained<Cert> caCert = new Cert(DistinguishedName(kCAName), caIssuerParams, caKey);
     cerr << "CA cert info:\n" << string(caCert->summary("\t"));
@@ -305,7 +315,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
 
     // Sign and create cert1 with the CA Cert:
     Cert::IssuerParameters caClientParams1;
-    caClientParams1.serial        = "1"_sl;
+    caClientParams1.serial        = slice(serials[1]);
     caClientParams1.validity_secs = 3600 * 24;
     Retained<Cert> cert1          = csr1->sign(caClientParams1, caKey, caCert);
     cerr << "Cert1 info:\n" << string(cert1->summary("\t"));
@@ -328,7 +338,7 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
 
     // Sign and create cert2 with the same CA Cert as the cert1:
     Cert::IssuerParameters caClientParams2;
-    caClientParams2.serial        = "2"_sl;
+    caClientParams2.serial        = slice(serials[2]);
     caClientParams2.validity_secs = 3600 * 24;
     Retained<Cert> cert2          = csr2->sign(caClientParams2, caKey, caCert);
     cerr << "Cert2 info:\n" << string(cert2->summary("\t"));
