@@ -86,9 +86,9 @@ static constexpr int kValidSeconds = 3600 * 24;
 static pair<Retained<PrivateKey>, Retained<Cert>> makeCert(slice subjectName) {
     Retained<PrivateKey>   key = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters issuerParams;
-    const auto randomSerial = randomDigitString<16>();
-    issuerParams.serial = slice(randomSerial);
-    issuerParams.validity_secs = kValidSeconds;
+    const auto             randomSerial = randomDigitString<16>();
+    issuerParams.serial                 = slice(randomSerial);
+    issuerParams.validity_secs          = kValidSeconds;
     return {key, new Cert(DistinguishedName(subjectName), issuerParams, key)};
 }
 
@@ -126,8 +126,8 @@ TEST_CASE("Self-signed cert with Subject Alternative Name", "[Certs]") {
     subjectParams.nsCertType = NSCertType(SSL_CLIENT | EMAIL);
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600 * 24;
-    const auto randomSerial = randomDigitString<16>();
-    issuerParams.serial = slice(randomSerial);
+    const auto randomSerial    = randomDigitString<16>();
+    issuerParams.serial        = slice(randomSerial);
     Retained<PrivateKey> key   = PrivateKey::generateTemporaryRSA(2048);
     Retained<Cert>       cert;
 
@@ -160,10 +160,10 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
 
     Cert::IssuerParameters issuerParams;
-    const auto randomSerial = randomDigitString<16>();
-    issuerParams.serial = slice(randomSerial);
-    issuerParams.validity_secs = 3600 * 24;
-    Retained<Cert> cert        = new Cert(DistinguishedName(kSubjectName), issuerParams, key);
+    const auto             randomSerial = randomDigitString<16>();
+    issuerParams.serial                 = slice(randomSerial);
+    issuerParams.validity_secs          = 3600 * 24;
+    Retained<Cert> cert                 = new Cert(DistinguishedName(kSubjectName), issuerParams, key);
 
     // Try to get private key with public key:
     key = PersistentPrivateKey::withPublicKey(pubKey);
@@ -228,7 +228,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 }
 
 TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
-    const auto randomSerials = randomDigitStrings<16,2>();
+    const auto randomSerials = randomDigitStrings<16, 2>();
     // Create a keypair and a cert1:
     Retained<PersistentPrivateKey> key1   = PersistentPrivateKey::generateRSA(2048);
     Retained<PublicKey>            pubKey = key1->publicKey();
@@ -393,8 +393,8 @@ TEST_CASE("Cert request", "[Certs]") {
     CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
 
     // Create a CA cert:
-    const auto randomSerial = randomDigitString<16>();
-    Retained<PrivateKey>   caKey = PrivateKey::generateTemporaryRSA(2048);
+    const auto             randomSerial = randomDigitString<16>();
+    Retained<PrivateKey>   caKey        = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters caIssuerParams;
     caIssuerParams.is_ca  = true;
     caIssuerParams.serial = slice(randomSerial);
