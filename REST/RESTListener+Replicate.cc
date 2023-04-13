@@ -64,7 +64,7 @@ namespace litecore { namespace REST {
                     replCollections[i].push       = pushMode;
                     replCollections[i].pull       = pullMode;
                 }
-                C4ReplicatorParameters params;
+                C4ReplicatorParameters params{};
                 AllocedDict            optionsDict;
                 params.collectionCount = collections.size();
                 params.collections     = replCollections.data();
