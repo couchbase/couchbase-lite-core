@@ -294,7 +294,7 @@ namespace litecore::net {
         // so this map will keep track of the ones we've seen so far so we can add on the
         // addresses to them instead of erroneously creating duplicate interfaces
         map<string, size_t> results;
-        struct ifaddrs* addrs;
+        struct ifaddrs*     addrs;
         if ( getifaddrs(&addrs) < 0 ) error::_throwErrno();
 
         Interface* intf = nullptr;
@@ -308,7 +308,7 @@ namespace litecore::net {
             }
 
             if ( (a->ifa_flags & IFF_UP) != 0 && a->ifa_addr != nullptr ) {
-                intf->name = a->ifa_name;
+                intf->name  = a->ifa_name;
                 intf->flags = a->ifa_flags;
                 switch ( a->ifa_addr->sa_family ) {
 #    ifdef __APPLE__

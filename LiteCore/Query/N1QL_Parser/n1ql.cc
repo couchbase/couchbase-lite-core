@@ -122,8 +122,8 @@ namespace litecore { namespace n1ql {
 #        define YY_CTX_PARAM
 #        define YY_CTX_ARG_
 #        define YY_CTX_ARG
-        yycontext _yyctx = {0, 0};
-        yycontext* yyctx = &_yyctx;
+        yycontext  _yyctx = {0, 0};
+        yycontext* yyctx  = &_yyctx;
 #        ifndef YY_INPUT
 #            define YY_INPUT(buf, result, max_size)                                                                    \
                 {                                                                                                      \
@@ -281,7 +281,7 @@ namespace litecore { namespace n1ql {
 #    else
             yy->__val += count;
             while ( yy->__valslen <= yy->__val - yy->__vals ) {
-                long offset = yy->__val - yy->__vals;
+                long   offset = yy->__val - yy->__vals;
                 size_t oldlen = yy->__valslen;
                 yy->__valslen *= 2;
                 yy->__vals = (YYSTYPE*)YY_REALLOC(yy, yy->__vals, sizeof(YYSTYPE) * yy->__valslen);
@@ -7055,7 +7055,7 @@ namespace litecore { namespace n1ql {
                 yyctx->__vals->reserve(YY_STACK_SIZE);
 #    else
                 ` yyctx->__valslen = YY_STACK_SIZE;
-                yyctx->__vals = (YYSTYPE*)YY_MALLOC(yyctx, sizeof(YYSTYPE) * yyctx->__valslen);
+                yyctx->__vals      = (YYSTYPE*)YY_MALLOC(yyctx, sizeof(YYSTYPE) * yyctx->__valslen);
                 memset(yyctx->__vals, 0, sizeof(YYSTYPE) * yyctx->__valslen);
 #    endif
                 yyctx->__begin = yyctx->__end = yyctx->__pos = yyctx->__limit = yyctx->__maxpos = yyctx->__thunkpos = 0;
