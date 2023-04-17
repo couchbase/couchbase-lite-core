@@ -293,7 +293,7 @@ collation =
   l:collationLang _                    { $$ = l; }
   | <("NO"i? ("CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
-_baseExpr =
+baseExpr_ =
     literal
   | arrayLiteral
   | dictLiteral
@@ -305,7 +305,7 @@ _baseExpr =
   | function
   | property
   | '(' _ expression _ ')'
-baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
+baseExpr = baseExpr_ _                  # baseExpr to absorb all trailing white space
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
@@ -497,9 +497,9 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
 
     bool ok = parse(&ctx) != 0;
     if (ok) {
-        result = ctx.__;
+        result = ctx._;
     } else {
-        *errPos = (unsigned) ctx.__maxpos;
+        *errPos = (unsigned) ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
