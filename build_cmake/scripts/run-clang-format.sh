@@ -16,5 +16,5 @@ fi
 
 
 for dir in ${DIRS[@]}; do
-  find $dir/. -iname '*.hh' -o -iname '*.cc' -o -iname '*.h' -o -iname '*.c' -o -iname '*.cpp' | xargs clang-format -i
+  find $dir/. \( -iname '*.hh' -o -iname '*.cc' -o -iname '*.h' -o -iname '*.c' -o -iname '*.cpp' \) -a \! -iname 'n1ql.cc' | xargs clang-format -i
 done
