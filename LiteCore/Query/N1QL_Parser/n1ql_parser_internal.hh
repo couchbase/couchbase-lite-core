@@ -14,17 +14,16 @@
 // so its contents are available to actions in the grammar file (n1ql.leg).
 
 #pragma once
-#include "n1ql_parser.hh"
 #include "fleece/Mutable.hh"
 #include "Any.hh"
-#include "PlatformIO.hh"
 #include <algorithm>
 #include <array>
 #include <sstream>
 #include <typeinfo>
+#include <utility>
 #include "betterassert.hh"
 
-namespace litecore { namespace n1ql {
+namespace litecore::n1ql {
 
     using namespace fleece;
     using namespace litecore;
@@ -87,7 +86,7 @@ namespace litecore { namespace n1ql {
         return setAny(array, index, value);
     }
 
-    static MutableArray appendAny(MutableArray array, const Any& value) {
+    static MutableArray appendAny(const MutableArray& array, const Any& value) {
         return insertAny(array, array.count(), value);
     }
 
@@ -103,11 +102,15 @@ namespace litecore { namespace n1ql {
         return a;
     }
 
+    // For some reason, making the parameter a reference breaks the template deduction for these functions
+    // NOLINTBEGIN(performance-unnecessary-value-param)
     template <>
     MutableArray arrayWith(Any item) {
         auto a = array();
         return appendAny(a, item);
     }
+
+    // NOLINTEND(performance-unnecessary-value-param)
 
     template <class T>
     static MutableDict dictWith(slice key, T item) {
@@ -116,12 +119,16 @@ namespace litecore { namespace n1ql {
         return d;
     }
 
+    // For some reason, making the parameter a reference breaks the template deduction for these functions
+    // NOLINTBEGIN(performance-unnecessary-value-param)
     template <>
     MutableDict dictWith(slice key, Any item) {
         auto d = MutableDict::newDict();
         setAny(d, key, item);
         return d;
     }
+
+    // NOLINTEND(performance-unnecessary-value-param)
 
     static MutableArray op(const Any& oper, const Any& op1, const Any& op2);
     static MutableArray binaryOp(const Any& left, const Any& oper, const Any& right);
@@ -188,7 +195,7 @@ namespace litecore { namespace n1ql {
         while ( isspace(*input) ) ++input;
         const char* last = input + strlen(input) - 1;
         while ( last >= input && isspace(*last) ) --last;
-        return string(input, last - input + 1);
+        return {input, static_cast<size_t>(last - input + 1)};
     }
 
     static string unquote(string str, char quoteChar) {
@@ -258,7 +265,7 @@ namespace litecore { namespace n1ql {
 
     // Postprocess an expression by changing references to 'var' from a property to a variable.
     static void substituteVariable(const string& var, MutableArray expr) {
-        _substituteVariable(slice("." + var), expr);
+        _substituteVariable(slice("." + var), std::move(expr));
     }
 
     // Recognizing reserved words & function names:
@@ -326,10 +333,10 @@ namespace litecore { namespace n1ql {
         if ( colonSuffix.length() > 0 ) { coll["LOCALE"_sl] = colonSuffix; }
     }
 
-    static MutableArray collateOp(MutableArray expr, string collation) {
+    static MutableArray collateOp(const MutableArray& expr, string collation) {
         auto collate = op("COLLATE", MutableDict::newDict(), expr);
-        extendCollate(collate, collation);
+        extendCollate(collate, std::move(collation));
         return collate;
     }
 
-}}  // namespace litecore::n1ql
+}  // namespace litecore::n1ql

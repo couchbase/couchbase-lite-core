@@ -73,7 +73,7 @@ void C4Query::setParameters(slice parameters) {
     LOCK(_mutex);
     _parameters = parameters;
 
-    if ( _bgQuerier ) { _bgQuerier->changeOptions(_parameters); }
+    if ( _bgQuerier ) { _bgQuerier->changeOptions(Query::Options(_parameters)); }
 }
 
 #pragma mark - ENUMERATOR:
@@ -180,7 +180,7 @@ void C4Query::enableObserver(C4QueryObserverImpl* obs, bool enable) {
         if ( !_bgQuerier ) {
             _bgQuerierDelegate = make_unique<LiveQuerierDelegate>(this);
             _bgQuerier         = new LiveQuerier(_database, _query, true, _bgQuerierDelegate.get());
-            _bgQuerier->start(_parameters);
+            _bgQuerier->start(Query::Options(_parameters));
         } else {
             // CBL-2459: For the second+ observers, get the current query result and notify if
             // the result is available. The current result will be reported via the callback

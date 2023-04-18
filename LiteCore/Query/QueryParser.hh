@@ -19,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace fleece::impl {
@@ -59,18 +60,23 @@ namespace litecore {
           public:
             using DeletionStatus = QueryParser::DeletionStatus;
 
-            virtual ~Delegate()                                                                   = default;
-            virtual bool   tableExists(const string& tableName) const                             = 0;
-            virtual string collectionTableName(const string& collection, DeletionStatus) const    = 0;
-            virtual string FTSTableName(const string& onTable, const string& property) const      = 0;
-            virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
+            virtual ~Delegate()                                                                              = default;
+            [[nodiscard]] virtual bool   tableExists(const string& tableName) const                          = 0;
+            [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const = 0;
+            [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const   = 0;
+            [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE
-            virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
 #endif
         };
 
-        QueryParser(const Delegate& delegate, const string& defaultCollectionName, const string& defaultTableName)
-            : _delegate(delegate), _defaultCollectionName(defaultCollectionName), _defaultTableName(defaultTableName) {}
+        QueryParser(const Delegate& delegate, string defaultCollectionName, string defaultTableName)
+            : _delegate(delegate)
+            , _defaultCollectionName(std::move(defaultCollectionName))
+            , _defaultTableName(std::move(defaultTableName)) {}
+
+        QueryParser(const QueryParser& qp)         = delete;
+        QueryParser& operator=(const QueryParser&) = delete;
 
         void setBodyColumnName(const string& name) { _bodyColumnName = name; }
 
@@ -146,13 +152,10 @@ namespace litecore {
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
-        QueryParser(const QueryParser* qp)
+        explicit QueryParser(const QueryParser* qp)
             : QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName) {
             _bodyColumnName = qp->_bodyColumnName;
         }
-
-        QueryParser(const QueryParser& qp)         = delete;
-        QueryParser& operator=(const QueryParser&) = delete;
 
         void reset();
         void parseNode(const Value*);
@@ -168,14 +171,14 @@ namespace litecore {
         void writeDeletionTest(const string& alias);
         void writeWhereClause(const Value* where);
 
-        void      addDefaultAlias();
-        void      addAlias(aliasInfo&&);
-        void      addAlias(const string& alias, aliasType, const string& tableName);
-        aliasInfo parseFromEntry(const Value* value);
-        void      parseFromClause(const Value* from);
-        void      writeFromClause(const Value* from);
-        int       parseJoinType(slice);
-        bool      writeOrderOrLimitClause(const Dict* operands, slice jsonKey, const char* keyword);
+        void       addDefaultAlias();
+        void       addAlias(aliasInfo&&);
+        void       addAlias(const string& alias, aliasType, const string& tableName);
+        aliasInfo  parseFromEntry(const Value* value);
+        void       parseFromClause(const Value* from);
+        void       writeFromClause(const Value* from);
+        static int parseJoinType(slice);
+        bool       writeOrderOrLimitClause(const Dict* operands, slice jsonKey, const char* keyword);
 
         void prefixOp(slice, ArrayIterator&);
         void postfixOp(slice, ArrayIterator&);
@@ -242,7 +245,7 @@ namespace litecore {
         bool                     _propertiesUseSourcePrefix{false};  // Must properties include alias as prefix?
         vector<string>           _columnTitles;                      // Pretty names of result columns
         stringstream             _sql;                               // The SQL being generated
-        const Value*             _curNode;                           // Current node being parsed
+        const Value*             _curNode{nullptr};                  // Current node being parsed
         vector<const Operation*> _context;                           // Parser stack
         set<string>              _parameters;                        // Plug-in "$" parameters found in parsing
         set<string>              _variables;                         // Active variables, inside ANY/EVERY exprs

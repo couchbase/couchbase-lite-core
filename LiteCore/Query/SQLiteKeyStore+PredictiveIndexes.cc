@@ -19,7 +19,6 @@
 #    include "Error.hh"
 #    include "StringUtil.hh"
 #    include "MutableArray.hh"
-#    include "SQLiteCpp/SQLiteCpp.h"
 
 using namespace std;
 using namespace fleece;
@@ -37,7 +36,7 @@ namespace litecore {
         // Create a table of the PREDICTION results:
         auto pred = MutableArray::newArray(expression);
         if ( pred->count() > 3 ) pred->remove(3, pred->count() - 3);
-        string predTableName = createPredictionTable(pred, spec.optionsPtr());
+        string predTableName = createPredictionTable(pred);
 
         // The final parameters are the result properties to create a SQL index on:
         Array::iterator i(expression);
@@ -55,7 +54,7 @@ namespace litecore {
         return createIndex(spec, predTableName, i);
     }
 
-    string SQLiteKeyStore::createPredictionTable(const Value* expression, const IndexSpec::Options* options) {
+    string SQLiteKeyStore::createPredictionTable(const Value* expression) {
         // Derive the table name from the expression (path) it unnests:
         auto        kvTableName   = tableName();
         auto        q_kvTableName = quotedTableName();

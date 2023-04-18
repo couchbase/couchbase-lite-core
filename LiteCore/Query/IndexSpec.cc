@@ -10,10 +10,12 @@
 // the file licenses/APL2.txt.
 //
 
+#include <utility>
 #include "IndexSpec.hh"
 #include "QueryParser+Private.hh"
 #include "Error.hh"
-#include "FleeceImpl.hh"
+#include "Doc.hh"
+#include "fleece/FLMutable.h"
 #include "n1ql_parser.hh"
 #include "Query.hh"
 #include "MutableDict.hh"
@@ -24,14 +26,14 @@ namespace litecore {
 
     IndexSpec::IndexSpec(std::string name_, Type type_, alloc_slice expression_, QueryLanguage queryLanguage_,
                          const Options* opt)
-        : name(move(name_))
+        : name(std::move(name_))
         , type(type_)
-        , expression(expression_)
+        , expression(std::move(expression_))
         , queryLanguage(queryLanguage_)
         , options(opt ? std::make_optional(*opt) : std::optional<Options>()) {}
 
-    IndexSpec::IndexSpec(IndexSpec&&) = default;
-    IndexSpec::~IndexSpec()           = default;
+    IndexSpec::IndexSpec(IndexSpec&&) noexcept = default;
+    IndexSpec::~IndexSpec()                    = default;
 
     void IndexSpec::validateName() const {
         if ( name.empty() ) { error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty"); }
@@ -53,7 +55,7 @@ namespace litecore {
                     break;
                 case QueryLanguage::kN1QL:
                     try {
-                        unsigned      errPos;
+                        int           errPos;
                         FLMutableDict result = n1ql::parse(string(expression), &errPos);
                         if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
                         alloc_slice json = ((MutableDict*)result)->toJSON(true);
@@ -69,7 +71,7 @@ namespace litecore {
     }
 
     const Array* IndexSpec::what() const {
-        const Array* what = nullptr;
+        const Array* what;
         if ( auto dict = doc()->asDict(); dict ) {
             what = qp::requiredArray(qp::getCaseInsensitive(dict, "WHAT"), "Index WHAT term");
         } else {

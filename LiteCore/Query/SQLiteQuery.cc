@@ -20,12 +20,16 @@
 #include "n1ql_parser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "FleeceImpl.hh"
+#include "Doc.hh"
+#include "Encoder.hh"
+#include "JSONConverter.hh"
 #include "MutableDict.hh"
-#include "Path.hh"
 #include "Stopwatch.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
+#include "SQLiteCpp/Statement.h"
+#include "SQLiteCpp/Column.h"
+#include "fleece/FLMutable.h"
 #include <sqlite3.h>
+#include <memory>
 #include <numeric>  // std::accumulate
 #include <sstream>
 #include <iostream>
@@ -66,7 +70,7 @@ namespace litecore {
                     break;
                 case QueryLanguage::kN1QL:
                     {
-                        unsigned      errPos;
+                        int           errPos;
                         FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
                         DEFER { FLMutableDict_Release(result); };
 
@@ -118,7 +122,7 @@ namespace litecore {
             _columnTitles          = qp.columnTitles();
         }
 
-        virtual void close() override {
+        void close() override {
             logInfo("Closing query (db is closing)");
             _statement.reset();
             _matchedTextStatement.reset();
@@ -142,13 +146,13 @@ namespace litecore {
 
         alloc_slice getMatchedText(const FullTextTerm& term) override {
             // Get the expression that generated the text
-            if ( _ftsTables.size() == 0 ) error::_throw(error::NoSuchIndex);
+            if ( _ftsTables.empty() ) error::_throw(error::NoSuchIndex);
             string expr = _ftsTables[0];  // TODO: Support for multiple matches in a query
 
             if ( !_matchedTextStatement ) {
-                auto&  df  = (SQLiteDataFile&)dataFile();
-                string sql = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
-                _matchedTextStatement.reset(new SQLite::Statement(df, sql, true));
+                auto&  df             = (SQLiteDataFile&)dataFile();
+                string sql            = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
+                _matchedTextStatement = std::make_unique<SQLite::Statement>(df, sql, true);
             }
 
             alloc_slice matchedText;
@@ -161,11 +165,11 @@ namespace litecore {
             return matchedText;
         }
 
-        virtual unsigned columnCount() const noexcept override {
+        unsigned columnCount() const noexcept override {
             return statement()->getColumnCount() - _1stCustomResultColumn;
         }
 
-        virtual const vector<string>& columnTitles() const noexcept override { return _columnTitles; }
+        const vector<string>& columnTitles() const noexcept override { return _columnTitles; }
 
         string explain() override {
             stringstream result;
@@ -199,7 +203,7 @@ namespace litecore {
         unsigned       _1stCustomResultColumn;  // Column index of the 1st column declared in JSON
 
       protected:
-        ~SQLiteQuery() { disposing(); }
+        ~SQLiteQuery() override { disposing(); }
 
         string loggingClassName() const override { return "Query"; }
 
@@ -231,13 +235,13 @@ namespace litecore {
                     recording->data().size, elapsedTime * 1000);
         }
 
-        ~SQLiteQueryEnumerator() { logInfo("Deleted"); }
+        ~SQLiteQueryEnumerator() override { logInfo("Deleted"); }
 
-        virtual int64_t getRowCount() const override {
+        int64_t getRowCount() const override {
             return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)
         }
 
-        virtual void seek(int64_t rowIndex) override {
+        void seek(int64_t rowIndex) override {
             auto rows = _recording->asArray();
             rowIndex *= 2;
             if ( rowIndex < 0 ) {
@@ -274,10 +278,10 @@ namespace litecore {
 
         uint64_t missingColumns() const noexcept override { return _iter[1u]->asUnsigned(); }
 
-        virtual bool obsoletedBy(const QueryEnumerator* otherE) override {
+        bool obsoletedBy(const QueryEnumerator* otherE) override {
             if ( !otherE ) return false;
             auto other = dynamic_cast<const SQLiteQueryEnumerator*>(otherE);
-            if ( !other || other->purgeCount() != _purgeCount ) {
+            if ( other->purgeCount() != _purgeCount ) {
                 // If other is null for some weird reason all bets are off.  Otherwise
                 // a purge will make changes that are unrecognizable to either lastSequence
                 // or the data doc, so don't consult them
@@ -308,7 +312,7 @@ namespace litecore {
         }
 
         QueryEnumerator* clone() override {
-            SQLiteQueryEnumerator* clon =
+            auto* clon =
                     new SQLiteQueryEnumerator(&_options, _lastSequence.load(), _purgeCount.load(), _recording.get());
             clon->_1stCustomResultColumn = this->_1stCustomResultColumn;
             clon->_hasFullText           = this->_hasFullText;
@@ -325,9 +329,9 @@ namespace litecore {
             const char* termStr = offsets.c_str();
             while ( *termStr ) {
                 uint32_t n[4];
-                for ( int i = 0; i < 4; ++i ) {
+                for ( unsigned int& i : n ) {
                     char* next;
-                    n[i]    = (uint32_t)strtol(termStr, &next, 10);
+                    i       = (uint32_t)strtol(termStr, &next, 10);
                     termStr = next;
                 }
                 _fullTextTerms.push_back({dataSource, n[0], n[1], n[2], n[3]});
@@ -349,8 +353,8 @@ namespace litecore {
 
         Retained<Doc>   _recording;
         Array::iterator _iter;
-        unsigned        _1stCustomResultColumn;  // Column index of the 1st column declared in JSON
-        bool            _hasFullText;
+        unsigned        _1stCustomResultColumn{0};  // Column index of the 1st column declared in JSON
+        bool            _hasFullText{false};
         bool            _first{true};
     };
 
@@ -483,7 +487,7 @@ namespace litecore {
                     uint64_t missingCols = 0;
                     enc.beginArray(nCols);
                     for ( int i = 0; i < nCols; ++i ) {
-                        int offsetColumn = i - firstCustomCol;
+                        int64_t offsetColumn = i - firstCustomCol;
                         if ( !encodeColumn(enc, i) && offsetColumn >= 0 && offsetColumn < 64 ) {
                             missingCols |= (1ULL << offsetColumn);
                         }

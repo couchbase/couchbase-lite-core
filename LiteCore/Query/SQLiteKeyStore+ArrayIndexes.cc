@@ -15,7 +15,6 @@
 #include "QueryParser.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
 #include "Array.hh"
 
 using namespace std;
@@ -26,11 +25,11 @@ namespace litecore {
 
     bool SQLiteKeyStore::createArrayIndex(const IndexSpec& spec) {
         Array::iterator iExprs(spec.what());
-        string          arrayTableName = createUnnestedTable(iExprs.value(), spec.optionsPtr());
+        string          arrayTableName = createUnnestedTable(iExprs.value());
         return createIndex(spec, arrayTableName, ++iExprs);
     }
 
-    string SQLiteKeyStore::createUnnestedTable(const Value* expression, const IndexSpec::Options* options) {
+    string SQLiteKeyStore::createUnnestedTable(const Value* expression) {
         // Derive the table name from the expression it unnests:
         string      kvTableName = tableName();
         QueryParser qp(db(), "", kvTableName);

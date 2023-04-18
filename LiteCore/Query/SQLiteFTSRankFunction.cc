@@ -11,10 +11,9 @@
 //
 //  Adapted from public domain source code at https://www.sqlite.org/fts3.html#appendix_a
 
-#include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
 #include <sqlite3.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace litecore {
 

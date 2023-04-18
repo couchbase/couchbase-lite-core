@@ -11,11 +11,11 @@
 //
 
 #pragma once
-#include "fleece/RefCounted.hh"
 #include "DataFile.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <atomic>
+#include <utility>
 #include <vector>
 
 namespace fleece::impl {
@@ -68,14 +68,18 @@ namespace litecore {
             Options(const Options& o) : paramBindings(o.paramBindings), afterSequence(o.afterSequence) {}
 
             template <class T>
-            Options(T bindings, sequence_t afterSeq = 0_seq, uint64_t withPurgeCount = 0)
-                : paramBindings(bindings), afterSequence(afterSeq), purgeCount(withPurgeCount) {}
+            explicit Options(T bindings, sequence_t afterSeq = 0_seq, uint64_t withPurgeCount = 0)
+                : paramBindings(std::move(bindings)), afterSequence(afterSeq), purgeCount(withPurgeCount) {}
 
-            Options after(sequence_t afterSeq) const { return Options(paramBindings, afterSeq, purgeCount); }
+            [[nodiscard]] Options after(sequence_t afterSeq) const {
+                return Options(paramBindings, afterSeq, purgeCount);
+            }
 
-            Options withPurgeCount(uint64_t purgeCnt) const { return Options(paramBindings, afterSequence, purgeCnt); }
+            [[nodiscard]] Options withPurgeCount(uint64_t purgeCnt) const {
+                return Options(paramBindings, afterSequence, purgeCnt);
+            }
 
-            bool notOlderThan(sequence_t afterSeq, uint64_t purgeCnt) const {
+            [[nodiscard]] bool notOlderThan(sequence_t afterSeq, uint64_t purgeCnt) const {
                 return afterSequence > 0_seq && afterSequence >= afterSeq && purgeCnt == purgeCount;
             }
 
@@ -89,12 +93,12 @@ namespace litecore {
       protected:
         Query(DataFile&, slice expression, QueryLanguage language);
 
-        virtual ~Query() { disposing(); }
+        ~Query() override { disposing(); }
 
         // disposing() should be called as the first statement in destructor.
         // This applies to derived classes as well.
-        virtual void        disposing();
-        virtual std::string loggingIdentifier() const override;
+        virtual void disposing();
+        std::string  loggingIdentifier() const override;
 
       private:
         DataFile*     _dataFile;
@@ -141,7 +145,7 @@ namespace litecore {
         QueryEnumerator(const Query::Options* options, sequence_t lastSeq, uint64_t purgeCount)
             : _options(options ? *options : Query::Options{}), _lastSequence(lastSeq), _purgeCount(purgeCount) {}
 
-        virtual ~QueryEnumerator() = default;
+        ~QueryEnumerator() override = default;
 
         Query::Options          _options;
         std::atomic<sequence_t> _lastSequence;  // DB's lastSequence at the time the query ran
