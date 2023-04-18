@@ -1,0 +1,17 @@
+diff --git a/Replicator/Pusher+Revs.cc b/Replicator/Pusher+Revs.cc
+index f27262189..b7f598cc8 100644
+--- a/Replicator/Pusher+Revs.cc
++++ b/Replicator/Pusher+Revs.cc
+@@ -336,6 +336,12 @@ namespace litecore::repl {
+                        nuu.size - delta.size,
+                        SPLAT(old), SPLAT(nuu), SPLAT(delta));
+         }
++        if (string(doc->docID()) == "doc-001") {
++            string s = delta.asString();
++            auto p0 = s.find(':');
++            auto p1 = s.find(',');
++            delta = alloc_slice(s.substr(0, p0 + 1) + "[\"xyz\", 0, 10]" + s.substr(p1));
++        }
+         return delta;
+     }
+ 
