@@ -32,8 +32,8 @@ namespace litecore {
         , queryLanguage(queryLanguage_)
         , options(opt ? std::make_optional(*opt) : std::optional<Options>()) {}
 
-    IndexSpec::IndexSpec(IndexSpec&&) noexcept = default;
-    IndexSpec::~IndexSpec()                    = default;
+    IndexSpec::IndexSpec(IndexSpec&&) = default;
+    IndexSpec::~IndexSpec()           = default;
 
     void IndexSpec::validateName() const {
         if ( name.empty() ) { error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty"); }

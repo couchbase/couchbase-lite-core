@@ -46,7 +46,7 @@ namespace litecore {
                   QueryLanguage queryLanguage = QueryLanguage::kJSON, const Options* opt = nullptr);
 
         IndexSpec(const IndexSpec&) = delete;
-        IndexSpec(IndexSpec&&) noexcept;
+        IndexSpec(IndexSpec&&);
 
         ~IndexSpec();
 
