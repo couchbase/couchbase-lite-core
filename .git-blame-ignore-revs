@@ -1,2 +1,8 @@
+# Use this file to clean up Git Blame
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 # CBL-4174 Formatting commit:
 610a37e06a1a67903e7289866dfcfd69386716d5
+# CBL-4330 Formatting commit:
+c83bdb6d4bd45b32381dd5bf6c5249e83a85cd6a
+# CBL-4400 Formatting commit:
+867a53f9fe25ed5696129262ed3f06d77505219c
