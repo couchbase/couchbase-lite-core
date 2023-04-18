@@ -11,6 +11,7 @@
 #line 18 "n1ql.leg"
 
 #include "n1ql_parser_internal.hh"
+#include "n1ql_parser.hh"
 
 namespace litecore::n1ql {
 
