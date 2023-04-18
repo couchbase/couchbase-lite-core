@@ -263,7 +263,7 @@ namespace litecore { namespace net {
                     auto fd = entry.fd;
                     if ( fd == _interruptReadFD ) {
                         // This is an interrupt -- read the byte from the pipe:
-                        int message;
+                        int  message;
                         auto nread = ::read(_interruptReadFD, &message, sizeof(message));
                         if ( _usuallyFalse(nread == -1) ) {
                             result = false;
