@@ -748,6 +748,12 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull deltas with filter from SG", "[.Syn
     };
 
     // -------- Pulling changes from SG --------
+    // CBL-4418: this test is interesting only if the puller finds an error of
+    // "Invalid delta". This error is not common. In the attachments of the ticket,
+    // a patch file, "cbl-4418-inject-error-pull.patch," can be found.
+    // Use "git apply" in the Replicator to modify DBAccess.cpp to fake an error
+    // for this test.
+    // _expectedDocPullErrors = { "doc-001" };
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify
@@ -829,9 +835,16 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Push deltas to SG", "[.SyncServerWalrus]
     }
 
     // -------- Pushing changes from SG --------
+    // CBL-4418: this test is interesting only if the pusher calculated a bad
+    // delta and rejected by the server with "Invalid delta". This error is not common.
+    // In the attachments of the ticket, a patch file, "cbl-4418-inject-error-push.patch,"
+    // can be found. Use "git apply" in the Replicator to modify Pusher+Revs.cpp
+    // to fake an error for this test.
+    // The failed attempt (with delta rev) is retried right away and the client
+    // won't see the error in documentEnded if the second try (without delta) succeeds.
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_callbackStatus.error.code == 0);
-    CHECK(_callbackStatus.progress.documentCount == 10);
+    CHECK(_callbackStatus.progress.documentCount == kNumDocs);
 }
 
 
