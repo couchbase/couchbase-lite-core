@@ -39,8 +39,12 @@ class CertHelper {
 
 #    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     ~CertHelper() {
-        if ( _serverPersistentIdentity.key ) { _serverPersistentIdentity.key->removePersistent(); }
-        if ( _clientPersistentIdentity.key ) { _clientPersistentIdentity.key->removePersistent(); }
+        if ( _serverPersistentIdentity.key ) {
+            c4keypair_removePersistent(_serverPersistentIdentity.key.get(), nullptr);
+        }
+        if ( _clientPersistentIdentity.key ) {
+            c4keypair_removePersistent(_clientPersistentIdentity.key.get(), nullptr);
+        }
     }
 #    endif
 
