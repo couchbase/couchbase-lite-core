@@ -245,9 +245,7 @@ namespace litecore::repl {
                 }
                 doneWithRev(rev, completed, synced);
                 switch (retry) {
-                    case kRetryNow:
-                        retryRevs({rev}, true);
-                        break;
+                    case kRetryNow:   retryRevs({rev}, true); break;
                     case kRetryLater: _revsToRetry.push_back(rev); break;
                     case kNoRetry:    break;
                 }
