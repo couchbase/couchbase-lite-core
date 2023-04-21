@@ -1085,15 +1085,18 @@ static void validateCipherInputs(ReplicatorCollectionSGTest::CipherContextMap* c
     context.called++;
 }
 
-C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties, C4String keyPath,
-                            C4Slice input, C4StringResult* outAlgorithm, C4StringResult* outKeyID, C4Error* outError) {
+C4SliceResult ReplicatorCollectionSGTest::propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID,
+                                                        FLDict properties, C4String keyPath, C4Slice input,
+                                                        C4StringResult* outAlgorithm, C4StringResult* outKeyID,
+                                                        C4Error* outError) {
     auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
     validateCipherInputs(test->encContextMap.get(), spec, docID, keyPath);
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
 }
 
-C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties, C4String keyPath,
-                            C4Slice input, C4String algorithm, C4String keyID, C4Error* outError) {
+C4SliceResult ReplicatorCollectionSGTest::propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID,
+                                                        FLDict properties, C4String keyPath, C4Slice input,
+                                                        C4String algorithm, C4String keyID, C4Error* outError) {
     auto test = static_cast<ReplicatorCollectionSGTest*>(ctx);
     validateCipherInputs(test->decContextMap.get(), spec, docID, keyPath);
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));

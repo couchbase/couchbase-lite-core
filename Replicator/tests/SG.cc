@@ -4,6 +4,7 @@
 
 #include "SG.hh"
 #include "c4Test.hh"
+#include "c4Database.hh"
 #include <utility>
 #include <map>
 #include "Response.hh"
@@ -19,7 +20,7 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4C
         path = std::string("/") + path;
         if ( remoteDBName.size > 0 ) {
             auto kspace = (string)(slice)(remoteDBName);
-            if ( collectionSpec.name.size > 0 ) {
+            if ( collectionSpec != kC4DefaultCollectionSpec && collectionSpec.name.size > 0 ) {
                 kspace += ".";
                 if ( collectionSpec.scope.size > 0 ) { kspace += string(collectionSpec.scope) + "."; }
                 kspace += string(collectionSpec.name);
@@ -116,6 +117,9 @@ bool SG::deleteUser(const string& username) const {
 
 bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs,
                            const std::vector<std::string>& channelIDs) const {
+    if ( getServerName() < "Couchbase Sync Gateway/3.1" ) return assignUserChannelOld(username, channelIDs);
+
+
     std::multimap<slice, slice> specsMap;
     for ( const auto& spec : collectionSpecs ) { specsMap.insert({spec.scope, spec.name}); }
 
@@ -145,6 +149,22 @@ bool SG::assignUserChannel(const std::string& username, const std::vector<C4Coll
         }
         enc.endDict();  // collection access
     }
+    enc.endDict();
+    Doc   doc{enc.finish()};
+    Value v = doc.root();
+
+    HTTPStatus status;
+    runRequest("PUT", {}, "_user/"s + username, v.toJSON(), true, nullptr, &status);
+    return status == HTTPStatus::OK;
+}
+
+bool SG::assignUserChannelOld(const std::string& username, const std::vector<std::string>& channelIDs) const {
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("admin_channels");
+    enc.beginArray(channelIDs.size());
+    for ( const auto& chID : channelIDs ) { enc.writeString(chID); }
+    enc.endArray();
     enc.endDict();
     Doc   doc{enc.finish()};
     Value v = doc.root();
@@ -186,11 +206,12 @@ bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const strin
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
-slice SG::getServerName() const {
+alloc_slice SG::getServerName() const {
     auto r = createRequest("GET", {}, "/");
     if ( r->run() ) {
         Assert(r->status() == HTTPStatus::OK);
-        return r->header("Server");
+        alloc_slice serverName{r->header("Server")};
+        return serverName;
     }
     return nullslice;
 }
