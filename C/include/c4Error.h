@@ -48,8 +48,8 @@ typedef C4_ENUM(uint8_t, C4ErrorDomain){
 
 // LiteCoreDomain error codes:
 // (These are identical to the internal C++ error::LiteCoreError enum values.)
-typedef C4_ENUM(int32_t,
-                C4ErrorCode){kC4ErrorAssertionFailed = 1,    // Internal assertion failure
+typedef C4_ENUM(int32_t, C4ErrorCode){
+                             kC4ErrorAssertionFailed = 1,    // Internal assertion failure
                              kC4ErrorUnimplemented,          // Oops, an unimplemented API call
                              kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
                              kC4ErrorBadRevisionID,          // Invalid revision ID syntax
@@ -130,15 +130,9 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode){
       (e.g. false or NULL.) If the function doesn't fail, it does NOT zero out the error, so its
       contents should be considered uninitialized garbage. */
 typedef struct C4Error {
-#if 0  // this cut the size of C4Error to 8 bytes, but caused problems for .NET bindings :(
-    C4ErrorDomain domain        : 8;
-    int           code          :24;
-    unsigned      internal_info :32;
-#else
     C4ErrorDomain domain;         // Domain of error (LiteCore, POSIX, SQLite, ...)
     int           code;           // Error code. Domain-specific, except 0 is ALWAYS "none".
     unsigned      internal_info;  // No user-serviceable parts inside. Do not touch.
-#endif
 
 #ifdef __cplusplus
     // C4Error C++ API:

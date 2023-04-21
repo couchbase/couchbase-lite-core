@@ -29,7 +29,8 @@ typedef C4_ENUM(int32_t, C4WebSocketCloseCode){
         kWebSocketCloseNoCode           = 1005,  // No status code in close frame
         kWebSocketCloseAbnormal         = 1006,  // Peer closed socket unexpectedly w/o a close frame
         kWebSocketCloseBadMessageFormat = 1007,  // Unparseable message
-        kWebSocketClosePolicyError = 1008,      kWebSocketCloseMessageTooBig = 1009,
+        kWebSocketClosePolicyError = 1008,      
+        kWebSocketCloseMessageTooBig = 1009,
         kWebSocketCloseMissingExtension = 1010,  // Peer doesn't provide a necessary extension
         kWebSocketCloseCantFulfill      = 1011,  // Can't fulfill request due to "unexpected condition"
         kWebSocketCloseTLSFailure       = 1015,  // Never sent, only received
