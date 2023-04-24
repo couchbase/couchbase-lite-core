@@ -65,11 +65,6 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         }
     }
 
-    //    virtual inline bool sgVersionCheck() const {
-    //        alloc_slice serverName = _sg.getServerName();
-    //        return serverName >= "Couchbase Sync Gateway/3.1";
-    //    }
-
     // Database verifyDb:
     C4Database* verifyDb{nullptr};
 
