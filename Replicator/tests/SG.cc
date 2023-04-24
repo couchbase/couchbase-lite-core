@@ -117,7 +117,13 @@ bool SG::deleteUser(const string& username) const {
 
 bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs,
                            const std::vector<std::string>& channelIDs) const {
-    if ( getServerName() < "Couchbase Sync Gateway/3.1" ) return assignUserChannelOld(username, channelIDs);
+    // Compares the ASCII bytes of the version strings
+    if ( getServerName() < "Couchbase Sync Gateway/3.1" ) {
+        C4Log("[SG] Assigning user channels for SG version < 3.1");
+        return assignUserChannelOld(username, channelIDs);
+    } else {
+        C4Log("[SG] Assigning user channels for SG version >= 3.1");
+    }
 
 
     std::multimap<slice, slice> specsMap;

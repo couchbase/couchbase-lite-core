@@ -204,13 +204,17 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         alloc_slice       serverName = _sg.getServerName();
         const std::string minSGVer   = std::string("Couchbase Sync Gateway/") + _expectedSGVersion.first;
         const std::string maxSGVer   = std::string("Couchbase Sync Gateway/") + _expectedSGVersion.second;
-        bool correctVersion = serverName >= minSGVer && (_expectedSGVersion.second.empty() || serverName < maxSGVer);
-        if ( !correctVersion ) {
-            C4Log("!!!!! INCORRECT SYNC GATEWAY VERSION RUNNING !!!!!");
-            C4Log("-> Expected version is: %s (EE or non-EE)", minSGVer.c_str());
-            C4Log("-> Actual version is: %.*s", SPLAT(serverName));
+        // Compares the ASCII bytes of the version strings
+        bool isCorrectVersion = serverName >= minSGVer && (_expectedSGVersion.second.empty() || serverName < maxSGVer);
+        if ( !isCorrectVersion ) {
+            C4Log("[ReplicatorTest] Sync Gateway version differs from expected."
+                  "\n\tExpected version: \n\t\tMinimum (inclusive): %s"
+                  "\n\t\tMaximum (exclusive): %s\n\tActual version: %.*s",
+                  minSGVer.c_str(), maxSGVer.c_str(), SPLAT(serverName));
+        } else {
+            C4Log("[ReplicatorTest] Sync Gateway version is: %.*s", SPLAT(serverName));
         }
-        return correctVersion;
+        return isCorrectVersion;
     }
 
     /*
