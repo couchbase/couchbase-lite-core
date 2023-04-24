@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"

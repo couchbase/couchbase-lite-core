@@ -1,5 +1,3 @@
-#ifdef COUCHBASE_ENTERPRISE
-
 //
 // QuerParser+Prediction.cc
 //
@@ -11,10 +9,11 @@
 //  software will be governed by the Apache License, Version 2.0, included in
 //  the file licenses/APL2.txt.
 //
+#ifdef COUCHBASE_ENTERPRISE
 
 #    include "QueryParser.hh"
 #    include "QueryParser+Private.hh"
-#    include "FleeceImpl.hh"
+#    include "SQLUtil.hh"
 #    include "StringUtil.hh"
 #    include "Path.hh"
 

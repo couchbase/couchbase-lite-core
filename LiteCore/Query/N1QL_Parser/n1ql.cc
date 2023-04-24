@@ -11,8 +11,9 @@
 #line 18 "n1ql.leg"
 
 #include "n1ql_parser_internal.hh"
+#include "n1ql_parser.hh"
 
-namespace litecore { namespace n1ql {
+namespace litecore::n1ql {
 
 #ifndef YY_MALLOC
 #define YY_MALLOC(C, N)		malloc(N)
@@ -5147,7 +5148,7 @@ static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
 }
 
 
-FLMutableDict parse(const string &input, unsigned *errPos) {
+FLMutableDict parse(const string &input, int *errPos) {
     MutableDict result;
     std::stringstream stream(input, std::ios_base::in);
     yycontext ctx = { };
@@ -5157,11 +5158,11 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
     if (ok) {
         result = ctx._;
     } else {
-        *errPos = (unsigned) ctx._maxpos;
+        *errPos = ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
 }
 
-} }
+}
 

@@ -16,16 +16,16 @@
 #include "QueryParser+Private.hh"
 #include "QueryParserTables.hh"
 #include "Record.hh"
-#include "Base64.hh"
 #include "DataFile.hh"
 #include "Error.hh"
-#include "FleeceImpl.hh"
+#include "Doc.hh"
 #include "MutableDict.hh"
 #include "DeepIterator.hh"
 #include "Path.hh"
 #include "Logging.hh"
-#include "PlatformIO.hh"
 #include "SecureDigest.hh"
+#include "StringUtil.hh"
+#include "SQLUtil.hh"
 #include "NumConversion.hh"
 #include "slice_stream.hh"
 #include <algorithm>
@@ -304,8 +304,8 @@ namespace litecore {
     unsigned QueryParser::writeSelectListClause(const Dict* operands, slice key, const char* sql, bool aggregatesOK) {
         auto param = getCaseInsensitive(operands, key);
         if ( !param ) return 0;
-        auto list  = requiredArray(param, "WHAT / GROUP BY / ORDER BY parameter");
-        int  count = list->count();
+        auto     list  = requiredArray(param, "WHAT / GROUP BY / ORDER BY parameter");
+        unsigned count = list->count();
         if ( count == 0 ) return 0;
 
         _sql << sql;
@@ -367,7 +367,7 @@ namespace litecore {
         require(isValidAlias(entry.alias), "Invalid AS identifier '%s'", entry.alias.c_str());
         require(_aliases.find(entry.alias) == _aliases.end(), "duplicate collection alias '%s'", entry.alias.c_str());
         if ( entry.type == kDBAlias ) _dbAlias = entry.alias;
-        _aliases.insert({entry.alias, move(entry)});
+        _aliases.insert({entry.alias, std::move(entry)});
     }
 
     void QueryParser::addAlias(const string& alias, aliasType type, const string& tableName) {
@@ -376,7 +376,7 @@ namespace litecore {
         entry.alias      = alias;
         entry.collection = _defaultCollectionName;
         entry.tableName  = tableName;
-        addAlias(move(entry));
+        addAlias(std::move(entry));
     }
 
     QueryParser::aliasInfo QueryParser::parseFromEntry(const Value* value) {
@@ -441,7 +441,7 @@ namespace litecore {
                         entry.type = kUnnestVirtualTableAlias;
                     entry.tableName = "";
                 }
-                addAlias(move(entry));
+                addAlias(std::move(entry));
                 first = false;
             }
         }
@@ -544,9 +544,9 @@ namespace litecore {
             string coAlias;
             if ( idxAt != string::npos ) {
                 string collTable = table.substr(0, idxAt);
-                for ( auto iter = _aliases.begin(); iter != _aliases.end(); ++iter ) {
-                    if ( iter->second.type == kResultAlias ) { continue; }
-                    if ( iter->second.tableName == collTable ) { coAlias = iter->first; }
+                for ( auto& _aliase : _aliases ) {
+                    if ( _aliase.second.type == kResultAlias ) { continue; }
+                    if ( _aliase.second.tableName == collTable ) { coAlias = _aliase.first; }
                 }
             }
             DebugAssert(!coAlias.empty());
@@ -619,7 +619,7 @@ namespace litecore {
         ++array;
 
         // Look up the handler:
-        int              nargs       = min(array.count(), 9u);
+        unsigned         nargs       = min(array.count(), 9u);
         bool             nameMatched = false;
         const Operation* def;
         for ( def = kOperationList; def->op; ++def ) {
@@ -837,7 +837,7 @@ namespace litecore {
         }
     }
 
-    static string columnTitleFromProperty(const Path& property, bool useAlias) {
+    static string columnTitleFromProperty(const Path& property) {
         if ( property.empty() )
             return "*";  // for the property ".", i.e. the entire doc. It will be translated to unique db alias.
         string first(property[0].keyStr());
@@ -851,7 +851,7 @@ namespace litecore {
     }
 
     // Handles the WHAT clause (list of results)
-    void QueryParser::resultOp(slice op, Array::iterator& operands) {
+    void QueryParser::resultOp(C4UNUSED slice op, Array::iterator& operands) {
         int      n         = 0;
         unsigned anonCount = 0;
         for ( auto& i = operands; i; ++i ) {
@@ -883,10 +883,10 @@ namespace litecore {
 
                 // Come up with a column title if there is no 'AS':
                 if ( result->type() == kString ) {
-                    title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
+                    title = columnTitleFromProperty(Path(result->asString()));
                 } else if ( result->type() == kArray ) {
                     if ( expr[0]->asString().hasPrefix('.') ) {
-                        title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
+                        title = columnTitleFromProperty(propertyFromNode(result));
                     } else if ( expr[0]->asString().hasPrefix("_.") && expr.count() == 3 && expr[1]->type() == kArray
                                 && expr[1]->asArray()->count() > 0
                                 && expr[1]->asArray()->begin()->asString().compare("meta()") == 0 ) {
@@ -912,7 +912,7 @@ namespace litecore {
 
     // Handles array literals (the "[]" op)
     // But note that this op is treated specially if it's an operand of "IN" (see inOp)
-    void QueryParser::arrayLiteralOp(slice op, Array::iterator& operands) {
+    void QueryParser::arrayLiteralOp(C4UNUSED slice op, Array::iterator& operands) {
         functionOp(kArrayFnNameWithParens, operands);
     }
 
@@ -932,7 +932,7 @@ namespace litecore {
     }
 
     // Handles COLLATE
-    void QueryParser::collateOp(slice op, Array::iterator& operands) {
+    void QueryParser::collateOp(C4UNUSED slice op, Array::iterator& operands) {
         auto outerCollation     = _collation;
         auto outerCollationUsed = _collationUsed;
 
@@ -965,7 +965,7 @@ namespace litecore {
     }
 
     // Handles "x || y", turning it into a call to the concat() function
-    void QueryParser::concatOp(slice op, Array::iterator& operands) { functionOp("concat()"_sl, operands); }
+    void QueryParser::concatOp(C4UNUSED slice op, Array::iterator& operands) { functionOp("concat()"_sl, operands); }
 
     // Handles "x BETWEEN y AND z" expressions
     void QueryParser::betweenOp(slice op, Array::iterator& operands) {
@@ -1005,7 +1005,7 @@ namespace litecore {
         }
     }
 
-    void QueryParser::likeOp(slice op, Array::iterator& operands) {
+    void QueryParser::likeOp(C4UNUSED slice op, Array::iterator& operands) {
         // Optimization: use SQLite's built-in LIKE function when possible, i.e. when the collation
         // in effect matches SQLite's BINARY collation. This allows the query optimizer to use the
         // "LIKE optimization", allowing an indexed prefix search, when the pattern is a literal or
@@ -1023,7 +1023,7 @@ namespace litecore {
     }
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
-    void QueryParser::matchOp(slice op, Array::iterator& operands) {
+    void QueryParser::matchOp(C4UNUSED slice op, Array::iterator& operands) {
         // Is a MATCH legal here? Look at the parent operation(s):
         auto parentCtx = _context.rbegin() + 1;
         auto parentOp  = (*parentCtx)->op;
@@ -1078,7 +1078,7 @@ namespace litecore {
     }
 
     // Handles doc property accessors, e.g. [".", "prop"] or [".prop"] --> fl_value(body, "prop")
-    void QueryParser::propertyOp(slice op, Array::iterator& operands) {
+    void QueryParser::propertyOp(C4UNUSED slice op, Array::iterator& operands) {
         writePropertyGetter(kValueFnName, propertyFromOperands(operands));
     }
 
@@ -1134,7 +1134,7 @@ namespace litecore {
         _sql << ", " << sqlString(path) << ")";
     }
 
-    void QueryParser::blobOp(slice op, Array::iterator& operands) {
+    void QueryParser::blobOp(C4UNUSED slice op, Array::iterator& operands) {
         writePropertyGetter(kBlobFnName, Path(requiredString(operands[0], "blob path")));
     }
 
@@ -1180,10 +1180,10 @@ namespace litecore {
     }
 
     // Handles MISSING, which is the N1QL equivalent of NULL
-    void QueryParser::missingOp(slice op, Array::iterator& operands) { _sql << "NULL"; }
+    void QueryParser::missingOp(C4UNUSED slice op, Array::iterator& operands) { _sql << "NULL"; }
 
     // Handles CASE
-    void QueryParser::caseOp(fleece::slice op, Array::iterator& operands) {
+    void QueryParser::caseOp(C4UNUSED fleece::slice op, Array::iterator& operands) {
         // First operand is either the expression being tested, or null if there isn't one.
         // After that, operands come in pairs of 'when', 'then'.
         // If there's one remaining, it's the 'else'.
@@ -1216,7 +1216,7 @@ namespace litecore {
     }
 
     // Handles SELECT
-    void QueryParser::selectOp(fleece::slice op, Array::iterator& operands) {
+    void QueryParser::selectOp(C4UNUSED fleece::slice op, Array::iterator& operands) {
         // SELECT is unusual in that its operands are encoded as an object
         auto dict = requiredDict(operands[0], "Argument to SELECT");
         if ( _context.size() <= 2 ) {
@@ -1240,7 +1240,7 @@ namespace litecore {
     }  // namespace
 
     // Handles ["meta", dbAlias_optional]
-    void QueryParser::metaOp(slice op, Array::iterator& operands) {
+    void QueryParser::metaOp(C4UNUSED slice op, Array::iterator& operands) {
         // Pre-conditions: op == "meta"
         //                 operands.size() == 0 || operands[0]->type() == kString (dbAlias)
 
@@ -1294,7 +1294,6 @@ namespace litecore {
                 break;
             default:
                 Assert(false, "Internal logic error");
-                break;
         };
     }
 
@@ -1446,7 +1445,7 @@ namespace litecore {
                     return propertyFromOperands(i, !justDot);
                 }
             }
-            return Path();  // not a valid property node
+            return {};  // not a valid property node
         }
     }  // namespace qp
 
@@ -1456,7 +1455,7 @@ namespace litecore {
         if ( operands.count() == 0 ) return false;
         Path property = propertyFromNode(operands[0]);
         if ( property.empty() ) return false;
-        writePropertyGetter(fnName, move(property));
+        writePropertyGetter(fnName, std::move(property));
         return true;
     }
 
@@ -1471,7 +1470,7 @@ namespace litecore {
             }
             _sql << ")";
         } else {
-            writePropertyGetter(fn, move(property), param);
+            writePropertyGetter(fn, std::move(property), param);
         }
     }
 
@@ -1500,8 +1499,8 @@ namespace litecore {
         bool hasMultiDbAliases = false;
         if ( _aliases.size() > 1 ) {
             int cnt = 0;
-            for ( auto it = this->_aliases.begin(); it != this->_aliases.end(); ++it ) {
-                if ( it->second.type != kResultAlias ) {
+            for ( const auto& _aliase : this->_aliases ) {
+                if ( _aliase.second.type != kResultAlias ) {
                     if ( ++cnt == 2 ) {
                         hasMultiDbAliases = true;
                         break;
@@ -1678,7 +1677,7 @@ namespace litecore {
             _sql << i->second;                              // write existing table alias
         else
 #endif
-        writePropertyGetter(kEachFnName, move(property));  // write fl_each()
+        writePropertyGetter(kEachFnName, std::move(property));  // write fl_each()
     }
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
@@ -1743,8 +1742,7 @@ namespace litecore {
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
         require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
-        Path                                  keyPathBeforeVerifyDbAlias = keyPath;
-        QueryParser::AliasMap::const_iterator iAlias                     = _aliases.end();
+        auto iAlias = _aliases.end();
 
         string outError;
         iAlias = verifyDbAlias(keyPath, &outError);

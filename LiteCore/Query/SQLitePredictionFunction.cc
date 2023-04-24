@@ -1,5 +1,3 @@
-#ifdef COUCHBASE_ENTERPRISE
-
 //
 // SQLitePredictFunction.cc
 //
@@ -12,11 +10,12 @@
 //  the file licenses/APL2.txt.
 //
 
+#ifdef COUCHBASE_ENTERPRISE
 #    include "SQLiteFleeceUtil.hh"
 #    include "PredictiveModel.hh"
+#    include "Array.hh"
 #    include "Logging.hh"
 #    include "StringUtil.hh"
-#    include "HeapValue.hh"
 #    include "Stopwatch.hh"
 #    include <sqlite3.h>
 #    include <string>
@@ -113,7 +112,7 @@ namespace litecore {
     }
 
     // https://en.wikipedia.org/wiki/Cosine_similarity
-    static void cosine_distance(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+    static void cosine_distance(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
 

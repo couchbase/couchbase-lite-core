@@ -26,7 +26,7 @@ namespace litecore {
 
     typedef void (QueryParser::*OpHandler)(slice op, ArrayIterator& args);
 
-    struct QueryParser::Operation {
+    struct QueryParser::Operation {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         slice     op;                // Name, as found in 1st item of array
         int       minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
         int       precedence;        // Used to minimize generated parens
@@ -105,7 +105,7 @@ namespace litecore {
     // http://www.sqlite.org/lang_corefunc.html
     // http://www.sqlite.org/lang_aggfunc.html
 
-    struct FunctionSpec {
+    struct FunctionSpec {        // NOLINT(cppcoreguidelines-pro-type-member-init)
         slice name;              // Name (without the parens)
         int   minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
         slice sqlite_name;       // Name to use in SQL; defaults to `name`

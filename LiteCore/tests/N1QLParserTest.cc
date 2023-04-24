@@ -28,7 +28,7 @@ class N1QLParserTest : public QueryParserTest {
     // On syntax error, returns "".
     string translate(const char* n1ql) {
         UNSCOPED_INFO("N1QL: " << n1ql);
-        unsigned errorPos;
+        int errorPos;
 
         FLValue dict = (FLValue)n1ql::parse(n1ql, &errorPos);
         if ( !dict ) {
