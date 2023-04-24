@@ -22,8 +22,8 @@
 #include <chrono>
 #include <thread>
 #ifdef WIN32
-#include "Error.hh"
-#include <winerror.h>
+#    include "Error.hh"
+#    include <winerror.h>
 #endif
 
 using namespace fleece;
@@ -39,24 +39,23 @@ using error = litecore::error;
 
 #pragma mark - ERROR HANDLING:
 
-
 TEST_CASE("C4Error messages") {
-    C4Error errors[200];
+    C4Error          errors[200];
     constexpr size_t messageBufSize = 100, expectedBufSize = 100;
-    for (int i = 0; i < 200; i++) {
+    for ( int i = 0; i < 200; i++ ) {
         char message[messageBufSize];
-        snprintf(message, messageBufSize, "Error number %d", 1000+i);
-        c4error_return(LiteCoreDomain, 1000+i, slice(message), &errors[i]);
+        snprintf(message, messageBufSize, "Error number %d", 1000 + i);
+        c4error_return(LiteCoreDomain, 1000 + i, slice(message), &errors[i]);
     }
-    for (int i = 0; i < 200; i++) {
+    for ( int i = 0; i < 200; i++ ) {
         CHECK(errors[i].domain == LiteCoreDomain);
-        CHECK(errors[i].code == 1000+i);
-        alloc_slice message = c4error_getMessage(errors[i]);
-        string messageStr = string(message);
-        if (i >= (200 - litecore::kMaxErrorMessagesToSave)) {
+        CHECK(errors[i].code == 1000 + i);
+        alloc_slice message    = c4error_getMessage(errors[i]);
+        string      messageStr = string(message);
+        if ( i >= (200 - litecore::kMaxErrorMessagesToSave) ) {
             // The latest C4Errors generated will have their custom messages:
             char expected[expectedBufSize];
-            snprintf(expected, expectedBufSize, "Error number %d", 1000+i);
+            snprintf(expected, expectedBufSize, "Error number %d", 1000 + i);
             CHECK(messageStr == string(expected));
         } else {
             // The earlier C4Errors will have default messages for their code:
@@ -65,18 +64,17 @@ TEST_CASE("C4Error messages") {
     }
 
 #ifdef WIN32
-    const long errs[] = { WSAEADDRINUSE, WSAEADDRNOTAVAIL, WSAEAFNOSUPPORT, WSAEALREADY,
-                          WSAECANCELLED, WSAECONNABORTED, WSAECONNREFUSED, WSAECONNRESET,
-                          WSAEDESTADDRREQ, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEISCONN,
-                          WSAELOOP, WSAEMSGSIZE, WSAENETDOWN, WSAENETRESET,
-                          WSAENETUNREACH, WSAENOBUFS, WSAENOPROTOOPT, WSAENOTCONN,
-                          WSAENOTSOCK, WSAEOPNOTSUPP, WSAEPROTONOSUPPORT, WSAEPROTOTYPE,
-                          WSAETIMEDOUT, WSAEWOULDBLOCK };
-    for(const auto err: errs) {
-        error errObj(error::Domain::POSIX, int(err));
+    const long errs[] = {WSAEADDRINUSE,   WSAEADDRNOTAVAIL, WSAEAFNOSUPPORT,    WSAEALREADY,     WSAECANCELLED,
+                         WSAECONNABORTED, WSAECONNREFUSED,  WSAECONNRESET,      WSAEDESTADDRREQ, WSAEHOSTUNREACH,
+                         WSAEINPROGRESS,  WSAEISCONN,       WSAELOOP,           WSAEMSGSIZE,     WSAENETDOWN,
+                         WSAENETRESET,    WSAENETUNREACH,   WSAENOBUFS,         WSAENOPROTOOPT,  WSAENOTCONN,
+                         WSAENOTSOCK,     WSAEOPNOTSUPP,    WSAEPROTONOSUPPORT, WSAEPROTOTYPE,   WSAETIMEDOUT,
+                         WSAEWOULDBLOCK};
+    for ( const auto err : errs ) {
+        error  errObj(error::Domain::POSIX, int(err));
         string msg = errObj.what();
-        CHECK(msg.find("Unknown error") == -1); // Should have a valid error message
-        CHECK(errObj.code != err); // Should be remapped to standard POSIX code
+        CHECK(msg.find("Unknown error") == -1);  // Should have a valid error message
+        CHECK(errObj.code != err);               // Should be remapped to standard POSIX code
     }
 #endif
 }
@@ -87,49 +85,46 @@ TEST_CASE("C4Error exceptions") {
     try {
         throw error(error::LiteCore, error::InvalidParameter, "Oops");
         FAIL("Exception wasn't thrown");
-    } catchError(&err);
+    }
+    catchError(&err);
     --gC4ExpectExceptions;
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
-    alloc_slice message = c4error_getMessage(err);
-    string messageStr = string(message);
+    alloc_slice message    = c4error_getMessage(err);
+    string      messageStr = string(message);
     CHECK(messageStr == "Oops");
 }
 
-
-static string fakeErrorTest(int n, C4Error *outError) {
-    if (n >= 0)
-        return "ok";
+static string fakeErrorTest(int n, C4Error* outError) {
+    if ( n >= 0 ) return "ok";
     c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Dude, that's negative"_sl, outError);
     return "bad";
 }
-
 
 TEST_CASE("Error Backtraces", "[Errors][C]") {
     bool oldCapture = c4error_getCaptureBacktraces();
 
     c4error_setCaptureBacktraces(true);
-    C4Error error = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
+    C4Error     error     = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
     alloc_slice backtrace = c4error_getBacktrace(error);
     C4Log("Got backtrace: %.*s", FMTSLICE(backtrace));
     CHECK(backtrace);
 
     c4error_setCaptureBacktraces(false);
-    error = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
+    error     = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
     backtrace = c4error_getBacktrace(error);
     CHECK(!backtrace);
 
     c4error_setCaptureBacktraces(oldCapture);
 }
 
-
 TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
     C4Error error;
-    string result = fakeErrorTest(7, ERROR_INFO(error));
+    string  result = fakeErrorTest(7, ERROR_INFO(error));
     CHECK(result == "ok");
     result = fakeErrorTest(-1, ERROR_INFO(error));
 
-#if 0 // enable these to test actual test failures and warnings:
+#if 0  // enable these to test actual test failures and warnings:
     CHECK(result == "ok");
     WARN(error);
 
@@ -143,75 +138,65 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
 #endif
 }
 
-
 #pragma mark - INSTANCECOUNTED:
-
 
 namespace {
 
     class NonVirt {
-    public:
+      public:
         int64_t o_hai;
     };
 
     class Virt {
-    public:
+      public:
         int64_t foo;
-        virtual ~Virt() =default;
+        virtual ~Virt() = default;
     };
 
-    class NonVirtCounty : public NonVirt, public fleece::InstanceCountedIn<NonVirtCounty> {
-    public:
-        NonVirtCounty(int32_t b) :bar(b) { }
+    class NonVirtCounty
+        : public NonVirt
+        , public fleece::InstanceCountedIn<NonVirtCounty> {
+      public:
+        NonVirtCounty(int32_t b) : bar(b) {}
+
         int32_t bar;
     };
 
-    class VirtCounty : public Virt, public fleece::InstanceCountedIn<VirtCounty> {
-    public:
-        VirtCounty(int32_t b) :bar(b) { }
+    class VirtCounty
+        : public Virt
+        , public fleece::InstanceCountedIn<VirtCounty> {
+      public:
+        VirtCounty(int32_t b) : bar(b) {}
+
         int32_t bar;
     };
 
     class TestActor : public litecore::actor::Actor {
-    public:
-        TestActor() 
-            :Actor(litecore::kC4Cpp_DefaultLog, "TestActor")
-        {}
+      public:
+        TestActor() : Actor(litecore::kC4Cpp_DefaultLog, "TestActor") {}
 
-        void doot() {
-            enqueue(FUNCTION_TO_QUEUE(TestActor::_doot));    
-        }
+        void doot() { enqueue(FUNCTION_TO_QUEUE(TestActor::_doot)); }
 
         void delayed_doot() {
             C4Log("I'LL DO IT LATER...");
             enqueueAfter(0.5s, FUNCTION_TO_QUEUE(TestActor::_doot));
         }
 
-        void recursive_doot() {
-            enqueue(FUNCTION_TO_QUEUE(TestActor::_recursive_doot));
-        }
+        void recursive_doot() { enqueue(FUNCTION_TO_QUEUE(TestActor::_recursive_doot)); }
 
-        void bad_doot() {
-            enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_doot));
-        }
+        void bad_doot() { enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_doot)); }
 
-        void bad_recursive_doot() {
-            enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_recursive_doot));
-        }
+        void bad_recursive_doot() { enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_recursive_doot)); }
 
-    private:
-        void _doot() {
-            C4Log("DOOT!");
-        }
+      private:
+        void _doot() { C4Log("DOOT!"); }
 
         void _recursive_doot() {
             C4Log("GETTING READY...");
             doot();
         }
 
-        void _bad_doot() {
-            throw std::runtime_error("TURN TO THE DARK SIDE");
-        }
+        void _bad_doot() { throw std::runtime_error("TURN TO THE DARK SIDE"); }
 
         void _bad_recursive_doot() {
             C4Log("LET THE HATE FLOW THROUGH YOU...");
@@ -221,8 +206,8 @@ namespace {
 
     TEST_CASE("fleece::InstanceCounted") {
         auto baseInstances = InstanceCounted::liveInstanceCount();
-        auto n = new NonVirtCounty(12);
-        auto v = new VirtCounty(34);
+        auto n             = new NonVirtCounty(12);
+        auto v             = new VirtCounty(34);
         C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted*)n);
         C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt>*)v);
         REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances + 2);
@@ -255,11 +240,9 @@ namespace {
 
     TEST_CASE("Channel Manifest") {
         thread t[4];
-        auto actor = retained(new TestActor());
-        for(int i = 0; i < 4; i++) {
-            t[i] = thread([&actor]() {
-                actor->doot();
-            });
+        auto   actor = retained(new TestActor());
+        for ( int i = 0; i < 4; i++ ) {
+            t[i] = thread([&actor]() { actor->doot(); });
         }
 
         actor->delayed_doot();
@@ -270,47 +253,47 @@ namespace {
 
         actor->recursive_doot();
         this_thread::sleep_for(1s);
-        
+
         ExpectingExceptions x;
         actor->bad_recursive_doot();
         this_thread::sleep_for(2s);
     }
 
     TEST_CASE("URL Transformation") {
-        slice withPort, unaffected;
+        slice       withPort, unaffected;
         alloc_slice withoutPort;
         SECTION("Plain") {
-            withPort = "ws://duckduckgo.com:80/search"_sl;
+            withPort    = "ws://duckduckgo.com:80/search"_sl;
             withoutPort = "ws://duckduckgo.com/search"_sl;
-            unaffected = "ws://duckduckgo.com:4984/search"_sl;
+            unaffected  = "ws://duckduckgo.com:4984/search"_sl;
         }
 
         SECTION("TLS") {
-            withPort = "wss://duckduckgo.com:443/search"_sl;
+            withPort    = "wss://duckduckgo.com:443/search"_sl;
             withoutPort = "wss://duckduckgo.com/search"_sl;
-            unaffected = "wss://duckduckgo.com:4984/search"_sl;
+            unaffected  = "wss://duckduckgo.com:4984/search"_sl;
         }
 
-        alloc_slice asIsWithPort = transform_url(withPort, URLTransformStrategy::AsIs);
+        alloc_slice asIsWithPort    = transform_url(withPort, URLTransformStrategy::AsIs);
         alloc_slice asIsWithoutPort = transform_url(withoutPort, URLTransformStrategy::AsIs);
-        alloc_slice asInUnaffected = transform_url(unaffected, URLTransformStrategy::AsIs);
+        alloc_slice asInUnaffected  = transform_url(unaffected, URLTransformStrategy::AsIs);
 
         CHECK(asIsWithPort == withPort);
         CHECK(asIsWithoutPort == withoutPort);
         CHECK(asIsWithoutPort.buf == withoutPort.buf);
         CHECK(asInUnaffected == unaffected);
 
-        alloc_slice addPortWithPort = transform_url(withPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortWithPort    = transform_url(withPort, URLTransformStrategy::AddPort);
         alloc_slice addPortWithoutPort = transform_url(withoutPort, URLTransformStrategy::AddPort);
-        alloc_slice addPortUnaffected = transform_url(unaffected, URLTransformStrategy::AddPort);
+        alloc_slice addPortUnaffected  = transform_url(unaffected, URLTransformStrategy::AddPort);
 
         CHECK(addPortWithPort == withPort);
         CHECK(addPortWithoutPort == withPort);
         CHECK(!addPortUnaffected);
 
-        alloc_slice removePortWithPort = transform_url(withPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortWithPort    = transform_url(withPort, URLTransformStrategy::RemovePort);
         alloc_slice removePortWithoutPort = transform_url(withoutPort, URLTransformStrategy::RemovePort);
-        alloc_slice removePortUnaffected = transform_url(unaffected, URLTransformStrategy::RemovePort);
+        alloc_slice removePortUnaffected  = transform_url(unaffected, URLTransformStrategy::RemovePort);
 
         CHECK(removePortWithPort == withoutPort);
         CHECK(removePortWithoutPort == withoutPort);
@@ -320,4 +303,4 @@ namespace {
         CHECK(++strategy == URLTransformStrategy::AddPort);
         CHECK(++strategy == URLTransformStrategy::RemovePort);
     }
-}
+}  // namespace

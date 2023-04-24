@@ -21,39 +21,33 @@
 #pragma clang diagnostic pop
 
 #ifdef __APPLE__
-#define USE_COMMON_CRYPTO
+#    define USE_COMMON_CRYPTO
 #endif
 
 #ifdef USE_COMMON_CRYPTO
-    #include <CommonCrypto/CommonDigest.h>
-    #define _CONTEXT ((CC_SHA1_CTX*)_context)
+#    include <CommonCrypto/CommonDigest.h>
+#    define _CONTEXT ((CC_SHA1_CTX*)_context)
 #else
-    #define _CONTEXT ((mbedtls_sha1_context*)_context)
+#    define _CONTEXT ((mbedtls_sha1_context*)_context)
 #endif
 
 namespace litecore {
 
-    void SHA1::computeFrom(fleece::slice s) {
-        (SHA1Builder() << s).finish(&_bytes, size());
-    }
+    void SHA1::computeFrom(fleece::slice s) { (SHA1Builder() << s).finish(&_bytes, size()); }
 
-    void SHA256::computeFrom(fleece::slice s) {
-        (SHA256Builder() << s).finish(&_bytes, size());
-    }
+    void SHA256::computeFrom(fleece::slice s) { (SHA256Builder() << s).finish(&_bytes, size()); }
 
-    template<unsigned int N>
+    template <unsigned int N>
     bool Hash<N>::setDigest(fleece::slice s) {
-        if (s.size != size())
-            return false;
+        if ( s.size != size() ) return false;
         memcpy(_bytes, s.buf, size());
         return true;
     }
 
-    template<unsigned int N>
+    template <unsigned int N>
     std::string Hash<N>::asBase64() const {
         return fleece::base64::encode(asSlice());
     }
-
 
     SHA1Builder::SHA1Builder() {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha1_context));
@@ -66,8 +60,7 @@ namespace litecore {
 #endif
     }
 
-
-    SHA1Builder& SHA1Builder::operator<< (fleece::slice s) {
+    SHA1Builder& SHA1Builder::operator<<(fleece::slice s) {
 #ifdef USE_COMMON_CRYPTO
         CC_SHA1_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
 #else
@@ -76,8 +69,7 @@ namespace litecore {
         return *this;
     }
 
-
-    void SHA1Builder::finish(void *result, size_t resultSize) {
+    void SHA1Builder::finish(void* result, size_t resultSize) {
         DebugAssert(resultSize == sizeof(SHA1::_bytes));
 #ifdef USE_COMMON_CRYPTO
         CC_SHA1_Final((uint8_t*)result, _CONTEXT);
@@ -89,10 +81,10 @@ namespace litecore {
 
 #undef _CONTEXT
 #ifdef USE_COMMON_CRYPTO
-#include <CommonCrypto/CommonDigest.h>
-#define _CONTEXT ((CC_SHA256_CTX*)_context)
+#    include <CommonCrypto/CommonDigest.h>
+#    define _CONTEXT ((CC_SHA256_CTX*)_context)
 #else
-#define _CONTEXT ((mbedtls_sha256_context*)_context)
+#    define _CONTEXT ((mbedtls_sha256_context*)_context)
 #endif
 
     SHA256Builder::SHA256Builder() {
@@ -106,8 +98,7 @@ namespace litecore {
 #endif
     }
 
-
-    SHA256Builder& SHA256Builder::operator<< (fleece::slice s) {
+    SHA256Builder& SHA256Builder::operator<<(fleece::slice s) {
 #ifdef USE_COMMON_CRYPTO
         CC_SHA256_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
 #else
@@ -115,7 +106,6 @@ namespace litecore {
 #endif
         return *this;
     }
-
 
     void SHA256Builder::finish(void* result, size_t resultSize) {
         DebugAssert(resultSize == sizeof(SHA256::_bytes));
@@ -132,4 +122,4 @@ namespace litecore {
     template class Hash<20>;
     template class Hash<32>;
 
-}
+}  // namespace litecore

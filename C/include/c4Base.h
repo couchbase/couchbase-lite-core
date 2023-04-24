@@ -18,7 +18,7 @@
 #include <stdarg.h>
 
 #if LITECORE_CPP_API
-#include "c4EnumUtil.hh"
+#    include "c4EnumUtil.hh"
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
@@ -42,51 +42,55 @@ C4API_BEGIN_DECLS
 
 // (This is just renaming stuff from FLSlice.h ... feel free to use the FL names instead.)
 
-typedef FLSlice         C4Slice;
-typedef FLHeapSlice     C4HeapSlice;
-typedef FLSliceResult   C4SliceResult;
-typedef C4Slice         C4String;
-typedef C4HeapSlice     C4HeapString;
-typedef C4SliceResult   C4StringResult;
+typedef FLSlice       C4Slice;
+typedef FLHeapSlice   C4HeapSlice;
+typedef FLSliceResult C4SliceResult;
+typedef C4Slice       C4String;
+typedef C4HeapSlice   C4HeapString;
+typedef C4SliceResult C4StringResult;
 
-static C4INLINE C4Slice c4str(const char* C4NULLABLE str)   {return FLStr(str);}
-#define C4STR(STR) FLSTR(STR)
+static C4INLINE C4Slice c4str(const char* C4NULLABLE str) { return FLStr(str); }
+
+#define C4STR(STR)   FLSTR(STR)
 #define kC4SliceNull kFLSliceNull
 
-static inline bool c4SliceEqual(C4Slice a, C4Slice b)       {return FLSlice_Equal(a,b);}
-static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Release(s);}
+static inline bool c4SliceEqual(C4Slice a, C4Slice b) { return FLSlice_Equal(a, b); }
 
+static inline void c4slice_free(C4SliceResult s) { FLSliceResult_Release(s); }
 
 #pragma mark - COMMON TYPES:
 
 
 #if LITECORE_CPP_API
-    C4API_END_DECLS // GCC doesn't like this stuff inside `extern "C" {}`
+C4API_END_DECLS  // GCC doesn't like this stuff inside `extern "C" {}`
 
-    /** A database sequence number, representing the order in which a revision was created. */
-    enum class C4SequenceNumber : uint64_t { None = 0, Max = UINT64_MAX };
-    static inline C4SequenceNumber operator"" _seq (unsigned long long n) {return C4SequenceNumber(n);}
-    DEFINE_ENUM_INC_DEC(C4SequenceNumber)
-    DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
+        /** A database sequence number, representing the order in which a revision was created. */
+        enum class C4SequenceNumber : uint64_t {
+            None = 0,
+            Max  = UINT64_MAX
+        };
+
+static inline C4SequenceNumber operator"" _seq(unsigned long long n) { return C4SequenceNumber(n); }
+DEFINE_ENUM_INC_DEC(C4SequenceNumber)
+DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
 
 
-    /** A date/time representation used for document expiration (and in date/time queries.)
+/** A date/time representation used for document expiration (and in date/time queries.)
         Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)
         A value of None represents "no expiration".  */
-    enum class C4Timestamp : int64_t { None = 0, Error = -1 };
-    DEFINE_ENUM_ADD_SUB_INT(C4Timestamp)
+enum class C4Timestamp : int64_t { None = 0, Error = -1 };
+DEFINE_ENUM_ADD_SUB_INT(C4Timestamp)
 
-    C4API_BEGIN_DECLS
+C4API_BEGIN_DECLS
 #else
-    /** A database sequence number, representing the order in which a revision was created. */
-    typedef uint64_t C4SequenceNumber;
+/** A database sequence number, representing the order in which a revision was created. */
+typedef uint64_t C4SequenceNumber;
 
-    /** A date/time representation used for document expiration (and in date/time queries.)
+/** A date/time representation used for document expiration (and in date/time queries.)
         Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)
         A value of 0 represents "no expiration". */
-    typedef int64_t C4Timestamp;
+typedef int64_t C4Timestamp;
 #endif
-
 
 
 /** Client-defined metadata that can be associated with some objects like C4Database.
@@ -97,8 +101,8 @@ static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Relea
     The `destructor` callback is optional, but gives you a chance to clean up (e.g. release) your
     own object when the containing C4 object is freed. */
 typedef struct C4ExtraInfo {
-    void* C4NULLABLE pointer;                   /// Client-specific pointer; can be anything
-    void (*C4NULLABLE destructor)(void *ptr);   /// Called when containing C4 object has been freed
+    void* C4NULLABLE pointer;                  /// Client-specific pointer; can be anything
+    void (*C4NULLABLE destructor)(void* ptr);  /// Called when containing C4 object has been freed
 } C4ExtraInfo;
 
 
@@ -174,47 +178,53 @@ typedef struct C4WriteStream C4WriteStream;
 
 
 // The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
-CBL_CORE_API void* c4base_retain(void * C4NULLABLE obj) C4API;
-CBL_CORE_API void c4base_release(void * C4NULLABLE obj) C4API;
+CBL_CORE_API void* c4base_retain(void* C4NULLABLE obj) C4API;
+CBL_CORE_API void  c4base_release(void* C4NULLABLE obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-static inline C4Cert* C4NULLABLE
-    c4cert_retain(C4Cert* C4NULLABLE r) C4API       {return (C4Cert*)c4base_retain(r);}
-static inline C4Collection* C4NULLABLE
-    c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
-static inline C4Database* C4NULLABLE
-    c4db_retain(C4Database* C4NULLABLE r) C4API     {return (C4Database*)c4base_retain(r);}
-static inline C4KeyPair* C4NULLABLE
-    c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
-static inline C4Query* C4NULLABLE
-    c4query_retain(C4Query* C4NULLABLE r) C4API     {return (C4Query*)c4base_retain(r);}
+static inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API { return (C4Cert*)c4base_retain(r); }
 
-CBL_CORE_API C4Document* C4NULLABLE
-    c4doc_retain(C4Document* C4NULLABLE) C4API;
-CBL_CORE_API C4QueryEnumerator* C4NULLABLE
-    c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
-CBL_CORE_API C4Socket* C4NULLABLE
-    c4socket_retain(C4Socket* C4NULLABLE) C4API;
+static inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {
+    return (C4Collection*)c4base_retain(r);
+}
 
-static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
-static inline void c4coll_release   (C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
-static inline void c4db_release     (C4Database* C4NULLABLE r) C4API   {c4base_release(r);}
-static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
-static inline void c4query_release  (C4Query* C4NULLABLE r) C4API      {c4base_release(r);}
+static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {
+    return (C4Database*)c4base_retain(r);
+}
 
-CBL_CORE_API void  c4doc_release    (C4Document* C4NULLABLE) C4API;
-CBL_CORE_API void  c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
-CBL_CORE_API void  c4socket_release(C4Socket* C4NULLABLE) C4API;
+static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {
+    return (C4KeyPair*)c4base_retain(r);
+}
+
+static inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
+
+CBL_CORE_API C4Document* C4NULLABLE        c4doc_retain(C4Document* C4NULLABLE) C4API;
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
+CBL_CORE_API C4Socket* C4NULLABLE          c4socket_retain(C4Socket* C4NULLABLE) C4API;
+
+static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
+
+CBL_CORE_API void c4doc_release(C4Document* C4NULLABLE) C4API;
+CBL_CORE_API void c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
+CBL_CORE_API void c4socket_release(C4Socket* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
-CBL_CORE_API void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;
-CBL_CORE_API void c4docobs_free       (C4DocumentObserver* C4NULLABLE) C4API;
-CBL_CORE_API void c4enum_free         (C4DocEnumerator* C4NULLABLE) C4API;
-CBL_CORE_API void c4listener_free     (C4Listener* C4NULLABLE) C4API;
-CBL_CORE_API void c4queryobs_free     (C4QueryObserver* C4NULLABLE) C4API;
-CBL_CORE_API void c4raw_free          (C4RawDocument* C4NULLABLE) C4API;
-CBL_CORE_API void c4repl_free         (C4Replicator* C4NULLABLE) C4API;
-CBL_CORE_API void c4stream_close      (C4ReadStream* C4NULLABLE) C4API;
+CBL_CORE_API void c4dbobs_free(C4CollectionObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
+CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
+CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
+CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
+CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE) C4API;
+CBL_CORE_API void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
 CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
@@ -246,7 +256,7 @@ CBL_CORE_API C4StringResult c4_getBuildInfo(void) C4API;
 /** A short version string. */
 CBL_CORE_API C4StringResult c4_getVersion(void) C4API;
 
-#define kC4EnvironmentTimezoneKey "tz"
+#define kC4EnvironmentTimezoneKey      "tz"
 #define kC4EnvironmentSupportedLocales "supported_locales"
 
 /** Returns information about LiteCore's view of the environment in the following format:

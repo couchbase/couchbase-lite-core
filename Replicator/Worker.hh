@@ -25,7 +25,6 @@
 #include <functional>
 #include <memory>
 
-
 namespace litecore { namespace repl {
     using fleece::RetainedConst;
 
@@ -45,11 +44,12 @@ namespace litecore { namespace repl {
         - Progress, status, and error tracking. Changes are detected at the end of every Actor
           event and propagated to the parent, which aggregates them together with its own.
         - Some BLIP convenience methods for registering handlers and sending messages. */
-    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
-    public:
-        
-        using slice = fleece::slice;
-        using alloc_slice = fleece::alloc_slice;
+    class Worker
+        : public actor::Actor
+        , public fleece::InstanceCountedIn<Worker> {
+      public:
+        using slice         = fleece::slice;
+        using alloc_slice   = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
 
         /** A key to set the collection that a worker is sending BLIP messages for
@@ -59,9 +59,12 @@ namespace litecore { namespace repl {
         static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
-            Status(ActivityLevel lvl =kC4Stopped) {
-                level = lvl; error = {}; progress = progressDelta = {};
+            Status(ActivityLevel lvl = kC4Stopped) {
+                level    = lvl;
+                error    = {};
+                progress = progressDelta = {};
             }
+
             C4Progress progressDelta;
         };
 
@@ -76,128 +79,123 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        virtual bool passive() const {return false;}
+        virtual bool passive() const { return false; }
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
-        void connectionClosed() {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed));
-        }
+        void connectionClosed() { enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed)); }
 
         /// Child workers call this on their parent when their status changes.
-        void childChangedStatus(Worker *task, const Status &status) {
+        void childChangedStatus(Worker* task, const Status& status) {
             enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
         }
 
-        C4ReplicatorProgressLevel progressNotificationLevel() const {
-            return _options->progressLevel;
-        }
+        C4ReplicatorProgressLevel progressNotificationLevel() const { return _options->progressLevel; }
 
-        CollectionIndex collectionIndex() const         {return _collectionIndex;}
+        CollectionIndex collectionIndex() const { return _collectionIndex; }
 
 #if !DEBUG
-    protected:
+      protected:
 #endif
         /// True if there is a BLIP connection.
-        bool connected() const                          {return _connection != nullptr;}
+        bool connected() const { return _connection != nullptr; }
 
         /// The BLIP connection. Throws if there isn't one.
-        blip::Connection& connection() const            {Assert(_connection); return *_connection;}
+        blip::Connection& connection() const {
+            Assert(_connection);
+            return *_connection;
+        }
 
-    protected:
+      protected:
         /// Designated constructor.
         /// @param connection  The BLIP connection.
         /// @param parent  The Worker that owns this one.
         /// @param options  The replicator options.
         /// @param db  Shared object providing thread-safe access to the C4Database.
         /// @param namePrefix  Prepended to the Actor name.
-        Worker(blip::Connection *connection NONNULL,
-               Worker *parent,
-               const Options* options NONNULL,
-               std::shared_ptr<DBAccess> db,
-               const char *namePrefix NONNULL,
-               CollectionIndex);
+        Worker(blip::Connection* connection NONNULL, Worker* parent, const Options* options NONNULL,
+               std::shared_ptr<DBAccess> db, const char* namePrefix NONNULL, CollectionIndex);
 
         /// Simplified constructor. Gets the other parameters from the parent object.
-        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL, CollectionIndex);
+        Worker(Worker* parent NONNULL, const char* namePrefix NONNULL, CollectionIndex);
 
         virtual ~Worker();
 
         /// Override to specify an Actor mailbox that all children of this Worker should use.
         /// On Apple platforms, a mailbox is a GCD queue, so this reduces the number of queues.
-        virtual actor::Mailbox* mailboxForChildren() {
-            return _parent ? _parent->mailboxForChildren() : nullptr;
-        }
+        virtual actor::Mailbox* mailboxForChildren() { return _parent ? _parent->mailboxForChildren() : nullptr; }
 
         // overrides:
         virtual std::string loggingClassName() const override;
-        virtual std::string loggingIdentifier() const override {return _loggingID;}
-        virtual void afterEvent() override;
-        virtual void caughtException(const std::exception &x) override;
 
-        virtual inline std::string formatWithCollection(const char * fmt) const {
+        virtual std::string loggingIdentifier() const override { return _loggingID; }
+
+        virtual void afterEvent() override;
+        virtual void caughtException(const std::exception& x) override;
+
+        virtual inline std::string formatWithCollection(const char* fmt) const {
             return format(string(kCollectionLogFormat), collectionID()) + " " + string(fmt);
         }
+
         // overrides for Logging functions which insert collection index to the format string
-        inline void logInfo(const char * fmt, ...) const override {
+        inline void logInfo(const char* fmt, ...) const override {
             const std::string fmt_ = formatWithCollection(fmt);
-            va_list args;
+            va_list           args;
             va_start(args, fmt);
             _logAt(LogLevel::Info, fmt_.c_str(), args);
             va_end(args);
         }
-        inline void logVerbose(const char * fmt, ...) const override {
+
+        inline void logVerbose(const char* fmt, ...) const override {
             const std::string fmt_ = formatWithCollection(fmt);
-            va_list args;
+            va_list           args;
             va_start(args, fmt);
             _logAt(LogLevel::Verbose, fmt_.c_str(), args);
             va_end(args);
         }
 
 #if DEBUG
-        inline void logDebug(const char * fmt, ...) const override {
+        inline void logDebug(const char* fmt, ...) const override {
             const std::string fmt_ = formatWithCollection(fmt);
-            va_list args;
+            va_list           args;
             va_start(args, fmt);
             _logAt(LogLevel::Debug, fmt_.c_str(), args);
             va_end(args);
         }
 #else
-        virtual inline void logDebug(const char * fmt, ...) const override {}
+        virtual inline void logDebug(const char* fmt, ...) const override {}
 #endif
 
         int32_t collectionID() const {
             // DebugAssert that collection index is within range of int32_t (we expect so), so we can ignore narrowing conversion warning
-            DebugAssert(_collectionIndex == kNotCollectionIndex || _collectionIndex <= std::numeric_limits<int32_t>::max());
-            return _collectionIndex != kNotCollectionIndex ? _collectionIndex : -1; // NOLINT(cppcoreguidelines-narrowing-conversions)
+            DebugAssert(_collectionIndex == kNotCollectionIndex
+                        || _collectionIndex <= std::numeric_limits<int32_t>::max());
+            return _collectionIndex != kNotCollectionIndex ? _collectionIndex
+                                                           : -1;  // NOLINT(cppcoreguidelines-narrowing-conversions)
         }
 
         // Uniform collection logging
-//        virtual void logWithCollection(LogLevel level, const std::string& fmt, ...) const;
+        //        virtual void logWithCollection(LogLevel level, const std::string& fmt, ...) const;
 
 #define logInfoWithColl(FMT, ...) logInfo(CONCAT("{Coll#%i} " << FMT), this->collectionID(), ##__VA_ARGS__)
 
 #pragma mark - BLIP:
 
         /// True if the WebSocket connection is open and acting as a client (active).
-        bool isOpenClient() const               {return _connection &&
-                                                 _connection->role() == websocket::Role::Client;}
+        bool isOpenClient() const { return _connection && _connection->role() == websocket::Role::Client; }
+
         /// True if the WebSocket connection is open and acting as a server (passive).
-        bool isOpenServer() const               {return _connection &&
-                                                 _connection->role() == websocket::Role::Server;}
+        bool isOpenServer() const { return _connection && _connection->role() == websocket::Role::Server; }
+
         /// True if the replicator is continuous.
-        bool isContinuous() const               {
+        bool isContinuous() const {
             auto collIndex = collectionIndex();
-            if (collIndex == kNotCollectionIndex) {
-                for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
-                    if (_options->push(i) == kC4Continuous
-                        || _options->pull(i) == kC4Continuous) {
-                        return true;
-                    }
+            if ( collIndex == kNotCollectionIndex ) {
+                for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
+                    if ( _options->push(i) == kC4Continuous || _options->pull(i) == kC4Continuous ) { return true; }
                 }
                 return false;
             } else {
-                return _options->push(collIndex) == kC4Continuous
-                        || _options->pull(collIndex) == kC4Continuous;
+                return _options->push(collIndex) == kC4Continuous || _options->pull(collIndex) == kC4Continuous;
             }
         }
 
@@ -209,20 +207,17 @@ namespace litecore { namespace repl {
 
         /// Registers a method to run when a BLIP request with the given profile arrives.
         template <class ACTOR>
-        void registerHandler(const char *profile NONNULL,
-                             void (ACTOR::*method)(Retained<blip::MessageIn>)) {
-            std::function<void(Retained<blip::MessageIn>)> fn(
-                                        std::bind(method, (ACTOR*)this, std::placeholders::_1) );
+        void registerHandler(const char* profile NONNULL, void (ACTOR::*method)(Retained<blip::MessageIn>)) {
+            std::function<void(Retained<blip::MessageIn>)> fn(std::bind(method, (ACTOR*)this, std::placeholders::_1));
             _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
         /// Sends a BLIP request. Increments `_pendingResponseCount` until the response is
         /// complete, keeping this Worker in the busy state.
-        void sendRequest(blip::MessageBuilder& builder,
-                         blip::MessageProgressCallback onProgress = nullptr);
+        void sendRequest(blip::MessageBuilder& builder, blip::MessageProgressCallback onProgress = nullptr);
 
         /// The number of BLIP responses I'm waiting for.
-        int pendingResponseCount() const        {return _pendingResponseCount;}
+        int pendingResponseCount() const { return _pendingResponseCount; }
 
 #pragma mark - ERRORS:
 
@@ -248,7 +243,7 @@ namespace litecore { namespace repl {
 #pragma mark - STATUS & PROGRESS:
 
         /// My current status.
-        const Status& status() const            {return _status;}
+        const Status& status() const { return _status; }
 
         /// Called by `afterEvent` if my status has changed.
         /// Default implementation calls the parent's `childChangedStatus`,
@@ -257,8 +252,7 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Retained<Worker> task, Status) { 
-        }
+        virtual void _childChangedStatus(Retained<Worker> task, Status) {}
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);
@@ -272,19 +266,15 @@ namespace litecore { namespace repl {
         virtual ActivityLevel computeActivityLevel() const;
 
 #pragma mark - INSTANCE DATA:
-    protected:
+      protected:
         // Basic type checking: CollectionIndex (alias of unsigned) vs. long.
         // We store an unsigned in intProperty and this method is to enure the integrity.
-        static CollectionIndex getCollectionIndex(const blip::MessageIn&  msgIn) {
-            return fleece::narrow_cast<CollectionIndex>(
-                msgIn.intProperty(kCollectionProperty, kNotCollectionIndex)
-            );
+        static CollectionIndex getCollectionIndex(const blip::MessageIn& msgIn) {
+            return fleece::narrow_cast<CollectionIndex>(msgIn.intProperty(kCollectionProperty, kNotCollectionIndex));
         }
 
         void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
-            if (_options->collectionAware()) {
-                msg[kCollectionProperty] = i;
-            }
+            if ( _options->collectionAware() ) { msg[kCollectionProperty] = i; }
         }
 
         // This method does two things. First it fetches the collectino index from 'msg';
@@ -293,23 +283,21 @@ namespace litecore { namespace repl {
         // 'errorSlice' describes the nature of the violation.
         std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
 
-        C4Collection* getCollection() {
-            return const_cast<C4Collection*>(((const Worker*)this)->getCollection());
-        }
+        C4Collection* getCollection() { return const_cast<C4Collection*>(((const Worker*)this)->getCollection()); }
 
         const C4Collection* getCollection() const;
 
-        RetainedConst<Options>      _options;                   // The replicator options
-        Retained<Worker>            _parent;                    // Worker that owns me
-        std::shared_ptr<DBAccess>   _db;                        // Database
-        std::string                 _loggingID;                 // My name in the log
-        uint8_t                     _importance {1};            // Higher values log more
-    private:
-        Retained<blip::Connection>  _connection;                // BLIP connection
-        int                         _pendingResponseCount {0};  // # of responses I'm awaiting
-        Status                      _status {kC4Idle};          // My status
-        bool                        _statusChanged {false};     // Status changed during this event
-        const CollectionIndex       _collectionIndex;
+        RetainedConst<Options>    _options;        // The replicator options
+        Retained<Worker>          _parent;         // Worker that owns me
+        std::shared_ptr<DBAccess> _db;             // Database
+        std::string               _loggingID;      // My name in the log
+        uint8_t                   _importance{1};  // Higher values log more
+      private:
+        Retained<blip::Connection> _connection;               // BLIP connection
+        int                        _pendingResponseCount{0};  // # of responses I'm awaiting
+        Status                     _status{kC4Idle};          // My status
+        bool                       _statusChanged{false};     // Status changed during this event
+        const CollectionIndex      _collectionIndex;
     };
 
-} }
+}}  // namespace litecore::repl

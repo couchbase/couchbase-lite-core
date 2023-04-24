@@ -26,51 +26,52 @@ namespace litecore { namespace actor {
     /** Actor mailbox that uses a Grand Central Dispatch (GCD) serial dispatch_queue.
         Available on Apple platforms, or elsewhere if libdispatch is installed. */
     class GCDMailbox {
-    public:
-        GCDMailbox(Actor *a, const std::string &name ="", GCDMailbox *parentMailbox =nullptr);
+      public:
+        GCDMailbox(Actor* a, const std::string& name = "", GCDMailbox* parentMailbox = nullptr);
         ~GCDMailbox();
 
         std::string name() const;
 
-        Scheduler* scheduler() const                        {return nullptr;}
-        void setScheduler(Scheduler *s)                     { }
+        Scheduler* scheduler() const { return nullptr; }
 
-        unsigned eventCount() const                         {return _eventCount;}
+        void setScheduler(Scheduler* s) {}
+
+        unsigned eventCount() const { return _eventCount; }
 
         //void enqueue(std::function<void()> f);
         void enqueue(const char* name, void (^block)());
         void enqueueAfter(delay_t delay, const char* name, void (^block)());
 
-        static void startScheduler(Scheduler *)             { }
+        static void startScheduler(Scheduler*) {}
 
         void logStats() const;
 
         static Actor* currentActor();
 
-        static void runAsyncTask(void (*task)(void*), void *context);
+        static void runAsyncTask(void (*task)(void*), void* context);
 
-    private:
+      private:
         void runEvent(void (^block)());
         void afterEvent();
         void safelyCall(void (^block)()) const;
-        
-        Actor *_actor;
-        dispatch_queue_t _queue;
-        std::atomic<int32_t> _eventCount {0};
-        
+
+        Actor*               _actor;
+        dispatch_queue_t     _queue;
+        std::atomic<int32_t> _eventCount{0};
+
 #if ACTORS_USE_MANIFESTS
-        mutable ChannelManifest _localManifest;
+        mutable ChannelManifest                              _localManifest;
         static thread_local std::shared_ptr<ChannelManifest> sQueueManifest;
 #endif
-        
+
 #if ACTORS_TRACK_STATS
-        int32_t _callCount {0};
-        int32_t _maxEventCount {0};
-        double _maxLatency {0};
-        double _maxBusy {0};
-        fleece::Stopwatch _createdAt {true};
-        fleece::Stopwatch _busy {false};
+        int32_t           _callCount{0};
+        int32_t           _maxEventCount{0};
+        double            _maxLatency{0};
+        double            _maxBusy{0};
+        fleece::Stopwatch _createdAt{true};
+        fleece::Stopwatch _busy{false};
 #endif
     };
 
-} }
+}}  // namespace litecore::actor

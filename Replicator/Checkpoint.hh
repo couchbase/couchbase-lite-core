@@ -44,50 +44,48 @@ namespace litecore { namespace repl {
      * by asking the server to send only sequences newer than it.
      */
     class Checkpoint {
-    public:
-        Checkpoint()                                        {resetLocal();}
-        Checkpoint(fleece::slice json)                      {readJSON(json);}
+      public:
+        Checkpoint() { resetLocal(); }
+
+        Checkpoint(fleece::slice json) { readJSON(json); }
 
         void readJSON(fleece::slice json);
-        
+
         void readDict(fleece::Dict dict);
 
         fleece::alloc_slice toJSON() const;
 
-        bool validateWith(const Checkpoint &remoteSequences);
+        bool validateWith(const Checkpoint& remoteSequences);
 
         //---- Local sequences:
 
         /** The last fully-complete local sequence, such that it and all lesser sequences are
             complete. In other words, the sequence before the first pending sequence. */
-        C4SequenceNumber    localMinSequence() const;
+        C4SequenceNumber localMinSequence() const;
 
         /** The set of sequences that have been "completed": either pushed, or skipped, or else
             don't exist. */
-        const SequenceSet&  completedSequences() const      {return _completed;}
+        const SequenceSet& completedSequences() const { return _completed; }
 
         /** Has this sequence been completed? */
-        bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
+        bool isSequenceCompleted(C4SequenceNumber s) const { return _completed.contains(s); }
 
         /** Removes a sequence from the set of completed sequences. */
         void addPendingSequence(C4SequenceNumber s);
 
         /** Adds a sequence to the set of completed sequences. */
-        void completedSequence(C4SequenceNumber s)          {_completed.add(s);}
+        void completedSequence(C4SequenceNumber s) { _completed.add(s); }
 
         /** Updates the state of a range of sequences:
             All sequences in the range [first...last] are marked completed,
             then the sequences in the collection `revs` are marked uncompleted/pending.*/
         template <class REV_LIST>
-        void addPendingSequences(const REV_LIST& revs,
-                                 C4SequenceNumber firstSequenceChecked,
-                                 C4SequenceNumber lastSequenceChecked)
-        {
+        void addPendingSequences(const REV_LIST& revs, C4SequenceNumber firstSequenceChecked,
+                                 C4SequenceNumber lastSequenceChecked) {
             assert(lastSequenceChecked >= _lastChecked);
             _lastChecked = lastSequenceChecked;
             _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
-            for (auto rev : revs)
-                _completed.remove(rev->sequence);
+            for ( auto rev : revs ) _completed.remove(rev->sequence);
         }
 
         /** The number of uncompleted sequences up through the last sequence checked. */
@@ -97,32 +95,29 @@ namespace litecore { namespace repl {
 
         /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
             complete. */
-        RemoteSequence remoteMinSequence() const       {return _remote;}
+        RemoteSequence remoteMinSequence() const { return _remote; }
 
         bool setRemoteMinSequence(const RemoteSequence&);
 
-        static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
+        static bool gWriteTimestamps;  // for testing; set to false to disable timestamps in JSON
 
-    private:
+      private:
         void resetLocal();
         void updateLocalFromPending();
 
-        SequenceSet         _completed;         // Set of completed local sequences
-        C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
-        RemoteSequence      _remote;            // Last completed remote sequence
+        SequenceSet      _completed;    // Set of completed local sequences
+        C4SequenceNumber _lastChecked;  // Last local sequence checked in the db
+        RemoteSequence   _remote;       // Last completed remote sequence
     };
-
 
     // specialization where REV_LIST is std::vector<C4SequenceNumber>
     template <>
     inline void Checkpoint::addPendingSequences(const std::vector<C4SequenceNumber>& revs,
-                                                C4SequenceNumber firstSequenceChecked,
-                                                C4SequenceNumber lastSequenceChecked)
-    {
+                                                C4SequenceNumber                     firstSequenceChecked,
+                                                C4SequenceNumber                     lastSequenceChecked) {
         _lastChecked = lastSequenceChecked;
         _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
-        for (auto rev : revs)
-            _completed.remove(rev);
+        for ( auto rev : revs ) _completed.remove(rev);
     }
 
-} }
+}}  // namespace litecore::repl

@@ -20,19 +20,20 @@ namespace litecore {
 
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
-    public:
-        TreeDocumentFactory(C4Collection *coll)   :DocumentFactory(coll) { }
+      public:
+        TreeDocumentFactory(C4Collection* coll) : DocumentFactory(coll) {}
+
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
-        bool isFirstGenRevID(slice revID) const override;
+        bool                 isFirstGenRevID(slice revID) const override;
 
-        std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
+        std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
         static C4Document* documentContaining(FLValue value);
     };
 
-}
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

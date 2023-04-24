@@ -11,15 +11,15 @@
 //
 
 #ifdef __APPLE__
-#ifdef _LIBCPP_DEBUG
+#    ifdef _LIBCPP_DEBUG
 
-#include <__debug>
+#        include <__debug>
 
 namespace std {
     // Resolves a link error building with libc++ in debug mode. Apparently this symbol would be in
     // the debug version of libc++.dylib, but we don't have that on Apple platforms.
     __1::__libcpp_debug_function_type __1::__libcpp_debug_function;
-}
+}  // namespace std
 
-#endif
+#    endif
 #endif

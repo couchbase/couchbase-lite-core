@@ -17,14 +17,11 @@ using namespace fleece;
 using namespace fleece::impl;
 using namespace std;
 
-
 class DocumentKeysTestFixture : public DataFileTestFixture {
-public:
-    DocumentKeysTestFixture()
-    :DataFileTestFixture(0, &DataFile::Options::defaults)
-    { }
+  public:
+    DocumentKeysTestFixture() : DataFileTestFixture(0, &DataFile::Options::defaults) {}
 
-    alloc_slice convertJSON(const char *json) {
+    alloc_slice convertJSON(const char* json) {
         Encoder enc;
         enc.setSharedKeys(db->documentKeys());
         JSONConverter jc(enc);
@@ -35,12 +32,10 @@ public:
         return out;
     }
 
-    void createDoc(const char *docID, const char *json, ExclusiveTransaction &t) {
+    void createDoc(const char* docID, const char* json, ExclusiveTransaction& t) {
         DataFileTestFixture::createDoc(slice(docID), convertJSON(json), t);
     }
-
 };
-
 
 TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
@@ -67,10 +62,10 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
         Record r = store->get("doc1"_sl);
         REQUIRE(r.exists());
-        Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
-        const Dict *root = doc->asDict();
+        Retained<Doc> doc  = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
+        const Dict*   root = doc->asDict();
         REQUIRE(root);
-        const Value *fooVal = root->get(foo);
+        const Value* fooVal = root->get(foo);
         REQUIRE(fooVal);
         CHECK(fooVal->asInt() == 1);
         REQUIRE(root->get(bar) == nullptr);
@@ -79,13 +74,13 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
         Record r = store->get("doc2"_sl);
         REQUIRE(r.exists());
-        Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
-        const Dict *root = doc->asDict();
+        Retained<Doc> doc  = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
+        const Dict*   root = doc->asDict();
         REQUIRE(root);
-        const Value *fooVal = root->get(foo);
+        const Value* fooVal = root->get(foo);
         REQUIRE(fooVal);
         CHECK(fooVal->asInt() == 2);
-        const Value *barVal = root->get(bar);
+        const Value* barVal = root->get(bar);
         REQUIRE(barVal);
         CHECK(barVal->asInt() == 1);
         REQUIRE(root->get(zog) == nullptr);
@@ -103,10 +98,10 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
         Record r = store->get("doc3"_sl);
         REQUIRE(r.exists());
-        Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
-        const Dict *root = doc->asDict();
+        Retained<Doc> doc  = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
+        const Dict*   root = doc->asDict();
         REQUIRE(root);
-        const Value *zogVal = root->get(zog);
+        const Value* zogVal = root->get(zog);
         REQUIRE(zogVal);
         CHECK(zogVal->asInt() == 17);
         REQUIRE(root->get(foo) == nullptr);

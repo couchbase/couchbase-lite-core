@@ -15,13 +15,10 @@
 
 namespace litecore { namespace REST {
 
-    std::string URLDecode(fleece::slice str, bool isFormURLEncoded =true);
-    
-    std::string URLEncode(fleece::slice str);
-    
-    std::string getURLQueryParam(fleece::slice queries,
-                                 const char *name,
-                                 char delimiter = '&',
-                                 size_t occurrence =0);
+    std::string URLDecode(fleece::slice str, bool isFormURLEncoded = true);
 
-} }
+    std::string URLEncode(fleece::slice str);
+
+    std::string getURLQueryParam(fleece::slice queries, const char* name, char delimiter = '&', size_t occurrence = 0);
+
+}}  // namespace litecore::REST

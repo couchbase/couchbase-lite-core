@@ -29,85 +29,78 @@ namespace litecore { namespace repl {
 
     // Operations on C4Progress objects:
 
-    static inline bool operator== (const C4Progress &p1, const C4Progress &p2) {
+    static inline bool operator==(const C4Progress& p1, const C4Progress& p2) {
         return p1.unitsCompleted == p2.unitsCompleted && p1.unitsTotal == p2.unitsTotal
-            && p1.documentCount == p2.documentCount;
+               && p1.documentCount == p2.documentCount;
     }
-    static inline bool operator!= (const C4Progress &p1, const C4Progress &p2) {
-        return !(p1 == p2);
+
+    static inline bool operator!=(const C4Progress& p1, const C4Progress& p2) { return !(p1 == p2); }
+
+    static inline C4Progress operator+(const C4Progress& p1, const C4Progress& p2) {
+        return C4Progress{p1.unitsCompleted + p2.unitsCompleted, p1.unitsTotal + p2.unitsTotal,
+                          p1.documentCount + p2.documentCount};
     }
-    static inline C4Progress operator+ (const C4Progress &p1, const C4Progress &p2) {
-        return C4Progress {p1.unitsCompleted + p2.unitsCompleted, p1.unitsTotal + p2.unitsTotal,
-                           p1.documentCount + p2.documentCount};
+
+    static inline C4Progress operator-(const C4Progress& p1, const C4Progress& p2) {
+        return C4Progress{p1.unitsCompleted - p2.unitsCompleted, p1.unitsTotal - p2.unitsTotal,
+                          p1.documentCount - p2.documentCount};
     }
-    static inline C4Progress operator- (const C4Progress &p1, const C4Progress &p2) {
-        return C4Progress {p1.unitsCompleted - p2.unitsCompleted, p1.unitsTotal - p2.unitsTotal,
-                           p1.documentCount - p2.documentCount};
-    }
-    static inline C4Progress& operator+= (C4Progress &p1, const C4Progress &p2) {
+
+    static inline C4Progress& operator+=(C4Progress& p1, const C4Progress& p2) {
         p1 = p1 + p2;
         return p1;
     }
 
-
     /** A request by the peer to send a revision. */
     class RevToSend final : public ReplicatedRev {
-    public:
-        alloc_slice     remoteAncestorRevID;        // Known ancestor revID (no-conflicts mode)
-        unsigned        maxHistory {0};             // Max depth of rev history to send
-        const uint64_t  bodySize {0};               // (Estimated) size of body
-        C4Timestamp     expiration {0};             // Time doc expires
-        std::unique_ptr<std::vector<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
-        Retained<RevToSend> nextRev;                // Newer rev waiting for this one to finish
-        bool            noConflicts {false};        // Server is in no-conflicts mode
-        bool            legacyAttachments {false};  // Add _attachments property when sending
-        bool            deltaOK {false};            // Can send a delta
-        int8_t          retryCount {0};             // Number of times this revision has been retried
+      public:
+        alloc_slice                               remoteAncestorRevID;  // Known ancestor revID (no-conflicts mode)
+        unsigned                                  maxHistory{0};        // Max depth of rev history to send
+        const uint64_t                            bodySize{0};          // (Estimated) size of body
+        C4Timestamp                               expiration{0};        // Time doc expires
+        std::unique_ptr<std::vector<alloc_slice>> ancestorRevIDs;       // Known ancestor revIDs the peer already has
+        Retained<RevToSend>                       nextRev;              // Newer rev waiting for this one to finish
+        bool                                      noConflicts{false};   // Server is in no-conflicts mode
+        bool                                      legacyAttachments{false};  // Add _attachments property when sending
+        bool                                      deltaOK{false};            // Can send a delta
+        int8_t                                    retryCount{0};  // Number of times this revision has been retried
 
-        RevToSend(const C4DocumentInfo &info, C4CollectionSpec, void*);
+        RevToSend(const C4DocumentInfo& info, C4CollectionSpec, void*);
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
 
+        Dir dir() const override { return Dir::kPushing; }
 
-        Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;
 
         alloc_slice historyString(C4Document*);
-        
-    protected:
-        ~RevToSend() =default;
+
+      protected:
+        ~RevToSend() = default;
     };
 
     typedef std::vector<Retained<RevToSend>> RevToSendList;
 
-
     /** A revision to be added to the database, complete with body. */
     class RevToInsert final : public ReplicatedRev {
-    public:
-        alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
-        fleece::Doc             doc;
-        const bool              noConflicts {false};    // Server is in no-conflicts mode
-        RevocationMode          revocationMode = RevocationMode::kNone;
-        Retained<IncomingRev>   owner;                  // Object that's processing this rev
-        alloc_slice             deltaSrc;
-        alloc_slice             deltaSrcRevID;          // Source revision if body is a delta
-        
-        RevToInsert(IncomingRev* owner,
-                    slice docID, slice revID,
-                    slice historyBuf,
-                    bool deleted,
-                    bool noConflicts,
-                    C4CollectionSpec,
-                    void*);
+      public:
+        alloc_slice           historyBuf;  // Revision history (comma-delimited revIDs)
+        fleece::Doc           doc;
+        const bool            noConflicts{false};  // Server is in no-conflicts mode
+        RevocationMode        revocationMode = RevocationMode::kNone;
+        Retained<IncomingRev> owner;  // Object that's processing this rev
+        alloc_slice           deltaSrc;
+        alloc_slice           deltaSrcRevID;  // Source revision if body is a delta
+
+        RevToInsert(IncomingRev* owner, slice docID, slice revID, slice historyBuf, bool deleted, bool noConflicts,
+                    C4CollectionSpec, void*);
 
         /// Constructor for a revoked document
-        RevToInsert(slice docID, slice revID,
-                    RevocationMode,
-                    C4CollectionSpec,
-                    void*);
+        RevToInsert(slice docID, slice revID, RevocationMode, C4CollectionSpec, void*);
 
-        Dir dir() const override                    {return Dir::kPulling;}
+        Dir dir() const override { return Dir::kPulling; }
+
         void trim() override;
         void trimBody();
 
@@ -115,21 +108,19 @@ namespace litecore { namespace repl {
 
         void notifyInserted();
 
-    protected:
+      protected:
         ~RevToInsert();
     };
-
 
     /** Metadata of a blob to download. */
     struct PendingBlob {
         fleece::alloc_slice docID;
         fleece::alloc_slice docProperty;
-        C4BlobKey key;
-        uint64_t length;
-        bool compressible;
+        C4BlobKey           key;
+        uint64_t            length;
+        bool                compressible;
     };
 
-    using CollectionIndex = unsigned;
-    constexpr const CollectionIndex kNotCollectionIndex
-        = std::numeric_limits<CollectionIndex>::max();
-} }
+    using CollectionIndex                               = unsigned;
+    constexpr const CollectionIndex kNotCollectionIndex = std::numeric_limits<CollectionIndex>::max();
+}}  // namespace litecore::repl

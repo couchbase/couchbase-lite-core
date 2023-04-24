@@ -35,22 +35,22 @@ using namespace litecore::net;
 namespace litecore::net {
     // Date formats we can parse, refer to std::chrono::parse for format specifiers
     static constexpr std::string_view dateFormats[] = {
-            "%a, %d %b %Y %T GMT" // RFC 822
-          , "%a, %d-%b-%Y %T GMT" // Google Cloud Load Balancer format (CBL-3949)
-          , "%a %b %d %T %Y"      // ANSI C asctime() format
+            "%a, %d %b %Y %T GMT"  // RFC 822
+            ,
+            "%a, %d-%b-%Y %T GMT"  // Google Cloud Load Balancer format (CBL-3949)
+            ,
+            "%a %b %d %T %Y"  // ANSI C asctime() format
     };
 
-
-    static time_t parse_gmt_time(const char* timeStr)
-    {
+    static time_t parse_gmt_time(const char* timeStr) {
         sys_seconds tp;
         // Go through each of the `dateFormats` and attempt to parse the date given
-        for(int i = 0; i < size(dateFormats); ++i) {
+        for ( int i = 0; i < size(dateFormats); ++i ) {
             istringstream s(timeStr);
             s >> parse(dateFormats[i].data(), tp);
-            if(s.fail()) {
+            if ( s.fail() ) {
                 // If we've failed to parse, and this is the last format in the list
-                if(i == size(dateFormats) - 1) {
+                if ( i == size(dateFormats) - 1 ) {
                     Warn("Couldn't parse Expires in cookie");
                     return 0;
                 }
@@ -61,74 +61,65 @@ namespace litecore::net {
 
         // The limit of 32-bit time_t is approaching...
         auto result = tp.time_since_epoch().count();
-        if(_usuallyFalse(result > numeric_limits<time_t>::max())) {
+        if ( _usuallyFalse(result > numeric_limits<time_t>::max()) ) {
             Warn("time_t overflow, capping to max!");
             return numeric_limits<time_t>::max();
         }
-        
-        if(_usuallyFalse(result < numeric_limits<time_t>::min())) {
+
+        if ( _usuallyFalse(result < numeric_limits<time_t>::min()) ) {
             Warn("time_t underflow, capping to min!");
             return numeric_limits<time_t>::min();
         }
-        
+
         return (time_t)result;
     }
 
 #pragma mark - COOKIE:
 
-
-    Cookie::Cookie(const string &header, const string &fromHost, const string &fromPath,
-                   bool acceptParentDomain)
-    :domain(fromHost)
-    ,created(time(nullptr))
-    {
+    Cookie::Cookie(const string& header, const string& fromHost, const string& fromPath, bool acceptParentDomain)
+        : domain(fromHost), created(time(nullptr)) {
         // Default path is the request path minus its last component:
         auto slash = fromPath.rfind('/');
-        if (slash != string::npos && slash > 0)
-            path = fromPath.substr(0, slash);
+        if ( slash != string::npos && slash > 0 ) path = fromPath.substr(0, slash);
 
         // <https://tools.ietf.org/html/rfc6265#section-4.1.1>
         static const regex sCookieRE("\\s*([^;=]+)=([^;=]*)");
-        sregex_iterator match(header.begin(), header.end(), sCookieRE);
-        sregex_iterator end;
-        string provisionalName;
-        int i = 0;
-        for (; match != end; ++match, ++i) {
+        sregex_iterator    match(header.begin(), header.end(), sCookieRE);
+        sregex_iterator    end;
+        string             provisionalName;
+        int                i = 0;
+        for ( ; match != end; ++match, ++i ) {
             string key = lowercase((*match)[1]);
             string val = (*match)[2];
-            if (i == 0) {
+            if ( i == 0 ) {
                 provisionalName = key;
-                if (hasPrefix(val,"\"") && hasSuffix(val, "\""))
-                    val = val.substr(1, val.size()-2);
+                if ( hasPrefix(val, "\"") && hasSuffix(val, "\"") ) val = val.substr(1, val.size() - 2);
                 value = val;
-            } else if (key == "domain") {
-                while (!val.empty() && val[0] == '.')
-                    val.erase(0, 1);
-                if (!Address::domainContains(fromHost, val)) {
-                    if (!acceptParentDomain) {
+            } else if ( key == "domain" ) {
+                while ( !val.empty() && val[0] == '.' ) val.erase(0, 1);
+                if ( !Address::domainContains(fromHost, val) ) {
+                    if ( !acceptParentDomain ) {
                         Warn("Cookie Domain isn't legal because it is not a subdomain of the host");
                         return;
-                    } else if (!Address::domainContains(val, fromHost)) {
+                    } else if ( !Address::domainContains(val, fromHost) ) {
                         Warn("Cookie Domain isn't legal");
                         return;
                     }
                 }
                 domain = val;
-            } else if (key == "path") {
+            } else if ( key == "path" ) {
                 path = val;
-            } else if (key == "secure") {
+            } else if ( key == "secure" ) {
                 secure = true;
-            } else if (key == "expires") {
-                if (expires == 0) {
+            } else if ( key == "expires" ) {
+                if ( expires == 0 ) {
                     expires = parse_gmt_time(val.c_str());
-                    if(expires == 0) {
-                        return;
-                    }
+                    if ( expires == 0 ) { return; }
                 }
-            } else if (key == "max-age") {
-                char *valEnd = &val[val.size()];
-                long maxAge = strtol(&val[0], &valEnd, 10);
-                if (valEnd != &val[val.size()] || val.size() == 0) {
+            } else if ( key == "max-age" ) {
+                char* valEnd = &val[val.size()];
+                long  maxAge = strtol(&val[0], &valEnd, 10);
+                if ( valEnd != &val[val.size()] || val.size() == 0 ) {
                     Warn("Couldn't parse Max-Age in cookie");
                     return;
                 }
@@ -136,50 +127,40 @@ namespace litecore::net {
             }
         }
 
-        if (i == 0) {
+        if ( i == 0 ) {
             Warn("Couldn't parse Set-Cookie header: %s", header.c_str());
             return;
         }
         name = provisionalName;
     }
 
-
     Cookie::Cookie(Dict dict)
-    :name(dict["name"].asstring())
-    ,value(dict["value"].asstring())
-    ,domain(dict["domain"].asstring())
-    ,path(dict["path"].asstring())
-    ,created((time_t)dict["created"].asInt())
-    ,expires((time_t)dict["expires"].asInt())
-    ,secure(dict["secure"].asBool())
-    {
-        if (domain.empty() || expires == 0 || created == 0)
-            name.clear();  // invalidate
+        : name(dict["name"].asstring())
+        , value(dict["value"].asstring())
+        , domain(dict["domain"].asstring())
+        , path(dict["path"].asstring())
+        , created((time_t)dict["created"].asInt())
+        , expires((time_t)dict["expires"].asInt())
+        , secure(dict["secure"].asBool()) {
+        if ( domain.empty() || expires == 0 || created == 0 ) name.clear();  // invalidate
     }
 
-
-    bool Cookie::matches(const Cookie &c) const {
+    bool Cookie::matches(const Cookie& c) const {
         return name == c.name && compareIgnoringCase(domain, c.domain) == 0 && path == c.path;
     }
 
-
-    bool Cookie::sameValueAs(const Cookie &c) const {
+    bool Cookie::sameValueAs(const Cookie& c) const {
         return value == c.value && expires == c.expires && secure == c.secure;
     }
 
-
-    bool Cookie::matches(const C4Address &addr) const {
-        return Address::domainContains(domain, addr.hostname)
-            && Address::pathContains(path, addr.path)
-            && (!secure || Address::isSecure(addr));
+    bool Cookie::matches(const C4Address& addr) const {
+        return Address::domainContains(domain, addr.hostname) && Address::pathContains(path, addr.path)
+               && (!secure || Address::isSecure(addr));
     }
 
+    ostream& operator<<(ostream& out, const Cookie& cookie) { return out << cookie.name << '=' << cookie.value; }
 
-    ostream& operator<< (ostream &out, const Cookie &cookie) {
-        return out << cookie.name << '=' << cookie.value;
-    }
-
-    fleece::Encoder& operator<< (fleece::Encoder &enc, const Cookie &cookie) {
+    fleece::Encoder& operator<<(fleece::Encoder& enc, const Cookie& cookie) {
         Assert(cookie.persistent());
         enc.beginDict(6);
         enc.writeKey("name"_sl);
@@ -192,11 +173,11 @@ namespace litecore::net {
         enc.writeInt(cookie.created);
         enc.writeKey("expires"_sl);
         enc.writeInt(cookie.expires);
-        if (!cookie.path.empty()) {
+        if ( !cookie.path.empty() ) {
             enc.writeKey("path"_sl);
             enc.writeString(cookie.path);
         }
-        if (cookie.secure) {
+        if ( cookie.secure ) {
             enc.writeKey("secure"_sl);
             enc.writeBool(true);
         }
@@ -204,75 +185,61 @@ namespace litecore::net {
         return enc;
     }
 
-
 #pragma mark - COOKIE STORE:
 
-
     CookieStore::CookieStore(slice data) {
-        if (data.size == 0)
-            return;
+        if ( data.size == 0 ) return;
         Array cookies = ValueFromData(data).asArray();
-        if (!cookies) {
+        if ( !cookies ) {
             Warn("Couldn't parse persisted cookie store!");
             return;
         }
-        for (Array::iterator i(cookies); i; ++i) {
+        for ( Array::iterator i(cookies); i; ++i ) {
             auto cookie = make_unique<const Cookie>(i.value().asDict());
-            if (cookie->valid()) {
-                if (!cookie->expired())
-                    _cookies.emplace_back(move(cookie));
+            if ( cookie->valid() ) {
+                if ( !cookie->expired() ) _cookies.emplace_back(move(cookie));
             } else {
                 Warn("Couldn't read a cookie from persisted cookie store!");
             }
         }
     }
 
-
     alloc_slice CookieStore::encode() {
         lock_guard<mutex> lock(_mutex);
-        Encoder enc;
+        Encoder           enc;
         enc.beginArray(_cookies.size());
-        for (CookiePtr &cookie : _cookies) {
-            if (cookie->persistent() && !cookie->expired())
-                enc << *cookie;
+        for ( CookiePtr& cookie : _cookies ) {
+            if ( cookie->persistent() && !cookie->expired() ) enc << *cookie;
         }
         enc.endArray();
         return enc.finish();
     }
 
-
     vector<const Cookie*> CookieStore::cookies() const {
-        lock_guard<mutex> lock(_mutex);
+        lock_guard<mutex>     lock(_mutex);
         vector<const Cookie*> cookies;
         cookies.reserve(_cookies.size());
-        for (const CookiePtr &cookie : _cookies)
-            cookies.push_back(cookie.get());
+        for ( const CookiePtr& cookie : _cookies ) cookies.push_back(cookie.get());
         return cookies;
     }
 
-
-    string CookieStore::cookiesForRequest(const C4Address &addr) const {
+    string CookieStore::cookiesForRequest(const C4Address& addr) const {
         lock_guard<mutex> lock(_mutex);
-        stringstream s;
-        int n = 0;
-        for (const CookiePtr &cookie : _cookies) {
-            if (cookie->matches(addr) && !cookie->expired()) {
-                if (n++)
-                    s << "; ";
+        stringstream      s;
+        int               n = 0;
+        for ( const CookiePtr& cookie : _cookies ) {
+            if ( cookie->matches(addr) && !cookie->expired() ) {
+                if ( n++ ) s << "; ";
                 s << *cookie;
             }
         }
         return s.str();
     }
 
-
-    bool CookieStore::setCookie(const string &headerValue,
-                                const string &fromHost,
-                                const string &path,
-                                bool  acceptParentDomain)
-    {
+    bool CookieStore::setCookie(const string& headerValue, const string& fromHost, const string& path,
+                                bool acceptParentDomain) {
         auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path, acceptParentDomain);
-        if (!newCookie->valid()) {
+        if ( !newCookie->valid() ) {
             Warn("Rejecting invalid cookie in setCookie!");
             return false;
         }
@@ -282,51 +249,43 @@ namespace litecore::net {
         return true;
     }
 
-
     void CookieStore::merge(slice data) {
-        CookieStore other(data);
+        CookieStore       other(data);
         lock_guard<mutex> lock(_mutex);
-        for (CookiePtr &cookie : other._cookies)
-            _addCookie(move(cookie));
+        for ( CookiePtr& cookie : other._cookies ) _addCookie(move(cookie));
     }
 
-
     void CookieStore::_addCookie(CookiePtr newCookie) {
-        for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
-            const Cookie *oldCookie = i->get();
-            if (newCookie->matches(*oldCookie)) {
-                if (newCookie->created < oldCookie->created) {
+        for ( auto i = _cookies.begin(); i != _cookies.end(); ++i ) {
+            const Cookie* oldCookie = i->get();
+            if ( newCookie->matches(*oldCookie) ) {
+                if ( newCookie->created < oldCookie->created ) {
                     LogVerbose(kC4Cpp_DefaultLog, "CookieStore::_addCookie: ignoring obsolete cookie...");
-                    return;   // obsolete
+                    return;  // obsolete
                 }
-                if (newCookie->sameValueAs(*oldCookie)) {
+                if ( newCookie->sameValueAs(*oldCookie) ) {
                     LogVerbose(kC4Cpp_DefaultLog, "CookieStore::_addCookie: ignoring identical cookie...");
-                    return;   // No-op
+                    return;  // No-op
                 }
 
                 // Remove the replaced cookie:
-                if (oldCookie->persistent())
-                    _changed = true;
+                if ( oldCookie->persistent() ) _changed = true;
                 _cookies.erase(i);
                 break;
             }
         }
         // Add the new cookie:
-        if (newCookie->persistent())
-            _changed = true;
+        if ( newCookie->persistent() ) _changed = true;
         _cookies.emplace_back(move(newCookie));
     }
 
-
     void CookieStore::clearCookies() {
         lock_guard<mutex> lock(_mutex);
-        for (auto i = _cookies.begin(); !_changed && i != _cookies.end(); ++i) {
-            if ((*i)->persistent())
-                _changed = true;
+        for ( auto i = _cookies.begin(); !_changed && i != _cookies.end(); ++i ) {
+            if ( (*i)->persistent() ) _changed = true;
         }
         _cookies.clear();
     }
-
 
     bool CookieStore::changed() {
         lock_guard<mutex> lock(_mutex);
@@ -338,4 +297,4 @@ namespace litecore::net {
         _changed = false;
     }
 
-}
+}  // namespace litecore::net

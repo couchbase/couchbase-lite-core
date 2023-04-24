@@ -60,33 +60,38 @@ U_NAMESPACE_BEGIN
  * @see U_DEFINE_LOCAL_OPEN_POINTER
  * @stable ICU 4.4
  */
-template<typename T>
+template <typename T>
 class LocalPointerBase {
-public:
+  public:
     /**
      * Constructor takes ownership.
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalPointerBase(T *p=NULL) : ptr(p) {}
+    explicit LocalPointerBase(T* p = NULL) : ptr(p) {}
+
     /**
      * Destructor deletes the object it owns.
      * Subclass must override: Base class does nothing.
      * @stable ICU 4.4
      */
-    ~LocalPointerBase() { /* delete ptr; */ }
+    ~LocalPointerBase() { /* delete ptr; */
+    }
+
     /**
      * NULL check.
      * @return TRUE if ==NULL
      * @stable ICU 4.4
      */
-    UBool isNull() const { return ptr==NULL; }
+    UBool isNull() const { return ptr == NULL; }
+
     /**
      * NULL check.
      * @return TRUE if !=NULL
      * @stable ICU 4.4
      */
-    UBool isValid() const { return ptr!=NULL; }
+    UBool isValid() const { return ptr != NULL; }
+
     /**
      * Comparison with a simple pointer, so that existing code
      * with ==NULL need not be changed.
@@ -94,7 +99,8 @@ public:
      * @return true if this pointer value equals other
      * @stable ICU 4.4
      */
-    bool operator==(const T *other) const { return ptr==other; }
+    bool operator==(const T* other) const { return ptr == other; }
+
     /**
      * Comparison with a simple pointer, so that existing code
      * with !=NULL need not be changed.
@@ -102,36 +108,41 @@ public:
      * @return true if this pointer value differs from other
      * @stable ICU 4.4
      */
-    bool operator!=(const T *other) const { return ptr!=other; }
+    bool operator!=(const T* other) const { return ptr != other; }
+
     /**
      * Access without ownership change.
      * @return the pointer value
      * @stable ICU 4.4
      */
-    T *getAlias() const { return ptr; }
+    T* getAlias() const { return ptr; }
+
     /**
      * Access without ownership change.
      * @return the pointer value as a reference
      * @stable ICU 4.4
      */
-    T &operator*() const { return *ptr; }
+    T& operator*() const { return *ptr; }
+
     /**
      * Access without ownership change.
      * @return the pointer value
      * @stable ICU 4.4
      */
-    T *operator->() const { return ptr; }
+    T* operator->() const { return ptr; }
+
     /**
      * Gives up ownership; the internal pointer becomes NULL.
      * @return the pointer value;
      *         caller becomes responsible for deleting the object
      * @stable ICU 4.4
      */
-    T *orphan() {
-        T *p=ptr;
-        ptr=NULL;
+    T* orphan() {
+        T* p = ptr;
+        ptr  = NULL;
         return p;
     }
+
     /**
      * Deletes the object it owns,
      * and adopts (takes ownership of) the one passed in.
@@ -139,29 +150,31 @@ public:
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         // delete ptr;
-        ptr=p;
+        ptr = p;
     }
-protected:
+
+  protected:
     /**
      * Actual pointer.
      * @internal
      */
-    T *ptr;
-private:
+    T* ptr;
+
+  private:
     // No comparison operators with other LocalPointerBases.
-    bool operator==(const LocalPointerBase &other);
-    bool operator!=(const LocalPointerBase &other);
+    bool operator==(const LocalPointerBase& other);
+    bool operator!=(const LocalPointerBase& other);
     // No ownership transfer: No copy constructor, no assignment operator.
-    LocalPointerBase(const LocalPointerBase &other);
-    void operator=(const LocalPointerBase &other);
+    LocalPointerBase(const LocalPointerBase& other);
+    void operator=(const LocalPointerBase& other);
     // No heap allocation. Use only on the stack.
-    static void * U_EXPORT2 operator new(size_t size);
-    static void * U_EXPORT2 operator new[](size_t size);
-#if U_HAVE_PLACEMENT_NEW
-    static void * U_EXPORT2 operator new(size_t, void *ptr);
-#endif
+    static void* U_EXPORT2 operator new(size_t size);
+    static void* U_EXPORT2 operator new[](size_t size);
+#    if U_HAVE_PLACEMENT_NEW
+    static void* U_EXPORT2 operator new(size_t, void* ptr);
+#    endif
 };
 
 /**
@@ -182,16 +195,16 @@ private:
  * @see LocalPointerBase
  * @stable ICU 4.4
  */
-template<typename T>
+template <typename T>
 class LocalPointer : public LocalPointerBase<T> {
-public:
+  public:
     /**
      * Constructor takes ownership.
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalPointer(T *p=NULL) : LocalPointerBase<T>(p) {}
-#ifndef U_HIDE_DRAFT_API
+    explicit LocalPointer(T* p = NULL) : LocalPointerBase<T>(p) {}
+#    ifndef U_HIDE_DRAFT_API
     /**
      * Constructor takes ownership and reports an error if NULL.
      *
@@ -205,30 +218,27 @@ public:
      *     if p==NULL and no other failure code had been set
      * @draft ICU 55
      */
-    LocalPointer(T *p, UErrorCode &errorCode) : LocalPointerBase<T>(p) {
-        if(p==NULL && U_SUCCESS(errorCode)) {
-            errorCode=U_MEMORY_ALLOCATION_ERROR;
-        }
+    LocalPointer(T* p, UErrorCode& errorCode) : LocalPointerBase<T>(p) {
+        if ( p == NULL && U_SUCCESS(errorCode) ) { errorCode = U_MEMORY_ALLOCATION_ERROR; }
     }
-#endif  /* U_HIDE_DRAFT_API */
+#    endif /* U_HIDE_DRAFT_API */
     /**
      * Destructor deletes the object it owns.
      * @stable ICU 4.4
      */
-    ~LocalPointer() {
-        delete LocalPointerBase<T>::ptr;
-    }
+    ~LocalPointer() { delete LocalPointerBase<T>::ptr; }
+
     /**
      * Deletes the object it owns,
      * and adopts (takes ownership of) the one passed in.
      * @param p simple pointer to an object that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         delete LocalPointerBase<T>::ptr;
-        LocalPointerBase<T>::ptr=p;
+        LocalPointerBase<T>::ptr = p;
     }
-#ifndef U_HIDE_DRAFT_API
+#    ifndef U_HIDE_DRAFT_API
     /**
      * Deletes the object it owns,
      * and adopts (takes ownership of) the one passed in.
@@ -244,18 +254,16 @@ public:
      *     if p==NULL and no other failure code had been set
      * @draft ICU 55
      */
-    void adoptInsteadAndCheckErrorCode(T *p, UErrorCode &errorCode) {
-        if(U_SUCCESS(errorCode)) {
+    void adoptInsteadAndCheckErrorCode(T* p, UErrorCode& errorCode) {
+        if ( U_SUCCESS(errorCode) ) {
             delete LocalPointerBase<T>::ptr;
-            LocalPointerBase<T>::ptr=p;
-            if(p==NULL) {
-                errorCode=U_MEMORY_ALLOCATION_ERROR;
-            }
+            LocalPointerBase<T>::ptr = p;
+            if ( p == NULL ) { errorCode = U_MEMORY_ALLOCATION_ERROR; }
         } else {
             delete p;
         }
     }
-#endif  /* U_HIDE_DRAFT_API */
+#    endif /* U_HIDE_DRAFT_API */
 };
 
 /**
@@ -276,32 +284,33 @@ public:
  * @see LocalPointerBase
  * @stable ICU 4.4
  */
-template<typename T>
+template <typename T>
 class LocalArray : public LocalPointerBase<T> {
-public:
+  public:
     /**
      * Constructor takes ownership.
      * @param p simple pointer to an array of T objects that is adopted
      * @stable ICU 4.4
      */
-    explicit LocalArray(T *p=NULL) : LocalPointerBase<T>(p) {}
+    explicit LocalArray(T* p = NULL) : LocalPointerBase<T>(p) {}
+
     /**
      * Destructor deletes the array it owns.
      * @stable ICU 4.4
      */
-    ~LocalArray() {
-        delete[] LocalPointerBase<T>::ptr;
-    }
+    ~LocalArray() { delete[] LocalPointerBase<T>::ptr; }
+
     /**
      * Deletes the array it owns,
      * and adopts (takes ownership of) the one passed in.
      * @param p simple pointer to an array of T objects that is adopted
      * @stable ICU 4.4
      */
-    void adoptInstead(T *p) {
+    void adoptInstead(T* p) {
         delete[] LocalPointerBase<T>::ptr;
-        LocalPointerBase<T>::ptr=p;
+        LocalPointerBase<T>::ptr = p;
     }
+
     /**
      * Array item access (writable).
      * No index bounds check.
@@ -309,7 +318,7 @@ public:
      * @return reference to the array item
      * @stable ICU 4.4
      */
-    T &operator[](ptrdiff_t i) const { return LocalPointerBase<T>::ptr[i]; }
+    T& operator[](ptrdiff_t i) const { return LocalPointerBase<T>::ptr[i]; }
 };
 
 /**
@@ -335,18 +344,18 @@ public:
  * @see LocalPointer
  * @stable ICU 4.4
  */
-#define U_DEFINE_LOCAL_OPEN_POINTER(LocalPointerClassName, Type, closeFunction) \
-    class LocalPointerClassName : public LocalPointerBase<Type> { \
-    public: \
-        explicit LocalPointerClassName(Type *p=NULL) : LocalPointerBase<Type>(p) {} \
-        ~LocalPointerClassName() { closeFunction(ptr); } \
-        void adoptInstead(Type *p) { \
-            closeFunction(ptr); \
-            ptr=p; \
-        } \
-    }
+#    define U_DEFINE_LOCAL_OPEN_POINTER(LocalPointerClassName, Type, closeFunction)                                    \
+        class LocalPointerClassName : public LocalPointerBase<Type> {                                                  \
+          public:                                                                                                      \
+            explicit LocalPointerClassName(Type* p = NULL) : LocalPointerBase<Type>(p) {}                              \
+            ~LocalPointerClassName() { closeFunction(ptr); }                                                           \
+            void adoptInstead(Type* p) {                                                                               \
+                closeFunction(ptr);                                                                                    \
+                ptr = p;                                                                                               \
+            }                                                                                                          \
+        }
 
 U_NAMESPACE_END
 
-#endif  /* U_SHOW_CPLUSPLUS_API */
-#endif  /* __LOCALPOINTER_H__ */
+#endif /* U_SHOW_CPLUSPLUS_API */
+#endif /* __LOCALPOINTER_H__ */

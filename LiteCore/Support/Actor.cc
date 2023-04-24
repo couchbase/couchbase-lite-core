@@ -14,25 +14,23 @@
 #include "Logging.hh"
 #include <mutex>
 
-
 namespace litecore { namespace actor {
 
-    void Actor::caughtException(const std::exception &x) {
+    void Actor::caughtException(const std::exception& x) {
         Warn("Caught exception in Actor %s: %s", actorName().c_str(), x.what());
     }
 
-
     void Actor::waitTillCaughtUp() {
-        std::mutex mut;
+        std::mutex              mut;
         std::condition_variable cond;
-        bool finished = false;
+        bool                    finished = false;
         enqueue(FUNCTION_TO_QUEUE(Actor::_waitTillCaughtUp), &mut, &cond, &finished);
-        
+
         std::unique_lock<std::mutex> lock(mut);
-        cond.wait(lock, [&]{return finished;});
+        cond.wait(lock, [&] { return finished; });
     }
 
-    void Actor::_waitTillCaughtUp(std::mutex *mut, std::condition_variable *cond, bool *finished) {
+    void Actor::_waitTillCaughtUp(std::mutex* mut, std::condition_variable* cond, bool* finished) {
         std::lock_guard<std::mutex> lock(*mut);
         *finished = true;
         // It's important to keep the mutex locked while calling notify_one. This ensures that
@@ -42,4 +40,4 @@ namespace litecore { namespace actor {
     }
 
 
-} }
+}}  // namespace litecore::actor

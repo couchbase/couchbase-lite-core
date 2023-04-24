@@ -23,7 +23,7 @@
 #include "ParseDate.hh"
 
 #if __APPLE__
-#include <sys/time.h>
+#    include <sys/time.h>
 #endif
 
 using namespace std;
@@ -41,41 +41,36 @@ namespace litecore {
 
 #pragma mark - LOG ITERATOR:
 
-
     /*static*/ LogIterator::Timestamp LogIterator::now() {
         using namespace chrono;
 
-        auto now = time_point_cast<microseconds>(system_clock::now());
-        auto count = now.time_since_epoch().count();
-        time_t secs = (time_t)count / 1000000;
+        auto     now       = time_point_cast<microseconds>(system_clock::now());
+        auto     count     = now.time_since_epoch().count();
+        time_t   secs      = (time_t)count / 1000000;
         unsigned microsecs = count % 1000000;
         return {secs, microsecs};
     }
 
-
-    void LogIterator::writeTimestamp(Timestamp t, ostream &out) {
-        local_time<microseconds> tp { seconds(t.secs) + microseconds(t.microsecs) };
-        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+    void LogIterator::writeTimestamp(Timestamp t, ostream& out) {
+        local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
+        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
         tp -= GetLocalTZOffset(&tmpTime, true);
         out << format("%T| ", tp);
     }
 
-
-    void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream &out) {
+    void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream& out) {
         sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
         out << format("%FT%TZ", tp);
     }
 
-
     string LogIterator::formatDate(Timestamp t) {
         local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
         tp -= GetLocalTZOffset(&tmpTime, true);
         stringstream out;
         out << format("%c", tp);
         return out.str();
     }
-
 
     string LogIterator::readMessage() {
         stringstream out;
@@ -83,88 +78,64 @@ namespace litecore {
         return out.str();
     }
 
-
-    /*static*/ void LogIterator::writeHeader(const string &levelName,
-                                            const string &domainName,
-                                            ostream &out)
-    {
-        if (!levelName.empty()) {
-            if (!domainName.empty())
-                out << '[' << domainName << "] ";
+    /*static*/ void LogIterator::writeHeader(const string& levelName, const string& domainName, ostream& out) {
+        if ( !levelName.empty() ) {
+            if ( !domainName.empty() ) out << '[' << domainName << "] ";
             out << levelName << ": ";
         } else {
-            if (!domainName.empty())
-                out << '[' << domainName << "]: ";
+            if ( !domainName.empty() ) out << '[' << domainName << "]: ";
         }
     }
 
-
-    void LogIterator::decodeTo(ostream &out,
-                               const std::vector<std::string> &levelNames,
-                               optional<Timestamp> start) {
-        while (next()) {
+    void LogIterator::decodeTo(ostream& out, const std::vector<std::string>& levelNames, optional<Timestamp> start) {
+        while ( next() ) {
             auto ts = timestamp();
-            if (start && ts < *start)
-                continue;
+            if ( start && ts < *start ) continue;
             writeTimestamp(ts, out);
 
             string levelName;
-            if (level() >= 0 && level() < levelNames.size())
-                levelName = levelNames[level()];
+            if ( level() >= 0 && level() < levelNames.size() ) levelName = levelNames[level()];
             writeHeader(levelName, domain(), out);
             decodeMessageTo(out);
             out << '\n';
         }
     }
 
-
 #pragma mark - LOG DECODER:
 
-
-    LogDecoder::LogDecoder(std::istream &in)
-    :_in(in)
-    {
+    LogDecoder::LogDecoder(std::istream& in) : _in(in) {
         try {
             _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
             uint8_t header[6];
             _in.read((char*)&header, sizeof(header));
-            if (memcmp(&header, &kMagicNumber, 4) != 0)
-                throw runtime_error("Not a LiteCore log file");
-            if (header[4] != kFormatVersion)
-                throw runtime_error("Unsupported log format version");
+            if ( memcmp(&header, &kMagicNumber, 4) != 0 ) throw runtime_error("Not a LiteCore log file");
+            if ( header[4] != kFormatVersion ) throw runtime_error("Unsupported log format version");
             _pointerSize = header[5];
-            if (_pointerSize != 4 && _pointerSize != 8)
-                throw runtime_error("This log file seems to be damaged");
-            _startTime = time_t(readUVarInt());
+            if ( _pointerSize != 4 && _pointerSize != 8 ) throw runtime_error("This log file seems to be damaged");
+            _startTime   = time_t(readUVarInt());
             _readMessage = true;
-        } catch (std::ios_base::failure &x) {
-            reraise(x);
-        }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
 
-
     bool LogDecoder::next() {
-        if (!_readMessage)
-            readMessage(); // skip past the unread message
+        if ( !_readMessage ) readMessage();  // skip past the unread message
 
         try {
             _in.exceptions(istream::badbit | istream::failbit);  // turn off EOF exception temporarily
-            if (!_in || _in.peek() < 0)
-                return false;
+            if ( !_in || _in.peek() < 0 ) return false;
             _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
 
             _elapsedTicks += readUVarInt();
-            _timestamp = {_startTime + time_t(_elapsedTicks / kTicksPerSec),
-                          uint32_t(_elapsedTicks % kTicksPerSec)};
+            _timestamp = {_startTime + time_t(_elapsedTicks / kTicksPerSec), uint32_t(_elapsedTicks % kTicksPerSec)};
 
-            _curLevel = (int8_t)_in.get();
+            _curLevel  = (int8_t)_in.get();
             _curDomain = &readStringToken();
 
-            _curObjectIsNew = false;
+            _curObjectIsNew        = false;
             _putCurObjectInMessage = true;
-            _curObject = readUVarInt();
-            if (_curObject != 0) {
-                if (_objects.find(_curObject) == _objects.end()) {
+            _curObject             = readUVarInt();
+            if ( _curObject != 0 ) {
+                if ( _objects.find(_curObject) == _objects.end() ) {
                     _objects.insert({_curObject, readCString()});
                     _curObjectIsNew = true;
                 }
@@ -172,158 +143,153 @@ namespace litecore {
 
             _readMessage = false;
             return true;
-        } catch (std::ios_base::failure &x) {
-            reraise(x);
-        }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
 
-
-    void LogDecoder::decodeTo(ostream &out,
-                              const std::vector<std::string> &levelNames,
-                              std::optional<Timestamp> startingAt)
-    {
-        if (!startingAt || *startingAt < Timestamp{_startTime, 0}) {
+    void LogDecoder::decodeTo(ostream& out, const std::vector<std::string>& levelNames,
+                              std::optional<Timestamp> startingAt) {
+        if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
             writeTimestamp({_startTime, 0}, out);
-        	local_time<seconds> tp {seconds(_startTime)};
-        	struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        	tp -= GetLocalTZOffset(&tmpTime, true);
-        	out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
+            local_time<seconds> tp{seconds(_startTime)};
+            struct tm           tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+            tp -= GetLocalTZOffset(&tmpTime, true);
+            out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);
     }
 
-
 #pragma mark - INNARDS:
-
 
     uint64_t LogDecoder::objectID() const {
         _putCurObjectInMessage = false;
         return _curObject;
     }
 
-
     const string* LogDecoder::objectDescription() const {
         _putCurObjectInMessage = false;
-        if (_curObject > 0) {
+        if ( _curObject > 0 ) {
             auto i = _objects.find(_curObject);
-            if (i != _objects.end())
-                return &i->second;
+            if ( i != _objects.end() ) return &i->second;
         }
         return nullptr;
     }
 
-
-    void LogDecoder::decodeMessageTo(ostream &out) {
+    void LogDecoder::decodeMessageTo(ostream& out) {
         try {
             assert(!_readMessage);
             _readMessage = true;
 
             // Write the object ID, unless the caller's already accessed it through the API:
-            if (_putCurObjectInMessage && _curObject > 0) {
+            if ( _putCurObjectInMessage && _curObject > 0 ) {
                 out << '{' << _curObject;
-                if (_curObjectIsNew)
-                    out << "|" << *objectDescription();
+                if ( _curObjectIsNew ) out << "|" << *objectDescription();
                 out << "} ";
             }
 
             // Read the format string, then the parameters:
             string format = readStringToken().c_str();
-            for (const char *c = format.c_str(); *c != '\0'; ++c) {
-                if (*c != '%') {
+            for ( const char* c = format.c_str(); *c != '\0'; ++c ) {
+                if ( *c != '%' ) {
                     out << *c;
                 } else {
-                    bool minus = false;
+                    bool minus   = false;
                     bool dotStar = false;
                     ++c;
-                    if (*c == '-') {
+                    if ( *c == '-' ) {
                         minus = true;
                         ++c;
                     }
                     c += strspn(c, "#0- +'");
-                    while (isdigit(*c))
+                    while ( isdigit(*c) ) ++c;
+                    if ( *c == '.' ) {
                         ++c;
-                    if (*c == '.') {
-                        ++c;
-                        if (*c == '*') {
+                        if ( *c == '*' ) {
                             dotStar = true;
                             ++c;
                         } else {
-                            while (isdigit(*c))
-                                ++c;
+                            while ( isdigit(*c) ) ++c;
                         }
                     }
                     c += strspn(c, "hljtzq");
 
-                    switch(*c) {
+                    switch ( *c ) {
                         case 'c':
                         case 'd':
-                        case 'i': {
-                            bool negative = _in.get() > 0;
-                            int64_t param = readUVarInt();
-                            if (negative)
-                                param = -param;
-                            if (*c == 'c')
-                                out.put(char(param));
-                            else
-                                out << param;
-                            break;
-                        }
-                        case 'x': case 'X':
+                        case 'i':
+                            {
+                                bool    negative = _in.get() > 0;
+                                int64_t param    = readUVarInt();
+                                if ( negative ) param = -param;
+                                if ( *c == 'c' ) out.put(char(param));
+                                else
+                                    out << param;
+                                break;
+                            }
+                        case 'x':
+                        case 'X':
                             out << hex << readUVarInt() << std::dec;
                             break;
-                        case 'u': {
-                            out << readUVarInt();
-                            break;
-                        }
-                        case 'e': case 'E':
-                        case 'f': case 'F':
-                        case 'g': case 'G':
-                        case 'a': case 'A': {
-                            fleece::endian::littleEndianDouble param;
-                            _in.read((char*)&param, sizeof(param));
-                            out << param;
-                            break;
-                        }
+                        case 'u':
+                            {
+                                out << readUVarInt();
+                                break;
+                            }
+                        case 'e':
+                        case 'E':
+                        case 'f':
+                        case 'F':
+                        case 'g':
+                        case 'G':
+                        case 'a':
+                        case 'A':
+                            {
+                                fleece::endian::littleEndianDouble param;
+                                _in.read((char*)&param, sizeof(param));
+                                out << param;
+                                break;
+                            }
                         case '@':
-                        case 's': {
-                            if (minus && !dotStar) {
-                                out << readStringToken();
-                            } else {
-                                size_t size = (size_t)readUVarInt();
-                                char buf[200];
-                                while (size > 0) {
-                                    auto n = min(size, sizeof(buf));
-                                    _in.read(buf, n);
-                                    if (minus) {
-                                        constexpr size_t bufSize = 3;
-                                        for (size_t i = 0; i < n; ++i) {
-                                            char hex[bufSize];
-                                            snprintf(hex, bufSize, "%02x", uint8_t(buf[i]));
-                                            out << hex;
+                        case 's':
+                            {
+                                if ( minus && !dotStar ) {
+                                    out << readStringToken();
+                                } else {
+                                    size_t size = (size_t)readUVarInt();
+                                    char   buf[200];
+                                    while ( size > 0 ) {
+                                        auto n = min(size, sizeof(buf));
+                                        _in.read(buf, n);
+                                        if ( minus ) {
+                                            constexpr size_t bufSize = 3;
+                                            for ( size_t i = 0; i < n; ++i ) {
+                                                char hex[bufSize];
+                                                snprintf(hex, bufSize, "%02x", uint8_t(buf[i]));
+                                                out << hex;
+                                            }
+                                        } else {
+                                            out.write(buf, n);
                                         }
-                                    } else {
-                                        out.write(buf, n);
+                                        size -= n;
                                     }
-                                    size -= n;
                                 }
+                                break;
                             }
-                            break;
-                        }
-                        case 'p': {
-                            out << "0x" << hex;
-                            if (_pointerSize == 8) {
-                                uint64_t ptr;
-                                _in.read((char*)&ptr, sizeof(ptr));
-                                out << ptr;
-                            } else {
-                                uint32_t ptr;
-                                _in.read((char*)&ptr, sizeof(ptr));
-                                out << ptr;
+                        case 'p':
+                            {
+                                out << "0x" << hex;
+                                if ( _pointerSize == 8 ) {
+                                    uint64_t ptr;
+                                    _in.read((char*)&ptr, sizeof(ptr));
+                                    out << ptr;
+                                } else {
+                                    uint32_t ptr;
+                                    _in.read((char*)&ptr, sizeof(ptr));
+                                    out << ptr;
+                                }
+                                out << std::dec;
+                                break;
                             }
-                            out << std::dec;
-                            break;
-                        }
                         case '%':
                             out << '%';
                             break;
@@ -332,17 +298,14 @@ namespace litecore {
                     }
                 }
             }
-        } catch (std::ios_base::failure &x) {
-            reraise(x);
-        }
+        } catch ( std::ios_base::failure& x ) { reraise(x); }
     }
-
 
     const string& LogDecoder::readStringToken() {
         auto tokenID = (size_t)readUVarInt();
-        if (tokenID < _tokens.size()) {
+        if ( tokenID < _tokens.size() ) {
             return _tokens[tokenID];
-        } else if (tokenID == _tokens.size()) {
+        } else if ( tokenID == _tokens.size() ) {
             _tokens.push_back(readCString());
             return _tokens.back();
         } else {
@@ -350,42 +313,35 @@ namespace litecore {
         }
     }
 
-
     string LogDecoder::readCString() {
         string str;
         str.reserve(20);
         int c;
-        while (0 < (c = _in.get()))
-            str.push_back(char(c));
-        if (c < 0)
-            throw runtime_error("Unexpected EOF in log data");
+        while ( 0 < (c = _in.get()) ) str.push_back(char(c));
+        if ( c < 0 ) throw runtime_error("Unexpected EOF in log data");
         return str;
     }
 
-
-    void LogDecoder::reraise(const std::ios_base::failure &x) {
-        if (_in.good())
-            throw x;                                // exception isn't on _in, so pass it on
+    void LogDecoder::reraise(const std::ios_base::failure& x) {
+        if ( _in.good() ) throw x;  // exception isn't on _in, so pass it on
         auto state = _in.rdstate();
         _in.clear();
-        const char *message;
-        if (state & ios_base::eofbit)
-            message = "unexpected EOF in log";
-        else if (state & ios_base::failbit)
+        const char* message;
+        if ( state & ios_base::eofbit ) message = "unexpected EOF in log";
+        else if ( state & ios_base::failbit )
             message = "error decoding log";
         else
             message = "I/O error reading log";
         constexpr size_t bufSize = 50;
-        char what[bufSize];
+        char             what[bufSize];
         snprintf(what, bufSize, "%s at %lld", message, (long long)_in.tellg());
         throw error(what);
     }
 
-
-// Begin code extracted from varint.cc
+    // Begin code extracted from varint.cc
     struct slice {
-        const void *buf;
-        size_t size;
+        const void* buf;
+        size_t      size;
     };
 
     enum {
@@ -394,57 +350,55 @@ namespace litecore {
         kMaxVarintLen64 = 10,
     };
 
-    static size_t _GetUVarInt(slice buf, uint64_t *n) {
+    static size_t _GetUVarInt(slice buf, uint64_t* n) {
         // NOTE: The public inline function GetUVarInt already decodes 1-byte varints,
         // so if we get here we can assume the varint is at least 2 bytes.
-        auto pos = (const uint8_t*)buf.buf;
-        auto end = pos + std::min(buf.size, (size_t)kMaxVarintLen64);
+        auto     pos    = (const uint8_t*)buf.buf;
+        auto     end    = pos + std::min(buf.size, (size_t)kMaxVarintLen64);
         uint64_t result = *pos++ & 0x7F;
-        int shift = 7;
-        while (pos < end) {
+        int      shift  = 7;
+        while ( pos < end ) {
             uint8_t byte = *pos++;
-            if (byte >= 0x80) {
+            if ( byte >= 0x80 ) {
                 result |= (uint64_t)(byte & 0x7F) << shift;
                 shift += 7;
             } else {
                 result |= (uint64_t)byte << shift;
-                *n = result;
+                *n            = result;
                 size_t nBytes = pos - (const uint8_t*)buf.buf;
-                if (nBytes == kMaxVarintLen64 && byte > 1)
-                    nBytes = 0; // Numeric overflow
+                if ( nBytes == kMaxVarintLen64 && byte > 1 ) nBytes = 0;  // Numeric overflow
                 return nBytes;
             }
         }
-        return 0; // buffer too short
+        return 0;  // buffer too short
     }
 
-    static inline size_t GetUVarInt(slice buf, uint64_t *n) {
-        if (buf.size == 0)
-            return 0;
+    static inline size_t GetUVarInt(slice buf, uint64_t* n) {
+        if ( buf.size == 0 ) return 0;
         uint8_t byte = *(const uint8_t*)buf.buf;
-        if (byte < 0x80) {
+        if ( byte < 0x80 ) {
             *n = byte;
             return 1;
         }
         return _GetUVarInt(buf, n);
     }
-// End code extracted from varint.cc
+
+    // End code extracted from varint.cc
 
 
     uint64_t LogDecoder::readUVarInt() {
         uint8_t buf[10];
-        for (int i = 0; i < 10; ++i) {
+        for ( int i = 0; i < 10; ++i ) {
             int byte = _in.get();
-            if (byte < 0)
-                throw runtime_error("Unexpected EOF in log data");
+            if ( byte < 0 ) throw runtime_error("Unexpected EOF in log data");
             buf[i] = uint8_t(byte);
-            if (byte < 0x80) {
+            if ( byte < 0x80 ) {
                 uint64_t n = 0;
-                GetUVarInt(slice{&buf, size_t(i+1)}, &n);
+                GetUVarInt(slice{&buf, size_t(i + 1)}, &n);
                 return n;
             }
         }
         throw runtime_error("Invalid varint encoding in log data");
     }
 
-}
+}  // namespace litecore
