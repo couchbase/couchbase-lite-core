@@ -522,6 +522,7 @@
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
 		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
 		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
@@ -1659,6 +1660,8 @@
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSG30Test.cc; sourceTree = "<group>"; };
+		EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorSG30Test.hh; sourceTree = "<group>"; };
 		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
 		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SGTestUser.cc; sourceTree = "<group>"; };
 		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SG.cc; sourceTree = "<group>"; };
@@ -2450,6 +2453,8 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */,
+				EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */,
 				EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */,
 				EAA0126E29687CBD001B04E0 /* ReplParams.hh */,
 				EAA0126F29687CBD001B04E0 /* SG.hh */,
@@ -3999,6 +4004,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
+				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
 				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
 				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,

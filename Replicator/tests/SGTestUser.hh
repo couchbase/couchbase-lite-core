@@ -49,7 +49,9 @@ class SG::TestUser {
     TestUser(TestUser& other)
         : TestUser(*(other._sg), other._username, other._channels, other._collectionSpecs, other._password) {}
 
-    ~TestUser() { _sg->deleteUser(_username); }
+    ~TestUser() {
+        if ( _sg ) _sg->deleteUser(_username);
+    }
 
     TestUser& operator=(const TestUser& other);
 

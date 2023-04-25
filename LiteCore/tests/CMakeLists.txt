@@ -87,6 +87,7 @@ add_executable(
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
     ${TOP}Replicator/tests/ReplicatorCollectionTest.cc
     ${TOP}Replicator/tests/ReplicatorCollectionSGTest.cc
+    ${TOP}Replicator/tests/ReplicatorSG30Test.cc
     ${TOP}Replicator/tests/SG.cc
     ${TOP}Replicator/tests/SGTestUser.cc
     ${TOP}Replicator/tests/ReplParams.cc

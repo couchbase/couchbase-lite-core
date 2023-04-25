@@ -41,7 +41,7 @@ class SG {
     // Will return nullslice if your json was invalid
     static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string>& channelIDs);
     static alloc_slice addRevToJSON(slice json, const std::string& revID);
-    slice              getServerName() const;
+    alloc_slice        getServerName() const;
     // Flush should only be used with Walrus
     void flushDatabase() const;
     bool createUser(const std::string& username, const std::string& password) const;
@@ -49,6 +49,8 @@ class SG {
     // Assign given channels to the user with given username, in the given collections
     bool assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs,
                            const std::vector<std::string>& channelIDs) const;
+    // Assign given channels to the user with given username, using SG<3.1 "admin_channels" format
+    bool assignUserChannelOld(const std::string& username, const std::vector<std::string>& channelIDs) const;
 
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
                    const std::vector<std::string>& channelIDs = {}, C4Error* err = nullptr) const;
