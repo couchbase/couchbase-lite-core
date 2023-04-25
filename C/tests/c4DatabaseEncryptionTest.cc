@@ -10,13 +10,11 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
-#include "c4Private.h"
-#include "c4DocEnumerator.h"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4BlobStore.h"
 #include "FilePath.hh"
 #include <cmath>
-#include <errno.h>
+#include <cerrno>
 #include <iostream>
 
 using namespace std;
@@ -28,7 +26,7 @@ using FilePath = litecore::FilePath;
 
 class C4EncryptionTest : public C4Test {
   public:
-    C4EncryptionTest(int testOption) : C4Test(testOption) {}
+    explicit C4EncryptionTest(int testOption) : C4Test(testOption) {}
 
     void checkBadKey(const C4DatabaseConfig2& config) {
         assert(!db);
@@ -41,7 +39,7 @@ class C4EncryptionTest : public C4Test {
 };
 
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    bool (*c4key_setPasswordFunc)(C4EncryptionKey * encryptionKey, C4String password, C4EncryptionAlgorithm alg) =
+    bool (*c4key_setPasswordFunc)(C4EncryptionKey* encryptionKey, C4String password, C4EncryptionAlgorithm alg) =
             nullptr;
     string          expectedKey;
     C4EncryptionKey key{};

@@ -8,6 +8,7 @@
 #include "Base.hh"
 #include <iomanip>
 #include <string_view>
+#include <utility>
 
 namespace litecore {
 
@@ -28,7 +29,7 @@ namespace litecore {
     /// You should use the `sqlString()` and `sqlIdentifier()` functions instead of this directly.
     template <char QUOTE, char ESC>
     struct quotedSlice {
-        explicit quotedSlice(slice s) : _raw(s) {}
+        explicit quotedSlice(slice s) : _raw(std::move(s)) {}
 
         quotedSlice(const quotedSlice&) = delete;
         quotedSlice(quotedSlice&&)      = delete;

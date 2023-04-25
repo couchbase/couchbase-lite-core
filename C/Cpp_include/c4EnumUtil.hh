@@ -10,6 +10,9 @@
 // the file licenses/APL2.txt.
 //
 
+// Safe to disable this, these macros expand fine
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #pragma once
 #include <type_traits>
 
@@ -50,3 +53,5 @@
     C4UNUSED static inline std::underlying_type_t<E> operator-(E e1, E e2) {                                           \
         return std::underlying_type_t<E>(e1) - std::underlying_type_t<E>(e2);                                          \
     }
+
+// NOLINTEND(bugprone-macro-parentheses)

@@ -29,7 +29,8 @@
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
-#include "Path.hh"
+#include "Array.hh"
+#include "Dict.hh"
 #include <optional>
 
 #include <sqlite3.h>
@@ -73,10 +74,10 @@ namespace litecore {
         optional<Scope> _scope;                     // Fleece document
         bool            _scopeDataIsCopied{false};  // If true, _scope.data() is a malloc'ed block
         alloc_slice     _rootPath;                  // The path string within the data, if any
-        const Value*    _container;                 // The object being iterated (target of the path)
-        valueType       _containerType;             // The value type of _container
-        uint32_t        _rowid;                     // The current row number, starting at 0
-        uint32_t        _rowCount;                  // The number of rows
+        const Value*    _container{nullptr};        // The object being iterated (target of the path)
+        valueType       _containerType{0};          // The value type of _container
+        uint32_t        _rowid{0};                  // The current row number, starting at 0
+        uint32_t        _rowCount{0};               // The number of rows
 
 
 #pragma mark - STATIC METHODS (DIRECT CALLBACKS):
@@ -87,8 +88,8 @@ namespace litecore {
         static void operator delete(void* mem) noexcept { free(mem); }
 
         // Creates a new sqlite3_vtab that describes the virtual table.
-        static int connect(sqlite3* db, void* aux, int argc, const char* const* argv, sqlite3_vtab** outVtab,
-                           char** outErr) noexcept {
+        static int connect(sqlite3* db, void* aux, C4UNUSED int argc, C4UNUSED const char* const* argv,
+                           sqlite3_vtab** outVtab, C4UNUSED char** outErr) noexcept {
             /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
@@ -127,7 +128,7 @@ namespace litecore {
         // "SQLite will invoke this method one or more times while planning a query
         // that uses this virtual table.  This routine needs to create
         // a query plan for each invocation and compute an estimated cost for that plan."
-        static int bestIndex(sqlite3_vtab* vtab, sqlite3_index_info* info) noexcept {
+        static int bestIndex(C4UNUSED sqlite3_vtab* vtab, sqlite3_index_info* info) noexcept {
             /* "Arguments on the virtual table name are matched to hidden columns in order. The number
            of arguments can be less than the number of hidden columns, in which case the latter
            hidden columns are unconstrained." */
@@ -176,7 +177,7 @@ namespace litecore {
 
 #pragma mark - INSTANCE METHODS:
 
-        FleeceCursor(FleeceVTab* vtab) : _vtab(vtab) {}
+        explicit FleeceCursor(FleeceVTab* vtab) : sqlite3_vtab_cursor{vtab}, _vtab(vtab) {}
 
         void resetScope() noexcept {
             if ( _scope ) {
@@ -201,7 +202,7 @@ namespace litecore {
         // This method is called to "rewind" the FleeceCursor object back
         // to the first row of output.  This method is always called at least
         // once prior to any call to column() or rowid() or eof().
-        int filter(int idxNum, const char* idxStr, int argc, sqlite3_value** argv) noexcept {
+        int filter(int idxNum, C4UNUSED const char* idxStr, C4UNUSED int argc, sqlite3_value** argv) noexcept {
             reset();
             if ( idxNum == kNoIndex ) return SQLITE_OK;
 
@@ -255,7 +256,7 @@ namespace litecore {
         }
 
         // Return true if the cursor has been moved off of the last row of output;
-        bool _atEOF() noexcept { return (_rowid >= _rowCount); }
+        [[nodiscard]] bool _atEOF() const noexcept { return (_rowid >= _rowCount); }
 
         int atEOF() noexcept {
             if ( !_atEOF() ) return false;
@@ -303,7 +304,7 @@ namespace litecore {
             return SQLITE_OK;
         }
 
-        const slice currentKey() noexcept {
+        slice currentKey() noexcept {
             const Dict* dict = _container->asDict();
             if ( !dict ) return nullslice;
             Dict::iterator iter(dict);
@@ -327,7 +328,7 @@ namespace litecore {
         }
 
         // Return the rowid for the current row.
-        int rowid(int64_t* outRowid) noexcept {
+        int rowid(int64_t* outRowid) const noexcept {
             *outRowid = _rowid;
             return SQLITE_OK;
         }
@@ -363,11 +364,11 @@ namespace litecore {
         // Module definition of 'fl_each' function
         constexpr static sqlite3_module kEachModule = {
                 0,            /* iVersion */
-                0,            /* xCreate */
+                nullptr,      /* xCreate */
                 connect,      /* xConnect */
                 bestIndex,    /* xBestIndex */
                 disconnect,   /* xDisconnect */
-                0,            /* xDestroy */
+                nullptr,      /* xDestroy */
                 open,         /* xOpen - open a cursor */
                 close,        /* xClose - close a cursor */
                 cursorFilter, /* xFilter - configure scan constraints */
@@ -375,18 +376,16 @@ namespace litecore {
                 cursorEof,    /* xEof - check for end of scan */
                 cursorColumn, /* xColumn - read data */
                 cursorRowid,  /* xRowid - read data */
-                0,            /* xUpdate */
-                0,            /* xBegin */
-                0,            /* xSync */
-                0,            /* xCommit */
-                0,            /* xRollback */
-                0,            /* xFindMethod */
-                0,            /* xRename */
+                nullptr,      /* xUpdate */
+                nullptr,      /* xBegin */
+                nullptr,      /* xSync */
+                nullptr,      /* xCommit */
+                nullptr,      /* xRollback */
+                nullptr,      /* xFindMethod */
+                nullptr,      /* xRename */
         };
 
     };  // end class definition
-
-    constexpr sqlite3_module FleeceCursor::kEachModule;
 
     int RegisterFleeceEachFunctions(sqlite3* db, const fleeceFuncContext& context) {
         return sqlite3_create_module_v2(db, "fl_each", &FleeceCursor::kEachModule, new fleeceFuncContext(context),

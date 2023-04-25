@@ -815,9 +815,9 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Verify Encryption Unsupported", "[D
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     REQUIRE(!factory().encryptionEnabled(kAES256));
 
-    DataFile::Options options = db->options();
+    DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
-    options.encryptionKey = "1234567890123456"_sl;
+    options.encryptionKey       = "1234567890123456"_sl;
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&] { reopenDatabase(&options); });
 }
 

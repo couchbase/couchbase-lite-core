@@ -18,6 +18,7 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "Encoder.hh"
 #include <SQLiteCpp/Exception.h>
 #include <sqlite3.h>
 #include <cmath>
@@ -114,6 +115,9 @@ namespace litecore {
         }
     }
 
+    // Clang-Tidy warns that _copied is not initialized by this constructor, we can ignore this because it is
+    // initialized by passing it to 'valueAsDocBody()'
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
     QueryFleeceScope::QueryFleeceScope(sqlite3_context* ctx, sqlite3_value** argv)
         : Scope(valueAsDocBody(argv[0], _copied), ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys) {
         if ( _usuallyTrue(data().buf != nullptr) ) {
@@ -127,6 +131,8 @@ namespace litecore {
         }
         if ( _usuallyTrue(sqlite3_value_type(argv[1]) != SQLITE_NULL) ) root = evaluatePathFromArg(ctx, argv, 1, root);
     }
+
+    // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
     QueryFleeceScope::~QueryFleeceScope() {
         if ( _usuallyFalse(_copied) ) {
@@ -150,7 +156,9 @@ namespace litecore {
                 case kNumber:
                     if ( val->isInteger() )
                         if ( val->isUnsigned() ) {
-                            sqlite3_result_int64(ctx, val->asUnsigned());
+                            // val->asUnsigned() does cause some overflow error with narrow_cast, so we can't use it
+                            sqlite3_result_int64(ctx,
+                                                 val->asUnsigned());  // NOLINT(cppcoreguidelines-narrowing-conversions)
                             sqlite3_result_subtype(ctx, kFleeceIntUnsigned);
                         } else {
                             sqlite3_result_int64(ctx, val->asInt());

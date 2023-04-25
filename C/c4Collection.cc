@@ -25,7 +25,7 @@ using namespace litecore;
 C4Collection::C4Collection(C4Database* db, C4CollectionSpec spec)
     : _database(db), _scope(spec.scope), _name(spec.name) {}
 
-void C4Collection::failClosed() const {
+void C4Collection::failClosed() const {  // NOLINT(readability-convert-member-functions-to-static)
     C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed");
 }
 

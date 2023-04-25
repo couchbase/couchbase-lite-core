@@ -29,7 +29,9 @@ namespace cbl {
     /** An abstract adapter class for LiteCore predictive model implementations. */
     class PredictiveModel {
       public:
-        PredictiveModel() = default;
+        PredictiveModel()                                  = default;
+        PredictiveModel(PredictiveModel&)                  = delete;
+        PredictiveModel& operator=(const PredictiveModel&) = delete;
 
         virtual ~PredictiveModel() { unregister(); }
 
@@ -47,9 +49,6 @@ namespace cbl {
         static bool __printflike(2, 3) reportError(C4Error* outError, const char* format, ...);
 
       private:
-        PredictiveModel(PredictiveModel&)                  = delete;
-        PredictiveModel& operator=(const PredictiveModel&) = delete;
-
         std::string _name;
     };
 
@@ -57,10 +56,10 @@ namespace cbl {
         (Only available on Apple platforms, obviously.) */
     class API_AVAILABLE(macos(10.13), ios(11)) CoreMLPredictiveModel : public PredictiveModel {
       public:
-        CoreMLPredictiveModel(MLModel* model);
+        explicit CoreMLPredictiveModel(MLModel* model);
 
       protected:
-        virtual bool predict(fleece::Dict input, C4Database*, fleece::Encoder&, C4Error* error) override;
+        bool predict(fleece::Dict input, C4Database*, fleece::Encoder&, C4Error* error) override;
 
       private:
         bool            predictViaCoreML(fleece::Dict input, fleece::Encoder&, C4Error* error);

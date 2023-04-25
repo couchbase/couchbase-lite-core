@@ -10,4 +10,4 @@
 
 #pragma once
 
-char* mkdtemp(char *tmpl);
+char* mkdtemp(char* tmpl);

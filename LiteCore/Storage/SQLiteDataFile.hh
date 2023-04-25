@@ -164,13 +164,13 @@ namespace litecore {
         bool _decrypt(EncryptionAlgorithm, slice key);
         int  _exec(const std::string& sql);
 
-        bool                         indexTableExists();
+        bool                         indexTableExists() const;
         void                         ensureIndexTableExists();
         void                         registerIndex(const litecore::IndexSpec&, const std::string& keyStoreName,
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
         void                         garbageCollectIndexTable(const std::string& tableName);
-        SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt);
+        static SQLiteIndexSpec       specFromStatement(SQLite::Statement& stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr);
 
         unique_ptr<SQLite::Database>          _sqlDb;  // SQLite database object

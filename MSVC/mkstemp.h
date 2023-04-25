@@ -10,4 +10,4 @@
 
 #pragma once
 
-int mkstemp(char *tmpl);
+int mkstemp(char* tmpl);

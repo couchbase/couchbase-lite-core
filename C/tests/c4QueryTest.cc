@@ -11,7 +11,6 @@
 //
 
 #include "c4QueryTest.hh"
-#include "c4BlobStore.h"
 #include "c4Collection.h"
 #include "c4Observer.h"
 #include "StringUtil.hh"
@@ -48,7 +47,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Basic", "[Query][C]") {
 
     // ...whereas null is a JSON null value
     compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
-    CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{}));
+    CHECK(run("{\"offset\":0,\"limit\":4}").empty());
 
     // Check OFFSET and LIMIT individually:
     compileSelect(json5("{LIMIT:10}"));
@@ -89,7 +88,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query LIKE", "[Query][C]") {
         addPersonInState("coder", "CA", "Bart_Simpson");
         compile(json5("['LIKE', ['.name.first'], 'Bart\\\\%%']"));
         CHECK(run() == (vector<string>{"weird"}));
-        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\\\\\%']"));
+        compile(json5(R"(['LIKE', ['.name.first'], 'Bart\\\\%'])"));
         CHECK(run() == (vector<string>{"weirder"}));
         compile(json5("['LIKE', ['.name.first'], 'Bart\\\\_Simpson']"));
         CHECK(run() == (vector<string>{"coder"}));
@@ -193,7 +192,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query binding types", "[Query][C]") {
             "['_.', {foo: ['$param']}, 'foo']",
             "['_.', ['[]', 1, ['$param'], 3], '[1]']",
     };
-    for ( string what : queries ) {
+    for ( const string& what : queries ) {
         C4Log("---- %s ----", what.c_str());
         compileSelect(json5("{WHAT: [" + what + "], LIMIT: 1}"));
         CHECK(run("{\"param\": 177}") == (vector<string>{"177"}));
@@ -229,7 +228,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY", "[Query][C]") {
 
     // Changing the op to ANY AND EVERY returns no results
     compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
-    CHECK(run() == (vector<string>{}));
+    CHECK(run().empty());
 
     // Look for people where everything they like contains an L:
     compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
@@ -864,7 +863,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     C4Error error;
 
     struct State {
-        C4Query*                 query;
+        C4Query*                 query = nullptr;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
@@ -947,7 +946,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parame
     C4Error error;
 
     struct State {
-        C4Query*                 query;
+        C4Query*                 query = nullptr;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
@@ -1122,14 +1121,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
     // then that name should access the new collection, not the default one:
     c4db_createCollection(db, {slice(dbName), kC4DefaultScopeID}, ERROR_INFO());
     compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + dbName + "'}]}"));
-    CHECK(run().size() == 0);
+    CHECK(run().empty());
 }
 
 class CollectionTest : public C4QueryTest {
   public:
     CollectionTest() : C4QueryTest(0, "") {}
 
-    void populate(C4CollectionSpec spec, std::string filename) {
+    void populate(C4CollectionSpec spec, const std::string& filename) {
         C4Collection* coll = c4db_createCollection(db, spec, ERROR_INFO());
         REQUIRE(coll);
         importJSONLines(sFixturesDir + filename, coll);
@@ -1185,7 +1184,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C]
 
     compile(json5("['AND', ['MATCH()', 'names.byStreet', 'Hwy'],\
                            ['MATCH()', 'wiki.byText',    'fictional']]"),
-            "", false, "[[\".names._id\"], [\".wiki._id\"]]",
+            "", false, R"([[".names._id"], [".wiki._id"]])",
             json5("[{COLLECTION: 'names', SCOPE: 'namedscope'},{COLLECTION:'wiki',\
                           ON: ['!=', ['.names.birthday'], ['.wiki.title']]}]"));
 
@@ -1200,7 +1199,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
     C4Error error;
 
     struct State {
-        C4Query*                 query;
+        C4Query*                 query = nullptr;
         c4::ref<C4QueryObserver> obs;
         atomic<int>              count = 0;
     };
@@ -1288,7 +1287,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
 
 class BigDBQueryTest : public C4QueryTest {
   public:
-    BigDBQueryTest(int which) : C4QueryTest(which, "iTunesMusicLibrary.json") {}
+    explicit BigDBQueryTest(int which) : C4QueryTest(which, "iTunesMusicLibrary.json") {}
 };
 
 N_WAY_TEST_CASE_METHOD(BigDBQueryTest, "C4Database Optimize", "[Database][C]") {
@@ -1305,7 +1304,7 @@ N_WAY_TEST_CASE_METHOD(BigDBQueryTest, "C4Database Optimize", "[Database][C]") {
 
 class CollatedQueryTest : public BigDBQueryTest {
   public:
-    CollatedQueryTest(int which) : BigDBQueryTest(which) {}
+    explicit CollatedQueryTest(int which) : BigDBQueryTest(which) {}
 
     vector<string> run() {
         C4Error                    error;

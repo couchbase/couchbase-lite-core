@@ -10,10 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Database.hh"
 #include "c4Certificate.hh"
-#include "c4ReplicatorTypes.h"
-#include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
@@ -32,7 +29,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
-#include "mbedtls/pk.h"
+#include "mbedtls/pk.h"  // IWYU pragma: keep
 #pragma clang diagnostic pop
 
 using namespace std;
@@ -147,7 +144,7 @@ Retained<C4Cert> C4Cert::getNextInChain() {
 // Certificate signing requests:
 
 
-Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComponents, C4CertUsage certUsages,
+Retained<C4Cert> C4Cert::createRequest(const std::vector<C4CertNameComponent>& nameComponents, C4CertUsage certUsages,
                                        C4KeyPair* subjectKey) {
     vector<DistinguishedName::Entry> name;
     SubjectAltNames                  altNames;
@@ -158,7 +155,7 @@ Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComp
             name.push_back({attributeID, component.value});
     }
     Cert::SubjectParameters params(name);
-    params.subjectAltNames = move(altNames);
+    params.subjectAltNames = std::move(altNames);
     params.nsCertType      = NSCertType(certUsages);
     return new C4Cert(new CertSigningRequest(params, subjectKey->getPrivateKey()));
 }
@@ -173,6 +170,7 @@ Retained<C4Cert> C4Cert::requestFromData(slice certRequestData) {
 
 bool C4Cert::isSigned() { return _impl->isSigned(); }
 
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 void C4Cert::sendSigningRequest(const C4Address& address, slice optionsDictFleece, const SigningCallback& callback) {
 #    ifdef ENABLE_SENDING_CERT_REQUESTS
     auto internalCallback = [=](crypto::Cert* cert, C4Error error) {
@@ -186,6 +184,8 @@ void C4Cert::sendSigningRequest(const C4Address& address, slice optionsDictFleec
     C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "Sending CSRs is disabled");
 #    endif
 }
+
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 Retained<C4Cert> C4Cert::signRequest(const C4CertIssuerParameters& c4Params, C4KeyPair* issuerPrivateKey,
                                      C4Cert* C4NULLABLE issuerC4Cert) {
@@ -345,11 +345,11 @@ namespace litecore {
             : ExternalPrivateKey(unsigned(keySizeInBits)), _externalKey(externalKey), _callbacks(callbacks) {}
 
       protected:
-        virtual ~ExternalKeyPair() override {
+        ~ExternalKeyPair() override {
             if ( _callbacks.free ) _callbacks.free(_externalKey);
         }
 
-        virtual fleece::alloc_slice publicKeyDERData() override {
+        fleece::alloc_slice publicKeyDERData() override {
             alloc_slice data(_keyLength + 40);  // DER data is ~38 bytes longer than keyLength
             size_t      len = data.size;
             if ( !_callbacks.publicKeyData(_externalKey, (void*)data.buf, data.size, &len) ) {
@@ -361,14 +361,13 @@ namespace litecore {
             return data;
         }
 
-        virtual fleece::alloc_slice publicKeyRawData() override {
+        fleece::alloc_slice publicKeyRawData() override {
             alloc_slice         data(publicKeyDERData());
             Retained<PublicKey> publicKey = new PublicKey(data);
             return publicKey->data(KeyFormat::Raw);
         }
 
-        virtual int _decrypt(const void* input, void* output, size_t output_max_len,
-                             size_t* output_len) noexcept override {
+        int _decrypt(const void* input, void* output, size_t output_max_len, size_t* output_len) noexcept override {
             if ( !_callbacks.decrypt(_externalKey, C4Slice{input, _keyLength}, output, output_max_len, output_len) ) {
                 WarnError("C4ExternalKey decrypt callback failed!");
                 return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
@@ -376,8 +375,8 @@ namespace litecore {
             return 0;
         }
 
-        virtual int _sign(int /*mbedtls_md_type_t*/ digestAlgorithm, fleece::slice inputData,
-                          void* outSignature) noexcept override {
+        int _sign(int /*mbedtls_md_type_t*/ digestAlgorithm, fleece::slice inputData,
+                  void* outSignature) noexcept override {
             if ( !_callbacks.sign(_externalKey, C4SignatureDigestAlgorithm(digestAlgorithm), inputData,
                                   outSignature) ) {
                 WarnError("C4ExternalKey sign callback failed!");

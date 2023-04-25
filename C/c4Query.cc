@@ -12,19 +12,13 @@
 
 #include "c4Query.hh"
 #include "c4Database.hh"
-#include "c4Index.h"
-#include "c4Observer.h"
-#include "c4Private.h"
 
-#include "c4ExceptionUtils.hh"
 #include "CollectionImpl.hh"
 #include "c4QueryImpl.hh"
 #include "c4Internal.hh"
 
 #include "DatabaseImpl.hh"
 #include "LiveQuerier.hh"
-#include "SQLiteDataFile.hh"
-#include "FleeceImpl.hh"
 
 
 using namespace std;
@@ -79,12 +73,12 @@ void C4Query::setParameters(slice parameters) {
     LOCK(_mutex);
     _parameters = parameters;
 
-    if ( _bgQuerier ) { _bgQuerier->changeOptions(_parameters); }
+    if ( _bgQuerier ) { _bgQuerier->changeOptions(Query::Options(_parameters)); }
 }
 
 #pragma mark - ENUMERATOR:
 
-Retained<QueryEnumerator> C4Query::_createEnumerator(const C4QueryOptions* c4options, slice encodedParameters) {
+Retained<QueryEnumerator> C4Query::_createEnumerator(slice encodedParameters) {
     Query::Options options(encodedParameters ? encodedParameters : parameters());
     return _query->createEnumerator(&options);
 }
@@ -93,21 +87,20 @@ Retained<C4QueryEnumeratorImpl> C4Query::wrapEnumerator(QueryEnumerator* e) {
     return e ? new C4QueryEnumeratorImpl(_database, _query, e) : nullptr;
 }
 
-C4Query::Enumerator C4Query::run(const C4QueryOptions* C4NULLABLE opt, slice params) {
-    return Enumerator(this, opt, params);
-}
+C4Query::Enumerator C4Query::run(slice params) { return Enumerator(this, params); }
 
-C4QueryEnumerator* C4Query::createEnumerator(const C4QueryOptions* c4options, slice encodedParameters) {
-    auto e = _createEnumerator(c4options, encodedParameters);
+C4QueryEnumerator* C4Query::createEnumerator(slice encodedParameters) {
+    auto e = _createEnumerator(encodedParameters);
     return wrapEnumerator(e).detach();
 }
 
-C4Query::Enumerator::Enumerator(C4Query* query, const C4QueryOptions* c4options, slice encodedParameters)
-    : _enum(query->_createEnumerator(c4options, encodedParameters)), _query(query->_query) {}
+C4Query::Enumerator::Enumerator(C4Query* query, slice encodedParameters)
+    : _enum(query->_createEnumerator(encodedParameters)), _query(query->_query) {}
 
 C4Query::Enumerator::Enumerator(Retained<litecore::QueryEnumerator> e) : _enum(std::move(e)) {}
 
-C4Query::Enumerator::Enumerator(Enumerator&& c4e) : _enum(std::move(c4e._enum)), _query(std::move(c4e._query)) {}
+C4Query::Enumerator::Enumerator(Enumerator&& c4e) noexcept
+    : _enum(std::move(c4e._enum)), _query(std::move(c4e._query)) {}
 
 C4Query::Enumerator::~Enumerator() = default;
 
@@ -154,7 +147,7 @@ C4FullTextMatch C4Query::Enumerator::fullTextMatch(unsigned i) const {
 
 class C4Query::LiveQuerierDelegate : public LiveQuerier::Delegate {
   public:
-    LiveQuerierDelegate(C4Query* query) : _query(query) {}
+    explicit LiveQuerierDelegate(C4Query* query) : _query(query) {}
 
     // called on a background thread!
     void liveQuerierUpdated(QueryEnumerator* qe, C4Error err) override { _query->liveQuerierUpdated(qe, err); }
@@ -176,7 +169,7 @@ class C4Query::LiveQuerierDelegate : public LiveQuerier::Delegate {
     Retained<C4Query> _query;
 };
 
-std::unique_ptr<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
+std::unique_ptr<C4QueryObserver> C4Query::observe(const std::function<void(C4QueryObserver*)>& callback) {
     return make_unique<C4QueryObserverImpl>(this, callback);
 }
 
@@ -187,7 +180,7 @@ void C4Query::enableObserver(C4QueryObserverImpl* obs, bool enable) {
         if ( !_bgQuerier ) {
             _bgQuerierDelegate = make_unique<LiveQuerierDelegate>(this);
             _bgQuerier         = new LiveQuerier(_database, _query, true, _bgQuerierDelegate.get());
-            _bgQuerier->start(_parameters);
+            _bgQuerier->start(Query::Options(_parameters));
         } else {
             // CBL-2459: For the second+ observers, get the current query result and notify if
             // the result is available. The current result will be reported via the callback
@@ -213,7 +206,7 @@ void C4Query::enableObserver(C4QueryObserverImpl* obs, bool enable) {
                         observers = _pendingObservers;
                     _pendingObservers.clear();
                 }
-                if ( observers.size() > 0 ) this->notifyObservers(observers, qe, err);
+                if ( !observers.empty() ) this->notifyObservers(observers, qe, err);
             });
         }
     } else {

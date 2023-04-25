@@ -17,8 +17,11 @@
 #include "c4Base.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include <array>
 #include <functional>
+#include <iomanip>
 #include <memory>
+#include <sstream>
 #include <utility>
 
 #ifdef DEBUG
@@ -39,6 +42,39 @@ using namespace fleece;
 
 std::string stringWithFormat(const char* format, ...) __printflike(1, 2);
 
+/**
+ * Generate a string of the given number of random decimal digits.
+ * (Not technically random, based on time).
+ * @tparam numDigits The number of random digits to generate (must be even and <= 64).
+ * @return A generated string of random digits.
+ */
+template <size_t numDigits>
+static std::string randomDigitString() {
+    static_assert(1 < numDigits <= 64);
+    static_assert(numDigits % 2 == 0);
+    auto appendEightDigits = [](std::stringstream& sstr) {
+        auto now     = std::chrono::high_resolution_clock::now();
+        auto epoch   = now.time_since_epoch();
+        auto seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
+        sstr << std::setfill('0') << std::setw(8) << (seconds % 100000000);
+    };
+    std::stringstream sstr;
+    for ( int i = 0; i < numDigits; i += 8 ) { appendEightDigits(sstr); }
+    return sstr.str();
+}
+
+/**
+ * Generate an array of random digit strings.
+ * @tparam count The number of strings to generate.
+ * @tparam numDigits The number of decimal digits per string.
+ * @return An array of generated strings of random digits.
+ */
+template <size_t count, size_t numDigits>
+static std::array<std::string, count> randomDigitStrings() {
+    std::array<std::string, count> arr;
+    for ( size_t i = 0; i < count; i++ ) { arr[i] = randomDigitString<numDigits>(); }
+    return arr;
+}
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.
 void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);

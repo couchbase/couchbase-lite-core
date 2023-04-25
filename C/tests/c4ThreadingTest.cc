@@ -10,9 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Observer.h"
-#include "c4DocEnumerator.h"
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -43,7 +42,7 @@ class C4ThreadingTest : public C4Test {
     bool               _changesToObserve{false};
     C4LogLevel         _oldDbLogLevel;
 
-    C4ThreadingTest(int testOption) : C4Test(testOption) {
+    explicit C4ThreadingTest(int testOption) : C4Test(testOption) {
         // Suppress the zillions of "begin transaction", "commit transaction" logs from this test:
         auto dbDomain  = c4log_getDomain("DB", false);
         _oldDbLogLevel = c4log_getLevel(dbDomain);
@@ -61,7 +60,7 @@ class C4ThreadingTest : public C4Test {
         return database;
     }
 
-    void closeDB(C4Database* database) {
+    static void closeDB(C4Database* database) {
         c4db_close(database, nullptr);
         c4db_release(database);
     }
@@ -121,7 +120,7 @@ class C4ThreadingTest : public C4Test {
         ((C4ThreadingTest*)context)->observe(observer);
     }
 
-    void observe(C4DatabaseObserver* observer) {
+    void observe(C4UNUSED C4DatabaseObserver* observer) {
         fprintf(stderr, "!");
         {
             std::lock_guard<std::mutex> lock(_observerMutex);

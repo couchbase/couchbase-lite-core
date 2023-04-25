@@ -92,8 +92,6 @@ namespace litecore { namespace REST {
 
         Retained<C4Database> getDatabase(RequestResponse& rq, const string& dbName);
 
-        /** Returns the database for this request, or null on error. */
-        Retained<C4Database> databaseFor(RequestResponse&);
         /** Returns the collection for this request, or null on error */
         std::pair<Retained<C4Database>, C4Collection*> collectionFor(RequestResponse&);
         unsigned                                       registerTask(Task*);

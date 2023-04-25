@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4QueryTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -57,27 +58,26 @@ struct C4Query final
     /// C++ query enumerator; equivalent to C4QueryEnumerator but more C++-friendly.
     class Enumerator {
       public:
-        bool    next();
-        int64_t rowCount() const;
-        void    seek(int64_t rowIndex);
+        bool                  next();
+        [[nodiscard]] int64_t rowCount() const;
+        void                  seek(int64_t rowIndex);
 
-        FLArrayIterator columns() const;
-        FLValue         column(unsigned i) const;
+        [[nodiscard]] FLArrayIterator columns() const;
+        [[nodiscard]] FLValue         column(unsigned i) const;
 
-        unsigned        fullTextMatchCount() const;
-        C4FullTextMatch fullTextMatch(unsigned i) const;
+        [[nodiscard]] unsigned        fullTextMatchCount() const;
+        [[nodiscard]] C4FullTextMatch fullTextMatch(unsigned i) const;
 
         bool restart();
         void close() noexcept;
 
-        Enumerator(Enumerator&&);
+        Enumerator(Enumerator&&) noexcept;
         ~Enumerator();
 
       private:
         friend struct C4Query;
         friend class litecore::C4QueryObserverImpl;
-        explicit Enumerator(C4Query*, const C4QueryOptions* C4NULLABLE = nullptr,
-                            slice encodedParameters = fleece::nullslice);
+        explicit Enumerator(C4Query*, slice encodedParameters = fleece::nullslice);
         explicit Enumerator(Retained<litecore::QueryEnumerator> e);
 
         Retained<litecore::QueryEnumerator> _enum;
@@ -89,28 +89,28 @@ struct C4Query final
     /// auto e = query.run();
     /// while (e.next()) { ... }
     /// ```
-    Enumerator run(const C4QueryOptions* C4NULLABLE opt = nullptr, slice params = fleece::nullslice);
+    Enumerator run(slice params = fleece::nullslice);
 
     /// Creates a C-style enumerator. Prefer \ref run to this.
-    C4QueryEnumerator* createEnumerator(const C4QueryOptions* C4NULLABLE, slice params = fleece::nullslice);
+    C4QueryEnumerator* createEnumerator(slice params = fleece::nullslice);
 
     // Observer:
 
     using ObserverCallback = std::function<void(C4QueryObserver*)>;
 
-    std::unique_ptr<C4QueryObserver> observe(ObserverCallback);
+    std::unique_ptr<C4QueryObserver> observe(const ObserverCallback&);
 
   protected:
     friend class litecore::C4QueryObserverImpl;
 
     C4Query(C4Collection*, C4QueryLanguage language, slice queryExpression);
-    ~C4Query();
+    ~C4Query() override;
     void enableObserver(litecore::C4QueryObserverImpl* obs, bool enable);
 
   private:
     class LiveQuerierDelegate;
 
-    Retained<litecore::QueryEnumerator>       _createEnumerator(const C4QueryOptions* C4NULLABLE, slice params);
+    Retained<litecore::QueryEnumerator>       _createEnumerator(slice params);
     Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator* C4NULLABLE);
     void                                      liveQuerierUpdated(litecore::QueryEnumerator* C4NULLABLE, C4Error err);
     void                                      liveQuerierStopped();
@@ -134,22 +134,22 @@ struct C4QueryObserver
     : public fleece::InstanceCounted
     , C4Base {
   public:
-    virtual ~C4QueryObserver() = default;
+    ~C4QueryObserver() override = default;
 
-    C4Query* query() const { return _query; }
+    [[nodiscard]] C4Query* query() const { return _query; }
 
     virtual void setEnabled(bool enabled) = 0;
 
     /// If the latest run of the query failed, the error will be stored here, with nonzero `code`.
     /// Always check the error before getting the enumerator.
-    C4Error getError() const { return _currentError; }
+    [[nodiscard]] C4Error getError() const { return _currentError; }
 
     /// Returns a new enumerator on the query results.
     /// If the query failed, throws that error as an exception.
     virtual C4Query::Enumerator getEnumerator(bool forget = true) = 0;
 
   protected:
-    C4QueryObserver(C4Query* query) : _query(query) {}
+    explicit C4QueryObserver(C4Query* query) : _query(query) {}
 
     Retained<C4Query> _query;
     C4Error           _currentError{};

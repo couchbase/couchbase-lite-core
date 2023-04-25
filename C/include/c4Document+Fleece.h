@@ -13,7 +13,6 @@
 #pragma once
 
 #include "c4Document.h"
-#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS

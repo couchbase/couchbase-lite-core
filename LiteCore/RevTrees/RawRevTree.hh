@@ -34,10 +34,12 @@ namespace litecore {
         /// from v3.x where it's Fleece (and the rev-tree is in 'extra'.)
         static bool isRevTree(slice raw_tree);
 
-        static std::deque<Rev> decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap, RevTree* owner NONNULL,
+        static std::deque<Rev> decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap,
+                                          std::vector<const Rev*>& rejectedRevs, RevTree* owner NONNULL,
                                           sequence_t curSeq);
 
-        static alloc_slice encodeTree(const std::vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap);
+        static alloc_slice encodeTree(const std::vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap,
+                                      const std::vector<const Rev*>& rejectedRevs);
 
         static inline slice getCurrentRevBody(slice raw_tree) noexcept {
             auto rawRev = (const RawRevision*)raw_tree.buf;

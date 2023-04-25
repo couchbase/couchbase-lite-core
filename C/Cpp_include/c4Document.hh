@@ -14,8 +14,7 @@
 #include "c4Base.hh"
 #include "c4DocumentTypes.h"
 #include "c4DocumentStruct.h"
-#include "fleece/function_ref.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 #if !LITECORE_CPP_API
 #    error "c4DocumentTypes.h was included before Base.hh"
@@ -102,6 +101,8 @@ struct C4Document
 
     virtual alloc_slice remoteAncestorRevID(C4RemoteID)                 = 0;
     virtual void        setRemoteAncestorRevID(C4RemoteID, slice revID) = 0;
+    virtual bool        isRevRejected()                                 = 0;
+    virtual void        revIsRejected(slice revID)                      = 0;
 
     // Purging:
 
@@ -111,6 +112,7 @@ struct C4Document
 
     // Conflicts:
 
+    // pruneLosingBranch is not exposed to the API, so it will probably always be true
     void resolveConflict(slice winningRevID, slice losingRevID, FLDict C4NULLABLE mergedProperties,
                          C4RevisionFlags mergedFlags, bool pruneLosingBranch = true);
 
@@ -128,7 +130,6 @@ struct C4Document
 
     /** Saves changes to the document. Returns false on conflict. */
     virtual bool save(unsigned maxRevTreeDepth = 0) = 0;
-
 
     // Static utility functions:
 
@@ -180,7 +181,7 @@ struct C4Document
 
     C4Document(C4Collection*, alloc_slice docID_);
     C4Document(const C4Document&);
-    virtual ~C4Document();
+    ~C4Document() override;
 
     litecore::KeyStore& keyStore() const;
 

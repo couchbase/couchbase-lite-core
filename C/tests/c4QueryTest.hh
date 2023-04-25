@@ -17,7 +17,6 @@
 #include "c4Test.hh"
 #include "c4Query.h"
 #include "c4Index.h"
-#include "c4CppUtils.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include <functional>
@@ -28,11 +27,11 @@ using namespace fleece;
 
 class C4QueryTest : public C4Test {
   public:
-    C4QueryTest(int which, std::string filename) : C4Test(which) {
+    C4QueryTest(int which, const std::string& filename) : C4Test(which) {
         if ( !filename.empty() ) importJSONLines(sFixturesDir + filename);
     }
 
-    C4QueryTest(int which) : C4QueryTest(which, "names_100.json") {}
+    explicit C4QueryTest(int which) : C4QueryTest(which, "names_100.json") {}
 
     ~C4QueryTest() { c4query_release(query); }
 
@@ -47,11 +46,11 @@ class C4QueryTest : public C4Test {
     void compile(const std::string& whereExpr, const std::string& sortExpr = "", bool addOffsetLimit = false,
                  const std::string& whatExpr = "", const std::string& fromExpr = "") {
         std::stringstream json;
-        json << "[\"SELECT\", {\"WHAT\": ";
+        json << R"(["SELECT", {"WHAT": )";
         json << (whatExpr.empty() ? "[[\"._id\"]]" : whatExpr) << ", \"WHERE\": " << whereExpr;
         if ( !fromExpr.empty() ) { json << ", \"FROM\": " << fromExpr; }
         if ( !sortExpr.empty() ) json << ", \"ORDER_BY\": " << sortExpr;
-        if ( addOffsetLimit ) json << ", \"OFFSET\": [\"$offset\"], \"LIMIT\":  [\"$limit\"]";
+        if ( addOffsetLimit ) json << R"(, "OFFSET": ["$offset"], "LIMIT":  ["$limit"])";
         json << "}]";
         compileSelect(json.str());
     }
@@ -112,7 +111,7 @@ class C4QueryTest : public C4Test {
     void checkColumnTitles(const std::vector<std::string>& expectedTitles) {
         size_t                   n = c4query_columnCount(query);
         std::vector<std::string> titles;
-        for ( unsigned i = 0; i < n; ++i ) titles.push_back(std::string(slice(c4query_columnTitle(query, i))));
+        for ( unsigned i = 0; i < n; ++i ) titles.emplace_back(slice(c4query_columnTitle(query, i)));
         CHECK(titles == expectedTitles);
     }
 
@@ -164,10 +163,10 @@ class C4QueryTest : public C4Test {
 
 class PathsQueryTest : public C4QueryTest {
   public:
-    PathsQueryTest(int which) : C4QueryTest(which, "paths.json") {}
+    explicit PathsQueryTest(int which) : C4QueryTest(which, "paths.json") {}
 };
 
 class NestedQueryTest : public C4QueryTest {
   public:
-    NestedQueryTest(int which) : C4QueryTest(which, "nested.json") {}
+    explicit NestedQueryTest(int which) : C4QueryTest(which, "nested.json") {}
 };

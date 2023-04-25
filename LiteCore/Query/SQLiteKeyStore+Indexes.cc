@@ -13,12 +13,9 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "SQLite_Internal.hh"
-#include "Query.hh"
 #include "QueryParser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
 #include "Stopwatch.hh"
 #include "Array.hh"
 
@@ -134,7 +131,7 @@ namespace litecore {
 
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
-        for ( auto& spec : db().getIndexes(this) ) result.push_back(move(spec));
+        for ( auto& spec : db().getIndexes(this) ) result.push_back(std::move(spec));
         return result;
     }
 

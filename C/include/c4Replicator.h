@@ -75,12 +75,6 @@ CBL_CORE_API C4Replicator* c4repl_newLocal(C4Database* db, C4Database* otherLoca
 CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSocket, C4ReplicatorParameters params,
                                                 C4Error* C4NULLABLE outError) C4API;
 
-/** Frees a replicator reference.
-        Does not stop the replicator -- if the replicator still has other internal references,
-        it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
-        \note This function is thread-safe. */
-CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;
-
 /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
         @param repl  The C4Replicator instance.

@@ -17,8 +17,9 @@
 
 %{
 #include "n1ql_parser_internal.hh"
+#include "n1ql_parser.hh"
 
-namespace litecore { namespace n1ql {
+namespace litecore::n1ql {
 %}
 
 
@@ -293,7 +294,7 @@ collation =
   l:collationLang _                    { $$ = l; }
   | <("NO"i? ("CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
-_baseExpr =
+baseExpr_ =
     literal
   | arrayLiteral
   | dictLiteral
@@ -305,7 +306,7 @@ _baseExpr =
   | function
   | property
   | '(' _ expression _ ')'
-baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
+baseExpr = baseExpr_ _                  # baseExpr to absorb all trailing white space
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
@@ -489,7 +490,7 @@ static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
 }
 
 
-FLMutableDict parse(const string &input, unsigned *errPos) {
+FLMutableDict parse(const string &input, int *errPos) {
     MutableDict result;
     std::stringstream stream(input, std::ios_base::in);
     yycontext ctx = { };
@@ -497,12 +498,12 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
 
     bool ok = parse(&ctx) != 0;
     if (ok) {
-        result = ctx.__;
+        result = ctx._;
     } else {
-        *errPos = (unsigned) ctx.__maxpos;
+        *errPos = ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
 }
 
-} }
+}

@@ -15,11 +15,11 @@
 #include "SQLite_Internal.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "SQLiteCpp/Database.h"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
-#include "FleeceImpl.hh"
-#include "Doc.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
+#include "Array.hh"
+#include "Encoder.hh"
 #include "sqlite3.h"
 
 using namespace std;
@@ -31,7 +31,7 @@ namespace litecore {
 
 #pragma mark - INDEX-TABLE MANAGEMENT:
 
-    bool SQLiteDataFile::indexTableExists() {
+    bool SQLiteDataFile::indexTableExists() const {
         string sql;
         return getSchema("indexes", "table", "indexes", sql);
     }
@@ -193,8 +193,8 @@ namespace litecore {
     SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
         alloc_slice expressionJSON;
         if ( string col = stmt.getColumn(2).getString(); !col.empty() ) expressionJSON = col;
-        return SQLiteIndexSpec(stmt.getColumn(0).getString(), (IndexSpec::Type)stmt.getColumn(1).getInt(),
-                               expressionJSON, stmt.getColumn(3).getString(), stmt.getColumn(4).getString());
+        return {stmt.getColumn(0).getString(), (IndexSpec::Type)stmt.getColumn(1).getInt(), expressionJSON,
+                stmt.getColumn(3).getString(), stmt.getColumn(4).getString()};
     }
 
     void SQLiteDataFile::inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows) {

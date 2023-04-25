@@ -186,6 +186,10 @@ namespace litecore {
         const Rev* latestRevisionOnRemote(RemoteID);
         void       setLatestRevisionOnRemote(RemoteID, const Rev*);
 
+        const std::vector<const Rev*> getRejectedRevs() const FLPURE { return _rejectedRevs; }
+
+        void revIsRejected(const Rev* rev);
+
         const RemoteRevMap& remoteRevisions() const { return _remoteRevs; }
 
 #if DEBUG
@@ -221,6 +225,7 @@ namespace litecore {
         std::vector<alloc_slice> _insertedData;          // Storage for new revids
         RemoteRevMap             _remoteRevs;            // Tracks current rev for a remote DB URL
         unsigned                 _pruneDepth{UINT_MAX};  // Tree depth to prune to
+        std::vector<const Rev*>  _rejectedRevs;          // Pushes rejected by the remote
     };
 
 }  // namespace litecore

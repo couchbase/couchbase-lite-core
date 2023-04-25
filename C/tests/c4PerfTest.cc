@@ -10,9 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "fleece/Fleece.h"
-#include "c4Test.hh"
-#include "c4BlobStore.h"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Document+Fleece.h"
 #include "c4Query.h"
 #include "c4Index.h"
@@ -41,7 +39,7 @@ using namespace std;
 // These tests are run via the perf runner in https://github.com/couchbaselabs/cbl_perf_runner
 class PerfTest : public C4Test {
   public:
-    PerfTest(int variation) : C4Test(variation) {
+    explicit PerfTest(int variation) : C4Test(variation) {
         const char* showFastDir = getenv("CBL_SHOWFAST_DIR");
         if ( showFastDir ) {
             litecore::FilePath showFastPath(showFastDir, "");
@@ -181,7 +179,7 @@ class PerfTest : public C4Test {
         return input;
     }
 
-    string generateShowfast(Benchmark& mark, double scale, string title, const char* items = nullptr) {
+    string generateShowfast(Benchmark& mark, double scale, string title) {
         if ( isEncrypted() ) { title += "_encrypted"; }
 
         append_platform(title);
@@ -218,7 +216,7 @@ class PerfTest : public C4Test {
 
         append_platform(title);
 
-        int64_t int_value = (int64_t)value;
+        auto int_value = (int64_t)value;
 
         FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeJSON, 0, false);
         FLEncoder_BeginArray(enc, 1);
@@ -228,7 +226,8 @@ class PerfTest : public C4Test {
         FLEncoder_WriteKey(enc, FLSTR("hidden"));
         FLEncoder_WriteBool(enc, false);
         FLEncoder_WriteKey(enc, FLSTR("value"));
-        if ( int_value == value ) {
+        // We can ignore the narrowing conversion warning as int_value was assigned as (int64_t)value
+        if ( int_value == value ) {  // NOLINT(cppcoreguidelines-narrowing-conversions)
             FLEncoder_WriteInt(enc, int_value);
         } else {
             FLEncoder_WriteDouble(enc, round(value * 1000.0) / 1000.0);
@@ -257,7 +256,7 @@ class PerfTest : public C4Test {
         fout.close();
     }
 
-    static void onTimedReplicatorStatusChanged(C4Replicator* r, C4ReplicatorStatus sts, void* ctx) {
+    static void onTimedReplicatorStatusChanged(C4UNUSED C4Replicator* r, C4ReplicatorStatus sts, void* ctx) {
         if ( sts.level == kC4Stopped ) { ((PerfTest*)ctx)->_replConditional.notify_one(); }
     }
 
@@ -321,7 +320,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     std::cerr << "Shared keys:  " << listSharedKeys() << "\n";
     for ( int pass = 0; pass < 2; ++pass ) {
         Stopwatch st;
-        auto      n = queryWhere("[\"=\", [\".contact.address.state\"], \"WA\"]");
+        auto      n = queryWhere(R"(["=", [".contact.address.state"], "WA"])");
         st.stop();
         st.printReport("SQL query of state", n, "doc");
         const char* sf_title = pass == 0 ? "names_sql_query_state" : "names_sql_query_state_indexed";

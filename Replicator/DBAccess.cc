@@ -38,10 +38,7 @@ namespace litecore { namespace repl {
         , _revsToMarkSynced(bind(&DBAccess::markRevsSyncedNow, this), bind(&DBAccess::markRevsSyncedLater, this),
                             tuning::kInsertionDelay)
         , _timer(bind(&DBAccess::markRevsSyncedNow, this))
-        , _usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0) {
-        // Copy database's sharedKeys:
-        SharedKeys dbsk = db->getFleeceSharedKeys();
-    }
+        , _usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0) {}
 
     AccessLockedDB& DBAccess::insertionDB() {
         if ( !_insertionDB ) {
@@ -267,6 +264,26 @@ namespace litecore { namespace repl {
                 // Copy database's sharedKeys:
                 _tempSharedKeys             = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
+                int retryCount              = 0;
+                while ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count() && retryCount++ < 10) ) {
+                    // CBL-4288: Possible compiler optimization issue?  If these two counts
+                    // are not equal then the shared keys creation process has been corrupted
+                    // and we must not continue as-is because then we will have data corruption
+
+                    // This really should not be the solution, but yet it reliably seems to stop
+                    // this weirdness from happening
+                    Warn("CBL-4288: Shared keys creation process failed, retrying...");
+                    _tempSharedKeys = SharedKeys::create(dbsk.stateData());
+                }
+
+                if ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count()) ) {
+                    // The above loop failed, so force an error condition to prevent a bad write
+                    // Note: I have never seen this happen, it is here just because the alternative
+                    // is data corruption, which is absolutely unacceptable
+                    WarnError("CBL-4288: Retrying 10 times did not solve the issue, aborting document encode...");
+                    _tempSharedKeys = SharedKeys();
+                }
+
                 assert(_tempSharedKeys);
             }
             return _tempSharedKeys;
@@ -275,7 +292,14 @@ namespace litecore { namespace repl {
 
     Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError* err) {
         Encoder enc;
-        enc.setSharedKeys(tempSharedKeys());
+        auto    tsk = tempSharedKeys();
+        if ( !tsk ) {
+            // Error logged in updateTempSharedKeys
+            if ( err ) *err = kFLInternalError;
+            return {};
+        }
+
+        enc.setSharedKeys(tsk);
         if ( !enc.convertJSON(jsonBody) ) {
             *err = enc.error();
             WarnError("Fleece encoder convertJSON failed (%d)", *err);
@@ -394,7 +418,8 @@ namespace litecore { namespace repl {
                              SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
                              static_cast<uint64_t>(rev->sequence), remoteDBID());
                     try {
-                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());
+                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence,
+                                                       rev->rejectedByRemote ? 0 : remoteDBID());
                     } catch ( const exception& x ) {
                         C4Error error = C4Error::fromException(x);
                         warn("Unable to mark '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
