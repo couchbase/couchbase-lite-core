@@ -48,7 +48,9 @@ typedef C4_ENUM(uint8_t, C4ErrorDomain){
 
 // LiteCoreDomain error codes:
 // (These are identical to the internal C++ error::LiteCoreError enum values.)
+// clang-format off
 typedef C4_ENUM(int32_t, C4ErrorCode){
+// clang-format on
                              kC4ErrorAssertionFailed = 1,    // Internal assertion failure
                              kC4ErrorUnimplemented,          // Oops, an unimplemented API call
                              kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
