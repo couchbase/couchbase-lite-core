@@ -50,7 +50,6 @@ typedef C4_ENUM(uint8_t, C4ErrorDomain){
 // (These are identical to the internal C++ error::LiteCoreError enum values.)
 // clang-format off
 typedef C4_ENUM(int32_t, C4ErrorCode){
-// clang-format on
                              kC4ErrorAssertionFailed = 1,    // Internal assertion failure
                              kC4ErrorUnimplemented,          // Oops, an unimplemented API call
                              kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
@@ -87,7 +86,7 @@ typedef C4_ENUM(int32_t, C4ErrorCode){
                              kC4ErrorDeltaBaseUnknown,  // Replicator can't apply delta: base revision body is missing
                              kC4ErrorCorruptDelta,      // Replicator can't apply delta: delta data invalid
                              kC4NumErrorCodesPlus1};
-
+// clang-format on
 
 /** Network error codes (potentially higher level than POSIX, lower level than HTTP.) 
     The entries marked with a POSIX code mirror that code so that platform bindings have
