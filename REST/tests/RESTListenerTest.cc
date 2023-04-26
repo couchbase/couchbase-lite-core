@@ -814,7 +814,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
 
 // This test uses SG set up for [.SyncServerCollection], but without TLS. c.f ReplicatorCollectionSG.cc.
 TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)",
-                 "[REST][Listener][C][.SyncServerCollection]") {
+                 "[REST][Listener][C][.SyncServerCollectionHTTP]") {
     constexpr C4CollectionSpec   Roses  = {"roses"_sl, "flowers"_sl};
     constexpr C4CollectionSpec   Tulips = {"tulips"_sl, "flowers"_sl};
     std::array<C4Collection*, 2> collections;
