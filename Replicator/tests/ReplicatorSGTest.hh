@@ -11,16 +11,6 @@
 #include "c4DocEnumerator.h"
 #include <unordered_map>
 
-#ifdef COUCHBASE_ENTERPRISE
-static C4SliceResult propEncryptor(void* ctx, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
-                                   C4StringResult* outKeyID, C4Error* outError);
-
-static C4SliceResult propDecryptor(void* ctx, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4String algorithm,
-                                   C4String keyID, C4Error* outError);
-#endif
-
 static constexpr const char *kTestUserName = "sguser";
 
 class ReplicatorSGTest : public ReplicatorAPITest {
@@ -78,22 +68,13 @@ public:
 
     // propertyEncryption: 0, no encryption; 1, encryption only; 2, encryption and decryption
     void verifyDocs(const std::unordered_map<alloc_slice, unsigned>& docIDs,
-                    bool checkRev =false, int propertyEncryption =0) {
+                    bool checkRev =false) {
         resetVerifyDb();
 
         // Pull to verify that Push successfully pushed all documents in docIDs
         ReplParams replParams { kC4Disabled, kC4OneShot };
         replParams.setDocIDs(docIDs);
-#ifdef COUCHBASE_ENTERPRISE
-        if(propertyEncryption > 0) {
-            replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(propDecryptor);
-        }
-        if (propertyEncryption == 1) {
-            replParams.setOption(kC4ReplicatorOptionDisablePropertyDecryption, true);
-        }
-#else
-        (void)propertyEncryption;
-#endif
+
         {
             C4Database* savedb = db;
             DEFER {
@@ -169,21 +150,6 @@ public:
     void updateDocIDs() {
         _docIDs = getDocIDs(db);
     }
-
-    struct CipherContext {
-        slice docID;
-        slice keyPath;
-        bool called;
-
-        CipherContext(const char* id, const char* path, bool called_)
-                : docID(id)
-                , keyPath(path)
-                , called(called_)
-        {}
-    };
-
-    std::unique_ptr<CipherContext> encContext;
-    std::unique_ptr<CipherContext> decContext;
 
     SG::TestUser _testUser {};
     std::unordered_map<alloc_slice, unsigned> _docIDs {};
