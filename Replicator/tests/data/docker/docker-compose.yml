@@ -1,0 +1,44 @@
+version: "3.9"
+services:
+  lite-core-cbs:
+    build:
+      context: ./cbs
+      args:
+        - COUCHBASE_VERSION=${COUCHBASE_VERSION:-7.1.4}
+    ports:
+      - "8091:8091"
+      - "8092:8092"
+      - "8093:8093"
+      - "8094:8094"
+      - "11207:11207"
+      - "11210:11210"
+      - "11211:11211"
+      - "18091:18091"
+      - "18092:18092"
+      - "18093:18093"
+      - "18094:18094"
+
+  lite-core-sg:
+    build:
+      context: ./sg
+      args:
+        - SG_DEB=${SG_DEB:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.0/couchbase-sync-gateway-enterprise_3.1.0_aarch64.deb}
+        - SSL=${SSL:-true}
+    ports:
+      - "4984:4984"
+      - "4985:4985"
+    depends_on: 
+      - "lite-core-cbs"
+
+  lite-core-sg-legacy:
+    build:
+      context: ./sg
+      args:
+        - SG_DEB=${SG_LEGACY_DEB:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.5/couchbase-sync-gateway-enterprise_3.0.5_aarch64.deb}
+        - SSL=${SSL:-true}
+        - LEGACY_MODE=true
+    ports:
+      - "4884:4884"
+      - "4885:4885"
+    depends_on: 
+      - "lite-core-cbs"

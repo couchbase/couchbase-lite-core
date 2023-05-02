@@ -1,0 +1,17 @@
+{
+    "num_index_replicas": 0,
+    "bucket": "lite-core",
+    "scopes": {
+       "flowers": {
+          "collections": {
+             "roses": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" },
+             "tulips": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" },
+             "lavenders": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" }
+          }
+       }
+    },
+    "delta_sync": {
+        "enabled": true
+    }
+ }
+ 
