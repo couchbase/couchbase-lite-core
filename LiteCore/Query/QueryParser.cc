@@ -1757,7 +1757,18 @@ namespace litecore {
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
-        auto iAlias = verifyDbAlias(keyPath);
+        // Path to FTS table has at most two components: [collectionAlias .] IndexName
+        size_t compCount = keyPath.size();
+        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        auto iAlias = _aliases.find(_dbAlias);
+        if (compCount == 2) {
+            // In V3.0, there is only one collection. All aliases should refer to the same
+            // collection. The following statement merely ensures the integrity.
+            iAlias = _aliases.find(string(keyPath[0].keyStr()));
+            keyPath.drop(1);
+        }
+        require(iAlias != _aliases.end() && iAlias->second.type != kResultAlias,
+                "FTS index name is prepended by bad alias");
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");

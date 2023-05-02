@@ -225,12 +225,30 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][QueryParser
                          WHERE: ['MATCH()', 'bio', 'mobile']}]")
           == "SELECT _doc.rowid, offsets(fts1.\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS fts1 ON fts1.docid = _doc.rowid WHERE (fts1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1 = 0)");
 
+    // Multiple db aliases refer to the default collction: index prepended by an alias.
+    CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
+                  FROM: [{as: 'book'}, \
+                         {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
+                 WHERE: ['MATCH()', '.library.auth', ['$AUTHOR']]}")
+          == "SELECT book.rowid, offsets(fts1.\"kv_default::auth\"), fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN kv_default AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) JOIN \"kv_default::auth\" AS fts1 ON fts1.docid = book.rowid WHERE (fts1.\"kv_default::auth\" MATCH ($_AUTHOR)) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_default"});
+
+    // The FTS index does not have to be prepended by db alias because. in V3.0, there is only one
+    // collection with that the index table is associated.
+    CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
+                  FROM: [{as: 'book'}, \
+                         {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
+                 WHERE: ['MATCH()', 'auth', ['$AUTHOR']]}")
+          == "SELECT book.rowid, offsets(fts1.\"kv_default::auth\"), fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN kv_default AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) JOIN \"kv_default::auth\" AS fts1 ON fts1.docid = book.rowid WHERE (fts1.\"kv_default::auth\" MATCH ($_AUTHOR)) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_default"});
+
     // Non-default collection:
     tableNames.insert("kv_coll_employees");
     CHECK(parseWhere("['SELECT', {\
                          FROM: [{collection: 'employees'}],\
                          WHERE: ['MATCH()', 'employees.bio', 'mobile']}]")
           == "SELECT employees.rowid, offsets(fts1.\"kv_coll_employees::bio\"), employees.key, employees.sequence FROM kv_coll_employees AS employees JOIN \"kv_coll_employees::bio\" AS fts1 ON fts1.docid = employees.rowid WHERE (fts1.\"kv_coll_employees::bio\" MATCH 'mobile') AND (employees.flags & 1 = 0)");
+
 }
 
 
