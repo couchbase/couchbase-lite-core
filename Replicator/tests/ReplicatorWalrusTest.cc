@@ -84,6 +84,32 @@ public:
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Failure", "[.SyncServerWalrus]") {
     _sg.remoteDBName = kProtectedDBName;
+
+    SECTION("No Credentials") { }
+
+    SECTION("Wrong Credentials") {
+        Encoder enc;
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+            enc.beginDict();
+                enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                enc.writeString("Basic"_sl);
+                enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                enc.writeString("brown");
+                enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                enc.writeString("sugar");
+                enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+                SECTION("Preemptive Auth") {
+                    enc.writeBool(false);
+                }
+                SECTION("Challenge Auth") {
+                    enc.writeBool(true);
+                }
+            enc.endDict();
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
     CHECK(_callbackStatus.error.code == 401);
@@ -104,6 +130,13 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Success", "[.SyncServerWalrus]"
             enc.writeString("pupshaw");
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
             enc.writeString("frank");
+            enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+            SECTION("Preemptive Auth") {
+                enc.writeBool(false);
+            }
+            SECTION("Challenge Auth") {
+                enc.writeBool(true);
+            }
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
@@ -355,7 +388,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Conflict", "[.SyncServerWalrus]
     replicate(kC4OneShot, kC4Disabled);
 
     _sg.sendRemoteRequest("PUT", "0000013", "{\"_rev\":\"" + originalRevID + "\","
-                                          "\"serverSideUpdate\":true}");
+                                          "\"serverSideUpdate\":true}", false, HTTPStatus::Created);
 
     createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
 
@@ -410,10 +443,10 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Update Once-Conflicted Doc", "[.SyncServ
     // Create a conflicted doc on SG, and resolve the conflict:
     _sg.remoteDBName = "scratch_allows_conflicts"_sl;
     flushScratchDatabase();
-    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl);
-    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl);
-    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl);
-    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl, false, HTTPStatus::Created);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl, false, HTTPStatus::Created);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl, false, HTTPStatus::Created);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl, false, HTTPStatus::Created);
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -456,16 +489,16 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull multiply-updated", "[.SyncServerWal
     // 7. run replication between SG -> db.cblite2 again
 
     flushScratchDatabase();
-    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"count\":1, \"_rev\":\"1-1111\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc?new_edits=false", "{\"count\":1, \"_rev\":\"1-1111\"}"_sl, false, HTTPStatus::Created);
 
     replicate(kC4Disabled, kC4OneShot);
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":2, \"_rev\":\"1-1111\"}"_sl);
-    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl);
-    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":2, \"_rev\":\"1-1111\"}"_sl, false, HTTPStatus::Created);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":3, \"_rev\":\"2-c5557c751fcbfe4cd1f7221085d9ff70\"}"_sl, false, HTTPStatus::Created);
+    _sg.sendRemoteRequest("PUT", "doc", "{\"count\":4, \"_rev\":\"3-2284e35327a3628df1ca8161edc78999\"}"_sl, false, HTTPStatus::Created);
 
     replicate(kC4Disabled, kC4OneShot);
     doc = c4doc_get(db, "doc"_sl, true, nullptr);
@@ -682,7 +715,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Revoke Access", "[.
 
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -744,7 +777,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Revoke Access", "[.
     
     // Check if update to doc1 is still pullable:
     auto oRevID = slice(doc1->revID).asString();
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}", false, HTTPStatus::Created);
     
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
@@ -777,7 +810,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Filter Revoked Revi
 
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -854,7 +887,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Disabled - Revoke Access", "[
 
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -931,7 +964,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Remove Doc From Cha
     
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -987,7 +1020,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Remove Doc From Cha
     
     // Removed doc from channel 'a':
     auto oRevID = slice(doc1->revID).asString();
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}", false, HTTPStatus::Created);
     
     C4Log("-------- Pull update");
     replicate(kC4Disabled, kC4OneShot);
@@ -1001,7 +1034,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Remove Doc From Cha
     
     // Remove doc from all channels:
     oRevID = slice(doc1->revID).asString();
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}", false, HTTPStatus::Created);
     
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
@@ -1020,7 +1053,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Filter Removed Revi
     
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1076,7 +1109,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Filter Removed Revi
     
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}", false, HTTPStatus::Created);
     
     C4Log("-------- Pull the removed");
     replicate(kC4Disabled, kC4OneShot);
@@ -1095,7 +1128,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Disabled - Remove Doc From Ch
     
     // Create docs on SG:
     _sg.authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl, false, HTTPStatus::Created);
 
     // Setup Replicator Options:
     Encoder enc;
@@ -1150,7 +1183,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Disabled - Remove Doc From Ch
     
     // Remove doc from all channels
     auto oRevID = slice(doc1->revID).asString();
-    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    _sg.sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}", false, HTTPStatus::Created);
     
     C4Log("-------- Pulling the removed");
     replicate(kC4Disabled, kC4OneShot);

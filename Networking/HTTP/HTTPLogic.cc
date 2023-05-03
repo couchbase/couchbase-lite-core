@@ -89,11 +89,18 @@ namespace litecore { namespace net {
 
 
     string HTTPLogic::requestToSend() {
+        // This logic prevents calling requestToSend() more than once to respond to the
+        // auth challenge after the the authentication from the first challenge failed
+        // (when failed the dispostion will still be kAuthenticate).
+        //
+        // In handleResponse(), after it handles the challenge first time, it will reset
+        // the _proxy's credentials for proxy authentication or _authHeader for server
+        // authentication.
         if (_lastDisposition == kAuthenticate) {
             if (_httpStatus == HTTPStatus::ProxyAuthRequired)
                 Assert(_proxy && _proxy->username);
             else
-                Assert(_authHeader);
+                Assert(_enableChallengeAuth && _authHeader);
         }
 
         stringstream rq;
@@ -124,7 +131,7 @@ namespace litecore { namespace net {
             addHeader(rq, "Proxy-Authorization", basicAuth(_proxy->username, _proxy->password));
 
         if (!connectingToProxy()) {
-            if (_authChallenged)                                    // don't send auth until challenged
+            if (!_enableChallengeAuth || _authChallenged)  // If using challenge auth, don't send auth until challenged
                 addHeader(rq, "Authorization", _authHeader);
 
             if (_cookieProvider)
@@ -195,11 +202,16 @@ namespace litecore { namespace net {
             case HTTPStatus::UseProxy:
                 return handleRedirect();
             case HTTPStatus::Unauthorized:
-                if (_authChallenged)
-                    _authHeader = nullslice;
-                else
-                    _authChallenged = true;
-                return handleAuthChallenge("Www-Authenticate"_sl, false);
+                // When challenge auth is not enabled (preemptive auth), fail right away
+                // as the authentication has been done and the result was unauthorized.
+                if (_enableChallengeAuth) {
+                    if (_authChallenged)
+                        _authHeader = nullslice;
+                    else
+                        _authChallenged = true;
+                    return handleAuthChallenge("Www-Authenticate"_sl, false);
+                }
+                return failure();
             case HTTPStatus::ProxyAuthRequired:
                 if (_proxy)
                     _proxy->username = _proxy->password = nullslice;
