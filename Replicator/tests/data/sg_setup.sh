@@ -52,7 +52,10 @@ if [ -z $DEFAULT_COLL ]; then
 CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/scratch/' \
  -H 'Content-Type: application/json' \
  -H 'Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==' \
- --data-raw '{\"num_index_replicas\": 0, \"bucket\": \"$BUCKET_NAME\", \"scopes\": {\"flowers\": {\"collections\":{\"roses\":{}, \"tulips\":{}, \"lavenders\":{}}}}}'"
+ --data-raw '{\"num_index_replicas\": 0, \"bucket\": \"$BUCKET_NAME\", \"scopes\": {\"flowers\": {\"collections\": {\
+ \"roses\":{\"sync\":\"function(doc,olddoc){channel(doc.channels)}\"},\
+ \"tulips\":{\"sync\":\"function(doc,olddoc){if (doc.isRejected==\\\"true\\\") {throw({\\\"forbidden\\\":\\\"read_only\\\"})};channel(doc.channels)}\"},\
+ \"lavenders\":{\"sync\":\"function(doc,olddoc){channel(doc.channels)}\"}}}}}}'"
 
 else
 
