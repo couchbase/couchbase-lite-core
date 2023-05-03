@@ -104,7 +104,10 @@ public:
         kAuthHeader
     };
 
-    void notWalrus(AuthType authType =kAuthNone) {
+    // With server-based SG:
+    // A. we don't flush "scratch" databases.
+    // B. we need to authenticate with "scratch" databases.
+    void withServerBackedSG(AuthType authType =kAuthNone) {
         _flushedScratch = true;
         _sg.pinnedCert = C4Test::readFile(sReplicatorFixturesDir + "cert/cert.pem");
         if(getenv("NOTLS")) {
@@ -153,7 +156,7 @@ public:
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Failure", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus();
+    withServerBackedSG();
 #else
     _sg.remoteDBName = kProtectedDBName;
 #endif
@@ -166,7 +169,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Failure", "[.SyncServerWalrus]"
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Success", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus();
+    withServerBackedSG();
     SG::TestUser testUser {_sg, "pupshaw", {}, "frank"};
 #else
     _sg.remoteDBName = kProtectedDBName;
@@ -191,7 +194,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Success", "[.SyncServerWalrus]"
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API ExtraHeaders", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus();
+    withServerBackedSG();
 #else
     _sg.remoteDBName = kProtectedDBName;
 #endif
@@ -216,7 +219,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API ExtraHeaders", "[.SyncServerWalrus]"
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Empty DB", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
 #endif
     replicate(kC4OneShot, kC4Disabled);
 }
@@ -224,7 +227,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Empty DB", "[.SyncServerWalrus]
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Non-Empty DB", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthHeader);
+    withServerBackedSG(kAuthHeader);
 #endif
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
@@ -233,7 +236,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Non-Empty DB", "[.SyncServerWal
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Empty Doc", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
 #endif
     Encoder enc;
     enc.beginDict();
@@ -247,7 +250,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Empty Doc", "[.SyncServerWalrus
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Big DB", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 0.0, false, nullptr, 0, idPrefix);
 #else
@@ -267,7 +270,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Large-Docs DB", "[.SyncServerWa
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push 5000 Changes", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
 #endif
     string docID = "Doc";
@@ -315,7 +318,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Pull With Indexes", "[.SyncServerWal
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Continuous Push", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     importJSONLines(sFixturesDir + "names_100.json", 0.0, false, nullptr, 0, idPrefix);
 #else
@@ -353,7 +356,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Stop after Idle with Error", "[.SyncServ
     // Before the fix: continuous retry after Stopping;
     // after the fix: stop with the error regardless of it being transient.
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
 #else
     _sg.remoteDBName = kScratchDBName;
@@ -374,7 +377,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Stop after Idle with Error", "[.SyncServ
 TEST_CASE_METHOD(ReplicatorWalrusTest, "Push & Pull Deletion", "[.SyncServerWalrus]") {
     string docID {"doc"};
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
 #endif
@@ -406,7 +409,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Push & Pull Deletion", "[.SyncServerWalr
 TEST_CASE_METHOD(ReplicatorWalrusTest, "Push & Pull Attachments", "[.SyncServerWalrus]") {
     string docID {"att1"};
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
 #endif
@@ -460,7 +463,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Prove Attachments", "[.SyncServerWalrus]
     string doc1 = "doc one";
     string doc2 = "doc two";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     doc1 = idPrefix + doc1;
     doc2 = idPrefix + doc2;
@@ -511,7 +514,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Pull Big Attachments", "[.SyncServer
 
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Conflict", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     importJSONLines(sFixturesDir + "names_100.json", 0.0, false, nullptr, 0, idPrefix);
 #else
@@ -585,7 +588,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Conflict", "[.SyncServerWalrus]
 TEST_CASE_METHOD(ReplicatorWalrusTest, "Update Once-Conflicted Doc", "[.SyncServerWalrus]") {
     string docID = "doc";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
 #endif
@@ -651,7 +654,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull multiply-updated", "[.SyncServerWal
     // 7. run replication between SG -> db.cblite2 again
     string docID = "doc";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
@@ -685,7 +688,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull deltas from SG", "[.SyncServerWalru
     static constexpr int kNumDocs = 1000, kNumProps = 1000;
 #ifdef NOT_WALRUS
     const string idPrefix = ReplicatorSGTest::timePrefix();
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 #else
     flushScratchDatabase();
@@ -810,7 +813,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull deltas from SG", "[.SyncServerWalru
 TEST_CASE_METHOD(ReplicatorWalrusTest, "Pull iTunes deltas from SG", "[.SyncServerWalrus][Delta]") {
 #ifdef NOT_WALRUS
     const string idPrefix = ReplicatorSGTest::timePrefix();
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     _sg.authHeader = HTTPLogic::basicAuth("sguser", "password");
 #else
     flushScratchDatabase();
@@ -922,7 +925,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Revoke Access", "[.
     string channelIDa = "a";
     string channelIDb = "b";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1032,7 +1035,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Filter Revoked Revi
     string docID = "doc1";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1119,7 +1122,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Disabled - Revoke Access", "[
     string docID = "doc1";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1207,7 +1210,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Remove Doc From Cha
     string channelIDa = "a";
     string channelIDb = "b";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1307,7 +1310,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled - Filter Removed Revi
     string docID = "doc1";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1392,7 +1395,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Disabled - Remove Doc From Ch
     string docID = "doc1";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docID = idPrefix + docID;
     channelIDa = idPrefix + channelIDa;
@@ -1477,7 +1480,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled(default) - Delete Doc
     string docIDStr = "doc";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docIDStr = idPrefix + docIDStr;
     channelIDa = idPrefix + channelIDa;
@@ -1543,7 +1546,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Auto Purge Enabled(default) - Delete the
     string docIDStr = "doc";
     string channelIDa = "a";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     docIDStr = idPrefix + docIDStr;
     channelIDa = idPrefix + channelIDa;
@@ -1619,7 +1622,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pinned Certificate Failure", "[.SyncServ
     _sg.address = {kC4Replicator2TLSScheme,
                    C4STR("localhost"),
                    4984};
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
 #else
     if (!Address::isSecure(_sg.address)) {
         return;
@@ -1658,7 +1661,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Pinned Certificate Success", "[.SyncServ
     _sg.address = {kC4Replicator2TLSScheme,
                    C4STR("localhost"),
                    4984};
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
 #else
     if (!Address::isSecure(_sg.address)) {
         return;
@@ -1893,7 +1896,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Replicate Encryptor Error", "[.SyncServe
     string doc2 = "seekrit";
     string doc3 = "doc03";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     doc1 = idPrefix + doc1;
     doc2 = idPrefix + doc2;
@@ -1979,7 +1982,7 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "Replicate Decryptor Error", "[.SyncServe
     string doc2 = "seekrit";
     string doc3 = "doc03";
 #ifdef NOT_WALRUS
-    notWalrus(kAuthBody);
+    withServerBackedSG(kAuthBody);
     const string idPrefix = ReplicatorSGTest::timePrefix();
     doc1 = idPrefix + doc1;
     doc2 = idPrefix + doc2;
