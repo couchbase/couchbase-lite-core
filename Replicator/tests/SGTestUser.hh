@@ -24,7 +24,6 @@
 #include "SG.hh"
 #include "Error.hh"
 #include "HTTPLogic.hh"
-#include "c4Private.h"
 
 class SG::TestUser {
   public:
