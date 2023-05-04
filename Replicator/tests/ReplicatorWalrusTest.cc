@@ -160,6 +160,32 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Failure", "[.SyncServerWalrus]"
 #else
     _sg.remoteDBName = kProtectedDBName;
 #endif
+
+    SECTION("No Credentials") { }
+
+    SECTION("Wrong Credentials") {
+        Encoder enc;
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+            enc.beginDict();
+                enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                enc.writeString("Basic"_sl);
+                enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                enc.writeString("brown");
+                enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                enc.writeString("sugar");
+                enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+                SECTION("Preemptive Auth") {
+                    enc.writeBool(false);
+                }
+                SECTION("Challenge Auth") {
+                    enc.writeBool(true);
+                }
+            enc.endDict();
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
     CHECK(_callbackStatus.error.code == 401);
@@ -184,6 +210,13 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Auth Success", "[.SyncServerWalrus]"
             enc.writeString("pupshaw");
             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
             enc.writeString("frank");
+            enc.writeKey(C4STR(kC4ReplicatorAuthEnableChallengeAuth));
+            SECTION("Preemptive Auth") {
+                enc.writeBool(false);
+            }
+            SECTION("Challenge Auth") {
+                enc.writeBool(true);
+            }
         enc.endDict();
     enc.endDict();
     _options = AllocedDict(enc.finish());
@@ -228,8 +261,11 @@ TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Empty DB", "[.SyncServerWalrus]
 TEST_CASE_METHOD(ReplicatorWalrusTest, "API Push Non-Empty DB", "[.SyncServerWalrus]") {
 #ifdef NOT_WALRUS
     withServerBackedSG(kAuthHeader);
-#endif
+    const string idPrefix = ReplicatorSGTest::timePrefix();
+    importJSONLines(sFixturesDir + "names_100.json", 0.0, false, nullptr, 0, idPrefix);
+#else
     importJSONLines(sFixturesDir + "names_100.json");
+#endif
     replicate(kC4OneShot, kC4Disabled);
 }
 
