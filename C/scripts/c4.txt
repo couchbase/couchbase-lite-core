@@ -54,6 +54,7 @@ c4doc_release
 c4doc_get
 c4doc_getBySequence
 c4db_purgeDoc
+c4doc_isRevRejected
 c4doc_selectRevision
 c4doc_selectCurrentRevision
 c4doc_loadRevisionBody

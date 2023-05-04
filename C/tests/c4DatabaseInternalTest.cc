@@ -10,13 +10,11 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
-#include "c4Private.h"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
-#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include <cmath>
-#include <errno.h>
+#include <cerrno>
 #include <iostream>
 #include <vector>
 
@@ -26,12 +24,10 @@
 #    include <ctime>
 #    include "Windows.h"
 #    define sleep(sec) Sleep((sec)*1000)
-#else
-#    include "unistd.h"
 #endif
 
 // For debugging
-#define C4STR_TO_STDSTR(x) std::string((char*)x.buf, x.size)
+#define C4STR_TO_STDSTR(x) std::string((char*)(x).buf, (x).size)
 #define C4STR_TO_CSTR(x)   C4STR_TO_STDSTR(x).c_str()
 
 static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
@@ -45,9 +41,9 @@ class C4DatabaseInternalTest : public C4Test {
   public:
     C4RemoteID _remoteID{0};
 
-    C4DatabaseInternalTest(int testOption) : C4Test(testOption) {}
+    explicit C4DatabaseInternalTest(int testOption) : C4Test(testOption) {}
 
-    void assertMessage(C4ErrorDomain domain, int code, const char* expectedMsg) {
+    static void assertMessage(C4ErrorDomain domain, int code, const char* expectedMsg) {
         C4SliceResult msg = c4error_getMessage({domain, code});
         REQUIRE(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
         c4slice_free(msg);
@@ -62,7 +58,7 @@ class C4DatabaseInternalTest : public C4Test {
         return getDoc(db, docID, content);
     }
 
-    C4Document* getDoc(C4Database* db, C4String docID, C4DocContentLevel content = kDocGetCurrentRev) {
+    static C4Document* getDoc(C4Database* db, C4String docID, C4DocContentLevel content = kDocGetCurrentRev) {
         C4Document* doc = c4db_getDoc(db, docID, true, content, ERROR_INFO());
         REQUIRE(doc);
         REQUIRE(doc->docID == docID);
@@ -153,18 +149,18 @@ class C4DatabaseInternalTest : public C4Test {
         REQUIRE(error.code == expected.code);
     };
 
-    std::vector<alloc_slice> getAllParentRevisions(C4Document* doc) {
+    static std::vector<alloc_slice> getAllParentRevisions(C4Document* doc) {
         std::vector<alloc_slice> history;
         do { history.emplace_back(doc->selectedRev.revID); } while ( c4doc_selectParentRevision(doc) );
         return history;
     }
 
-    std::vector<alloc_slice> getRevisionHistory(C4Document* doc, bool onlyCurrent, bool includeDeleted) {
+    static std::vector<alloc_slice> getRevisionHistory(C4Document* doc, bool onlyCurrent, bool includeDeleted) {
         std::vector<alloc_slice> history;
         do {
             if ( onlyCurrent && !(doc->selectedRev.flags & kRevLeaf) ) continue;
             if ( !includeDeleted && (doc->selectedRev.flags & kRevDeleted) ) continue;
-            history.push_back(doc->selectedRev.revID);
+            history.emplace_back(doc->selectedRev.revID);
         } while ( c4doc_selectNextRevision(doc) );
         return history;
     }

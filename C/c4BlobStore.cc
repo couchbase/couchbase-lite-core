@@ -11,25 +11,24 @@
 //
 
 #include "c4BlobStore.hh"
-#include "c4Database.hh"
-#include "c4Document+Fleece.h"
 #include "c4ExceptionUtils.hh"
-#include "c4Internal.hh"
+#include "c4Document+Fleece.h"
 #include "BlobStreams.hh"
-#include "DatabaseImpl.hh"
 #include "Base64.hh"
 #include "EncryptedStream.hh"
 #include "Error.hh"
 #include "FilePath.hh"
+#include "Logging.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include <array>
 
 using namespace std;
 using namespace fleece;
 using namespace litecore;
 
 namespace C4Blob {
-    const slice kObjectTypeProperty = C4Document::kObjectTypeProperty;
+    const slice kObjectTypeProperty = kC4ObjectTypeProperty;
 }
 
 #pragma mark - C4BLOBKEY:
@@ -47,7 +46,7 @@ static SHA1& digest(C4BlobKey& key) { return (SHA1&)key.bytes; }
 static const SHA1& digest(const C4BlobKey& key) { return (const SHA1&)key.bytes; }
 
 C4BlobKey C4BlobKey::computeDigestOfContent(slice content) {
-    C4BlobKey key;
+    C4BlobKey key{};
     digest(key).computeFrom(content);
     return key;
 }
@@ -104,9 +103,9 @@ C4BlobStore::~C4BlobStore() = default;
 
 void C4BlobStore::deleteStore() { dir().delRecursive(); }
 
-FilePath C4BlobStore::dir() const { return FilePath(_dirPath, ""); }
+FilePath C4BlobStore::dir() const { return {_dirPath, ""}; }
 
-FilePath C4BlobStore::pathForKey(C4BlobKey key) const { return FilePath(_dirPath, BlobKeyToFilename(key)); }
+FilePath C4BlobStore::pathForKey(C4BlobKey key) const { return {_dirPath, BlobKeyToFilename(key)}; }
 
 alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
     FilePath path = pathForKey(key);
@@ -133,7 +132,7 @@ unique_ptr<SeekableReadStream> C4BlobStore::getReadStream(C4BlobKey key) const {
                               slice(&_encryptionKey.bytes, sizeof(_encryptionKey.bytes)));
 }
 
-alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
+alloc_slice C4BlobStore::getBlobData(FLDict flDict) const {
     Dict dict(flDict);
     if ( !C4Blob::isBlob(dict) ) {
         error::_throw(error::InvalidParameter, "Not a blob");
@@ -225,21 +224,21 @@ void C4BlobStore::replaceWith(C4BlobStore& other) {
 
 C4ReadStream::C4ReadStream(const C4BlobStore& store, C4BlobKey key) : _impl(store.getReadStream(key)) {}
 
-C4ReadStream::C4ReadStream(C4ReadStream&& other) : _impl(move(other._impl)) {}
+C4ReadStream::C4ReadStream(C4ReadStream&& other) noexcept : _impl(std::move(other._impl)) {}
 
 C4ReadStream::~C4ReadStream() = default;
 
 // clang-format off
-size_t  C4ReadStream::read(void *dst, size_t mx)    { return _impl->read(dst, mx); }
-int64_t C4ReadStream::getLength() const             { return _impl->getLength(); }
-void    C4ReadStream::seek(int64_t pos)             { _impl->seek(pos); }
+size_t   C4ReadStream::read(void *dst, size_t mx)    { return _impl->read(dst, mx); }
+uint64_t C4ReadStream::getLength() const             { return _impl->getLength(); }
+void     C4ReadStream::seek(uint64_t pos)            { _impl->seek(pos); }
 
 // clang-format on
 
 C4WriteStream::C4WriteStream(C4BlobStore& store) : _impl(store.getWriteStream()), _store(store) {}
 
-C4WriteStream::C4WriteStream(C4WriteStream&& other)
-    : InstanceCounted(move(other)), _impl(move(other._impl)), _store(other._store) {}
+C4WriteStream::C4WriteStream(C4WriteStream&& other) noexcept
+    : InstanceCounted(std::move(other)), _impl(std::move(other._impl)), _store(other._store) {}
 
 C4WriteStream::~C4WriteStream() {
     try {
@@ -313,26 +312,24 @@ bool C4Blob::findAttachmentReferences(FLDict docRoot, const FindBlobCallback& ca
 // See <http://www.iana.org/assignments/media-types/media-types.xhtml>
 
 // These substrings in a MIME type mean it's definitely not compressible:
-static constexpr slice kCompressedTypeSubstrings[] = {"zip"_sl,   "zlib"_sl, "pkcs"_sl, "mpeg"_sl, "mp4"_sl,
-                                                      "crypt"_sl, ".rar"_sl, "-rar"_sl, {}};
+static constexpr std::array<slice, 8> kCompressedTypeSubstrings = {
+        {"zip"_sl, "zlib"_sl, "pkcs"_sl, "mpeg"_sl, "mp4"_sl, "crypt"_sl, ".rar"_sl, "-rar"_sl}};
 
-// These substrings mean it is compressible:
-static constexpr slice kGoodTypeSubstrings[] = {"json"_sl, "html"_sl, "xml"_sl, "yaml"_sl, {}};
+// These substrings mean it is compressible (unused for now):
+//static constexpr std::array<slice, 4> kGoodTypeSubstrings = {"json"_sl, "html"_sl, "xml"_sl, "yaml"_sl};
 
 // These prefixes mean it's not compressible, *unless* it matches the above good-types list
 // (like SVG (image/svg+xml), which is compressible.)
-static constexpr slice kBadTypePrefixes[] = {"image/"_sl, "audio/"_sl, "video/"_sl, {}};
+static constexpr std::array<slice, 3> kBadTypePrefixes = {{"image/"_sl, "audio/"_sl, "video/"_sl}};
 
-static bool containsAnyOf(slice type, const slice types[]) {
-    for ( const slice* t = &types[0]; *t; ++t )
-        if ( type.find(*t) ) return true;
-    return false;
+template <size_t N>
+static bool containsAnyOf(slice type, const std::array<slice, N> types) {
+    return std::any_of(types.begin(), types.end(), [&type](slice t) { return type.find(t); });
 }
 
-static bool startsWithAnyOf(slice type, const slice types[]) {
-    for ( const slice* t = &types[0]; *t; ++t )
-        if ( type.hasPrefix(*t) ) return true;
-    return false;
+template <size_t N>
+static bool startsWithAnyOf(slice type, const std::array<slice, N> types) {
+    return std::any_of(types.begin(), types.end(), [&type](slice t) { return type.hasPrefix(t); });
 }
 
 bool C4Blob::isLikelyCompressible(FLDict flMeta) {
@@ -351,11 +348,7 @@ bool C4Blob::isLikelyCompressible(FLDict flMeta) {
     type = lc;
 
     // Check the MIME type:
-    if ( containsAnyOf(type, kCompressedTypeSubstrings) ) return false;
-    else if ( type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings) )
-        return true;
-    else if ( startsWithAnyOf(type, kBadTypePrefixes) )
-        return false;
+    if ( containsAnyOf(type, kCompressedTypeSubstrings) || startsWithAnyOf(type, kBadTypePrefixes) ) return false;
     else
         return true;
 }

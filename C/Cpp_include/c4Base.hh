@@ -18,9 +18,8 @@
 #    define LITECORE_CPP_API 1
 #endif
 
-#include "c4Base.h"
+#include "c4Compat.h"
 #include "fleece/RefCounted.hh"
-#include "fleece/InstanceCounted.hh"
 #include "fleece/slice.hh"
 
 C4_ASSUME_NONNULL_BEGIN

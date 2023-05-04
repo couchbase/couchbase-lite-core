@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4DocumentTypes.h"
-#include <stdarg.h>
+#include <cstdarg>
 
 #ifdef __cplusplus
 #    include <atomic>

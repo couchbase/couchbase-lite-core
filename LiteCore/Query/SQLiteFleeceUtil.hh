@@ -14,8 +14,10 @@
 #include "Base.hh"
 #include "DataFile.hh"
 #include "SQLite_Internal.hh"
-#include "FleeceImpl.hh"
+#include "Doc.hh"
 #include <sqlite3.h>
+
+#include <utility>
 
 namespace litecore {
     class CollationContext;
@@ -49,7 +51,7 @@ namespace litecore {
     class QueryFleeceScope : public fleece::impl::Scope {
       public:
         QueryFleeceScope(sqlite3_context* ctx, sqlite3_value** argv);
-        ~QueryFleeceScope();
+        ~QueryFleeceScope() override;
 
         const fleece::impl::Value* root;
 
@@ -64,13 +66,13 @@ namespace litecore {
     // Returns the data of a SQLite blob value as a slice
     static inline slice valueAsSlice(sqlite3_value* arg) noexcept {
         const void* blob = sqlite3_value_blob(arg);  // must be called _before_ sqlite3_value_bytes
-        return slice(blob, sqlite3_value_bytes(arg));
+        return {blob, static_cast<size_t>(sqlite3_value_bytes(arg))};
     }
 
     // Returns the data of a SQLite string value as a slice
     static inline slice valueAsStringSlice(sqlite3_value* arg) noexcept {
         auto blob = sqlite3_value_text(arg);  // must be called _before_ sqlite3_value_bytes
-        return slice(blob, sqlite3_value_bytes(arg));
+        return {blob, static_cast<size_t>(sqlite3_value_bytes(arg))};
     }
 
     // Interprets the arg, which must be a blob, as a Fleece value and returns it as a Value*.
@@ -102,7 +104,7 @@ namespace litecore {
     }
 
     static inline void setResultBlobFromFleeceData(sqlite3_context* ctx, alloc_slice blob) noexcept {
-        setResultBlobFromData(ctx, blob, 0);
+        setResultBlobFromData(ctx, std::move(blob), 0);
     }
 
     // Encodes the Value as a Fleece container and sets it as the result

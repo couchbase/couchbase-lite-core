@@ -10,26 +10,25 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
-#include "TestsCommon.hh"
+#include "c4Test.hh"       // IWYU pragma: keep
+#include "TestsCommon.hh"  // IWYU pragma: keep
 #include "c4BlobStore.h"
 #include "c4Collection.h"
 #include "c4Document+Fleece.h"
-#include "c4Private.h"
 #include "fleece/slice.hh"
 #include "FilePath.hh"
-#include "StringUtil.hh"
+#include "StringUtil.hh"  // IWYU pragma: keep
 #include "Backtrace.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "Error.hh"
 #include <csignal>
 #include <iostream>
 #include <fstream>
-#include <stdio.h>
-#include "PlatformIO.hh"
+#include <cstdio>
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <utility>
 
 #if TARGET_OS_IPHONE
 #    include <CoreFoundation/CFBundle.h>
@@ -58,15 +57,19 @@ void ps(fleece::slice s) { ps(C4Slice{s.buf, s.size}); }
 ostream& operator<<(ostream& out, C4Error error) {
     if ( error.code ) {
         C4SliceResult s = c4error_getDescription(error);
+        // Ensure that s.size (size_t/uint64) will not exceed limit of std::streamsize (int64)
+        DebugAssert(s.size <= std::numeric_limits<std::streamsize>::max());
         out << "C4Error(";
-        out.write((const char*)s.buf, s.size);
+        out.write((const char*)s.buf, s.size);  // NOLINT(cppcoreguidelines-narrowing-conversions)
         out << ")";
         c4slice_free(s);
 
         alloc_slice backtrace = c4error_getBacktrace(error);
         if ( backtrace ) {
+            // Ensure that backtrace.size (size_t/uint64) will not exceed limit of std::streamsize (int64)
+            DebugAssert(backtrace.size <= std::numeric_limits<std::streamsize>::max());
             out << ":\n";
-            out.write((const char*)backtrace.buf, backtrace.size);
+            out.write((const char*)backtrace.buf, backtrace.size);  // NOLINT(cppcoreguidelines-narrowing-conversions)
         }
     } else {
         out << "C4Error(none)";
@@ -96,7 +99,7 @@ void CheckError(C4Error error, C4ErrorDomain expectedDomain, int expectedCode, c
     }
 }
 
-void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()> lambda) {
+void C4ExpectException(C4ErrorDomain domain, int code, const std::function<void()>& lambda) {
     try {
         ExpectingExceptions x;
         C4Log("NOTE: Expecting an exception to be thrown...");
@@ -123,7 +126,7 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 #endif
 
 
-C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {
+C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
     constexpr static TestOptions numToTestOption[] = {
 #if SkipVersionVectorTest
         RevTreeOption,
@@ -313,7 +316,7 @@ void C4Test::deleteAndRecreateDB(C4Database*& db) {
     return coll;
 }
 
-int C4Test::addDocs(C4Collection* collection, int total, std::string idprefix) {
+int C4Test::addDocs(C4Collection* collection, int total, const std::string& idprefix) const {
     int              docNo   = 1;
     constexpr size_t bufSize = 80;
     for ( int i = 1; docNo <= total; i++ ) {
@@ -327,13 +330,13 @@ int C4Test::addDocs(C4Collection* collection, int total, std::string idprefix) {
     return docNo - 1;
 }
 
-int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) {
+int C4Test::addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix) const {
     C4Collection* coll = getCollection(database, spec);
     if ( idprefix.empty() ) { idprefix = (database == db ? "newdoc-db-" : "newdoc-otherdb-"); }
     return addDocs(coll, total, idprefix);
 }
 
-void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
+void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) const {
     C4Test::createRev(db, docID, revID, body, flags);
 }
 
@@ -450,7 +453,7 @@ string C4Test::createFleeceRev(C4Collection* coll, C4Slice docID, C4Slice revID,
     }
 }
 
-void C4Test::createNumberedDocs(unsigned numberOfDocs) {
+void C4Test::createNumberedDocs(unsigned numberOfDocs) const {
     TransactionHelper t(db);
     constexpr size_t  bufSize = 20;
     char              docID[bufSize];
@@ -460,7 +463,7 @@ void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     }
 }
 
-string C4Test::listSharedKeys(string delimiter) {
+string C4Test::listSharedKeys(const string& delimiter) const {
     stringstream result;
     auto         sk = c4db_getFLSharedKeys(db);
     REQUIRE(sk);
@@ -486,7 +489,7 @@ string C4Test::getDocJSON(C4Collection* collection, C4Slice docID) {
     return json.asString();
 }
 
-bool C4Test::docBodyEquals(C4Document* doc, slice fleece) {
+bool C4Test::docBodyEquals(C4Document* doc, slice fleece) const {
     Dict root = c4doc_getProperties(doc);
     if ( !root ) return false;
 
@@ -497,13 +500,14 @@ bool C4Test::docBodyEquals(C4Document* doc, slice fleece) {
 
 #pragma mark - ATTACHMENTS / BLOBS:
 
-vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID, vector<string> attachments, const char* contentType,
-                                                vector<string>* legacyNames, C4RevisionFlags flags) {
+vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID, const vector<string>& attachments,
+                                                const char* contentType, vector<string>* legacyNames,
+                                                C4RevisionFlags flags) const {
     return addDocWithAttachments(db, kC4DefaultCollectionSpec, docID, attachments, contentType, legacyNames, flags);
 }
 
 vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database, C4CollectionSpec collSpec, C4Slice docID,
-                                                vector<string> attachments, const char* contentType,
+                                                const vector<string>& attachments, const char* contentType,
                                                 vector<string>* legacyNames, C4RevisionFlags flags) {
     C4Collection* coll = c4db_getCollection(database, collSpec, ERROR_INFO());
     REQUIRE(coll);
@@ -512,7 +516,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Database* database, C4Collecti
     stringstream      json;
     int               i = 0;
     json << (legacyNames ? "{_attachments: {" : "{attached: [");
-    for ( string& attachment : attachments ) {
+    for ( const string& attachment : attachments ) {
         C4BlobKey key;
         REQUIRE(c4blob_create(c4db_getBlobStore(database, nullptr), fleece::slice(attachment), nullptr, &key,
                               WITH_ERROR()));
@@ -557,7 +561,7 @@ void C4Test::checkAttachments(C4Database* inDB, vector<C4BlobKey> blobKeys, vect
 #pragma mark - FILE IMPORT:
 
 // Parameter is relative filepath for cert from project root
-fleece::alloc_slice C4Test::readFile(std::string filepath) {
+fleece::alloc_slice C4Test::readFile(const std::string& filepath) {
     std::ifstream inFile(filepath);
     REQUIRE(inFile.is_open());
     std::stringstream outData;
@@ -569,7 +573,7 @@ fleece::alloc_slice C4Test::readFile(std::string filepath) {
     return result;
 }
 
-bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
+bool C4Test::readFileByLines(const string& path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
@@ -577,7 +581,9 @@ bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, 
     size_t       lineCount = 0;
     while ( fd.good() ) {
         if ( maxLines > 0 && lineCount == maxLines ) { break; }
-        fd.getline(buf.data(), buf.capacity());
+        // Ensure that buf.capacity (size_t/uint64) will not exceed limit of std::streamsize (int64)
+        DebugAssert(buf.capacity() <= std::numeric_limits<std::streamsize>::max());
+        fd.getline(buf.data(), buf.capacity());  // NOLINT(cppcoreguidelines-narrowing-conversions)
         auto len = fd.gcount();
         if ( len <= 0 ) break;
         ++lineCount;
@@ -589,7 +595,7 @@ bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, 
     return true;
 }
 
-unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bool verbose) {
+unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, double timeout, bool verbose) const {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
     FLError           error;
@@ -634,8 +640,8 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 }
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, C4Collection* collection, double timeout, bool verbose, size_t maxLines,
-                                 const string& idPrefix) {
+unsigned C4Test::importJSONLines(const string& path, C4Collection* collection, double timeout, bool verbose,
+                                 size_t maxLines, const string& idPrefix) {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
 
@@ -678,11 +684,15 @@ unsigned C4Test::importJSONLines(string path, C4Collection* collection, double t
     return numDocs;
 }
 
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database, size_t maxLines,
-                                 const string& idPrefix) {
+// Ignore "method can be made const"
+// NOLINTBEGIN(readability-make-member-function-const)
+unsigned C4Test::importJSONLines(const string& path, double timeout, bool verbose, C4Database* database,
+                                 size_t maxLines, const string& idPrefix) {
     if ( database == nullptr ) database = db;
     return importJSONLines(path, c4db_getDefaultCollection(database, nullptr), timeout, verbose, maxLines, idPrefix);
 }
+
+// NOLINTEND(readability-make-member-function-const)
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
 C4Slice       C4Test::kFleeceBody, C4Test::kEmptyFleeceBody;

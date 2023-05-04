@@ -133,11 +133,11 @@ namespace litecore {
         void _createFlagsIndex(const char* indexName NONNULL, DocumentFlags flag, bool& created);
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
-        std::string createUnnestedTable(const fleece::impl::Value* arrayPath, const IndexSpec::Options*);
+        std::string createUnnestedTable(const fleece::impl::Value* arrayPath);
 
 #ifdef COUCHBASE_ENTERPRISE
         bool        createPredictiveIndex(const IndexSpec&);
-        std::string createPredictionTable(const fleece::impl::Value* arrayPath, const IndexSpec::Options*);
+        std::string createPredictionTable(const fleece::impl::Value* arrayPath);
         void        garbageCollectPredictiveIndexes();
 #endif
 

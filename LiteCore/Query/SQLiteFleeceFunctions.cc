@@ -12,11 +12,11 @@
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
-#include "Path.hh"
 #include "Error.hh"
+#include "Encoder.hh"
 #include "Logging.hh"
-#include "fleece/Fleece.h"
 #include "DeepIterator.hh"
+#include "NumConversion.hh"
 #include "RevID.hh"
 #include <sstream>
 
@@ -30,7 +30,7 @@ namespace litecore {
 
 
     // fl_root(body) -> fleeceData
-    static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_root(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         if ( sqlite3_value_type(argv[0]) == SQLITE_BLOB ) {
             // Pull the Fleece data out of a raw document body:
             bool  copied{false};
@@ -50,7 +50,7 @@ namespace litecore {
     }
 
     // fl_value(body, propertyPath) -> propertyValue
-    __hot static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    __hot static void fl_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             setResultFromValue(ctx, scope.root);
@@ -58,7 +58,7 @@ namespace litecore {
     }
 
     // fl_version(version) -> propertyValue (string)
-    static void fl_version(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_version(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             slice version = valueAsSlice(argv[0]);
             setResultTextFromSlice(ctx, revid(version).expanded());
@@ -66,7 +66,7 @@ namespace litecore {
     }
 
     // fl_blob(body, propertyPath) -> blob data
-    static void fl_blob(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_blob(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) return;
@@ -86,7 +86,7 @@ namespace litecore {
     }
 
     // fl_nested_value(fleeceData, propertyPath) -> propertyValue
-    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_nested_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             const Value* val = fleeceParam(ctx, argv[0], false);
             if ( !val ) {
@@ -123,7 +123,7 @@ namespace litecore {
     }
 
     // fl_fts_value(body, propertyPath) -> blob data
-    static void fl_fts_value(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_fts_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( scope.root == nullptr ) { return; }
@@ -157,7 +157,7 @@ namespace litecore {
     }
 
     // fl_exists(body, propertyPath) -> 0/1
-    static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_exists(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             sqlite3_result_int(ctx, (scope.root ? 1 : 0));
@@ -166,7 +166,7 @@ namespace litecore {
     }
 
     // fl_count(body, propertyPath) -> int
-    static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_count(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) {
@@ -188,7 +188,7 @@ namespace litecore {
                         break;
                     }
                 case kDict:
-                    sqlite3_result_int(ctx, scope.root->asDict()->count());
+                    sqlite3_result_int(ctx, narrow_cast<int>(scope.root->asDict()->count()));
                     break;
                 default:
                     sqlite3_result_null(ctx);
@@ -200,7 +200,7 @@ namespace litecore {
     // fl_result(value) -> value suitable for use as a result column
     // Primarily what this does is change the various custom value subtypes into Fleece containers
     // that can be read by SQLiteQueryRunner::encodeColumn().
-    __hot static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    __hot static void fl_result(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             auto arg = argv[0];
             switch ( sqlite3_value_type(arg) ) {
@@ -266,12 +266,12 @@ namespace litecore {
         } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_result: exception!", -1); }
     }
 
-    static void fl_null(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_null(sqlite3_context* ctx, C4UNUSED int argc, C4UNUSED sqlite3_value** argv) noexcept {
         sqlite3_result_zeroblob(ctx, 0);
         sqlite3_result_subtype(ctx, kFleeceNullSubtype);
     }
 
-    static void fl_bool(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_bool(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         sqlite3_result_int(ctx, sqlite3_value_int(argv[0]) != 0);
         sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
@@ -291,7 +291,7 @@ namespace litecore {
 #pragma mark - CONTAINS()
 
     // fl_contains(body, propertyPath, value) -> 0/1
-    static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_contains(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             collectionContainsImpl(ctx, scope.root, argv[2]);
@@ -311,7 +311,7 @@ namespace litecore {
             FLSlice s;
         };
 
-        target_t  target;
+        target_t  target;  // NOLINT(cppcoreguidelines-pro-type-member-init)
         valueType targetType;
         bool (*predicate)(const Value*, const target_t&);
 
@@ -436,6 +436,7 @@ namespace litecore {
                     break;
                 }
             case SQLITE_NULL:
+            default:
                 {
                     const Value* value = asFleeceValue(arg);
                     if ( value ) {
@@ -480,7 +481,7 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
     // fl_callback(docID, revID, body, extra, sequence, callback, flags) -> string
-    static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
+    static void fl_callback(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version   = valueAsSlice(argv[1]);
         rec.extra     = valueAsSlice(argv[3]);

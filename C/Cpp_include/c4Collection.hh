@@ -16,6 +16,7 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/RefCounted.hh"
 #include <functional>
@@ -114,7 +115,7 @@ struct C4Collection
 
     // Internal use only:
 
-    virtual ~C4Collection() = default;
+    ~C4Collection() override = default;
 
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs,
                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,

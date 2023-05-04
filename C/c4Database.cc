@@ -13,7 +13,6 @@
 #include "c4Database.hh"
 #include "c4Collection.hh"
 #include "c4Query.hh"
-#include "c4Private.h"
 #include "c4ExceptionUtils.hh"
 
 #include "DatabaseImpl.hh"
@@ -24,10 +23,8 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "SecureRandomize.hh"
 #include "SecureSymmetricCrypto.hh"
-#include "StringUtil.hh"
-#include <inttypes.h>
+#include <cinttypes>
 #include <optional>
 
 
@@ -82,7 +79,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
 
 /*static*/ bool C4Database::deleteDatabaseFileAtPath(const string& dbPath, C4StorageEngine storageEngine) {
     FilePath           path(dbPath);
-    DataFile::Factory* factory = nullptr;
+    DataFile::Factory* factory;
     if ( storageEngine ) {
         factory = DataFile::factoryNamed(storageEngine);
         if ( !factory ) Warn("c4db_deleteNamed: unknown storage engine '%s'", storageEngine);
@@ -161,8 +158,8 @@ C4Collection* C4Database::getDefaultCollectionSafe() const {
 }
 
 C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig& inConfig)
-    : _name(move(name))
-    , _parentDirectory(move(dir))
+    : _name(std::move(name))
+    , _parentDirectory(std::move(dir))
     , _config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
     , _configV1(inConfig) {}
 
@@ -230,7 +227,7 @@ void C4Database::forEachCollection(slice inScope, const CollectionSpecCallback& 
 
 #ifndef C4_STRICT_COLLECTION_API
 
-#    include "c4Document.hh"
+#    include "c4Document.hh"  // IWYU pragma: keep - needed for full definition of C4Document
 
 // Shims to ease the pain of converting to collections. These delegate to the default collection.
 

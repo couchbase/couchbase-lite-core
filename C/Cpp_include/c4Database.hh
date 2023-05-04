@@ -17,6 +17,7 @@
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
 #include "fleece/function_ref.hh"
+#include "fleece/InstanceCounted.hh"
 #include <functional>
 #include <memory>
 #include <vector>
@@ -60,7 +61,7 @@ struct C4Database
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain() { return openNamed(getName(), getConfiguration()); }
+    Retained<C4Database> openAgain() const { return openNamed(getName(), getConfiguration()); }
 
     virtual void close()                                      = 0;
     virtual void closeAndDeleteFile()                         = 0;
@@ -94,6 +95,8 @@ struct C4Database
     struct CollectionSpec : public C4CollectionSpec {
         CollectionSpec() : C4CollectionSpec{kC4DefaultCollectionName, kC4DefaultScopeID} {}
 
+        // The single-arg constructors must be implicit, otherwise half the code breaks
+        // NOLINTBEGIN(google-explicit-constructor)
         CollectionSpec(const C4CollectionSpec& spec) : C4CollectionSpec(spec) {}
 
         CollectionSpec(FLString name, FLString scope) : C4CollectionSpec{name, scope} {}
@@ -103,6 +106,8 @@ struct C4Database
         CollectionSpec(slice name, slice scope) : C4CollectionSpec{name, scope} {}
 
         CollectionSpec(slice name) : C4CollectionSpec{name, kC4DefaultScopeID} {}
+
+        // NOLINTEND(google-explicit-constructor)
     };
 
     /// Returns the default collection, whose name is "_default" (`kC4DefaultCollectionName`).
@@ -156,7 +161,7 @@ struct C4Database
       public:
         explicit Transaction(C4Database* db) : _db(db) { db->beginTransaction(); }
 
-        Transaction(Transaction&& t) : _db(t._db) { t._db = nullptr; }
+        Transaction(Transaction&& t) noexcept : _db(t._db) { t._db = nullptr; }
 
         void commit() {
             auto db = _db;
@@ -174,9 +179,10 @@ struct C4Database
             if ( _db ) _db->endTransaction(false);
         }
 
+        Transaction(const Transaction&)            = delete;
+        Transaction& operator=(const Transaction&) = delete;
+
       private:
-        Transaction(const Transaction&)                      = delete;
-        Transaction&           operator=(const Transaction&) = delete;
         C4Database* C4NULLABLE _db;
     };
 

@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#define __C4DOCUMENT_H__
 #include "c4DocumentTypes.h"
 
 #if LITECORE_CPP_API
@@ -82,6 +81,8 @@ CBL_CORE_API bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth, C4Error*
 /** \name Revisions
         @{ */
 
+/*** Returns whether the selected revision has been rejected by the remote */
+CBL_CORE_API bool c4doc_isRevRejected(C4Document* doc) C4API;
 
 /** Selects a specific revision of a document (or no revision, if revID is NULL.) */
 CBL_CORE_API bool c4doc_selectRevision(C4Document* doc, C4String revID, bool withBody,

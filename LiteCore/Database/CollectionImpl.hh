@@ -210,7 +210,11 @@ namespace litecore {
                 } while ( doc->selectNextRevision() );
                 if ( !revID ) return false;
             }
-            doc->setRemoteAncestorRevID(remoteID, revID);
+            if ( remoteID == RevTree::kNoRemoteID ) {
+                doc->revIsRejected(revID);
+            } else {
+                doc->setRemoteAncestorRevID(remoteID, revID);
+            }
             doc->save();
             return true;
         }

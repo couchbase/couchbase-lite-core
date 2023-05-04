@@ -237,21 +237,21 @@ namespace litecore {
             if ( _usuallyFalse(this->willLog(level)) ) this->_logv(level, format, args);
         }
 
-        virtual inline void logInfo(const char* format, ...) const {
+        inline void logInfo(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Info, format, args);
             va_end(args);
         }
 
-        virtual inline void logVerbose(const char* format, ...) const {
+        inline void logVerbose(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Verbose, format, args);
             va_end(args);
         }
 #if DEBUG
-        virtual inline void logDebug(const char* format, ...) const {
+        inline void logDebug(const char* format, ...) const {
             va_list args;
             va_start(args, format);
             _logAt(LogLevel::Debug, format, args);

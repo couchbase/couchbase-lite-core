@@ -73,7 +73,7 @@ namespace litecore {
         // In 2.0 schema, entire tree is stored in `body` and there is no `extra`.
         // In 3.0 schema, the rev tree is in `extra`, except the current rev's body is in `body`.
         slice rawTree = (extra ? extra : body);
-        _revsStorage  = RawRevision::decodeTree(rawTree, _remoteRevs, this, seq);
+        _revsStorage  = RawRevision::decodeTree(rawTree, _remoteRevs, _rejectedRevs, this, seq);
         initRevs();
         if ( body && extra ) {
             auto cur = currentRevision();
@@ -100,7 +100,7 @@ namespace litecore {
             curBody = cur->body();
             substituteBody(cur, nullslice);
         }
-        alloc_slice tree = RawRevision::encodeTree(_revs, _remoteRevs);
+        alloc_slice tree = RawRevision::encodeTree(_revs, _remoteRevs, _rejectedRevs);
         if ( cur ) substituteBody(cur, curBody);
         return {curBody, tree};
     }
@@ -525,6 +525,12 @@ namespace litecore {
         for ( auto& e : tempRemoteRevs ) {
             if ( e.second->isMarkedForPurge() ) _remoteRevs.erase(e.first);
         }
+        // Remove purged revs from _rejectedRevs
+        auto tempRejectedRevs = _rejectedRevs;
+        _rejectedRevs.clear();
+        for ( auto& e : tempRejectedRevs ) {
+            if ( !e->isMarkedForPurge() ) _rejectedRevs.push_back(e);
+        }
 
         _changed = true;
     }
@@ -583,6 +589,14 @@ namespace litecore {
             if ( r.second == rev ) return true;
         }
         return false;
+    }
+
+    void RevTree::revIsRejected(const Rev* rev) {
+        Assert(rev);
+        if ( std::find(_rejectedRevs.begin(), _rejectedRevs.end(), rev) == _rejectedRevs.end() ) {
+            _rejectedRevs.push_back(rev);
+            _changed = true;
+        }
     }
 
     const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {

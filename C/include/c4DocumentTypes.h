@@ -53,12 +53,16 @@ typedef C4_ENUM(uint8_t, C4DocContentLevel){
         kDocGetAll,         ///< Get everything
 };                          // Note: Same as litecore::ContentOption
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** Describes a revision of a document. A sub-struct of C4Document. */
 typedef struct C4Revision {
     C4HeapString     revID;     ///< Revision ID
     C4RevisionFlags  flags;     ///< Flags (deleted?, leaf?, new? hasAttachments?)
     C4SequenceNumber sequence;  ///< Sequence number in database
 } C4Revision;
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 // NOTE: Looking for C4Document itself? It's moved to c4DocumentStruct.h
 
@@ -107,6 +111,8 @@ typedef struct C4DocPutRequest {
 /** \name Collection Observer
  @{ */
 
+// Ignore warning about not initializing members, it must be this way to be C-compatible
+// NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
 /** Represents a change to a document in a collection, as returned from \ref c4dbobs_getChanges. */
 typedef struct {
     C4HeapString     docID;     ///< The document's ID
@@ -115,6 +121,8 @@ typedef struct {
     uint32_t         bodySize;  ///< The size of the revision body in bytes
     C4RevisionFlags  flags;     ///< The current revision's flags
 } C4CollectionChange;
+
+// NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 #ifndef C4_STRICT_COLLECTION_API
 typedef C4CollectionChange C4DatabaseChange;

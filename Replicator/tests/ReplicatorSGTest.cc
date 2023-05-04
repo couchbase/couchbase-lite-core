@@ -1509,7 +1509,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Network Interface", "[.SyncServer]") {
         code                 = EADDRNOTAVAIL;
 #elif defined(__linux__)
         _sg.networkInterface = "eth0"_sl;
-        code = ETIMEDOUT;
+        code                 = ETIMEDOUT;
 #elif defined(_WIN32)
         // Note: Required Wi-Fi interface on the test machine.
         _sg.networkInterface = "Wi-Fi"_sl;

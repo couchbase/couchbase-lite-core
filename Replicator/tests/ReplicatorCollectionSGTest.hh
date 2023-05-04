@@ -31,21 +31,11 @@ static constexpr C4CollectionSpec Tulips    = {TulipsName, FlowersScopeName};
 static constexpr C4CollectionSpec Lavenders = {LavenderName, FlowersScopeName};
 static constexpr C4CollectionSpec Default   = kC4DefaultCollectionSpec;
 
-#ifdef COUCHBASE_ENTERPRISE
-static C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
-                                   C4StringResult* outKeyID, C4Error* outError);
-
-static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4String algorithm, C4String keyID,
-                                   C4Error* outError);
-#endif
-
 static constexpr const char* kTestUserName = "sguser";
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
   public:
-    ReplicatorCollectionSGTest() : ReplicatorAPITest() {
+    ReplicatorCollectionSGTest() : ReplicatorAPITest(), _expectedSGVersion{"3.1", ""} {
         _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
         if ( getenv("NOTLS") ) {
             _sg.address = {kC4Replicator2Scheme, C4STR("localhost"), 4984};
@@ -54,6 +44,16 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         }
 
         _flushedScratch = true;
+    }
+
+    // Useful for derived classes to state the minimum and maximum SG versions they can use
+    // Copied from the bottom of this file:
+    // Pair of strings representing min and max SG version
+    // min is inclusive, max is exclusive. Empty string for max will ignore it
+    // i.e.: {"3.0", "3.1"} represents anything 3.0 and above, and excludes 3.1 and above
+    ReplicatorCollectionSGTest(const std::string& minSGVer, const std::string& maxSGVer)
+        : ReplicatorCollectionSGTest() {
+        _expectedSGVersion = {minSGVer, maxSGVer};
     }
 
     ~ReplicatorCollectionSGTest() {
@@ -75,6 +75,16 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
             deleteAndRecreateDB(verifyDb);
         }
     }
+
+#ifdef COUCHBASE_ENTERPRISE
+    static C4SliceResult propEncryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                                       C4String keyPath, C4Slice input, C4StringResult* outAlgorithm,
+                                       C4StringResult* outKeyID, C4Error* outError);
+
+    static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String docID, FLDict properties,
+                                       C4String keyPath, C4Slice input, C4String algorithm, C4String keyID,
+                                       C4Error* outError);
+#endif
 
     static AllocedDict createOptionsAuth(const std::string& username, const std::string& password) {
         Encoder enc;
@@ -117,16 +127,13 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         for ( size_t i = 0; i < _collectionCount; ++i ) {
             if ( _collectionSpecs[i] != Default ) { verifyDb->createCollection(_collectionSpecs[i]); }
             collections[i] = verifyDb->getCollection(_collectionSpecs[i]);
+            REQUIRE(collections[i]);
             CHECK(0 == c4coll_getDocumentCount(collections[i]));
         }
 
         // Pull to verify that Push successfully pushed all documents in docIDs
 
-        std::vector<C4ReplicationCollection> replCollections{_collectionCount};
-        for ( size_t i = 0; i < _collectionCount; ++i ) {
-            replCollections[i] = C4ReplicationCollection{_collectionSpecs[i], kC4Disabled, kC4OneShot};
-        }
-        ReplParams replParams{replCollections};
+        ReplParams replParams{_collectionSpecs, kC4Disabled, kC4OneShot};
         replParams.setDocIDs(docIDs);
 #ifdef COUCHBASE_ENTERPRISE
         if ( propertyEncryption > 0 ) {
@@ -167,16 +174,6 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         }
     }
 
-    // Returns unique prefix based on time.
-    static string timePrefix() {
-        auto              now     = std::chrono::high_resolution_clock::now();
-        auto              epoch   = now.time_since_epoch();
-        auto              seconds = std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
-        std::stringstream ss;
-        ss << std::hex << seconds << "_";
-        return ss.str();
-    }
-
     // map: docID -> rev generation
     static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
         std::unordered_map<alloc_slice, unsigned> ret;
@@ -196,6 +193,23 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         deleteAndRecreateDB();
         _collections = collectionPreamble(_collectionSpecs);
+    }
+
+    bool sgVersionCheck() {
+        alloc_slice       serverName = _sg.getServerName();
+        const std::string minSGVer   = std::string("Couchbase Sync Gateway/") + _expectedSGVersion.first;
+        const std::string maxSGVer   = std::string("Couchbase Sync Gateway/") + _expectedSGVersion.second;
+        // Compares the ASCII bytes of the version strings
+        bool isCorrectVersion = serverName >= minSGVer && (_expectedSGVersion.second.empty() || serverName < maxSGVer);
+        if ( !isCorrectVersion ) {
+            C4Log("[ReplicatorTest] Sync Gateway version differs from expected."
+                  "\n\tExpected version: \n\t\tMinimum (inclusive): %s"
+                  "\n\t\tMaximum (exclusive): %s\n\tActual version: %.*s",
+                  minSGVer.c_str(), maxSGVer.c_str(), SPLAT(serverName));
+        } else {
+            C4Log("[ReplicatorTest] Sync Gateway version is: %.*s", SPLAT(serverName));
+        }
+        return isCorrectVersion;
     }
 
     /*
@@ -219,6 +233,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         _options       = createOptionsAuth(_testUser._username, _testUser._password);
         _sg.authHeader = _testUser.authHeader();
         _docIDs.resize(_collectionCount);
+        REQUIRE(sgVersionCheck());
     }
 
     /*
@@ -253,6 +268,10 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
     SG::TestUser                                           _testUser{};
     size_t                                                 _collectionCount = 0;
     std::vector<std::unordered_map<alloc_slice, unsigned>> _docIDs{};
+    // Pair of strings representing min and max SG version
+    // min is inclusive, max is exclusive. Empty string for max will ignore it
+    // i.e.: {"3.0", "3.1"} represents anything 3.0 and above, and excludes 3.1 and above
+    std::pair<std::string, std::string> _expectedSGVersion;
 };
 
 #endif  //LITECORE_REPLICATORCOLLECTIONSGTEST_HH

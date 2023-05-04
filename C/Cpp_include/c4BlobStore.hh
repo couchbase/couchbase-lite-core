@@ -15,7 +15,8 @@
 #include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
 #include "fleece/function_ref.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
+#include "fleece/InstanceCounted.hh"
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -92,11 +93,11 @@ struct C4ReadStream
     : public fleece::InstanceCounted
     , C4Base {
     C4ReadStream(const C4BlobStore&, C4BlobKey);
-    C4ReadStream(C4ReadStream&&);
-    ~C4ReadStream();
-    size_t  read(void* buffer, size_t maxBytes);
-    int64_t getLength() const;
-    void    seek(int64_t pos);
+    C4ReadStream(C4ReadStream&&) noexcept;
+    ~C4ReadStream() override;
+    size_t                 read(void* buffer, size_t maxBytes);
+    [[nodiscard]] uint64_t getLength() const;
+    void                   seek(uint64_t pos);
 
   private:
     std::unique_ptr<litecore::SeekableReadStream> _impl;
@@ -106,15 +107,15 @@ struct C4WriteStream
     : public fleece::InstanceCounted
     , C4Base {
     explicit C4WriteStream(C4BlobStore&);
-    C4WriteStream(C4WriteStream&&);
-    ~C4WriteStream();
+    C4WriteStream(C4WriteStream&&) noexcept;
+    ~C4WriteStream() override;
 
-    C4BlobStore& blobStore() const { return _store; }
+    [[nodiscard]] C4BlobStore& blobStore() const { return _store; }
 
-    void      write(slice);
-    uint64_t  getBytesWritten() const noexcept;
-    C4BlobKey computeBlobKey();
-    C4BlobKey install(const C4BlobKey* C4NULLABLE expectedKey = nullptr);
+    void                   write(slice);
+    [[nodiscard]] uint64_t getBytesWritten() const noexcept;
+    C4BlobKey              computeBlobKey();
+    C4BlobKey              install(const C4BlobKey* C4NULLABLE expectedKey = nullptr);
 
   private:
     std::unique_ptr<litecore::BlobWriteStream> _impl;
@@ -126,23 +127,23 @@ struct C4BlobStore : C4Base {
 
     ~C4BlobStore();
 
-    bool isEncrypted() const { return _encryptionKey.algorithm != kC4EncryptionNone; }
+    [[nodiscard]] bool isEncrypted() const { return _encryptionKey.algorithm != kC4EncryptionNone; }
 
     void deleteStore();
 
     /// The size of the blob in bytes. Returns -1 if there is no such blob.
-    int64_t getSize(C4BlobKey) const;
+    [[nodiscard]] int64_t getSize(C4BlobKey) const;
 
     /// The blob's data. Returns nullslice if there is no such blob.
-    alloc_slice getContents(C4BlobKey) const;
+    [[nodiscard]] alloc_slice getContents(C4BlobKey) const;
 
     /// The filesystem path of a blob, or nullslice if no blob with that key exists.
-    alloc_slice getFilePath(C4BlobKey) const;
+    [[nodiscard]] alloc_slice getFilePath(C4BlobKey) const;
 
     C4BlobKey createBlob(slice contents, const C4BlobKey* C4NULLABLE expectedKey = nullptr);
     void      deleteBlob(C4BlobKey);
 
-    C4ReadStream openReadStream(C4BlobKey key) const { return C4ReadStream(*this, key); }
+    [[nodiscard]] C4ReadStream openReadStream(C4BlobKey key) const { return {*this, key}; }
 
     C4WriteStream openWriteStream() { return C4WriteStream(*this); }
 
@@ -151,7 +152,7 @@ struct C4BlobStore : C4Base {
          provided.
          Returns a null slice if the blob data is not inline but no BlobStore is given.
          Otherwise throws an exception if it's unable to return data. */
-    alloc_slice getBlobData(FLDict dict);
+    alloc_slice getBlobData(FLDict dict) const;
 
     // Used internally by C4Database:
     unsigned deleteAllExcept(const std::unordered_set<C4BlobKey>& inUse);
@@ -161,15 +162,16 @@ struct C4BlobStore : C4Base {
     // rarely used / for testing only:
     C4BlobStore(slice dirPath, C4DatabaseFlags, const C4EncryptionKey& = {});
 
+    C4BlobStore(const C4BlobStore&) = delete;
+
   protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
 
-    C4BlobStore(const C4BlobStore&) = delete;
-    litecore::FilePath                            dir() const;
-    litecore::FilePath                            pathForKey(C4BlobKey) const;
-    std::unique_ptr<litecore::SeekableReadStream> getReadStream(C4BlobKey) const;
-    std::unique_ptr<litecore::BlobWriteStream>    getWriteStream();
+    [[nodiscard]] litecore::FilePath                            dir() const;
+    [[nodiscard]] litecore::FilePath                            pathForKey(C4BlobKey) const;
+    [[nodiscard]] std::unique_ptr<litecore::SeekableReadStream> getReadStream(C4BlobKey) const;
+    std::unique_ptr<litecore::BlobWriteStream>                  getWriteStream();
     C4BlobKey install(litecore::BlobWriteStream*, const C4BlobKey* C4NULLABLE expectedKey);
 
   private:

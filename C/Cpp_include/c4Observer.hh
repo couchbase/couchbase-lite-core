@@ -34,7 +34,7 @@ struct C4CollectionObserver
 
     static std::unique_ptr<C4CollectionObserver> create(C4Collection*, Callback);
 
-    virtual ~C4CollectionObserver() = default;
+    ~C4CollectionObserver() override = default;
 
     /// Metadata of a change recorded by C4CollectionObserver. (Equivalent to C4CollectionChange.)
     struct Change {
@@ -61,8 +61,8 @@ struct C4DocumentObserver
     , C4Base {
     using Callback = C4Collection::DocumentObserverCallback;
 
-    static std::unique_ptr<C4DocumentObserver> create(C4Collection*, slice docID, Callback);
-    virtual ~C4DocumentObserver() = default;
+    static std::unique_ptr<C4DocumentObserver> create(C4Collection*, slice docID, const Callback&);
+    ~C4DocumentObserver() override = default;
 
   protected:
     C4DocumentObserver() = default;

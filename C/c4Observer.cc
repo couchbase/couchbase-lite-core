@@ -11,11 +11,10 @@
 //
 
 #include "c4Observer.hh"
-#include "c4Database.hh"
-#include "c4Internal.hh"
 #include "CollectionImpl.hh"
 #include "SequenceTracker.hh"
 #include <optional>
+#include <utility>
 
 using namespace std;
 
@@ -26,14 +25,14 @@ namespace litecore {
         C4CollectionObserverImpl(C4Collection* collection, C4SequenceNumber since, Callback callback)
             : _retainDatabase(collection->getDatabase())
             , _collection(asInternal(collection))
-            , _callback(move(callback)) {
+            , _callback(std::move(callback)) {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker& st) {
                 _notifier.emplace(
                         &st, [this](CollectionChangeNotifier&) { _callback(this); }, since);
             });
         }
 
-        ~C4CollectionObserverImpl() {
+        ~C4CollectionObserverImpl() override {
             if ( !_collection->isValid() ) {
                 // HACK: If the collection is not valid anymore, the notifier tracker is probably
                 // also bad, so null it out so the destructor doesn't try to use it
@@ -72,7 +71,7 @@ namespace litecore {
 
 unique_ptr<C4CollectionObserver> C4CollectionObserver::create(C4Collection*                  coll,
                                                               C4CollectionObserver::Callback callback) {
-    return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, move(callback));
+    return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, std::move(callback));
 }
 
 #pragma mark - DOCUMENT OBSERVER:
@@ -82,7 +81,9 @@ namespace litecore {
     class C4DocumentObserverImpl : public C4DocumentObserver {
       public:
         C4DocumentObserverImpl(C4Collection* collection, slice docID, Callback callback)
-            : _retainedDatabase(collection->getDatabase()), _collection(asInternal(collection)), _callback(callback) {
+            : _retainedDatabase(collection->getDatabase())
+            , _collection(asInternal(collection))
+            , _callback(std::move(callback)) {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker& st) {
                 _notifier.emplace(&st, docID, [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
                     _callback(this, _collection, docID, sequence);
@@ -90,7 +91,7 @@ namespace litecore {
             });
         }
 
-        ~C4DocumentObserverImpl() {
+        ~C4DocumentObserverImpl() override {
             if ( !_collection->isValid() ) {
                 // HACK: If the collection is not valid anymore, the notifier tracker is probably
                 // also bad, so null it out so the destructor doesn't try to use it
@@ -115,6 +116,6 @@ namespace litecore {
 }  // namespace litecore
 
 unique_ptr<C4DocumentObserver> C4DocumentObserver::create(C4Collection* db, slice docID,
-                                                          C4DocumentObserver::Callback callback) {
+                                                          const C4DocumentObserver::Callback& callback) {
     return make_unique<litecore::C4DocumentObserverImpl>(db, docID, callback);
 }

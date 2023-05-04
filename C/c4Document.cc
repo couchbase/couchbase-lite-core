@@ -14,23 +14,16 @@
 #    define NOMINMAX
 #endif
 
-#include "c4Document.hh"
-#include "c4BlobStore.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "CollectionImpl.hh"
 #include "DatabaseImpl.hh"
-#include "DocumentFactory.hh"
 #include "LegacyAttachments.hh"
 #include "RevID.hh"
-#include "RevTree.hh"  // only for kDefaultRemoteID
-#include "Base64.hh"
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "Doc.hh"
 #include "fleece/FLExpert.h"
-#include "FleeceImpl.hh"
 #include "DeepIterator.hh"
 
 using namespace std;
@@ -38,7 +31,7 @@ using namespace fleece;
 using namespace litecore;
 
 C4Document::C4Document(C4Collection* collection, alloc_slice docID_)
-    : _collection(asInternal(collection)), _docID(move(docID_)) {
+    : _collection(asInternal(collection)), _docID(std::move(docID_)), _flags(0), _sequence(C4SequenceNumber::None) {
     // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
     if ( _docID.size < 1 || _docID.size > kMaxDocIDLength )
         error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
@@ -103,7 +96,8 @@ C4Document::C4Document(C4Collection* collection, alloc_slice docID_)
 C4Document::~C4Document() { destructExtraInfo(_extraInfo); }
 
 C4Document::C4Document(const C4Document& doc)
-    : _flags(doc._flags)
+    : RefCounted(doc)  // Calling base class copy constructor to abide by Clang-Tidy warning
+    , _flags(doc._flags)
     , _docID(doc._docID)
     , _revID(doc._revID)
     , _sequence(doc._sequence)
@@ -251,7 +245,7 @@ void C4Document::resolveConflict(slice winningRevID, slice losingRevID, FLDict m
         mergedBody = FLEncoder_Finish(enc, &flErr);
         if ( !mergedBody ) error::_throw(error::Fleece, flErr);
     }
-    return resolveConflict(winningRevID, losingRevID, mergedBody, mergedFlags);
+    return resolveConflict(winningRevID, losingRevID, mergedBody, mergedFlags, pruneLosingBranch);
 }
 
 #pragma mark - STATIC UTILITY FUNCTIONS:

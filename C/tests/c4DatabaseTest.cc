@@ -10,18 +10,16 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
-#include "c4Private.h"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
-#include "c4Index.h"
 #include "c4IndexTypes.h"
 #include "c4Query.h"
 #include "c4Collection.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
-#include <errno.h>
+#include <cerrno>
 #include <iostream>
 #include <thread>
 
@@ -35,9 +33,10 @@ static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError) no
 
 class C4DatabaseTest : public C4Test {
   public:
-    C4DatabaseTest(int testOption) : C4Test(testOption) {}
+    explicit C4DatabaseTest(int testOption) : C4Test(testOption) {}
 
-    void assertMessage(C4ErrorDomain domain, int code, const char* expectedDomainAndType, const char* expectedMsg) {
+    static void assertMessage(C4ErrorDomain domain, int code, const char* expectedDomainAndType,
+                              const char* expectedMsg) {
         C4SliceResult msg = c4error_getMessage({domain, code});
         CHECK(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
         c4slice_free(msg);
@@ -624,7 +623,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
         C4Timestamp expire = c4_now() + 2 * secs;
         REQUIRE(c4doc_setExpiration(db, slice(docID), expire, nullptr));
 
-        int n = litecore::RandomNumber(1000);
+        uint32_t n = litecore::RandomNumber(1000);
         this_thread::sleep_for(chrono::microseconds(n));
         C4LogToAt(kC4DatabaseLog, kC4LogInfo, "---- close & reopen db ---");
         reopenDB();

@@ -91,6 +91,7 @@ namespace litecore {
 
         error(Domain, int code);
         error(error::Domain, int code, const std::string& what);
+        error(Domain, int code, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace);
 
         explicit error(LiteCoreError e) : error(LiteCore, e) {}
 
