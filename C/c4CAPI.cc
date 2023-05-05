@@ -492,6 +492,18 @@ bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxA
     });
 }
 
+// only used by tests
+bool c4coll_findDocAncestors(C4Collection* collection, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
+                             C4RemoteID remoteDBID, const C4String docIDs[], const C4String revIDs[],
+                             C4StringResult ancestors[], C4Error* outError) noexcept {
+    return tryCatch(outError, [&] {
+        vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
+        vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
+        auto vecAncestors = collection->findDocAncestors(vecDocIDs, vecRevIDs, maxAncestors, requireBodies, remoteDBID);
+        for ( unsigned i = 0; i < numDocs; ++i ) ancestors[i] = C4SliceResult(vecAncestors[i]);
+    });
+}
+
 void c4raw_free(C4RawDocument* rawDoc) noexcept {
     if ( rawDoc ) {
         ::free((void*)rawDoc->key.buf);
@@ -545,7 +557,11 @@ C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexc
 }
 
 C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* outError) noexcept {
-    return tryCatch<C4SliceResult>(outError, [&] { return C4SliceResult(database->getIndexRows(indexName)); });
+    return tryCatch<C4SliceResult>(outError, [&] {
+        auto coll = database->getDefaultCollection();
+        returnIfCollectionInvalid(coll, outError, C4SliceResult{nullptr});
+        return C4SliceResult(coll->getIndexRows(indexName));
+    });
 }
 
 C4StringResult c4db_getCookies(C4Database* db, C4Address request, C4Error* outError) noexcept {
@@ -695,6 +711,12 @@ bool c4db_markSynced(C4Database* database, C4String docID, C4String revID, C4Seq
     return tryCatch<bool>(outError, [&] {
         return database->getDefaultCollection()->markDocumentSynced(docID, revID, sequence, remoteID);
     });
+}
+
+// this wrapper is only used by tests
+bool c4coll_markSynced(C4Collection* collection, C4String docID, C4String revID, C4SequenceNumber sequence,
+                       C4RemoteID remoteID, C4Error* outError) noexcept {
+    return tryCatch<bool>(outError, [&] { return collection->markDocumentSynced(docID, revID, sequence, remoteID); });
 }
 
 char* c4doc_generateID(char* docID, size_t bufferSize) noexcept { return C4Document::generateID(docID, bufferSize); }

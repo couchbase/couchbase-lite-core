@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Document+Fleece.h"
+#include "c4Collection.h"
 #include "c4Query.h"
 #include "c4Index.h"
 #include "c4Replicator.h"
@@ -107,11 +108,12 @@ class PerfTest : public C4Test {
 
             // Save document:
             C4Error         c4err;
-            C4DocPutRequest rq = {};
-            rq.docID           = trackID;
-            rq.body            = (C4Slice)body;
-            rq.save            = true;
-            C4Document* doc    = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
+            C4DocPutRequest rq      = {};
+            rq.docID                = trackID;
+            rq.body                 = (C4Slice)body;
+            rq.save                 = true;
+            auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            C4Document* doc         = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(&c4err));
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
@@ -152,7 +154,8 @@ class PerfTest : public C4Test {
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;
-            auto    doc = c4doc_get(db, c4str(docID), true, ERROR_INFO(error));
+            auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            auto    doc         = c4coll_getDoc(defaultColl, c4str(docID), true, kDocGetCurrentRev, ERROR_INFO(error));
             REQUIRE(doc);
             CHECK(c4doc_getProperties(doc) != nullptr);
             c4doc_release(doc);
@@ -330,8 +333,10 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
         if ( pass == 0 ) {
             Stopwatch st2;
             C4Error   error;
-            C4Slice   property = C4STR("[[\".contact.address.state\"]]");
-            REQUIRE(c4db_createIndex(db, C4STR("byState"), property, kC4ValueIndex, nullptr, WITH_ERROR(&error)));
+            C4Slice   property    = C4STR("[[\".contact.address.state\"]]");
+            auto      defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("byState"), property, kC4JSONQuery, kC4ValueIndex, nullptr,
+                                       WITH_ERROR(&error)));
             st2.stop();
             st2.printReport("Creating SQL index of state", 1, "index");
             sf = generateShowfast(round(st2.elapsedMS()), "names_sql_index_creation");

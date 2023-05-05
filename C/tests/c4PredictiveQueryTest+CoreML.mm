@@ -18,6 +18,7 @@
 #include "c4QueryTest.hh"
 #include "c4CppUtils.hh"
 #include "fleece/Fleece.hh"
+#include "c4Collection.h"
 #include <CoreML/CoreML.h>
 #include <array>
 
@@ -176,8 +177,9 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
         if (pass == 1) {
             // Create an index:
             C4Log("-------- Creating index");
-            REQUIRE(c4db_createIndex(db, C4STR("mobilenet"),
-                                     slice("[" + json5(prediction) + "]"), kC4PredictiveIndex, nullptr, nullptr));
+            auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("mobilenet"),
+                                     slice("[" + json5(prediction) + "]"), kC4JSONQuery, kC4PredictiveIndex, nullptr, nullptr));
         }
         compileSelect(json5("{WHAT: [['._id']," + prediction + "], ORDER_BY: [['._id']]}"));
 
@@ -244,9 +246,10 @@ public:
 
     void createIndex() {
         C4Log("-------- Creating index");
-        REQUIRE(c4db_createIndex(db, C4STR("faces"),
+        auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("faces"),
                                  slice("[" + json5(kPrediction) + "]"),
-                                 kC4PredictiveIndex, nullptr, nullptr));
+                                   kC4JSONQuery, kC4PredictiveIndex, nullptr, nullptr));
     }
 
     using face = array<double,128>;

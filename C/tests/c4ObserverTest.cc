@@ -281,7 +281,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Purge", "[Observer][C]") {
     CHECK(dbCallbackCalls == 0);
 
     REQUIRE(c4db_beginTransaction(db, ERROR_INFO()));
-    REQUIRE(c4db_purgeDoc(db, "A"_sl, ERROR_INFO()));
+    REQUIRE(c4coll_purgeDoc(defaultColl, "A"_sl, ERROR_INFO()));
     REQUIRE(c4db_endTransaction(db, true, ERROR_INFO()));
 
     CHECK(dbCallbackCalls == 1);
@@ -300,11 +300,12 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     REQUIRE(dbObserver);
     CHECK(dbCallbackCalls == 0);
 
-    REQUIRE(c4doc_setExpiration(db, "A"_sl, now - 100 * 1000, nullptr));
-    REQUIRE(c4doc_setExpiration(db, "B"_sl, now + 100 * 1000, nullptr));
+    REQUIRE(c4coll_setDocExpiration(defaultColl, "A"_sl, now - 100 * 1000, nullptr));
+    REQUIRE(c4coll_setDocExpiration(defaultColl, "B"_sl, now + 100 * 1000, nullptr));
 
     auto isDocExpired = [&] {
-        c4::ref<C4Document> doc = c4db_getDoc(db, "A"_sl, true, kDocGetAll, nullptr);
+        auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+        c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "A"_sl, true, kDocGetAll, nullptr);
         return doc == nullptr;
     };
     REQUIRE_BEFORE(5s, isDocExpired());

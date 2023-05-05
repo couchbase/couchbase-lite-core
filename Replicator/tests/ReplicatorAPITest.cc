@@ -259,7 +259,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_docsEnded == 100);
-    REQUIRE(c4db_getDocumentCount(db2) == 100);
+    auto defaultColl = getCollection(db2, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == 100);
 }
 #endif
 
@@ -274,7 +275,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_docsEnded == 1);
 
-    c4::ref<C4Document> doc = c4db_getDoc(db2, "doc"_sl, true, kDocGetAll, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db2, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
     CHECK(doc->revID == kRev2ID);
@@ -330,7 +332,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
 
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
-    REQUIRE(c4db_getDocumentCount(db) == 1);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == 1);
     CHECK(overall == expectedOverall);
     CHECK(perCollection == expectedPerCollection);
 }
@@ -436,7 +439,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
 
     CHECK(_counter == 100);
     CHECK(_docsEnded == 45);
-    CHECK(c4db_getDocumentCount(db2) == 45);
+    auto defaultColl = getCollection(db2, kC4DefaultCollectionSpec);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 45);
 }
 #endif
 
@@ -460,7 +464,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
     // Not being equal implies that some of the doc ended callbacks failed
     // (presumably because of CBL-221 which causes an actor internal assertion
     // failure that cannot be detected from the outside)
-    CHECK(c4db_getDocumentCount(db) == _docsEnded);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    CHECK(c4coll_getDocumentCount(defaultColl) == _docsEnded);
 }
 #endif
 
@@ -890,7 +895,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
 
-    REQUIRE(c4db_getLastSequence(db) == 50);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == 50);
     CHECK(docIDs.empty());
     docIDs.clear();
 
@@ -911,7 +917,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
 
-    REQUIRE(c4db_getLastSequence(db) == 100);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == 100);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
         auto nextID = litecore::format("doc-%03u", i + 51);
@@ -962,7 +968,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
-    REQUIRE(c4db_getLastSequence(db) == 50);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == 50);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
         auto nextID = litecore::format("doc-%03u", i + 1);

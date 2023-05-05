@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Document+Fleece.h"
+#include "c4Collection.h"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
@@ -43,7 +44,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Document][C]") {
         rq.save            = true;
         rq.docID           = docID;
         ExpectingExceptions x;
-        CHECK(c4doc_put(db, &rq, nullptr, &error) == nullptr);
+        auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        CHECK(c4coll_putDoc(defaultColl, &rq, nullptr, &error) == nullptr);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorBadDocID);
     };
@@ -72,7 +74,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
     createRev(kDocID, kRev2ID, kFleeceBody);
     createRev(kDocID, kRev3ID, kFleeceBody);
 
-    C4Document *doc = c4doc_get(db, kDocID, true, ERROR_INFO());
+    auto defaultColl = c4db_getDefaultCollection(db,nullptr);
+	C4Document *doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc);
 
     C4Slice newRevID = C4STR("3-f00f00");
@@ -114,7 +117,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error     error;
     C4Document* doc;
-    doc = c4doc_get(db, kDocID, true, &error);
+    auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
+    doc                     = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, &error);
     REQUIRE(!doc);
     REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
@@ -122,14 +126,14 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
 
     // Test c4db_getDoc, which also fails:
     for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
-        doc = c4db_getDoc(db, kDocID, true, content, &error);
+        doc = c4coll_getDoc(defaultColl, kDocID, true, content, &error);
         REQUIRE(!doc);
         REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
         REQUIRE(error.code == (int)kC4ErrorNotFound);
     }
 
     // Now get the doc with mustExist=false, which returns an empty doc:
-    doc = c4doc_get(db, kDocID, false, ERROR_INFO(error));
+    doc = c4coll_getDoc(defaultColl, kDocID, false, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     REQUIRE(doc->flags == 0);
     REQUIRE(doc->docID == kDocID);
@@ -147,7 +151,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
         rq.historyCount      = 1;
         rq.body              = kFleeceBody;
         rq.save              = true;
-        doc                  = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
+        doc                  = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         CHECK(doc->revID == kRevID);
         CHECK(doc->selectedRev.revID == kRevID);
@@ -159,7 +163,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     }
 
     // Reload the doc:
-    doc = c4doc_get(db, kDocID, true, ERROR_INFO(error));
+    doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     CHECK(doc->sequence == 1);
     CHECK(doc->flags == kDocExists);
@@ -171,7 +175,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     c4doc_release(doc);
 
     // Get the doc by its sequence:
-    doc = c4doc_getBySequence(db, 1, ERROR_INFO(error));
+    doc = c4coll_getDocBySequence(defaultColl, 1, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     CHECK(doc->sequence == 1);
     CHECK(doc->flags == kDocExists);
@@ -183,13 +187,13 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     c4doc_release(doc);
 
     // Get a bogus sequence
-    doc = c4doc_getBySequence(db, 2, &error);
+    doc = c4coll_getDocBySequence(defaultColl, 2, &error);
     CHECK(doc == nullptr);
     CHECK(error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 
     // Test c4db_getDoc:
     for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
-        doc = c4db_getDoc(db, kDocID, true, content, ERROR_INFO(error));
+        doc = c4coll_getDoc(defaultColl, kDocID, true, content, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         CHECK(doc->sequence == 1);
         CHECK(doc->flags == kDocExists);
@@ -217,7 +221,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
 
     // Reload the doc:
     C4Error     error;
-    C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
+    auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
+    C4Document* doc         = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     CHECK(doc->flags == kDocExists);
     CHECK(doc->docID == kDocID);
@@ -242,7 +247,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         // Add a 3rd revision:
         createRev(kDocID, kRev3ID, kFleeceBody3);
         // Revision 2 should keep its body due to the kRevKeepBody flag:
-        doc = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
+
+        doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         REQUIRE(c4doc_selectParentRevision(doc));
         CHECK(doc->selectedRev.revID == kRev2ID);
@@ -253,7 +259,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
 
         // Test c4db_getDoc:
         for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
-            doc = c4db_getDoc(db, kDocID, true, content, ERROR_INFO(error));
+            doc = c4coll_getDoc(defaultColl, kDocID, true, content, ERROR_INFO(error));
             REQUIRE(doc != nullptr);
             CHECK(doc->sequence == 3);
             CHECK(doc->flags == kDocExists);
@@ -270,7 +276,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         // Purge doc
         {
             TransactionHelper t(db);
-            doc = c4doc_get(db, kDocID, true, ERROR_INFO(error));
+
+            doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(error));
             REQUIRE(doc);
             int nPurged = c4doc_purgeRevision(doc, {}, ERROR_INFO(error));
             CHECK(nPurged == 3);
@@ -279,7 +286,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         }
 
         // Make sure it's gone:
-        doc = c4doc_get(db, kDocID, true, &error);
+        doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, &error);
         CHECK(!doc);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
@@ -313,17 +320,19 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
         rq.body             = kFleeceBody3;
         rq.save             = true;
         REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&err)));
-        auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+        auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        auto doc         = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(err));
         REQUIRE(doc);
         c4doc_release(doc);
         REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&err)));
     }
 
     REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&err)));
-    REQUIRE(c4db_purgeDoc(db, kDocID, WITH_ERROR(&err)));
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_purgeDoc(defaultColl, kDocID, WITH_ERROR(&err)));
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&err)));
 
-    REQUIRE(c4db_getDocumentCount(db) == 0);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == 0);
 
     if ( isRevTrees() ) {
         // c4doc_purgeRevision is not available with version vectors
@@ -331,20 +340,20 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
         createRev(kDocID, kRev2ID, kFleeceBody2);
         createRev(kDocID, kRev3ID, kFleeceBody3);
         REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&err)));
-        auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+        auto doc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(err));
         REQUIRE(doc);
         REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&err)));
         c4doc_release(doc);
 
         REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&err)));
-        doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(err));
         REQUIRE(doc);
         CHECK(c4doc_purgeRevision(doc, kRev2ID, WITH_ERROR(&err)) == 0);
         REQUIRE(c4doc_purgeRevision(doc, kC4SliceNull, WITH_ERROR(&err)) == 4);
         REQUIRE(c4doc_save(doc, 20, WITH_ERROR(&err)));
         c4doc_release(doc);
         REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&err)));
-        REQUIRE(c4db_getDocumentCount(db) == 0);
+        REQUIRE(c4coll_getDocumentCount(defaultColl) == 0);
     }
 }
 
@@ -461,7 +470,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         rq.docID           = kDocID;
         rq.body            = kFleeceBody;
         rq.save            = true;
-        doc                = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
+        auto defaultColl   = getCollection(db, kC4DefaultCollectionSpec);
+        doc                = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         REQUIRE(doc->docID == kDocID);
 
@@ -478,7 +488,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         rq.body              = body;
         rq.history           = &kExpectedRevID;
         rq.historyCount      = 1;
-        doc                  = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        auto defaultColl     = getCollection(db, kC4DefaultCollectionSpec);
+        doc                  = c4coll_putDoc(defaultColl, &rq, &commonAncestorIndex, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         CHECK((unsigned long)commonAncestorIndex == 0ul);
         if ( isRevTrees() ) {
@@ -510,7 +521,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         rq.history         = history;
         rq.historyCount    = 2;
         rq.allowConflict   = true;
-        doc                = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        auto defaultColl   = getCollection(db, kC4DefaultCollectionSpec);
+        doc                = c4coll_putDoc(defaultColl, &rq, &commonAncestorIndex, ERROR_INFO(error));
 
         REQUIRE(doc != nullptr);
         CHECK((unsigned long)commonAncestorIndex == 1ul);
@@ -528,7 +540,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         rq.revFlags        = kRevDeleted;
         rq.history         = &kExpectedRev2ID;
         rq.historyCount    = 1;
-        doc                = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        auto defaultColl   = getCollection(db, kC4DefaultCollectionSpec);
+        doc                = c4coll_putDoc(defaultColl, &rq, &commonAncestorIndex, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         CHECK(doc->flags == (kDocExists | kDocDeleted | kDocConflicted));
         revID = doc->revID;
@@ -542,7 +555,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         rq.body              = body;
         rq.history           = (C4Slice*)&revID;
         rq.historyCount      = 1;
-        doc                  = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        auto defaultColl     = getCollection(db, kC4DefaultCollectionSpec);
+        doc                  = c4coll_putDoc(defaultColl, &rq, &commonAncestorIndex, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
         CHECK(doc->flags == (kDocExists | kDocConflicted));
         c4doc_release(doc);
@@ -563,7 +577,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Document][
     rq.historyCount       = 1;
     rq.save               = true;
     size_t commonAncestor = 9999;
-    auto   doc            = c4doc_put(db, &rq, &commonAncestor, ERROR_INFO(error));
+    auto   defaultColl    = getCollection(db, kC4DefaultCollectionSpec);
+    auto   doc            = c4coll_putDoc(defaultColl, &rq, &commonAncestor, ERROR_INFO(error));
     REQUIRE(doc != nullptr);
     CHECK(commonAncestor == 1);
     CHECK(doc->docID == kDocID);
@@ -575,11 +590,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     C4Log("Begin test");
     C4Error     error;
     C4Document* doc;
-
+    auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     {
         C4Log("Begin create");
         TransactionHelper t(db);
-        doc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO(error));
+        doc = c4coll_createDoc(defaultColl, kDocID, kFleeceBody, 0, ERROR_INFO(error));
         REQUIRE(doc);
     }
     C4Log("After save");
@@ -596,7 +611,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     CHECK(doc->docID == kDocID);
 
     // Read the doc into another C4Document:
-    auto doc2 = c4db_getDoc(db, kDocID, false, kDocGetAll, ERROR_INFO(error));
+    auto doc2 = c4coll_getDoc(defaultColl, kDocID, false, kDocGetAll, ERROR_INFO(error));
     REQUIRE(doc2->revID == kExpectedRevID);
 
     // Update it a few times:
@@ -635,7 +650,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     {
         C4Log("Begin conflicting create");
         TransactionHelper t(db);
-        REQUIRE(c4doc_create(db, kDocID, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
+        REQUIRE(c4coll_createDoc(defaultColl, kDocID, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
         CHECK(error == C4Error{LiteCoreDomain, kC4ErrorConflict});
     }
 
@@ -645,10 +660,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Delete then Update", "[Document][C]") {
     TransactionHelper t(db);
-
+    auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     // Create a doc:
     C4Error error;
-    auto    doc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO(error));
+    auto    doc = c4coll_createDoc(defaultColl, kDocID, kFleeceBody, 0, ERROR_INFO(error));
     REQUIRE(doc);
 
     // Update the doc:
@@ -677,18 +692,19 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Delete then Update", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "LoadRevisions After Purge", "[Document][C]") {
     TransactionHelper t(db);
+    auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     for ( auto content = int(kDocGetMetadata); content <= int(kDocGetAll); ++content ) {
         C4Log("---- Content level %d", content);
 
         // Create document
-        c4::ref<C4Document> fullDoc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO());
+        c4::ref<C4Document> fullDoc = c4coll_createDoc(defaultColl, kDocID, kFleeceBody, 0, ERROR_INFO());
         REQUIRE(fullDoc);
 
         // Get the document, with the current content level
-        c4::ref<C4Document> curDoc = c4db_getDoc(db, kDocID, true, C4DocContentLevel(content), ERROR_INFO());
+        c4::ref<C4Document> curDoc = c4coll_getDoc(defaultColl, kDocID, true, C4DocContentLevel(content), ERROR_INFO());
 
         // Purge the doc on disk!
-        REQUIRE(c4db_purgeDoc(db, kDocID, ERROR_INFO()));
+        REQUIRE(c4coll_purgeDoc(defaultColl, kDocID, ERROR_INFO()));
 
         ExpectingExceptions x;
         C4Error             error;
@@ -725,9 +741,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Body Doesn't Change", "[Document][C]") 
     createRev(kDocID, kRev2ID, kFleeceBody);
 
     // Get the document, with only the current revision:
-    c4::ref<C4Document> curDoc     = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, ERROR_INFO());
-    FLDict              properties = c4doc_getProperties(curDoc);
-    slice               curBody    = c4doc_getRevisionBody(curDoc);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> curDoc      = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO());
+    FLDict              properties  = c4doc_getProperties(curDoc);
+    slice               curBody     = c4doc_getRevisionBody(curDoc);
 
     // Force the rest of the doc's data to be loaded:
     REQUIRE(c4doc_setRemoteAncestor(curDoc, 1, kRevID, ERROR_INFO()));
@@ -763,7 +780,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Deletion External Pointers", "[Document
         FLSliceResult_Release(result);
     }
 
-    c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     FLValue docBodyVal = FLValue_FromData(c4doc_getRevisionBody(doc), kFLTrusted);
     REQUIRE(docBodyVal);
@@ -800,6 +818,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         kRev4ConflictID = "4@cafe";
     }
 
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
     const auto kFleeceBody4 = json2fleece("{'four':'four'}");
@@ -823,8 +843,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         rq.revFlags                = kRevKeepBody;
         rq.save                    = true;
         rq.remoteDBID              = 1;
-
-        c4::ref<C4Document> doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+        c4::ref<C4Document> doc    = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(err));
         REQUIRE(doc);
         CHECK(doc->selectedRev.revID == kRev4ConflictID);
 
@@ -874,7 +893,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     {
         C4Log("--- Resolve, remote wins");
-        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(err));
         REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, nullslice, 0, WITH_ERROR(&err)));
         c4doc_selectCurrentRevision(doc);
         CHECK(docBodyEquals(doc, kFleeceBody4));
@@ -915,7 +934,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         rq.history                           = history;
         rq.historyCount                      = 2;
         rq.body                              = kFleeceBody2;
-        c4::ref<C4Document> doc              = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+
+        c4::ref<C4Document> doc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(err));
         REQUIRE(doc);
 
         REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kSomeoneElsesVersion, nullslice, 0, WITH_ERROR(&err)));
@@ -932,7 +952,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     {
         C4Log("--- Merge onto remote");
-        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(err));
         REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, mergedBody, 0, WITH_ERROR(&err)));
         c4doc_selectCurrentRevision(doc);
         CHECK(docBodyEquals(doc, mergedBody));
@@ -966,7 +987,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     {
         C4Log("--- Resolve, local wins");
-        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(err));
         REQUIRE(doc);
         REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, nullslice, 0, WITH_ERROR(&err)));
         // kRevID -- [kRev2ID] -- kRev3ID
@@ -992,7 +1013,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     {
         C4Log("--- Merge onto local");
-        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, ERROR_INFO(err));
         REQUIRE(doc);
         REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, mergedBody, 0, WITH_ERROR(&err)));
         // kRevID -- [kRev2ID] -- kRev3ID -- kMergedRevID
@@ -1029,7 +1050,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Document][C]") {
     const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
 
-    C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
+    auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
+    C4Document* doc         = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     auto root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
@@ -1049,7 +1071,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
 
-    C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, nullptr);
+    auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
+    C4Document* doc         = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kRevID);
     auto root = FLValue(c4doc_getProperties(doc));
@@ -1169,8 +1192,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][Blob]
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Global Rev ID", "[Document][C]") {
     createRev(kDocID, kRevID, kFleeceBody);
-    C4Document* doc   = c4doc_get(db, kDocID, true, nullptr);
-    alloc_slice revID = c4doc_getSelectedRevIDGlobalForm(doc);
+    auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
+    C4Document* doc         = c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, nullptr);
+    alloc_slice revID       = c4doc_getSelectedRevIDGlobalForm(doc);
     C4Log("Global rev ID = %.*s", (int)revID.size, (char*)revID.buf);
     CHECK(revID.findByte('*') == nullptr);
     c4doc_release(doc);
