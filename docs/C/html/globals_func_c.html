@@ -201,6 +201,7 @@ $(function() {
 <li>c4doc_hasOldMetaProperties()&#160;:&#160;<a class="el" href="group___documents.html#ga9c535e9248ba04d10e00f7c2d0c34e89">c4Document+Fleece.h</a></li>
 <li>c4doc_hasRevisionBody()&#160;:&#160;<a class="el" href="group___documents.html#gab1aae9c4158e514c2d9e60478aef483e">c4Document.h</a></li>
 <li>c4doc_isOldMetaProperty()&#160;:&#160;<a class="el" href="group___documents.html#ga7eb5e317a270771d84ee61b0f340c06f">c4Document+Fleece.h</a></li>
+<li>c4doc_isRevRejected()&#160;:&#160;<a class="el" href="group___documents.html#gab9ca40f6a43c77462aafbf719c6b1ad9">c4Document.h</a></li>
 <li>c4doc_loadRevisionBody()&#160;:&#160;<a class="el" href="group___documents.html#ga698318f1f88de1ada7e66d9ede9a9502">c4Document.h</a></li>
 <li>c4doc_purgeRevision()&#160;:&#160;<a class="el" href="group___documents.html#ga060fb1eb2e2259c81f9c7e454e89c26d">c4Document.h</a></li>
 <li>c4doc_put()&#160;:&#160;<a class="el" href="group___documents.html#ga0d9a4a6162ff70b59cb1105ae249c6b3">c4Document.h</a></li>
@@ -242,7 +243,7 @@ $(function() {
 <li>c4keypair_release()&#160;:&#160;<a class="el" href="group___base.html#gaa565ac815fdef649626be6107361e14e">c4Base.h</a></li>
 <li>c4keypair_retain()&#160;:&#160;<a class="el" href="group___base.html#ga9e3f759f567f48b7fff4730019266a20">c4Base.h</a></li>
 <li>c4listener_availableAPIs()&#160;:&#160;<a class="el" href="group___listener.html#gae750f8819cbf087c53292d036445894b">c4Listener.h</a></li>
-<li>c4listener_free()&#160;:&#160;<a class="el" href="group___base.html#ga02a9de188fcf64bb5889dc0eeff2792c">c4Base.h</a>, <a class="el" href="group___listener.html#ga0130c321241b92db7bb4a306ca99c563">c4Listener.h</a></li>
+<li>c4listener_free()&#160;:&#160;<a class="el" href="group___base.html#ga02a9de188fcf64bb5889dc0eeff2792c">c4Base.h</a></li>
 <li>c4listener_getConnectionStatus()&#160;:&#160;<a class="el" href="group___listener.html#ga717879a3452a5fcd88d71e36ea3d5e20">c4Listener.h</a></li>
 <li>c4listener_getPort()&#160;:&#160;<a class="el" href="group___listener.html#gaef934fd07c44999037782df7a2a9f352">c4Listener.h</a></li>
 <li>c4listener_getURLs()&#160;:&#160;<a class="el" href="group___listener.html#gad75d5b43de0641c18e79a49aa16cf52b">c4Listener.h</a></li>
@@ -292,10 +293,10 @@ $(function() {
 <li>c4queryobs_free()&#160;:&#160;<a class="el" href="group___base.html#gaad139d9666bd4ea99eb985880bbea06a">c4Base.h</a></li>
 <li>c4queryobs_getEnumerator()&#160;:&#160;<a class="el" href="group___observer.html#gaaeb7a2d0b36b83bc782117d58d32785e">c4Observer.h</a></li>
 <li>c4queryobs_setEnabled()&#160;:&#160;<a class="el" href="group___observer.html#gaa9a79c5ba0b4165010c22b6b3218f58d">c4Observer.h</a></li>
-<li>c4raw_free()&#160;:&#160;<a class="el" href="group___base.html#ga35a7d83907da4367dcd624a0ba58d6bb">c4Base.h</a>, <a class="el" href="group___raw_docs.html#ga1f7ab47259f06358350c34d71a82a6ef">c4Database.h</a></li>
+<li>c4raw_free()&#160;:&#160;<a class="el" href="group___base.html#ga35a7d83907da4367dcd624a0ba58d6bb">c4Base.h</a></li>
 <li>c4raw_get()&#160;:&#160;<a class="el" href="group___raw_docs.html#ga99f9e87a9602e8757fae43e060a92cad">c4Database.h</a></li>
 <li>c4raw_put()&#160;:&#160;<a class="el" href="group___raw_docs.html#ga0676c66d1000ce95547ad2f13bade7d6">c4Database.h</a></li>
-<li>c4repl_free()&#160;:&#160;<a class="el" href="group___base.html#gae9a9a1e1e425c5c761ec92dbfb936994">c4Base.h</a>, <a class="el" href="group___replicator.html#ga1e28a3daeb57d7eb555b9180d593266b">c4Replicator.h</a></li>
+<li>c4repl_free()&#160;:&#160;<a class="el" href="group___base.html#gae9a9a1e1e425c5c761ec92dbfb936994">c4Base.h</a></li>
 <li>c4repl_getPeerTLSCertificate()&#160;:&#160;<a class="el" href="group___replicator.html#ga483b8d382e07fbf738a125e186c27b15">c4Replicator.h</a></li>
 <li>c4repl_getPendingDocIDs()&#160;:&#160;<a class="el" href="group___replicator.html#ga39aad33c5038dae3b90292461c56c932">c4Replicator.h</a></li>
 <li>c4repl_getResponseHeaders()&#160;:&#160;<a class="el" href="group___replicator.html#ga7b8bfc1886f4cd7870e8a73eaae50078">c4Replicator.h</a></li>
@@ -331,8 +332,8 @@ $(function() {
 <li>c4Socket_setNativeHandle()&#160;:&#160;<a class="el" href="group___socket.html#gae620d7a2353dfbea7cccb3d858a35cdd">c4Socket.h</a></li>
 <li>c4str()&#160;:&#160;<a class="el" href="group___base.html#gae0419d888a0524b718da8c06fabe5a21">c4Base.h</a></li>
 <li>c4stream_bytesWritten()&#160;:&#160;<a class="el" href="group___blobs.html#ga812730f8a2606f4c0a33541f987d4db1">c4BlobStore.h</a></li>
-<li>c4stream_close()&#160;:&#160;<a class="el" href="group___base.html#ga7e1505cde0f0b92a70c630c9b71eaddf">c4Base.h</a>, <a class="el" href="group___blobs.html#ga7e1505cde0f0b92a70c630c9b71eaddf">c4BlobStore.h</a></li>
-<li>c4stream_closeWriter()&#160;:&#160;<a class="el" href="group___base.html#ga7aea7c227642415bfd207d72d22a26f0">c4Base.h</a>, <a class="el" href="group___blobs.html#ga7aea7c227642415bfd207d72d22a26f0">c4BlobStore.h</a></li>
+<li>c4stream_close()&#160;:&#160;<a class="el" href="group___base.html#ga7e1505cde0f0b92a70c630c9b71eaddf">c4Base.h</a></li>
+<li>c4stream_closeWriter()&#160;:&#160;<a class="el" href="group___base.html#ga7aea7c227642415bfd207d72d22a26f0">c4Base.h</a></li>
 <li>c4stream_computeBlobKey()&#160;:&#160;<a class="el" href="group___blobs.html#gab4342c6561bd66b833ddb70c959cf07d">c4BlobStore.h</a></li>
 <li>c4stream_getLength()&#160;:&#160;<a class="el" href="group___blobs.html#ga09233c2a2566b02dc125c642cc96dad9">c4BlobStore.h</a></li>
 <li>c4stream_install()&#160;:&#160;<a class="el" href="group___blobs.html#gaa1699b6edc32d10e0ddb24d8360b82ca">c4BlobStore.h</a></li>
