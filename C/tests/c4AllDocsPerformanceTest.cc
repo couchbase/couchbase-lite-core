@@ -11,6 +11,7 @@
 //
 
 #include "c4Test.hh"  // IWYU pragma: keep
+#include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "Stopwatch.hh"
 #include "SecureRandomize.hh"
@@ -56,7 +57,8 @@ class C4AllDocsPerformanceTest : public C4Test {
             rq.historyCount            = 1;
             rq.body                    = (C4Slice)body;
             rq.save                    = true;
-            auto doc                   = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
+            auto defaultColl           = getCollection(db, kC4DefaultCollectionSpec);
+            auto doc                   = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(error));
             REQUIRE(doc);
             c4doc_release(doc);
             c4slice_free(body);
@@ -65,17 +67,18 @@ class C4AllDocsPerformanceTest : public C4Test {
         REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&error)));
         C4Log("Created %u docs", kNumDocuments);
 
-        REQUIRE(c4db_getDocumentCount(db) == (uint64_t)kNumDocuments);
+        auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_getDocumentCount(defaultColl) == (uint64_t)kNumDocuments);
     }
 };
 
 N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
-    fleece::Stopwatch st;
-
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    fleece::Stopwatch   st;
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    C4EnumeratorOptions options     = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
     C4Error error;
-    auto    e = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
+    auto    e = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO(error));
     REQUIRE(e);
     C4Document* doc;
     unsigned    i = 0;

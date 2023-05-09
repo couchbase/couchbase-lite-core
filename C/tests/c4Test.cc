@@ -620,11 +620,12 @@ unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, doub
         FLSliceResult body = FLEncoder_Finish(enc, nullptr);
 
         // Save document:
-        C4DocPutRequest rq = {};
-        rq.docID           = c4str(docID);
-        rq.allocedBody     = body;
-        rq.save            = true;
-        C4Document* doc    = c4doc_put(db, &rq, nullptr, ERROR_INFO());
+        C4DocPutRequest rq      = {};
+        rq.docID                = c4str(docID);
+        rq.allocedBody          = body;
+        rq.save                 = true;
+        auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        C4Document* doc         = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO());
         REQUIRE(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);

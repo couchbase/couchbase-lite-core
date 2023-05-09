@@ -257,13 +257,15 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY of dict", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") {  // CBL-1248
     C4Error           error;
     TransactionHelper t(db);
-
+    auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     // New Doc:
-    auto doc1 = c4doc_create(db, C4STR("doc1"), json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0,
-                             ERROR_INFO(error));
+    auto doc1 =
+            c4coll_createDoc(defaultColl, C4STR("doc1"),
+                             json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0, ERROR_INFO(error));
 
-    auto doc2 = c4doc_create(db, C4STR("doc2"), json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0,
-                             ERROR_INFO(error));
+    auto doc2 =
+            c4coll_createDoc(defaultColl, C4STR("doc2"),
+                             json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0, ERROR_INFO(error));
 
     compile(json5("['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]"));
 
@@ -275,15 +277,18 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") 
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
-                             kC4ValueIndex, nullptr, WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
+                               kC4JSONQuery, kC4ValueIndex, nullptr, WITH_ERROR(&err)));
+
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
     CHECK(run() == (vector<string>{"0000015", "0000099"}));
 }
 
 static bool lookForIndex(C4Database* db, slice name) {
-    bool found = false;
-    Doc  info(alloc_slice(c4db_getIndexesInfo(db, nullptr)));
+    bool found       = false;
+    auto defaultColl = C4QueryTest::getCollection(db, kC4DefaultCollectionSpec);
+    Doc  info(alloc_slice(c4coll_getIndexesInfo(defaultColl, nullptr)));
     for ( Array::iterator i(info.asArray()); i; ++i ) {
         Dict index = i.value().asDict();
         C4Log("-- index: %s", index.toJSONString().c_str());
@@ -294,8 +299,9 @@ static bool lookForIndex(C4Database* db, slice name) {
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Reindex", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
-                             kC4ValueIndex, nullptr, WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
+                               kC4JSONQuery, kC4ValueIndex, nullptr, WITH_ERROR(&err)));
     CHECK(lookForIndex(db, "length"_sl));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
     CHECK(run() == (vector<string>{"0000015", "0000099"}));
@@ -310,15 +316,16 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Reindex", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
     // Create the same index as the above test:
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
-                             kC4ValueIndex, nullptr, WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()),
+                               kC4JSONQuery, kC4ValueIndex, nullptr, WITH_ERROR(&err)));
 
     // Delete doc "0000015":
     {
         TransactionHelper t(db);
 
         C4Error     c4err;
-        C4Document* doc = c4doc_get(db, C4STR("0000015"), true, ERROR_INFO(&c4err));
+        C4Document* doc = c4coll_getDoc(defaultColl, C4STR("0000015"), true, kDocGetCurrentRev, ERROR_INFO(&c4err));
         REQUIRE(doc);
         C4DocPutRequest rq     = {};
         rq.docID               = C4STR("0000015");
@@ -326,7 +333,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
         rq.historyCount        = 1;
         rq.revFlags            = kRevDeleted;
         rq.save                = true;
-        C4Document* updatedDoc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
+        C4Document* updatedDoc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(updatedDoc != nullptr);
         c4doc_release(doc);
         c4doc_release(updatedDoc);
@@ -408,8 +415,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
     auto results = runFTS();
     CHECK(results
@@ -460,10 +468,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
-    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['AND', ['MATCH()', 'byStreet', 'Hwy'],\
                            ['MATCH()', 'byCity',   'Santa']]"));
     CHECK(run() == (vector<string>{"0000015"}));
@@ -472,10 +481,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple ANDs", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
-    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'],\
                                    ['MATCH()', 'byCity', 'Santa']],\
                            ['=', ['.name.first'], 'Cleveland']]"));
@@ -487,8 +497,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple queries", "[Query][C][
     // You can't query the same FTS index multiple times in a query (says SQLite)
     ExpectingExceptions x;
     C4Error             err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new2(db, kC4JSONQuery, json5slice("['AND', ['MATCH()', 'byStreet', 'Hwy'],\
                                             ['MATCH()', 'byStreet', 'Blvd']]"),
                          nullptr, &err);
@@ -501,8 +512,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
     // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
     ExpectingExceptions x;
     C4Error             err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new2(db, kC4JSONQuery, json5slice("['OR', ['MATCH()', 'byStreet', 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
                          nullptr, &err);
@@ -513,8 +525,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/703
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new2(db, kC4JSONQuery,
                          json5slice("['SELECT', { 'WHAT': [ [ 'count()', [ '.', 'uuid' ] ] ],"
                                     " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.', 'doc_type' ], 'rec' ],"
@@ -530,8 +543,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr,
-                             WITH_ERROR(&err)));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new2(db, kC4JSONQuery,
                          json5slice("['SELECT', { 'WHAT': [ [ '.db.uuid' ] ],"
                                     " 'FROM': [{ 'AS' : 'db'}],"
@@ -551,8 +565,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
     C4Error        err;
     C4IndexOptions options = {nullptr, false, false, nullptr};
 
-    REQUIRE(c4db_createIndex(db, C4STR("nameFTSIndex"), C4STR("[[\".content\"]]"), kC4FullTextIndex, &options,
-                             WITH_ERROR(&err)));
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("nameFTSIndex"), C4STR("[[\".content\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, &options, WITH_ERROR(&err)));
 
     {
         TransactionHelper t(db);
@@ -713,7 +728,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
-            REQUIRE(c4db_createIndex(db, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4ArrayIndex, nullptr, nullptr));
+            auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4JSONQuery,
+                                       kC4ArrayIndex, nullptr, nullptr));
         }
         compileSelect(json5("{WHAT: ['.person._id'],\
                               FROM: [{as: 'person'}, \
@@ -843,7 +860,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
 
     {
         TransactionHelper t(db);
-        REQUIRE(c4db_purgeDoc(db, "added_later"_sl, WITH_ERROR(&error)));
+        auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_purgeDoc(defaultColl, "added_later"_sl, WITH_ERROR(&error)));
     }
 
     refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
@@ -926,7 +944,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     state.count = 0;
     {
         TransactionHelper t(db);
-        REQUIRE(c4db_purgeDoc(db, "after2"_sl, WITH_ERROR(&error)));
+        auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_purgeDoc(defaultColl, "after2"_sl, WITH_ERROR(&error)));
         C4Log("---- Commiting changes");
     }
 
@@ -1015,9 +1034,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     C4IndexType types[2] = {kC4ValueIndex, kC4FullTextIndex};
 
     for ( int i = 0; i < 2; i++ ) {
-        REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, WITH_ERROR(&err)));
+        auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_createIndex(defaultColl, names[i], desc[i], kC4JSONQuery, types[i], nullptr, WITH_ERROR(&err)));
 
-        alloc_slice indexes = c4db_getIndexesInfo(db, ERROR_INFO(err));
+        alloc_slice indexes = c4coll_getIndexesInfo(defaultColl, ERROR_INFO(err));
         REQUIRE(indexes);
         FLArray indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
         REQUIRE(FLArray_Count(indexArray) == 1);
@@ -1025,9 +1045,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
         FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
         CHECK(indexName == names[i]);
 
-        REQUIRE(c4db_deleteIndex(db, names[i], WITH_ERROR(&err)));
+        REQUIRE(c4coll_deleteIndex(defaultColl, names[i], WITH_ERROR(&err)));
 
-        indexes    = c4db_getIndexesInfo(db, ERROR_INFO(err));
+        indexes    = c4coll_getIndexesInfo(defaultColl, ERROR_INFO(err));
         indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
         REQUIRE(FLArray_Count(indexArray) == 0);
     }
@@ -1050,13 +1070,13 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Deleted Docs", "[Query][C][!throws]") {
-    C4Error           error;
-    TransactionHelper t(db);
-
+    C4Error             error;
+    TransactionHelper   t(db);
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     c4::ref<C4Document> doc;
-    doc = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
+    doc = c4coll_createDoc(defaultColl, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
     CHECK(doc);
-    doc = c4doc_create(db, C4STR("doc2"), kC4SliceNull, 0, ERROR_INFO(error));
+    doc = c4coll_createDoc(defaultColl, C4STR("doc2"), kC4SliceNull, 0, ERROR_INFO(error));
     CHECK(doc);
     doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
     CHECK(doc);
@@ -1068,9 +1088,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Deleted Docs", "[Query][C][!throws]
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]") {
     C4Error           error;
     TransactionHelper t(db);
-
+    auto              defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     // New Doc:
-    auto doc1a = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
+    auto doc1a = c4coll_createDoc(defaultColl, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
     REQUIRE(doc1a);
     auto revID = toString(doc1a->revID);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));

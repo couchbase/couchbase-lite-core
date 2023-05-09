@@ -17,6 +17,7 @@
 #include "c4Test.hh"
 #include "c4Query.h"
 #include "c4Index.h"
+#include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include <functional>
@@ -147,11 +148,12 @@ class C4QueryTest : public C4Test {
         REQUIRE(body.buf);
 
         // Save document:
-        C4DocPutRequest rq = {};
-        rq.docID           = slice(docID);
-        rq.allocedBody     = body;
-        rq.save            = true;
-        C4Document* doc    = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
+        C4DocPutRequest rq      = {};
+        rq.docID                = slice(docID);
+        rq.allocedBody          = body;
+        rq.save                 = true;
+        auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        C4Document* doc         = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);

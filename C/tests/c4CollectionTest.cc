@@ -403,22 +403,23 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Expired", "[Collection][C][
 
     C4Slice docID = C4STR("expire_me");
     createRev(fresh, docID, kRevID, kFleeceBody);
-    C4Timestamp expire = c4_now() + 1000;
-    CHECK(!c4doc_setExpiration(db, docID, expire, &err));
+    C4Timestamp expire      = c4_now() + 1000;
+    auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    CHECK(!c4coll_setDocExpiration(defaultColl, docID, expire, &err));
     CHECK(err == notFound);
     REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
 
 
     expire = c4_now() + 2000;
     // Make sure setting it to the same is also true
-    CHECK(!c4doc_setExpiration(db, docID, expire, &err));
+    CHECK(!c4coll_setDocExpiration(defaultColl, docID, expire, &err));
     CHECK(err == notFound);
     REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
     REQUIRE(c4coll_setDocExpiration(fresh, docID, expire, WITH_ERROR()));
 
     C4Slice docID2 = C4STR("expire_me_too");
     createRev(fresh, docID2, kRevID, kFleeceBody);
-    CHECK(!c4doc_setExpiration(db, docID2, expire, &err));
+    CHECK(!c4coll_setDocExpiration(defaultColl, docID2, expire, &err));
     CHECK(err == notFound);
     REQUIRE(c4coll_setDocExpiration(fresh, docID2, expire, WITH_ERROR()));
 
@@ -427,7 +428,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Expired", "[Collection][C][
 
     C4Slice docID4 = C4STR("expire_me_later");
     createRev(fresh, docID4, kRevID, kFleeceBody);
-    CHECK(!c4doc_setExpiration(db, docID4, expire + 100000, &err));
+    CHECK(!c4coll_setDocExpiration(defaultColl, docID4, expire + 100000, &err));
     CHECK(err == notFound);
     REQUIRE(c4coll_setDocExpiration(fresh, docID4, expire + 100000, WITH_ERROR()));
 
