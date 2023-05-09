@@ -17,7 +17,7 @@
 #include "slice_stream.hh"
 #include <cmath>
 #include <climits>
-#include <cctype>
+#include <ctype.h>
 
 namespace litecore {
 
