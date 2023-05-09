@@ -14,11 +14,9 @@
 #include "VersionVector.hh"
 #include "Error.hh"
 #include "varint.hh"
-#include "fleece/PlatformCompat.hh"
-#include "StringUtil.hh"
 #include "slice_stream.hh"
-#include <math.h>
-#include <limits.h>
+#include <cmath>
+#include <climits>
 
 namespace litecore {
 
@@ -88,7 +86,7 @@ namespace litecore {
     }
 
     alloc_slice revid::expanded() const {
-        if ( !buf ) return alloc_slice();
+        if ( !buf ) return {};
         if ( isVersion() ) {
             return asVersion().asASCII();
         } else {
@@ -104,22 +102,23 @@ namespace litecore {
 
     std::string revid::str() const {
         alloc_slice exp = expanded();
-        return std::string((char*)exp.buf, exp.size);
+        return {(char*)exp.buf, exp.size};
     }
 
 #pragma mark - RevIDBuffer:
 
-    revidBuffer::revidBuffer(unsigned generation, slice digest) : revid(&_buffer, 0) {
+    revidBuffer::revidBuffer(unsigned generation, slice digest) : _revid(&_buffer, 0) {
         uint8_t* dst = _buffer;
         dst += PutUVarInt(dst, generation);
-        setSize(dst + digest.size - _buffer);
-        if ( size > sizeof(_buffer) ) error::_throw(error::BadRevisionID);  // digest too long!
+        _revid.setSize(dst + digest.size - _buffer);
+        if ( _revid.size > sizeof(_buffer) ) error::_throw(error::BadRevisionID);  // digest too long!
         memcpy(dst, digest.buf, digest.size);
     }
 
     revidBuffer& revidBuffer::operator=(const revidBuffer& other) noexcept {
+        if ( &other == this ) return *this;
         memcpy(_buffer, other._buffer, sizeof(_buffer));
-        set(&_buffer, other.size);
+        _revid.set(&_buffer, other._revid.size);
         return *this;
     }
 
@@ -130,7 +129,7 @@ namespace litecore {
         } else {
             if ( other.size > sizeof(_buffer) ) error::_throw(error::BadRevisionID);  // digest too long!
             memcpy(_buffer, other.buf, other.size);
-            set(&_buffer, other.size);
+            _revid.set(&_buffer, other.size);
         }
         return *this;
     }
@@ -139,7 +138,7 @@ namespace litecore {
         slice_ostream out(_buffer, sizeof(_buffer));
         out.writeByte(0);
         vers.writeBinary(out);
-        *(slice*)this = out.output();
+        *(slice*)&_revid = out.output();
         return *this;
     }
 
@@ -152,7 +151,7 @@ namespace litecore {
         if ( ascii.findByte('-') != nullptr ) {
             // Digest type:
             uint8_t *start = _buffer, *end = start + sizeof(_buffer), *dst = start;
-            set(start, 0);
+            _revid.set(start, 0);
 
             uint64_t gen = ascii.readDecimal();
             if ( gen == 0 || gen > UINT_MAX ) return false;
@@ -164,11 +163,12 @@ namespace litecore {
             if ( ascii.size == 0 || (ascii.size & 1) || dst + ascii.size / 2 > end )
                 return false;  // rev ID is too long to fit in my buffer
             for ( unsigned i = 0; i < ascii.size; i += 2 ) {
-                if ( !islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i + 1]) ) return false;  // digest is not hex
+                if ( !islowerxdigit(static_cast<char>(ascii[i])) || !islowerxdigit(static_cast<char>(ascii[i + 1])) )
+                    return false;  // digest is not hex
                 *dst++ = (uint8_t)(16 * digittoint(ascii[i]) + digittoint(ascii[i + 1]));
             }
 
-            setEnd(dst);
+            _revid.setEnd(dst);
             return true;
         } else {
             // Vector type:

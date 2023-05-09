@@ -73,9 +73,9 @@ namespace litecore {
 
         revidBuffer _parseRevID(slice revID) const {
             if ( revID ) {
-                if ( revidBuffer binaryID(revID); binaryID.isVersion() ) {
+                if ( revidBuffer binaryID(revID); binaryID.getRevID().isVersion() ) {
                     // If it's a version in global form, convert it to local form:
-                    if ( auto vers = binaryID.asVersion(); vers.author() == myPeerID() )
+                    if ( auto vers = binaryID.getRevID().asVersion(); vers.author() == myPeerID() )
                         binaryID = Version(revID, myPeerID());
                     return binaryID;
                 }
@@ -97,7 +97,7 @@ namespace litecore {
                 }
             } else {
                 // It's a single version, so find a vector that starts with it:
-                Version vers = _parseRevID(revID).asVersion();
+                Version vers = _parseRevID(revID).getRevID().asVersion();
                 while ( auto rev = _doc.loadRemoteRevision(remote) ) {
                     if ( rev->revID && rev->version() == vers ) return {{remote, *rev}};
                     remote = _doc.loadNextRemoteID(remote);
@@ -208,7 +208,7 @@ namespace litecore {
             revidBuffer vers(revID);
             if ( auto r = _findRemote(revID); r ) revision = r->second;
             else
-                revision.revID = vers;
+                revision.revID = vers.getRevID();
             _doc.setRemoteRevision(RemoteID(remote), revision);
         }
 

@@ -232,7 +232,7 @@ namespace litecore {
         size_t   historyCount = history.size();
         int      i            = 0;
         for ( i = 0; i < historyCount; i++ ) {
-            unsigned gen = history[i].generation();
+            unsigned gen = history[i].getRevID().generation();
             if ( lastGen > 0 && gen != lastGen - 1 ) {
                 // Generation numbers not in sequence:
                 if ( gen < lastGen && i >= _pruneDepth - 1 ) {
@@ -247,7 +247,7 @@ namespace litecore {
             }
             lastGen = gen;
 
-            parent = (Rev*)get(history[i]);
+            parent = (Rev*)get(history[i].getRevID());
             if ( parent ) break;
         }
 
@@ -371,8 +371,8 @@ namespace litecore {
         if ( commonAncestorIndex > 0 && body ) {
             // Insert all the new revisions in chronological order:
             for ( int i = commonAncestorIndex - 1; i > 0; --i )
-                parent = _insert(history[i], {}, parent, Rev::kNoFlags, markConflict);
-            _insert(history[0], body, parent, revFlags, markConflict);
+                parent = _insert(history[i].getRevID(), {}, parent, Rev::kNoFlags, markConflict);
+            _insert(history[0].getRevID(), body, parent, revFlags, markConflict);
         }
         return commonAncestorIndex;
     }
