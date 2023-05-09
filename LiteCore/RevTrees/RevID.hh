@@ -57,9 +57,7 @@ namespace litecore {
         [[nodiscard]] bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
         /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
-        [[nodiscard]] bool isVersion() const noexcept FLPURE {
-            return size > 0 && (*this)[0] == 0;
-        }
+        [[nodiscard]] bool isVersion() const noexcept FLPURE { return size > 0 && (*this)[0] == 0; }
 
         //---- Tree revision IDs only
         [[nodiscard]] pair<unsigned, slice> generationAndDigest() const FLPURE;
@@ -73,7 +71,7 @@ namespace litecore {
 
         //---- ASCII conversions:
         [[nodiscard]] alloc_slice expanded() const;
-        bool        expandInto(slice_ostream& dst) const noexcept;
+        bool                      expandInto(slice_ostream& dst) const noexcept;
         [[nodiscard]] std::string str() const;
 
         explicit operator std::string() const { return str(); }
@@ -100,9 +98,7 @@ namespace litecore {
 
         /** Constructs a revidBuffer from an ASCII revision (digest or version style).
             Throws BadRevisionID if the string isn't parseable.*/
-        explicit revidBuffer(slice asciiString) : _revid(&_buffer, 0) {
-            parse(asciiString);
-        }
+        explicit revidBuffer(slice asciiString) : _revid(&_buffer, 0) { parse(asciiString); }
 
         [[nodiscard]] const revid& getRevID() const { return _revid; }
 
@@ -125,7 +121,7 @@ namespace litecore {
         bool tryParse(slice asciiString) noexcept;
 
       private:
-        uint8_t _buffer[42] {};
-        revid _revid;
+        uint8_t _buffer[42]{};
+        revid   _revid;
     };
 }  // namespace litecore

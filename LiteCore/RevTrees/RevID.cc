@@ -165,7 +165,7 @@ namespace litecore {
             for ( unsigned i = 0; i < ascii.size; i += 2 ) {
                 if ( !islowerxdigit(static_cast<char>(ascii[i])) || !islowerxdigit(static_cast<char>(ascii[i + 1])) )
                     return false;  // digest is not hex
-                *dst++ = (uint8_t)(16 * digittoint(ascii[i]) + digittoint(ascii[i + 1]));
+                *dst++ = (uint8_t)(16 * ::digittoint(ascii[i]) + ::digittoint(ascii[i + 1]));
             }
 
             _revid.setEnd(dst);

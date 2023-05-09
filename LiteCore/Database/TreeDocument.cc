@@ -547,8 +547,8 @@ namespace litecore {
 
             C4ErrorCode errorCode = {};
             int         httpStatus;
-            auto        newRev = _revTree.insert(encodedNewRevID.getRevID(), body, (Rev::Flags)rq.revFlags, _selectedRev,
-                                                 rq.allowConflict, false, httpStatus);
+            auto newRev = _revTree.insert(encodedNewRevID.getRevID(), body, (Rev::Flags)rq.revFlags, _selectedRev,
+                                          rq.allowConflict, false, httpStatus);
             if ( newRev ) {
                 if ( !saveNewRev(rq, newRev) ) errorCode = kC4ErrorConflict;
             } else if ( httpStatus == 200 ) {
