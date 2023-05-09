@@ -479,7 +479,7 @@ C4SliceResult c4db_rawQuery(C4Database* database, C4String query, C4Error* outEr
 // LCOV_EXCL_STOP
 
 
-// only used by tests
+// only used by tests - not exposed to public API
 bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
                            C4RemoteID remoteDBID, const C4String docIDs[], const C4String revIDs[],
                            C4StringResult ancestors[], C4Error* outError) noexcept {
@@ -492,7 +492,7 @@ bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxA
     });
 }
 
-// only used by tests
+// only used by tests - not exposed to public API
 bool c4coll_findDocAncestors(C4Collection* collection, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
                              C4RemoteID remoteDBID, const C4String docIDs[], const C4String revIDs[],
                              C4StringResult ancestors[], C4Error* outError) noexcept {
@@ -705,7 +705,7 @@ bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID remoteDatabase, C4Strin
     });
 }
 
-// this wrapper is only used by tests
+// only used by tests - not exposed to public API
 bool c4db_markSynced(C4Database* database, C4String docID, C4String revID, C4SequenceNumber sequence,
                      C4RemoteID remoteID, C4Error* outError) noexcept {
     return tryCatch<bool>(outError, [&] {
@@ -713,7 +713,7 @@ bool c4db_markSynced(C4Database* database, C4String docID, C4String revID, C4Seq
     });
 }
 
-// this wrapper is only used by tests
+// only used by tests - not exposed to public API
 bool c4coll_markSynced(C4Collection* collection, C4String docID, C4String revID, C4SequenceNumber sequence,
                        C4RemoteID remoteID, C4Error* outError) noexcept {
     return tryCatch<bool>(outError, [&] { return collection->markDocumentSynced(docID, revID, sequence, remoteID); });
