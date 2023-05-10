@@ -15,9 +15,11 @@
 #include "Error.hh"
 #include "varint.hh"
 #include "slice_stream.hh"
+#ifndef __APPLE__
+#    include "StringUtil.hh"
+#endif
 #include <cmath>
 #include <climits>
-#include <ctype.h>
 
 namespace litecore {
 
