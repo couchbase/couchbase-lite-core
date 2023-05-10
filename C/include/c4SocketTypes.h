@@ -21,6 +21,7 @@ C4API_BEGIN_DECLS
 
 /** Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.
     These are defined at <http://tools.ietf.org/html/rfc6455#section-7.4.1> */
+// clang-format off
 typedef C4_ENUM(int32_t, C4WebSocketCloseCode){
         kWebSocketCloseNormal           = 1000,
         kWebSocketCloseGoingAway        = 1001,  // Peer has to close, e.g. because host app is quitting
@@ -29,7 +30,8 @@ typedef C4_ENUM(int32_t, C4WebSocketCloseCode){
         kWebSocketCloseNoCode           = 1005,  // No status code in close frame
         kWebSocketCloseAbnormal         = 1006,  // Peer closed socket unexpectedly w/o a close frame
         kWebSocketCloseBadMessageFormat = 1007,  // Unparseable message
-        kWebSocketClosePolicyError = 1008,      kWebSocketCloseMessageTooBig = 1009,
+        kWebSocketClosePolicyError      = 1008,      
+        kWebSocketCloseMessageTooBig    = 1009,
         kWebSocketCloseMissingExtension = 1010,  // Peer doesn't provide a necessary extension
         kWebSocketCloseCantFulfill      = 1011,  // Can't fulfill request due to "unexpected condition"
         kWebSocketCloseTLSFailure       = 1015,  // Never sent, only received
@@ -39,6 +41,7 @@ typedef C4_ENUM(int32_t, C4WebSocketCloseCode){
 
         kWebSocketCloseFirstAvailable = 5000,  // First unregistered code for freeform use
 };
+// clang-format on
 
 
 /** The type of message framing that should be applied to the socket's data (added to outgoing,
