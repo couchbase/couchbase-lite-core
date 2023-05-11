@@ -91,7 +91,7 @@ xcarchive()
     -configuration "${CONFIGURATION}" \
     -destination "${DESTINATION}" \
     -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
-    "ONLY_ACTIVE_ARCH=NO" "BITCODE_GENERATION_MODE=bitcode" \
+    "ONLY_ACTIVE_ARCH=NO" \
     "CODE_SIGNING_ALLOWED=NO" \
     "SKIP_INSTALL=NO"
   
