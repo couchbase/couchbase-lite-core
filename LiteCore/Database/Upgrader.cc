@@ -90,8 +90,8 @@ namespace litecore {
             revidBuffer rev1, rev2;
             rev1.parse({chars1, size_t(len1)});
             rev2.parse({chars2, size_t(len2)});
-            if ( rev1 < rev2 ) return -1;
-            else if ( rev1 > rev2 )
+            if ( rev1.getRevID() < rev2.getRevID() ) return -1;
+            else if ( rev1.getRevID() > rev2.getRevID() )
                 return 1;
             else
                 return 0;

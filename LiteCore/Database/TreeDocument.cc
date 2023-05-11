@@ -218,7 +218,7 @@ namespace litecore {
         bool selectRevision(slice revID, bool withBody) override {
             if ( revID.buf ) {
                 if ( !loadRevisions() ) return false;
-                const Rev* rev = _revTree[revidBuffer(revID)];
+                const Rev* rev = _revTree[revidBuffer(revID).getRevID()];
                 if ( !selectRevision(rev) ) return false;
                 if ( withBody ) (void)loadRevisionBody();
             } else {
@@ -266,8 +266,8 @@ namespace litecore {
 
         bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
             requireRevisions();
-            const Rev* rev1 = _revTree[revidBuffer(revID1)];
-            const Rev* rev2 = _revTree[revidBuffer(revID2)];
+            const Rev* rev1 = _revTree[revidBuffer(revID1).getRevID()];
+            const Rev* rev2 = _revTree[revidBuffer(revID2).getRevID()];
             if ( !rev1 || !rev2 ) error::_throw(error::NotFound);
             while ( rev1 != rev2 ) {
                 int d = (int)rev1->revID.generation() - (int)rev2->revID.generation();
@@ -287,7 +287,7 @@ namespace litecore {
 
         void setRemoteAncestorRevID(C4RemoteID remote, slice revID) override {
             mustLoadRevisions();
-            const Rev* rev = _revTree[revidBuffer(revID)];
+            const Rev* rev = _revTree[revidBuffer(revID).getRevID()];
             if ( !rev ) error::_throw(error::NotFound);
             _revTree.setLatestRevisionOnRemote(remote, rev);
         }
@@ -300,7 +300,7 @@ namespace litecore {
 
         void revIsRejected(slice revID) override {
             mustLoadRevisions();
-            const Rev* rev = _revTree[revidBuffer(revID)];
+            const Rev* rev = _revTree[revidBuffer(revID).getRevID()];
             if ( !rev ) error::_throw(error::NotFound);
             _revTree.revIsRejected(rev);
         }
@@ -343,7 +343,7 @@ namespace litecore {
         int32_t purgeRevision(slice revID) override {
             mustLoadRevisions();
             int32_t total;
-            if ( revID.buf ) total = _revTree.purge(revidBuffer(revID));
+            if ( revID.buf ) total = _revTree.purge(revidBuffer(revID).getRevID());
             else
                 total = _revTree.purgeAll();
             if ( total > 0 ) {
@@ -361,8 +361,8 @@ namespace litecore {
             mustLoadRevisions();
 
             // Validate the revIDs:
-            auto winningRev = _revTree[revidBuffer(winningRevID)];
-            auto losingRev  = _revTree[revidBuffer(losingRevID)];
+            auto winningRev = _revTree[revidBuffer(winningRevID).getRevID()];
+            auto losingRev  = _revTree[revidBuffer(losingRevID).getRevID()];
             if ( !winningRev || !losingRev ) error::_throw(error::NotFound);
             if ( !winningRev->isLeaf() || !losingRev->isLeaf() ) error::_throw(error::Conflict);
             if ( winningRev == losingRev ) error::_throw(error::InvalidParameter);
@@ -491,7 +491,7 @@ namespace litecore {
                 return -1;
             }
 
-            auto newRev = _revTree[revidBuffer(rq.history[0])];
+            auto newRev = _revTree[revidBuffer(rq.history[0]).getRevID()];
             DebugAssert(newRev);
 
             if ( rq.remoteDBID ) {
@@ -547,13 +547,13 @@ namespace litecore {
 
             C4ErrorCode errorCode = {};
             int         httpStatus;
-            auto        newRev = _revTree.insert(encodedNewRevID, body, (Rev::Flags)rq.revFlags, _selectedRev,
-                                                 rq.allowConflict, false, httpStatus);
+            auto newRev = _revTree.insert(encodedNewRevID.getRevID(), body, (Rev::Flags)rq.revFlags, _selectedRev,
+                                          rq.allowConflict, false, httpStatus);
             if ( newRev ) {
                 if ( !saveNewRev(rq, newRev) ) errorCode = kC4ErrorConflict;
             } else if ( httpStatus == 200 ) {
                 // Revision already exists, so nothing was added. Not an error.
-                selectRevision(encodedNewRevID.expanded(), true);
+                selectRevision(encodedNewRevID.getRevID().expanded(), true);
             } else if ( httpStatus == 400 ) {
                 errorCode = kC4ErrorInvalidParameter;
             } else if ( httpStatus == 409 ) {
@@ -621,7 +621,7 @@ namespace litecore {
             unsigned generation = 1;
             if ( parentRevID.buf ) {
                 revidBuffer parentID(parentRevID);
-                generation = parentID.generation() + 1;
+                generation = parentID.getRevID().generation() + 1;
             }
             return revidBuffer(generation, slice(digest));
         }
@@ -663,7 +663,7 @@ namespace litecore {
             // Convert revID to encoded binary form:
             revidBuffer revID;
             revID.parse(revMap[rec.key]);
-            auto                          revGeneration = revID.generation();
+            auto                          revGeneration = revID.getRevID().generation();
             C4FindDocAncestorsResultFlags status        = {};
             RevTree                       tree(rec.body, rec.extra, 0_seq);
             auto                          current = tree.currentRevision();
@@ -675,7 +675,7 @@ namespace litecore {
             }
 
             // Does it exist in the doc?
-            if ( const Rev* rev = tree[revID] ) {
+            if ( const Rev* rev = tree[revID.getRevID()] ) {
                 if ( rev->isBodyAvailable() ) status |= kRevsHaveLocal;
                 if ( remoteDBID && rev == tree.latestRevisionOnRemote(remoteDBID) ) status |= kRevsAtThisRemote;
                 if ( current != rev ) {
