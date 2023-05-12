@@ -875,7 +875,7 @@ namespace litecore {
             if ( inTransaction ) { endTransaction(commit); }
         };
 
-        C4RemoteID remoteID;
+        C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
         // If the ID isn't found, then do a second pass where we either add the remote URL
