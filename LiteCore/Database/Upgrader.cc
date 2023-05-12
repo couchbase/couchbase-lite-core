@@ -127,17 +127,19 @@ namespace litecore {
         void copyRevisions(int64_t oldDocKey, C4Document* newDoc) {
             if ( !_currentRev ) {
                 // Gets the current revision of doc
-                _currentRev = std::make_unique<SQLite::Statement>(_oldDB,
-                                                        "SELECT sequence, revid, parent, deleted, json, no_attachments"
-                                                        " FROM revs WHERE doc_id=? and current!=0"
-                                                        " ORDER BY deleted, revid DESC LIMIT 1",
-                                                        true);
+                _currentRev = std::make_unique<SQLite::Statement>(
+                        _oldDB,
+                        "SELECT sequence, revid, parent, deleted, json, no_attachments"
+                        " FROM revs WHERE doc_id=? and current!=0"
+                        " ORDER BY deleted, revid DESC LIMIT 1",
+                        true);
                 // Gets non-leaf revisions of doc in reverse sequence order
-                _parentRevs = std::make_unique<SQLite::Statement>(_oldDB,
-                                                        "SELECT sequence, revid, parent, deleted, json, no_attachments"
-                                                        " FROM revs WHERE doc_id=? and current=0"
-                                                        " ORDER BY sequence DESC",
-                                                        true);
+                _parentRevs = std::make_unique<SQLite::Statement>(
+                        _oldDB,
+                        "SELECT sequence, revid, parent, deleted, json, no_attachments"
+                        " FROM revs WHERE doc_id=? and current=0"
+                        " ORDER BY sequence DESC",
+                        true);
             }
 
             _currentRev->reset();

@@ -128,7 +128,7 @@ namespace litecore {
         size_t                               _numPlaceholders{0};
         size_t                               _numDocObservers{0};
         unique_ptr<CollectionChangeNotifier> _transaction;
-        sequence_t                           _preTransactionLastSequence {0};
+        sequence_t                           _preTransactionLastSequence{0};
     };
 
     /** Tracks changes to a single document and calls a client callback. */

@@ -23,17 +23,17 @@ namespace fleece::impl {
 
 namespace litecore::legacy_attachments {
 
-        /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
-        bool isOldMetaProperty(fleece::slice key);
+    /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
+    bool isOldMetaProperty(fleece::slice key);
 
-        /** Returns true if the document contains 1.x metadata properties (at top level). */
-        bool hasOldMetaProperties(const fleece::impl::Dict* root);
+    /** Returns true if the document contains 1.x metadata properties (at top level). */
+    bool hasOldMetaProperties(const fleece::impl::Dict* root);
 
-        /** Encodes to Fleece, without any 1.x metadata properties.
+    /** Encodes to Fleece, without any 1.x metadata properties.
             The _attachments property is treated specially, in that any entries in it that don't
             appear elsewhere in the dictionary as blobs are preserved. */
-        fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
-                                                             fleece::impl::SharedKeys* C4NULLABLE);
-    }  // namespace litecore
+    fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
+                                                         fleece::impl::SharedKeys* C4NULLABLE);
+}  // namespace litecore::legacy_attachments
 
 C4_ASSUME_NONNULL_END

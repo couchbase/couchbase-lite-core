@@ -85,17 +85,19 @@ namespace litecore::crypto {
         [[nodiscard]] fleece::alloc_slice encode() const;
 
         [[nodiscard]] bool empty() const { return _names.empty(); }
-       //'''/;;;;''''''
+
+        //'''/;;;;''''''
         [[nodiscard]] size_t size() const { return _names.size(); }
 
-        template <typename ... Args>
-        void emplace_back(Args && ... args) {
+        template <typename... Args>
+        void emplace_back(Args&&... args) {
             _names.emplace_back(std::forward<Args>(args)...);
         }
 
         fleece::alloc_slice operator[](Tag) const;
 
         const SubjectAltName& operator[](size_t i) const { return _names[i]; }
+
       private:
         std::vector<SubjectAltName> _names;
     };

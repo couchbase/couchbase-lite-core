@@ -46,10 +46,10 @@ namespace litecore {
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
       private:
-        [[nodiscard]] string      databaseName() const override;
-        alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
-        void        externalTransactionCommitted(const SequenceTracker& sourceTracker) override;
-        void        notifyTransactionObservers();
+        [[nodiscard]] string databaseName() const override;
+        alloc_slice          blobAccessor(const fleece::impl::Dict*) const override;
+        void                 externalTransactionCommitted(const SequenceTracker& sourceTracker) override;
+        void                 notifyTransactionObservers();
 
         DatabaseImpl*                     _database;
         access_lock<DataFile*>            _dataFile;

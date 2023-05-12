@@ -79,7 +79,7 @@ namespace litecore {
         QueryLanguage             _language;             // The query language (JSON or N1QL)
         Retained<Query>           _query;                // Compiled query
         Retained<QueryEnumerator> _currentEnumerator;    // Latest query results
-        C4Error                   _currentError{};         // Latest query error;
+        C4Error                   _currentError{};       // Latest query error;
         clock::time_point         _lastTime;             // Time the query last ran
         bool                      _continuous;           // Do I keep running until stopped?
         bool                      _waitingToRun{false};  // Is a call to _runQuery scheduled?

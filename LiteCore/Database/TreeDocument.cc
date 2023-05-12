@@ -618,7 +618,7 @@ namespace litecore {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.getRevID().generation() + 1;
             }
-            return { generation, slice(digest) };
+            return {generation, slice(digest)};
         }
 
 
@@ -685,7 +685,7 @@ namespace litecore {
             }
 
             char statusChar = static_cast<char>('0' + char(status));
-            if ( !(status & kRevsLocalIsOlder) ) { return { &statusChar, 1 }; }
+            if ( !(status & kRevsLocalIsOlder) ) { return {&statusChar, 1}; }
 
             // Find revs that could be ancestors of it and write them as a JSON array:
             result.str("");

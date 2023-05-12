@@ -189,6 +189,9 @@ namespace litecore {
         _runQuery(options);
     }
 
-    void LiveQuerier::_currentResult(const CurrentResultCallback callback) { callback(_currentEnumerator, _currentError); }
+    void LiveQuerier::_currentResult(const CurrentResultCallback callback) {
+        callback(_currentEnumerator, _currentError);
+    }
+
     // NOLINTEND(performance-unnecessary-value-param)
 }  // namespace litecore

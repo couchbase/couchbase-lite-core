@@ -557,7 +557,7 @@ namespace litecore {
             char statusChar = static_cast<char>('0' + char(status));
             if ( cmp == kNewer || cmp == kSame ) {
                 // If I already have this revision, just return the status byte:
-                return { &statusChar, 1 };
+                return {&statusChar, 1};
             }
 
             // I don't have the requested rev, so find revs that could be ancestors of it,

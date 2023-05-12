@@ -153,7 +153,7 @@ namespace litecore {
         nuDoc.setEncoder(db->sharedFleeceEncoder());
 
         // Add each remote revision:
-        for (auto i : revTree.remoteRevisions()) {
+        for ( auto i : revTree.remoteRevisions() ) {
             auto        remoteID = RemoteID(i.first);
             const Rev*  rev      = i.second;
             Revision    nuRev;
