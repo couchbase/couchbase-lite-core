@@ -4600,6 +4600,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				signing = NO;
 			};
 			name = Debug;
 		};
@@ -4607,6 +4610,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				signing = NO;
 			};
 			name = Release;
 		};
@@ -4642,6 +4648,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
 					"$(SOCKPP)/include",
@@ -4656,6 +4663,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
 					"$(SOCKPP)/include",
@@ -4899,6 +4907,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug;
 		};
@@ -4906,6 +4915,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug_EE;
 		};
@@ -4913,6 +4923,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release;
 		};
@@ -4920,6 +4931,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release_EE;
 		};
@@ -5027,6 +5039,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
 					"$(SOCKPP)/include",
@@ -5041,6 +5054,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug_EE;
 		};
@@ -5048,6 +5062,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug_EE;
 		};
@@ -5055,6 +5070,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug_EE;
 		};
@@ -5062,6 +5078,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				signing = NO;
 			};
 			name = Debug_EE;
 		};
@@ -5186,6 +5205,7 @@
 		2791EA2E2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug_EE;
 		};
@@ -5193,6 +5213,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA1A203273BF00BD813C /* Project_Release_EE.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
 					"$(SOCKPP)/include",
@@ -5207,6 +5228,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release_EE;
 		};
@@ -5214,6 +5236,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release_EE;
 		};
@@ -5221,6 +5244,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release_EE;
 		};
@@ -5228,6 +5252,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
+				signing = NO;
 			};
 			name = Release_EE;
 		};
@@ -5346,6 +5373,7 @@
 		2791EA422032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release_EE;
 		};
@@ -5528,6 +5556,7 @@
 			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -5538,6 +5567,7 @@
 			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -5548,6 +5578,7 @@
 			baseConfigurationReference = 2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -5558,6 +5589,7 @@
 			baseConfigurationReference = 2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */;
 			buildSettings = {
 				CURRENT_PROJECT_VERSION = 1;
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
@@ -5566,12 +5598,14 @@
 		27B7E0F318F8FB4800044EBA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug;
 		};
 		27B7E0F418F8FB4800044EBA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release;
 		};
@@ -5607,6 +5641,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug;
 		};
@@ -5614,6 +5649,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release;
 		};
@@ -5621,6 +5657,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug;
 		};
@@ -5628,6 +5665,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release;
 		};
@@ -5635,6 +5673,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Debug;
 		};
@@ -5642,6 +5681,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
+				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
 			};
 			name = Release;
 		};

@@ -2384,3 +2384,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
         CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
     }
 }
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Parameter Binding", "[Query][N1QL]") {
+    addNumberedDocs();
+    auto language = QueryLanguage::kN1QL;
+    auto str = string("SELECT * AS square FROM ") + collectionName + " WHERE type = $doc";
+    logSection(str);
+    Retained<Query> query = store->compileQuery(str, language);
+    CHECK(query->columnCount() == 1);
+    CHECK(query->columnTitles() == (vector<string>{"square"}));
+   
+    Query::Options options {"{\"doc\":\"number\"}"_sl};
+    Retained<QueryEnumerator> e(query->createEnumerator(&options));
+    int num = 1;
+    while ( e->next() ) {
+        string expectedDocID = stringWithFormat("rec-%03d", num);
+        ++num;
+    }
+    REQUIRE(num == 101);
+}
