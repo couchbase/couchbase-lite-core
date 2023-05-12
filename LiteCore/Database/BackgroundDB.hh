@@ -11,10 +11,8 @@
 //
 
 #pragma once
-#include "Actor.hh"
 #include "DataFile.hh"
 #include "access_lock.hh"
-#include "fleece/function_ref.hh"
 #include <mutex>
 #include <vector>
 
@@ -24,8 +22,8 @@ namespace litecore {
 
     class BackgroundDB final : private DataFile::Delegate {
       public:
-        BackgroundDB(DatabaseImpl*);
-        ~BackgroundDB();
+        explicit BackgroundDB(DatabaseImpl*);
+        ~BackgroundDB() override;
 
         void close();
 
@@ -48,7 +46,7 @@ namespace litecore {
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
       private:
-        string      databaseName() const override;
+        [[nodiscard]] string      databaseName() const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         void        externalTransactionCommitted(const SequenceTracker& sourceTracker) override;
         void        notifyTransactionObservers();

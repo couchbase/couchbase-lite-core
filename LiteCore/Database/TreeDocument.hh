@@ -12,7 +12,7 @@
 
 #pragma once
 #include "DocumentFactory.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -21,11 +21,11 @@ namespace litecore {
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
       public:
-        TreeDocumentFactory(C4Collection* coll) : DocumentFactory(coll) {}
+        explicit TreeDocumentFactory(C4Collection* coll) : DocumentFactory(coll) {}
 
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
-        bool                 isFirstGenRevID(slice revID) const override;
+        [[nodiscard]] bool   isFirstGenRevID(slice revID) const override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,

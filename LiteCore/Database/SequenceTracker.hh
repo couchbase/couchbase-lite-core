@@ -12,7 +12,6 @@
 
 #pragma once
 #include "Base.hh"
-#include "Error.hh"
 #include "Logging.hh"
 #include <list>
 #include <unordered_map>
@@ -30,8 +29,8 @@ namespace litecore {
       public:
         enum class RevisionFlags : uint8_t { None = 0 };
 
-        SequenceTracker(slice name);
-        ~SequenceTracker();
+        explicit SequenceTracker(slice name);
+        ~SequenceTracker() override;
         SequenceTracker(SequenceTracker&&) noexcept;
 
         slice name() const { return _name; }
@@ -85,6 +84,9 @@ namespace litecore {
         std::string dump(bool verbose = false) const;
 #endif
 
+        SequenceTracker(const SequenceTracker&)            = delete;
+        SequenceTracker& operator=(const SequenceTracker&) = delete;
+
       protected:
         struct Entry;
         using iterator       = std::list<Entry>::iterator;
@@ -92,7 +94,7 @@ namespace litecore {
 
         static size_t kMinChangesToKeep;  // exposed for testing purposes only
 
-        bool inTransaction() const { return _transaction.get() != nullptr; }
+        bool inTransaction() const { return _transaction != nullptr; }
 
         /** Returns the oldest Entry. */
         const_iterator begin() const;
@@ -118,9 +120,6 @@ namespace litecore {
         const_iterator _since(sequence_t s) const;
         slice          _docIDAt(sequence_t) const;  // for tests only
 
-        SequenceTracker(const SequenceTracker&)            = delete;
-        SequenceTracker& operator=(const SequenceTracker&) = delete;
-
         alloc_slice const                    _name;
         std::list<Entry>                     _changes;
         std::list<Entry>                     _idle;
@@ -129,7 +128,7 @@ namespace litecore {
         size_t                               _numPlaceholders{0};
         size_t                               _numDocObservers{0};
         unique_ptr<CollectionChangeNotifier> _transaction;
-        sequence_t                           _preTransactionLastSequence;
+        sequence_t                           _preTransactionLastSequence {0};
     };
 
     /** Tracks changes to a single document and calls a client callback. */
@@ -143,16 +142,16 @@ namespace litecore {
         SequenceTracker* tracker;
         Callback const   callback;
 
-        slice      docID() const;
-        sequence_t sequence() const;
+        [[nodiscard]] slice      docID() const;
+        [[nodiscard]] sequence_t sequence() const;
+
+        DocChangeNotifier(const DocChangeNotifier&)            = delete;
+        DocChangeNotifier& operator=(const DocChangeNotifier&) = delete;
 
       protected:
         void notify(const SequenceTracker::Entry* entry) noexcept;
 
       private:
-        DocChangeNotifier(const DocChangeNotifier&)            = delete;
-        DocChangeNotifier& operator=(const DocChangeNotifier&) = delete;
-
         friend class SequenceTracker;
         SequenceTracker::const_iterator const _docEntry;
     };
@@ -166,7 +165,7 @@ namespace litecore {
 
         CollectionChangeNotifier(SequenceTracker*, Callback, sequence_t afterSeq = sequence_t::Max);
 
-        ~CollectionChangeNotifier();
+        ~CollectionChangeNotifier() override;
 
         SequenceTracker* tracker;
         Callback const   callback;
@@ -181,13 +180,13 @@ namespace litecore {
             Only after that will the notifier reset so the callback can be called again. */
         size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool& external);
 
+        CollectionChangeNotifier(const CollectionChangeNotifier&)            = delete;
+        CollectionChangeNotifier& operator=(const CollectionChangeNotifier&) = delete;
+
       protected:
         void notify() noexcept;
 
       private:
-        CollectionChangeNotifier(const CollectionChangeNotifier&)            = delete;
-        CollectionChangeNotifier& operator=(const CollectionChangeNotifier&) = delete;
-
         friend class SequenceTracker;
 
         SequenceTracker::const_iterator const _placeholder;

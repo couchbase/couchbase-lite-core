@@ -10,13 +10,12 @@
 // the file licenses/APL2.txt.
 //
 
-#include "mbedtls/config.h"
 #include "PublicKey.hh"
-#include "TLSContext.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "mbedUtils.hh"
 #include "Error.hh"
+#include "SecureDigest.hh"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
@@ -25,10 +24,9 @@
 #include "mbedtls/pk.h"
 #pragma clang diagnostic pop
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
     using namespace std;
     using namespace fleece;
-    using namespace net;
 
     LogDomain TLSLogDomain("TLS", LogLevel::Warning);
 
@@ -140,6 +138,11 @@ namespace litecore { namespace crypto {
 
         auto keyLengthFunc = [](void* ctx) -> size_t { return ((ExternalPrivateKey*)ctx)->_keyLength; };
 
+        /** Clang-Tidy suggests to make `start` a const pointer. Unfortunately, we cannot do this because
+         * the mbedtls function it is passed to expects start to be a non-const pointer, and mbedtls is
+         * a vendor library.
+         */
+        // NOLINTBEGIN(readability-non-const-parameter)
         auto writeKeyFunc = [](void* ctx, uint8_t** p, uint8_t* start) -> int {
             try {
                 alloc_slice keyData = ((ExternalPrivateKey*)ctx)->publicKeyRawData();
@@ -152,6 +155,7 @@ namespace litecore { namespace crypto {
                 return MBEDTLS_ERR_PK_FILE_IO_ERROR;
             }
         };
+        // NOLINTEND(readability-non-const-parameter)
 
         TRY(mbedtls_pk_setup_rsa_alt2(context(), this, decryptFunc, signFunc, keyLengthFunc, writeKeyFunc));
     }
@@ -176,4 +180,4 @@ namespace litecore { namespace crypto {
 #    endif
 #endif  // PERSISTENT_PRIVATE_KEY_AVAILABLE
 
-}}  // namespace litecore::crypto
+}  // namespace litecore::crypto

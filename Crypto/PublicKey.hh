@@ -13,13 +13,12 @@
 #pragma once
 #include "fleece/RefCounted.hh"
 #include "fleece/slice.hh"
-#include "SecureDigest.hh"
 #include "Logging.hh"
 #include <string>
 
 struct mbedtls_pk_context;
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
     class Cert;
 
     extern LogDomain TLSLogDomain;
@@ -43,7 +42,11 @@ namespace litecore { namespace crypto {
 
         virtual bool isPrivate() = 0;
 
+        // Not going to make this static incase Jens or someone else does decide to address the 3 yrs old to-do comment
+        // NOLINTBEGIN(readability-convert-member-functions-to-static)
         bool isRSA() { return true; }  //TODO: Change when/if we support ECC
+
+        // NOLINTEND(readability-convert-member-functions-to-static)
 
         std::string description();
 
@@ -55,7 +58,7 @@ namespace litecore { namespace crypto {
         explicit Key(KeyOwner* owner) : _owner(owner), _pk(owner->keyContext()) {}
 
         Key();
-        ~Key();
+        ~Key() override;
         virtual fleece::alloc_slice publicKeyDERData();
         virtual fleece::alloc_slice publicKeyRawData();
 
@@ -71,7 +74,7 @@ namespace litecore { namespace crypto {
 
         fleece::alloc_slice data(KeyFormat f = KeyFormat::DER) { return Key::publicKeyData(f); }
 
-        virtual bool isPrivate() override { return false; }
+        bool isPrivate() override { return false; }
 
       protected:
         friend class CertBase;
@@ -94,7 +97,7 @@ namespace litecore { namespace crypto {
             since the private key is exposed and difficult to save securely. */
         static fleece::Retained<PrivateKey> generateTemporaryRSA(unsigned keySizeInBits);
 
-        virtual bool isPrivate() override { return true; }
+        bool isPrivate() override { return true; }
 
         virtual PersistentPrivateKey* asPersistent() { return nullptr; }
 
@@ -117,10 +120,10 @@ namespace litecore { namespace crypto {
     /** A key-pair stored externally; subclasses must implement the crypto operations. */
     class ExternalPrivateKey : public PrivateKey {
       protected:
-        ExternalPrivateKey(unsigned keySizeInBits);
+        explicit ExternalPrivateKey(unsigned keySizeInBits);
 
         /** Subclass must provide the public key data on request. */
-        virtual fleece::alloc_slice publicKeyDERData() override = 0;
+        fleece::alloc_slice publicKeyDERData() override = 0;
 
         /** Subclass-specific decryption implementation, using PKCS1 padding.
             @param input  The encrypted data; length is equal to _keyLength.
@@ -169,12 +172,12 @@ namespace litecore { namespace crypto {
             Don't make any more calls to this object afterwards. */
         virtual void remove() = 0;
 
-        virtual PersistentPrivateKey* asPersistent() override { return this; }
+        PersistentPrivateKey* asPersistent() override { return this; }
 
       protected:
-        PersistentPrivateKey(unsigned keySizeInBits) : ExternalPrivateKey(keySizeInBits) {}
+        explicit PersistentPrivateKey(unsigned keySizeInBits) : ExternalPrivateKey(keySizeInBits) {}
     };
 
 #endif  // PERSISTENT_PRIVATE_KEY_AVAILABLE
 
-}}  // namespace litecore::crypto
+}  // namespace litecore::crypto

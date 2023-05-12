@@ -11,11 +11,12 @@
 //
 
 #include "SequenceTracker.hh"
-#include "c4Document.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "Error.hh"
 #include <algorithm>
 #include <sstream>
+#include <utility>
 
 /* THEORY OF OPERATION:
  
@@ -81,14 +82,24 @@ namespace litecore {
         // Placeholder entry (when docID == nullslice):
         CollectionChangeNotifier* const databaseObserver{nullptr};
 
-        Entry(const alloc_slice& d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
-            : docID(d), revID(r), sequence(s), bodySize(bs), flags(flags), idle(false), external(false) {
+        Entry(alloc_slice d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
+            : docID(std::move(d))
+            , revID(std::move(r))
+            , sequence(s)
+            , bodySize(bs)
+            , flags(flags)
+            , idle(false)
+            , external(false) {
             DebugAssert(docID != nullslice);
         }
 
         explicit Entry(const alloc_slice& d) : Entry(d, nullslice, 0_seq, 0, {}) {}
 
+        // Disable warning about uninitialized fields. It seems intended behaviour for this constructor
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         explicit Entry(CollectionChangeNotifier* o NONNULL) : databaseObserver(o) {}  // placeholder
+
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
         bool isPlaceholder() const { return docID.buf == nullptr; }
 
@@ -159,8 +170,8 @@ namespace litecore {
             _lastSequence = _preTransactionLastSequence;
 
             // Revert their committedSequences:
-            const_iterator lastEntry = prev(_changes.end());
-            const_iterator nextEntry = _transaction->_placeholder;
+            auto           lastEntry = std::prev(_changes.end());
+            auto           nextEntry = _transaction->_placeholder;
             const_iterator entry;
             do {
                 entry     = nextEntry;
@@ -221,7 +232,7 @@ namespace litecore {
         } else {
             // or create a new entry at the end:
             _changes.emplace_back(docID, revID, sequence, shortBodySize, flags);
-            iterator change         = prev(_changes.end());
+            auto change             = prev(_changes.end());
             _byDocID[change->docID] = change;
             entry                   = &*change;
         }
@@ -419,7 +430,7 @@ namespace litecore {
 #pragma mark - DOC CHANGE NOTIFIER:
 
     DocChangeNotifier::DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb)
-        : tracker(t), _docEntry(tracker->addDocChangeNotifier(docID, this)), callback(move(cb)) {
+        : tracker(t), _docEntry(tracker->addDocChangeNotifier(docID, this)), callback(std::move(cb)) {
         t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
 
@@ -443,7 +454,7 @@ namespace litecore {
     CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker* t, Callback cb, sequence_t afterSeq)
         : Logging(ChangesLog)
         , tracker(t)
-        , callback(move(cb))
+        , callback(std::move(cb))
         , _placeholder(tracker->addPlaceholderAfter(this, afterSeq)) {
         if ( callback ) logInfo("Created, starting after #%" PRIu64, (uint64_t)afterSeq);
     }

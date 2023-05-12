@@ -21,10 +21,7 @@ namespace fleece::impl {
     class SharedKeys;
 }  // namespace fleece::impl
 
-namespace litecore {
-
-    /** Utilities for dealing with 'legacy' properties like _id, _rev, _deleted, _attachments. */
-    namespace legacy_attachments {
+namespace litecore::legacy_attachments {
 
         /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
         bool isOldMetaProperty(fleece::slice key);
@@ -37,8 +34,6 @@ namespace litecore {
             appear elsewhere in the dictionary as blobs are preserved. */
         fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
                                                              fleece::impl::SharedKeys* C4NULLABLE);
-    }  // namespace legacy_attachments
-
-}  // namespace litecore
+    }  // namespace litecore
 
 C4_ASSUME_NONNULL_END

@@ -26,13 +26,13 @@ namespace litecore {
         using ContentOption = litecore::ContentOption;
         using Record        = litecore::Record;
 
-        DocumentFactory(C4Collection* coll) : _coll(coll) {}
+        explicit DocumentFactory(C4Collection* coll) : _coll(coll) {}
 
         virtual ~DocumentFactory() = default;
 
-        C4Collection* collection() const { return _coll; }
+        [[nodiscard]] C4Collection* collection() const { return _coll; }
 
-        virtual bool isFirstGenRevID(slice revID) const { return false; }
+        [[nodiscard]] virtual bool isFirstGenRevID(slice revID) const { return false; }
 
         virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
         virtual Retained<C4Document> newDocumentInstance(const Record&)              = 0;

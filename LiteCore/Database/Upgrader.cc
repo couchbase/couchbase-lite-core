@@ -12,21 +12,20 @@
 
 #include "c4Base.hh"
 #include "c4Document+Fleece.h"
+#include "c4Collection.hh"
 #include "Upgrader.hh"
 #include "SQLite_Internal.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
 #include "DatabaseImpl.hh"
-#include "c4Collection.hh"
-#include "c4Document.hh"
 #include "c4BlobStore.hh"
-#include "c4Internal.hh"
-#include "BlobStreams.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "RevID.hh"
 #include "FleeceImpl.hh"
+#include "SQLiteCpp/Database.h"
+#include "Stream.hh"
 #include <sqlite3.h>
+#include <memory>
 #include <thread>
 
 using namespace std;
@@ -46,12 +45,12 @@ namespace litecore {
         Upgrader(const FilePath& oldPath, Retained<DatabaseImpl> newDB)
             : _oldPath(oldPath)
             , _oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE)  // *
-            , _newDB(move(newDB))
+            , _newDB(std::move(newDB))
             , _attachments(oldPath["attachments/"]) {
             // * Note: It would be preferable to open the old db read-only, but that will fail
             // unless its '-shm' file already exists. <https://www.sqlite.org/wal.html#readonly>
 
-            sqlite3_create_collation(_oldDB.getHandle(), "REVID", SQLITE_UTF8, NULL, &compareRevIDs);
+            sqlite3_create_collation(_oldDB.getHandle(), "REVID", SQLITE_UTF8, nullptr, &compareRevIDs);
         }
 
         static C4DatabaseConfig asTreeVersioning(C4DatabaseConfig config) {
@@ -86,7 +85,7 @@ namespace litecore {
 
 
       private:
-        static int compareRevIDs(void* context, int len1, const void* chars1, int len2, const void* chars2) {
+        static int compareRevIDs(C4UNUSED void* context, int len1, const void* chars1, int len2, const void* chars2) {
             revidBuffer rev1, rev2;
             rev1.parse({chars1, size_t(len1)});
             rev2.parse({chars2, size_t(len2)});
@@ -128,17 +127,17 @@ namespace litecore {
         void copyRevisions(int64_t oldDocKey, C4Document* newDoc) {
             if ( !_currentRev ) {
                 // Gets the current revision of doc
-                _currentRev.reset(new SQLite::Statement(_oldDB,
+                _currentRev = std::make_unique<SQLite::Statement>(_oldDB,
                                                         "SELECT sequence, revid, parent, deleted, json, no_attachments"
                                                         " FROM revs WHERE doc_id=? and current!=0"
                                                         " ORDER BY deleted, revid DESC LIMIT 1",
-                                                        true));
+                                                        true);
                 // Gets non-leaf revisions of doc in reverse sequence order
-                _parentRevs.reset(new SQLite::Statement(_oldDB,
+                _parentRevs = std::make_unique<SQLite::Statement>(_oldDB,
                                                         "SELECT sequence, revid, parent, deleted, json, no_attachments"
                                                         " FROM revs WHERE doc_id=? and current=0"
                                                         " ORDER BY sequence DESC",
-                                                        true));
+                                                        true);
             }
 
             _currentRev->reset();

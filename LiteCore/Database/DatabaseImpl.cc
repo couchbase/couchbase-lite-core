@@ -13,27 +13,20 @@
 #include "DatabaseImpl.hh"
 #include "Defer.hh"
 #include "CollectionImpl.hh"
-#include "c4Document.hh"
-#include "c4Document.h"
 #include "c4ExceptionUtils.hh"
 #include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
-#include "TreeDocument.hh"
-#include "VectorDocument.hh"
 #include "BackgroundDB.hh"
-#include "Housekeeper.hh"
 #include "DataFile.hh"
-#include "SQLiteDataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
 #include "FleeceImpl.hh"
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "PrebuiltCopier.hh"
 #include <functional>
-#include <inttypes.h>
+#include <memory>
 #include <unordered_set>
 
 namespace litecore::constants {
@@ -358,7 +351,7 @@ namespace litecore {
     }
 
     BackgroundDB* DatabaseImpl::backgroundDatabase() {
-        if ( !_backgroundDB ) _backgroundDB.reset(new BackgroundDB(this));
+        if ( !_backgroundDB ) _backgroundDB = std::make_unique<BackgroundDB>(this);
         return _backgroundDB.get();
     }
 
@@ -555,12 +548,11 @@ namespace litecore {
 
         // CBL-3298: Final fallback to detect scopes added in another handle
         auto allStores = _dataFile->allKeyStoreNames();
-        for ( const auto& store : allStores ) {
-            auto spec = keyStoreNameToCollectionSpec(slice(store));
-            if ( spec.scope == name ) { return true; }
-        }
 
-        return false;
+        return std::any_of(allStores.begin(), allStores.end(), [&name](const std::string& store) {
+            auto spec = keyStoreNameToCollectionSpec(slice(store));
+            return spec.scope == name;
+        });
     }
 
     C4Collection* DatabaseImpl::getCollection(CollectionSpec spec) const {
@@ -600,7 +592,7 @@ namespace litecore {
         auto      collection = make_retained<CollectionImpl>(this, spec, store);
         // Update its state & add it to _collections:
         auto collectionPtr = collection.get();
-        _collections.insert({CollectionSpec(collection->getSpec()), move(collection)});
+        _collections.insert({CollectionSpec(collection->getSpec()), std::move(collection)});
 
         if ( isInTransaction() ) collectionPtr->transactionBegan();
         return collectionPtr;  //-> New object
@@ -681,7 +673,7 @@ namespace litecore {
 
     bool DatabaseImpl::isInTransaction() const noexcept { return _transactionLevel > 0; }
 
-    void DatabaseImpl::mustBeInTransaction() {
+    void DatabaseImpl::mustBeInTransaction() const {
         if ( !isInTransaction() ) error::_throw(error::NotInTransaction);
     }
 
@@ -740,7 +732,7 @@ namespace litecore {
         if ( isDefaultCollection(spec) ) { _defaultCollection->invalidate(); }
     }
 
-    void DatabaseImpl::mustNotBeInTransaction() {
+    void DatabaseImpl::mustNotBeInTransaction() const {
         if ( isInTransaction() ) error::_throw(error::TransactionNotClosed);
     }
 
@@ -791,7 +783,7 @@ namespace litecore {
 
     fleece::impl::Encoder& DatabaseImpl::sharedEncoder() const {
         _encoder->reset();
-        return *_encoder.get();
+        return *_encoder;
     }
 
     FLEncoder DatabaseImpl::sharedFleeceEncoder() const {
@@ -883,7 +875,7 @@ namespace litecore {
             if ( inTransaction ) { endTransaction(commit); }
         };
 
-        C4RemoteID remoteID = 0;
+        C4RemoteID remoteID;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
         // If the ID isn't found, then do a second pass where we either add the remote URL

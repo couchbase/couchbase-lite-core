@@ -24,12 +24,12 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace fleece { namespace impl {
+namespace fleece::impl {
     class Dict;
     class Encoder;
     class SharedKeys;
     class Value;
-}}  // namespace fleece::impl
+}  // namespace fleece::impl
 
 namespace litecore {
 class BackgroundDB;
@@ -70,8 +70,8 @@ class DatabaseImpl final
     void resetUUIDs();
 
     ExclusiveTransaction& transaction() const;
-    void                  mustBeInTransaction();
-    void                  mustNotBeInTransaction();
+    void                  mustBeInTransaction() const;
+    void                  mustNotBeInTransaction() const;
 
     uint32_t maxRevTreeDepth();
     void     setMaxRevTreeDepth(uint32_t depth);
@@ -129,11 +129,11 @@ class DatabaseImpl final
 
     // DataFile::Delegate API:
 
-    virtual string databaseName() const override { return _name; }
+    string databaseName() const override { return _name; }
 
-    virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
-    virtual void        externalTransactionCommitted(const SequenceTracker&) override;
-    virtual void        collectionRemoved(const std::string& keyStoreName) override;
+    alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
+    void        externalTransactionCommitted(const SequenceTracker&) override;
+    void        collectionRemoved(const std::string& keyStoreName) override;
 
     C4DatabaseTag getDatabaseTag() const { return (C4DatabaseTag)_dataFile->databaseTag(); }
 
@@ -143,7 +143,7 @@ class DatabaseImpl final
     friend struct C4Database;
 
     DatabaseImpl(const FilePath& dir, C4DatabaseConfig config);
-    virtual ~DatabaseImpl();
+    ~DatabaseImpl() override;
 
     void            open(const FilePath& path);
     void            initCollections();

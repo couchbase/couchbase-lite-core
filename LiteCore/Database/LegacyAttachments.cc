@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace litecore { namespace legacy_attachments {
+namespace litecore::legacy_attachments {
     using namespace std;
     using namespace fleece;
     using namespace fleece::impl;
@@ -113,4 +113,4 @@ namespace litecore { namespace legacy_attachments {
         return enc.finish();
     }
 
-}}  // namespace litecore::legacy_attachments
+}  // namespace litecore::legacy_attachments

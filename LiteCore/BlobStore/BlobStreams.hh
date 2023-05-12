@@ -11,8 +11,7 @@
 //
 
 #pragma once
-#include "c4BlobStore.h"
-#include "c4DatabaseTypes.h"
+#include "c4BlobStoreTypes.h"
 #include "FilePath.hh"
 #include "SecureDigest.hh"
 #include "Stream.hh"
@@ -31,12 +30,12 @@ namespace litecore {
       public:
         BlobWriteStream(const std::string& blobStoreDirectory, EncryptionAlgorithm, slice encryptionKey);
 
-        ~BlobWriteStream();
+        ~BlobWriteStream() override;
 
         void write(slice) override;
         void close() override;
 
-        uint64_t bytesWritten() const { return _bytesWritten; }
+        [[nodiscard]] uint64_t bytesWritten() const { return _bytesWritten; }
 
         /** Derives the blobKey from the digest of the file data.
             No more data can be written after this is called. */
