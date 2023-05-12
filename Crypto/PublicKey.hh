@@ -42,11 +42,7 @@ namespace litecore::crypto {
 
         virtual bool isPrivate() = 0;
 
-        // Not going to make this static incase Jens or someone else does decide to address the 3 yrs old to-do comment
-        // NOLINTBEGIN(readability-convert-member-functions-to-static)
-        bool isRSA() { return true; }  //TODO: Change when/if we support ECC
-
-        // NOLINTEND(readability-convert-member-functions-to-static)
+        static bool isRSA() { return true; }  //TODO: Change when/if we support ECC
 
         std::string description();
 

@@ -139,8 +139,7 @@ namespace litecore::crypto {
         auto keyLengthFunc = [](void* ctx) -> size_t { return ((ExternalPrivateKey*)ctx)->_keyLength; };
 
         /** Clang-Tidy suggests to make `start` a const pointer. Unfortunately, we cannot do this because
-         * the mbedtls function it is passed to expects start to be a non-const pointer, and mbedtls is
-         * a vendor library.
+         * the mbedtls function it is passed to expects start to be a non-const pointer.
          */
         // NOLINTBEGIN(readability-non-const-parameter)
         auto writeKeyFunc = [](void* ctx, uint8_t** p, uint8_t* start) -> int {

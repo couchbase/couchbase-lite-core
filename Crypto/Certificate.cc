@@ -304,7 +304,7 @@ namespace litecore::crypto {
         if ( subjectParams.nsCertType != 0 ) {
             TRY(mbedtls_x509write_crt_set_ns_cert_type(&crt, subjectParams.nsCertType));
             if ( key_usage == 0 )  // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(subjectParams.nsCertType, subjectKey->isRSA());
+                key_usage = defaultKeyUsage(subjectParams.nsCertType, PublicKey::isRSA());
         }
         if ( key_usage != 0 ) TRY(mbedtls_x509write_crt_set_key_usage(&crt, key_usage));
 
@@ -479,7 +479,7 @@ namespace litecore::crypto {
         if ( params.nsCertType != 0 ) {
             TRY(mbedtls_x509write_csr_set_ns_cert_type(&csr, params.nsCertType));
             if ( key_usage == 0 )  // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(params.nsCertType, subjectKey->isRSA());
+                key_usage = defaultKeyUsage(params.nsCertType, PrivateKey::isRSA());
         }
         if ( key_usage != 0 ) TRY(mbedtls_x509write_csr_set_key_usage(&csr, uint8_t(key_usage)));
 

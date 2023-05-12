@@ -232,7 +232,7 @@ namespace litecore {
         } else {
             // or create a new entry at the end:
             _changes.emplace_back(docID, revID, sequence, shortBodySize, flags);
-            auto change             = prev(_changes.end());
+            auto change             = std::prev(_changes.end());
             _byDocID[change->docID] = change;
             entry                   = &*change;
         }
@@ -297,7 +297,7 @@ namespace litecore {
                 else if ( !i->isPlaceholder() )
                     break;
             }
-            return prev(result.base());  // (convert `result` to regular fwd iterator)
+            return std::prev(result.base());  // (convert `result` to regular fwd iterator)
         }
     }
 

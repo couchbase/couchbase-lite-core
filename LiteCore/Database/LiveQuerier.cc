@@ -177,8 +177,7 @@ namespace litecore {
         _delegate->liveQuerierUpdated(newQE, error);
     }
 
-    // It seems to be a limitation of `Actor::enqueue()` that the function to enqueue cannot have reference parameters
-    // That is unfortunate because it means every call is performing a copy
+    // It seems to be a limitation of `Actor::enqueue()` that the function to enqueue cannot have reference parameters.
     // NOLINTBEGIN(performance-unnecessary-value-param)
     void LiveQuerier::_changeOptions(const Query::Options options) {
         if ( _stopping ) return;
