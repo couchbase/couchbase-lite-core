@@ -278,8 +278,16 @@ collateSuffix =
         )+ ')' _
     )                                   { $$ = co; }
 
+collationLang =
+    <"NOUNICODE"i>                      { $$ = string(yytext); }
+  | (
+        "UNICODE"i                      { $$ = string("UNICODE"); }
+        <(':' [a-zA-Z] [a-zA-Z0-9_]*)?> { $$ = $$.as<string>() + string(yytext); }
+    )
+
 collation =
-    <("NO"i? ("UNICODE"i | "CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
+  l:collationLang _                    { $$ = l; }
+  | <("NO"i? ("CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
 _baseExpr =
     literal
@@ -480,9 +488,9 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
 
     bool ok = parse(&ctx) != 0;
     if (ok) {
-        result = ctx.__;
+        result = ctx._;
     } else {
-        *errPos = (unsigned) ctx.__maxpos;
+        *errPos = (unsigned) ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
