@@ -17,6 +17,7 @@
 //
 
 #include "mbedSnippets.hh"
+#include <cstring>
 
 namespace litecore::crypto {
 
@@ -95,8 +96,8 @@ namespace litecore::crypto {
      */
     int x509_name_cmp(const mbedtls_x509_name* a, const mbedtls_x509_name* b) {
         /* Avoid recursion, it might not be optimised by the compiler */
-        while ( a != NULL || b != NULL ) {
-            if ( a == NULL || b == NULL ) return (-1);
+        while ( a != nullptr || b != nullptr ) {
+            if ( a == nullptr || b == nullptr ) return (-1);
 
             /* type */
             if ( a->oid.tag != b->oid.tag || a->oid.len != b->oid.len || memcmp(a->oid.p, b->oid.p, b->oid.len) != 0 ) {

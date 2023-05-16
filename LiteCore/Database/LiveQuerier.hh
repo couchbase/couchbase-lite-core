@@ -11,12 +11,10 @@
 //
 
 #pragma once
-#include "c4Base.h"
 #include "Actor.hh"
 #include "fleece/InstanceCounted.hh"
 #include "BackgroundDB.hh"
 #include "Query.hh"
-#include "Logging.hh"
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -59,14 +57,14 @@ namespace litecore {
         void getCurrentResult(CurrentResultCallback callback);
 
       protected:
-        virtual ~LiveQuerier();
-        virtual std::string loggingIdentifier() const override;
+        ~LiveQuerier() override;
+        std::string loggingIdentifier() const override;
 
       private:
         using clock = std::chrono::steady_clock;
 
         // TransactionObserver method:
-        virtual void transactionCommitted() override;
+        void transactionCommitted() override;
 
         void _runQuery(Query::Options);
         void _changeOptions(Query::Options);
@@ -81,7 +79,7 @@ namespace litecore {
         QueryLanguage             _language;             // The query language (JSON or N1QL)
         Retained<Query>           _query;                // Compiled query
         Retained<QueryEnumerator> _currentEnumerator;    // Latest query results
-        C4Error                   _currentError;         // Latest query error;
+        C4Error                   _currentError{};       // Latest query error;
         clock::time_point         _lastTime;             // Time the query last ran
         bool                      _continuous;           // Do I keep running until stopped?
         bool                      _waitingToRun{false};  // Is a call to _runQuery scheduled?

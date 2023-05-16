@@ -23,11 +23,11 @@ namespace litecore {
         bool setDigest(fleece::slice);
 
         /// The digest as a slice
-        fleece::slice asSlice() const { return {_bytes, N}; }
+        [[nodiscard]] fleece::slice asSlice() const { return {_bytes, N}; }
 
-        operator fleece::slice() const { return asSlice(); }
+        explicit operator fleece::slice() const { return asSlice(); }
 
-        std::string asBase64() const;
+        [[nodiscard]] std::string asBase64() const;
 
         bool operator==(const Hash& x) const { return memcmp(&_bytes, &x._bytes, N) == 0; }
 
@@ -36,9 +36,9 @@ namespace litecore {
       protected:
         Hash() { memset(_bytes, 0, N); }
 
-        constexpr unsigned int size() const { return N; }
+        [[nodiscard]] constexpr unsigned int size() const { return N; }
 
-        char _bytes[N];
+        char _bytes[N]{};
     };
 
     /// A SHA-1 digest.
@@ -77,7 +77,7 @@ namespace litecore {
         }
 
       private:
-        uint8_t _context[100];  // big enough to hold any platform's context struct
+        uint8_t _context[100]{};  // big enough to hold any platform's context struct
     };
 
     class SHA256 : public Hash<32> {
@@ -115,6 +115,6 @@ namespace litecore {
         }
 
       private:
-        uint8_t _context[110];  // big enough to hold any platform's context struct
+        uint8_t _context[110]{};  // big enough to hold any platform's context struct
     };
 }  // namespace litecore

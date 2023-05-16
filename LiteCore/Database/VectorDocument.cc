@@ -15,9 +15,6 @@
 #include "VersionVector.hh"
 #include "CollectionImpl.hh"
 #include "c4Database.hh"
-#include "c4Document+Fleece.h"
-#include "c4Private.h"
-#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "Error.hh"
 #include "Delimiter.hh"
@@ -47,7 +44,7 @@ namespace litecore {
 
         Retained<C4Document> copy() const override { return new VectorDocument(*this); }
 
-        ~VectorDocument() { _doc.owner = nullptr; }
+        ~VectorDocument() override { _doc.owner = nullptr; }
 
         void _initialize() {
             _doc.owner = this;
@@ -66,7 +63,7 @@ namespace litecore {
 
         peerID myPeerID() const { return peerID{asInternal(database())->myPeerID()}; }
 
-        alloc_slice _expandRevID(revid rev, peerID myID = kMePeerID) const {
+        static alloc_slice _expandRevID(revid rev, peerID myID = kMePeerID) {
             if ( !rev ) return nullslice;
             return rev.asVersion().asASCII(myID);
         }
@@ -522,7 +519,7 @@ namespace litecore {
                                                              C4RemoteID remoteDBID) {
         // Map docID->revID for faster lookup in the callback:
         unordered_map<slice, slice> revMap(docIDs.size());
-        for ( ssize_t i = docIDs.size() - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
+        for ( ssize_t i = static_cast<ssize_t>(docIDs.size()) - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
         const peerID myPeerID{asInternal(collection()->getDatabase())->myPeerID()};
 
         // These variables get reused in every call to the callback but are declared outside to
@@ -557,10 +554,10 @@ namespace litecore {
                 });
             }
 
-            char statusChar = '0' + char(status);
+            char statusChar = static_cast<char>('0' + char(status));
             if ( cmp == kNewer || cmp == kSame ) {
                 // If I already have this revision, just return the status byte:
-                return alloc_slice(&statusChar, 1);
+                return {&statusChar, 1};
             }
 
             // I don't have the requested rev, so find revs that could be ancestors of it,

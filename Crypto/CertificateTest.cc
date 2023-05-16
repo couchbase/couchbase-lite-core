@@ -10,10 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Base.hh"
 #include "PublicKey.hh"
 #include "Certificate.hh"
-#include "CertRequest.hh"
 #include "Error.hh"
 #include "LiteCoreTest.hh"
 #include <iostream>
@@ -56,7 +54,7 @@ TEST_CASE("Creating subject names", "[Certs]") {
     CHECK(name["CN"_sl] == "Zegpold"_sl);
     CHECK(name["foo"_sl] == nullslice);
 
-    name = DistinguishedName("CN=Zegpold\\, Jr,O=Example\\, Inc.,   OU=Mailroom"_sl);
+    name = DistinguishedName(R"(CN=Zegpold\, Jr,O=Example\, Inc.,   OU=Mailroom)"_sl);
     CHECK(name["CN"_sl] == "Zegpold, Jr"_sl);
     CHECK(name["O"_sl] == "Example, Inc."_sl);
     CHECK(name["OU"_sl] == "Mailroom"_sl);

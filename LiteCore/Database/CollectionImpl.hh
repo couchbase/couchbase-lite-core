@@ -29,7 +29,6 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.h"
 #include "betterassert.hh"
 
 namespace litecore {
@@ -51,7 +50,7 @@ namespace litecore {
             logInfo("Instantiated");
         }
 
-        ~CollectionImpl() { destructExtraInfo(_extraInfo); }
+        ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
         void close() {
             logInfo("Closed");
@@ -159,7 +158,7 @@ namespace litecore {
 
         Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const override {
             if ( Record rec = keyStore().get(sequence, kEntireBody); rec.exists() )
-                return documentFactory()->newDocumentInstance(move(rec));
+                return documentFactory()->newDocumentInstance(rec);
             else
                 return nullptr;
         }
@@ -263,9 +262,7 @@ namespace litecore {
                     }
                 } else {
                     // Create new revision:
-                    slice       docID = rq.docID;
-                    alloc_slice newDocID;
-                    if ( !docID ) docID = newDocID = C4Document::createDocID();
+                    alloc_slice docID = (rq.docID.buf) ? alloc_slice(rq.docID) : C4Document::createDocID();
 
                     slice parentRevID;
                     if ( rq.historyCount > 0 ) parentRevID = rq.history[0];
@@ -287,7 +284,7 @@ namespace litecore {
         }
 
         // Is this a PutRequest that doesn't require a Record to exist already?
-        bool isNewDocPutRequest(const C4DocPutRequest& rq) {
+        bool isNewDocPutRequest(const C4DocPutRequest& rq) const {
             if ( rq.deltaCB ) return false;
             else if ( rq.existingRevision )
                 return documentFactory()->isFirstGenRevID(rq.history[rq.historyCount - 1]);
@@ -296,7 +293,7 @@ namespace litecore {
         }
 
         // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-        pair<Retained<C4Document>, int> putNewDoc(const C4DocPutRequest& rq) {
+        pair<Retained<C4Document>, int> putNewDoc(const C4DocPutRequest& rq) const {
             DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
             Record record(rq.docID);
             if ( !rq.docID.buf ) record.setKey(C4Document::createDocID());
@@ -445,11 +442,11 @@ namespace litecore {
 
 #pragma mark - OBSERVERS:
 
-        virtual std::unique_ptr<C4CollectionObserver> observe(CollectionObserverCallback cb) override {
+        std::unique_ptr<C4CollectionObserver> observe(CollectionObserverCallback cb) override {
             return C4CollectionObserver::create(this, cb);
         }
 
-        virtual std::unique_ptr<C4DocumentObserver> observeDocument(slice docID, DocumentObserverCallback cb) override {
+        std::unique_ptr<C4DocumentObserver> observeDocument(slice docID, DocumentObserverCallback cb) override {
             return C4DocumentObserver::create(this, docID, cb);
         }
 

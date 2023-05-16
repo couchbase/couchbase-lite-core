@@ -11,13 +11,9 @@
 //
 
 #include "TreeDocument.hh"
-#include "c4Document.hh"
 #include "CollectionImpl.hh"
-#include "c4Internal.hh"
-#include "c4Private.h"
 #include "DatabaseImpl.hh"
 #include "Record.hh"
-#include "RawRevTree.hh"
 #include "RevTreeRecord.hh"
 #include "DeepIterator.hh"
 #include "Delimiter.hh"
@@ -25,7 +21,6 @@
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
-#include "SecureSymmetricCrypto.hh"
 #include "FleeceImpl.hh"
 #include "slice_stream.hh"
 #include <ctime>
@@ -97,7 +92,7 @@ namespace litecore {
             return true;
         }
 
-        void mustLoadRevisions() {
+        void mustLoadRevisions() const {
             if ( !loadRevisions() ) error::_throw(error::Conflict, "Can't load rev tree: doc has changed on disk");
         }
 
@@ -113,7 +108,7 @@ namespace litecore {
             return loadRevisions() && (!_selectedRev || _selectedRev->body());
         }
 
-        virtual slice getRevisionBody() const noexcept override {
+        slice getRevisionBody() const noexcept override {
             if ( _selectedRev ) return _selectedRev->body();
             else if ( _revTree.currentRevAvailable() )
                 return _revTree.currentRevBody();
@@ -137,7 +132,7 @@ namespace litecore {
             auto append = [&](slice revID) {
                 lastPos = (string::size_type)historyStream.tellp();
                 if ( revsWritten++ > 0 ) historyStream << ',';
-                historyStream.write((const char*)revID.buf, revID.size);
+                historyStream.write((const char*)revID.buf, static_cast<std::streamsize>(revID.size));
             };
 
             auto hasRemoteAncestor = [&](slice revID) {
@@ -150,7 +145,7 @@ namespace litecore {
                 string buf = historyStream.str();
                 buf.resize(lastPos);
                 historyStream.str(buf);
-                historyStream.seekp(lastPos);
+                historyStream.seekp(static_cast<std::streamsize>(lastPos));
                 --revsWritten;
             };
 
@@ -451,7 +446,7 @@ namespace litecore {
 
         int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             Assert(rq.historyCount >= 1);
-            int32_t commonAncestor = -1;
+            int32_t commonAncestor;
             mustLoadRevisions();
             vector<revidBuffer> revIDBuffers(rq.historyCount);
             for ( size_t i = 0; i < rq.historyCount; i++ ) revIDBuffers[i].parse(rq.history[i]);
@@ -623,7 +618,7 @@ namespace litecore {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.getRevID().generation() + 1;
             }
-            return revidBuffer(generation, slice(digest));
+            return {generation, slice(digest)};
         }
 
 
@@ -654,7 +649,7 @@ namespace litecore {
                                                            C4RemoteID remoteDBID) {
         // Map docID->revID for faster lookup in the callback:
         unordered_map<slice, slice> revMap(docIDs.size());
-        for ( ssize_t i = docIDs.size() - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
+        for ( ssize_t i = static_cast<ssize_t>(docIDs.size()) - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
         auto callback = [&](const RecordUpdate& rec) -> alloc_slice {
@@ -689,8 +684,8 @@ namespace litecore {
                     status |= kRevsConflict;
             }
 
-            char statusChar = '0' + char(status);
-            if ( !(status & kRevsLocalIsOlder) ) { return alloc_slice(&statusChar, 1); }
+            char statusChar = static_cast<char>('0' + char(status));
+            if ( !(status & kRevsLocalIsOlder) ) { return {&statusChar, 1}; }
 
             // Find revs that could be ancestors of it and write them as a JSON array:
             result.str("");
