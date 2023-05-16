@@ -224,7 +224,7 @@ namespace litecore::repl {
                         // immediately. In this case, we don't put it into _docsEnded now. It wil be
                         // taken care of after retry.
                         //
-                        if (retry != kRetryNow) finishedDocumentWithError(rev, c4err, !completed);
+                        if ( retry != kRetryNow ) finishedDocumentWithError(rev, c4err, !completed);
 
                         // If this is a permanent failure, like a validation error or conflict,
                         // then I've completed my duty to push it.

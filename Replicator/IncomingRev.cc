@@ -166,12 +166,10 @@ namespace litecore { namespace repl {
                     if ( _options->noIncomingConflicts() ) err = {WebSocketDomain, 409};
                     else
                         err = C4Error::printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                              "Couldn't apply delta: Don't have body of '%.*s' #%.*s", SPLAT(_rev->docID),
-                                              SPLAT(_rev->deltaSrcRevID));
+                                              "Couldn't apply delta: Don't have body of '%.*s' #%.*s",
+                                              SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
                 }
-            } catch (...) {
-                err = C4Error::fromCurrentException();
-            }
+            } catch ( ... ) { err = C4Error::fromCurrentException(); }
             _rev->deltaSrcRevID = nullslice;
 
         } else {
