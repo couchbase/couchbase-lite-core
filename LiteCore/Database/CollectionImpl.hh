@@ -126,7 +126,7 @@ namespace litecore {
             options.sortOption = kUnsorted;
             RecordEnumerator e(keyStore(), options);
             while ( e.next() ) {
-                Retained<C4Document> doc = _documentFactory->newDocumentInstance(*e);
+                Retained<C4Document> doc = _documentFactory->newDocumentInstance(e.record());
                 doc->selectCurrentRevision();
                 do {
                     if ( doc->loadRevisionBody() ) {

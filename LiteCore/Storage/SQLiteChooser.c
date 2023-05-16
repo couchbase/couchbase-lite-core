@@ -24,7 +24,7 @@
 #    endif
 #    if __APPLE__
 #        define CCCRYPT256
-#        include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-cccrypt.c"
+#        include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-cccrypt.c"  // NOLINT(bugprone-suspicious-include)
 #    else
 #        include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-aes256-ofb.c"
 #    endif

@@ -16,7 +16,6 @@
 #include "DataFile.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "Logging.hh"
 #include <chrono>
 
 using namespace std;

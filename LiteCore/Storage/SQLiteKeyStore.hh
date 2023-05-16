@@ -69,10 +69,10 @@ namespace litecore {
 
         void moveTo(slice key, KeyStore& dst, ExclusiveTransaction&, slice newKey = nullslice) override;
 
-        virtual bool         setExpiration(slice key, expiration_t) override;
-        virtual expiration_t getExpiration(slice key) override;
-        virtual expiration_t nextExpiration() override;
-        virtual unsigned     expireRecords(std::optional<ExpirationCallback>) override;
+        bool         setExpiration(slice key, expiration_t) override;
+        expiration_t getExpiration(slice key) override;
+        expiration_t nextExpiration() override;
+        unsigned     expireRecords(std::optional<ExpirationCallback>) override;
 
         bool supportsIndexes(IndexSpec::Type t) const override { return true; }
 
@@ -81,8 +81,7 @@ namespace litecore {
         void                   deleteIndex(slice name) override;
         std::vector<IndexSpec> getIndexes() const override;
 
-        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs,
-                                                       WithDocBodyCallback       callback) override;
+        std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback) override;
 
         void createSequenceIndex();
         void createConflictsIndex();
@@ -94,7 +93,7 @@ namespace litecore {
         void shareSequencesWith(KeyStore&) override;
 
       protected:
-        virtual bool            mayHaveExpiration() override;
+        bool                    mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
                                                   RecordEnumerator::Options) override;
 

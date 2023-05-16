@@ -186,7 +186,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile EnumerateDocs", "[DataFile
         int              i = 0;
         RecordEnumerator e(*store);
         for ( ; e.next(); ++i ) { FAIL("Shouldn't have found any docs"); }
-        REQUIRE_FALSE(e);
+        REQUIRE_FALSE(e.hasRecord());
     }
 
     createNumberedDocs(store);
@@ -206,7 +206,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile EnumerateDocs", "[DataFile
                 REQUIRE(e->bodySize() > 0);  // even metaOnly should set the body size
             }
             REQUIRE(i == 101);
-            REQUIRE_FALSE(e);
+            REQUIRE_FALSE(e.hasRecord());
         }
     }
 }
@@ -272,7 +272,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "[
         cout << "\n";
         if ( !includeDeleted && (i % 10 == 0) ) ++i;
         CHECK(i == 101);
-        REQUIRE_FALSE(e);
+        REQUIRE_FALSE(e.hasRecord());
     }
 }
 
@@ -316,7 +316,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile TransactionsThenIterate", 
 
     int i = 0;
     for ( RecordEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
-        slice key = (*iter).key();
+        slice key = ((const litecore::Record*)iter)->key();
         //INFO("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
         unsigned d = (i % kNDocs) + 1;

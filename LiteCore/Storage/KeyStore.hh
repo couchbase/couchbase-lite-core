@@ -13,10 +13,9 @@
 #pragma once
 #define LITECORE_CPP_API 1
 #include "IndexSpec.hh"
-#include "fleece/RefCounted.hh"
 #include "RecordEnumerator.hh"
-#include "fleece/function_ref.hh"
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace litecore {
@@ -45,15 +44,15 @@ namespace litecore {
         static constexpr Capabilities withSequences = {true};
         static constexpr Capabilities noSequences   = {false};
 
-        DataFile& dataFile() const { return _db; }
+        [[nodiscard]] DataFile& dataFile() const { return _db; }
 
-        const std::string& name() const { return _name; }
+        [[nodiscard]] const std::string& name() const { return _name; }
 
-        Capabilities capabilities() const { return _capabilities; }
+        [[nodiscard]] Capabilities capabilities() const { return _capabilities; }
 
-        virtual uint64_t   recordCount(bool includeDeleted = false) const = 0;
-        virtual sequence_t lastSequence() const                           = 0;
-        virtual uint64_t   purgeCount() const                             = 0;
+        [[nodiscard]] virtual uint64_t   recordCount(bool includeDeleted = false) const = 0;
+        [[nodiscard]] virtual sequence_t lastSequence() const                           = 0;
+        [[nodiscard]] virtual uint64_t   purgeCount() const                             = 0;
 
         virtual void shareSequencesWith(KeyStore&) = 0;
 
@@ -82,15 +81,15 @@ namespace litecore {
         MUST_USE_RESULT static bool isValidCollectionNameWithScope(slice name);
 
         /// This KeyStore's collection name. Throws an exception if it's not a collection.
-        std::string collectionName() const;
+        [[nodiscard]] std::string collectionName() const;
 
         //////// Keys/values:
 
         /** Reads the rest of a record whose key() or sequence() is already set. */
         virtual bool read(Record& rec, ReadBy = ReadBy::Key, ContentOption = kEntireBody) const = 0;
 
-        Record get(slice key, ContentOption = kEntireBody) const;
-        Record get(sequence_t, ContentOption = kEntireBody) const;
+        [[nodiscard]] Record get(slice key, ContentOption = kEntireBody) const;
+        [[nodiscard]] Record get(sequence_t, ContentOption = kEntireBody) const;
 
         using WithDocBodyCallback = function_ref<alloc_slice(const RecordUpdate&)>;
 
@@ -182,7 +181,7 @@ namespace litecore {
 
         //////// Indexing:
 
-        virtual bool supportsIndexes(IndexSpec::Type) const { return false; }
+        [[nodiscard]] virtual bool supportsIndexes(IndexSpec::Type) const { return false; }
 
         virtual bool createIndex(const IndexSpec&) = 0;
         bool createIndex(slice name, slice expression, QueryLanguage queryLanguage, IndexSpec::Type = IndexSpec::kValue,
@@ -194,15 +193,18 @@ namespace litecore {
             return createIndex(name, expression, QueryLanguage::kJSON, type, options);
         }
 
-        virtual void                   deleteIndex(slice name) = 0;
-        virtual std::vector<IndexSpec> getIndexes() const      = 0;
+        virtual void                                 deleteIndex(slice name) = 0;
+        [[nodiscard]] virtual std::vector<IndexSpec> getIndexes() const      = 0;
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore() = default;
 
+        KeyStore(const KeyStore&)            = delete;  // not copyable
+        KeyStore& operator=(const KeyStore&) = delete;
+
       protected:
-        KeyStore(DataFile& db, const std::string& name, Capabilities capabilities)
-            : _db(db), _name(name), _capabilities(capabilities) {}
+        KeyStore(DataFile& db, std::string name, Capabilities capabilities)
+            : _db(db), _name(std::move(name)), _capabilities(capabilities) {}
 
         virtual void reopen() {}
 
@@ -216,9 +218,6 @@ namespace litecore {
         const Capabilities _capabilities;  // Do I support sequences or soft deletes?
 
       private:
-        KeyStore(const KeyStore&)            = delete;  // not copyable
-        KeyStore& operator=(const KeyStore&) = delete;
-
         friend class BothKeyStore;
         friend class BothEnumeratorImpl;
         friend class DataFile;

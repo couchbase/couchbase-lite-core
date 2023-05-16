@@ -12,7 +12,6 @@
 
 #include "UnicodeCollator.hh"
 #include "Logging.hh"
-#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include <sqlite3.h>
 #include <algorithm>
@@ -24,7 +23,7 @@ namespace litecore {
 
     static inline slice ReadUTF8(slice& str) {
         slice retVal = NextUTF8(str);
-        str.moveStart(retVal.size);
+        str.moveStart(static_cast<ptrdiff_t>(retVal.size));
         return retVal;
     }
 
@@ -35,7 +34,7 @@ namespace litecore {
                 Collation coll;
                 if ( coll.readSQLiteName(name) ) {
                     auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
-                    if ( ctx ) (*(CollationContextVector*)pContexts).push_back(move(ctx));
+                    if ( ctx ) (*(CollationContextVector*)pContexts).push_back(std::move(ctx));
                 }
             } catch ( std::runtime_error& x ) {
                 Warn("Exception registering a collator: %s", x.what());
@@ -50,7 +49,7 @@ namespace litecore {
             size_t nextSubstrSize = NextUTF8Length(current);
             if ( !CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, ctx) ) {
                 // The characters are a match, move to the next substring character
-                current.moveStart(nextSubstrSize);
+                current.moveStart(static_cast<ptrdiff_t>(nextSubstrSize));
                 if ( current.size == 0 ) {
                     // Found a match!
                     return true;
@@ -59,7 +58,7 @@ namespace litecore {
                 current = substr;
             }
 
-            str.moveStart(nextStrSize);
+            str.moveStart(static_cast<ptrdiff_t>(nextStrSize));
         }
         return false;
     }
@@ -81,7 +80,7 @@ namespace litecore {
                 }
                 if ( c.size == 0 ) {
                     return kLikeMatch; /* "*" at the end of the pattern matches */
-                } else if ( c == "\\"_sl ) {
+                } else if ( c == R"(\)" ) {
                     c = ReadUTF8(pattern);
                     if ( c.size == 0 ) return kLikeNoWildcardMatch;
                 }
@@ -101,7 +100,7 @@ namespace litecore {
                 return kLikeNoWildcardMatch;
             }
 
-            if ( c == "\\"_sl ) {
+            if ( c == R"(\)" ) {
                 c = ReadUTF8(pattern);
                 if ( c.size == 0 ) return kLikeNoMatch;
                 zEscaped = pattern;

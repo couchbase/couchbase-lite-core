@@ -59,25 +59,25 @@ namespace litecore {
         explicit Record(alloc_slice key);
 
         /** Which content was loaded (set by KeyStore::get and RecordEnumerator) */
-        ContentOption contentLoaded() const FLPURE { return _contentLoaded; }
+        [[nodiscard]] ContentOption contentLoaded() const FLPURE { return _contentLoaded; }
 
-        const alloc_slice& key() const FLPURE { return _key; }
+        [[nodiscard]] const alloc_slice& key() const FLPURE { return _key; }
 
-        const alloc_slice& version() const FLPURE { return _version; }
+        [[nodiscard]] const alloc_slice& version() const FLPURE { return _version; }
 
-        const alloc_slice& body() const FLPURE { return _body; }
+        [[nodiscard]] const alloc_slice& body() const FLPURE { return _body; }
 
-        const alloc_slice& extra() const FLPURE { return _extra; }
+        [[nodiscard]] const alloc_slice& extra() const FLPURE { return _extra; }
 
-        size_t bodySize() const FLPURE { return _bodySize; }
+        [[nodiscard]] size_t bodySize() const FLPURE { return _bodySize; }
 
-        size_t extraSize() const FLPURE { return _extraSize; }
+        [[nodiscard]] size_t extraSize() const FLPURE { return _extraSize; }
 
-        sequence_t sequence() const FLPURE { return _sequence; }
+        [[nodiscard]] sequence_t sequence() const FLPURE { return _sequence; }
 
-        uint64_t subsequence() const FLPURE { return _subsequence; }
+        [[nodiscard]] uint64_t subsequence() const FLPURE { return _subsequence; }
 
-        DocumentFlags flags() const FLPURE { return _flags; }
+        [[nodiscard]] DocumentFlags flags() const FLPURE { return _flags; }
 
         void setFlags(DocumentFlags f) { _flags = f; }
 
@@ -85,15 +85,15 @@ namespace litecore {
 
         void clearFlag(DocumentFlags f) { _flags -= f; }
 
-        bool exists() const FLPURE { return _exists; }
+        [[nodiscard]] bool exists() const FLPURE { return _exists; }
 
         void setKey(slice key) { _key = key; }
 
-        void setKey(alloc_slice key) { _key = move(key); }
+        void setKey(alloc_slice key) { _key = std::move(key); }
 
         void setVersion(slice vers) { _version = vers; }
 
-        void setVersion(alloc_slice vers) { _version = move(vers); }
+        void setVersion(alloc_slice vers) { _version = std::move(vers); }
 
         template <class SLICE>
         void setBody(SLICE body) {
@@ -114,8 +114,8 @@ namespace litecore {
             }
         }
 
-        uint64_t bodyAsUInt() const noexcept FLPURE;
-        void     setBodyAsUInt(uint64_t) noexcept;
+        [[nodiscard]] uint64_t bodyAsUInt() const noexcept FLPURE;
+        void                   setBodyAsUInt(uint64_t) noexcept;
 
         /** Clears/frees everything. */
         void clear() noexcept;
@@ -142,7 +142,7 @@ namespace litecore {
         void setContentLoaded(ContentOption opt) { _contentLoaded = opt; }
 
         // Only RecordEnumerator sets the expiration property
-        expiration_t expiration() const FLPURE { return _expiration; }
+        [[nodiscard]] expiration_t expiration() const FLPURE { return _expiration; }
 
         void setExpiration(expiration_t x) { _expiration = x; }
 

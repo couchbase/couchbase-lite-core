@@ -18,6 +18,8 @@
 #include "UnicodeCollator.hh"
 #include <memory>
 #include <optional>
+#include <utility>
+#include <utility>
 #include <vector>
 
 namespace SQLite {
@@ -37,7 +39,7 @@ namespace litecore {
         , public QueryParser::Delegate {
       public:
         SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options*);
-        ~SQLiteDataFile();
+        ~SQLiteDataFile() override;
 
         bool isOpen() const noexcept override;
 
@@ -67,7 +69,7 @@ namespace litecore {
         bool getSchema(const std::string& name, const std::string& type, const std::string& tableName,
                        std::string& outSQL) const;
         bool schemaExistsWithSQL(const std::string& name, const std::string& type, const std::string& tableName,
-                                 const std::string& sql);
+                                 const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
 
@@ -75,20 +77,20 @@ namespace litecore {
           public:
             Factory();
 
-            virtual const char* cname() override { return "SQLite"; }
+            const char* cname() override { return "SQLite"; }
 
-            virtual std::string filenameExtension() override { return ".sqlite3"; }
+            std::string filenameExtension() override { return ".sqlite3"; }
 
-            virtual bool            encryptionEnabled(EncryptionAlgorithm) override;
-            virtual SQLiteDataFile* openFile(const FilePath&, DataFile::Delegate*, const Options* = nullptr) override;
+            bool            encryptionEnabled(EncryptionAlgorithm) override;
+            SQLiteDataFile* openFile(const FilePath&, DataFile::Delegate*, const Options* = nullptr) override;
 
           protected:
-            virtual bool _deleteFile(const FilePath& path, const Options* = nullptr) override;
+            bool _deleteFile(const FilePath& path, const Options* = nullptr) override;
         };
 
         static Factory& sqliteFactory();
 
-        virtual Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); };
+        Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); };
 
         // Get an index's row count, and/or all its rows. For debugging/troubleshooting only!
         void inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows = nullptr);
@@ -96,12 +98,12 @@ namespace litecore {
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
         // QueryParser::delegate:
-        virtual bool        tableExists(const std::string& tableName) const override;
-        virtual string      collectionTableName(const string& collection, DeletionStatus) const override;
-        virtual std::string FTSTableName(const string& collection, const std::string& property) const override;
-        virtual std::string unnestedTableName(const string& collection, const std::string& property) const override;
+        bool        tableExists(const std::string& tableName) const override;
+        string      collectionTableName(const string& collection, DeletionStatus) const override;
+        std::string FTSTableName(const string& collection, const std::string& property) const override;
+        std::string unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
-        virtual std::string predictiveTableName(const string& collection, const std::string& property) const override;
+        std::string predictiveTableName(const string& collection, const std::string& property) const override;
 #endif
 
       protected:
@@ -182,9 +184,11 @@ namespace litecore {
     };
 
     struct SQLiteIndexSpec : public IndexSpec {
-        SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON,
-                        const std::string& ksName, const std::string& itName)
-            : IndexSpec(name, type, expressionJSON), keyStoreName(ksName), indexTableName(itName) {}
+        SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON, std::string ksName,
+                        std::string itName)
+            : IndexSpec(name, type, std::move(expressionJSON))
+            , keyStoreName(std::move(ksName))
+            , indexTableName(std::move(itName)) {}
 
         std::string const keyStoreName;
         std::string const indexTableName;
