@@ -13,6 +13,10 @@
 #include "StringUtil.hh"
 #include <sstream>
 #include <cstdlib>
+#ifdef _MSC_VER
+// For vasprintf and strcasecmp
+#    include "PlatformIO.hh"
+#endif
 
 namespace litecore {
 

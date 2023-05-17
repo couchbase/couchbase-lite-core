@@ -35,6 +35,8 @@
 
 #ifdef _MSC_VER
 #    include <winapifamily.h>
+// For strcasecmp
+#    include "PlatformIO.hh"
 #endif
 
 #define CBL_LOG_EXTENSION ".cbllog"
