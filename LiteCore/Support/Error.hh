@@ -16,6 +16,9 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#ifndef __printflike
+#    include "c4Compat.h"
+#endif
 
 #undef check
 
