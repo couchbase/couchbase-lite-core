@@ -16,6 +16,7 @@
 #include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "fleece/FLExpert.h"
+#include <atomic>
 #include <mutex>
 #include <thread>
 
