@@ -12,37 +12,29 @@
 
 #pragma once
 #include "ThreadedMailbox.hh"
-#include "Stopwatch.hh"
-#include "ChannelManifest.hh"
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 #include <dispatch/dispatch.h>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
     class Actor;
 
     /** Actor mailbox that uses a Grand Central Dispatch (GCD) serial dispatch_queue.
         Available on Apple platforms, or elsewhere if libdispatch is installed. */
     class GCDMailbox {
       public:
-        GCDMailbox(Actor* a, const std::string& name = "", GCDMailbox* parentMailbox = nullptr);
+        explicit GCDMailbox(Actor* a, const std::string& name = "", GCDMailbox* parentMailbox = nullptr);
         ~GCDMailbox();
 
         std::string name() const;
-
-        Scheduler* scheduler() const { return nullptr; }
-
-        void setScheduler(Scheduler* s) {}
 
         unsigned eventCount() const { return _eventCount; }
 
         //void enqueue(std::function<void()> f);
         void enqueue(const char* name, void (^block)());
         void enqueueAfter(delay_t delay, const char* name, void (^block)());
-
-        static void startScheduler(Scheduler*) {}
 
         void logStats() const;
 
@@ -74,4 +66,4 @@ namespace litecore { namespace actor {
 #endif
     };
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

@@ -17,6 +17,7 @@
 #include "SecureSymmetricCrypto.hh"
 #include "Endian.hh"
 #include <algorithm>
+#include <utility>
 
 /*
     Implementing a random-access encrypted stream is actually kind of tricky.
@@ -67,7 +68,7 @@ namespace litecore {
 
     EncryptedWriteStream::EncryptedWriteStream(std::shared_ptr<WriteStream> output, EncryptionAlgorithm alg,
                                                slice encryptionKey)
-        : _output(output) {
+        : _output(std::move(output)) {
         // Derive a random nonce with which to scramble the key, and write it to the file:
         uint8_t       buf[kAES256KeySize];
         mutable_slice nonce(buf, sizeof(buf));
@@ -129,7 +130,7 @@ namespace litecore {
 
     EncryptedReadStream::EncryptedReadStream(std::shared_ptr<SeekableReadStream> input, EncryptionAlgorithm alg,
                                              slice encryptionKey)
-        : _input(input)
+        : _input(std::move(input))
         , _inputLength(_input->getLength() - kFileSizeOverhead)
         , _finalBlockID((_inputLength - 1) / kFileBlockSize) {
         // Read the random nonce from the end of the file:

@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include "Base.hh"
 #include <stdexcept>
 #include <atomic>
 #include <functional>
@@ -102,9 +101,9 @@ namespace litecore {
         [[noreturn]] void _throw(unsigned skipFrames = 0);
 
         /** Returns an equivalent error in the LiteCore or POSIX domain. */
-        error standardized() const;
+        [[nodiscard]] error standardized() const;
 
-        bool isUnremarkable() const;
+        [[nodiscard]] bool isUnremarkable() const;
 
         /** Returns the error equivalent to a given runtime_error. Uses RTTI to discover if the
             error is already an `error` instance; otherwise tries to convert some other known

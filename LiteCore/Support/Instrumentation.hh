@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include <stdint.h>
+#include <cstdint>
 
 namespace litecore {
 
@@ -40,7 +40,8 @@ namespace litecore {
         static void begin(Type, uintptr_t param = 0, uintptr_t param2 = 0);
         static void end(Type, uintptr_t param = 0, uintptr_t param2 = 0);
 
-        Signpost(Type t, uintptr_t param1 = 0, uintptr_t param2 = 0) : _type(t), _param1(param1), _param2(param2) {
+        explicit Signpost(Type t, uintptr_t param1 = 0, uintptr_t param2 = 0)
+            : _type(t), _param1(param1), _param2(param2) {
             begin(_type, _param1, _param2);
         }
 

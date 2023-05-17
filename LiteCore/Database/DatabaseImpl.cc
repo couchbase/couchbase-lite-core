@@ -58,7 +58,7 @@ namespace litecore {
     }
 
     DatabaseImpl::DatabaseImpl(const FilePath& path, C4DatabaseConfig inConfig)
-        : C4Database(path.unextendedName(), path.parentDir(), inConfig), _encoder(new Encoder()) {}
+        : C4Database(path.unextendedName(), std::string(path.parentDir()), inConfig), _encoder(new Encoder()) {}
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath DatabaseImpl::findOrCreateBundle(const string& path, bool canCreate,
@@ -121,8 +121,8 @@ namespace litecore {
                 }
         };
 
-        FilePath dataFilePath =
-                findOrCreateBundle(bundlePath, (_configV1.flags & kC4DB_Create) != 0, _configV1.storageEngine);
+        FilePath dataFilePath = findOrCreateBundle(std::string(bundlePath), (_configV1.flags & kC4DB_Create) != 0,
+                                                   _configV1.storageEngine);
         // Set up DataFile options:
         DataFile::Options options{};
         options.keyStores.sequences = true;
@@ -310,8 +310,8 @@ namespace litecore {
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string& dirname, C4EncryptionKey encryptionKey,
                                                           bool force) const {
         // Split path into a separate variable to workaround GCC 8 constructor resolution issue
-        alloc_slice path  = filePath().subdirectoryNamed(dirname);
-        auto        flags = _config.flags;
+        auto path  = alloc_slice(filePath().subdirectoryNamed(dirname));
+        auto flags = _config.flags;
         if ( force ) { flags |= kC4DB_Create; }
 
         return make_unique<C4BlobStore>(path, flags, encryptionKey);

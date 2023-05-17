@@ -701,7 +701,7 @@ TEST_CASE("ParentDir") {
     ExpectException(error::POSIX, EINVAL, [&] {
         stringstream ss;
         ss << "." << FilePath::kSeparator;
-        FilePath(ss.str()).parentDir();
+        auto success = FilePath(ss.str()).parentDir();
     });
 }
 

@@ -12,9 +12,7 @@
 
 #pragma once
 #include "Channel.hh"
-#include "ChannelManifest.hh"
 #include "fleece/RefCounted.hh"
-#include "Stopwatch.hh"
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -23,7 +21,7 @@
 #include <functional>
 #include <vector>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
     using fleece::RefCounted;
     using fleece::Retained;
 
@@ -126,4 +124,4 @@ namespace litecore { namespace actor {
     extern template class Channel<std::function<void()>>;
 #endif
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

@@ -15,7 +15,7 @@
 #include <ios>
 #include <map>
 #include <optional>
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -43,19 +43,19 @@ namespace litecore {
         virtual bool next() = 0;
 
         /** Returns the time logging began. */
-        virtual Timestamp startTime() const = 0;
+        [[nodiscard]] virtual Timestamp startTime() const = 0;
 
         /** Returns the current line's timestamp. */
-        virtual Timestamp timestamp() const = 0;
+        [[nodiscard]] virtual Timestamp timestamp() const = 0;
 
         /** Returns the current line's level. */
-        virtual int8_t level() const = 0;
+        [[nodiscard]] virtual int8_t level() const = 0;
 
         /** Returns the current line's domain. */
-        virtual const std::string& domain() const = 0;
+        [[nodiscard]] virtual const std::string& domain() const = 0;
 
-        virtual uint64_t           objectID() const          = 0;
-        virtual const std::string* objectDescription() const = 0;
+        [[nodiscard]] virtual uint64_t           objectID() const          = 0;
+        [[nodiscard]] virtual const std::string* objectDescription() const = 0;
 
         /** Reads the next message from the input and returns it as a string.
          You can only read each message once; calling this twice in a row will fail. */
@@ -78,7 +78,7 @@ namespace litecore {
         static const uint8_t kMagicNumber[4];
 
         /** Initializes decoder with a stream written by a LogEncoder. */
-        LogDecoder(std::istream&);
+        explicit LogDecoder(std::istream&);
 
         // LogIterator API:
         void decodeTo(std::ostream&, const std::vector<std::string>& levelNames,
@@ -116,15 +116,15 @@ namespace litecore {
         size_t                          _pointerSize;
         time_t                          _startTime;
         uint64_t                        _elapsedTicks{0};
-        Timestamp                       _timestamp;
+        Timestamp                       _timestamp{};
         std::vector<std::string>        _tokens;
         std::map<uint64_t, std::string> _objects;
 
         int8_t             _curLevel{0};
         const std::string* _curDomain{nullptr};
-        uint64_t           _curObject;
-        bool               _curObjectIsNew;
-        mutable bool       _putCurObjectInMessage;
+        uint64_t           _curObject{};
+        bool               _curObjectIsNew{};
+        mutable bool       _putCurObjectInMessage{};
         bool               _readMessage;
     };
 

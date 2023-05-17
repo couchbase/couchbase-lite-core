@@ -96,9 +96,9 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
     if ( bundle.exists() ) {
         try {
             C4StorageEngine storageEngine = nullptr;
-            auto            dbFilePath    = DatabaseImpl::findOrCreateBundle(bundle.dir(), false, storageEngine);
+            auto dbFilePath = DatabaseImpl::findOrCreateBundle(std::string(bundle.dir()), false, storageEngine);
             // Delete it:
-            deleteDatabaseFileAtPath(dbFilePath, storageEngine);
+            deleteDatabaseFileAtPath(std::string(dbFilePath), storageEngine);
         } catch ( const error& x ) {
             if ( x.code != error::WrongFormat )  // ignore exception if db file isn't found
                 throw;
@@ -137,7 +137,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
 
 /*static*/ bool C4Database::deleteNamed(slice name, slice inDirectory) {
     // Split this into a variable to workaround a GCC 8 issue with constructor resolution
-    alloc_slice path = dbPath(name, inDirectory);
+    auto path = alloc_slice(dbPath(name, inDirectory));
     return deleteAtPath(path);
 }
 

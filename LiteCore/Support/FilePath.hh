@@ -12,7 +12,6 @@
 
 #pragma once
 
-#include "fleece/PlatformCompat.hh"
 #include "fleece/function_ref.hh"
 #include <string>
 #include <tuple>  // for std::tie
@@ -51,25 +50,25 @@ namespace litecore {
 
         //////// DIRECTORY & FILE NAMES:
 
-        bool isDir() const { return _file.empty(); }
+        [[nodiscard]] bool isDir() const { return _file.empty(); }
 
-        FilePath dir() const { return FilePath(_dir, ""); }
+        [[nodiscard]] FilePath dir() const { return {_dir, ""}; }
 
-        const std::string& dirName() const { return _dir; }
+        [[nodiscard]] const std::string& dirName() const { return _dir; }
 
-        const std::string& fileName() const { return _file; }
+        [[nodiscard]] const std::string& fileName() const { return _file; }
 
-        std::string fileOrDirName() const;
+        [[nodiscard]] std::string fileOrDirName() const;
 
-        std::string path() const { return _dir + _file; }
+        [[nodiscard]] std::string path() const { return _dir + _file; }
 
         /** Returns a canonical standard form of the path by resolving symbolic links, normalizing
             capitalization (in case-insensitive filesystems), etc. */
-        std::string canonicalPath() const;
+        [[nodiscard]] std::string canonicalPath() const;
 
-        operator std::string() const { return path(); }
+        explicit operator std::string() const { return path(); }
 
-        operator fleece::alloc_slice() const;
+        explicit operator fleece::alloc_slice() const;
 
         /** Converts a string to a valid filename by escaping invalid characters,
             including the directory separator ('/') */
@@ -77,21 +76,21 @@ namespace litecore {
 
         //////// FILENAME EXTENSIONS:
 
-        std::string unextendedName() const;
-        std::string extension() const;
+        [[nodiscard]] std::string unextendedName() const;
+        [[nodiscard]] std::string extension() const;
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */
-        FilePath addingExtension(const std::string& ext) const;
+        [[nodiscard]] FilePath addingExtension(const std::string& ext) const;
 
         /** Adds a filename extension only if there is none already. */
-        FilePath withExtensionIfNone(const std::string& ext) const;
+        [[nodiscard]] FilePath withExtensionIfNone(const std::string& ext) const;
 
         /** Replaces the filename extension, or removes it if `ext` is empty.
             Cannot be called on directories. */
-        FilePath withExtension(const std::string& ext) const;
+        [[nodiscard]] FilePath withExtension(const std::string& ext) const;
 
-        FilePath appendingToName(const std::string& suffix) const;
+        [[nodiscard]] FilePath appendingToName(const std::string& suffix) const;
 
         //////// NAVIGATION:
 
@@ -100,25 +99,31 @@ namespace litecore {
             a directory. */
         FilePath operator[](const std::string& name) const;
 
-        FilePath fileNamed(const std::string& filename) const;
-        FilePath subdirectoryNamed(const std::string& dirname) const;
+        [[nodiscard]] FilePath fileNamed(const std::string& filename) const;
+        [[nodiscard]] FilePath subdirectoryNamed(const std::string& dirname) const;
 
         /** Returns the parent directory. If the current path is root, the root directory
             will be returned. An exception will be thrown if the parent directory cannot
             be determined. */
-        FilePath parentDir() const;
+        [[nodiscard]] FilePath parentDir() const;
 
         /////// FILESYSTEM OPERATIONS:
 
-        bool exists() const noexcept;
-        bool existsAsDir() const noexcept;
-        void mustExistAsDir() const;
+        [[nodiscard]] bool exists() const noexcept;
+        [[nodiscard]] bool existsAsDir() const noexcept;
+        void               mustExistAsDir() const;
 
         /** Returns the size of the file in bytes, or -1 if the file does not exist. */
-        int64_t dataSize() const;
+        [[nodiscard]] int64_t dataSize() const;
 
         /** Returns the date at which this file was last modified, or -1 if the file does not exist */
-        time_t lastModified() const;
+        [[nodiscard]] time_t lastModified() const;
+
+        /**
+         * The return values of mkdir(), del(), and delRecursive() are almost never used throughout our code,
+         * so making them nodiscard causes a lot of compilation warnings (and thereby errors with -Werror).
+         */
+        // NOLINTBEGIN(modernize-use-nodiscard)
 
         /** Creates a directory at this path. */
         bool mkdir(int mode = 0700) const;
@@ -128,7 +133,7 @@ namespace litecore {
         FilePath mkTempFile(FILE** outHandle = nullptr) const;
 
         /** Creates an empty temporary directory by appending a random 6-letter/digit string. */
-        FilePath mkTempDir() const;
+        [[nodiscard]] FilePath mkTempDir() const;
 
         /** Deletes the file, or empty directory, at this path.
             If the item doesn't exist, returns false instead of throwing an exception. */
@@ -136,6 +141,8 @@ namespace litecore {
 
         /** Deletes the file or directory tree at this path. */
         bool delRecursive() const;
+
+        // NOLINTEND(modernize-use-nodiscard)
 
         /** Moves this file/directory to a different path.
              An existing file or empty directory at the destination path will be replaced.

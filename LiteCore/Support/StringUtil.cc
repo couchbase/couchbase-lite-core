@@ -11,10 +11,8 @@
 //
 
 #include "StringUtil.hh"
-#include "Logging.hh"
-#include "PlatformIO.hh"
 #include <sstream>
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace litecore {
 
@@ -47,7 +45,8 @@ namespace litecore {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-    std::string format(const std::string fmt, ...) {
+    // Can't make fmt reference type, as it causes undefined behaviour with va_start
+    std::string format(const std::string fmt, ...) {  // NOLINT(performance-unnecessary-value-param)
         va_list args;
         va_start(args, fmt);
         std::string result = vformat(fmt.c_str(), args);
@@ -124,7 +123,7 @@ namespace litecore {
 
     bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept {
         return str.size() >= suffix.size()
-               && strncasecmp(&str.data()[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
+               && strncasecmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
     int compareIgnoringCase(const std::string& a, const std::string& b) { return strcasecmp(a.c_str(), b.c_str()); }
@@ -182,7 +181,7 @@ namespace litecore {
             if ( nextByteLength == 0 ) {
                 str.moveStart(1);
             } else {
-                str.moveStart(nextByteLength);
+                str.moveStart(static_cast<ptrdiff_t>(nextByteLength));
             }
             ++length;
         }

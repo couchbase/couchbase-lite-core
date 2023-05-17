@@ -17,7 +17,7 @@
 #include "varint.hh"
 #include <exception>
 #include <iostream>
-#include <time.h>
+#include <ctime>
 
 #if __APPLE__
 #    include <CoreFoundation/CFBase.h>
@@ -39,7 +39,7 @@ namespace litecore {
     static const uint64_t kSaveInterval = 1 * kTicksPerSec;
 
     LogEncoder::LogEncoder(ostream& out, LogLevel level)
-        : _out(out), _flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this))), _level(level) {
+        : _out(out), _flushTimer(new actor::Timer([this] { performScheduledFlush(); })), _level(level) {
         _writer.write(&LogDecoder::kMagicNumber, 4);
         uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void*)};
         _writer.write(&header, sizeof(header));
