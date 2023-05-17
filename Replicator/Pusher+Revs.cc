@@ -238,7 +238,13 @@ namespace litecore::repl {
                              (completed ? "" : "transient "),
                              SPLAT(rev->docID), SPLAT(rev->revID), (uint64_t)rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
-                    finishedDocumentWithError(rev, c4err, !completed);
+
+                    // It's safe to not call finishedDocumentWithError if we are going to retry it
+                    // immediately. In this case, we don't put it into _docsEnded now. It wil be
+                    // taken care of after retry.
+                    //
+                    if ( retry != kRetryNow ) finishedDocumentWithError(rev, c4err, !completed);
+
                     // If this is a permanent failure, like a validation error or conflict,
                     // then I've completed my duty to push it.
                 }
