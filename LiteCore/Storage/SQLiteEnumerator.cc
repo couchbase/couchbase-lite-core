@@ -15,9 +15,6 @@
 #include "SQLite_Internal.hh"
 #include "Logging.hh"
 #include "RecordEnumerator.hh"
-#include "Error.hh"
-#include "FleeceImpl.hh"
-#include "Path.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
 #include <iostream>
@@ -34,17 +31,17 @@ namespace litecore {
             LogTo(SQL, "Enumerator: %s", _stmt->getQuery().c_str());
         }
 
-        virtual bool next() override { return _stmt->executeStep(); }
+        bool next() override { return _stmt->executeStep(); }
 
-        virtual bool read(Record& rec) const override {
+        bool read(Record& rec) const override {
             rec.setExpiration(expiration_t(int64_t(_stmt->getColumn(RecordColumn::Expiration))));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content, true, true);
             return true;
         }
 
-        virtual slice key() const override { return SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)); }
+        [[nodiscard]] slice key() const override { return SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)); }
 
-        virtual sequence_t sequence() const override { return sequence_t(int64_t(_stmt->getColumn(0))); }
+        [[nodiscard]] sequence_t sequence() const override { return sequence_t(int64_t(_stmt->getColumn(0))); }
 
       private:
         unique_ptr<SQLite::Statement> _stmt;

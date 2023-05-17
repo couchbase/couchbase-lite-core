@@ -14,7 +14,6 @@
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"  // For fleece::InstanceCountedIn
 #include <mutex>
 #include <vector>
@@ -25,11 +24,11 @@
 #    undef check
 #endif
 
-namespace fleece { namespace impl {
-        class Dict;
-        class SharedKeys;
-        class PersistentSharedKeys;
-}}  // namespace fleece::impl
+namespace fleece::impl {
+    class Dict;
+    class SharedKeys;
+    class PersistentSharedKeys;
+}  // namespace fleece::impl
 
 namespace litecore {
 
@@ -59,7 +58,7 @@ namespace litecore {
           public:
             virtual ~Delegate() = default;
             // The user-visible name of this database
-            virtual string databaseName() const = 0;
+            [[nodiscard]] virtual string databaseName() const = 0;
             // Callback that takes a blob dictionary and returns the blob data
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const = 0;
 
@@ -83,7 +82,7 @@ namespace litecore {
         };
 
         DataFile(const FilePath& path, Delegate* delegate NONNULL, const Options* = nullptr);
-        virtual ~DataFile();
+        ~DataFile() override;
 
         FilePath filePath() const noexcept { return _path; }
 
@@ -171,15 +170,15 @@ namespace litecore {
         virtual void deleteKeyStore(const std::string& name) = 0;
 
         // Redeclare logging methods as public, so Database can use them
-        bool willLog(LogLevel level = LogLevel::Info) const { return Logging::willLog(level); }
+        bool willLog(LogLevel level = LogLevel::Info) const override { return Logging::willLog(level); }
 
         void _logWarning(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
 
-        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
+        void _logInfo(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Info) }
 
-        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
+        void _logVerbose(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char* format, ...) const __printflike(2, 3){LOGBODY(Debug)}
+        void _logDebug(const char* format, ...) const override __printflike(2, 3){LOGBODY(Debug)}
 
         //////// SHARED OBJECTS:
 
@@ -191,7 +190,7 @@ namespace litecore {
         /** Abstract factory for creating/managing DataFiles. */
         class Factory {
           public:
-            std::string name() { return std::string(cname()); }
+            std::string name() { return {cname()}; }
 
             virtual const char* cname()                                = 0;
             virtual std::string filenameExtension()                    = 0;
@@ -231,8 +230,11 @@ namespace litecore {
         // the following function can be used to unescape the escaped separator.
         static string unescapeCollectionName(const string& unescaped);
 
+        DataFile(const DataFile&)            = delete;
+        DataFile& operator=(const DataFile&) = delete;
+
       protected:
-        virtual std::string loggingIdentifier() const override;
+        std::string loggingIdentifier() const override;
 
         /** Reopens database after it's been closed. */
         virtual void reopen();
@@ -286,9 +288,6 @@ namespace litecore {
         void                  endTransactionScope(ExclusiveTransaction*);
         ExclusiveTransaction& transaction();
 
-        DataFile(const DataFile&)            = delete;
-        DataFile& operator=(const DataFile&) = delete;
-
         Delegate* const                                       _delegate;
         Retained<Shared>                                      _shared;   // Shared state of file (lock)
         FilePath const                                        _path;     // Path as given (non-canonical)
@@ -317,19 +316,20 @@ namespace litecore {
 
         ~ExclusiveTransaction();
 
-        DataFile& dataFile() const { return _db; }
+        [[nodiscard]] DataFile& dataFile() const { return _db; }
 
         void commit();
         void abort();
 
         void notifyCommitted(SequenceTracker&);
 
+        ExclusiveTransaction(const ExclusiveTransaction&) = delete;
+
       private:
         friend class DataFile;
         friend class KeyStore;
 
         ExclusiveTransaction(DataFile*, bool begin);
-        ExclusiveTransaction(const ExclusiveTransaction&) = delete;
 
         DataFile& _db;      // The DataFile
         bool      _active;  // Is there an open transaction at the db level?
@@ -348,9 +348,9 @@ namespace litecore {
 
         ~ReadOnlyTransaction();
 
-      private:
         ReadOnlyTransaction(const ReadOnlyTransaction&) = delete;
 
+      private:
         DataFile* _db{nullptr};
     };
 
