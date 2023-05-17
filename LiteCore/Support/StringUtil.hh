@@ -19,6 +19,9 @@
 #include <vector>
 #include <sstream>
 #include <string_view>
+#ifndef __printflike
+#    include "c4Compat.h"
+#endif
 
 namespace litecore {
 
