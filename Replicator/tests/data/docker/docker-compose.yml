@@ -34,7 +34,7 @@ services:
     build:
       context: ./sg
       args:
-        - SG_DEB=${SG_LEGACY_DEB:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.5/couchbase-sync-gateway-enterprise_3.0.5_aarch64.deb}
+        - SG_DEB=${SG_LEGACY_DEB:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.7/couchbase-sync-gateway-enterprise_3.0.7_aarch64.deb}
         - SSL=${SSL:-true}
         - LEGACY_MODE=true
     ports:

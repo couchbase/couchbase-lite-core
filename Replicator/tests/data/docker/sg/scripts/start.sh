@@ -37,10 +37,12 @@ fi
 
 SG_PORT=4984
 SG_ADMIN_PORT=4985
+SG_DB_NAME="scratch"
 CONFIG_DIR="collections"
 if [ "${LEGACY_MODE}" = "true" ]; then
   SG_PORT=4884
   SG_ADMIN_PORT=4885  
+  SG_DB_NAME="scratch-30"
   CONFIG_DIR="legacy"
 fi
 
@@ -67,7 +69,7 @@ wait_for_uri 200 ${SG_URL_SCHEME}://localhost:${SG_PORT}
 SG_CONFIG=${CONFIG_BASE_DIR}/${CONFIG_DIR}/config.json
 echo "Configure sync-gateway with config : ${SG_CONFIG}"
 
-curl -k --silent --location --request PUT ${SG_URL_SCHEME}://localhost:${SG_ADMIN_PORT}/scratch/ \
+curl -k --silent --location --request PUT ${SG_URL_SCHEME}://localhost:${SG_ADMIN_PORT}/${SG_DB_NAME}/ \
 --user "admin:password" \
 --header "Content-Type: application/json" \
 --data @"${SG_CONFIG}"

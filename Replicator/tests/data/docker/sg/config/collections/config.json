@@ -4,9 +4,9 @@
     "scopes": {
        "flowers": {
           "collections": {
-             "roses": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" },
-             "tulips": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" },
-             "lavenders": { "sync": "function (doc, oldDoc) { channel(doc.channels); }" }
+             "roses": { "sync": "function (doc, oldDoc) { if (doc.isRejected == 'true') throw({'forbidden':'read_only'}); channel(doc.channels); }" },
+             "tulips": { "sync": "function (doc, oldDoc) { if (doc.isRejected == 'true') throw({'forbidden':'read_only'}); channel(doc.channels); }" },
+             "lavenders": { "sync": "function (doc, oldDoc) { if (doc.isRejected == 'true') throw({'forbidden':'read_only'}); channel(doc.channels); }" }
           }
        }
     },

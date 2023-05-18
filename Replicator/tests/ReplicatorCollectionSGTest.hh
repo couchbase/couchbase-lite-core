@@ -36,15 +36,16 @@ static constexpr const char* kTestUserName = "sguser";
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
   public:
     explicit ReplicatorCollectionSGTest(const std::string& minSGVer = "3.1", const std::string& maxSGVer = "",
-                                        uint16_t port = 4984)
+                                        uint16_t port = 4984, const slice remoteDBName = kScratchDBName)
         : ReplicatorAPITest(), _expectedSGVersion{minSGVer, maxSGVer} {
         _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
         if ( getenv("NOTLS") ) {
-            _sg.address = {kC4Replicator2Scheme, C4STR("localhost"), port};
+            _sg.address      = {kC4Replicator2Scheme, C4STR("localhost"), port};
+            _sg.remoteDBName = remoteDBName;
         } else {
-            _sg.address = {kC4Replicator2TLSScheme, C4STR("localhost"), port};
+            _sg.address      = {kC4Replicator2TLSScheme, C4STR("localhost"), port};
+            _sg.remoteDBName = remoteDBName;
         }
-
         _flushedScratch = true;
     }
 

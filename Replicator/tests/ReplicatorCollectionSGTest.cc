@@ -19,6 +19,10 @@
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
 // Jenkins/GitHub CI. They can be run locally with the following environment.
+// Option 1: Use docker compose in Replicator/tests/data/docker by running 'docker compose up'.
+//
+// Option 2: Use your own setup:
+//
 // Couchbase DB server, with docker, for example,
 //   docker run -d --name cbserver -p 8091-8096:8091-8096 -p 11210-11211:11210-11211 couchbase:7.1.1
 //   bucket configuration:

@@ -8,5 +8,5 @@
 
 class ReplicatorSG30Test : public ReplicatorCollectionSGTest {
   public:
-    ReplicatorSG30Test() : ReplicatorCollectionSGTest("3.0", "3.1", 4884) {}
+    ReplicatorSG30Test() : ReplicatorCollectionSGTest("3.0", "3.1", 4884, "scratch-30") {}
 };
