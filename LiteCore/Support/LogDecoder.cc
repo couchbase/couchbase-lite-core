@@ -20,6 +20,7 @@
 #include <algorithm>
 #include "date/date.h"
 #include "ParseDate.hh"
+#include "NumConversion.hh"
 
 #if __APPLE__
 #    include <sys/time.h>
@@ -218,7 +219,7 @@ namespace litecore {
                         case 'i':
                             {
                                 bool negative = _in.get() > 0;
-                                auto param    = static_cast<int64_t>(readUVarInt());
+                                auto param    = narrow_cast<int64_t>(readUVarInt());
                                 if ( negative ) param = -param;
                                 if ( *c == 'c' ) out.put(char(param));
                                 else
