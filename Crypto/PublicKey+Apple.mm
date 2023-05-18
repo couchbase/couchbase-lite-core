@@ -613,7 +613,6 @@ namespace litecore { namespace crypto {
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = 1; i < count; i++) {
@@ -622,9 +621,7 @@ namespace litecore { namespace crypto {
                     cert->append(new Cert(slice(data)));
                 }
                 CFRelease(certs);
-            } else
-#endif
-            {
+            } else {
                 for (CFIndex i = 1; i < count; i++) {
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
                     NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
@@ -695,7 +692,7 @@ namespace litecore { namespace crypto {
                               "Couldn't delete a certificate from the Keychain");
                 return;
             }
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
+            
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = count - 1; i >= 0; i--) {
@@ -708,9 +705,10 @@ namespace litecore { namespace crypto {
                             (id)kSecValueRef:           (__bridge id)copiedRef,
                             (id)kSecReturnAttributes:   @YES
                         }));
-                        NSString* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
+                        
+                        NSData* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
                         Assert(issuer);
-                        NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
+                        NSData* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
                         Assert(serialNum);
                         NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
                         Assert(certType != nil);
@@ -727,9 +725,7 @@ namespace litecore { namespace crypto {
                     }
                 }
                 CFRelease(certs);
-            } else
-#endif
-            {
+            } else {
                 for (CFIndex i = count - 1; i >= 0; i--) {
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
                     if (getChildCertCount(ref) < 2) {
@@ -814,7 +810,6 @@ namespace litecore { namespace crypto {
             
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trust);
                 for (CFIndex i = 1; i < certCount; ++i) {
@@ -829,9 +824,7 @@ namespace litecore { namespace crypto {
                         root->append(cert);
                 }
                 CFRelease(certs);
-            } else
-#endif
-            {
+            } else {
                 for (CFIndex i = 1; i < certCount; ++i) {
                     auto certRef = SecTrustGetCertificateAtIndex(trust, i);
                     LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
