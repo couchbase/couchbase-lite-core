@@ -14,11 +14,11 @@
 #include "RawRevTree.hh"
 #include "Error.hh"
 #include <algorithm>
-#include <ctype.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #if DEBUG
 #    include <iostream>
 #    include <sstream>
@@ -106,7 +106,7 @@ namespace litecore {
     }
 
 #if DEBUG
-    void Rev::dump(std::ostream& out) {
+    void Rev::dump(std::ostream& out) const {
         out << "(" << uint64_t(sequence) << ") " << (std::string)revID.expanded() << "  ";
         if ( isLeaf() ) out << " leaf";
         if ( isDeleted() ) out << " del";
@@ -225,8 +225,8 @@ namespace litecore {
         return true;
     }
 
-    pair<Rev*, int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history, bool allowConflict) {
-        Assert(history.size() > 0);
+    pair<Rev*, int> RevTree::findCommonAncestor(const std::vector<revidBuffer>& history, bool allowConflict) {
+        Assert(!history.empty());
         unsigned lastGen      = 0;
         Rev*     parent       = nullptr;
         size_t   historyCount = history.size();
@@ -280,7 +280,7 @@ namespace litecore {
         Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.emplace_back(unownedRevID);
-        revid revID = revid(_insertedData.back());
+        auto revID = revid(_insertedData.back());
 
         _revsStorage.emplace_back();
         Rev* newRev               = &_revsStorage.back();
@@ -334,7 +334,7 @@ namespace litecore {
             }
             parentGen = parent->revID.generation();
         } else {
-            if ( !allowConflict && _revs.size() > 0 ) {
+            if ( !allowConflict && !_revs.empty() ) {
                 httpStatus = 409;
                 return nullptr;
             }
@@ -569,10 +569,7 @@ namespace litecore {
     }
 
     bool RevTree::hasNewRevisions() const {
-        for ( Rev* rev : _revs ) {
-            if ( rev->isNew() || rev->sequence == 0_seq ) return true;
-        }
-        return false;
+        return std::any_of(_revs.begin(), _revs.end(), [](Rev* rev) { return rev->isNew() || rev->sequence == 0_seq; });
     }
 
     void RevTree::saved(sequence_t newSequence) {
@@ -585,10 +582,7 @@ namespace litecore {
 #pragma mark - ETC.
 
     bool RevTree::isLatestRemoteRevision(const Rev* rev) const {
-        for ( auto& r : _remoteRevs ) {
-            if ( r.second == rev ) return true;
-        }
-        return false;
+        return std::any_of(_remoteRevs.begin(), _remoteRevs.end(), [&rev](auto& r) { return r.second == rev; });
     }
 
     void RevTree::revIsRejected(const Rev* rev) {

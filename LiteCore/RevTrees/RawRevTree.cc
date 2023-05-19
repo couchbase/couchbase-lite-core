@@ -14,6 +14,7 @@
 #include "RevTree.hh"
 #include "Error.hh"
 #include "varint.hh"
+#include "NumConversion.hh"
 
 using namespace std;
 using namespace fleece;
@@ -45,7 +46,7 @@ namespace litecore {
 
     std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree::RemoteRevMap& remoteMap,
                                             std::vector<const Rev*>& rejectedRevs, RevTree* owner, sequence_t curSeq) {
-        const RawRevision* rawRev = (const RawRevision*)raw_tree.buf;
+        auto rawRev = (const RawRevision*)raw_tree.buf;
         if ( fleece::endian::dec32(rawRev->size_BE) > raw_tree.size )
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree binary error");
         unsigned count = rawRev->count();
@@ -103,7 +104,7 @@ namespace litecore {
         alloc_slice result(totalSize);
 
         // Write the raw revs:
-        RawRevision* dst = (RawRevision*)result.buf;
+        auto dst = (RawRevision*)result.buf;
         for ( Rev* src : revs ) { dst = dst->copyFrom(*src); }
         dst->size_BE = endian::enc32(0);  // write trailing 0 size marker
 
@@ -148,11 +149,11 @@ namespace litecore {
         if ( rev._body ) dstFlags |= RawRevision::kHasData;
         this->flags = (Rev::Flags)dstFlags;
 
-        void* dstData = offsetby(&this->revID[0], rev.revID.size);
-        dstData       = offsetby(dstData, PutUVarInt(dstData, uint64_t(rev.sequence)));
+        void* dstData = offsetby(&this->revID[0], narrow_cast<ptrdiff_t>(rev.revID.size));
+        dstData       = offsetby(dstData, narrow_cast<ptrdiff_t>(PutUVarInt(dstData, uint64_t(rev.sequence))));
         rev._body.copyTo(dstData);
 
-        return (RawRevision*)offsetby(this, revSize);
+        return (RawRevision*)offsetby(this, narrow_cast<ptrdiff_t>(revSize));
     }
 
     void RawRevision::copyTo(Rev& dst, const deque<Rev>& revs) const {
@@ -167,7 +168,7 @@ namespace litecore {
             dst.parent = &revs[parentIndex];
         const void* data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t   len  = (uint8_t*)end - (uint8_t*)data;
-        data             = offsetby(data, GetUVarInt(slice(data, len), (uint64_t*)&dst.sequence));
+        data = offsetby(data, narrow_cast<ptrdiff_t>(GetUVarInt(slice(data, len), (uint64_t*)&dst.sequence)));
         if ( this->flags & RawRevision::kHasData ) dst._body = slice(data, end);
         else
             dst._body = nullslice;
@@ -178,7 +179,7 @@ namespace litecore {
             const void* end  = this->next();
             const void* data = offsetby(&this->revID, this->revIDLen);
             data             = SkipVarInt(data);
-            return slice(data, end);
+            return {data, end};
         } else {
             return nullslice;
         }

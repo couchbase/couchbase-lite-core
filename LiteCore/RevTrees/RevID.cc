@@ -76,15 +76,15 @@ namespace litecore {
             return isVersion() && other.isVersion() && asVersion() == other.asVersion();
     }
 
-    bool revid::expandInto(slice_ostream& result) const noexcept {
-        slice_ostream out = result.capture();
+    bool revid::expandInto(slice_ostream& dst) const noexcept {
+        slice_ostream out = dst.capture();
         if ( isVersion() ) {
             if ( !asVersion().writeASCII(out) ) return false;
         } else {
             auto [gen, digest] = generationAndDigest();
             if ( !out.writeDecimal(gen) || !out.writeByte('-') || !out.writeHex(digest) ) return false;
         }
-        result = out;
+        dst = out;
         return true;
     }
 
@@ -145,12 +145,12 @@ namespace litecore {
         return *this;
     }
 
-    void revidBuffer::parse(slice s) {
-        if ( !tryParse(s) ) error::_throw(error::BadRevisionID);
+    void revidBuffer::parse(slice asciiString) {
+        if ( !tryParse(asciiString) ) error::_throw(error::BadRevisionID);
     }
 
-    bool revidBuffer::tryParse(slice asciiData) noexcept {
-        slice_istream ascii(asciiData);
+    bool revidBuffer::tryParse(slice asciiString) noexcept {
+        slice_istream ascii(asciiString);
         if ( ascii.findByte('-') != nullptr ) {
             // Digest type:
             uint8_t *start = _buffer, *end = start + sizeof(_buffer), *dst = start;
