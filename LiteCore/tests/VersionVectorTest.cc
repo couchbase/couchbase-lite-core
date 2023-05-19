@@ -240,11 +240,11 @@ TEST_CASE("RevID Parsing", "[RevIDs]") {
         revidBuffer r;
         if ( c4se.gen ) {
             CHECK(r.tryParse(slice(c4se.str)));
-            CHECK(!r.isVersion());
-            CHECK(r.generation() == c4se.gen);
-            CHECK(r.digest() == c4se.digest);
-            CHECK(r.expanded() == slice(c4se.str));
-            CHECK(r.hexString() == c4se.hex);
+            CHECK(!r.getRevID().isVersion());
+            CHECK(r.getRevID().generation() == c4se.gen);
+            CHECK(r.getRevID().digest() == c4se.digest);
+            CHECK(r.getRevID().expanded() == slice(c4se.str));
+            CHECK(r.getRevID().hexString() == c4se.hex);
         } else {
             CHECK(!r.tryParse(slice(c4se.str)));
         }
@@ -303,12 +303,12 @@ TEST_CASE("RevID Version Parsing", "[RevIDs]") {
         revidBuffer r;
         if ( c4se.gen ) {
             CHECK(r.tryParse(slice(c4se.str)));
-            CHECK(r.isVersion());
+            CHECK(r.getRevID().isVersion());
             //CHECK(r.generation() == c4se.gen);
-            CHECK(r.asVersion().gen() == c4se.gen);
-            CHECK(r.asVersion().author().id == c4se.peer);
-            CHECK(r.expanded() == slice(c4se.str));
-            CHECK(r.hexString() == c4se.hex);
+            CHECK(r.getRevID().asVersion().gen() == c4se.gen);
+            CHECK(r.getRevID().asVersion().author().id == c4se.peer);
+            CHECK(r.getRevID().expanded() == slice(c4se.str));
+            CHECK(r.getRevID().hexString() == c4se.hex);
         } else {
             CHECK(!r.tryParse(slice(c4se.str)));
         }
@@ -325,7 +325,7 @@ TEST_CASE("RevID <-> Version", "[RevIDs]") {
     CHECK(rev.expanded() == "11@100"_sl);  // revid only looks at the current Version
 
     revidBuffer r(Version(17, Alice));
-    CHECK(r.isVersion());
-    CHECK(r.asVersion() == Version(17, Alice));
-    CHECK(r.expanded() == "11@100"_sl);
+    CHECK(r.getRevID().isVersion());
+    CHECK(r.getRevID().asVersion() == Version(17, Alice));
+    CHECK(r.getRevID().expanded() == "11@100"_sl);
 }

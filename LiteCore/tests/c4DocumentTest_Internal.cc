@@ -13,6 +13,7 @@
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "c4Collection.h"
 #include "Benchmark.hh"
 #include "fleece/Fleece.hh"
 #include "SecureDigest.hh"
@@ -32,10 +33,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
     static constexpr unsigned kMaxAncestors = 4;
     C4SliceResult             ancestors[4]  = {};
 
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
     auto findDocAncestor = [&](C4Slice docID, C4Slice revID, bool requireBodies = false) -> std::string {
         C4SliceResult ancestors[1] = {};
-        REQUIRE(c4db_findDocAncestors(db, 1, kMaxAncestors, requireBodies, kRemoteID, &docID, &revID, ancestors,
-                                      WITH_ERROR()));
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 1, kMaxAncestors, requireBodies, kRemoteID, &docID, &revID,
+                                        ancestors, WITH_ERROR()));
         return toString(std::move(ancestors[0]));
     };
 
@@ -70,14 +73,15 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 
         // Limit number of results:
         C4Slice newRevID = "4-deadbeef"_sl;
-        REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, WITH_ERROR()));
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
+                                        WITH_ERROR()));
         CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
         C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
-        REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
-                                      WITH_ERROR()));
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
+                                        WITH_ERROR()));
         CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef","2-c001d00d","1-abcd"])");
         CHECK(toString(std::move(ancestors[1])) == "8");
         CHECK(!slice(ancestors[2]));
@@ -117,14 +121,15 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 
         // Limit number of results:
         C4Slice newRevID = "11@8,3@100"_sl;
-        REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, WITH_ERROR()));
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
+                                        WITH_ERROR()));
         CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
         C4String revIDs[4] = {"9@100,10@8"_sl, "3@100,10@8"_sl, C4STR("17@17"), "1@99,3@300,30@8"_sl};
-        REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
-                                      WITH_ERROR()));
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
+                                        WITH_ERROR()));
         CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
         CHECK(alloc_slice(std::move(ancestors[1])) == "0");
         CHECK(!slice(ancestors[2]));
@@ -146,15 +151,17 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
 
     // Read doc from db and keep in memory
     C4Error error;
-    auto    curDoc = c4db_getDoc(db, kDocID, false, kDocGetAll, ERROR_INFO(error));
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    auto    curDoc      = c4coll_getDoc(defaultColl, kDocID, false, kDocGetAll, ERROR_INFO(error));
     REQUIRE(curDoc != nullptr);
 
     // Call MarkRevSynced which will set the flag
-    bool markSynced = c4db_markSynced(db, kDocID, curDoc->revID, curDoc->sequence, testRemoteId, ERROR_INFO(error));
+    bool markSynced =
+            c4coll_markSynced(defaultColl, kDocID, curDoc->revID, curDoc->sequence, testRemoteId, ERROR_INFO(error));
     REQUIRE(markSynced);
 
     // Get the latest version of the doc
-    auto curDocAfterMarkSync = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
+    auto curDocAfterMarkSync = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, ERROR_INFO(error));
     REQUIRE(curDocAfterMarkSync != nullptr);
 
     // Get the remote ancesor rev, and make sure it matches up with the latest rev of the doc
@@ -166,7 +173,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     REQUIRE(updatedDoc);
 
     // Re-read the doc from the db just to be sure getting accurate version
-    auto updatedDocRefreshed = c4db_getDoc(db, kDocID, true, kDocGetAll, ERROR_INFO(error));
+    auto updatedDocRefreshed = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, ERROR_INFO(error));
 
     // Check the remote ancestor rev of the updated doc and make sure it has not been clobbered.
     // Before the bug fix for LiteCore #478, this was returning an empty value.

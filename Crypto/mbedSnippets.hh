@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "fleece/CompilerSupport.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"

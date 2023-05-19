@@ -13,6 +13,7 @@
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4BlobStore.h"
 #include "FilePath.hh"
+#include "c4Collection.h"
 #include <cmath>
 #include <cerrno>
 #include <iostream>
@@ -88,7 +89,8 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     // Reopen with correct key:
     db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO(error));
     REQUIRE(db);
-    CHECK(c4db_getDocumentCount(db) == 99);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 99);
 }
 
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryption][blob][C]") {
@@ -117,7 +119,8 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     }
 
     // Verify the db works:
-    REQUIRE(c4db_getDocumentCount(db) == 99);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
     REQUIRE(blobStore);
     blobResult = c4blob_getContents(blobStore, blobKey, ERROR_INFO(error));
     CHECK(blobResult == blobToStore);

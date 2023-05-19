@@ -222,13 +222,13 @@ namespace litecore {
 
         void logError(const char* format, ...) const __printflike(2, 3) { LOGBODY(Error) }
 
-        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
+        virtual void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
+        virtual void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
+        virtual void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
-        bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
+        virtual bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char* format, va_list) const;

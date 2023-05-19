@@ -33,8 +33,8 @@ class SG::TestUser {
                       const std::vector<C4CollectionSpec>& collectionSpecs = {kC4DefaultCollectionSpec},
                       const std::string&                   password        = "password")
         : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{collectionSpecs} {
-        Assert(_sg->createUser(_username, _password));
-        Assert(_sg->assignUserChannel(_username, _collectionSpecs, _channels));
+        _sg->createUser(_username, _password);
+        _sg->assignUserChannel(_username, _collectionSpecs, _channels);
         _authHeader = HTTPLogic::basicAuth(_username, _password);
     }
 

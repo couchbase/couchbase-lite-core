@@ -59,7 +59,7 @@ struct C4Address {
     uint16_t port;
     C4String path;
 
-#if __cplusplus
+#ifdef __cplusplus
     bool isValidRemote(fleece::slice withDbName, C4Error* C4NULLABLE = nullptr) const noexcept;
     [[nodiscard]] fleece::alloc_slice toURL() const;
     static bool fromURL(fleece::slice url, C4Address* outAddress, fleece::slice* C4NULLABLE outDBName);

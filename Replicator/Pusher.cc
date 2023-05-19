@@ -556,7 +556,6 @@ namespace litecore { namespace repl {
         // immediate means I want to resend as soon as possible, bypassing another changes feed entry
         // (for example in the case of a failed delta merge)
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
-        _caughtUp = false;
         if ( immediate ) {
             for ( const auto& revToRetry : revsToRetry ) {
                 _pushingDocs.insert({revToRetry->docID, revToRetry});
@@ -564,6 +563,7 @@ namespace litecore { namespace repl {
             }
             _revQueue.insert(_revQueue.begin(), revsToRetry.begin(), revsToRetry.end());
         } else {
+            _caughtUp                    = false;
             ChangesFeed::Changes changes = {};
             changes.revs                 = move(revsToRetry);
             changes.lastSequence         = _lastSequenceRead;

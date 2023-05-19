@@ -668,3 +668,16 @@ Pull interaction digram
       │                                                                                        │        
       ▼                                                                                        ▼            
 ```
+
+[[extensions]]
+5. Extensions
+~~~~~~~~~~~~~
+
+The replication protocol can be extended with additional message types and properties.
+
+[[connected-client]]
+Connected Client
+^^^^^^^^^^^^^^^^
+The Connected Client protocol extension allows mobile clients to access a server-side database (bucket) directly, without needing a local database replica.
+
+https://github.com/couchbase/couchbase-lite-core/blob/feature/connected-client/docs/overview/ConnectedClientProtocol.md 

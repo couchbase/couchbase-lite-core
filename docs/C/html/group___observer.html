@@ -158,16 +158,19 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Callback invoked by a collection/database observer. </p>
-<p>CAUTION: This callback is called when a transaction is committed, even one made by a different connection (C4Database instance) on the same file. This means that, if your application is multithreaded, the callback may be running on a different thread than the one this database instance uses. It is your responsibility to ensure thread safety.</p>
-<p>In general, it is best to make <em>no</em> LiteCore calls from within this callback. Instead, use your platform event-handling API to schedule a later call from which you can read the changes. Since this callback may be invoked many times in succession, make sure you schedule only one call at a time.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">observer</td><td>The observer that initiated the callback. </td></tr>
-    <tr><td class="paramname">context</td><td>user-defined parameter given when registering the callback. </td></tr>
-  </table>
-  </dd>
-</dl>
+<pre class="fragment">CAUTION: This callback is called when a transaction is committed, even one made by a
+different connection (C4Database instance) on the same file. This means that, if your
+application is multithreaded, the callback may be running on a different thread than the
+one this database instance uses. It is your responsibility to ensure thread safety.
 
+In general, it is best to make _no_ LiteCore calls from within this callback. Instead,
+use your platform event-handling API to schedule a later call from which you can read the
+changes. Since this callback may be invoked many times in succession, make sure you
+schedule only one call at a time.
+
+@param observer  The observer that initiated the callback.
+@param context  user-defined parameter given when registering the callback. 
+</pre> 
 </div>
 </div>
 <a id="ga1a4e9d32cb3fc53098f1e8bed57cb629" name="ga1a4e9d32cb3fc53098f1e8bed57cb629"></a>
@@ -542,8 +545,11 @@ The new observer needs to be enabled by calling <a class="el" href="group___obse
 </div><div class="memdoc">
 
 <p>Enables a query observer so its callback can be called, or disables it to stop callbacks. </p>
-<p>When a query observer is enabled, its callback will be called with the current results. If this is the first observer, the query has to run first (on a background thread) so the callback will take a little while; if there are already enabled observers, the callback will be pretty much instantaneous. </p>
-
+<pre class="fragment">When a query observer is enabled, its callback will be called with the current results.
+If this is the first observer, the query has to run first (on a background thread) so
+the callback will take a little while; if there are already enabled observers, the
+callback will be pretty much instantaneous.
+</pre> 
 </div>
 </div>
 </div><!-- contents -->

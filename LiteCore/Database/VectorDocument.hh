@@ -12,7 +12,7 @@
 
 #pragma once
 #include "DocumentFactory.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -20,7 +20,7 @@ namespace litecore {
 
     class VectorDocumentFactory final : public DocumentFactory {
       public:
-        VectorDocumentFactory(C4Collection* db) : DocumentFactory(db) {}
+        explicit VectorDocumentFactory(C4Collection* db) : DocumentFactory(db) {}
 
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;

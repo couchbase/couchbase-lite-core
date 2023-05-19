@@ -1856,8 +1856,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
     auto                opts = Replicator::Options::pushing(kC4OneShot, _collSpec);
     ExpectingExceptions x;
     runReplicators(opts, Replicator::Options::passive(_collSpec));
-
-    REQUIRE(db2->getDocumentCount() == 0);
+    auto defaultColl = db2->getDefaultCollection();
+    REQUIRE(defaultColl->getDocumentCount() == 0);
 }
 
 

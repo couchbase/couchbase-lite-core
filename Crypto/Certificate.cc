@@ -11,11 +11,9 @@
 //
 
 #include "Certificate.hh"
-#include "TLSContext.hh"
 #include "Defer.hh"
 #include "Logging.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
 #include "TempArray.hh"
 #include "Writer.hh"
 #include "slice_stream.hh"
@@ -27,7 +25,6 @@
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #include "mbedtls/asn1write.h"
 #include "mbedtls/ctr_drbg.h"
-#include "mbedtls/error.h"
 #include "mbedtls/md.h"
 #include "mbedtls/oid.h"
 #include "mbedtls/platform.h"
@@ -41,12 +38,11 @@
 #include <chrono>
 #include "date/date.h"
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
     using namespace std;
     using namespace std::chrono;
     using namespace std::chrono_literals;
     using namespace fleece;
-    using namespace net;
     using namespace date;
 
 
@@ -63,7 +59,7 @@ namespace litecore { namespace crypto {
             slice          value = e.value;
             const uint8_t* comma;
             while ( nullptr != (comma = value.findByte(',')) ) {
-                out << slice(value.buf, comma) << "\\,"_sl;
+                out << slice(value.buf, comma) << R"(\,)"_sl;
                 value.setStart(comma + 1);
             }
             out << value;
@@ -80,7 +76,7 @@ namespace litecore { namespace crypto {
             alloc_slice value;
             uint8_t     delim;
             do {
-                auto next = dn.findAnyByteOf(",\\"_sl);
+                auto next = dn.findAnyByteOf(R"(,\)"_sl);
                 if ( next ) {
                     delim = *next;
                     value.append(slice(dn.buf, next));
@@ -141,18 +137,18 @@ namespace litecore { namespace crypto {
             if ( (rawTag & MBEDTLS_ASN1_TAG_CLASS_MASK) != MBEDTLS_ASN1_CONTEXT_SPECIFIC ) continue;
             emplace_back(SANTag(rawTag & MBEDTLS_ASN1_TAG_VALUE_MASK), alloc_slice(cur->buf.p, cur->buf.len));
         }
-        reverse(begin(), end());  // subject_alt_names list is in reverse order!
+        reverse(_names.begin(), _names.end());  // subject_alt_names list is in reverse order!
     }
 
     alloc_slice SubjectAltNames::encode() const {
         // Allocate enough buffer space:
         size_t bufferSize = 0;
-        for ( auto& name : *this ) bufferSize += name.second.size + 16;
+        for ( auto& name : _names ) bufferSize += name.second.size + 16;
         TempArray(start, uint8_t, bufferSize);
         uint8_t* pos = start + bufferSize;
 
         size_t totalLen = 0;
-        for ( auto& name : *this ) {
+        for ( auto& name : _names ) {
             size_t len = 0;
             len += TRY(mbedtls_asn1_write_raw_buffer(&pos, start, (const uint8_t*)name.second.buf, name.second.size));
             len += TRY(mbedtls_asn1_write_len(&pos, start, len));
@@ -162,11 +158,11 @@ namespace litecore { namespace crypto {
 
         totalLen += TRY(mbedtls_asn1_write_len(&pos, start, totalLen));
         totalLen += TRY(mbedtls_asn1_write_tag(&pos, start, MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE));
-        return alloc_slice(pos, totalLen);
+        return {pos, totalLen};
     }
 
     alloc_slice SubjectAltNames::operator[](SANTag tag) const {
-        for ( auto& altName : *this ) {
+        for ( auto& altName : _names ) {
             if ( altName.first == tag ) return altName.second;
         }
         return nullslice;
@@ -308,7 +304,7 @@ namespace litecore { namespace crypto {
         if ( subjectParams.nsCertType != 0 ) {
             TRY(mbedtls_x509write_crt_set_ns_cert_type(&crt, subjectParams.nsCertType));
             if ( key_usage == 0 )  // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(subjectParams.nsCertType, subjectKey->isRSA());
+                key_usage = defaultKeyUsage(subjectParams.nsCertType, PublicKey::isRSA());
         }
         if ( key_usage != 0 ) TRY(mbedtls_x509write_crt_set_key_usage(&crt, key_usage));
 
@@ -338,7 +334,7 @@ namespace litecore { namespace crypto {
         alloc_slice summary;
         for ( Retained<Cert> cert = this; cert; cert = cert->next() ) {
             alloc_slice single = cert->CertBase::summary(indent);
-            if ( !summary ) summary = move(single);
+            if ( !summary ) summary = std::move(single);
             else {
                 summary.append("----------------\n"_sl);
                 summary.append(single);
@@ -483,7 +479,7 @@ namespace litecore { namespace crypto {
         if ( params.nsCertType != 0 ) {
             TRY(mbedtls_x509write_csr_set_ns_cert_type(&csr, params.nsCertType));
             if ( key_usage == 0 )  // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(params.nsCertType, subjectKey->isRSA());
+                key_usage = defaultKeyUsage(params.nsCertType, PrivateKey::isRSA());
         }
         if ( key_usage != 0 ) TRY(mbedtls_x509write_csr_set_key_usage(&csr, uint8_t(key_usage)));
 
@@ -531,4 +527,4 @@ namespace litecore { namespace crypto {
         Assert(mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) == 0);
     }
 
-}}  // namespace litecore::crypto
+}  // namespace litecore::crypto

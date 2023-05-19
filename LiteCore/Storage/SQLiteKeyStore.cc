@@ -17,7 +17,6 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "FleeceImpl.hh"
 #include "sqlite3.h"
 #include <sstream>
 
@@ -105,7 +104,7 @@ namespace litecore {
         if ( i == _stmtCache.end() ) {
             // Note: Substituting the store name for "@" in the SQL
             auto stmt = db().compile(subst(sqlTemplate.c_str()).c_str());
-            i         = _stmtCache.insert({sqlTemplate, move(stmt)}).first;
+            i         = _stmtCache.insert({sqlTemplate, std::move(stmt)}).first;
         } else {
             db().checkOpen();
         }
@@ -187,7 +186,7 @@ namespace litecore {
     }
 
     /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column& col) {
-        return slice(col.getBlob(), col.getBytes());
+        return {col.getBlob(), static_cast<size_t>(col.getBytes())};
     }
 
     // The columns in `stmt` must match RecordColumn.
@@ -338,7 +337,7 @@ namespace litecore {
                 Assert(rec.sequence > 0_seq);
                 seq = rec.sequence;
                 // If we don't update the sequence, update the subsequence so MVCC can work:
-                rawFlags |= (rec.subsequence + 1) << 16;
+                rawFlags |= static_cast<int64_t>(rec.subsequence + 1) << 16;
             }
 
             stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
@@ -499,7 +498,7 @@ namespace litecore {
             slice  value = getColumnAsSlice(stmt, 1);
             size_t i     = docIndices[docID];
             //Log("    -- %zu: %.*s --> '%.*s'", i, SPLAT(docID), SPLAT(revs));
-            if ( value.size == 0 && value.buf != 0 )
+            if ( value.size == 0 && value.buf != nullptr )
                 results[i] = empty;  // reuse one empty slice instead of creating one per row
             else
                 results[i] = alloc_slice(value);

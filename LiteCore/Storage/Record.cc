@@ -10,6 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
+#include <utility>
+
 #include "Record.hh"
 #include "Endian.hh"
 
@@ -20,7 +22,7 @@ namespace litecore {
 
     Record::Record(slice key) : _key(key) {}
 
-    Record::Record(alloc_slice key) : _key(move(key)) {}
+    Record::Record(alloc_slice key) : _key(std::move(key)) {}
 
     void Record::clear() noexcept {
         _key = _version = _body = _extra = nullslice;
@@ -43,7 +45,8 @@ namespace litecore {
         setBody(slice(&newBody, sizeof(newBody)));
     }
 
-    RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_) : key(key_), body(body_), flags(flags_) {}
+    RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_)
+        : key(std::move(key_)), body(std::move(body_)), flags(flags_) {}
 
     RecordUpdate::RecordUpdate(const Record& rec) : RecordUpdate(rec.key(), rec.body(), rec.flags()) {
         version     = rec.version();

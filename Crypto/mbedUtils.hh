@@ -12,12 +12,11 @@
 
 #pragma once
 #include "Base.hh"
-#include "fleece/function_ref.hh"
 
 struct mbedtls_asn1_named_data;
 struct mbedtls_ctr_drbg_context;
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
 
     [[noreturn]] void throwMbedTLSError(int err);
 
@@ -54,4 +53,4 @@ namespace litecore { namespace crypto {
 
     fleece::alloc_slice convertToPEM(const slice& derData, const char* name NONNULL);
 
-}}  // namespace litecore::crypto
+}  // namespace litecore::crypto

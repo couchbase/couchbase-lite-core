@@ -184,17 +184,17 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorReco
     VectorRecord         doc(*store, Versioning::RevTrees, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
-    doc.setRevID(revidBuffer("1-f000"));
+    doc.setRevID(revidBuffer("1-f000").getRevID());
     CHECK(doc.save(t) == VectorRecord::kNewSequence);
 
     // Add a remote revision:
     MutableDict remoteProps = MutableDict::newDict();
     remoteProps["rodent"]   = "capybara";
     revidBuffer remoteRev("2-eeee");
-    doc.setRemoteRevision(kRemote1, Revision{remoteProps, remoteRev, DocumentFlags::kHasAttachments});
+    doc.setRemoteRevision(kRemote1, Revision{remoteProps, remoteRev.getRevID(), DocumentFlags::kHasAttachments});
     CHECK(doc.changed());
     CHECK(doc.remoteRevision(kRemote1)->properties == remoteProps);
-    CHECK(doc.remoteRevision(kRemote1)->revID == remoteRev);
+    CHECK(doc.remoteRevision(kRemote1)->revID == remoteRev.getRevID());
     CHECK(doc.remoteRevision(kRemote1)->flags == DocumentFlags::kHasAttachments);
 
     CHECK(doc.save(t) == VectorRecord::kNoNewSequence);
@@ -228,11 +228,11 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[Vect
         loc.append(-108.3);
         loc.append(37.234);
         doc.mutableProperties()["loc"] = loc;
-        doc.setRevID(revid1);
+        doc.setRevID(revid1.getRevID());
 
         // Make remote 1 the same as local:
         auto local = doc.currentRevision();
-        CHECK(local == (Revision{doc.properties(), revid1}));
+        CHECK(local == (Revision{doc.properties(), revid1.getRevID()}));
         doc.setRemoteRevision(kRemote1, local);
         CHECK(doc.save(t) == VectorRecord::kNewSequence);
     }
@@ -246,7 +246,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[Vect
         // Update doc locally:
         doc.mutableProperties()["age"] = 2;
         revidBuffer revid2("2-2222");
-        doc.setRevID(revid2);
+        doc.setRevID(revid2.getRevID());
         doc.setFlags(DocumentFlags::kNone);
         CHECK(doc.save(t));
     }

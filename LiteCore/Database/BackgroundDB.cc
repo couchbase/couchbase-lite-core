@@ -11,14 +11,12 @@
 //
 
 #include "BackgroundDB.hh"
-#include "c4ExceptionUtils.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DataFile.hh"
 #include "SequenceTracker.hh"
 
 namespace litecore {
-    using namespace actor;
     using namespace std::placeholders;
     using namespace std;
 

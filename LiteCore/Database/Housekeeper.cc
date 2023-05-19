@@ -12,14 +12,12 @@
 
 #include "Housekeeper.hh"
 #include "CollectionImpl.hh"
-#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include <inttypes.h>
 
 namespace litecore {
     using namespace actor;
@@ -28,7 +26,7 @@ namespace litecore {
     Housekeeper::Housekeeper(C4Collection* coll)
         : Actor(DBLog, format("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
         , _keyStoreName(asInternal(coll)->keyStore().name())
-        , _expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
+        , _expiryTimer([this] { _doExpiration(); })
         , _collection(coll) {}
 
     void Housekeeper::start() {
@@ -65,7 +63,7 @@ namespace litecore {
             return;
         }
 
-        expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile* df) {
+        auto nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile* df) {
             if ( !df ) { return expiration_t::None; }
 
             auto& store = df->getKeyStore(_keyStoreName);

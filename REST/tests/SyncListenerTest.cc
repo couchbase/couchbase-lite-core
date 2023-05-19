@@ -12,7 +12,7 @@
 
 #include "ListenerHarness.hh"
 #include "ReplicatorAPITest.hh"
-#include "Stopwatch.hh"
+#include "c4Collection.h"
 #include "Server.hh"
 #include "NetworkInterfaces.hh"
 #include "c4Replicator.h"
@@ -53,7 +53,10 @@ class C4SyncListenerTest
         _sg.address.port = c4listener_getPort(listener());
         if ( _sg.pinnedCert ) _sg.address.scheme = kC4Replicator2TLSScheme;
         replicate(kC4OneShot, kC4Disabled, expectSuccess);
-        if ( expectSuccess ) { CHECK(c4db_getDocumentCount(db2) == 100); }
+        if ( expectSuccess ) {
+            auto defaultColl = getCollection(db2, kC4DefaultCollectionSpec);
+            CHECK(c4coll_getDocumentCount(defaultColl) == 100);
+        }
     }
 };
 
@@ -250,7 +253,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener
     if ( _sg.pinnedCert ) _sg.address.scheme = kC4Replicator2TLSScheme;
 
     replicate(pushMode, pullMode, false);
-    CHECK(c4db_getDocumentCount(db2) == 0);
+    auto defaultColl = getCollection(db2, kC4DefaultCollectionSpec);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
 }
 
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {

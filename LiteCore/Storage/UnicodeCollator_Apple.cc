@@ -14,8 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "fleece/PlatformCompat.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
+#include "SQLiteCpp/Exception.h"
 #include <sqlite3.h>
 
 #if __APPLE__  // For Apple platforms; see UnicodeCollator_*.cc for other implementations
@@ -31,8 +30,8 @@ namespace litecore {
     class TempCFString {
       public:
         explicit TempCFString(slice str) noexcept
-            : _cfStr(CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)str.buf, str.size, kCFStringEncodingUTF8,
-                                                   false, kCFAllocatorNull)) {}
+            : _cfStr(CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)str.buf, static_cast<CFIndex>(str.size),
+                                                   kCFStringEncodingUTF8, false, kCFAllocatorNull)) {}
 
         ~TempCFString() noexcept {
             if ( _cfStr ) CFRelease(_cfStr);
@@ -40,11 +39,11 @@ namespace litecore {
 
         operator CFStringRef() const noexcept { return _cfStr; }
 
-      private:
-        CFStringRef const _cfStr;
-
         TempCFString(const TempCFString&)            = delete;
         TempCFString& operator=(const TempCFString&) = delete;
+
+      private:
+        CFStringRef const _cfStr;
     };
 
     // Stores CF collation parameters for fast lookup; callback context points to this
@@ -63,11 +62,11 @@ namespace litecore {
             slice localeName = coll.localeName ?: "en_US"_sl;
             flags |= kCFCompareLocalized;
             TempCFString localeStr(localeName);
-            if ( localeStr ) localeRef = CFLocaleCreate(NULL, localeStr);
+            if ( localeStr ) localeRef = CFLocaleCreate(nullptr, localeStr);
             if ( !localeRef ) Warn("Unknown locale name '%.*s'", SPLAT(coll.localeName));
         }
 
-        ~CFCollationContext() {
+        ~CFCollationContext() override {
             if ( localeRef ) CFRelease(localeRef);
         }
 
@@ -137,7 +136,7 @@ namespace litecore {
         for ( CFIndex i = 0; i < count; i++ ) {
             auto locale = (CFStringRef)CFArrayGetValueAtIndex(rawLocales, i);
             CFStringGetCString(locale, buf, 32, kCFStringEncodingASCII);
-            locales.push_back(buf);
+            locales.emplace_back(buf);
         }
 
         CFRelease(rawLocales);

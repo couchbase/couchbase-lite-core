@@ -20,7 +20,8 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "fleece/Expert.hh"
-#include <inttypes.h>
+#include <cinttypes>
+#include <utility>
 #include <vector>
 
 namespace litecore {
@@ -143,7 +144,7 @@ namespace litecore {
                                                             alloc_slice currentVersion) {
         // Make an in-memory VV-based Record, with no remote revisions:
         const Rev* currentRev = revTree.currentRevision();
-        rec.setVersion(currentVersion);
+        rec.setVersion(std::move(currentVersion));
         rec.setBody(currentRev->body());
         rec.setExtra(nullslice);
 
@@ -152,9 +153,9 @@ namespace litecore {
         nuDoc.setEncoder(db->sharedFleeceEncoder());
 
         // Add each remote revision:
-        for ( auto i = revTree.remoteRevisions().begin(); i != revTree.remoteRevisions().end(); ++i ) {
-            auto        remoteID = RemoteID(i->first);
-            const Rev*  rev      = i->second;
+        for ( auto i : revTree.remoteRevisions() ) {
+            auto        remoteID = RemoteID(i.first);
+            const Rev*  rev      = i.second;
             Revision    nuRev;
             alloc_slice binaryVers;
             if ( rev == currentRev ) {

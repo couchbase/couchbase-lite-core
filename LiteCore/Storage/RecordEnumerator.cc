@@ -15,8 +15,8 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include <algorithm>
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
 using namespace std;
 
