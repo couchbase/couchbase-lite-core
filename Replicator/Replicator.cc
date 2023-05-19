@@ -58,12 +58,9 @@ namespace litecore { namespace repl {
         return result.str();
     }
 
-    shared_ptr<DBAccess> Replicator::createDBAccess(C4Database* db, Options* options) {
-        return make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool());
-    }
-
     Replicator::Replicator(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate, Options* options)
-        : Replicator(createDBAccess(db, options), webSocket, delegate, options) {}
+        : Replicator(make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()), webSocket,
+                     delegate, options) {}
 
     Replicator::Replicator(shared_ptr<DBAccess> db, websocket::WebSocket* webSocket, Delegate& delegate,
                            Options* options)

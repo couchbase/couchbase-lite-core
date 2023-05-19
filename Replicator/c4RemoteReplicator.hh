@@ -112,7 +112,7 @@ namespace litecore {
         virtual void createReplicator() override {
             auto dbOpenedAgain = _database->openAgain();
             _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
-            auto dbAccess  = Replicator::createDBAccess(dbOpenedAgain, _options);
+            auto dbAccess  = make_shared<DBAccess>(db, _options->properties["disable_blob_support"_sl].asBool());
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
             _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
 
