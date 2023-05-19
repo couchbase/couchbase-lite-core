@@ -92,7 +92,7 @@ namespace litecore { namespace websocket {
             // Size of the buffer allocated for reading from the socket.
             static constexpr size_t kReadBufferSize = 32 * 1024;
 
-            shared_ptr<repl::DBAccess>            _database;       // The database (used only for cookies)
+            shared_ptr<repl::DBAccess>      _database;       // The database (used only for cookies)
             std::unique_ptr<net::TCPSocket> _socket;         // The TCP socket
             Retained<BuiltInWebSocket>      _selfRetain;     // Keeps me alive while connected
             Retained<net::TLSContext>       _tlsContext;     // TLS settings
