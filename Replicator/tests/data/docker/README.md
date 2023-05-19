@@ -27,7 +27,8 @@ When running `docker compose up`, there will be one Couchbase Server and two Syn
  | Database    | scratch-30  |
  | Port        | 4884        |
  | Admin Port  | 4885        |
- | Collections | default     |
+
+ ** SG 3.0 doesn't support collection.
 
  #### Sync Function
 
@@ -38,7 +39,7 @@ When running `docker compose up`, there will be one Couchbase Server and two Syn
     }
  ``` 
 
-The Admin Credentials of both Sync Gateways are `admin/password` or `Administrtor/password`.
+The Admin Credentials of both Sync Gateways are `admin/password` or `Administrator/password`.
 
 ### Docker Compose Environment Variables
 
