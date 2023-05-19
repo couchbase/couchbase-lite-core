@@ -43,7 +43,10 @@ namespace litecore { namespace repl {
         using CloseStatus = blip::Connection::CloseStatus;
         using Options     = litecore::repl::Options;
 
+        static shared_ptr<DBAccess> createDBAccess(C4Database* NONNULL, Options* NONNULL);
+
         Replicator(C4Database* NONNULL, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
+        Replicator(shared_ptr<DBAccess>, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
 
         struct BlobProgress {
             Dir         dir;

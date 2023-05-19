@@ -58,10 +58,16 @@ namespace litecore { namespace repl {
         return result.str();
     }
 
+    shared_ptr<DBAccess> Replicator::createDBAccess(C4Database* db, Options* options) {
+        return make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool());
+    }
+
     Replicator::Replicator(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate, Options* options)
-        : Worker(new Connection(webSocket, options->properties, {}), nullptr, options,
-                 make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()), "Repl",
-                 kNotCollectionIndex)
+        : Replicator(createDBAccess(db, options), webSocket, delegate, options) {}
+
+    Replicator::Replicator(shared_ptr<DBAccess> db, websocket::WebSocket* webSocket, Delegate& delegate,
+                           Options* options)
+        : Worker(new Connection(webSocket, options->properties, {}), nullptr, options, db, "Repl", kNotCollectionIndex)
         , _delegate(&delegate)
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
@@ -74,7 +80,7 @@ namespace litecore { namespace repl {
             //                    : all collections are passive.
             _options->verify();
 
-            _loggingID  = string(db->getPath()) + " " + _loggingID;
+            _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
             logInfo("%s", string(*options).c_str());

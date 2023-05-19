@@ -61,7 +61,7 @@ namespace litecore::repl {
 
     void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) { sRegisteredInternalFactory = f; }
 
-    Retained<WebSocket> CreateWebSocket(websocket::URL url, alloc_slice options, C4Database* database,
+    Retained<WebSocket> CreateWebSocket(websocket::URL url, alloc_slice options, shared_ptr<DBAccess> database,
                                         const C4SocketFactory* factory, void* nativeHandle) {
         if ( !factory ) factory = sRegisteredFactory;
 
