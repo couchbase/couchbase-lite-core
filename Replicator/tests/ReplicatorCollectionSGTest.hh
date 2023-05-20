@@ -35,25 +35,18 @@ static constexpr const char* kTestUserName = "sguser";
 
 class ReplicatorCollectionSGTest : public ReplicatorAPITest {
   public:
-    ReplicatorCollectionSGTest() : ReplicatorAPITest(), _expectedSGVersion{"3.1", ""} {
+    explicit ReplicatorCollectionSGTest(const std::string& minSGVer = "3.1", const std::string& maxSGVer = "",
+                                        uint16_t port = 4984, const slice remoteDBName = kScratchDBName)
+        : ReplicatorAPITest(), _expectedSGVersion{minSGVer, maxSGVer} {
         _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
         if ( getenv("NOTLS") ) {
-            _sg.address = {kC4Replicator2Scheme, C4STR("localhost"), 4984};
+            _sg.address      = {kC4Replicator2Scheme, C4STR("localhost"), port};
+            _sg.remoteDBName = remoteDBName;
         } else {
-            _sg.address = {kC4Replicator2TLSScheme, C4STR("localhost"), 4984};
+            _sg.address      = {kC4Replicator2TLSScheme, C4STR("localhost"), port};
+            _sg.remoteDBName = remoteDBName;
         }
-
         _flushedScratch = true;
-    }
-
-    // Useful for derived classes to state the minimum and maximum SG versions they can use
-    // Copied from the bottom of this file:
-    // Pair of strings representing min and max SG version
-    // min is inclusive, max is exclusive. Empty string for max will ignore it
-    // i.e.: {"3.0", "3.1"} represents anything 3.0 and above, and excludes 3.1 and above
-    ReplicatorCollectionSGTest(const std::string& minSGVer, const std::string& maxSGVer)
-        : ReplicatorCollectionSGTest() {
-        _expectedSGVersion = {minSGVer, maxSGVer};
     }
 
     ~ReplicatorCollectionSGTest() {
