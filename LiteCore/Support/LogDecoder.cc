@@ -259,7 +259,7 @@ namespace litecore {
                                     char buf[200];
                                     while ( size > 0 ) {
                                         auto n = min(size, sizeof(buf));
-                                        _in.read(buf, static_cast<std::streamsize>(n));
+                                        _in.read(buf, narrow_cast<std::streamsize>(n));
                                         if ( minus ) {
                                             constexpr size_t bufSize = 3;
                                             for ( size_t i = 0; i < n; ++i ) {
@@ -268,7 +268,7 @@ namespace litecore {
                                                 out << hex;
                                             }
                                         } else {
-                                            out.write(buf, static_cast<std::streamsize>(n));
+                                            out.write(buf, narrow_cast<std::streamsize>(n));
                                         }
                                         size -= n;
                                     }

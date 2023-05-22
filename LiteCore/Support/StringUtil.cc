@@ -11,6 +11,7 @@
 //
 
 #include "StringUtil.hh"
+#include "NumConversion.hh"
 #include <sstream>
 #include <cstdlib>
 #ifdef _MSC_VER
@@ -185,7 +186,7 @@ namespace litecore {
             if ( nextByteLength == 0 ) {
                 str.moveStart(1);
             } else {
-                str.moveStart(static_cast<ptrdiff_t>(nextByteLength));
+                str.moveStart(narrow_cast<ptrdiff_t>(nextByteLength));
             }
             ++length;
         }
