@@ -44,6 +44,7 @@ namespace litecore { namespace repl {
         using Options     = litecore::repl::Options;
 
         Replicator(C4Database* NONNULL, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
+        Replicator(shared_ptr<DBAccess>, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
 
         struct BlobProgress {
             Dir         dir;
