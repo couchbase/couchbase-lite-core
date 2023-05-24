@@ -30,7 +30,7 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     C4SocketImpl::registerInternalFactory(
-            [](websocket::URL url, fleece::alloc_slice options, shared_ptr<DBAccess> database) -> WebSocketImpl* {
+            [](websocket::URL url, fleece::alloc_slice options, std::shared_ptr<DBAccess> database) -> WebSocketImpl* {
                 return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options), database);
             });
 }
