@@ -88,7 +88,7 @@ namespace litecore {
         void close() override;
         void closeAndDeleteFile() override;
 
-        alloc_slice getPath() const override { return filePath(); }
+        alloc_slice getPath() const override { return alloc_slice(filePath()); }
 
         alloc_slice getPeerID() const override;
 

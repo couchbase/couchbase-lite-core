@@ -12,7 +12,6 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include "JSON5.hh"
 #include "fleece/function_ref.hh"
 #include <chrono>
 #include <iostream>
@@ -52,9 +51,9 @@ static inline std::string toString(fleece::slice s) { return std::string(s); }
 
 static inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
 
-static inline std::string toString(const FLSliceResult& s) { return std::string((char*)s.buf, s.size); }
+static inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
 
-static inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(std::move(s))); }
+static inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(s)); }
 
 // Converts JSON5 to JSON; helps make JSON test input more readable!
 std::string         json5(std::string_view);

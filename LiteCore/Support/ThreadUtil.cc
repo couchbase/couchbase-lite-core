@@ -22,7 +22,6 @@
 #include <thread>
 #include <string>
 #include <sstream>
-#include "Channel.hh"
 
 
 #ifndef _MSC_VER

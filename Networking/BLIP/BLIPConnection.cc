@@ -20,6 +20,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "Stopwatch.hh"
 #include "varint.hh"
 #include "fleece/PlatformCompat.hh"
 #include <algorithm>

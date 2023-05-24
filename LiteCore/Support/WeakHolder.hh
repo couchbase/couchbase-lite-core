@@ -15,6 +15,8 @@
 
 namespace litecore {
 
+    using namespace fleece;
+
     /** WeakHolder<T>: holds a pointer to T weakly. Unlike general weak reference, one cannot get a strong holder from it.
     Instead, we can call the methods of class T via invoke, which returns true if pointer is strongly referenced by some
     object other than *this.
@@ -27,10 +29,10 @@ namespace litecore {
     class WeakHolder : public RefCounted {
       public:
         template <typename U>
-        WeakHolder(U* pointer) : _pointer(pointer) {
+        explicit WeakHolder(U* pointer) : _pointer(pointer) {
             DebugAssert(_pointer != nullptr);
-            RefCounted* refCounted = dynamic_cast<RefCounted*>(pointer);
-            _holder                = refCounted;
+            auto* refCounted = dynamic_cast<RefCounted*>(pointer);
+            _holder          = refCounted;
             Assert(_holder);
         }
 

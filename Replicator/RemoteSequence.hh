@@ -64,7 +64,7 @@ namespace litecore::repl {
         std::string toJSONString() const {
             if ( isInt() ) return format("%" PRIu64, intValue());
             else
-                return string(sliceValue());
+                return std::string(sliceValue());
         }
 
         bool operator==(const RemoteSequence& other) const noexcept FLPURE { return _value == other._value; }

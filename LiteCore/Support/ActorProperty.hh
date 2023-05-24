@@ -15,7 +15,7 @@
 #include <functional>
 #include <vector>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
 
     template <class T>
     class Observer;
@@ -30,7 +30,7 @@ namespace litecore { namespace actor {
 
         T get() const { return _value; }
 
-        operator T() const { return _value; }
+        explicit operator T() const { return _value; }
 
         PropertyImpl& operator=(const T& t);
 
@@ -49,7 +49,7 @@ namespace litecore { namespace actor {
 
         T get() const { return _value; }
 
-        operator T() const { return _value; }
+        explicit operator T() const { return _value; }
 
       private:
         void receiveValue(T t) { _value = t; }
@@ -74,4 +74,4 @@ namespace litecore { namespace actor {
         PropertyImpl<T>& _impl;
     };
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

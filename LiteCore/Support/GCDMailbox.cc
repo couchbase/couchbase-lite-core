@@ -19,7 +19,7 @@
 
 using namespace std;
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
 
 
 #if ACTORS_TRACK_STATS
@@ -176,4 +176,4 @@ namespace litecore { namespace actor {
     }
 
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

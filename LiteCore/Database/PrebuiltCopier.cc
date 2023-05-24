@@ -35,7 +35,7 @@ namespace litecore {
         FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().c_str(), to.path().c_str());
 
-        FilePath temp = FilePath::sharedTempDirectory(to.parentDir()).mkTempDir();
+        FilePath temp = FilePath::sharedTempDirectory(std::string(to.parentDir())).mkTempDir();
         temp.delRecursive();
         from.copyTo(temp);
 

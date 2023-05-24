@@ -32,9 +32,9 @@ namespace litecore {
     template <class T>
     class temporary_increment {
       public:
-        temporary_increment(T& value, T by = 1) : _value(value), _by(by) { _increment(value, by); }
+        explicit temporary_increment(T& value, T by = 1) : _value(value), _by(by) { _increment(value, by); }
 
-        temporary_increment(const temporary_increment&& other) : temporary_increment(other._value, other._by) {
+        temporary_increment(const temporary_increment&& other) noexcept : temporary_increment(other._value, other._by) {
             other._by = 0;
         }
 
@@ -45,10 +45,10 @@ namespace litecore {
 
         ~temporary_increment() { _decrement(_value, _by); }
 
-      private:
         temporary_increment(const temporary_increment&)            = delete;
         temporary_increment& operator=(const temporary_increment&) = delete;
 
+      private:
         T& _value;
         T  _by;
     };

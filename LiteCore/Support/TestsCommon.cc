@@ -10,15 +10,13 @@
 // the file licenses/APL2.txt.
 //
 
-#include "TestsCommon.hh"
 #include "c4Base.h"
-#include "c4Private.h"
-#include "Error.hh"
 #include "FilePath.hh"
-#include "Logging.hh"
+#include "TestsCommon.hh"  // iwyu pragma: keep
+#include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.h"
 #include "fleece/FLExpert.h"
+#include <atomic>
 #include <mutex>
 #include <thread>
 
@@ -41,7 +39,7 @@ FilePath GetSystemTempDirectory() {
     CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
     return litecore::FilePath(convertedPath.m_psz, "");
 #else   // _MSC_VER
-    return litecore::FilePath("/tmp", "");
+    return {"/tmp", ""};
 #endif  // _MSC_VER
 }
 

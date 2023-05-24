@@ -19,13 +19,13 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4C
     if ( !hasPrefix(path, "/") ) {
         path = std::string("/") + path;
         if ( remoteDBName.size > 0 ) {
-            auto kspace = (string)(slice)(remoteDBName);
+            auto kspace = (std::string)(slice)(remoteDBName);
             if ( collectionSpec != kC4DefaultCollectionSpec && collectionSpec.name.size > 0 ) {
                 kspace += ".";
-                if ( collectionSpec.scope.size > 0 ) { kspace += string(collectionSpec.scope) + "."; }
-                kspace += string(collectionSpec.name);
+                if ( collectionSpec.scope.size > 0 ) { kspace += std::string(collectionSpec.scope) + "."; }
+                kspace += std::string(collectionSpec.name);
             }
-            path = string("/") + kspace + path;
+            path = std::string("/") + kspace + path;
         }
     }
     if ( logRequests )
@@ -90,7 +90,7 @@ alloc_slice SG::addChannelToJSON(slice json, slice ckey, const std::vector<std::
     return dict.toJSON();
 }
 
-alloc_slice SG::addRevToJSON(slice json, const string& revID) {
+alloc_slice SG::addRevToJSON(slice json, const std::string& revID) {
     MutableDict dict{FLMutableDict_NewFromJSON(json, nullptr)};
     if ( !dict ) {
         C4Log("ERROR: MutableDict is null, likely your JSON is bad.");
@@ -109,7 +109,7 @@ bool SG::createUser(const std::string& username, const std::string& password) co
     return status == HTTPStatus::Created;
 }
 
-bool SG::deleteUser(const string& username) const {
+bool SG::deleteUser(const std::string& username) const {
     HTTPStatus status;
     runRequest("DELETE", {}, "_user/"s + username, nullslice, true, nullptr, &status);
     return status == HTTPStatus::OK;
@@ -117,7 +117,7 @@ bool SG::deleteUser(const string& username) const {
 
 bool SG::assignUserChannel(const std::string& username, const std::vector<C4CollectionSpec>& collectionSpecs,
                            const std::vector<std::string>& channelIDs) const {
-    // Compares the ASCII bytes of the version strings
+    // Compares the ASCII bytes of the version std::strings
     if ( getServerName() < "Couchbase Sync Gateway/3.1" ) {
         C4Log("[SG] Assigning user channels for SG version < 3.1");
         return assignUserChannelOld(username, channelIDs);
@@ -196,12 +196,12 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, sl
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
-bool SG::upsertDoc(C4CollectionSpec collectionSpec, const string& docID, const string& revID, slice body,
+bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID, slice body,
                    const std::vector<std::string>& channelIDs, C4Error* err) const {
     return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
 }
 
-bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const string& docID, slice body,
+bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
                                     C4Error* err) const {
     alloc_slice bodyWithChannel = addChannelToJSON(body, "channels"_sl, {});
     if ( !bodyWithChannel ) {  // body had invalid JSON

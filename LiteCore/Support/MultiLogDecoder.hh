@@ -59,10 +59,10 @@ namespace litecore {
         }
 
         /// Time when the earliest log began
-        Timestamp startTime() const override { return _startTime; }
+        [[nodiscard]] Timestamp startTime() const override { return _startTime; }
 
         /// First time when logs of all levels are available
-        Timestamp fullStartTime() const {
+        [[nodiscard]] Timestamp fullStartTime() const {
             Timestamp fullStartTime = {0, 0};
             for ( unsigned i = 0; i <= kMaxLevel; i++ ) fullStartTime = std::max(fullStartTime, _startTimeByLevel[i]);
             return fullStartTime;
@@ -83,15 +83,15 @@ namespace litecore {
             }
         }
 
-        Timestamp timestamp() const override { return _current->timestamp(); }
+        [[nodiscard]] Timestamp timestamp() const override { return _current->timestamp(); }
 
-        int8_t level() const override { return _current->level(); }
+        [[nodiscard]] int8_t level() const override { return _current->level(); }
 
-        const std::string& domain() const override { return _current->domain(); }
+        [[nodiscard]] const std::string& domain() const override { return _current->domain(); }
 
-        uint64_t objectID() const override { return _current->objectID(); }
+        [[nodiscard]] uint64_t objectID() const override { return _current->objectID(); }
 
-        const std::string* objectDescription() const override { return _current->objectDescription(); }
+        [[nodiscard]] const std::string* objectDescription() const override { return _current->objectDescription(); }
 
         std::string readMessage() override { return _current->readMessage(); }
 
@@ -115,8 +115,8 @@ namespace litecore {
 
         std::priority_queue<LogIterator*, std::vector<LogIterator*>, logcmp> _logs;
         LogIterator*                                                         _current{nullptr};
-        Timestamp                                                            _startTime;
-        Timestamp                                                            _startTimeByLevel[kMaxLevel + 1];
+        Timestamp                                                            _startTime{};
+        Timestamp                                                            _startTimeByLevel[kMaxLevel + 1]{};
 
         std::deque<LogDecoder>    _decoders;
         std::deque<std::ifstream> _inputs;
