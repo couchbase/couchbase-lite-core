@@ -64,10 +64,20 @@ namespace litecore { namespace repl {
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options options)
+    :Replicator(std::make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
+                webSocket,
+                delegate,
+                options)
+    {}
+
+    Replicator::Replicator(std::shared_ptr<DBAccess> db,
+                           websocket::WebSocket *webSocket,
+                           Delegate &delegate,
+                           Options options)
     :Worker(new Connection(webSocket, options.properties, {}),
             nullptr,
             options,
-            make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
+            db,
             "Repl")
     ,_delegate(&delegate)
     ,_connectionState(connection().state())
@@ -76,7 +86,7 @@ namespace litecore { namespace repl {
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
     {
-        _loggingID = string(db->getPath()) + " " + _loggingID;
+        _loggingID = string(db->useLocked()->getPath()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
         _important = 2;
 
