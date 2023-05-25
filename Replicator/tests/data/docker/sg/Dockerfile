@@ -33,6 +33,8 @@ RUN dpkg -i ./couchbase-sync-gateway.deb
 
 EXPOSE 4984
 EXPOSE 4985
+EXPOSE 4884
+EXPOSE 4885
 
 ENV SSL=${SSL}
 ENV LEGACY_MODE=${LEGACY_MODE}
