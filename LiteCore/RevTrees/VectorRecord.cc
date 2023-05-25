@@ -17,7 +17,6 @@
 #include "VersionVector.hh"
 #include "DeDuplicateEncoder.hh"
 #include "Error.hh"
-#include "Defer.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "fleece/Expert.hh"
@@ -276,7 +275,7 @@ namespace litecore {
                 revDict[kRevIDKey].setData(newRev.revID);
                 _changed = true;
             }
-            if ( newRev.properties != revDict[kRevPropertiesKey] ) {
+            if ( newRev.properties != revDict.get(kRevPropertiesKey) ) {
                 if ( newRev.properties ) revDict[kRevPropertiesKey] = newRev.properties;
                 else
                     revDict.remove(kRevPropertiesKey);
@@ -294,7 +293,7 @@ namespace litecore {
             mutateRevisions();
             _mutatedRevisions[int(remote)] = Value::null();
             auto n                         = _mutatedRevisions.count();
-            while ( n > 0 && !_mutatedRevisions[n - 1].asDict() ) --n;
+            while ( n > 0 && !_mutatedRevisions.get(n - 1).asDict() ) --n;
             _mutatedRevisions.resize(n);
             _changed = changedFlags = true;
         }
@@ -399,7 +398,7 @@ namespace litecore {
         return false;
     }
 
-    void VectorRecord::clearPropertiesChanged() {
+    void VectorRecord::clearPropertiesChanged() const {
         for ( DeepIterator i(_current.properties); i; ++i ) {
             if ( Value val = i.value(); val.isMutable() ) {
                 if ( auto dict = val.asDict(); dict ) FLMutableDict_SetChanged(dict.asMutable(), false);
@@ -493,7 +492,7 @@ namespace litecore {
 
             // Write other revs:
             for ( unsigned i = 1; i < nRevs; i++ ) {
-                Value rev = _revisions[i];
+                Value rev = _revisions.get(i);
                 ddenc.writeValue(rev, 2);
             }
             enc.endArray();
@@ -507,7 +506,7 @@ namespace litecore {
         // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and JSON:
         alloc_slice json = FLValue_ToJSONX(body, false, true);
         parentRevID.setSize(min(parentRevID.size, size_t(255)));
-        uint8_t  revLen     = (uint8_t)parentRevID.size;
+        auto     revLen     = (uint8_t)parentRevID.size;
         uint8_t  delByte    = (flags & DocumentFlags::kDeleted) != 0;
         SHA1     digest     = (SHA1Builder() << revLen << parentRevID << delByte << json).finish();
         unsigned generation = parentRevID ? parentRevID.generation() + 1 : 1;
@@ -524,8 +523,8 @@ namespace litecore {
 
     void VectorRecord::dump(ostream& out) const {
         out << "\"" << (string)docID() << "\" #" << uint64_t(sequence()) << " ";
-        int nRevs = _revisions.count();
-        for ( int i = 0; i < nRevs; ++i ) {
+        uint32_t nRevs = _revisions.count();
+        for ( uint32_t i = 0; i < nRevs; ++i ) {
             optional<Revision> rev = remoteRevision(RemoteID(i));
             if ( rev ) {
                 if ( i > 0 ) out << "; R" << i << '@';

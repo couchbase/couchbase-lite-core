@@ -12,6 +12,9 @@ xcuserdata/
 build/
 DerivedData/
 
+# CLion:
+.idea/
+
 # CMake:
 /build_cmake/*
 !/build_cmake/scripts

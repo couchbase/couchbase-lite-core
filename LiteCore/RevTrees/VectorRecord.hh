@@ -40,16 +40,16 @@ namespace litecore {
         DocumentFlags flags{};
 
         /// Returns the current (first) version of the version vector encoded in the `revID`.
-        Version version() const;
+        [[nodiscard]] Version version() const;
 
         /// Decodes the entire version vector encoded in the `revID`. (This allocates heap space.)
-        VersionVector versionVector() const;
+        [[nodiscard]] VersionVector versionVector() const;
 
-        bool isDeleted() const FLPURE { return flags & DocumentFlags::kDeleted; }
+        [[nodiscard]] bool isDeleted() const FLPURE { return flags & DocumentFlags::kDeleted; }
 
-        bool isConflicted() const FLPURE { return flags & DocumentFlags::kConflicted; }
+        [[nodiscard]] bool isConflicted() const FLPURE { return flags & DocumentFlags::kConflicted; }
 
-        bool hasAttachments() const FLPURE { return flags & DocumentFlags::kHasAttachments; }
+        [[nodiscard]] bool hasAttachments() const FLPURE { return flags & DocumentFlags::kHasAttachments; }
     };
 
 
@@ -239,7 +239,7 @@ namespace litecore {
         pair<alloc_slice, alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
         alloc_slice                    encodeExtra(FLEncoder NONNULL);
         bool                           propertiesChanged() const;
-        void                           clearPropertiesChanged();
+        void                           clearPropertiesChanged() const;
         void                           updateDocFlags();
 
         KeyStore&                    _store;                // The database KeyStore

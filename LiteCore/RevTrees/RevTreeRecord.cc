@@ -18,10 +18,10 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
-#include "varint.hh"
 #include "MutableArray.hh"
 #include "MutableDict.hh"
 #include <ostream>
+#include <utility>
 
 namespace litecore {
     using namespace fleece;
@@ -37,7 +37,7 @@ namespace litecore {
 
 #pragma GCC diagnostic pop
 
-    RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec) : _store(store), _rec(rec) { decode(); }
+    RevTreeRecord::RevTreeRecord(KeyStore& store, Record rec) : _store(store), _rec(std::move(rec)) { decode(); }
 
     RevTreeRecord::RevTreeRecord(const RevTreeRecord& other)
         : RevTree(other), _store(other._store), _rec(other._rec), _contentLoaded(other._contentLoaded) {
