@@ -1,6 +1,11 @@
 name: Sync Gateway Replication Tests
 
 on:
+  push:
+    branches:
+      - master
+      - dev
+      - 'release/*'
   pull_request:
     branches:
       - '**'
@@ -10,7 +15,6 @@ env:
 
 jobs:
   build:
-    # Build/test on Ubuntu Linux + GCC, macOS + Apple Clang, Windows + MSVC.
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
