@@ -8,3 +8,5 @@
 
 //GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
 HEADER_SEARCH_PATHS          = $(inherited)   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/fleece/Fleece/Mutable   $(SRCROOT)/../vendor/SQLiteCpp/include/   $(SRCROOT)/../vendor/fleece/vendor/   $(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp   $(SRCROOT)/../vendor/BLIP-Cpp/src/util  $(SRCROOT)/../LiteCore/Support
+
+ONLY_ACTIVE_ARCH            = YES

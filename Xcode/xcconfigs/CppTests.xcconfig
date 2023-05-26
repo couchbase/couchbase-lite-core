@@ -15,3 +15,5 @@ ONLY_ACTIVE_ARCH            = YES
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1
 
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
+
+CODE_SIGNING_ALLOWED = NO
