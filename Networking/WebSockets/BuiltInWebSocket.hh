@@ -14,6 +14,7 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "HTTPLogic.hh"
+#include "DBAccess.hh"
 #include "c4Base.hh"
 #include <atomic>
 #include <exception>
@@ -42,7 +43,7 @@ namespace litecore { namespace websocket {
         /** Client-side constructor. Call \ref connect() afterwards. */
         BuiltInWebSocket(const URL &url,
                          const Parameters&,
-                         C4Database *database);
+                         std::shared_ptr<repl::DBAccess> database);
 
         /** Server-side constructor; takes an already-connected socket that's been through the
             HTTP WebSocket handshake and is ready to send/receive frames. */
@@ -89,7 +90,7 @@ namespace litecore { namespace websocket {
         // Size of the buffer allocated for reading from the socket.
         static constexpr size_t kReadBufferSize = 32 * 1024;
 
-        Retained<C4Database> _database;                     // The database (used only for cookies)
+        std::shared_ptr<repl::DBAccess> _database;          // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         Retained<BuiltInWebSocket> _selfRetain;             // Keeps me alive while connected
         Retained<net::TLSContext> _tlsContext;              // TLS settings

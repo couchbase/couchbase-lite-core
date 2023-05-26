@@ -12,4 +12,4 @@
 //  the file licenses/APL2.txt.
 //
 
-HEADER_SEARCH_PATHS          = $(inherited)   $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/SQLiteCpp/include/
+HEADER_SEARCH_PATHS          = $(inherited)   $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/SQLiteCpp/include/   $(SRCROOT)/../C/Cpp_include

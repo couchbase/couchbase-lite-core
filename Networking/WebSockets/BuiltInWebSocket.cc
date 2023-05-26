@@ -32,7 +32,7 @@ using namespace litecore::websocket;
 void C4RegisterBuiltInWebSocket() {
     C4SocketImpl::registerInternalFactory([](websocket::URL url,
                                              fleece::alloc_slice options,
-                                             C4Database *database) -> WebSocketImpl* {
+                                             std::shared_ptr<DBAccess> database) -> WebSocketImpl* {
         return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options), database);
     });
 }
@@ -65,7 +65,7 @@ namespace litecore { namespace websocket {
     // client constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        const Parameters &parameters,
-                                       C4Database *database)
+                                       std::shared_ptr<DBAccess> database)
     :BuiltInWebSocket(url, Role::Client, parameters)
     {
         _database = database;
@@ -342,7 +342,7 @@ namespace litecore { namespace websocket {
 
 
     alloc_slice BuiltInWebSocket::cookiesForRequest(const Address &addr) {
-        alloc_slice cookies(_database->getCookies(addr));
+        alloc_slice cookies(_database->useLocked()->getCookies(addr));
 
         slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
         if (cookiesOption) {
@@ -363,7 +363,7 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
         bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
-        _database->setCookie(cookieHeader, addr.hostname, addr.path, acceptParentDomain);
+        _database->useLocked()->setCookie(cookieHeader, addr.hostname, addr.path, acceptParentDomain);
     }
 
 
