@@ -149,7 +149,7 @@ namespace {
 
     class Virt {
       public:
-        int64_t foo;
+        int64_t foo{};
         virtual ~Virt() = default;
     };
 
@@ -157,7 +157,7 @@ namespace {
         : public NonVirt
         , public fleece::InstanceCountedIn<NonVirtCounty> {
       public:
-        NonVirtCounty(int32_t b) : bar(b) {}
+        explicit NonVirtCounty(int32_t b) : NonVirt(), bar(b) {}
 
         int32_t bar;
     };
@@ -166,7 +166,7 @@ namespace {
         : public Virt
         , public fleece::InstanceCountedIn<VirtCounty> {
       public:
-        VirtCounty(int32_t b) : bar(b) {}
+        explicit VirtCounty(int32_t b) : bar(b) {}
 
         int32_t bar;
     };
@@ -241,8 +241,8 @@ namespace {
     TEST_CASE("Channel Manifest") {
         thread t[4];
         auto   actor = retained(new TestActor());
-        for ( int i = 0; i < 4; i++ ) {
-            t[i] = thread([&actor]() { actor->doot(); });
+        for ( auto& i : t ) {
+            i = thread([&actor]() { actor->doot(); });
         }
 
         actor->delayed_doot();

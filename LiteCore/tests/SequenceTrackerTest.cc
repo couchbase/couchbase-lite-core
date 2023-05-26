@@ -18,7 +18,7 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-inline alloc_slice operator"" _asl(const char* str, size_t length) { return alloc_slice(str, length); }
+inline alloc_slice operator"" _asl(const char* str, size_t length) { return {str, length}; }
 
 namespace litecore {
 
@@ -37,14 +37,14 @@ namespace litecore {
         // These methods provide access to private members of SequenceTracker
 
 #if DEBUG
-        string dump(bool verbose = false) { return tracker.dump(verbose); }
+        string dump(bool verbose = false) const { return tracker.dump(verbose); }
 #endif
 
-        SequenceTracker::const_iterator since(sequence_t s) { return tracker._since(s); }
+        SequenceTracker::const_iterator since(sequence_t s) const { return tracker._since(s); }
 
-        slice docIDAt(sequence_t s) { return tracker._docIDAt(s); }
+        slice docIDAt(sequence_t s) const { return tracker._docIDAt(s); }
 
-        SequenceTracker::const_iterator end() { return tracker.end(); }
+        SequenceTracker::const_iterator end() const { return tracker.end(); }
 
       private:
         size_t oldMinChanges;

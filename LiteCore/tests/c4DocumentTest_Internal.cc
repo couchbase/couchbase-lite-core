@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // iwyu pragma: keep
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "c4Collection.h"
@@ -27,7 +27,7 @@ using namespace fleece;
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
     C4String                  doc1 = C4STR("doc1"), doc2 = C4STR("doc2"), doc3 = C4STR("doc3");
-    auto                      toString      = [](C4SliceResult sr) { return std::string(alloc_slice(std::move(sr))); };
+    auto                      toString      = [](C4SliceResult sr) { return std::string(alloc_slice(sr)); };
     static constexpr bool     kNoBodies     = false;
     C4RemoteID                kRemoteID     = 1;
     static constexpr unsigned kMaxAncestors = 4;
@@ -39,7 +39,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         C4SliceResult ancestors[1] = {};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, kMaxAncestors, requireBodies, kRemoteID, &docID, &revID,
                                         ancestors, WITH_ERROR()));
-        return toString(std::move(ancestors[0]));
+        return toString(ancestors[0]);
     };
 
     if ( isRevTrees() ) {
@@ -57,7 +57,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         createRev(doc3, kRev3ID, kFleeceBody);
 
         // Doc I don't have yet:
-        CHECK(findDocAncestor("new"_sl, kRev3ID) == "");
+        CHECK(findDocAncestor("new"_sl, kRev3ID).empty());
 
         // Revision I already have:
         CHECK(findDocAncestor(doc1, kRev3ID) == "8");  // kRevHaveLocal | kRevSame
@@ -75,17 +75,17 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         C4Slice newRevID = "4-deadbeef"_sl;
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef"])");
+        CHECK(toString(ancestors[0]) == R"(1["3-deadbeef"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
         C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef","2-c001d00d","1-abcd"])");
-        CHECK(toString(std::move(ancestors[1])) == "8");
+        CHECK(toString(ancestors[0]) == R"(1["3-deadbeef","2-c001d00d","1-abcd"])");
+        CHECK(toString(ancestors[1]) == "8");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(std::move(ancestors[3])) == R"(3["1-abcd"])");
+        CHECK(toString(ancestors[3]) == R"(3["1-abcd"])");
 
     } else {
         // Version-vectors:
@@ -94,7 +94,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         createRev(doc3, "3@300,30@8"_sl, kFleeceBody);
 
         // Doc I don't have yet:
-        CHECK(findDocAncestor("new"_sl, "3@300,30@8"_sl) == "");
+        CHECK(findDocAncestor("new"_sl, "3@300,30@8"_sl).empty());
 
         // Revision I already have:
         CHECK(findDocAncestor(doc1, "3@100,10@8"_sl) == "0");  // kRevSame
@@ -123,17 +123,17 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         C4Slice newRevID = "11@8,3@100"_sl;
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
+        CHECK(toString(ancestors[0]) == R"(1["3@100,10@8"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
         C4String revIDs[4] = {"9@100,10@8"_sl, "3@100,10@8"_sl, C4STR("17@17"), "1@99,3@300,30@8"_sl};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
-        CHECK(alloc_slice(std::move(ancestors[1])) == "0");
+        CHECK(toString(ancestors[0]) == R"(1["3@100,10@8"])");
+        CHECK(alloc_slice(ancestors[1]) == "0");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(std::move(ancestors[3])) == R"(1["3@300,30@8"])");
+        CHECK(toString(ancestors[3]) == R"(1["3@300,30@8"])");
     }
 }
 

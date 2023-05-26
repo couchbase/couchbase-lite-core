@@ -77,7 +77,7 @@ static std::array<std::string, count> randomDigitStrings() {
 }
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.
-void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);
+void ExpectException(litecore::error::Domain, int code, const std::function<void()>& lambda);
 
 
 #include "CatchHelper.hh"
@@ -91,8 +91,8 @@ class TestFixture {
     TestFixture();
     ~TestFixture();
 
-    unsigned           warningsLogged() noexcept;
-    litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
+    unsigned                  warningsLogged() const noexcept;
+    static litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
 
     static std::string sFixturesDir;
     static FilePath    sTempDir;
@@ -110,37 +110,37 @@ class DataFileTestFixture
 
     DataFileTestFixture() : DataFileTestFixture(0) {}  // defaults to SQLite, rev-trees
 
-    DataFileTestFixture(int testOption, const DataFile::Options* options = nullptr);
-    ~DataFileTestFixture();
+    explicit DataFileTestFixture(int testOption, const DataFile::Options* options = nullptr);
+    ~DataFileTestFixture() override;
 
-    DataFile::Factory& factory();
+    static DataFile::Factory& factory();
 
     std::unique_ptr<DataFile> db;
     KeyStore*                 store{nullptr};
 
-    FilePath  databasePath(const string baseName);
-    void      deleteDatabase();
-    void      deleteDatabase(const FilePath& dbPath);
-    DataFile* newDatabase(const FilePath& path, const DataFile::Options* = nullptr);
-    void      reopenDatabase(const DataFile::Options* newOptions = nullptr);
+    FilePath    databasePath(const string& baseName);
+    void        deleteDatabase();
+    static void deleteDatabase(const FilePath& dbPath);
+    DataFile*   newDatabase(const FilePath& path, const DataFile::Options* = nullptr);
+    void        reopenDatabase(const DataFile::Options* newOptions = nullptr);
 
     static sequence_t createDoc(KeyStore&, slice docID, slice body, ExclusiveTransaction&);
 
-    sequence_t createDoc(slice docID, slice body, ExclusiveTransaction& t) {
+    sequence_t createDoc(slice docID, slice body, ExclusiveTransaction& t) const {
         return createDoc(*store, docID, body, t);
     };
 
     sequence_t writeDoc(slice docID, DocumentFlags flags, ExclusiveTransaction& t,
                         std::function<void(fleece::impl::Encoder&)> fn) {
-        return writeDoc(*store, docID, flags, t, fn);
+        return writeDoc(*store, docID, flags, t, std::move(fn));
     }
 
-    sequence_t writeDoc(KeyStore&, slice docID, DocumentFlags, ExclusiveTransaction&,
-                        std::function<void(fleece::impl::Encoder&)>);
+    static sequence_t writeDoc(KeyStore&, slice docID, DocumentFlags, ExclusiveTransaction&,
+                               const std::function<void(fleece::impl::Encoder&)>&);
 
-    virtual string databaseName() const override { return _databaseName; }
+    [[nodiscard]] string databaseName() const override { return _databaseName; }
 
-    virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
+    alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
     string _databaseName{"cbl_core_temp"};
 };

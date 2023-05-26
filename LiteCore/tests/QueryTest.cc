@@ -12,6 +12,7 @@
 
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
+#include "Benchmark.hh"
 #include <cstdint>
 #include <ctime>
 #include <cfloat>
@@ -36,10 +37,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
     IndexSpec::Options options{"en", true};
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(""_sl, "[[\".num\"]]"_sl); });
+                    [=] { store->createIndex(""_sl, R"([[".num"]])"); });
 
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options); });
+                    [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, &options); });
 
     CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
@@ -72,12 +73,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("array_1st"_sl);  // Duplicate should be no-op
     store->deleteIndex("array_2nd"_sl);
     store->deleteIndex("array_2nd"_sl);  // Duplicate should be no-op
-    CHECK(extractIndexes(store->getIndexes()) == vector<string>{});
+    CHECK(extractIndexes(store->getIndexes()).empty());
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
-    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
+    store->createIndex("nums"_sl, R"([[".numbers"]])", IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
 }
 
@@ -133,9 +134,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
         while ( e->next() ) {
             auto cols = e->columns();
             REQUIRE(e->columns().count() == 2);
-            slice      docID         = cols[0]->asString();
-            sequence_t seq           = sequence_t(cols[1]->asInt());
-            string     expectedDocID = stringWithFormat("rec-%03d", i);
+            slice  docID         = cols[0]->asString();
+            auto   seq           = sequence_t(cols[1]->asInt());
+            string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(docID == slice(expectedDocID));
             REQUIRE(seq == (sequence_t)i);
             ++i;
@@ -146,13 +147,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
         // Add an index after the first pass:
         if ( pass == 0 ) {
             Stopwatch st2;
-            store->createIndex("num"_sl, "[\".num\"]"_sl);
+            store->createIndex("num"_sl, R"([".num"])");
             st2.printReport("Index on .num", 1, "index");
         }
     }
 
     // Redundant createIndex should not fail:
-    store->createIndex("num"_sl, "[\".num\"]"_sl);
+    store->createIndex("num"_sl, R"([".num"])");
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
@@ -440,7 +441,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
             json5("{WHAT: [['TOBOOLEAN()', ['.num']]]}"),
     };
 
-    for ( auto query : queries ) {
+    for ( const auto& query : queries ) {
         Retained<Query>           q = store->compileQuery(query);
         Retained<QueryEnumerator> e = q->createEnumerator();
         REQUIRE(e->getRowCount() == 1);
@@ -1491,7 +1492,7 @@ class ArrayQueryTest : public QueryTest {
   protected:
     Retained<Query> query;
 
-    ArrayQueryTest(int option) : QueryTest(option) {}
+    explicit ArrayQueryTest(int option) : QueryTest(option) {}
 
     void checkQuery(int docNo, int expectedRowCount) {
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -1514,7 +1515,7 @@ class ArrayQueryTest : public QueryTest {
         checkQuery(88, 3);
 
         Log("-------- Creating index --------");
-        store->createIndex("numbersIndex"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
+        store->createIndex("numbersIndex"_sl, R"([[".numbers"]])", IndexSpec::kArray);
         Log("-------- Recompiling query with index --------");
         query = store->compileQuery(json);
         checkOptimized(query, checkOptimization);
@@ -2028,7 +2029,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
         REQUIRE(cols.count() == 4);
         REQUIRE(cols[2]->asDouble() == (double)5.5 / 16.5);
         REQUIRE(cols[1]->asDouble() == (double)5 / 15);
-        REQUIRE(cols[3]->asDouble() == 5 / 15);
+        // This integer division is on purpose (see above query).
+        REQUIRE(cols[3]->asDouble() == 5 / 15);  // NOLINT(bugprone-integer-division)
     }
 }
 
@@ -2487,7 +2489,7 @@ TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     // In N1QL expression, we back-quote quote it.
 
     _databaseName = "cbl.core.temp";
-    checkType(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\\\.core\\\\.temp'}]}"));
+    checkType(json5(R"({'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\.core\\.temp'}]})"));
     checkTypeN1QL("SELECT type FROM `cbl.core.temp`");
 }
 
