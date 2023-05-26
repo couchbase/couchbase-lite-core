@@ -87,7 +87,7 @@ jobs:
       if: always()
       run: |
         pushd Replicator/tests/data/docker
-        docker-compose down
+        docker compose down
         popd
 
     
