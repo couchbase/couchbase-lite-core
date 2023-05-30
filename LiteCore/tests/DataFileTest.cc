@@ -47,7 +47,8 @@ class KeyStoreTestFixture : public DataFileTestFixture {
     string keyStoreName;
 };
 
-static void check_parent(const string& full, const string& parent) {
+// Clang-Tidy suggests to make the parameters `const&`, but the parameters are modified on Windows.
+static void check_parent(string full, string parent) {  // NOLINT(performance-unnecessary-value-param)
 #ifdef _MSC_VER
     replace(full.begin(), full.end(), '/', '\\');
     replace(parent.begin(), parent.end(), '/', '\\');
