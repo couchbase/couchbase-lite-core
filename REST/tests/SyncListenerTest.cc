@@ -30,10 +30,9 @@ using namespace std;
 
 #ifdef COUCHBASE_ENTERPRISE
 
-static constexpr const char* kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US";
+static constexpr const char* kCAName = "TrustMe Root CA";
 
-static constexpr const char* kSubjectName = "localhost, O=ExampleCorp, C=US, "
-"pseudonym=3Jane";
+static constexpr const char* kSubjectName = "localhost";
 
 class C4SyncListenerTest : public ReplicatorAPITest, public ListenerHarness {
 public:
