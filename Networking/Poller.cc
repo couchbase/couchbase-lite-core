@@ -22,6 +22,12 @@
 #    include <poll.h>
 #endif
 
+#ifdef WIN32
+#    include "sockpp/platform.h"
+#    include "sockpp/tcp_acceptor.h"
+#    include "sockpp/tcp_connector.h"
+#endif
+
 #define WSLog (*(LogDomain*)kC4WebSocketLog)
 
 namespace litecore::net {
