@@ -16,7 +16,7 @@
 #include <ostream>
 #include <utility>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
     class Codec;
 
     /** An outgoing message that's been constructed by a MessageBuilder. */
@@ -26,7 +26,7 @@ namespace litecore { namespace blip {
         friend class Connection;
         friend class BLIPIO;
 
-        MessageOut(Connection* connection, FrameFlags flags, alloc_slice payload, MessageDataSource&& dataSource,
+        MessageOut(Connection* connection, FrameFlags flags, const alloc_slice& payload, MessageDataSource&& dataSource,
                    MessageNo number);
 
         MessageOut(Connection* connection, MessageBuilder& builder, MessageNo number)
@@ -40,10 +40,10 @@ namespace litecore { namespace blip {
         void nextFrameToSend(Codec& codec, fleece::slice_ostream& dst, FrameFlags& outFlags);
         void receivedAck(uint32_t byteCount);
 
-        bool needsAck() { return _unackedBytes >= kMaxUnackedBytes; }
+        bool needsAck() const { return _unackedBytes >= kMaxUnackedBytes; }
 
         MessageIn* createResponse();
-        void       disconnected();
+        void       disconnected() override;
 
         // for debugging/logging:
         std::string description();
@@ -60,12 +60,12 @@ namespace litecore { namespace blip {
         /** Manages the data (properties, body, data source) of a MessageOut. */
         class Contents {
           public:
-            Contents(alloc_slice payload, MessageDataSource dataSource);
-            slice_istream&          dataToSend();
-            bool                    hasMoreDataToSend() const;
-            std::pair<slice, slice> getPropsAndBody() const;
+            Contents(const alloc_slice& payload, MessageDataSource dataSource);
+            slice_istream&                        dataToSend();
+            [[nodiscard]] bool                    hasMoreDataToSend() const;
+            [[nodiscard]] std::pair<slice, slice> getPropsAndBody() const;
 
-            slice body() const { return _payload; }
+            [[nodiscard]] slice body() const { return _payload; }
 
           private:
             void readFromDataSource();
@@ -84,4 +84,4 @@ namespace litecore { namespace blip {
         uint32_t          _unackedBytes{0};           // Bytes transmitted for which no ack received yet
     };
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

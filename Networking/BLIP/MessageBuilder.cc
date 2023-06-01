@@ -11,10 +11,7 @@
 //
 
 #include "MessageBuilder.hh"
-#include "BLIPInternal.hh"
-#include "Codec.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
 #include "fleece/Expert.hh"
@@ -23,7 +20,7 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
 #pragma mark - MESSAGE BUILDER:
 
@@ -114,4 +111,4 @@ namespace litecore { namespace blip {
         _wroteProperties = false;
     }
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

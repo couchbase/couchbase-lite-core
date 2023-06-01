@@ -17,7 +17,6 @@
 #include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include "c4ExceptionUtils.hh"
 #include <algorithm>

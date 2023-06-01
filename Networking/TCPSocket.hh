@@ -13,8 +13,6 @@
 #pragma once
 #include "fleece/RefCounted.hh"
 #include "Address.hh"
-#include "HTTPTypes.hh"
-#include "fleece/Fleece.hh"
 #include <functional>
 #include <memory>
 #include <optional>
@@ -55,11 +53,11 @@ namespace litecore::net {
         /// Closes the socket if it's open.
         void close();
 
-        bool connected() const;
+        [[nodiscard]] bool connected() const;
 
-        operator bool() const { return connected(); }
+        explicit operator bool() const { return connected(); }
 
-        void onClose(std::function<void()>&& callback) { _onClose = move(callback); }
+        void onClose(std::function<void()>&& callback) { _onClose = std::move(callback); }
 
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
@@ -71,7 +69,7 @@ namespace litecore::net {
         fleece::Retained<crypto::Cert> peerTLSCertificate();
 
         /// Last error
-        C4Error error() const { return _error; }
+        [[nodiscard]] C4Error error() const { return _error; }
 
         //-------- READING:
 
@@ -112,7 +110,7 @@ namespace litecore::net {
         /// On error, sets the error property and returns false.
         bool readHTTPBody(const websocket::Headers& headers, fleece::alloc_slice& body) MUST_USE_RESULT;
 
-        bool atReadEOF() const { return _eofOnRead; }
+        [[nodiscard]] bool atReadEOF() const { return _eofOnRead; }
 
         //-------- WRITING:
 
@@ -128,14 +126,16 @@ namespace litecore::net {
         /// unsent bytes. (This will always be the 1st in the vector on return.)
         ssize_t write(std::vector<fleece::slice>& ioByteRanges) MUST_USE_RESULT;
 
-        bool atWriteEOF() const { return _eofOnWrite; }
+        [[nodiscard]] bool atWriteEOF() const { return _eofOnWrite; }
 
         //-------- [NON]BLOCKING AND WAITING:
 
         /// Sets read/write/connect timeout in seconds
         bool setTimeout(double secs);
 
-        double timeout() const { return _timeout; }
+        [[nodiscard]] double timeout() const { return _timeout; }
+
+        bool wrapTLS(slice hostname);
 
         /// Enables or disables non-blocking mode.
         bool setNonBlocking(bool);
@@ -148,7 +148,6 @@ namespace litecore::net {
       protected:
         bool    setSocket(std::unique_ptr<sockpp::stream_socket>);
         void    setError(C4ErrorDomain, int code, slice message = fleece::nullslice);
-        bool    wrapTLS(slice hostname);
         void    checkStreamError();
         bool    checkReadWriteStreamError();
         bool    checkSocketFailure();
@@ -157,9 +156,9 @@ namespace litecore::net {
         int     fileDescriptor();
 
       private:
-        bool                   _setTimeout(double secs);
-        sockpp::stream_socket* actualSocket() const;
-        void                   addListener(int pollerEvent /*Poller::Event*/, std::function<void()>&&);
+        bool                                 _setTimeout(double secs);
+        [[nodiscard]] sockpp::stream_socket* actualSocket() const;
+        void                                 addListener(int pollerEvent /*Poller::Event*/, std::function<void()>&&);
 
         std::unique_ptr<sockpp::stream_socket> _socket;              // The TCP (or TLS) socket
         fleece::Retained<TLSContext>           _tlsContext;          // Custom TLS context if any
@@ -182,16 +181,12 @@ namespace litecore::net {
         /// Connects to the host, synchronously. On failure throws an exception.
         bool connect(const Address& addr) MUST_USE_RESULT;
 
-        /// Wrap the existing socket in TLS, performing a handshake.
-        /// This is used after connecting to a CONNECT-type proxy, not in a normal connection.
-        bool wrapTLS(slice hostname) { return TCPSocket::wrapTLS(hostname); }
-
         /// Set a specific a network interface name (e.g. en0) for connecting to the host
         void setNetworkInterface(slice interface) { _interface = interface; }
 
       private:
         /// Get the specified network interface based on the server's address family as a scokpp's Interface.
-        std::optional<sockpp::Interface> networkInterface(uint8_t family) const;
+        [[nodiscard]] std::optional<sockpp::Interface> networkInterface(uint8_t family) const;
 
         fleece::alloc_slice _interface;  // Specific network interface
     };

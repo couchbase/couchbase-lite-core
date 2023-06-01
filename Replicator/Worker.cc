@@ -18,7 +18,6 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "fleece/PlatformCompat.hh"
-#include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include <sstream>
 #include <thread>

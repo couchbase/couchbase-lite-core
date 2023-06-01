@@ -11,9 +11,9 @@
 //
 
 #pragma once
-#include <stdint.h>
+#include <cstdint>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     // See "docs/BLIP Protocol.md"
 
@@ -41,4 +41,4 @@ namespace litecore { namespace blip {
 
     // Implementation-imposed max encoded size of message properties (not part of protocol)
     constexpr uint64_t kMaxPropertiesSize = 100 * 1024;
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

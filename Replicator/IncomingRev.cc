@@ -20,7 +20,6 @@
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
 #include "Instrumentation.hh"
-#include "BLIP.hh"
 #include "fleece/Mutable.hh"
 #include <atomic>
 #include <deque>

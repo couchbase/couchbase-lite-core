@@ -118,7 +118,7 @@ namespace litecore::repl {
                 this, "connect", std::string("_factory.open is ") + (_factory.open == nullptr ? "null" : "set"));
         if ( _factory.open ) {
             net::Address c4addr(url());
-            _factory.open(this, &c4addr, options().data(), _factory.context);
+            _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
         }
     }
 

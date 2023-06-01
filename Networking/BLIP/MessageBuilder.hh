@@ -18,7 +18,7 @@
 #include <utility>
 #include <sstream>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     /** A callback to provide data for an outgoing message. When called, it should copy data
         to the location in the `buf` parameter, with a maximum length of `capacity`. It should
@@ -42,13 +42,13 @@ namespace litecore { namespace blip {
         typedef std::pair<slice, slice> property;
 
         /** Constructs a MessageBuilder for a request, optionally setting its Profile property. */
-        MessageBuilder(slice profile = fleece::nullslice);
+        explicit MessageBuilder(slice profile = fleece::nullslice);
 
         /** Constructs a MessageBuilder for a request, with a list of properties. */
         MessageBuilder(std::initializer_list<property>);
 
         /** Constructs a MessageBuilder for a response. */
-        MessageBuilder(MessageIn* inReplyTo);
+        explicit MessageBuilder(MessageIn* inReplyTo);
 
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
@@ -108,7 +108,7 @@ namespace litecore { namespace blip {
 
         FrameFlags  flags() const;
         alloc_slice finish();
-        void        writeTokenizedString(std::ostream& out, slice str);
+        static void writeTokenizedString(std::ostream& out, slice str);
 
         MessageType type{kRequestType};
 
@@ -120,4 +120,4 @@ namespace litecore { namespace blip {
         bool                _wroteProperties{false};  // Have _properties been written to _out yet?
     };
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

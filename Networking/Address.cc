@@ -13,21 +13,22 @@
 // NOTE: This class is used in the C4Tests, which link against the LiteCore DLL,
 // so it cannot use the LiteCore C++ API.
 
+#include <utility>
+
 #include "Address.hh"
 #include "c4Database.h"
 #include "c4Replicator.h"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.hh"
 
 using namespace std;
 using namespace fleece;
 using namespace litecore;
 
-namespace litecore { namespace net {
+namespace litecore::net {
 
-    Address::Address(const alloc_slice& url) : _url(url) {
-        if ( !c4address_fromURL(_url, this, nullptr) ) error::_throw(error::Network, kC4NetErrInvalidURL);
+    Address::Address(alloc_slice url) : _url(std::move(url)), _c4address{} {
+        if ( !c4address_fromURL(_url, &_c4address, nullptr) ) error::_throw(error::Network, kC4NetErrInvalidURL);
     }
 
     Address::Address(const C4Address& addr) : Address(alloc_slice(c4address_toURL(addr))) {}
@@ -44,11 +45,7 @@ namespace litecore { namespace net {
     Address::Address(slice scheme, slice hostname, uint16_t port, slice uri)
         : Address(mkAddr(scheme, hostname, port, uri)) {}
 
-    Address& Address::operator=(const Address& other) {
-        *((C4Address*)this) = other;
-        _url                = other._url;
-        return *this;
-    }
+    Address& Address::operator=(const Address& other) = default;
 
     static alloc_slice dbURL(C4Database* db) {
         alloc_slice path(c4db_getPath(db));
@@ -79,4 +76,4 @@ namespace litecore { namespace net {
                && (path.size == basePath.size || path[basePath.size] == '/' || basePath[basePath.size - 1] == '/');
     }
 
-}}  // namespace litecore::net
+}  // namespace litecore::net

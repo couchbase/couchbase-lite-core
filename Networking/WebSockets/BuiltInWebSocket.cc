@@ -123,7 +123,7 @@ namespace litecore { namespace websocket {
             stringstream name;
             name << "CBL WebSocket " << (role() == Role::Client ? "to " : "from ");
             Address addr(url());
-            name << addr.hostname << ":" << addr.port;
+            name << addr.hostname() << ":" << addr.port();
             SetThreadName(name.str().c_str());
         }
 
@@ -323,7 +323,7 @@ namespace litecore { namespace websocket {
             if ( cookiesOption ) {
                 Address dstAddr(url());
                 bool    acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
-                Cookie  ck(string(cookiesOption), string(slice(dstAddr.hostname)), string(slice(dstAddr.path)),
+                Cookie  ck(string(cookiesOption), string(slice(dstAddr.hostname())), string(slice(dstAddr.path())),
                            acceptParentDomain);
                 if ( ck.valid() && ck.matches(addr) && !ck.expired() ) {
                     if ( cookies ) cookies.append("; "_sl);
@@ -335,7 +335,7 @@ namespace litecore { namespace websocket {
 
         void BuiltInWebSocket::setCookie(const Address& addr, slice cookieHeader) {
             bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
-            _database->useLocked()->setCookie(cookieHeader, addr.hostname, addr.path, acceptParentDomain);
+            _database->useLocked()->setCookie(cookieHeader, addr.hostname(), addr.path(), acceptParentDomain);
         }
 
 #pragma mark - I/O:
