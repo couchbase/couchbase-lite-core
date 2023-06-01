@@ -13,9 +13,7 @@
 #pragma once
 #include "DataFile.hh"
 #include "Query.hh"
-#include "Error.hh"
 #include "FleeceImpl.hh"
-#include "Benchmark.hh"
 #include "StringUtil.hh"
 
 #include "LiteCoreTest.hh"
@@ -42,7 +40,7 @@ class QueryTest : public DataFileTestFixture {
     static unsigned alter2;
     static unsigned alter3;
 
-    QueryTest(int option) {
+    explicit QueryTest(int option) {
         static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
         logSection(kSectionNames[option]);
         unsigned jump;
@@ -59,12 +57,14 @@ class QueryTest : public DataFileTestFixture {
                 collectionName = "scopey.subsidiary";
                 store          = &db->getKeyStore(".scopey.subsidiary");
                 break;
+            default:
+                Assert(false, "Test option out of valid range");
         }
     }
 
-    void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
+    static void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
 
-    string numberString(int n) {
+    static string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two",   "three", "four",
                                          "five", "six", "seven", "eight", "nine"};
         string             str;
@@ -189,13 +189,13 @@ class QueryTest : public DataFileTestFixture {
         t.commit();
     }
 
-    std::vector<std::string> extractIndexes(std::vector<IndexSpec> indexes) {
+    static std::vector<std::string> extractIndexes(const std::vector<IndexSpec>& indexes) {
         std::set<std::string> retVal;
         for ( auto& i : indexes ) retVal.insert(i.name);
-        return std::vector<std::string>(retVal.begin(), retVal.end());
+        return {retVal.begin(), retVal.end()};
     }
 
-    int64_t rowsInQuery(string json) {
+    int64_t rowsInQuery(const string& json) {
         Retained<Query>           query = store->compileQuery(json);
         Retained<QueryEnumerator> e(query->createEnumerator());
         return e->getRowCount();
@@ -217,7 +217,7 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
-    void checkOptimized(Query* query, bool expectOptimized = true) {
+    static void checkOptimized(Query* query, bool expectOptimized = true) {
         string explanation = query->explain();
         Log("Query:\n%s", explanation.c_str());
         auto optimized = (explanation.find("SCAN") == string::npos);

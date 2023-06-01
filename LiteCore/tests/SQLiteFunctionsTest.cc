@@ -32,7 +32,7 @@ class SQLiteFunctionsTest
   public:
     static constexpr int numberOfOptions = 2;
 
-    SQLiteFunctionsTest(int which) : db(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
+    explicit SQLiteFunctionsTest(int which) : db(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
         // Run test once with shared keys, once without:
         if ( which & 1 ) sharedKeys = new SharedKeys();
         RegisterSQLiteFunctions(db.getHandle(), {this, sharedKeys});
@@ -48,9 +48,9 @@ class SQLiteFunctionsTest
         insertStmt->reset();
     }
 
-    virtual string databaseName() const override { return "db"; }
+    [[nodiscard]] string databaseName() const override { return "db"; }
 
-    virtual alloc_slice blobAccessor(const Dict* blob) const override {
+    alloc_slice blobAccessor(const Dict* blob) const override {
         auto digestProp = blob->get("digest"_sl);
         if ( !digestProp ) return {};
         slice digest = digestProp->asString();
@@ -68,11 +68,11 @@ class SQLiteFunctionsTest
         while ( each.executeStep() ) {
             auto column = each.getColumn(0);
             if ( column.getType() == SQLITE_NULL ) {
-                results.push_back("MISSING");
+                results.emplace_back("MISSING");
             } else if ( column.getType() == SQLITE_BLOB && column.getBytes() == 0 ) {
-                results.push_back("null");
+                results.emplace_back("null");
             } else {
-                results.push_back(each.getColumn(0).getText());
+                results.emplace_back(each.getColumn(0).getText());
             }
         }
         return results;
@@ -90,11 +90,11 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains", "[Query]") {
     // fl_contains is called for the ANY operator when the condition is a simple equality test
     insert("one", "{\"hey\": [1, 2, 3, 4]}");
     insert("two", "{\"hey\": [2, 4, 6, 8]}");
-    insert("three", "{\"hey\": [1, \"T\", \"4\", []]}");
-    insert("four", "{\"hey\": [1, \"T\", 3.15,   []]}");
-    insert("five", "{\"hey\": {\"a\": \"bar\", \"b\": 4}}");  // ANY supports dicts!
-    insert("xorp", "{\"hey\": \"oops\"}");
-    insert("yerg", "{\"xxx\": [1, \"T\", 3.1416, []]}");
+    insert("three", R"({"hey": [1, "T", "4", []]})");
+    insert("four", R"({"hey": [1, "T", 3.15,   []]})");
+    insert("five", R"({"hey": {"a": "bar", "b": 4}})");  // ANY supports dicts!
+    insert("xorp", R"({"hey": "oops"})");
+    insert("yerg", R"({"xxx": [1, "T", 3.1416, []]})");
 
     CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 4)") == (vector<string>{"one", "two", "five"}));
     CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 'T')") == (vector<string>{"three", "four"}));
@@ -104,7 +104,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_sum of fl_value", "[Qu
     insert("a", "{\"hey\": [1, 2, 3, 4]}");
     insert("b", "{\"hey\": [2, 4, 6, 8]}");
     insert("c", "{\"hey\": []}");
-    insert("d", "{\"hey\": [1, 2, true, \"foo\"]}");
+    insert("d", R"({"hey": [1, 2, true, "foo"]})");
     insert("e", "{\"xxx\": [1, 2, 3, 4]}");
 
     CHECK(query("SELECT ARRAY_SUM(fl_value(body, 'hey')) FROM kv")
@@ -115,7 +115,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_avg of fl_value", "[Qu
     insert("a", "{\"hey\": [1, 2, 3, 4]}");
     insert("b", "{\"hey\": [2, 4, 6, 8]}");
     insert("c", "{\"hey\": []}");
-    insert("d", "{\"hey\": [1, 2, true, \"foo\"]}");
+    insert("d", R"({"hey": [1, 2, true, "foo"]})");
     insert("e", "{\"xxx\": [1, 2, 3, 4]}");
 
     CHECK(query("SELECT ARRAY_AVG(fl_value(body, 'hey')) FROM kv")
@@ -123,12 +123,12 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_avg of fl_value", "[Qu
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value", "[Query]") {
-    insert("a", "{\"hey\": [1, 1, 2, true, true, 4, \"bar\"]}");
+    insert("a", R"({"hey": [1, 1, 2, true, true, 4, "bar"]})");
     insert("b", "{\"hey\": [1, 1, 2, true, true, 4]}");
-    insert("c", "{\"hey\": [1, 1, 2, \"4\", \"bar\"]}");
-    insert("e", "{\"hey\": {\"a\": \"bar\", \"b\": 1}}");  // array_contains doesn't match dicts!
-    insert("f", "{\"hey\": \"bar\"}");
-    insert("d", "{\"xxx\": [1, 1, 2, \"bar\"]}");
+    insert("c", R"({"hey": [1, 1, 2, "4", "bar"]})");
+    insert("e", R"({"hey": {"a": "bar", "b": 1}})");  // array_contains doesn't match dicts!
+    insert("f", R"({"hey": "bar"})");
+    insert("d", R"({"xxx": [1, 1, 2, "bar"]})");
     insert("g", "{\"hey\": [true, 0]}");
     insert("h", "{\"hey\": [false, 1]}");
 
@@ -160,13 +160,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value",
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_ifnull of fl_value", "[Query]") {
-    insert("a", "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
+    insert("a", R"({"hey": [null, null, 2, true, true, 4, "bar"]})");
 
     CHECK(query("SELECT ARRAY_IFNULL(fl_value(body, 'hey')) FROM kv") == (vector<string>{"2"}));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_min_max of fl_value", "[Query]") {
-    insert("a", "{\"hey\": [1, 4, 3, -50, 10, 4, \"bar\"]}");
+    insert("a", R"({"hey": [1, 4, 3, -50, 10, 4, "bar"]})");
 
     CHECK(query("SELECT ARRAY_MAX(fl_value(body, 'hey')) FROM kv") == (vector<string>{"10.0"}));
     CHECK(query("SELECT ARRAY_MIN(fl_value(body, 'hey')) FROM kv") == (vector<string>{"-50.0"}));
@@ -175,17 +175,17 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_min_max of fl_value", 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
     insert("a", "{\"hey\": 17}");
     insert("b", "{\"hey\": 8.125}");
-    insert("c", "{\"hey\": \"there\"}");
+    insert("c", R"({"hey": "there"})");
     insert("c", "{\"hey\": null}");
     insert("d", "{}");
-    insert("e", "{\"hey\": [99, -5.5, \"wow\"]}");
+    insert("e", R"({"hey": [99, -5.5, "wow"]})");
     insert("f", "{\"hey\": 8.125}");
 
     const char* sql          = "SELECT ARRAY_AGG(fl_value(body, 'hey')) FROM kv";
-    slice       expectedJSON = "[17,8.125,\"there\",null,[99,-5.5,\"wow\"],8.125]"_sl;
+    slice       expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"],8.125])";
     SECTION("Distinct") {
         sql          = "SELECT ARRAY_AGG(DISTINCT fl_value(body, 'hey')) FROM kv";
-        expectedJSON = "[17,8.125,\"there\",null,[99,-5.5,\"wow\"]]"_sl;
+        expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"]])";
     }
     SQLite::Statement st(db, sql);
     REQUIRE(st.executeStep());
@@ -200,7 +200,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL missingif/nullif", "[Query]") {
-    insert("a", "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
+    insert("a", R"({"hey": [null, null, 2, true, true, 4, "bar"]})");
 
     CHECK(query("SELECT MISSINGIF('5', '5') FROM kv") == (vector<string>{"MISSING"}));
     CHECK(query("SELECT MISSINGIF(5, 5.0) FROM kv")  // compare int with float
@@ -236,9 +236,9 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[Query][fl_
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[Query][fl_each]") {
-    insert("a", "{\"one\": 1, \"two\": 2, \"three\": 3}");
-    insert("b", "{\"one\": 2, \"two\": 4, \"three\": 6}");
-    insert("c", "{\"one\": 3, \"two\": 6, \"three\": 9}");
+    insert("a", R"({"one": 1, "two": 2, "three": 3})");
+    insert("b", R"({"one": 2, "two": 4, "three": 6})");
+    insert("c", R"({"one": 3, "two": 6, "three": 9})");
 
     CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'c' ORDER BY fl_each.value")
           == (vector<string>{"3", "6", "9"}));
@@ -257,7 +257,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[Query]
 
     CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'one'")
           == (vector<string>{"1", "2", "3", "4"}));
-    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'three'") == (vector<string>{}));
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'three'").empty());
     CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, 'hey') WHERE fl_each.value = 3")
           == (vector<string>{"one"}));
 }
@@ -294,7 +294,7 @@ static void testTrim(const char16_t* str, int onSide, int leftTrimmed, int right
     CHECK(newLength == max(0l, (long)length - leftTrimmed - rightTrimmed));
 }
 
-static void testTrim(const char16_t* str, unsigned leftTrimmed, unsigned rightTrimmed) {
+static void testTrim(const char16_t* str, int leftTrimmed, int rightTrimmed) {
     testTrim(str, -1, leftTrimmed, 0);
     testTrim(str, 0, leftTrimmed, rightTrimmed);
     testTrim(str, 1, 0, rightTrimmed);
@@ -375,9 +375,9 @@ TEST_CASE("Unicode collation", "[Query][Collation]") {
     struct {
         slice a;
         slice b;
-        int   result;
-        bool  caseSensitive;
-        bool  diacriticSensitive;
+        int   result{};
+        bool  caseSensitive{};
+        bool  diacriticSensitive{};
     } tests[] = {//---- First, test just ASCII:
 
                  // Edge cases: empty and 1-char strings
@@ -481,10 +481,10 @@ TEST_CASE("Unicode locale collation", "[Query][Collation]") {
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collation]") {
     CollationContextVector contexts;
     RegisterSQLiteUnicodeCollations(db.getHandle(), contexts);
-    insert("a", "{\"hey\": \"Apple\"}");
-    insert("b", "{\"hey\": \"Aardvark\"}");
+    insert("a", R"({"hey": "Apple"})");
+    insert("b", R"({"hey": "Aardvark"})");
     insert("c", "{\"hey\": \"Ångström\"}");
-    insert("d", "{\"hey\": \"Zebra\"}");
+    insert("d", R"({"hey": "Zebra"})");
     insert("d", "{\"hey\": \"äpple\"}");
 
     {

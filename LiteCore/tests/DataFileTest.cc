@@ -16,7 +16,6 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "FleeceImpl.hh"
-#include "Benchmark.hh"
 #include "SecureRandomize.hh"
 #ifndef _MSC_VER
 #    include <sys/stat.h>
@@ -34,7 +33,7 @@ class KeyStoreTestFixture : public DataFileTestFixture {
   public:
     static const int numberOfOptions = 2;
 
-    KeyStoreTestFixture(int option) {
+    explicit KeyStoreTestFixture(int option) {
         if ( option == 0 ) {
             // On the first pass use a non-Both KeyStore
             keyStoreName = "test";
@@ -48,7 +47,8 @@ class KeyStoreTestFixture : public DataFileTestFixture {
     string keyStoreName;
 };
 
-static void check_parent(string full, string parent) {
+// Clang-Tidy suggests to make the parameters `const&`, but the parameters are modified on Windows.
+static void check_parent(string full, string parent) {  // NOLINT(performance-unnecessary-value-param)
 #ifdef _MSC_VER
     replace(full.begin(), full.end(), '/', '\\');
     replace(parent.begin(), parent.end(), '/', '\\');
@@ -634,14 +634,14 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
         t.commit();
     }
 
-    int64_t oldSize = db->fileSize();
+    uint64_t oldSize = db->fileSize();
 
     SECTION("Close & reopen (incremental vacuum on close)") { reopenDatabase(); }
     SECTION("Compact database (vacuum)") { db->maintenance(DataFile::kCompact); }
 
-    int64_t newSize = db->fileSize();
-    Log("File size went from %" PRIi64 " to %" PRIi64, oldSize, newSize);
-    CHECK(newSize < oldSize - 100000);
+    uint64_t newSize = db->fileSize();
+    Log("File size went from %" PRIu64 " to %" PRIu64, oldSize, newSize);
+    CHECK((oldSize > 100000 && newSize < oldSize - 100000));
 }
 
 TEST_CASE("CanonicalPath") {
@@ -831,7 +831,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
     // For https://github.com/couchbase/couchbase-lite-core/issues/528
     Encoder       enc;
     JSONConverter converter(enc);
-    bool          ok = converter.encodeJSON("{\"foo\":\"Hello\\u0000There\"}"_sl);
+    bool          ok = converter.encodeJSON(R"({"foo":"Hello\u0000There"})");
     INFO("JSONConverter error " << converter.errorCode() << " '" << converter.errorMessage() << "' at pos "
                                 << converter.errorPos());
     REQUIRE(ok);
