@@ -21,5 +21,3 @@ OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 
 ONLY_ACTIVE_ARCH            = YES
 LLVM_LTO                    = NO    // LTO makes tests very slow to link
-
-CODE_SIGNING_ALLOWED = NO
