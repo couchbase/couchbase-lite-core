@@ -25,7 +25,6 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "Headers.hh"
-#include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"

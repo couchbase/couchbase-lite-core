@@ -18,7 +18,7 @@
 #include <atomic>
 #include <functional>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
     class BLIPIO;
     class ConnectionDelegate;
     class MessageOut;
@@ -75,13 +75,13 @@ namespace litecore { namespace blip {
 
         State state() { return _state; }
 
-        virtual std::string loggingIdentifier() const override { return _name; }
+        std::string loggingIdentifier() const override { return _name; }
 
         /** Exposed only for testing. */
         websocket::WebSocket* webSocket() const;
 
       protected:
-        virtual ~Connection();
+        ~Connection() override;
 
         friend class MessageIn;
         friend class BLIPIO;
@@ -90,7 +90,7 @@ namespace litecore { namespace blip {
         void gotHTTPResponse(int status, const websocket::Headers& headers);
         void gotTLSCertificate(slice certData);
         void connected();
-        void closed(CloseStatus);
+        void closed(const CloseStatus&);
 
       private:
         std::string                              _name;
@@ -130,4 +130,4 @@ namespace litecore { namespace blip {
         virtual void onRequestReceived(MessageIn* request) { request->notHandled(); }
     };
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

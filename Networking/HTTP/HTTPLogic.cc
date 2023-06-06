@@ -38,7 +38,7 @@ namespace litecore { namespace net {
     HTTPLogic::HTTPLogic(const Address& address, bool handleRedirects)
         : _address(address)
         , _handleRedirects(handleRedirects)
-        , _isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
+        , _isWebSocket(address.scheme() == "ws"_sl || address.scheme() == "wss"_sl)
         , _proxy(sDefaultProxy) {}
 
     HTTPLogic::HTTPLogic(const Address& address, const websocket::Headers& requestHeaders, bool handleRedirects)
@@ -85,19 +85,19 @@ namespace litecore { namespace net {
         stringstream rq;
         if ( connectingToProxy() ) {
             // CONNECT proxy: https://tools.ietf.org/html/rfc7231#section-4.3.6
-            rq << "CONNECT " << string(slice(_address.hostname)) << ":" << _address.port;
+            rq << "CONNECT " << string(slice(_address.hostname())) << ":" << _address.port();
         } else {
             rq << MethodName(_method) << " ";
             if ( _proxy && _proxy->type == ProxyType::HTTP ) rq << string(_address.url());
             else
-                rq << string(slice(_address.path));
+                rq << string(slice(_address.path()));
         }
 
         rq << " HTTP/1.1\r\n"
               "Host: "
-           << string(slice(_address.hostname));
+           << string(slice(_address.hostname()));
         // Omit port from header if using standard ports
-        if ( _address.port != 80 && _address.port != 443 ) { rq << ':' << _address.port; }
+        if ( _address.port() != 80 && _address.port() != 443 ) { rq << ':' << _address.port(); }
 
         rq << "\r\n";
 
@@ -246,7 +246,7 @@ namespace litecore { namespace net {
             if ( _proxy ) return failure();
             _proxy = ProxySpec(ProxyType::HTTP, newAddr);
         } else {
-            if ( newAddr.hostname != _address.hostname ) _authHeader = nullslice;
+            if ( newAddr.hostname != _address.hostname() ) _authHeader = nullslice;
             _address = Address(newAddr);
         }
         return kRetry;
@@ -315,7 +315,7 @@ namespace litecore { namespace net {
         bool connected;
         if ( _lastDisposition == kContinue ) {
             Assert(socket.connected());
-            connected = !_address.isSecure() || socket.wrapTLS(_address.hostname);
+            connected = !_address.isSecure() || socket.wrapTLS(_address.hostname());
         } else {
             Assert(!socket.connected());
             connected = socket.connect(directAddress());

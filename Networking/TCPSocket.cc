@@ -14,20 +14,18 @@
 #include "TLSContext.hh"
 #include "Poller.hh"
 #include "Headers.hh"
-#include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "NetworkInterfaces.hh"
 #include "WebSocketInterface.hh"
-#include "SecureRandomize.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
 #include "sockpp/exception.h"
+#include "sockpp/inet_address.h"
 #include "sockpp/inet6_address.h"
-#include "sockpp/tcp_acceptor.h"
 #include "sockpp/connector.h"
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
-#include "PlatformIO.hh"
+#include "sockpp/tcp_socket.h"
+#include "NumConversion.hh"
 #include "c4ExceptionUtils.hh"  // for ExpectingExceptions
 #include "slice_stream.hh"
 #include <chrono>
@@ -40,7 +38,7 @@
 #include "mbedtls/ssl.h"
 #pragma clang diagnostic pop
 
-namespace litecore { namespace net {
+namespace litecore::net {
     using namespace std;
     using namespace fleece;
     using namespace sockpp;
@@ -67,7 +65,7 @@ namespace litecore { namespace net {
 
     bool TCPSocket::setSocket(unique_ptr<stream_socket> socket) {
         Assert(!_socket);
-        _socket = move(socket);
+        _socket = std::move(socket);
         if ( !checkSocketFailure() ) return false;
         _setTimeout(_timeout);
         return true;
@@ -78,9 +76,9 @@ namespace litecore { namespace net {
     bool TCPSocket::wrapTLS(slice hostname) {
         if ( !_tlsContext ) _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
-        auto   oldSocket = move(_socket);
+        auto   oldSocket = std::move(_socket);
         return setSocket(_tlsContext->_context->wrap_socket(
-                move(oldSocket), (_isClient ? tls_context::CLIENT : tls_context::SERVER), hostnameStr.c_str()));
+                std::move(oldSocket), (_isClient ? tls_context::CLIENT : tls_context::SERVER), hostnameStr));
     }
 
     bool TCPSocket::connected() const { return _socket && !_socket->is_shutdown(); }
@@ -130,7 +128,7 @@ namespace litecore { namespace net {
     ClientSocket::ClientSocket(TLSContext* tls) : TCPSocket(true, tls) {}
 
     bool ClientSocket::connect(const Address& addr) {
-        string hostname(slice(addr.hostname));
+        string hostname(slice(addr.hostname()));
 
         optional<IPAddress> ipAddr = IPAddress::parse(hostname);
 
@@ -141,10 +139,10 @@ namespace litecore { namespace net {
             unique_ptr<sock_address> sockAddr;
             if ( ipAddr ) {
                 // hostname is numeric, either IPv4 or IPv6:
-                sockAddr = ipAddr->sockppAddress(addr.port);
+                sockAddr = ipAddr->sockppAddress(addr.port());
             } else {
                 // Otherwise it's a DNS name; let sockpp resolve it:
-                sockAddr = make_unique<inet_address>(hostname, addr.port);
+                sockAddr = make_unique<inet_address>(hostname, addr.port());
             }
 
             socket = make_unique<connector>();
@@ -161,7 +159,7 @@ namespace litecore { namespace net {
             return false;
         }
 
-        return setSocket(move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
+        return setSocket(std::move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname()));
     }
 
     optional<sockpp::Interface> ClientSocket::networkInterface(uint8_t family) const {
@@ -215,9 +213,9 @@ namespace litecore { namespace net {
 
     ResponderSocket::ResponderSocket(TLSContext* tls) : TCPSocket(false, tls) {}
 
-    bool ResponderSocket::acceptSocket(stream_socket&& s) { return setSocket(make_unique<tcp_socket>(move(s))); }
+    bool ResponderSocket::acceptSocket(stream_socket&& s) { return setSocket(make_unique<tcp_socket>(std::move(s))); }
 
-    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) { return setSocket(move(socket)); }
+    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) { return setSocket(std::move(socket)); }
 
 #pragma mark - READ/WRITE:
 
@@ -258,10 +256,10 @@ namespace litecore { namespace net {
 
         ssize_t remaining = written;
         for ( auto i = ioByteRanges.begin(); i != ioByteRanges.end(); ++i ) {
-            remaining -= i->size;
+            remaining -= narrow_cast<ssize_t>(i->size);
             if ( remaining < 0 ) {
                 // This slice was only partly written (or unwritten). Adjust its start:
-                i->moveStart(i->size + remaining);
+                i->moveStart(narrow_cast<ptrdiff_t>(i->size) + remaining);
                 // Remove all prior slices:
                 ioByteRanges.erase(ioByteRanges.begin(), i);
                 return written;
@@ -303,7 +301,7 @@ namespace litecore { namespace net {
             memmove((void*)_unread.offset(0), _unread.offset(n), _unreadLen - n);
             _unreadLen -= n;
             if ( _unreadLen == 0 ) _unread = nullslice;
-            return n;
+            return narrow_cast<ssize_t>(n);
         } else {
             return _read(dst, byteCount);
         }
@@ -311,7 +309,7 @@ namespace litecore { namespace net {
 
     // Read exactly `byteCount` bytes from the socket (or the unread buffer)
     ssize_t TCPSocket::readExactly(void* dst, size_t byteCount) {
-        ssize_t remaining = byteCount;
+        auto remaining = narrow_cast<ssize_t>(byteCount);
         while ( remaining > 0 ) {
             auto n = read(dst, remaining);
             if ( n < 0 ) return n;
@@ -322,7 +320,7 @@ namespace litecore { namespace net {
             remaining -= n;
             dst = offsetby(dst, n);
         }
-        return byteCount;
+        return narrow_cast<ssize_t>(byteCount);
     }
 
     // Read up to the given delimiter.
@@ -468,15 +466,15 @@ namespace litecore { namespace net {
             return -1;
     }
 
-    void TCPSocket::onReadable(function<void()> listener) { addListener(Poller::kReadable, move(listener)); }
+    void TCPSocket::onReadable(function<void()> listener) { addListener(Poller::kReadable, std::move(listener)); }
 
-    void TCPSocket::onWriteable(function<void()> listener) { addListener(Poller::kWriteable, move(listener)); }
+    void TCPSocket::onWriteable(function<void()> listener) { addListener(Poller::kWriteable, std::move(listener)); }
 
-    void TCPSocket::onDisconnect(function<void()> listener) { addListener(Poller::kDisconnected, move(listener)); }
+    void TCPSocket::onDisconnect(function<void()> listener) { addListener(Poller::kDisconnected, std::move(listener)); }
 
     void TCPSocket::addListener(int event, function<void()>&& listener) {
         if ( int fd = fileDescriptor(); fd >= 0 )
-            Poller::instance().addListener(fd, Poller::Event(event), move(listener));
+            Poller::instance().addListener(fd, Poller::Event(event), std::move(listener));
     }
 
     void TCPSocket::cancelCallbacks() {
@@ -636,4 +634,4 @@ namespace litecore { namespace net {
         checkStreamError();
         return true;
     }
-}}  // namespace litecore::net
+}  // namespace litecore::net

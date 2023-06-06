@@ -22,7 +22,6 @@
 #include "c4Private.h"
 #include "c4Document.hh"
 #include "c4ReplicatorTypes.h"
-#include "BLIP.hh"
 
 using namespace std;
 using namespace fleece;

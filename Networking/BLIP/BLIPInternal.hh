@@ -13,8 +13,8 @@
 #pragma once
 #include "Logging.hh"
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     extern LogDomain BLIPLog;
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

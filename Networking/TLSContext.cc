@@ -13,23 +13,21 @@
 #include "TLSContext.hh"
 #include "Certificate.hh"
 #include "Logging.hh"
-#include "WebSocketInterface.hh"
 #include "sockpp/mbedtls_context.h"
-#include "mbedtls/debug.h"
 #include <string>
 
 using namespace std;
 using namespace sockpp;
 using namespace fleece;
 
-namespace litecore { namespace net {
+namespace litecore::net {
     using namespace crypto;
 
     TLSContext::TLSContext(role_t role)
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](string certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [this](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #endif
 
         // Set up mbedTLS logging. mbedTLS log levels are numbered:
@@ -96,7 +94,7 @@ namespace litecore { namespace net {
 
         _onlySelfSigned = onlySelfSigned;
         if ( onlySelfSigned ) {
-            _context->set_root_cert_locator([](string certStr, string& rootStr) {
+            _context->set_root_cert_locator([](const string& certStr, string& rootStr) {
                 // Don't return any CA certs, have those all fail
                 return true;
             });
@@ -110,7 +108,7 @@ namespace litecore { namespace net {
         }
     }
 
-    void TLSContext::setCertAuthCallback(std::function<bool(fleece::slice)> callback) {
+    void TLSContext::setCertAuthCallback(const std::function<bool(fleece::slice)>& callback) {
         _context->set_auth_callback([=](const string& certData) { return callback(slice(certData)); });
 
         resetRootCertFinder();
@@ -128,11 +126,11 @@ namespace litecore { namespace net {
     void TLSContext::resetRootCertFinder() {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](string certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [this](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #else
         _context->set_root_cert_locator(nullptr);
 #endif
     }
 
 
-}}  // namespace litecore::net
+}  // namespace litecore::net

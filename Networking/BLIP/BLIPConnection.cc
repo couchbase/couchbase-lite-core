@@ -24,11 +24,13 @@
 #include "varint.hh"
 #include "fleece/PlatformCompat.hh"
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <map>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -36,7 +38,7 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::websocket;
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     static const size_t kDefaultFrameSize = 4096;   // Default size of frame
     static const size_t kBigFrameSize     = 16384;  // Max size of frame
@@ -53,11 +55,11 @@ namespace litecore { namespace blip {
       public:
         MessageQueue() = default;
 
-        MessageQueue(size_t rsrv) { reserve(rsrv); }
+        explicit MessageQueue(size_t rsrv) { reserve(rsrv); }
 
         bool contains(MessageOut* msg) const { return find(begin(), end(), msg) != end(); }
 
-        MessageOut* findMessage(MessageNo msgNo, bool isResponse) const {
+        [[nodiscard]] MessageOut* findMessage(MessageNo msgNo, bool isResponse) const {
             auto i = find_if(begin(), end(), [&](const Retained<MessageOut>& msg) {
                 return msg->number() == msgNo && msg->isResponse() == isResponse;
             });
@@ -139,7 +141,7 @@ namespace litecore { namespace blip {
         }
 
         void setRequestHandler(std::string profile, bool atBeginning, Connection::RequestHandler handler) {
-            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_setRequestHandler), profile, atBeginning, handler);
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_setRequestHandler), std::move(profile), atBeginning, std::move(handler));
         }
 
         void close(CloseCode closeCode = kCodeNormal, slice message = nullslice) {
@@ -148,13 +150,14 @@ namespace litecore { namespace blip {
 
         WebSocket* webSocket() const { return _webSocket; }
 
-        virtual std::string loggingIdentifier() const override {
-            return _connection ? _connection->name() : Logging::loggingIdentifier();
+        std::string loggingIdentifier() const override {
+            return _connection ? _connection->name()
+                               : Logging::loggingIdentifier();  // NOLINT(bugprone-parent-virtual-call)
         }
 
 
       protected:
-        ~BLIPIO() {
+        ~BLIPIO() override {
             LogTo(SyncLog,
                   "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64
                   " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
@@ -163,26 +166,26 @@ namespace litecore { namespace blip {
             logStats();
         }
 
-        virtual void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {
+        void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {
             _connection->gotHTTPResponse(status, headers);
         }
 
-        virtual void onWebSocketGotTLSCertificate(slice certData) override { _connection->gotTLSCertificate(certData); }
+        void onWebSocketGotTLSCertificate(slice certData) override { _connection->gotTLSCertificate(certData); }
 
         // websocket::Delegate interface:
-        virtual void onWebSocketConnect() override {
+        void onWebSocketConnect() override {
             _timeOpen.reset();
             _connection->connected();
             onWebSocketWriteable();
         }
 
-        virtual void onWebSocketClose(websocket::CloseStatus status) override {
+        void onWebSocketClose(websocket::CloseStatus status) override {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_closed), status);
         }
 
-        virtual void onWebSocketWriteable() override { enqueue(FUNCTION_TO_QUEUE(BLIPIO::_onWebSocketWriteable)); }
+        void onWebSocketWriteable() override { enqueue(FUNCTION_TO_QUEUE(BLIPIO::_onWebSocketWriteable)); }
 
-        virtual void onWebSocketMessage(websocket::Message* message) override {
+        void onWebSocketMessage(websocket::Message* message) override {
             if ( message->binary ) _incomingFrames.push(message);
             else
                 warn("Ignoring non-binary WebSocket message");
@@ -196,7 +199,8 @@ namespace litecore { namespace blip {
         }
 
         /** Implementation of public close() method. Closes the WebSocket. */
-        void _close(CloseCode closeCode, alloc_slice message) {
+        // Cannot use const& because it breaks Actor::enqueue
+        void _close(CloseCode closeCode, alloc_slice message) {  // NOLINT(performance-unnecessary-value-param)
             if ( _webSocket && !_closingWithError ) { _webSocket->close(closeCode, message); }
         }
 
@@ -207,7 +211,7 @@ namespace litecore { namespace blip {
                 warn("_closeWithError called more than once (this time with %d / %d)", x.domain, x.code);
             } else {
                 _webSocket->close(kCodeUnexpectedCondition, "Unexpected exception"_sl);
-                _closingWithError.reset(new error(x));
+                _closingWithError = std::make_unique<error>(x);
             }
         }
 
@@ -240,7 +244,8 @@ namespace litecore { namespace blip {
 
         /** Implementation of public queueMessage() method.
             Adds a new message to the outgoing queue and wakes up the queue. */
-        void _queueMessage(Retained<MessageOut> msg) {
+        // Cannot use const& because it breaks Actor::enqueue
+        void _queueMessage(Retained<MessageOut> msg) {  // NOLINT(performance-unnecessary-value-param)
             if ( !_webSocket || _closingWithError ) {
                 logInfo("Can't send %s #%" PRIu64 "; socket is closed", kMessageTypeNames[msg->type()], msg->number());
                 msg->disconnected();
@@ -546,12 +551,16 @@ namespace litecore { namespace blip {
             pending.clear();
         }
 
+        // NOLINTBEGIN(performance-unnecessary-value-param)
+        // Cannot use const& because it breaks Actor::enqueue
         void _setRequestHandler(std::string profile, bool atBeginning, Connection::RequestHandler handler) {
             HandlerKey key{profile, atBeginning};
             if ( handler ) _requestHandlers.emplace(key, handler);
             else
                 _requestHandlers.erase(key);
         }
+
+        // NOLINTEND(performance-unnecessary-value-param)
 
         void handleRequestBeginning(MessageIn* request) {}
 
@@ -588,7 +597,7 @@ namespace litecore { namespace blip {
 
     Connection::Connection(WebSocket* webSocket, const fleece::AllocedDict& options,
                            Retained<WeakHolder<ConnectionDelegate>> weakDelegate)
-        : Logging(BLIPLog), _name(webSocket->name()), _role(webSocket->role()), _weakDelegate(weakDelegate) {
+        : Logging(BLIPLog), _name(webSocket->name()), _role(webSocket->role()), _weakDelegate(std::move(weakDelegate)) {
         if ( _role == Role::Server ) logInfo("Accepted connection");
         else
             logInfo("Opening connection...");
@@ -604,7 +613,8 @@ namespace litecore { namespace blip {
     Connection::~Connection() { logDebug("~Connection"); }
 
     void Connection::start(Retained<WeakHolder<blip::ConnectionDelegate>> connectionDelegate) {
-        _weakDelegate = connectionDelegate;
+        // Can't use std::move here because it breaks the Retain
+        _weakDelegate = connectionDelegate;  //NOLINT(performance-unnecessary-value-param)
         Assert(_state == kClosed);
         _state = kConnecting;
         _io->start();
@@ -631,7 +641,7 @@ namespace litecore { namespace blip {
     }
 
     void Connection::setRequestHandler(string profile, bool atBeginning, RequestHandler handler) {
-        _io->setRequestHandler(profile, atBeginning, handler);
+        _io->setRequestHandler(std::move(profile), atBeginning, std::move(handler));
     }
 
     void Connection::gotHTTPResponse(int status, const websocket::Headers& headers) {
@@ -654,7 +664,7 @@ namespace litecore { namespace blip {
         _io->close(closeCode, errorMessage);
     }
 
-    void Connection::closed(CloseStatus status) {
+    void Connection::closed(const CloseStatus& status) {
         logInfo("Closed with %-s %d: %.*s", status.reasonName(), status.code, SPLAT(status.message));
         _state       = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;
@@ -669,4 +679,4 @@ namespace litecore { namespace blip {
 
     websocket::WebSocket* Connection::webSocket() const { return _io->webSocket(); }
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip
