@@ -196,7 +196,7 @@ namespace litecore::websocket {
 
     void WebSocketImpl::onReceive(slice data) {
         ssize_t     completedBytes = 0;
-        int         opToSend       = 0;
+        uint8_t     opToSend       = 0;
         alloc_slice msgToSend;
         {
             // Lock the mutex; this protects all methods (below) involved in receiving,
@@ -597,7 +597,7 @@ namespace uWS {
     }
 
     template <const bool isServer>
-    bool WebSocketProtocol<isServer>::refusePayloadLength(C4UNUSED void* user, int length) {
+    bool WebSocketProtocol<isServer>::refusePayloadLength(C4UNUSED void* user, size_t length) {
         return length > kMaxMessageLength;
     }
 

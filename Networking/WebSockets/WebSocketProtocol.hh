@@ -199,7 +199,7 @@ namespace uWS {
         inline bool consumeContinuation(std::byte*& src, size_t& length, void* user) {
             if ( remainingBytes <= length ) {
                 if ( isServer ) {
-                    int n = remainingBytes >> 2;
+                    size_t n = remainingBytes >> 2;
                     unmaskInplace(src, src + n * 4, mask);
                     for ( int i = 0, s = remainingBytes % 4; i < s; i++ ) { src[n * 4 + i] ^= mask[i]; }
                 }
@@ -418,7 +418,7 @@ namespace uWS {
         static constexpr int CONSUME_PRE_PADDING  = LONG_MESSAGE_HEADER - 1;
 
         // events to be implemented by application (can't be inline currently)
-        bool refusePayloadLength(void* user, int length);
+        bool refusePayloadLength(void* user, size_t length);
         bool setCompressed(void* user);
         void forceClose(void* user);
         bool handleFragment(std::byte* data, size_t length, size_t remainingByteCount, uint8_t opcode, bool fin,
