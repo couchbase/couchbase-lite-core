@@ -343,15 +343,6 @@ namespace uWS {
                 auto*      start_byte = reinterpret_cast<std::byte*>(start);
                 std::byte* end_byte   = dst + headerLength + length;
                 for ( int i = 0; start_byte != end_byte; ++i, ++start_byte ) { *start_byte ^= mask[i % 4]; }
-
-                // overwrites up to 3 bytes outside of the given buffer!
-                //WebSocketProtocol<isServer>::unmaskInplace(dst + headerLength, dst + headerLength + length, mask);
-
-                // this is not optimal
-                // std::byte* start = dst + headerLength;
-                // std::byte* stop  = start + length;
-                // int        i     = 0;
-                // while ( start != stop ) { (*start++) ^= mask[i++ % 4]; }
             }
             return messageLength;
         }
