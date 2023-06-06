@@ -128,11 +128,13 @@ namespace litecore {
 
 
         virtual void createReplicator() override {
-            auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
             auto dbOpenedAgain = _database->openAgain();
             _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
-            _replicator = new Replicator(dbOpenedAgain.get(), webSocket, *this, _options);
-            
+
+            auto dbAccess = std::make_shared<DBAccess>(dbOpenedAgain, _options->properties["disable_blob_support"_sl].asBool());
+            auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
+            _replicator = new Replicator(dbAccess, webSocket, *this, _options);
+
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that

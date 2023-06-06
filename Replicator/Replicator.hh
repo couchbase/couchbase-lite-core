@@ -50,6 +50,10 @@ namespace litecore { namespace repl {
                    websocket::WebSocket* NONNULL,
                    Delegate&,
                    Options* NONNULL);
+        Replicator(std::shared_ptr<DBAccess>,
+                   websocket::WebSocket* NONNULL,
+                   Delegate&,
+                   Options* NONNULL);
 
         struct BlobProgress {
             Dir         dir;
