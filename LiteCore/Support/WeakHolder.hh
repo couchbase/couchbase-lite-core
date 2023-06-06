@@ -12,6 +12,7 @@
 
 #pragma once
 #include "fleece/RefCounted.hh"
+#include "Error.hh"
 
 namespace litecore {
 

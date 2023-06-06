@@ -11,17 +11,15 @@
 //
 
 #pragma once
-#include "Error.hh"
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
 #include "Logging.hh"
-#include "fleece/Fleece.hh"
 #include "WeakHolder.hh"
 #include <atomic>
 #include <string>
 #include <utility>
 
-namespace litecore { namespace websocket {
+namespace litecore::websocket {
     using fleece::RefCounted;
     using fleece::Retained;
 
@@ -105,9 +103,11 @@ namespace litecore { namespace websocket {
         CloseStatus(CloseReason reason_, int code_, fleece::slice message_)
             : CloseStatus(reason_, code_, fleece::alloc_slice(message_)) {}
 
-        bool isNormal() const { return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway); }
+        [[nodiscard]] bool isNormal() const {
+            return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway);
+        }
 
-        const char* reasonName() const;
+        [[nodiscard]] const char* reasonName() const;
     };
 
     /** "WS" log domain for WebSocket operations */
@@ -143,8 +143,8 @@ namespace litecore { namespace websocket {
         virtual void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) = 0;
 
       protected:
-        WebSocket(const URL& url, Role role);
-        virtual ~WebSocket();
+        WebSocket(URL url, Role role);
+        ~WebSocket() override;
 
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
         virtual void connect() = 0;
@@ -160,7 +160,7 @@ namespace litecore { namespace websocket {
       public:
         Message(fleece::slice d, bool b) : data(d), binary(b) {}
 
-        Message(fleece::alloc_slice d, bool b) : data(d), binary(b) {}
+        Message(fleece::alloc_slice d, bool b) : data(std::move(std::move(d))), binary(b) {}
 
         const fleece::alloc_slice data;
         const bool                binary;
@@ -186,4 +186,4 @@ namespace litecore { namespace websocket {
         virtual void onWebSocketWriteable() {}
     };
 
-}}  // namespace litecore::websocket
+}  // namespace litecore::websocket
