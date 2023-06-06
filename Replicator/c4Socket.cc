@@ -75,7 +75,7 @@ namespace litecore::repl {
 
     Retained<WebSocket> CreateWebSocket(websocket::URL url,
                                         alloc_slice options,
-                                        C4Database *database,
+                                        std::shared_ptr<DBAccess> database,
                                         const C4SocketFactory *factory,
                                         void *nativeHandle)
     {

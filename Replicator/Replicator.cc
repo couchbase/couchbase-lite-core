@@ -67,10 +67,21 @@ namespace litecore { namespace repl {
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options *options)
+    : Replicator(std::make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()),
+                 webSocket,
+                 delegate,
+                 options)
+    {}
+
+
+    Replicator::Replicator(std::shared_ptr<DBAccess> db,
+                           websocket::WebSocket *webSocket,
+                           Delegate &delegate,
+                           Options *options)
     :Worker(new Connection(webSocket, options->properties, {}),
             nullptr,
             options,
-            make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()),
+            db,
             "Repl",
             kNotCollectionIndex)
     ,_delegate(&delegate)
@@ -86,7 +97,7 @@ namespace litecore { namespace repl {
             //                    : all collections are passive.
             _options->verify();
 
-            _loggingID = string(db->getPath()) + " " + _loggingID;
+            _loggingID = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
             logInfo("%s", string(*options).c_str());
