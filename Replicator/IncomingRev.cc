@@ -174,19 +174,19 @@ namespace litecore { namespace repl {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, it may contain new blobs to download, or it may
             // have properties to decrypt.
-            logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
-                       SPLAT(_rev->docID), SPLAT(_rev->revID));
-            fleeceDoc = _db->applyDelta(getCollection(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
-            if (!fleeceDoc) {
-                // Don't have the body of the source revision. This might be because I'm in
-                // no-conflict mode and the peer is trying to push me a now-obsolete revision.
-                if (_options->noIncomingConflicts())
-                    err = {WebSocketDomain, 409};
-                else
-                    err = C4Error::printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                          "Couldn't apply delta: Don't have body of '%.*s' #%.*s",
-                                          SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
-            }
+            logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...", SPLAT(_rev->docID), SPLAT(_rev->revID));
+            try {
+                fleeceDoc = _db->applyDelta(getCollection(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
+                if ( !fleeceDoc ) {
+                    // Don't have the body of the source revision. This might be because I'm in
+                    // no-conflict mode and the peer is trying to push me a now-obsolete revision.
+                    if ( _options->noIncomingConflicts() ) err = {WebSocketDomain, 409};
+                    else
+                        err = C4Error::printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                              "Couldn't apply delta: Don't have body of '%.*s' #%.*s",
+                                              SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
+                }
+            } catch ( ... ) { err = C4Error::fromCurrentException(); }
             _rev->deltaSrcRevID = nullslice;
 
         } else {
