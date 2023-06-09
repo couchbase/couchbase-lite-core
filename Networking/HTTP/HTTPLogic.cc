@@ -16,15 +16,15 @@
 #include "c4ReplicatorTypes.h"
 #include "Base64.hh"
 #include "Error.hh"
-#include "Replicator.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
-#include "StringUtil.hh"
 #include "slice_stream.hh"
+#include "NumConversion.hh"
+#include "fleece/Fleece.hh"
 #include <regex>
 #include <sstream>
 
-namespace litecore { namespace net {
+namespace litecore::net {
     using namespace std;
     using namespace fleece;
     using namespace websocket;
@@ -54,7 +54,7 @@ namespace litecore { namespace net {
     }
 
     void HTTPLogic::setProxy(optional<ProxySpec> p) {
-        _proxy = move(p);
+        _proxy = std::move(p);
         if ( _proxy ) _proxyAddress = Address(*_proxy);
         else
             _proxyAddress.reset();
@@ -355,10 +355,10 @@ namespace litecore { namespace net {
             if ( !first ) s << '\n';
             first = false;
             s << '\t';
-            s.write((const char*)line.buf, line.size);
+            s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
         }
         return s.str();
     }
 
 
-}}  // namespace litecore::net
+}  // namespace litecore::net

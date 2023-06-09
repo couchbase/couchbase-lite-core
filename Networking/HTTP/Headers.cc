@@ -14,13 +14,15 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"
 #include "slice_stream.hh"
-#include <string.h>
+#include <cstring>
+
+#include <utility>
 #include "betterassert.hh"
 
-namespace litecore { namespace websocket {
+namespace litecore::websocket {
     using namespace fleece;
 
-    Headers::Headers(fleece::alloc_slice encoded) : _backingStore(encoded) {
+    Headers::Headers(const fleece::alloc_slice& encoded) : _backingStore(encoded) {
         readFrom(ValueFromData(encoded).asDict());
     }
 
@@ -28,7 +30,7 @@ namespace litecore { namespace websocket {
 
     Headers::Headers(const Headers& other) { *this = other; }
 
-    Headers::Headers(Headers&& other)
+    Headers::Headers(Headers&& other) noexcept
         : _map(std::move(other._map))
         , _backingStore(std::move(other._backingStore))
         , _writer(std::move(other._writer)) {}
@@ -59,7 +61,7 @@ namespace litecore { namespace websocket {
 
     void Headers::setBackingStore(alloc_slice backingStore) {
         assert(_map.empty());
-        _backingStore = backingStore;
+        _backingStore = std::move(backingStore);
     }
 
     void Headers::clear() {
@@ -70,7 +72,7 @@ namespace litecore { namespace websocket {
 
     slice Headers::store(slice s) {
         if ( _backingStore.containsAddressRange(s) ) return s;
-        return slice(_writer.write(s), s.size);
+        return {_writer.write(s), s.size};
     }
 
     void Headers::add(slice name, slice value) {
@@ -93,7 +95,7 @@ namespace litecore { namespace websocket {
     }
 
     void Headers::forEach(fleece::function_ref<void(slice, slice)> callback) const {
-        for ( auto i = _map.begin(); i != _map.end(); ++i ) callback(i->first, i->second);
+        for ( const auto& i : _map ) callback(i.first, i.second);
     }
 
     void Headers::forEach(slice name, fleece::function_ref<void(slice)> callback) const {
@@ -125,4 +127,4 @@ namespace litecore { namespace websocket {
     }
 
 
-}}  // namespace litecore::websocket
+}  // namespace litecore::websocket

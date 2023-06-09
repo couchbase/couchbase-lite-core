@@ -42,6 +42,7 @@
 
 //COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
+#include <limits>
 #ifdef __APPLE__
 #    include <libkern/OSByteOrder.h>
 #    define htobe64(x) OSSwapHostToBigInt64(x)
@@ -76,16 +77,16 @@
 
 namespace uWS {
 
-    enum OpCode : unsigned char { TEXT = 1, BINARY = 2, CLOSE = 8, PING = 9, PONG = 10 };
+    enum OpCode : uint8_t { TEXT = 1, BINARY = 2, CLOSE = 8, PING = 9, PONG = 10 };
 
     enum { CLIENT, SERVER };
 
     template <const bool isServer>
     class WebSocketProtocol {
       public:
-        static const int SHORT_MESSAGE_HEADER  = isServer ? 6 : 2;
-        static const int MEDIUM_MESSAGE_HEADER = isServer ? 8 : 4;
-        static const int LONG_MESSAGE_HEADER   = isServer ? 14 : 10;
+        static constexpr int SHORT_MESSAGE_HEADER  = isServer ? 6 : 2;
+        static constexpr int MEDIUM_MESSAGE_HEADER = isServer ? 8 : 4;
+        static constexpr int LONG_MESSAGE_HEADER   = isServer ? 14 : 10;
 
       private:
         typedef uint16_t frameFormat;
@@ -102,7 +103,7 @@ namespace uWS {
 
         static inline bool getMask(frameFormat& frame) { return frame & 32768; }
 
-        static inline void unmaskPrecise(char* dst, char* src, char* mask, unsigned int length) {
+        static inline void unmaskPrecise(std::byte* dst, std::byte* src, std::byte* mask, size_t length) {
             for ( ; length >= 4; length -= 4 ) {
                 *(dst++) = *(src++) ^ mask[0];
                 *(dst++) = *(src++) ^ mask[1];
@@ -112,21 +113,21 @@ namespace uWS {
             for ( ; length > 0; --length ) *(dst++) = *(src++) ^ *(mask++);
         }
 
-        static inline void unmaskPreciseCopyMask(char* dst, char* src, char* maskPtr, unsigned int length) {
-            char mask[4] = {maskPtr[0], maskPtr[1], maskPtr[2], maskPtr[3]};
+        static inline void unmaskPreciseCopyMask(std::byte* dst, std::byte* src, std::byte* maskPtr, size_t length) {
+            std::byte mask[4] = {maskPtr[0], maskPtr[1], maskPtr[2], maskPtr[3]};
             unmaskPrecise(dst, src, mask, length);
         }
 
-        static inline void rotateMask(unsigned int offset, char* mask) {
-            char originalMask[4]   = {mask[0], mask[1], mask[2], mask[3]};
-            mask[(0 + offset) % 4] = originalMask[0];
-            mask[(1 + offset) % 4] = originalMask[1];
-            mask[(2 + offset) % 4] = originalMask[2];
-            mask[(3 + offset) % 4] = originalMask[3];
+        static inline void rotateMask(size_t offset, std::byte* mask) {
+            std::byte originalMask[4] = {mask[0], mask[1], mask[2], mask[3]};
+            mask[(0 + offset) % 4]    = originalMask[0];
+            mask[(1 + offset) % 4]    = originalMask[1];
+            mask[(2 + offset) % 4]    = originalMask[2];
+            mask[(3 + offset) % 4]    = originalMask[3];
         }
 
-        static inline void unmaskInplace(char* data, char* stop, char* mask) {
-            char* stop1 = stop - 3;
+        static inline void unmaskInplace(std::byte* data, std::byte* stop, std::byte* mask) {
+            std::byte* stop1 = stop - 3;
             while ( data < stop1 ) {
                 *(data++) ^= mask[0];
                 *(data++) ^= mask[1];
@@ -136,39 +137,38 @@ namespace uWS {
             while ( data < stop ) *(data++) ^= *(mask++);
         }
 
-        enum state_t { READ_HEAD, READ_MESSAGE };
+        enum state_t : uint8_t { READ_HEAD, READ_MESSAGE };
 
-        enum send_state_t { SND_CONTINUATION = 1, SND_NO_FIN = 2, SND_COMPRESSED = 64 };
+        enum send_state_t : uint8_t { SND_CONTINUATION = 1, SND_NO_FIN = 2, SND_COMPRESSED = 64 };
 
         template <const int MESSAGE_HEADER, typename T>
-        inline bool consumeMessage(T payLength, char*& src, unsigned int& length, frameFormat frame, void* user) {
+        inline bool consumeMessage(T payLength, std::byte*& src, size_t& length, frameFormat frame, void* user) {
             if ( getOpCode(frame) ) {
                 if ( opStack == 1 || (!lastFin && getOpCode(frame) < 2) ) {
                     forceClose(user);
                     return true;
                 }
-                opCode[(unsigned char)++opStack] = (OpCode)getOpCode(frame);
+                opCode[++opStack] = (OpCode)getOpCode(frame);
             } else if ( opStack == -1 ) {
                 forceClose(user);
                 return true;
             }
             lastFin = isFin(frame);
 
-            if ( payLength > SIZE_MAX || refusePayloadLength(user, (int)payLength) ) {
+            if ( payLength > SIZE_MAX || refusePayloadLength(user, payLength) ) {
                 forceClose(user);
                 return true;
             }
 
             if ( int(payLength) <= int(length - MESSAGE_HEADER) ) {
                 if ( isServer ) {
-                    unmaskPreciseCopyMask(src, src + MESSAGE_HEADER, src + MESSAGE_HEADER - 4, (unsigned int)payLength);
-                    if ( handleFragment(src, (size_t)payLength, 0, opCode[(unsigned char)opStack], isFin(frame),
-                                        user) ) {
+                    unmaskPreciseCopyMask(src, src + MESSAGE_HEADER, src + MESSAGE_HEADER - 4, payLength);
+                    if ( handleFragment(src, (size_t)payLength, 0, opCode[opStack], isFin(frame), user) ) {
                         return true;
                     }
                 } else {
-                    if ( handleFragment(src + MESSAGE_HEADER, (size_t)payLength, 0, opCode[(unsigned char)opStack],
-                                        isFin(frame), user) ) {
+                    if ( handleFragment(src + MESSAGE_HEADER, (size_t)payLength, 0, opCode[opStack], isFin(frame),
+                                        user) ) {
                         return true;
                     }
                 }
@@ -182,7 +182,7 @@ namespace uWS {
             } else {
                 spillLength    = 0;
                 state          = READ_MESSAGE;
-                remainingBytes = (unsigned)(payLength + MESSAGE_HEADER - length);
+                remainingBytes = payLength + MESSAGE_HEADER - length;
 
                 if ( isServer ) {
                     memcpy(mask, src + MESSAGE_HEADER - 4, 4);
@@ -191,23 +191,20 @@ namespace uWS {
                 } else {
                     src += MESSAGE_HEADER;
                 }
-                handleFragment(src, length - MESSAGE_HEADER, remainingBytes, opCode[(unsigned char)opStack],
-                               isFin(frame), user);
+                handleFragment(src, length - MESSAGE_HEADER, remainingBytes, opCode[opStack], isFin(frame), user);
                 return true;
             }
         }
 
-        inline bool consumeContinuation(char*& src, unsigned int& length, void* user) {
+        inline bool consumeContinuation(std::byte*& src, size_t& length, void* user) {
             if ( remainingBytes <= length ) {
                 if ( isServer ) {
-                    int n = remainingBytes >> 2;
+                    size_t n = remainingBytes >> 2;
                     unmaskInplace(src, src + n * 4, mask);
                     for ( int i = 0, s = remainingBytes % 4; i < s; i++ ) { src[n * 4 + i] ^= mask[i]; }
                 }
 
-                if ( handleFragment(src, remainingBytes, 0, opCode[(unsigned char)opStack], lastFin, user) ) {
-                    return false;
-                }
+                if ( handleFragment(src, remainingBytes, 0, opCode[opStack], lastFin, user) ) { return false; }
 
                 if ( lastFin ) { opStack--; }
 
@@ -219,9 +216,7 @@ namespace uWS {
                 if ( isServer ) { unmaskInplace(src, src + length, mask); }
 
                 remainingBytes -= length;
-                if ( handleFragment(src, length, remainingBytes, opCode[(unsigned char)opStack], lastFin, user) ) {
-                    return false;
-                }
+                if ( handleFragment(src, length, remainingBytes, opCode[opStack], lastFin, user) ) { return false; }
 
                 if ( isServer && length % 4 ) { rotateMask(4 - (length % 4), mask); }
                 return false;
@@ -230,15 +225,15 @@ namespace uWS {
 
         // this can hold two states (1 bit)
         // this can hold length of spill (up to 16 = 4 bit)
-        unsigned char state       = READ_HEAD;
-        unsigned char spillLength = 0;     // remove this!
-        char          opStack     = -1;    // remove this too
-        char          lastFin     = true;  // hold in state!
-        unsigned char spill[LONG_MESSAGE_HEADER - 1];
-        unsigned int  remainingBytes =
+        state_t   state       = READ_HEAD;
+        size_t    spillLength = 0;     // remove this!
+        int       opStack     = -1;    // remove this too
+        bool      lastFin     = true;  // hold in state!
+        std::byte spill[LONG_MESSAGE_HEADER - 1]{};
+        size_t    remainingBytes =
                 0;  // denna kan hålla spillLength om state är READ_HEAD, och remainingBytes när state är annat?
-        char   mask[isServer ? 4 : 1];
-        OpCode opCode[2];
+        std::byte mask[isServer ? 4 : 1]{};
+        OpCode    opCode[2]{};
 
       public:
         WebSocketProtocol() = default;
@@ -274,12 +269,12 @@ namespace uWS {
         }
 
         struct CloseFrame {
-            uint16_t code;
-            char*    message;
-            size_t   length;
+            uint16_t   code;
+            std::byte* message;
+            size_t     length;
         };
 
-        static inline CloseFrame parseClosePayload(char* src, size_t length) {
+        static inline CloseFrame parseClosePayload(std::byte* src, size_t length) {
             CloseFrame cf = {};
             if ( length >= 2 ) {
                 memcpy(&cf.code, src, 2);
@@ -292,7 +287,7 @@ namespace uWS {
             return cf;
         }
 
-        static inline size_t formatClosePayload(char* dst, uint16_t code, const char* message, size_t length) {
+        static inline size_t formatClosePayload(std::byte* dst, uint16_t code, const char* message, size_t length) {
             if ( code ) {
                 code = htons(code);
                 memcpy(dst, &code, 2);
@@ -303,28 +298,28 @@ namespace uWS {
             return 0;
         }
 
-        static inline size_t formatMessage(char* dst, const char* src, size_t length, OpCode opCode,
+        static inline size_t formatMessage(std::byte* dst, const char* src, size_t length, OpCode opCode,
                                            size_t reportedLength, bool compressed) {
             size_t messageLength;
             size_t headerLength;
             if ( reportedLength < 126 ) {
                 headerLength = 2;
-                dst[1]       = (char)reportedLength;
-            } else if ( reportedLength <= UINT16_MAX ) {
+                dst[1]       = (std::byte)reportedLength;
+            } else if ( reportedLength <= std::numeric_limits<uint16_t>::max() ) {
                 headerLength          = 4;
-                dst[1]                = 126;
+                dst[1]                = (std::byte)126;
                 *((uint16_t*)&dst[2]) = htons((uint16_t)reportedLength);
             } else {
                 headerLength          = 10;
-                dst[1]                = 127;
+                dst[1]                = (std::byte)127;
                 *((uint64_t*)&dst[2]) = htobe64(reportedLength);
             }
 
             int flags = 0;
-            dst[0]    = char((flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0));
-            if ( !(flags & SND_CONTINUATION) ) { dst[0] |= opCode; }
+            dst[0]    = (std::byte)((flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0));
+            if ( !(flags & SND_CONTINUATION) ) { dst[0] |= (std::byte)opCode; }
 
-            char mask[4];
+            std::byte mask[4];
             if ( !isServer ) {
                 ((uint8_t*)dst)[1] |= 0x80;
                 uint32_t random = litecore::RandomNumber();
@@ -337,25 +332,28 @@ namespace uWS {
             memcpy(dst + headerLength, src, length);
 
             if ( !isServer ) {
-                // overwrites up to 3 bytes outside of the given buffer!
-                //WebSocketProtocol<isServer>::unmaskInplace(dst + headerLength, dst + headerLength + length, mask);
+                uint32_t mask_i32 = *reinterpret_cast<uint32_t*>(mask);
 
-                // this is not optimal
-                char* start = dst + headerLength;
-                char* stop  = start + length;
-                int   i     = 0;
-                while ( start != stop ) { (*start++) ^= mask[i++ % 4]; }
+                auto*     start = reinterpret_cast<uint32_t*>(dst + headerLength);
+                uint32_t* end   = start + length / 4;
+
+                while ( start != end ) { *start++ ^= mask_i32; }
+
+                // Handle remaining bytes (if length is not a multiple of 4)
+                auto*      start_byte = reinterpret_cast<std::byte*>(start);
+                std::byte* end_byte   = dst + headerLength + length;
+                for ( int i = 0; start_byte != end_byte; ++i, ++start_byte ) { *start_byte ^= mask[i % 4]; }
             }
             return messageLength;
         }
 
-        void consume(const char* src, unsigned int length, void* user) {
+        void consume(std::byte* src, size_t length, void* user) {
             while ( spillLength > 0 ) {
                 // Use up any unread bytes, without letting _consume do it, because it will copy them
                 // before `src`, causing memory corruption or crashes. (#531)
-                char     buf[LONG_MESSAGE_HEADER];
-                unsigned bufLen     = std::min(spillLength + length, (unsigned)sizeof(buf));
-                unsigned lengthUsed = bufLen - spillLength;
+                std::byte buf[LONG_MESSAGE_HEADER];
+                size_t    bufLen     = std::min(spillLength + length, sizeof(buf));
+                size_t    lengthUsed = bufLen - spillLength;
                 memcpy(buf, spill, spillLength);
                 memcpy(buf + spillLength, src, lengthUsed);
                 spillLength = 0;
@@ -364,10 +362,10 @@ namespace uWS {
                 _consume(buf, bufLen, user);
                 if ( length == 0 ) return;
             }
-            _consume((char*)src, length, user);
+            _consume(src, length, user);
         }
 
-        void _consume(char* src, unsigned int length, void* user) {
+        void _consume(std::byte* src, size_t length, void* user) {
             if ( spillLength ) {
                 src -= spillLength;
                 length += spillLength;
@@ -409,21 +407,22 @@ namespace uWS {
                 }
                 if ( length ) {
                     memcpy(spill, src, length);
-                    spillLength = (unsigned char)length;
+                    spillLength = length;
                 }
             } else if ( consumeContinuation(src, length, user) ) {
                 goto parseNext;
             }
         }
 
-        static const int CONSUME_POST_PADDING = 18;
-        static const int CONSUME_PRE_PADDING  = LONG_MESSAGE_HEADER - 1;
+        static constexpr int CONSUME_POST_PADDING = 18;
+        static constexpr int CONSUME_PRE_PADDING  = LONG_MESSAGE_HEADER - 1;
 
         // events to be implemented by application (can't be inline currently)
-        bool refusePayloadLength(void* user, int length);
+        bool refusePayloadLength(void* user, size_t length);
         bool setCompressed(void* user);
         void forceClose(void* user);
-        bool handleFragment(char* data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void* user);
+        bool handleFragment(std::byte* data, size_t length, size_t remainingByteCount, uint8_t opcode, bool fin,
+                            void* user);
     };
 
 }  // namespace uWS

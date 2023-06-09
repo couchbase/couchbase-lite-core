@@ -15,7 +15,7 @@
 
 using namespace fleece;
 
-namespace litecore { namespace net {
+namespace litecore::net {
 
     static const struct {
         HTTPStatus  code;
@@ -79,4 +79,4 @@ namespace litecore { namespace net {
         return Address(addr);
     }
 
-}}  // namespace litecore::net
+}  // namespace litecore::net

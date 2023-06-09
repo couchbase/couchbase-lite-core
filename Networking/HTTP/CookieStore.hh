@@ -16,12 +16,12 @@
 #include <iosfwd>
 #include <memory>
 #include <mutex>
-#include <time.h>
+#include <ctime>
 #include <vector>
 
 struct C4Address;
 
-namespace litecore { namespace net {
+namespace litecore::net {
     using fleece::RefCounted;
     using fleece::Retained;
 
@@ -33,25 +33,25 @@ namespace litecore { namespace net {
         Cookie() = default;
         Cookie(const std::string& header, const std::string& fromHost, const std::string& fromPath,
                bool acceptParentDomain = false);
-        Cookie(fleece::Dict);
+        explicit Cookie(fleece::Dict);
 
         explicit operator bool() const { return valid(); }
 
-        bool valid() const { return !name.empty(); }
+        [[nodiscard]] bool valid() const { return !name.empty(); }
 
-        bool persistent() const { return expires > 0; }
+        [[nodiscard]] bool persistent() const { return expires > 0; }
 
-        bool expired() const { return expires > 0 && expires < time(NULL); }
+        [[nodiscard]] bool expired() const { return expires > 0 && expires < time(nullptr); }
 
-        bool matches(const Cookie&) const;
-        bool matches(const C4Address&) const;
-        bool sameValueAs(const Cookie&) const;
+        [[nodiscard]] bool matches(const Cookie&) const;
+        [[nodiscard]] bool matches(const C4Address&) const;
+        [[nodiscard]] bool sameValueAs(const Cookie&) const;
 
         std::string name;
         std::string value;
         std::string domain;
         std::string path;
-        time_t      created;
+        time_t      created{0};
         time_t      expires{0};
         bool        secure{false};
     };
@@ -84,16 +84,16 @@ namespace litecore { namespace net {
         bool changed();
         void clearChanged();
 
+        CookieStore(const CookieStore&) = delete;
+
       private:
         using CookiePtr = std::unique_ptr<const Cookie>;
 
         void _addCookie(CookiePtr newCookie);
-
-        CookieStore(const CookieStore&) = delete;
 
         std::vector<CookiePtr> _cookies;
         bool                   _changed{false};
         mutable std::mutex     _mutex;
     };
 
-}}  // namespace litecore::net
+}  // namespace litecore::net
