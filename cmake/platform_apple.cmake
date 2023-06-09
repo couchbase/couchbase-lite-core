@@ -47,7 +47,7 @@ function(setup_litecore_build)
         )
     endforeach()
 
-    foreach(platform LiteCoreObjects LiteObjectsCppTest BLIPObjects)
+    foreach(platform LiteCoreObjects LiteCoreObjectsCppTest BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"
