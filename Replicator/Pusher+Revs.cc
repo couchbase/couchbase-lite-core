@@ -17,7 +17,6 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "c4Document.hh"
 #include "fleece/Mutable.hh"
 #include <cinttypes>
 
@@ -29,7 +28,7 @@ namespace litecore::repl {
     void Pusher::maybeSendMoreRevs() {
         while ( _revisionsInFlight < tuning::kMaxRevsInFlight
                 && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply && !_revQueue.empty() ) {
-            Retained<RevToSend> first = move(_revQueue.front());
+            Retained<RevToSend> first = std::move(_revQueue.front());
             _revQueue.pop_front();
             sendRevision(first);
             if ( _revQueue.size() == tuning::kMaxRevsQueued - 1 )
@@ -107,7 +106,7 @@ namespace litecore::repl {
         msg.compressed     = true;
         msg["id"_sl]       = request->docID;
         msg["rev"_sl]      = fullRevID;
-        msg["sequence"_sl] = uint64_t(request->sequence);
+        msg["sequence"_sl] = narrow_cast<int64_t>((uint64_t)request->sequence);
         if ( root ) {
             if ( request->noConflicts ) msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev().flags;
@@ -140,7 +139,7 @@ namespace litecore::repl {
                     bodyEncoder.writeValue(root);
             }
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID), SPLAT(request->revID));
-            sendRequest(msg, [this, request](MessageProgress progress) { onRevProgress(request, progress); });
+            sendRequest(msg, [this, request](const MessageProgress& progress) { onRevProgress(request, progress); });
             increment(_revisionsInFlight);
 
         } else {
@@ -164,7 +163,7 @@ namespace litecore::repl {
     }
 
     // "rev" message progress callback:
-    void Pusher::onRevProgress(Retained<RevToSend> rev, const MessageProgress& progress) {
+    void Pusher::onRevProgress(const Retained<RevToSend>& rev, const MessageProgress& progress) {
         switch ( progress.state ) {
             case MessageProgress::kDisconnected:
                 doneWithRev(rev, false, false);
@@ -275,7 +274,7 @@ namespace litecore::repl {
         if ( ancestorFlags & kRevDeleted ) return delta;
 
         if ( !ancestor && request->ancestorRevIDs ) {
-            for ( auto revID : *request->ancestorRevIDs ) {
+            for ( const auto& revID : *request->ancestorRevIDs ) {
                 if ( doc->selectRevision(revID, true) ) {
                     ancestor      = doc->getProperties();
                     ancestorFlags = doc->selectedRev().flags;
@@ -306,7 +305,7 @@ namespace litecore::repl {
         }
 
         delta = FLCreateJSONDelta(ancestor, root);
-        if ( !delta || delta.size > revisionSize * 1.2 )
+        if ( !delta || narrow_cast<double>(delta.size) > narrow_cast<double>(revisionSize) * 1.2 )
             return {};  // Delta failed, or is (probably) bigger than body; don't use
 
         if ( willLog(LogLevel::Verbose) ) {
@@ -337,7 +336,7 @@ namespace litecore::repl {
         }
 
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
-        Retained<RevToSend> newRev = move(rev->nextRev);
+        Retained<RevToSend> newRev = std::move(rev->nextRev);
         _pushingDocs.erase(rev->docID);
         if ( newRev ) {
             if ( synced && getForeignAncestors() ) newRev->remoteAncestorRevID = rev->revID;

@@ -20,13 +20,12 @@
 #include "Error.hh"
 #include "ReplicatorTypes.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.hh"
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <shared_mutex>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using fleece::RetainedConst;
 
     class DBAccess;
@@ -60,13 +59,9 @@ namespace litecore { namespace repl {
         static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
-            Status(ActivityLevel lvl = kC4Stopped) {
-                level    = lvl;
-                error    = {};
-                progress = progressDelta = {};
-            }
+            explicit Status(ActivityLevel lvl = kC4Stopped) : C4ReplicatorStatus({lvl, {}, {}, 0}) {}
 
-            C4Progress progressDelta;
+            C4Progress progressDelta{};
         };
 
         /// The Replicator at the top of the tree.
@@ -106,6 +101,9 @@ namespace litecore { namespace repl {
             return *_connection;
         }
 
+        /// My current status.
+        const Status& status() const { return _status; }
+
       protected:
         /// Designated constructor.
         /// @param connection  The BLIP connection.
@@ -119,19 +117,19 @@ namespace litecore { namespace repl {
         /// Simplified constructor. Gets the other parameters from the parent object.
         Worker(Worker* parent NONNULL, const char* namePrefix NONNULL, CollectionIndex);
 
-        virtual ~Worker();
+        ~Worker() override;
 
         /// Override to specify an Actor mailbox that all children of this Worker should use.
         /// On Apple platforms, a mailbox is a GCD queue, so this reduces the number of queues.
         virtual actor::Mailbox* mailboxForChildren() { return _parent ? _parent->mailboxForChildren() : nullptr; }
 
         // overrides:
-        virtual std::string loggingClassName() const override;
+        std::string loggingClassName() const override;
 
-        virtual std::string loggingIdentifier() const override { return _loggingID; }
+        std::string loggingIdentifier() const override { return _loggingID; }
 
-        virtual void afterEvent() override;
-        virtual void caughtException(const std::exception& x) override;
+        void afterEvent() override;
+        void caughtException(const std::exception& x) override;
 
         // Add the token for collection info to the format string (and cache the string, returning the pointer)
         // Concurrent read-write of cache is technically safe, but if a rehash occurs (capacity of _formatCache is
@@ -218,7 +216,7 @@ namespace litecore { namespace repl {
 
         /// Sends a BLIP request. Increments `_pendingResponseCount` until the response is
         /// complete, keeping this Worker in the busy state.
-        void sendRequest(blip::MessageBuilder& builder, blip::MessageProgressCallback onProgress = nullptr);
+        void sendRequest(blip::MessageBuilder& builder, const blip::MessageProgressCallback& onProgress = nullptr);
 
         /// The number of BLIP responses I'm waiting for.
         int pendingResponseCount() const { return _pendingResponseCount; }
@@ -245,9 +243,6 @@ namespace litecore { namespace repl {
         static C4Error blipToC4Error(const blip::Error&);
 
 #pragma mark - STATUS & PROGRESS:
-
-        /// My current status.
-        const Status& status() const { return _status; }
 
         /// Called by `afterEvent` if my status has changed.
         /// Default implementation calls the parent's `childChangedStatus`,
@@ -305,4 +300,4 @@ namespace litecore { namespace repl {
         static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
         static std::shared_mutex               _formatMutex;  // Ensure thread-safety for cache insert
     };
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

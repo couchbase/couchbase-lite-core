@@ -24,7 +24,6 @@
 #include "IncomingRev.hh"
 #include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
-#include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
@@ -34,7 +33,7 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
@@ -70,7 +69,7 @@ namespace litecore { namespace repl {
         if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
         if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
             msg["revocations"] = "true";  // Enable revocation notification in "changes" (SG 3.0)
-            logInfo("msg[\"revocations\"]=\"true\" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0",
+            logInfo(R"(msg["revocations"]="true" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0)",
                     _options->enableAutoPurge(), progressNotificationLevel());
         }
 
@@ -104,7 +103,7 @@ namespace litecore { namespace repl {
             enc.endDict();
         }
 
-        sendRequest(msg, [=](blip::MessageProgress progress) {
+        sendRequest(msg, [=](const blip::MessageProgress& progress) {
             //... After request is sent:
             if ( progress.reply && progress.reply->isError() ) {
                 gotError(progress.reply);
@@ -157,7 +156,7 @@ namespace litecore { namespace repl {
                 Signpost::begin(Signpost::revsBackPressure);
                 logVerbose("Back pressure started for changes messages");
             }
-            _waitingRevMessages.push_back(move(msg));
+            _waitingRevMessages.push_back(std::move(msg));
         }
     }
 
@@ -249,10 +248,10 @@ namespace litecore { namespace repl {
         }
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
-        ssize_t capacity = tuning::kMaxIncomingRevs - _spareIncomingRevs.size();
+        ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
         if ( capacity > 0 )
             _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(),
-                                      revs->begin() + min(size_t(capacity), revs->size()));
+                                      revs->begin() + min(capacity, narrow_cast<ssize_t>(revs->size())));
 
         if ( !passive() ) updateLastSequence();
 
@@ -341,4 +340,4 @@ namespace litecore { namespace repl {
     }
 
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

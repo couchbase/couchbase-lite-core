@@ -20,13 +20,9 @@
 #include "Checkpointer.hh"
 #include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
-#include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
 #include "c4DocEnumerator.hh"
-#include "c4Document.hh"
 #include "c4Observer.hh"
-#include "c4Private.h"
-#include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include <cinttypes>
 #include <cstdint>
@@ -34,7 +30,7 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
 
     ChangesFeed::ChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* checkpointer)
@@ -67,9 +63,10 @@ namespace litecore { namespace repl {
         combined->reserve(docIDs.count());
         for ( Array::iterator i(docIDs); i; ++i ) {
             string docID = i.value().asstring();
-            if ( !docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()) ) combined->insert(move(docID));
+            if ( !docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()) )
+                combined->insert(std::move(docID));
         }
-        _docIDs = move(combined);
+        _docIDs = std::move(combined);
         if ( !_options->isActive() ) logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
     }
 
@@ -177,7 +174,7 @@ namespace litecore { namespace repl {
                     // c4dbobs_getChanges, if it changes in between calls. Remove the older:
                     for ( size_t j = 0; j < oldChangesCount; ++j ) {
                         if ( changes.revs[j]->docID == c4change->docID ) {
-                            changes.revs.erase(changes.revs.begin() + j);
+                            changes.revs.erase(changes.revs.begin() + narrow_cast<long>(j));
                             ++limit;
                             break;
                         }
@@ -215,10 +212,11 @@ namespace litecore { namespace repl {
         if ( info.expiration > C4Timestamp::None && info.expiration < c4_now() ) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;  // skip rev: expired
-        } else if ( _options->isActive() && _checkpointer->isSequenceCompleted(info.sequence) ) {
-            return nullptr;  // skip rev: checkpoint says we already pushed it before
-        } else if ( _docIDs != nullptr && _docIDs->find(slice(info.docID).asString()) == _docIDs->end() ) {
-            return nullptr;  // skip rev: not in list of docIDs
+            // skip rev: checkpoint says we already pushed it before
+        } else if ( (_options->isActive() && _checkpointer->isSequenceCompleted(info.sequence)) ||
+                    // skip rev: not in list of docIDs
+                    (_docIDs != nullptr && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) ) {
+            return nullptr;
         } else {
             auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
                                                 _options->collectionCallbackContext(_collectionIndex));
@@ -305,4 +303,4 @@ namespace litecore { namespace repl {
         return ChangesFeed::getMoreChanges(limit);
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

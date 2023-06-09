@@ -17,7 +17,6 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
-#include "c4Document.hh"
 #include "c4DocEnumerator.hh"
 #include "c4Private.h"
 #include <functional>
@@ -25,19 +24,19 @@
 #include <utility>
 #include <cinttypes>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     using namespace std;
     using namespace fleece;
 
     DBAccess::DBAccess(C4Database* db, bool disableBlobSupport)
-        : access_lock(move(db))
+        : access_lock(db)
         , Logging(SyncLog)
         , _blobStore(&db->getBlobStore())
         , _disableBlobSupport(disableBlobSupport)
         , _revsToMarkSynced(bind(&DBAccess::markRevsSyncedNow, this), bind(&DBAccess::markRevsSyncedLater, this),
                             tuning::kInsertionDelay)
-        , _timer(bind(&DBAccess::markRevsSyncedNow, this))
+        , _timer([this] { markRevsSyncedNow(); })
         , _usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0) {}
 
     AccessLockedDB& DBAccess::insertionDB() {
@@ -53,7 +52,7 @@ namespace litecore { namespace repl {
                         logError("Couldn't open new db connection: %s", error.description().c_str());
                         idb = db;
                     }
-                    _insertionDB.emplace(move(idb));
+                    _insertionDB.emplace(std::move(idb));
                 }
             });
         }
@@ -78,11 +77,9 @@ namespace litecore { namespace repl {
         });
     }
 
-    UseCollection DBAccess::useCollection(C4Collection* coll) { return UseCollection(*this, coll); }
+    UseCollection DBAccess::useCollection(C4Collection* coll) { return {*this, coll}; }
 
-    const UseCollection DBAccess::useCollection(C4Collection* coll) const {
-        return UseCollection(*const_cast<DBAccess*>(this), coll);
-    }
+    UseCollection DBAccess::useCollection(C4Collection* coll) const { return {*const_cast<DBAccess*>(this), coll}; }
 
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
@@ -107,7 +104,7 @@ namespace litecore { namespace repl {
         return useCollection(collection)->getDocument(docID, true, content);
     }
 
-    alloc_slice DBAccess::getDocRemoteAncestor(C4Document* doc) {
+    alloc_slice DBAccess::getDocRemoteAncestor(C4Document* doc) const {
         if ( _remoteDBID ) return doc->remoteAncestorRevID(_remoteDBID);
         else
             return {};
@@ -147,7 +144,7 @@ namespace litecore { namespace repl {
     }
 
     static bool containsAttachmentsProperty(slice json) {
-        if ( !json.find("\"_attachments\":"_sl) ) return false;
+        if ( !json.find(R"("_attachments":)") ) return false;
         Doc doc = Doc::fromJSON(json);
         return doc.root().asDict()[C4Blob::kLegacyAttachmentsProperty].asDict() != nullptr;
     }
@@ -173,7 +170,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    void DBAccess::findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback) {
+    void DBAccess::findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback) const {
         // This method is non-static because it references _disableBlobSupport, but it's
         // thread-safe.
         set<string>    found;
@@ -191,7 +188,7 @@ namespace litecore { namespace repl {
         FLDeepIterator_Free(i);
     }
 
-    void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) {
+    void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) const {
         enc.beginDict();
 
         // Write existing properties except for _attachments:
@@ -430,7 +427,7 @@ namespace litecore { namespace repl {
                 transaction.commit();
                 double t = st.elapsed();
                 logVerbose("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)", revs->size(), t * 1000,
-                           revs->size() / t);
+                           (double)revs->size() / t);
             } catch ( const exception& x ) {
                 C4Error error = C4Error::fromException(x);
                 warn("Error marking %zu revs as synced: %d/%d", revs->size(), error.domain, error.code);
@@ -443,4 +440,4 @@ namespace litecore { namespace repl {
     atomic<unsigned> DBAccess::gNumDeltasApplied;
 
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

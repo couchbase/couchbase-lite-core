@@ -11,8 +11,6 @@
 //
 
 #include "fleece/Fleece.hh"
-#include "c4ExceptionUtils.hh"
-#include "c4Private.h"
 #include "c4Socket.hh"
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
@@ -20,9 +18,10 @@
 #include "Headers.hh"
 #include "Logging.hh"
 #include "WebSocketImpl.hh"
-#include "StringUtil.hh"
 #include <atomic>
 #include <exception>
+#include <utility>
+#include <sstream>
 
 using namespace std;
 using namespace fleece;
@@ -61,8 +60,9 @@ namespace litecore::repl {
 
     void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) { sRegisteredInternalFactory = f; }
 
-    Retained<WebSocket> CreateWebSocket(websocket::URL url, alloc_slice options, shared_ptr<DBAccess> database,
-                                        const C4SocketFactory* factory, void* nativeHandle) {
+    Retained<WebSocket> CreateWebSocket(const websocket::URL& url, const alloc_slice& options,
+                                        shared_ptr<DBAccess> database, const C4SocketFactory* factory,
+                                        void* nativeHandle) {
         if ( !factory ) factory = sRegisteredFactory;
 
         if ( factory ) {
@@ -71,7 +71,7 @@ namespace litecore::repl {
             return ret;
         } else if ( sRegisteredInternalFactory ) {
             Assert(!nativeHandle);
-            return sRegisteredInternalFactory(url, options, database);
+            return sRegisteredInternalFactory(url, options, std::move(database));
         } else {
             throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         }
@@ -90,8 +90,8 @@ namespace litecore::repl {
         return params;
     }
 
-    C4SocketImpl::C4SocketImpl(websocket::URL url, Role role, alloc_slice options, const C4SocketFactory* factory_,
-                               void* nativeHandle_)
+    C4SocketImpl::C4SocketImpl(const websocket::URL& url, Role role, const alloc_slice& options,
+                               const C4SocketFactory* factory_, void* nativeHandle_)
         : WebSocketImpl(url, role, effectiveFactory(factory_).framing != kC4NoFraming, convertParams(options))
         , _factory(effectiveFactory(factory_)) {
         nativeHandle = nativeHandle_;
@@ -199,13 +199,13 @@ namespace litecore::repl {
 
 namespace c4SocketTrace {
 
-    Event::Event(const C4Socket* sock, const string& f) : socket(sock), tid(this_thread::get_id()), func(f) {
+    Event::Event(const C4Socket* sock, string f) : socket(sock), tid(this_thread::get_id()), func(std::move(f)) {
         timestamp = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
     }
 
     Event::Event(const C4Socket* sock, const string& f, const string& rem) : Event(sock, f) { remark = rem; }
 
-    Event::operator string() {
+    Event::operator string() const {
         stringstream ss;
         ss << (void*)socket << ", time= " << timestamp << ", tid= " << tid << ", func= " << func;
         if ( !remark.empty() ) { ss << ", remark= " << remark; }

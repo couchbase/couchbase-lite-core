@@ -11,7 +11,7 @@
 //
 
 #include "URLTransformer.hh"
-#include "c4Replicator.hh"
+#include "c4ReplicatorTypes.h"
 
 namespace litecore::repl {
     URLTransformStrategy& operator++(URLTransformStrategy& s) {

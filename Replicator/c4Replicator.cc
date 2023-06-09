@@ -18,10 +18,8 @@
 #include "c4IncomingReplicator.hh"
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
-#include "DatabaseCookies.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.hh"
-#include <errno.h>
+#include <cerrno>
 
 using namespace std;
 using namespace litecore;
@@ -67,9 +65,9 @@ Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, c
     return newIncomingReplicator(WebSocketFrom(openSocket), params);
 }
 
-bool C4Replicator::retry() { return asInternal(this)->retry(true); }
+bool C4Replicator::retry() const { return asInternal(this)->retry(true); }
 
-void C4Replicator::setOptions(slice optionsDictFleece) {
+void C4Replicator::setOptions(slice optionsDictFleece) const {
     asInternal(this)->setProperties(AllocedDict(optionsDictFleece));
 }
 

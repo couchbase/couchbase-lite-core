@@ -44,13 +44,15 @@ namespace litecore::repl {
 
         explicit operator bool() const noexcept FLPURE { return isInt() || sliceValue(); }
 
-        bool isInt() const noexcept FLPURE { return std::holds_alternative<uint64_t>(_value); }
+        [[nodiscard]] bool isInt() const noexcept FLPURE { return std::holds_alternative<uint64_t>(_value); }
 
-        uint64_t intValue() const FLPURE { return *std::get_if<uint64_t>(&_value); }
+        [[nodiscard]] uint64_t intValue() const FLPURE { return *std::get_if<uint64_t>(&_value); }
 
-        const fleece::alloc_slice& sliceValue() const FLPURE { return *std::get_if<fleece::alloc_slice>(&_value); }
+        [[nodiscard]] const fleece::alloc_slice& sliceValue() const FLPURE {
+            return *std::get_if<fleece::alloc_slice>(&_value);
+        }
 
-        fleece::alloc_slice toJSON() const {
+        [[nodiscard]] fleece::alloc_slice toJSON() const {
             if ( isInt() ) {
                 constexpr size_t bufSize = 30;
                 char             buf[bufSize];
@@ -61,7 +63,7 @@ namespace litecore::repl {
             }
         }
 
-        std::string toJSONString() const {
+        [[nodiscard]] std::string toJSONString() const {
             if ( isInt() ) return format("%" PRIu64, intValue());
             else
                 return std::string(sliceValue());

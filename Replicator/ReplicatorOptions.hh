@@ -21,7 +21,7 @@
 #include "NumConversion.hh"
 #include <unordered_map>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     using namespace fleece;
 
@@ -219,10 +219,10 @@ namespace litecore { namespace repl {
         inline static alloc_slice const kDefaultCollectionPath = collectionSpecToPath(kC4DefaultCollectionSpec, false);
 
         struct CollectionOptions {
-            C4CollectionSpec collectionSpec;
+            C4CollectionSpec collectionSpec{};
 
-            C4ReplicatorMode push;
-            C4ReplicatorMode pull;
+            C4ReplicatorMode push{};
+            C4ReplicatorMode pull{};
 
             fleece::AllocedDict properties;
 
@@ -234,7 +234,7 @@ namespace litecore { namespace repl {
             alloc_slice collectionPath;
 
           public:
-            CollectionOptions(C4CollectionSpec collectionSpec_) {
+            explicit CollectionOptions(C4CollectionSpec collectionSpec_) {
                 collectionPath = collectionSpecToPath(collectionSpec_);
                 collectionSpec = collectionPathToSpec(collectionPath);
             }
@@ -383,7 +383,7 @@ namespace litecore { namespace repl {
     }
 
     inline void Options::verify() const {
-        if ( collectionOpts.size() == 0 ) {
+        if ( collectionOpts.empty() ) {
             throw error(error::LiteCore, error::InvalidParameter,
                         "Invalid replicator configuration: requiring at least one collection");
         }
@@ -427,7 +427,7 @@ namespace litecore { namespace repl {
         unsigned oneshot    = 0;
         unsigned continuous = 0;
         if ( _mutables._isActive && collectionOpts.size() > 1 ) {
-            for ( auto c : collectionOpts ) {
+            for ( const auto& c : collectionOpts ) {
                 if ( c.push == kC4OneShot ) ++oneshot;
                 else if ( c.push == kC4Continuous )
                     ++continuous;
@@ -470,4 +470,4 @@ namespace litecore { namespace repl {
         }
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

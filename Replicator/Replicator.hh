@@ -15,13 +15,12 @@
 #include "Checkpointer.hh"
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
-#include "fleece/Fleece.hh"
-#include "fleece/InstanceCounted.hh"
 #include "Stopwatch.hh"
 #include <array>
 #include <optional>
+#include <utility>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     class Pusher;
     class Puller;
@@ -44,7 +43,7 @@ namespace litecore { namespace repl {
         using Options     = litecore::repl::Options;
 
         Replicator(C4Database* NONNULL, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
-        Replicator(shared_ptr<DBAccess>, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
+        Replicator(const shared_ptr<DBAccess>&, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
 
         struct BlobProgress {
             Dir         dir;
@@ -77,8 +76,6 @@ namespace litecore { namespace repl {
             virtual void replicatorDocumentsEnded(Replicator* NONNULL, const DocumentsEnded&) = 0;
             virtual void replicatorBlobProgress(Replicator* NONNULL, const BlobProgress&)     = 0;
         };
-
-        Status status() const { return Worker::status(); }  //FIX: Needs to be thread-safe
 
         void start(bool reset = false, bool synchronous = false);
 
@@ -117,7 +114,7 @@ namespace litecore { namespace repl {
         }
 
       protected:
-        virtual std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "repl"; }
+        std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "repl"; }
 
         // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
         // pass the collectionIndex manually for log calls
@@ -144,26 +141,26 @@ namespace litecore { namespace repl {
 #endif
 
         // BLIP ConnectionDelegate API:
-        virtual void onHTTPResponse(int status, const websocket::Headers& headers) override;
-        virtual void onTLSCertificate(slice certData) override;
+        void onHTTPResponse(int status, const websocket::Headers& headers) override;
+        void onTLSCertificate(slice certData) override;
 
-        virtual void onConnect() override { enqueue(FUNCTION_TO_QUEUE(Replicator::_onConnect)); }
+        void onConnect() override { enqueue(FUNCTION_TO_QUEUE(Replicator::_onConnect)); }
 
-        virtual void onClose(CloseStatus status, blip::Connection::State state) override {
+        void onClose(CloseStatus status, blip::Connection::State state) override {
             enqueue(FUNCTION_TO_QUEUE(Replicator::_onClose), status, state);
         }
 
-        virtual void onRequestReceived(blip::MessageIn* msg NONNULL) override {
+        void onRequestReceived(blip::MessageIn* msg NONNULL) override {
             enqueue(FUNCTION_TO_QUEUE(Replicator::_onRequestReceived), retained(msg));
         }
 
-        virtual void changedStatus() override;
+        void changedStatus() override;
 
-        virtual void onError(C4Error error) override;
+        void onError(C4Error error) override;
 
         // Worker method overrides:
-        virtual ActivityLevel computeActivityLevel() const override;
-        virtual void          _childChangedStatus(Retained<Worker>, Status taskStatus) override;
+        ActivityLevel computeActivityLevel() const override;
+        void          _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
       private:
         void _onHTTPResponse(int status, websocket::Headers headers);
@@ -185,7 +182,7 @@ namespace litecore { namespace repl {
         void updateCheckpoint();
 
         void saveCheckpoint(CollectionIndex coll, alloc_slice json) {
-            enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), coll, json);
+            enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), coll, std::move(json));
         }
 
         void _saveCheckpoint(CollectionIndex, alloc_slice json);
@@ -243,7 +240,7 @@ namespace litecore { namespace repl {
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
 
-        void setMsgHandlerFor3_0_Client(Retained<blip::MessageIn>);
+        void setMsgHandlerFor3_0_Client(const Retained<blip::MessageIn>&);
 
         Delegate*               _delegate;         // Delegate whom I report progress/errors to
         blip::Connection::State _connectionState;  // Current BLIP connection state
@@ -261,4 +258,4 @@ namespace litecore { namespace repl {
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl
