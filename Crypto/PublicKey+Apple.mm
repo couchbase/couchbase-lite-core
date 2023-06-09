@@ -166,9 +166,7 @@ namespace litecore { namespace crypto {
 
         virtual alloc_slice publicKeyRawData() override {
             CFErrorRef error;
-            ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
             CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
-            --gC4ExpectExceptions;
             if (!data) {
                 warnCFError(error, "SecKeyCopyExternalRepresentation");
                 error::_throw(error::CryptoError, "Couldn't get the data of a public key");
@@ -190,9 +188,7 @@ namespace litecore { namespace crypto {
             @autoreleasepool {
                 // Get public key hash from kSecAttrApplicationLabel attribute:
                 // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
-                ++gC4ExpectExceptions;
                 NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(_privateKeyRef));
-                --gC4ExpectExceptions;
                 NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
                 if (!publicKeyHash) {
                     throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
@@ -204,9 +200,7 @@ namespace litecore { namespace crypto {
                     (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
                     (id)kSecAttrApplicationLabel:   publicKeyHash
                 };
-                ++gC4ExpectExceptions;
                 OSStatus status = SecItemDelete((CFDictionaryRef)params);
-                --gC4ExpectExceptions;
                 if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
                     checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
                 
@@ -216,9 +210,7 @@ namespace litecore { namespace crypto {
                     (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
                     (id)kSecAttrApplicationLabel:   publicKeyHash
                 };
-                ++gC4ExpectExceptions;
                 status = SecItemDelete((CFDictionaryRef)params);
-                --gC4ExpectExceptions;
                 if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
                     checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
             }
@@ -321,9 +313,7 @@ namespace litecore { namespace crypto {
 
             SecKeyRef publicKey = NULL, privateKey = NULL;
             CFErrorRef error;
-            ++gC4ExpectExceptions;
             privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
-            --gC4ExpectExceptions;
             if (!privateKey) {
                 warnCFError(error, "SecKeyCreateRandomKey");
                 return nullptr;
@@ -395,9 +385,7 @@ namespace litecore { namespace crypto {
             if (!privateKeyRef)
                 return nullptr;
             
-            ++gC4ExpectExceptions;
             auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
-            --gC4ExpectExceptions;
             if (!publicKeyRef) {
                 // If the public key is not in the KeyChain, SecKeyCopyPublicKey() will return null.
                 // Create a SecKeyRef directly from the publicKey data instead:
