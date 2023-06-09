@@ -8,8 +8,8 @@
 	"adminInterface": ":4995",
 	"metricsInterface": ":4996",
 	"admin_interface_authentication": false,
-	"SSLCert": "sg_cert.pem",
-	"SSLKey":  "sg_key.pem",
+	"SSLCert": "cert/sg_cert.pem",
+	"SSLKey":  "cert/sg_key.pem",
 
 	"databases": {
 		"itunes": {
