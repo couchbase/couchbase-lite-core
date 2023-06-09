@@ -315,6 +315,15 @@ namespace litecore::repl {
             logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
                        nuu.size - delta.size, SPLAT(old), SPLAT(nuu), SPLAT(delta));
         }
+#ifdef LITECORE_CPPTEST
+        slice cbl_4499_errDoc = "cbl-4499_doc-001"_sl;
+        if ( doc->docID().hasSuffix(cbl_4499_errDoc) ) {
+            string s  = delta.asString();
+            auto   p0 = s.find(':');
+            auto   p1 = s.find(',');
+            delta     = alloc_slice(s.substr(0, p0 + 1) + "[\"xyz\", 0, 10]" + s.substr(p1));
+        }
+#endif
         return delta;
     }
 

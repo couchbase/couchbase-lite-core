@@ -2446,3 +2446,195 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
         replicate(replParams);
     }
 }
+
+// cbl-4499
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
+                 "[.SyncServerCollection][Delta]") {
+    string       idPrefix  = timePrefix();
+    const string channelID = idPrefix + "ch";
+    initTest({Tulips}, {channelID}, "test_user");
+
+    static constexpr int         kNumDocs = 10, kNumProps = 100;
+    static constexpr int         kDocBufSize = 80;
+    static constexpr const char* cblTicket   = "cbl-4499";
+
+    const string docPrefix = idPrefix + cblTicket + "_";
+
+    // -------- Populating local db --------
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        std::srand(123456);  // start random() sequence at a known place
+        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for ( int p = 0; p < kNumProps; ++p ) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(std::rand());
+            }
+            enc.writeKey("channels"_sl);
+            enc.beginArray();
+            enc.writeString(channelID);
+            enc.endArray();
+            enc.endDict();
+            alloc_slice body  = enc.finish();
+            string      revID = createNewRev(_collections[0], slice(docID), body);
+        }
+    };
+    populateDB();
+
+    // Push parameter
+    ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
+    // Push to the remote
+    replicate(replParams);
+
+    // -------- Updating docs on SG --------
+    {
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
+            C4Error             error;
+            c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
+            REQUIRE(doc);
+            Dict props = c4doc_getProperties(doc);
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(doc->revID);
+            for ( Dict::iterator i(props); i; ++i ) {
+                enc.writeKey(i.keyString());
+                auto value = i.value().asInt();
+                if ( RandomNumber() % 2 == 0 ) value = RandomNumber();
+                enc.writeInt(value);
+            }
+            enc.writeKey("channels"_sl);
+            enc.beginArray();
+            enc.writeString(channelID);
+            enc.endArray();
+            enc.endDict();
+        }
+        enc.endArray();
+        enc.endDict();
+        _sg.sendRemoteRequest("POST", _collectionSpecs[0], "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
+    }
+
+    // -------- Repopulating local db --------
+    deleteAndRecreateDBAndCollections();
+    populateDB();
+
+    // Setup pull filter:
+    _pullFilter = [](C4CollectionSpec collectionName, C4String docID, C4String revID, C4RevisionFlags flags,
+                     FLDict flbody, void* context) { return true; };
+
+    // -------- Pulling changes from SG --------
+#ifdef LITECORE_CPPTEST
+    _expectedDocPullErrors = {docPrefix + "doc-001"};
+#endif
+    replParams.setPushPull(kC4Disabled, kC4OneShot);
+    replParams.setPullFilter(_pullFilter).setCallbackContext(this);
+    {
+        ExpectingExceptions x;
+        replicate(replParams);
+    }
+
+    // Verify
+    int                      n = 0;
+    C4Error                  error;
+    c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(_collections[0], nullptr, ERROR_INFO(error));
+    REQUIRE(e);
+    while ( c4enum_next(e, ERROR_INFO(error)) ) {
+        CHECK(error.code == 0);
+        C4DocumentInfo info;
+        c4enum_getDocumentInfo(e, &info);
+        CHECK(slice(info.docID).hasPrefix(slice(docPrefix + "doc-")));
+        CHECK(slice(info.revID).hasPrefix("2-"_sl));
+        ++n;
+    }
+    CHECK(n == kNumDocs);
+}
+
+// cbl-4499
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.SyncServerCollection][Delta]") {
+    string       idPrefix  = timePrefix();
+    const string channelID = idPrefix + "ch";
+    initTest({Tulips}, {channelID}, "test_user");
+
+    static constexpr int         kNumDocs = 10, kNumProps = 100;
+    static constexpr int         kDocBufSize = 80;
+    static constexpr const char* cblTicket   = "cbl-4499";
+
+    const string docPrefix = idPrefix + cblTicket + "_";
+
+    // -------- Populating local db --------
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        std::srand(123456);  // start random() sequence at a known place
+        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for ( int p = 0; p < kNumProps; ++p ) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(std::rand());
+            }
+            enc.writeKey("channels"_sl);
+            enc.beginArray();
+            enc.writeString(channelID);
+            enc.endArray();
+            enc.endDict();
+            alloc_slice body  = enc.finish();
+            string      revID = createNewRev(_collections[0], slice(docID), body);
+        }
+    };
+    populateDB();
+
+    // Push parameter
+    ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
+    // Push to the remote
+    replicate(replParams);
+
+    // -------- Updating local docs --------
+    for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+        char docID[kDocBufSize];
+        snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
+        slice               docIDsl = slice(docID);
+        TransactionHelper   t(db);
+        C4Error             error;
+        c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], docIDsl, false, kDocGetAll, ERROR_INFO(error));
+        REQUIRE(doc);
+        Dict        props = c4doc_getProperties(doc);
+        Encoder     enc(c4db_createFleeceEncoder(db));
+        MutableDict mutableProps = props.mutableCopy(kFLDeepCopyImmutables);
+        for ( Dict::iterator i(props); i; ++i ) {
+            auto value = i.value().asInt();
+            if ( RandomNumber() % 4 == 0 ) value = RandomNumber();
+            mutableProps[i.keyString()] = value;
+        }
+        enc.writeValue(mutableProps);
+        alloc_slice newBody = enc.finish();
+
+        C4String        history = doc->selectedRev.revID;
+        C4DocPutRequest rq      = {};
+        rq.body                 = newBody;
+        rq.docID                = docIDsl;
+        rq.revFlags             = (doc->selectedRev.flags & kRevHasAttachments);
+        rq.history              = &history;
+        rq.historyCount         = 1;
+        rq.save                 = true;
+        doc                     = c4coll_putDoc(_collections[0], &rq, nullptr, ERROR_INFO(error));
+        CHECK(doc);
+    }
+
+    // -------- Pushing changes from SG --------
+    replicate(replParams);
+    CHECK(_callbackStatus.error.code == 0);
+    CHECK(_callbackStatus.progress.documentCount == kNumDocs);
+}

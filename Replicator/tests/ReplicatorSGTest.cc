@@ -697,8 +697,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     flushScratchDatabase();
     bool logRemoteRequests = false;
 
-    //    c4log_setCallbackLevel(kC4LogInfo);
-
     C4Log("-------- Populating local db --------");
     size_t numDocs    = 100;
     auto   populateDB = [&]() {

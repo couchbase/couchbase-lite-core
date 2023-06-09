@@ -5679,6 +5679,284 @@
 			};
 			name = Release;
 		};
+		D6D93DE42A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */;
+			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
+			};
+			name = Test_EE;
+		};
+		D6D93DE52A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE62A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE72A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Test_EE;
+		};
+		D6D93DE82A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE92A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEA2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEB2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEC2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DED2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEE2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEF2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
+		D6D93DF02A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_EE;
+		};
+		D6D93DF12A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
+				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
+				PRODUCT_NAME = "LiteCore-iOS";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_EE;
+		};
+		D6D93DF22A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiteCore-iOS.app/LiteCore-iOS";
+			};
+			name = Test_EE;
+		};
+		D6D93DF32A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DF42A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
 		EAE4736A29BA113000C28D49 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -5719,6 +5997,7 @@
 			buildConfigurations = (
 				2708FE501CF4CC880022F721 /* Debug */,
 				2791EA212032745700BD813C /* Debug_EE */,
+				D6D93DEA2A2ACD9D00E30981 /* Test_EE */,
 				2708FE511CF4CC880022F721 /* Release */,
 				2791EA352032746700BD813C /* Release_EE */,
 			);
@@ -5730,6 +6009,7 @@
 			buildConfigurations = (
 				27139B4218F8E9750021A9A3 /* Debug */,
 				2791EA2A2032745700BD813C /* Debug_EE */,
+				D6D93DEC2A2ACD9D00E30981 /* Test_EE */,
 				27139B4318F8E9750021A9A3 /* Release */,
 				2791EA3E2032746700BD813C /* Release_EE */,
 			);
@@ -5741,6 +6021,7 @@
 			buildConfigurations = (
 				274D040D1BA75E1C00FF7C35 /* Debug */,
 				2791EA222032745700BD813C /* Debug_EE */,
+				D6D93DEB2A2ACD9D00E30981 /* Test_EE */,
 				274D040E1BA75E1C00FF7C35 /* Release */,
 				2791EA362032746700BD813C /* Release_EE */,
 			);
@@ -5752,6 +6033,7 @@
 			buildConfigurations = (
 				2750724718E3E52800A80C5A /* Debug */,
 				2791EA1B2032745700BD813C /* Debug_EE */,
+				D6D93DE42A2ACD9D00E30981 /* Test_EE */,
 				2750724818E3E52800A80C5A /* Release */,
 				2791EA2F2032746700BD813C /* Release_EE */,
 			);
@@ -5763,6 +6045,7 @@
 			buildConfigurations = (
 				2752B26B233D76010014AD9D /* Debug */,
 				2752B26C233D76010014AD9D /* Debug_EE */,
+				D6D93DEF2A2ACD9D00E30981 /* Test_EE */,
 				2752B26D233D76010014AD9D /* Release */,
 				2752B26E233D76010014AD9D /* Release_EE */,
 			);
@@ -5774,6 +6057,7 @@
 			buildConfigurations = (
 				2771A0A1228624C100B18E0A /* Debug */,
 				2771A0A2228624C100B18E0A /* Debug_EE */,
+				D6D93DE92A2ACD9D00E30981 /* Test_EE */,
 				2771A0A3228624C100B18E0A /* Release */,
 				2771A0A4228624C100B18E0A /* Release_EE */,
 			);
@@ -5785,6 +6069,7 @@
 			buildConfigurations = (
 				278F476324C9131000E1CA7A /* Debug */,
 				278F476424C9131000E1CA7A /* Debug_EE */,
+				D6D93DF02A2ACD9D00E30981 /* Test_EE */,
 				278F476524C9131000E1CA7A /* Release */,
 				278F476624C9131000E1CA7A /* Release_EE */,
 			);
@@ -5796,6 +6081,7 @@
 			buildConfigurations = (
 				27A924B41D9B316D00086206 /* Debug */,
 				2791EA2B2032745700BD813C /* Debug_EE */,
+				D6D93DF12A2ACD9D00E30981 /* Test_EE */,
 				27A924B51D9B316D00086206 /* Release */,
 				2791EA3F2032746700BD813C /* Release_EE */,
 			);
@@ -5807,6 +6093,7 @@
 			buildConfigurations = (
 				27A924B71D9B316D00086206 /* Debug */,
 				2791EA2D2032745700BD813C /* Debug_EE */,
+				D6D93DF22A2ACD9D00E30981 /* Test_EE */,
 				27A924B81D9B316D00086206 /* Release */,
 				2791EA412032746700BD813C /* Release_EE */,
 			);
@@ -5818,6 +6105,7 @@
 			buildConfigurations = (
 				27B6493D206971FC00FC12F7 /* Debug */,
 				27B6493E206971FC00FC12F7 /* Debug_EE */,
+				D6D93DE72A2ACD9D00E30981 /* Test_EE */,
 				27B6493F206971FC00FC12F7 /* Release */,
 				27B64940206971FC00FC12F7 /* Release_EE */,
 			);
@@ -5829,6 +6117,7 @@
 			buildConfigurations = (
 				27B7E0F318F8FB4800044EBA /* Debug */,
 				2791EA2E2032745700BD813C /* Debug_EE */,
+				D6D93DF32A2ACD9D00E30981 /* Test_EE */,
 				27B7E0F418F8FB4800044EBA /* Release */,
 				2791EA422032746700BD813C /* Release_EE */,
 			);
@@ -5840,6 +6129,7 @@
 			buildConfigurations = (
 				27DF7D651F4236500022F3DF /* Debug */,
 				2791EA272032745700BD813C /* Debug_EE */,
+				D6D93DED2A2ACD9D00E30981 /* Test_EE */,
 				27DF7D661F4236500022F3DF /* Release */,
 				2791EA3B2032746700BD813C /* Release_EE */,
 			);
@@ -5851,6 +6141,7 @@
 			buildConfigurations = (
 				27EF807619142C2500A327B9 /* Debug */,
 				2791EA282032745700BD813C /* Debug_EE */,
+				D6D93DEE2A2ACD9D00E30981 /* Test_EE */,
 				27EF807719142C2500A327B9 /* Release */,
 				2791EA3C2032746700BD813C /* Release_EE */,
 			);
@@ -5862,6 +6153,7 @@
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,
 				2791EA1C2032745700BD813C /* Debug_EE */,
+				D6D93DE52A2ACD9D00E30981 /* Test_EE */,
 				27EF81111917EEC600A327B9 /* Release */,
 				2791EA302032746700BD813C /* Release_EE */,
 			);
@@ -5873,6 +6165,7 @@
 			buildConfigurations = (
 				27FC81F11EAAB0D90028E38E /* Debug */,
 				2791EA1E2032745700BD813C /* Debug_EE */,
+				D6D93DE82A2ACD9D00E30981 /* Test_EE */,
 				27FC81F21EAAB0D90028E38E /* Release */,
 				2791EA322032746700BD813C /* Release_EE */,
 			);
@@ -5884,6 +6177,7 @@
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,
 				2791EA1D2032745700BD813C /* Debug_EE */,
+				D6D93DE62A2ACD9D00E30981 /* Test_EE */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
 				2791EA312032746700BD813C /* Release_EE */,
 			);
@@ -5895,6 +6189,7 @@
 			buildConfigurations = (
 				EAE4736A29BA113000C28D49 /* Debug */,
 				EAE4736B29BA113000C28D49 /* Debug_EE */,
+				D6D93DF42A2ACD9D00E30981 /* Test_EE */,
 				EAE4736C29BA113000C28D49 /* Release */,
 				EAE4736D29BA113000C28D49 /* Release_EE */,
 			);
