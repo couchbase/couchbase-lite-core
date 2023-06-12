@@ -54,7 +54,7 @@ namespace cbl {
 
     /** An adapter class that registers a CoreML model with LiteCore for predictive queries.
         (Only available on Apple platforms, obviously.) */
-    class API_AVAILABLE(macos(10.13), ios(11)) CoreMLPredictiveModel : public PredictiveModel {
+    class API_AVAILABLE(ios(11)) CoreMLPredictiveModel : public PredictiveModel {
       public:
         explicit CoreMLPredictiveModel(MLModel* model);
 
