@@ -337,7 +337,13 @@ namespace uWS {
                 auto*     start = reinterpret_cast<uint32_t*>(dst + headerLength);
                 uint32_t* end   = start + length / 4;
 
-                while ( start != end ) { *start++ ^= mask_i32; }
+                while ( start != end ) {
+                    uint32_t chunk;
+                    std::memcpy(&chunk, start, sizeof(chunk));
+                    chunk ^= mask_i32;
+                    std::memcpy(start, &chunk, sizeof(chunk));
+                    start++;
+                }
 
                 // Handle remaining bytes (if length is not a multiple of 4)
                 auto*      start_byte = reinterpret_cast<std::byte*>(start);
