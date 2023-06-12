@@ -89,6 +89,9 @@ namespace litecore::repl {
 
         CollectionIndex collectionIndex() const { return _collectionIndex; }
 
+        /// My current status.
+        const Status& status() const { return _status; }
+
 #if !DEBUG
       protected:
 #endif
@@ -100,9 +103,6 @@ namespace litecore::repl {
             Assert(_connection);
             return *_connection;
         }
-
-        /// My current status.
-        const Status& status() const { return _status; }
 
       protected:
         /// Designated constructor.
