@@ -140,7 +140,7 @@ typedef struct C4ExternalKeyCallbacks {
         @param externalKey  The client-provided key value given to c4keypair_fromExternal.
         @param digestAlgorithm  Indicates what type of digest to create the signature from.
         @param inputData  The data to be signed.
-        @param outputSignature  Write the signature here; length must be equal to the key size.
+        @param outSignature  Write the signature here; length must be equal to the key size.
         @return  True on success, false on failure.
         \note The data in inputData is _already hashed_ and does not need to be hashed by the caller.  The
               algorithm is provided as a reference for what was used to perform the hashing.    */
