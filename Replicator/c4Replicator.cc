@@ -67,7 +67,7 @@ Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, c
 
 bool C4Replicator::retry() const { return asInternal(this)->retry(true); }
 
-void C4Replicator::setOptions(slice optionsDictFleece) const {
+void C4Replicator::setOptions(slice optionsDictFleece) {
     asInternal(this)->setProperties(AllocedDict(optionsDictFleece));
 }
 

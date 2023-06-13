@@ -42,7 +42,7 @@ struct C4Replicator
 
     virtual void setSuspended(bool) noexcept = 0;
 
-    void         setOptions(slice optionsDictFleece) const;
+    void         setOptions(slice optionsDictFleece);
     virtual void setProgressLevel(C4ReplicatorProgressLevel) noexcept = 0;
 
     virtual C4ReplicatorStatus getStatus() const noexcept          = 0;
