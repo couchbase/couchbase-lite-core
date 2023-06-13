@@ -118,7 +118,7 @@ namespace litecore::repl {
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
         if ( callback ) {
             increment(_pendingResponseCount);
-            builder.onProgress = asynchronize("sendRequest callback", [=](const MessageProgress& progress) {
+            builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
                 if ( progress.state >= MessageProgress::kComplete ) decrement(_pendingResponseCount);
                 callback(progress);
             });
