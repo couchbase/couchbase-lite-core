@@ -35,7 +35,7 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_unix()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_definitions(
             ${liteCoreVariant} PUBLIC
             -DPERSISTENT_PRIVATE_KEY_AVAILABLE
@@ -47,7 +47,7 @@ function(setup_litecore_build)
         )
     endforeach()
 
-    foreach(platform LiteCoreObjects LiteCoreObjectsCppTest BLIPObjects)
+    foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"

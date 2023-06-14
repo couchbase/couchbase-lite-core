@@ -78,7 +78,7 @@ function(setup_litecore_build)
         )
     endforeach()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_link_libraries(
            ${liteCoreVariant} INTERFACE
            Threads::Threads

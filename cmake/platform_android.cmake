@@ -48,7 +48,7 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_definitions(
             ${liteCoreVariant} PRIVATE
             -DLITECORE_USES_ICU=1

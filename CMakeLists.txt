@@ -11,6 +11,7 @@ CppTests - A test runner that runs test based on the static library
 FleeceObjects - The Fleece serialization library for saving data to a binary format
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
+LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
 LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
@@ -196,7 +197,7 @@ target_compile_definitions(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
-add_library(LiteCoreObjectsCppTest OBJECT ${ALL_SRC_FILES})
+add_library(LiteCoreUnitTesting OBJECT ${ALL_SRC_FILES})
 set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
@@ -207,7 +208,7 @@ target_compile_definitions(
     ${LiteCoreObjectsDefines}
 )
 target_compile_definitions(
-    LiteCoreObjectsCppTest PRIVATE
+    LiteCoreUnitTesting PRIVATE
     ${LiteCoreObjectsDefines}
     PUBLIC LITECORE_CPPTEST
 )
@@ -256,7 +257,7 @@ target_include_directories(
     ${LiteCoreObjectsIncludes}
 )
 target_include_directories(
-    LiteCoreObjectsCppTest PRIVATE
+    LiteCoreUnitTesting PRIVATE
     ${LiteCoreObjectsIncludes}
 )
 
@@ -304,7 +305,7 @@ target_link_libraries(
     mbedx509
 )
 target_link_libraries(
-    LiteCoreObjectsCppTest INTERFACE
+    LiteCoreUnitTesting INTERFACE
     SQLite3_UnicodeSN
     mbedcrypto
     mbedtls
@@ -317,7 +318,7 @@ if(USE_COUCHBASE_SQLITE)
         CouchbaseSqlite3
     )
     target_link_libraries(
-        LiteCoreObjectsCppTest PUBLIC
+        LiteCoreUnitTesting PUBLIC
         CouchbaseSqlite3
     )
 endif()

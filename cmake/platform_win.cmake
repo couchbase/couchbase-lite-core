@@ -50,7 +50,7 @@ function(setup_globals)
 endfunction()
 
 function(setup_litecore_build_win)
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_definitions(
             ${liteCoreVariant} PRIVATE
             -DUNICODE               # Use wide string variants for Win32 calls
@@ -77,7 +77,7 @@ function(setup_litecore_build_win)
     )
 
     # Link with subproject libz and Windows sockets lib
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_link_libraries(
            ${liteCoreVariant} INTERFACE
            zlibstatic

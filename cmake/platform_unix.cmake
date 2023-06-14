@@ -35,7 +35,7 @@ function(setup_litecore_build_unix)
         if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             # GNU and Linux clang LTO can't seem to handle any of this...at least not with the versions I tried.  
             # Unexplained linker errors occur.
-            set_property(TARGET LiteCoreObjects LiteCoreObjectsCppTest PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+            set_property(TARGET LiteCoreObjects LiteCoreUnitTesting PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
@@ -75,7 +75,7 @@ function(setup_litecore_build_unix)
         -Werror=strict-prototypes
     )
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreObjectsCppTest)
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_options(${liteCoreVariant} PRIVATE 
             ${LITECORE_WARNINGS} 
             -Wformat=2
