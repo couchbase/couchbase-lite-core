@@ -11,6 +11,7 @@ CppTests - A test runner that runs test based on the static library
 FleeceObjects - The Fleece serialization library for saving data to a binary format
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
+LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
 LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
@@ -196,12 +197,22 @@ target_compile_definitions(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
-target_compile_definitions(
-    LiteCoreObjects PRIVATE
+add_library(LiteCoreUnitTesting OBJECT ${ALL_SRC_FILES})
+set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
+target_compile_definitions(
+    LiteCoreObjects PRIVATE
+    ${LiteCoreObjectsDefines}
+)
+target_compile_definitions(
+    LiteCoreUnitTesting PRIVATE
+    ${LiteCoreObjectsDefines}
+    PUBLIC LITECORE_CPPTEST
+)
+
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
@@ -210,8 +221,8 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-target_include_directories(
-    LiteCoreObjects PRIVATE
+set(
+    LiteCoreObjectsIncludes
     vendor/fleece/API
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
@@ -239,6 +250,15 @@ target_include_directories(
     vendor/mbedtls/include
     vendor/mbedtls/crypto/include
     vendor/sockpp/include
+)
+
+target_include_directories(
+    LiteCoreObjects PRIVATE
+    ${LiteCoreObjectsIncludes}
+)
+target_include_directories(
+    LiteCoreUnitTesting PRIVATE
+    ${LiteCoreObjectsIncludes}
 )
 
 if(WIN32)
@@ -284,10 +304,21 @@ target_link_libraries(
     mbedtls
     mbedx509
 )
+target_link_libraries(
+    LiteCoreUnitTesting INTERFACE
+    SQLite3_UnicodeSN
+    mbedcrypto
+    mbedtls
+    mbedx509
+)
 
 if(USE_COUCHBASE_SQLITE)
     target_link_libraries(
         LiteCoreObjects PUBLIC
+        CouchbaseSqlite3
+    )
+    target_link_libraries(
+        LiteCoreUnitTesting PUBLIC
         CouchbaseSqlite3
     )
 endif()

@@ -149,7 +149,7 @@ target_include_directories(
 
 target_link_libraries(
     CppTests PRIVATE 
-    LiteCoreObjects
+    LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
     LiteCoreREST_Static
