@@ -25,7 +25,6 @@ function(set_litecore_source)
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_Apple.cc
         LiteCore/Support/StringUtil_Apple.mm
-        LiteCore/Support/LibC++Debug.cc
         LiteCore/Support/Instrumentation.cc
         Crypto/PublicKey+Apple.mm
         PARENT_SCOPE
