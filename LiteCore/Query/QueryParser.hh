@@ -232,7 +232,7 @@ namespace litecore {
         const string& indexJoinTableAlias(const string &key, const char *aliasPrefix =nullptr);
         const string&  FTSJoinTableAlias(const Value *matchLHS, bool canAdd =false);
         const string&  predictiveJoinTableAlias(const Value *expr, bool canAdd =false);
-        string FTSTableName(const Value *key) const;
+        pair<string, string> FTSTableName(const Value *key) const;
         string expressionIdentifier(const Array *expression, unsigned maxItems =0) const;
         void findPredictiveJoins(const Value *node, vector<string> &joins);
         bool writeIndexedPrediction(const Array *node);
@@ -257,6 +257,7 @@ namespace litecore {
         map<string, string> _indexJoinTables;    // index table name --> alias
         set<string> _kvTables;                   // Collection tables referenced in this query
         vector<string> _ftsTables;               // FTS virtual tables being used
+        std::multimap<string, string> _ftsTableAliases;
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};          // Is this an aggregate query?
