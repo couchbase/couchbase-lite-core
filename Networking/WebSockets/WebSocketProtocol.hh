@@ -42,6 +42,7 @@
 
 //COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
+#include "c4Log.h"
 #include <limits>
 #ifdef __APPLE__
 #    include <libkern/OSByteOrder.h>
@@ -332,23 +333,29 @@ namespace uWS {
             memcpy(dst + headerLength, src, length);
 
             if ( !isServer ) {
-                uint32_t mask_i32 = *reinterpret_cast<uint32_t*>(mask);
+                std::byte* start_byte = dst + headerLength;
+                std::byte* end_byte   = start_byte + length;
+                size_t     i          = 0;
 
-                auto*     start = reinterpret_cast<uint32_t*>(dst + headerLength);
-                uint32_t* end   = start + length / 4;
-
-                while ( start != end ) {
-                    uint32_t chunk;
-                    std::memcpy(&chunk, start, sizeof(chunk));
-                    chunk ^= mask_i32;
-                    std::memcpy(start, &chunk, sizeof(chunk));
-                    start++;
+                // Handle first x amount of bytes individually until we are aligned with the 4-byte alignment
+                for ( ; reinterpret_cast<uintptr_t>(start_byte) % 4 != 0 && start_byte != end_byte; ++i ) {
+                    *start_byte++ ^= mask[i % 4];
                 }
 
-                // Handle remaining bytes (if length is not a multiple of 4)
-                auto*      start_byte = reinterpret_cast<std::byte*>(start);
-                std::byte* end_byte   = dst + headerLength + length;
-                for ( int i = 0; start_byte != end_byte; ++i, ++start_byte ) { *start_byte ^= mask[i % 4]; }
+                // Process majority of bytes in chunks of 4
+                auto*     start = reinterpret_cast<uint32_t*>(start_byte);
+                uint32_t* end   = start + ((end_byte - start_byte) / 4);
+                // Construct mask_i32 such that it's a rotation of 'mask' following on from the first loop
+                uint32_t mask_i32 = 0;
+                for ( int j = 0; j < 4; ++j ) { mask_i32 |= (static_cast<uint32_t>(mask[(i + j) % 4]) << (8 * j)); }
+                while ( start != end ) {
+                    *start++ ^= mask_i32;
+                    i += 4;
+                }
+
+                // Process remaining bytes individually (if any)
+                start_byte = reinterpret_cast<std::byte*>(start);
+                for ( ; start_byte != end_byte; ++i ) { *start_byte++ ^= mask[i % 4]; }
             }
             return messageLength;
         }
