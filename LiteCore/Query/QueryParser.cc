@@ -2048,7 +2048,7 @@ namespace {
         });
     }
 
-    // Returns the FTS table name given the LHS of a MATCH expression.
+    // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
     pair<string, string> QueryParser::FTSTableName(const Value *key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName

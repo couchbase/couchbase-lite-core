@@ -257,7 +257,7 @@ namespace litecore {
         map<string, string> _indexJoinTables;    // index table name --> alias
         set<string> _kvTables;                   // Collection tables referenced in this query
         vector<string> _ftsTables;               // FTS virtual tables being used
-        std::multimap<string, string> _ftsTableAliases;
+        std::multimap<string, string> _ftsTableAliases; // multimap from the FTS table to aliases that prefix the table in the query expression
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};          // Is this an aggregate query?
