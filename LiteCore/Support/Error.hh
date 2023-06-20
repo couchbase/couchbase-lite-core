@@ -16,6 +16,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include "fleece/CompilerSupport.h"
 #ifndef __printflike
 #    include "c4Compat.h"
 #endif
