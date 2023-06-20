@@ -657,6 +657,7 @@ namespace {
                 idxAt = table.find(KeyStore::kPredictSeparator);
             }
             string coAlias;
+            auto [prefixBegin, prefixEnd] = _ftsTableAliases.equal_range(table);
             if (idxAt != string::npos) {
                 string collTable = table.substr(0, idxAt);
                 for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
@@ -665,6 +666,12 @@ namespace {
                     }
                     if (iter->second.tableName == collTable) {
                         coAlias = iter->first;
+                    }
+                    if ( prefixBegin != _ftsTableAliases.end()
+                        && std::find_if(prefixBegin, prefixEnd, [iter](const auto& i) {
+                        return i.second == iter->first;
+                    }) != prefixEnd ) {
+                        break;
                     }
                 }
             }
@@ -1245,7 +1252,7 @@ namespace {
         // Write the expression:
         auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
         Assert(!ftsTableAlias.empty());
-        _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0])) << " MATCH ";
+        _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0]).first) << " MATCH ";
         parseCollatableNode(operands[1]);
     }
 
@@ -1627,7 +1634,7 @@ namespace {
 
         // Special case: in "rank(ftsName)" the param has to be a matchinfo() call:
         if (op.caseEquivalent(kRankFnName)) {
-            string fts = FTSTableName(operands[0]);
+            string fts = FTSTableName(operands[0]).first;
             auto i = _indexJoinTables.find(fts);
             if (i == _indexJoinTables.end())
                 fail("rank() can only be called on FTS indexes");
@@ -2041,8 +2048,8 @@ namespace {
         });
     }
 
-    // Returns the FTS table name given the LHS of a MATCH expression.
-    string QueryParser::FTSTableName(const Value *key) const {
+    // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
+    pair<string, string> QueryParser::FTSTableName(const Value *key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
@@ -2052,7 +2059,12 @@ namespace {
 
         string outError;
         iAlias = verifyDbAlias(keyPath, &outError);
-        if (iAlias == _aliases.end()) {
+        slice prefix;
+        if (iAlias != _aliases.end()) {
+            ptrdiff_t diff = keyPathBeforeVerifyDbAlias.size() - keyPath.size();
+            Assert(diff < 2);
+            if ( diff > 0 ) prefix = keyPathBeforeVerifyDbAlias[0].keyStr();
+        } else {
             bool uniq = true;
             string uniqAlias;
             for (auto iter = _aliases.begin(); iter != _aliases.end(); ++iter) {
@@ -2078,16 +2090,17 @@ namespace {
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _delegate.FTSTableName(iAlias->second.tableName, indexName);
+        return {_delegate.FTSTableName(iAlias->second.tableName, indexName), string(prefix)};
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
     const string& QueryParser::FTSJoinTableAlias(const Value *matchLHS, bool canAdd) {
-        auto tableName = FTSTableName(matchLHS);
+        auto [tableName, prefix] = FTSTableName(matchLHS);
         const string &alias = indexJoinTableAlias(tableName);
         if (!canAdd || !alias.empty())
             return alias;
         _ftsTables.push_back(tableName);
+        _ftsTableAliases.insert( {tableName, prefix} );
         return indexJoinTableAlias(tableName, "fts");
     }
 
