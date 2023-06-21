@@ -28,7 +28,7 @@ namespace litecore {
                          alloc_slice expression_,
                          QueryLanguage queryLanguage_,
                          const Options* opt)
-    :name(move(name_)), type(type_), expression(expression_), queryLanguage(queryLanguage_)
+    :name(std::move(name_)), type(type_), expression(expression_), queryLanguage(queryLanguage_)
     ,options(opt ? std::make_optional(*opt) : std::optional<Options>())
     { }
 

@@ -277,7 +277,7 @@ public:
     struct Jthread {
         std::thread thread;
         Jthread(std::thread&& thread_)
-        : thread(move(thread_))
+        : thread(std::move(thread_))
         {}
         Jthread() = default;
         ~Jthread() {

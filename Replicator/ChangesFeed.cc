@@ -74,9 +74,9 @@ namespace litecore { namespace repl {
         for (Array::iterator i(docIDs); i; ++i) {
             string docID = i.value().asstring();
             if (!docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()))
-                combined->insert(move(docID));
+                combined->insert(std::move(docID));
         }
-        _docIDs = move(combined);
+        _docIDs = std::move(combined);
         if (!_options->isActive())
             logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
     }

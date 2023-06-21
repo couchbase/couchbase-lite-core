@@ -194,7 +194,7 @@ Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComp
             name.push_back({attributeID, component.value});
     }
     Cert::SubjectParameters params(name);
-    params.subjectAltNames = move(altNames);
+    params.subjectAltNames = std::move(altNames);
     params.nsCertType = NSCertType(certUsages);
     return new C4Cert(new CertSigningRequest(params, subjectKey->getPrivateKey()));
 }

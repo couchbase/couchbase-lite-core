@@ -286,7 +286,7 @@ C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
 { }
 
 C4ReadStream::C4ReadStream( C4ReadStream &&other)
-:_impl(move(other._impl))
+:_impl(std::move(other._impl))
 { }
 
 C4ReadStream::~C4ReadStream() = default;
@@ -301,8 +301,8 @@ C4WriteStream::C4WriteStream(C4BlobStore &store)
 { }
 
 C4WriteStream::C4WriteStream(C4WriteStream &&other)
-:InstanceCounted(move(other))
-,_impl(move(other._impl))
+:InstanceCounted(std::move(other))
+,_impl(std::move(other._impl))
 ,_store(other._store)
 { }
 

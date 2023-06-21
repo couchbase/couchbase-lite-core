@@ -56,7 +56,7 @@ namespace litecore::net {
         bool connected() const;
         operator bool() const                   {return connected();}
 
-        void onClose(std::function<void()> &&callback)     {_onClose = move(callback);}
+        void onClose(std::function<void()> &&callback)     {_onClose = std::move(callback);}
 
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();

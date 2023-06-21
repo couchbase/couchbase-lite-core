@@ -134,7 +134,7 @@ namespace litecore { namespace repl {
                 alloc_slice bodyForDB;
                 if (rev->deltaSrc) {
                     // If this is a delta, put the JSON delta in the put-request:
-                    bodyForDB = move(rev->deltaSrc);
+                    bodyForDB = std::move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
                     put.deltaCB = [](void *context, C4Document *doc,
                                      C4Slice delta, C4Error *outError) -> C4SliceResult {

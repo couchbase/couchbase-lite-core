@@ -159,7 +159,7 @@ namespace litecore {
 
 
     FilePath::FilePath(string &&dirName, string &&fileName)
-    :_dir(move(dirName)), _file(move(fileName))
+    :_dir(std::move(dirName)), _file(std::move(fileName))
     {
         if (_dir.empty())
             _dir = kCurrentDir;

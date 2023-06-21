@@ -246,7 +246,7 @@ namespace litecore { namespace websocket {
                 else
                     _serverProtocol->consume((const char*)data.buf, (unsigned)data.size, this);
                 opToSend = _opToSend;
-                msgToSend = move(_msgToSend);
+                msgToSend = std::move(_msgToSend);
                 // Compute # of bytes consumed: just the framing data, not any partial or
                 // delivered messages. (Trust me, the math works.)
                 completedBytes = data.size + prevMessageLength - _curMessageLength - _deliveredBytes;
@@ -293,7 +293,7 @@ namespace litecore { namespace websocket {
         // End:
         if (fin && remainingBytes == 0) {
             _curMessage.shorten(_curMessageLength);
-            bool ok = receivedMessage(_curOpCode, move(_curMessage));
+            bool ok = receivedMessage(_curOpCode, std::move(_curMessage));
             DebugAssert(!_curMessage);
             _curMessageLength = 0;
             return ok;

@@ -39,7 +39,7 @@ namespace litecore {
                 if (coll.readSQLiteName(name)) {
                     auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
                     if (ctx)
-                        (*(CollationContextVector*)pContexts).push_back(move(ctx));
+                        (*(CollationContextVector*)pContexts).push_back(std::move(ctx));
                 }
             } catch (std::runtime_error &x) {
                 Warn("Exception registering a collator: %s", x.what());

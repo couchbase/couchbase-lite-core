@@ -121,7 +121,7 @@ namespace litecore {
     public:
         C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
         :C4QueryObserver(query)
-        ,_callback(move(callback))
+        ,_callback(std::move(callback))
         { }
 
         ~C4QueryObserverImpl() {
@@ -159,7 +159,7 @@ namespace litecore {
             Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
             if (forget)
                 _currentEnumerator = nullptr;
-            return C4Query::Enumerator(move(e));
+            return C4Query::Enumerator(std::move(e));
         }
 
     private:

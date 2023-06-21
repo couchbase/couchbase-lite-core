@@ -59,7 +59,7 @@ namespace litecore::repl {
                        SPLAT(req->property("Profile"_sl)), req->number(),
                        _waitingChangesMessages.size() + 1);
             Signpost::begin(Signpost::handlingChanges, (uintptr_t)req->number());
-            _waitingChangesMessages.push_back(move(req));
+            _waitingChangesMessages.push_back(std::move(req));
         }
     }
 
@@ -149,7 +149,7 @@ namespace litecore::repl {
                 // applies to local to local replication where things can come back over the wire
                 // very quickly)
                 _numRevsBeingRequested += requested;
-                _delegate->expectSequences(move(sequences));
+                _delegate->expectSequences(std::move(sequences));
                 req->respond(response);
 
                 logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
@@ -228,7 +228,7 @@ namespace litecore::repl {
         }
 
         if (!revoked.empty())
-            _delegate->documentsRevoked(move(revoked));
+            _delegate->documentsRevoked(std::move(revoked));
 
         // Ask the database to look up the ancestors:
         auto collection = getCollection();

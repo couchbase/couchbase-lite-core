@@ -121,7 +121,7 @@ namespace litecore {
         if (i == _stmtCache.end()) {
             // Note: Substituting the store name for "@" in the SQL
             auto stmt = db().compile(subst(sqlTemplate.c_str()).c_str());
-            i = _stmtCache.insert({sqlTemplate, move(stmt)}).first;
+            i = _stmtCache.insert({sqlTemplate, std::move(stmt)}).first;
         } else {
             db().checkOpen();
         }

@@ -49,7 +49,7 @@ namespace litecore {
         Upgrader(const FilePath &oldPath, Retained<DatabaseImpl> newDB)
         :_oldPath(oldPath)
         ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
-        ,_newDB(move(newDB))
+        ,_newDB(std::move(newDB))
         ,_attachments(oldPath["attachments/"])
         {
             // * Note: It would be preferable to open the old db read-only, but that will fail

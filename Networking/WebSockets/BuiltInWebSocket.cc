@@ -77,7 +77,7 @@ namespace litecore { namespace websocket {
                                        unique_ptr<net::ResponderSocket> socket)
     :BuiltInWebSocket(url, Role::Server, Parameters())
     {
-        _socket = move(socket);
+        _socket = std::move(socket);
     }
 
 
@@ -126,7 +126,7 @@ namespace litecore { namespace websocket {
                     return;
                 }
 
-                _socket = move(socket);
+                _socket = std::move(socket);
             } catch (const std::exception &x) {
                 closeWithException(x, "while connecting");
                 return;

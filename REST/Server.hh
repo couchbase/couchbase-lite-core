@@ -60,7 +60,7 @@ namespace litecore { namespace REST {
         /** A function that authenticates an HTTP request, given the "Authorization" header. */
         using Authenticator = std::function<bool(slice)>;
 
-        void setAuthenticator(Authenticator auth)       {_authenticator = move(auth);}
+        void setAuthenticator(Authenticator auth)       {_authenticator = std::move(auth);}
 
         /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
