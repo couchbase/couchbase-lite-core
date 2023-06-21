@@ -349,9 +349,10 @@ namespace uWS {
                 std::rotate(mask.begin(), mask.begin() + offset, mask.end());
 
                 // Process majority of bytes in chunks of 4 (until end or < 4 bytes away from end)
-                auto*     start    = reinterpret_cast<uint32_t*>(start_byte);
-                uint32_t* end      = start + ((end_byte - start_byte) / 4);
-                uint32_t  mask_i32 = *(reinterpret_cast<uint32_t*>(mask.data()));
+                auto*     start = reinterpret_cast<uint32_t*>(start_byte);
+                uint32_t* end   = start + ((end_byte - start_byte) / 4);
+                uint32_t  mask_i32{};
+                std::memcpy(&mask_i32, mask.data(), 4);
                 while ( start != end ) { *start++ ^= mask_i32; }
 
                 // Process remaining bytes individually (if any)
