@@ -945,7 +945,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Reject invalid top-level keys", "[Databa
         rq.body = fleeceBody;
         rq.save = true;
         C4Error error;
-        auto doc = c4doc_put(db, &rq, nullptr, &error);
+        auto* C4NULLABLE doc = c4doc_put(db, &rq, nullptr, &error);
         CHECK(doc == nullptr);
         CHECK(error == C4Error{LiteCoreDomain, kC4ErrorCorruptRevisionData});
     }

@@ -51,7 +51,7 @@ const C4Database* C4Collection::getDatabase() const {
 
 
 C4Document* C4Collection::documentContainingValue(FLValue value) noexcept {
-    auto doc = VectorDocumentFactory::documentContaining(value);
+    auto* C4NULLABLE doc = VectorDocumentFactory::documentContaining(value);
     if (!doc)
         doc = TreeDocumentFactory::documentContaining(value);
     return doc;
