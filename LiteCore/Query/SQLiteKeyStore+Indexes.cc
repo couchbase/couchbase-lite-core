@@ -136,7 +136,7 @@ namespace litecore {
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
         for (auto &spec : db().getIndexes(this))
-            result.push_back(move(spec));
+            result.push_back(std::move(spec));
         return result;
     }
 

@@ -176,7 +176,7 @@ namespace litecore {
 
         virtual void setProperties(AllocedDict properties) {
             LOCK(_mutex);
-            _options->properties = move(properties);
+            _options->properties = std::move(properties);
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)

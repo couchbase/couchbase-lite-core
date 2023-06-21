@@ -30,7 +30,7 @@ namespace litecore::repl {
                        const Replicator::BlobProgress &progress)
         :_pusher(pusher)
         ,_repl(pusher->replicator())
-        ,_blob(move(blob))
+        ,_blob(std::move(blob))
         ,_progress(progress)
         { }
 
@@ -115,7 +115,7 @@ namespace litecore::repl {
         if (progressNotificationLevel() >= 2)
             repl->onBlobProgress(progress);
 
-        reply.dataSource = make_unique<BlobDataSource>(this, move(blob), progress);
+        reply.dataSource = make_unique<BlobDataSource>(this, std::move(blob), progress);
         req->respond(reply);
     }
 

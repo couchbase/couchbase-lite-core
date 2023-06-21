@@ -64,7 +64,7 @@ namespace litecore { namespace net {
 
 
     void HTTPLogic::setProxy(optional<ProxySpec> p) {
-        _proxy = move(p);
+        _proxy = std::move(p);
         if (_proxy)
             _proxyAddress = Address(*_proxy);
         else

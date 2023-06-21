@@ -125,6 +125,10 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    add_definitions(-DLIBCPP_ENABLE_ASSERTIONS=0)
+endif()
+
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)

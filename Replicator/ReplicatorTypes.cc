@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
 
     RevToInsert::RevToInsert(slice docID_, slice revID_, RevocationMode mode,
                              C4CollectionSpec spec, void* collectionContext)
-    :ReplicatedRev(spec, move(docID_), move(revID_), collectionContext)
+    :ReplicatedRev(spec, std::move(docID_), std::move(revID_), collectionContext)
     ,revocationMode(mode)
     {
         flags |= kRevPurged;

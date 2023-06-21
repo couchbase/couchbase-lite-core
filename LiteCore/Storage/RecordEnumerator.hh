@@ -53,11 +53,11 @@ namespace litecore {
                          sequence_t since,
                          Options options = Options());
 
-        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = move(e);}
+        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = std::move(e);}
 
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept {
             _store = e._store;
-            _impl = move(e._impl);
+            _impl = std::move(e._impl);
             return *this;
         }
 

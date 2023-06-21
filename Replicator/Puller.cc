@@ -172,7 +172,7 @@ namespace litecore { namespace repl {
                 Signpost::begin(Signpost::revsBackPressure);
                 logVerbose("Back pressure started for changes messages");
             }
-            _waitingRevMessages.push_back(move(msg));
+            _waitingRevMessages.push_back(std::move(msg));
         }
     }
 

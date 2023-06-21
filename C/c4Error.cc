@@ -78,7 +78,7 @@ namespace litecore {
                         _table.pop_front();
                         ++_tableStart;
                     }
-                    _table.emplace_back(move(info));
+                    _table.emplace_back(std::move(info));
                     error.internal_info = (uint32_t)(_tableStart + _table.size() - 1);
                 } catch (...) { }
             }
@@ -98,7 +98,7 @@ namespace litecore {
                     info.message = vformat(format, args);
                 } catch (...) { }
             }
-            return makeError(domain, code, move(info), skipStackFrames + 1);
+            return makeError(domain, code, std::move(info), skipStackFrames + 1);
         }
 
         /// Returns the ErrorInfo associated with a C4Error.
@@ -180,7 +180,7 @@ C4Error C4Error::make(C4ErrorDomain domain, int code, slice message) {
     ErrorInfo info;
     if (message.size > 0)
         info.message = string(slice(message));
-    return ErrorTable::instance().makeError(domain, code, move(info));
+    return ErrorTable::instance().makeError(domain, code, std::move(info));
 }
 
 

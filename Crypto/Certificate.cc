@@ -412,7 +412,7 @@ namespace litecore { namespace crypto {
         for (Retained<Cert> cert = this; cert; cert = cert->next()) {
             alloc_slice single = cert->CertBase::summary(indent);
             if (!summary)
-                summary = move(single);
+                summary = std::move(single);
             else {
                 summary.append("----------------\n"_sl);
                 summary.append(single);

@@ -129,9 +129,9 @@ namespace litecore { namespace repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if (_options->pullFilter(collectionIndex())|| jsonBody.size > kMaxImmediateParseSize
                                   || _mayContainBlobs || _mayContainEncryptedProperties)
-            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         else
-            parseAndInsert(move(jsonBody));
+            parseAndInsert(std::move(jsonBody));
     }
 
 

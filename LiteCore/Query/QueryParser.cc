@@ -455,7 +455,7 @@ namespace {
                 "duplicate collection alias '%s'", entry.alias.c_str());
         if (entry.type == kDBAlias)
             _dbAlias = entry.alias;
-        _aliases.insert({entry.alias, move(entry)});
+        _aliases.insert({entry.alias, std::move(entry)});
     }
 
 
@@ -465,7 +465,7 @@ namespace {
         entry.alias = alias;
         entry.collection = _defaultCollectionName;
         entry.tableName = tableName;
-        addAlias(move(entry));
+        addAlias(std::move(entry));
     }
 
 
@@ -538,7 +538,7 @@ namespace {
                         entry.type = kUnnestVirtualTableAlias;
                     entry.tableName = "";
                 }
-                addAlias(move(entry));
+                addAlias(std::move(entry));
                 first = false;
             }
         }
@@ -1743,7 +1743,7 @@ namespace {
         Path property = propertyFromNode(operands[0]);
         if (property.empty())
             return false;
-        writePropertyGetter(fnName, move(property));
+        writePropertyGetter(fnName, std::move(property));
         return true;
     }
 
@@ -1759,7 +1759,7 @@ namespace {
             }
             _sql << ")";
         } else {
-            writePropertyGetter(fn, move(property), param);
+            writePropertyGetter(fn, std::move(property), param);
         }
     }
 
@@ -1978,7 +1978,7 @@ namespace {
             _sql << i->second;                              // write existing table alias
         else
 #endif
-        writePropertyGetter(kEachFnName, move(property));     // write fl_each()
+        writePropertyGetter(kEachFnName, std::move(property));     // write fl_each()
     }
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property

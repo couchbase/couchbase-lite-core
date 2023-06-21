@@ -82,7 +82,7 @@ namespace litecore { namespace net {
 
     bool TCPSocket::setSocket(unique_ptr<stream_socket> socket) {
         Assert(!_socket);
-        _socket = move(socket);
+        _socket = std::move(socket);
         if (!checkSocketFailure())
             return false;
         _setTimeout(_timeout);
@@ -98,8 +98,8 @@ namespace litecore { namespace net {
         if (!_tlsContext)
             _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
-        auto oldSocket = move(_socket);
-        return setSocket(_tlsContext->_context->wrap_socket(move(oldSocket),
+        auto oldSocket = std::move(_socket);
+        return setSocket(_tlsContext->_context->wrap_socket(std::move(oldSocket),
                                             (_isClient ? tls_context::CLIENT : tls_context::SERVER),
                                             hostnameStr.c_str()));
     }
@@ -195,7 +195,7 @@ namespace litecore { namespace net {
             return false;
         }
 
-        return setSocket(move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
+        return setSocket(std::move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
     }
 
     optional<sockpp::Interface> ClientSocket::networkInterface(uint8_t family) const {
@@ -259,12 +259,12 @@ namespace litecore { namespace net {
 
 
     bool ResponderSocket::acceptSocket(stream_socket &&s) {
-        return setSocket( make_unique<tcp_socket>(move(s)));
+        return setSocket( make_unique<tcp_socket>(std::move(s)));
     }
 
 
     bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) {
-        return setSocket(move(socket));
+        return setSocket(std::move(socket));
     }
 
 
@@ -556,23 +556,23 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::onReadable(function<void()> listener) {
-        addListener(Poller::kReadable, move(listener));
+        addListener(Poller::kReadable, std::move(listener));
     }
 
 
     void TCPSocket::onWriteable(function<void()> listener) {
-        addListener(Poller::kWriteable, move(listener));
+        addListener(Poller::kWriteable, std::move(listener));
     }
 
 
     void TCPSocket::onDisconnect(function<void()> listener) {
-        addListener(Poller::kDisconnected, move(listener));
+        addListener(Poller::kDisconnected, std::move(listener));
     }
 
 
     void TCPSocket::addListener(int event, function<void()> &&listener) {
         if (int fd = fileDescriptor(); fd >= 0)
-            Poller::instance().addListener(fd, Poller::Event(event), move(listener));
+            Poller::instance().addListener(fd, Poller::Event(event), std::move(listener));
     }
 
 

@@ -31,7 +31,7 @@ namespace litecore::repl {
         while (_revisionsInFlight < tuning::kMaxRevsInFlight
                    && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
                    && !_revQueue.empty()) {
-            Retained<RevToSend> first = move(_revQueue.front());
+            Retained<RevToSend> first = std::move(_revQueue.front());
             _revQueue.pop_front();
             sendRevision(first);
             if (_revQueue.size() == tuning::kMaxRevsQueued - 1)
@@ -366,7 +366,7 @@ namespace litecore::repl {
         }
 
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
-        Retained<RevToSend> newRev = move(rev->nextRev);
+        Retained<RevToSend> newRev = std::move(rev->nextRev);
         _pushingDocs.erase(rev->docID);
         if (newRev) {
             if (synced && getForeignAncestors())
