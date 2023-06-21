@@ -315,7 +315,7 @@ TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
     C4Error err;
 
     ExpectingExceptions x;
-    auto listener2 = c4listener_start(&config, &err);
+    auto* C4NULLABLE listener2 = c4listener_start(&config, &err);
     CHECK(!listener2);
     CHECK(err.domain == POSIXDomain);
     CHECK(err.code == EADDRINUSE);

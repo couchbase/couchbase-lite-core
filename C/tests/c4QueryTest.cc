@@ -845,7 +845,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
-    auto refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
+    auto* C4NULLABLE refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
     REQUIRE(!refreshed);
     
     addPersonInState("added_later", "CA");
