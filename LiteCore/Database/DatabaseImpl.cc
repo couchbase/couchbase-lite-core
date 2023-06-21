@@ -687,7 +687,7 @@ namespace litecore {
         // Update its state & add it to _collections:
         auto collectionPtr = collection.get();
         _collections.insert({CollectionSpec(collection->getSpec()),
-                             move(collection)});
+                             std::move(collection)});
 
         if (isInTransaction())
             collectionPtr->transactionBegan();

@@ -29,7 +29,7 @@ namespace litecore {
                                  Callback callback)
         :_retainDatabase(collection->getDatabase())
         ,_collection(asInternal(collection))
-        ,_callback(move(callback))
+        ,_callback(std::move(callback))
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(&st,
@@ -83,7 +83,7 @@ namespace litecore {
 
 unique_ptr<C4CollectionObserver>
 C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback callback) {
-    return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, move(callback));
+    return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, std::move(callback));
 }
 
 

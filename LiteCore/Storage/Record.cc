@@ -23,7 +23,7 @@ namespace litecore {
     { }
 
     Record::Record(alloc_slice key)
-    :_key(move(key))
+    :_key(std::move(key))
     { }
 
     void Record::clear() noexcept {

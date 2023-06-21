@@ -38,7 +38,7 @@ namespace litecore { namespace REST {
 
     Request::Request(Method method, const string &path, const string &queries,
                      websocket::Headers headers, fleece::alloc_slice body)
-    :Body(move(headers), body)
+    :Body(std::move(headers), body)
     ,_method(method)
     ,_path(path)
     ,_queries(queries)
@@ -119,7 +119,7 @@ namespace litecore { namespace REST {
 
     RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket> socket)
     :_server(server)
-    ,_socket(move(socket))
+    ,_socket(std::move(socket))
     {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if (!request) {
@@ -385,13 +385,13 @@ namespace litecore { namespace REST {
 
 
     void RequestResponse::onClose(std::function<void()> &&callback) {
-        _socket->onClose(move(callback));
+        _socket->onClose(std::move(callback));
     }
 
 
     unique_ptr<ResponderSocket> RequestResponse::extractSocket() {
         finish();
-        return move(_socket);
+        return std::move(_socket);
     }
 
 

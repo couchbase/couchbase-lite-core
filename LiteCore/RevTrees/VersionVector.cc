@@ -277,7 +277,7 @@ namespace litecore {
 
 //    bool VersionVector::addHistory(VersionVector &&earlier) {
 //        if (empty()) {
-//            _vers = move(earlier._vers);
+//            _vers = std::move(earlier._vers);
 //        } else {
 //            for (auto &v : earlier._vers) {
 //                if (genOfAuthor(v.author()) > 0)

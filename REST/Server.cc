@@ -182,8 +182,8 @@ namespace litecore { namespace REST {
                 sock.set_non_blocking(false);
                 // We are in the poller thread and go handle the client connection in a new thead to avoid
                 // blocking the polling thread.
-                thread handleThread([selfRetain = Retained<Server>{this}, sock = move(sock), this]() mutable {
-                    this->handleConnection(move(sock));
+                thread handleThread([selfRetain = Retained<Server>{this}, sock = std::move(sock), this]() mutable {
+                    this->handleConnection(std::move(sock));
                 });
                 handleThread.detach();
             }
@@ -197,7 +197,7 @@ namespace litecore { namespace REST {
 
     void Server::handleConnection(sockpp::stream_socket &&sock) {
         auto responder = make_unique<ResponderSocket>(_tlsContext);
-        if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
+        if (!responder->acceptSocket(std::move(sock)) || (_tlsContext && !responder->wrapTLS())) {
             c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
                   responder->error().description().c_str());
             return;
@@ -211,7 +211,7 @@ namespace litecore { namespace REST {
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s",
                       responder->peerAddress().c_str());
         }
-        RequestResponse rq(this, move(responder));
+        RequestResponse rq(this, std::move(responder));
         if (rq.isValid()) {
             dispatchRequest(&rq);
             rq.finish();

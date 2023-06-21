@@ -272,7 +272,7 @@ namespace litecore { namespace repl {
         bool proposedChanges = _proposeChanges;
 
         increment(_changeListsInFlight);
-        sendRequest(req, [this,changes=move(changes),proposedChanges](MessageProgress progress) mutable {
+        sendRequest(req, [this,changes=std::move(changes),proposedChanges](MessageProgress progress) mutable {
             if (progress.state == MessageProgress::kComplete)
                 handleChangesResponse(changes, progress.reply, proposedChanges);
         });
@@ -562,7 +562,7 @@ namespace litecore { namespace repl {
 
 
     void Pusher::_connectionClosed() {
-        auto conflicts = move(_conflictsIMightRetry);
+        auto conflicts = std::move(_conflictsIMightRetry);
         if (!conflicts.empty()) {
             // OK, now I must report these as conflicts:
             _conflictsIMightRetry.clear();
@@ -616,7 +616,7 @@ namespace litecore { namespace repl {
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
         if (!_revsToRetry.empty() && connected() && !isBusy())
-            retryRevs(move(_revsToRetry), false);
+            retryRevs(std::move(_revsToRetry), false);
         Worker::afterEvent();
     }
 
@@ -634,9 +634,9 @@ namespace litecore { namespace repl {
         } else {
             _caughtUp                    = false;
             ChangesFeed::Changes changes = {};
-            changes.revs = move(revsToRetry);
+            changes.revs = std::move(revsToRetry);
             changes.lastSequence = _lastSequenceRead;
-            gotChanges(move(changes));
+            gotChanges(std::move(changes));
         }
     }
 

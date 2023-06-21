@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
 
 
     DBAccess::DBAccess(C4Database* db, bool disableBlobSupport)
-    :access_lock(move(db))
+    :access_lock(std::move(db))
     ,Logging(SyncLog)
     ,_blobStore(&db->getBlobStore())
     ,_disableBlobSupport(disableBlobSupport)
@@ -58,7 +58,7 @@ namespace litecore { namespace repl {
                         logError("Couldn't open new db connection: %s", error.description().c_str());
                         idb = db;
                     }
-                    _insertionDB.emplace(move(idb));
+                    _insertionDB.emplace(std::move(idb));
                 }
             });
         }

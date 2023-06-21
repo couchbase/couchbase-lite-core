@@ -48,10 +48,10 @@ namespace litecore { namespace repl {
     protected:
         virtual void caughtUp() override        {enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp));}
         virtual void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), move(changes));
+            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), std::move(changes));
         }
         virtual void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), move(revs));
+            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), std::move(revs));
         }
         virtual void _childChangedStatus(Retained<Worker>, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;

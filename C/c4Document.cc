@@ -40,7 +40,7 @@ using namespace litecore;
 
 C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 :_collection(asInternal(collection))
-,_docID(move(docID_))
+,_docID(std::move(docID_))
 {
     // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
     if (_docID.size < 1 || _docID.size > kMaxDocIDLength)

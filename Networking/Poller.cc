@@ -94,7 +94,7 @@ namespace litecore { namespace net {
     void Poller::addListener(int fd, Event event, Listener listener) {
         Assert(fd >= 0);
         lock_guard<mutex> lock(_mutex);
-        _listeners[fd][event] = move(listener);
+        _listeners[fd][event] = std::move(listener);
         if (_waiting)
             _interrupt(0);  // wake the poller thread so it will detect the new listener fd
     }
@@ -119,7 +119,7 @@ namespace litecore { namespace net {
             auto &lref = i->second[event];
             if (!lref)
                 return;
-            listener = move(lref);
+            listener = std::move(lref);
             lref = nullptr;
         }
         // Unlock mutex before calling listener

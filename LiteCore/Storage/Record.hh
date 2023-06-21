@@ -89,16 +89,16 @@ namespace litecore {
         bool exists() const FLPURE                {return _exists;}
 
         void setKey(slice key)                  {_key = key;}
-        void setKey(alloc_slice key)            {_key = move(key);}
+        void setKey(alloc_slice key)            {_key = std::move(key);}
         void setVersion(slice vers)             {_version = vers;}
-        void setVersion(alloc_slice vers)       {_version = move(vers);}
+        void setVersion(alloc_slice vers)       {_version = std::move(vers);}
 
         template <class SLICE>
         void setBody(SLICE body) {
             // Leave _body alone if the new body is identical; this prevents a doc's body from
             // being swapped out when clients are using Fleece values pointing into it.
             if (slice(body) != _body || !_body) {
-                _body = move(body);
+                _body = std::move(body);
                 _bodySize = _body.size;
             }
         }
@@ -107,7 +107,7 @@ namespace litecore {
         void setExtra(SLICE extra) {
             // Same thing as setBody: there may be Fleece objects (other revs) in _extra.
             if (slice(extra) != _extra || !_extra) {
-                _extra = move(extra);
+                _extra = std::move(extra);
                 _extraSize = _extra.size;
             }
         }

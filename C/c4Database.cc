@@ -222,8 +222,8 @@ C4Collection* C4Database::getDefaultCollectionSafe() const {
 
 
 C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig &inConfig)
-:_name(move(name))
-,_parentDirectory(move(dir))
+:_name(std::move(name))
+,_parentDirectory(std::move(dir))
 ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
 ,_configV1(inConfig)
 { }

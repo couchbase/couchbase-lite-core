@@ -313,7 +313,7 @@ C4Document* c4coll_getDoc(C4Collection *coll,
         Retained<C4Document> doc = coll->getDocument(docID, mustExist, content);
         if (!doc)
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -326,7 +326,7 @@ C4Document* c4coll_getDocBySequence(C4Collection *coll,
         auto doc = coll->getDocumentBySequence(sequence);
         if (!doc)
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -1058,7 +1058,7 @@ C4Document* c4doc_update(C4Document *doc,
         Retained<C4Document> updated = doc->update(revBody, revFlags);
         if (!updated)
             c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-        return move(updated).detach();
+        return std::move(updated).detach();
     });
 }
 
@@ -1291,7 +1291,7 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
         Retained<C4Document> doc = e->getDocument();
         if (!doc)
             clearError(outError);      // end of iteration is not an error
-        return move(doc).detach();
+        return std::move(doc).detach();
     });
 }
 
@@ -1580,8 +1580,8 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
     auto info = cert->getSubjectNameAtIndex(index);
     if (!info.id)
         return false;
-    outInfo->id = FLSliceResult(move(info.id));
-    outInfo->value = FLSliceResult(move(info.value));
+    outInfo->id = FLSliceResult(std::move(info.id));
+    outInfo->value = FLSliceResult(std::move(info.value));
     return true;
 }
 

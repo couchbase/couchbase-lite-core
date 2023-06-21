@@ -919,7 +919,7 @@ namespace litecore { namespace repl {
     void Replicator::_saveCheckpoint(CollectionIndex coll, alloc_slice json) {
         if (!connected())
             return;
-        _subRepls[coll].checkpointJSONToSave = move(json);
+        _subRepls[coll].checkpointJSONToSave = std::move(json);
         if (_subRepls[coll].remoteCheckpointReceived)
             saveCheckpointNow(coll);
         // ...else wait until checkpoint received (see above), which will call saveCheckpointNow().
@@ -935,7 +935,7 @@ namespace litecore { namespace repl {
             sub.remoteCheckpointRevID = nullslice;
         }
 
-        alloc_slice json = move(sub.checkpointJSONToSave);
+        alloc_slice json = std::move(sub.checkpointJSONToSave);
 
         cLogVerbose(coll, "Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...",
                    SPLAT(sub.remoteCheckpointDocID), SPLAT(sub.remoteCheckpointRevID),
@@ -959,7 +959,7 @@ namespace litecore { namespace repl {
                 Error responseErr = response->getError();
                 if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
                     // On conflict, read the remote checkpoint to get the real revID:
-                    sub.checkpointJSONToSave = json; // move() has no effect here
+                    sub.checkpointJSONToSave = json; // std::move() has no effect here
                     sub.remoteCheckpointRequested = sub.remoteCheckpointReceived = false;
                     getRemoteCheckpoint(true, coll);
                 } else {
