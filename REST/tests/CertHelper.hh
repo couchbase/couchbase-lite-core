@@ -12,6 +12,8 @@
 
 #pragma once
 #include "c4Certificate.h"
+#include "c4Certificate.hh"
+#include "Certificate.hh"
 #include "c4Private.h"
 #include "PublicKey.hh"     // just for PERSISTENT_PRIVATE_KEY_AVAILABLE
 
@@ -39,6 +41,13 @@ public:
     ,temporaryClientIdentity(createIdentity(false, kC4CertUsage_TLSClient,
                                             "LiteCore Client Test"))
     { }
+    
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    ~CertHelper() {
+        if ( _serverPersistentIdentity.key ) { _serverPersistentIdentity.key->removePersistent(); }
+        if ( _clientPersistentIdentity.key ) { _clientPersistentIdentity.key->removePersistent(); }
+    }
+#endif
 
     Identity const temporaryServerIdentity;
 
