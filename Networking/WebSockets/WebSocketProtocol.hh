@@ -320,11 +320,14 @@ namespace uWS {
             dst[0]    = (std::byte)((flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0));
             if ( !(flags & SND_CONTINUATION) ) { dst[0] |= (std::byte)opCode; }
 
-            std::byte mask[4];
+            std::array<std::byte, 4> mask{};
+
             if ( !isServer ) {
                 ((uint8_t*)dst)[1] |= 0x80;
-                uint32_t random = litecore::RandomNumber();
-                memcpy(mask, &random, 4);
+                uint32_t  random = litecore::RandomNumber();
+                std::byte temp_mask[4]{};
+                memcpy(temp_mask, &random, 4);
+                std::move(std::begin(temp_mask), std::end(temp_mask), mask.begin());
                 memcpy(dst + headerLength, &random, 4);
                 headerLength += 4;
             }
@@ -335,27 +338,25 @@ namespace uWS {
             if ( !isServer ) {
                 std::byte* start_byte = dst + headerLength;
                 std::byte* end_byte   = start_byte + length;
-                size_t     i          = 0;
+                size_t     offset     = 0;
 
                 // Handle first x amount of bytes individually until we are aligned with the 4-byte alignment
-                for ( ; reinterpret_cast<uintptr_t>(start_byte) % 4 != 0 && start_byte != end_byte; ++i ) {
-                    *start_byte++ ^= mask[i % 4];
+                for ( ; (reinterpret_cast<uintptr_t>(start_byte) & 3) != 0 && start_byte != end_byte; ++offset ) {
+                    *start_byte++ ^= mask[offset % 4];
                 }
 
-                // Process majority of bytes in chunks of 4
-                auto*     start = reinterpret_cast<uint32_t*>(start_byte);
-                uint32_t* end   = start + ((end_byte - start_byte) / 4);
-                // Construct mask_i32 such that it's a rotation of 'mask' following on from the first loop
-                uint32_t mask_i32 = 0;
-                for ( int j = 0; j < 4; ++j ) { mask_i32 |= (static_cast<uint32_t>(mask[(i + j) % 4]) << (8 * j)); }
-                while ( start != end ) {
-                    *start++ ^= mask_i32;
-                    i += 4;
-                }
+                // Rotate mask by the offset we reached in the first loop to become memory-aligned
+                std::rotate(mask.begin(), mask.begin() + offset, mask.end());
+
+                // Process majority of bytes in chunks of 4 (until end or < 4 bytes away from end)
+                auto*     start    = reinterpret_cast<uint32_t*>(start_byte);
+                uint32_t* end      = start + ((end_byte - start_byte) / 4);
+                uint32_t  mask_i32 = *(reinterpret_cast<uint32_t*>(mask.data()));
+                while ( start != end ) { *start++ ^= mask_i32; }
 
                 // Process remaining bytes individually (if any)
                 start_byte = reinterpret_cast<std::byte*>(start);
-                for ( ; start_byte != end_byte; ++i ) { *start_byte++ ^= mask[i % 4]; }
+                for ( int i = 0; start_byte != end_byte; ++i ) { *start_byte++ ^= mask[i % 4]; }
             }
             return messageLength;
         }
