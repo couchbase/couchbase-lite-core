@@ -339,7 +339,7 @@ namespace uWS {
                 // this is not optimal
                 std::byte* start = dst + headerLength;
                 std::byte* stop  = start + length;
-                int   i     = 0;
+                int        i     = 0;
                 while ( start != stop ) { (*start++) ^= mask[i++ % 4]; }
 #else
                 uint32_t mask_i32 = *reinterpret_cast<uint32_t*>(mask);
