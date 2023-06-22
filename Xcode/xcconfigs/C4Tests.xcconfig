@@ -10,9 +10,9 @@
 PRODUCT_NAME                = C4Tests
 
 // Use of CoreML in predictive-query unit tests requires a more recent OS than LiteCore's baseline.
-IPHONEOS_DEPLOYMENT_TARGET  = 11.0
-MACOSX_DEPLOYMENT_TARGET    = 10.13
-TVOS_DEPLOYMENT_TARGET      = 11.0
+IPHONEOS_DEPLOYMENT_TARGET  = 10.0
+MACOSX_DEPLOYMENT_TARGET    = 10.14
+TVOS_DEPLOYMENT_TARGET      = 10.0
 
 SDKROOT                     = macosx
 SUPPORTED_PLATFORMS         = macosx

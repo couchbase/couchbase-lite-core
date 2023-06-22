@@ -359,19 +359,28 @@ namespace litecore::repl {
 
         Doc     result;
         FLError flErr;
-        if ( useDBSharedKeys ) {
-            // insertionDB() asserts DB open, no need to do it here
-            insertionDB().useLocked([&](C4Database* idb) {
-                SharedEncoder enc(idb->sharedFleeceEncoder());
+#ifdef LITECORE_CPPTEST
+        slice cbl_4499_errDoc = "cbl-4499_doc-001"_sl;
+        if ( doc->docID().hasSuffix(cbl_4499_errDoc) ) {
+            flErr = kFLInvalidData;
+        } else {
+#endif
+            if ( useDBSharedKeys ) {
+                // insertionDB() asserts DB open, no need to do it here
+                insertionDB().useLocked([&](C4Database* idb) {
+                    SharedEncoder enc(idb->sharedFleeceEncoder());
+                    JSONDelta::apply(srcRoot, deltaJSON, enc);
+                    result = enc.finishDoc(&flErr);
+                });
+            } else {
+                Encoder enc;
+                enc.setSharedKeys(tempSharedKeys());
                 JSONDelta::apply(srcRoot, deltaJSON, enc);
                 result = enc.finishDoc(&flErr);
-            });
-        } else {
-            Encoder enc;
-            enc.setSharedKeys(tempSharedKeys());
-            JSONDelta::apply(srcRoot, deltaJSON, enc);
-            result = enc.finishDoc(&flErr);
+            }
+#ifdef LITECORE_CPPTEST
         }
+#endif
         ++gNumDeltasApplied;
 
         if ( !result ) {

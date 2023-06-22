@@ -25,7 +25,6 @@ function(set_litecore_source)
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_Apple.cc
         LiteCore/Support/StringUtil_Apple.mm
-        LiteCore/Support/LibC++Debug.cc
         LiteCore/Support/Instrumentation.cc
         Crypto/PublicKey+Apple.mm
         PARENT_SCOPE
@@ -35,12 +34,19 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_unix()
 
-    target_compile_definitions(
-        LiteCoreObjects PUBLIC
-        -DPERSISTENT_PRIVATE_KEY_AVAILABLE
-    )
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+        target_compile_definitions(
+            ${liteCoreVariant} PUBLIC
+            -DPERSISTENT_PRIVATE_KEY_AVAILABLE
+        )
+        target_link_libraries(
+            ${liteCoreVariant} INTERFACE
+            "-framework Security"
+            "-framework SystemConfiguration"
+        )
+    endforeach()
 
-    foreach(platform LiteCoreObjects BLIPObjects)
+    foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"
@@ -48,12 +54,6 @@ function(setup_litecore_build)
             "-Wformat-security"
         )
     endforeach()
-
-    target_link_libraries(
-        LiteCoreObjects INTERFACE
-        "-framework Security"
-        "-framework SystemConfiguration"
-    )
 endfunction()
 
 function(setup_rest_build)

@@ -35,7 +35,7 @@ function(setup_litecore_build_unix)
         if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             # GNU and Linux clang LTO can't seem to handle any of this...at least not with the versions I tried.  
             # Unexplained linker errors occur.
-            set_property(TARGET LiteCoreObjects PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+            set_property(TARGET LiteCoreObjects LiteCoreUnitTesting PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
@@ -75,15 +75,17 @@ function(setup_litecore_build_unix)
         -Werror=strict-prototypes
     )
 
-    target_compile_options(LiteCoreObjects PRIVATE 
-        ${LITECORE_WARNINGS} 
-        -Wformat=2
-        -fstack-protector
-        -D_FORTIFY_SOURCE=2
-        $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
-        $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-        $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+        target_compile_options(${liteCoreVariant} PRIVATE 
+            ${LITECORE_WARNINGS} 
+            -Wformat=2
+            -fstack-protector
+            -D_FORTIFY_SOURCE=2
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
+            $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+            $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+        )
+    endforeach()
 
     target_compile_options(BLIPObjects PRIVATE 
         ${LITECORE_WARNINGS} 
