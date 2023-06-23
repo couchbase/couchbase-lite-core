@@ -43,6 +43,7 @@
 //COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
 #include "c4Log.h"
+#include "fleece/slice.hh"
 #include <limits>
 #ifdef __APPLE__
 #    include <libkern/OSByteOrder.h>
@@ -325,11 +326,9 @@ namespace uWS {
 
             if ( !isServer ) {
                 ((uint8_t*)dst)[1] |= 0x80;
-                uint32_t  random = litecore::RandomNumber();
-                std::byte temp_mask[4]{};
-                memcpy(temp_mask, &random, 4);
-                std::move(std::begin(temp_mask), std::end(temp_mask), mask.begin());
-                memcpy(dst + headerLength, &random, 4);
+                fleece::mutable_slice maskSlice(mask.data(), 4);
+                litecore::SecureRandomize(maskSlice);
+                memcpy(dst + headerLength, mask.data(), 4);
                 headerLength += 4;
             }
 
