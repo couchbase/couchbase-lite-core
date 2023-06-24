@@ -403,12 +403,7 @@ namespace litecore {
         }
         if ( from.alias.empty() ) {
             if ( collection ) {
-                auto dot = DataFile::findCollectionPathSeparator(collection.asString());
-                if ( dot != string::npos ) {
-                    from.alias = DataFile::unescapeCollectionName(collection.asString().substr(dot + 1));
-                } else {
-                    from.alias = DataFile::unescapeCollectionName(collection.asString());
-                }
+                from.alias = DataFile::unescapeCollectionName(from.collection);
             } else {
                 from.alias = _defaultCollectionName;
             }
@@ -453,15 +448,18 @@ namespace litecore {
     }
 
     static string aliasOfFromEntry(const Value* value, const string& defaultAlias) {
+        // c.f. QueryParser::parseFromEntry
         auto   dict = requiredDict(value, "FROM item");
         string ret{optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
         if ( ret.empty() ) {
             ret = string{optionalString(getCaseInsensitive(dict, "COLLECTION"_sl), "COLLECTION in FROM item")};
             if ( ret.empty() ) {
                 ret = defaultAlias;
-            } else if ( auto pos = DataFile::findCollectionPathSeparator(ret); pos != string::npos ) {
-                ret = DataFile::unescapeCollectionName(ret.substr(pos + 1));
             } else {
+                if ( auto scope = optionalString(getCaseInsensitive(dict, "SCOPE"_sl), "SCOPE in FROM item");
+                     !scope.empty() ) {
+                    ret = string(scope) + "." + ret;
+                }
                 ret = DataFile::unescapeCollectionName(ret);
             }
         }
@@ -1485,16 +1483,62 @@ namespace litecore {
     QueryParser::AliasMap::const_iterator QueryParser::verifyDbAlias(fleece::impl::Path& property,
                                                                      string*             error) const {
         string alias;
-        auto   iType = _aliases.end();
-        if ( !property.empty() ) {
+        auto   iType     = _aliases.end();
+        int    leadMatch = 0;
+        do {
+            if ( property.empty() ) break;
+
+            // full-match has the highest priority
             // Check for result alias before 'alias' gets reassigned below
-            alias = string(property[0].keyStr());
-            iType = _aliases.find(alias);
+            alias     = string(property[0].keyStr());
+            leadMatch = 1;
+            iType     = _aliases.find(alias);
             if ( iType != _aliases.end() && iType->second.type == kResultAlias ) {
                 // we only look for alias in the db context.
                 iType = _aliases.end();
             }
-        }
+            if ( iType != _aliases.end() ) break;
+
+            // Assertion: iType == _aliase.end()
+            int matchedCount = 0;
+            for ( auto it = _aliases.begin(); it != _aliases.end(); ++it ) {
+                if ( it->second.type == kResultAlias ) continue;
+                if ( it->first.length() > alias.length() + 1
+                     && it->first.substr(it->first.length() - alias.length()) == alias
+                     && it->first.at(it->first.length() - alias.length() - 1) == '.' ) {
+                    // scope.property[0]
+                    matchedCount++;
+                    iType = it;
+                }
+            }
+
+            //Aasertion: matchedCount == 0 || iType != _aliases.end()
+            if ( matchedCount > 1 ) {
+                // Ambiguous
+                iType = _aliases.end();
+            } else if ( matchedCount == 1 ) {
+                // get unique match of x.property[0].
+                // want to make sure x is a scope.
+                // c.f. parseFromEntry
+                if ( iType->first == DataFile::unescapeCollectionName(iType->second.collection) ) {
+                    alias = iType->first;
+                    break;
+                }
+            }
+
+            // Assertion: iType == _aliase.end()
+            if ( property.size() == 1 || !property[1].isKey() ) break;
+
+            // Look for property[0].property[1]
+            alias     = alias + "." + string(property[1].keyStr());
+            leadMatch = 2;
+            iType     = _aliases.find(alias);
+            if ( iType != _aliases.end() && iType->second.type == kResultAlias ) {
+                // we only look for alias in the db context.
+                iType = _aliases.end();
+            }
+
+        } while ( false );
 
         bool hasMultiDbAliases = false;
         if ( _aliases.size() > 1 ) {
@@ -1514,8 +1558,9 @@ namespace litecore {
             require(property[0].isKey(), "Property path can't start with array index");
             if ( hasMultiDbAliases || alias == _dbAlias ) {
                 // With join (size > 1), properties must start with a keyspace alias to avoid ambiguity.
-                // Otherwise, we assume property[0] to be the alias if it coincides with the unique one.
-                // Otherwise, we consider that the property path starts in the document and, hence, do not drop.
+                // Otherwise, we assume property[0], or property[0].property[1], to be the alias if it coincides
+                // with the unique one. Otherwise, we consider that the property path starts in the document and,
+                // hence, do not drop.
                 dropAliasIfSuccess = true;
             } else {
                 alias = _dbAlias;
@@ -1543,7 +1588,7 @@ namespace litecore {
                 *error = message;
             }
         } else if ( dropAliasIfSuccess ) {
-            property.drop(1);
+            property.drop(leadMatch);
         }
         return iType;
     }
@@ -1741,7 +1786,7 @@ namespace litecore {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
-        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        require((0 < compCount), "Requires reference to FTS table");
         auto iAlias = _aliases.end();
 
         string outError;
