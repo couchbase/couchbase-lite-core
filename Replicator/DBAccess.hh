@@ -27,7 +27,7 @@
 #include <mutex>
 #include <optional>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using fleece::Retained;
     class ReplicatedRev;
     class UseCollection;
@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
         using Dict        = fleece::Dict;
 
         DBAccess(C4Database* db, bool disableBlobSupport);
-        ~DBAccess();
+        ~DBAccess() override;
 
         static inline void AssertDBOpen(const Retained<C4Database>& db) {
             if ( !db ) {
@@ -57,8 +57,8 @@ namespace litecore { namespace repl {
         void close();
 
         /** Check the C4Collection inside the lock and returns a holder object that hodes this->useLocked().*/
-        UseCollection       useCollection(C4Collection*);
-        const UseCollection useCollection(C4Collection*) const;
+        UseCollection useCollection(C4Collection*);
+        UseCollection useCollection(C4Collection*) const;
 
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
         Retained<C4Document> getDoc(C4Collection* NONNULL, slice docID, C4DocContentLevel content) const;
 
         /** Returns the remote ancestor revision ID of a document. */
-        alloc_slice getDocRemoteAncestor(C4Document* doc NONNULL);
+        alloc_slice getDocRemoteAncestor(C4Document* doc NONNULL) const;
 
         /** Updates the remote ancestor revision ID of a document, to an existing revision. */
         void setDocRemoteAncestor(C4Collection* NONNULL, slice docID, slice revID);
@@ -117,10 +117,10 @@ namespace litecore { namespace repl {
 
         using FindBlobCallback = fleece::function_ref<void(FLDeepIterator, Dict blob, const C4BlobKey& key)>;
         /** Finds all blob references in the dict, at any depth. */
-        void findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback);
+        void findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback) const;
 
         /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
-        void encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos);
+        void encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) const;
 
         //////// INSERTION:
 
@@ -143,7 +143,7 @@ namespace litecore { namespace repl {
              ended, it aborts the transaction. */
         class Transaction {
           public:
-            Transaction(AccessLockedDB& dba) : _dba(dba.useLocked()), _t(_dba) {}
+            explicit Transaction(AccessLockedDB& dba) : _dba(dba.useLocked()), _t(_dba) {}
 
             void commit() { _t.commit(); }
 
@@ -192,4 +192,4 @@ namespace litecore { namespace repl {
 
         const C4Collection* operator->() const { return _collection; }
     };
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

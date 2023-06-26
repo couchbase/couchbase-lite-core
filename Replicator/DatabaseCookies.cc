@@ -11,7 +11,6 @@
 //
 
 #include "c4Database.hh"
-#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
 #include "Error.hh"
@@ -20,7 +19,7 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     static const char*     kInfoKeyStore     = "info";
     static constexpr slice kCookieStoreDocID = "org.couchbase.cookies"_sl;
@@ -47,4 +46,4 @@ namespace litecore { namespace repl {
         _store->clearChanged();
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

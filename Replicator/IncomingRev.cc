@@ -15,10 +15,8 @@
 #include "DBAccess.hh"
 #include "PropertyEncryption.hh"
 #include "Increment.hh"
-#include "Replicator.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
-#include "c4Document.hh"
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"
 #include <atomic>
@@ -29,7 +27,7 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
@@ -108,16 +106,16 @@ namespace litecore { namespace repl {
         auto jsonBody = _revMessage->extractBody();
         if ( _revMessage->noReply() ) _revMessage = nullptr;
 
-        _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
+        _mayContainBlobs = jsonBody.containsBytes(R"("digest")");
         _mayContainEncryptedProperties =
                 !_options->disablePropertyDecryption() && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobs
              || _mayContainEncryptedProperties )
-            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         else
-            parseAndInsert(move(jsonBody));
+            parseAndInsert(std::move(jsonBody));
     }
 
     // We've lost access to this doc on the server; it should be purged.
@@ -316,7 +314,7 @@ namespace litecore { namespace repl {
 
         if ( _revMessage ) {
             MessageBuilder response(_revMessage);
-            if ( _rev->error.code != 0 ) response.makeError(c4ToBLIPError(_rev->error));
+            if ( _rev->error.code != 0 ) response.makeError((Error)c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
             _revMessage = nullptr;
         }
@@ -350,4 +348,4 @@ namespace litecore { namespace repl {
         }
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

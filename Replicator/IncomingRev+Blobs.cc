@@ -21,7 +21,7 @@
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
 #if DEBUG
     static std::atomic_int sNumOpenWriters{0};
@@ -60,7 +60,7 @@ namespace litecore { namespace repl {
         req["digest"_sl] = _blob->key.digestString();
         req["docID"]     = _blob->docID;
         if ( _blob->compressible ) req["compress"_sl] = "true"_sl;
-        sendRequest(req, [=](blip::MessageProgress progress) {
+        sendRequest(req, [=](const blip::MessageProgress& progress) {
             //... After request is sent:
             if ( _blob != _pendingBlobs.end() ) {
                 if ( progress.state == MessageProgress::kDisconnected ) {
@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
     }
 
     // Writes data to the blob on disk.
-    void IncomingRev::writeToBlob(alloc_slice data) {
+    void IncomingRev::writeToBlob(const alloc_slice& data) {
         try {
             if ( _writer == nullptr ) {
                 _writer = make_unique<C4WriteStream>(*_db->blobStore());
@@ -156,4 +156,4 @@ namespace litecore { namespace repl {
         _writer = nullptr;
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

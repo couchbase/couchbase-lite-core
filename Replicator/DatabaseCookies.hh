@@ -15,13 +15,13 @@
 
 struct C4Database;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using namespace fleece;
 
     /** Persists a CookieStore to/from a Database. */
     class DatabaseCookies {
       public:
-        DatabaseCookies(C4Database*);
+        explicit DatabaseCookies(C4Database*);
 
         std::string cookiesForRequest(const C4Address& addr) { return _store->cookiesForRequest(addr); }
 
@@ -40,4 +40,4 @@ namespace litecore { namespace repl {
         Retained<net::CookieStore> _store;
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

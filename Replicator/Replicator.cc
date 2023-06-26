@@ -11,6 +11,10 @@
 //
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
+#include <memory>
+
+#include <utility>
+
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
@@ -25,7 +29,6 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "Headers.hh"
-#include "Address.hh"
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"
 
@@ -34,9 +37,9 @@ using namespace std::placeholders;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
-    struct StoppingErrorEntry {
+    struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool    isFatal;
         slice   msg;
@@ -61,7 +64,7 @@ namespace litecore { namespace repl {
         : Replicator(make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()), webSocket,
                      delegate, options) {}
 
-    Replicator::Replicator(shared_ptr<DBAccess> db, websocket::WebSocket* webSocket, Delegate& delegate,
+    Replicator::Replicator(const shared_ptr<DBAccess>& db, websocket::WebSocket* webSocket, Delegate& delegate,
                            Options* options)
         : Worker(new Connection(webSocket, options->properties, {}), nullptr, options, db, "Repl", kNotCollectionIndex)
         , _delegate(&delegate)
@@ -224,7 +227,7 @@ namespace litecore { namespace repl {
 
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
         Retained<Pusher> pusher = _subRepls[coll].pusher;
-        if ( pusher ) pusher->docRemoteAncestorChanged(docID, revID);
+        if ( pusher ) pusher->docRemoteAncestorChanged(std::move(docID), std::move(revID));
     }
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
@@ -285,11 +288,10 @@ namespace litecore { namespace repl {
 
         // Status::error
         sub.pushStatus.error = status.error;
-        if ( _pushStatus.error.code == 0 ) {
-            // overall error moves from 0 to non-0.
-            _pushStatus.error = status.error;
-        } else if ( _pushStatus.error.mayBeTransient() && !status.error.mayBeTransient() ) {
-            // transient error is superceded by non-transient error.
+        // overall error moves from 0 to non-0.
+        if ( _pushStatus.error.code == 0 ||
+             // transient error is superceded by non-transient error.
+             (_pushStatus.error.mayBeTransient() && !status.error.mayBeTransient()) ) {
             _pushStatus.error = status.error;
         }
     }
@@ -319,11 +321,10 @@ namespace litecore { namespace repl {
 
         // Status::error
         sub.pullStatus.error = status.error;
-        if ( _pullStatus.error.code == 0 ) {
-            // overall error moves from 0 to non-0.
-            _pullStatus.error = status.error;
-        } else if ( _pullStatus.error.mayBeTransient() && !status.error.mayBeTransient() ) {
-            // transient error is superceded by non-transient error.
+        // overall error moves from 0 to non-0.
+        if ( _pullStatus.error.code == 0 ||
+             // transient error is superceded by non-transient error.
+             (_pullStatus.error.mayBeTransient() && !status.error.mayBeTransient()) ) {
             _pullStatus.error = status.error;
         }
     }
@@ -428,7 +429,7 @@ namespace litecore { namespace repl {
         Worker::onError(error);
         for ( const StoppingErrorEntry& stoppingErr : StoppingErrors ) {
             if ( stoppingErr.err == error ) {
-                string message = error.description().c_str();
+                string message = error.description();
                 if ( stoppingErr.isFatal ) {
                     logError("Stopping due to fatal error: %s", message.c_str());
                     _disconnect(websocket::kCloseAppPermanent, stoppingErr.msg);
@@ -545,8 +546,7 @@ namespace litecore { namespace repl {
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
-        for ( CollectionIndex i = 0; i < _subRepls.size(); ++i ) {
-            SubReplicator& sub = _subRepls[i];
+        for ( auto& sub : _subRepls ) {
             if ( sub.pusher ) sub.pusher->connectionClosed();
             if ( sub.puller ) sub.puller->connectionClosed();
         }
@@ -581,7 +581,7 @@ namespace litecore { namespace repl {
 
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        CollectionIndex collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
+        auto collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
         warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
              msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
@@ -634,7 +634,7 @@ namespace litecore { namespace repl {
         msg["client"_sl] = sub.remoteCheckpointDocID;
         assignCollectionToMsg(msg, coll);
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this, refresh, coll, &sub](MessageProgress progress) {
+        sendRequest(msg, [this, refresh, coll, &sub](const MessageProgress& progress) {
             // ...after the checkpoint is received:
             if ( progress.state != MessageProgress::kComplete ) return;
             Signpost::end(Signpost::blipSent);
@@ -695,14 +695,14 @@ namespace litecore { namespace repl {
         if ( _connectionState != Connection::kConnected )
             return;  // Not ready yet; Will be called again from _onConnect.
 
-        for ( int i = 0; i < _subRepls.size(); i++ ) {
-            if ( !_subRepls[i].remoteCheckpointDocID )
-                _subRepls[i].remoteCheckpointDocID = _subRepls[i].checkpointer->initialCheckpointID();
+        for ( auto& _subRepl : _subRepls ) {
+            if ( !_subRepl.remoteCheckpointDocID )
+                _subRepl.remoteCheckpointDocID = _subRepl.checkpointer->initialCheckpointID();
 
             // Note:
             // This check is copied from getRemoteCheckpoint().
             // Is there a case that _remoteCheckpointDocID[i] is nullslice?
-            if ( !_subRepls[i].remoteCheckpointDocID ) return;  // Not ready yet.
+            if ( !_subRepl.remoteCheckpointDocID ) return;  // Not ready yet.
         }
 
         logVerbose("Requesting get collections");
@@ -712,7 +712,7 @@ namespace litecore { namespace repl {
         enc.beginDict();
         enc.writeKey("checkpoint_ids"_sl);
         enc.beginArray();
-        for ( int i = 0; i < _subRepls.size(); i++ ) { enc.writeString(_subRepls[i].remoteCheckpointDocID); }
+        for ( auto& _subRepl : _subRepls ) { enc.writeString(_subRepl.remoteCheckpointDocID); }
         enc.endArray();
         enc.writeKey("collections"_sl);
         enc.beginArray();
@@ -721,7 +721,7 @@ namespace litecore { namespace repl {
         enc.endDict();
 
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this](MessageProgress progress) {
+        sendRequest(msg, [this](const MessageProgress& progress) {
             // ...after the checkpoint is received:
             if ( progress.state != MessageProgress::kComplete ) return;
             Signpost::end(Signpost::blipSent);
@@ -795,7 +795,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_saveCheckpoint(CollectionIndex coll, alloc_slice json) {
         if ( !connected() ) return;
-        _subRepls[coll].checkpointJSONToSave = move(json);
+        _subRepls[coll].checkpointJSONToSave = std::move(json);
         if ( _subRepls[coll].remoteCheckpointReceived ) saveCheckpointNow(coll);
         // ...else wait until checkpoint received (see above), which will call saveCheckpointNow().
     }
@@ -809,7 +809,7 @@ namespace litecore { namespace repl {
             sub.remoteCheckpointRevID = nullslice;
         }
 
-        alloc_slice json = move(sub.checkpointJSONToSave);
+        alloc_slice json = std::move(sub.checkpointJSONToSave);
 
         cLogVerbose(coll, "Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...", SPLAT(sub.remoteCheckpointDocID),
                     SPLAT(sub.remoteCheckpointRevID), SPLAT(json));
@@ -822,7 +822,7 @@ namespace litecore { namespace repl {
         msg["rev"_sl]    = sub.remoteCheckpointRevID;
         msg << json;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [=, &sub](MessageProgress progress) {
+        sendRequest(msg, [=, &sub](const MessageProgress& progress) {
             if ( progress.state != MessageProgress::kComplete ) return;
 
             Signpost::end(Signpost::blipSent);
@@ -868,9 +868,9 @@ namespace litecore { namespace repl {
         try {
             bool attempted = false;
             db->useLocked([this, spec, callback, &attempted](const Retained<C4Database>& db) {
-                for ( CollectionIndex i = 0; i < _subRepls.size(); ++i ) {
-                    if ( _subRepls[i].collection->getSpec() == spec ) {
-                        _subRepls[i].checkpointer->pendingDocumentIDs(db, callback);
+                for ( auto& _subRepl : _subRepls ) {
+                    if ( _subRepl.collection->getSpec() == spec ) {
+                        _subRepl.checkpointer->pendingDocumentIDs(db, callback);
                         attempted = true;
                         break;
                     }
@@ -893,9 +893,9 @@ namespace litecore { namespace repl {
 
         try {
             return db->useLocked<bool>([this, docID, spec](const Retained<C4Database>& db) {
-                for ( CollectionIndex i = 0; i < _subRepls.size(); ++i ) {
-                    if ( _subRepls[i].collection->getSpec() == spec ) {
-                        return _subRepls[i].checkpointer->isDocumentPending(db, docID);
+                for ( auto& _subRepl : _subRepls ) {
+                    if ( _subRepl.collection->getSpec() == spec ) {
+                        return _subRepl.checkpointer->isDocumentPending(db, docID);
                     }
                 }
                 throw error(error::LiteCore, error::NotFound,
@@ -997,7 +997,7 @@ namespace litecore { namespace repl {
     void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
         // This message only comes from 3.1+ client.
 
-        if ( _subRepls.size() != 0 ) {
+        if ( !_subRepls.empty() ) {
             // Request of 3.0 style has been received prior to this one.
             logError("Some message has preceded 'getCollections'");
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: not the first message"_sl});
@@ -1041,9 +1041,9 @@ namespace litecore { namespace repl {
 
         // check duplicates
         std::unordered_set<C4CollectionSpec> specSet;
-        for ( size_t i = 0; i < collSpecs.size(); ++i ) {
+        for ( auto& collSpec : collSpecs ) {
             bool b;
-            std::tie(std::ignore, b) = specSet.insert(collSpecs[i]);
+            std::tie(std::ignore, b) = specSet.insert(collSpec);
             if ( !b ) {
                 request->respondWithError(
                         {"BLIP"_sl, 400, "Invalid getCollections message: duplicate collection path"_sl});
@@ -1139,28 +1139,29 @@ namespace litecore { namespace repl {
         for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
             SubReplicator& sub = _subRepls[i];
             if ( _options->push(i) != kC4Disabled ) {
-                sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
-                sub.pusher     = new Pusher(this, *sub.checkpointer, i);
-                sub.pushStatus = kC4Busy;
-                isPushBusy     = true;
+                sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
+                sub.pusher       = new Pusher(this, *sub.checkpointer, i);
+                sub.pushStatus   = Worker::Status(kC4Busy);
+                isPushBusy       = true;
             } else {
-                sub.pushStatus = kC4Stopped;
+                sub.pushStatus = Worker::Status(kC4Stopped);
             }
             if ( _options->pull(i) != kC4Disabled ) {
                 sub.puller     = new Puller(this, i);
-                sub.pullStatus = kC4Busy;
-                if ( sub.checkpointer.get() == nullptr ) {
-                    sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
+                sub.pullStatus = Worker::Status(kC4Busy);
+                if ( sub.checkpointer == nullptr ) {
+                    sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
                 }
                 isPullBusy = true;
             } else {
-                sub.pullStatus = kC4Stopped;
+                sub.pullStatus = Worker::Status(kC4Stopped);
             }
             DebugAssert(sub.checkpointer.get() != nullptr);
-            sub.checkpointer->enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, i, _1));
+            sub.checkpointer->enableAutosave(
+                    saveDelay, [this, i](auto&& PH1) { saveCheckpoint(i, std::forward<decltype(PH1)>(PH1)); });
         }
-        _pushStatus = isPushBusy ? kC4Busy : kC4Stopped;
-        _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
+        _pushStatus = Worker::Status(isPushBusy ? kC4Busy : kC4Stopped);
+        _pullStatus = Worker::Status(isPullBusy ? kC4Busy : kC4Stopped);
     }
 
     void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
@@ -1191,7 +1192,7 @@ namespace litecore { namespace repl {
     // 1. it is working in the active mode,                             or
     // 2. the incoming meesage includes explicit "collection" property, or
     // 3. the second time and after that this method is called.
-    void Replicator::setMsgHandlerFor3_0_Client(Retained<blip::MessageIn> request) {
+    void Replicator::setMsgHandlerFor3_0_Client(const Retained<blip::MessageIn>& request) {
         if ( _setMsgHandlerFor3_0_ClientDone ) {
             return;
         } else {
@@ -1225,4 +1226,4 @@ namespace litecore { namespace repl {
         }
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

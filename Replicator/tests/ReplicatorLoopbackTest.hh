@@ -98,7 +98,7 @@ class ReplicatorLoopbackTest
 
         _gotResponse              = false;
         _statusChangedCalls       = 0;
-        _statusReceived           = {};
+        _statusReceived           = Worker::Status();
         _replicatorClientFinished = _replicatorServerFinished = false;
 
         c4::ref<C4Database> dbClient = c4db_openAgain(db, nullptr);

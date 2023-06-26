@@ -17,9 +17,10 @@
 #include "RemoteSequenceSet.hh"
 #include "Batcher.hh"
 #include <deque>
+#include <utility>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     class IncomingRev;
     class RevToInsert;
     class Inserter;
@@ -32,7 +33,9 @@ namespace litecore { namespace repl {
         void setSkipDeleted() { _skipDeleted = true; }
 
         // Starts an active pull
-        void start(RemoteSequence sinceSequence) { enqueue(FUNCTION_TO_QUEUE(Puller::_start), sinceSequence); }
+        void start(RemoteSequence sinceSequence) {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_start), std::move(sinceSequence));
+        }
 
         // Called only by IncomingRev
         void revWasProvisionallyHandled() { _provisionallyHandledRevs.add(1); }
@@ -45,19 +48,19 @@ namespace litecore { namespace repl {
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
       protected:
-        virtual void caughtUp() override { enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp)); }
+        void caughtUp() override { enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp)); }
 
-        virtual void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), move(changes));
+        void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), std::move(changes));
         }
 
-        virtual void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), move(revs));
+        void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), std::move(revs));
         }
 
-        virtual void          _childChangedStatus(Retained<Worker>, Status) override;
-        virtual ActivityLevel computeActivityLevel() const override;
-        void                  activityLevelChanged(ActivityLevel level);
+        void          _childChangedStatus(Retained<Worker>, Status) override;
+        ActivityLevel computeActivityLevel() const override;
+        void          activityLevelChanged(ActivityLevel level);
 
       private:
         void                  _start(RemoteSequence sinceSequence);
@@ -90,7 +93,7 @@ namespace litecore { namespace repl {
         actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
-        virtual actor::Mailbox* mailboxForChildren() override { return &_revMailbox; }
+        actor::Mailbox* mailboxForChildren() override { return &_revMailbox; }
 
         // This field must go before _revFinder because "this" is passed in "new RevFinder(replicator, this)," which will
         // call this->mailboxForChildren() which depends on it.
@@ -104,4 +107,4 @@ namespace litecore { namespace repl {
     };
 
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

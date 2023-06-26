@@ -14,22 +14,19 @@
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
-#include "Base64.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
-#include "StringUtil.hh"
 #include "c4Database.hh"
 #include "DatabaseImpl.hh"
 #include "NumConversion.hh"
-#include <inttypes.h>
-
-#include "c4Database.hh"
-#include "c4Document.hh"
+#include <cinttypes>
+#include <memory>
+#include <utility>
 #include "c4DocEnumerator.hh"
 
 #define LOCK() lock_guard<mutex> lock(_mutex)
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using namespace std;
     using namespace fleece;
 
@@ -109,9 +106,9 @@ namespace litecore { namespace repl {
     void Checkpointer::enableAutosave(duration saveTime, SaveCallback cb) {
         DebugAssert(saveTime > duration(0));
         LOCK();
-        _saveCallback = cb;
+        _saveCallback = std::move(cb);
         _saveTime     = saveTime;
-        _timer.reset(new actor::Timer(bind(&Checkpointer::save, this)));
+        _timer        = std::make_unique<actor::Timer>([this] { save(); });
     }
 
     void Checkpointer::stopAutosave() {
@@ -267,7 +264,7 @@ namespace litecore { namespace repl {
 
         // Checkpoint doc is either read, or nonexistent:
         LOCK();
-        _checkpoint.reset(new Checkpoint);
+        _checkpoint = std::make_unique<Checkpoint>();
         if ( body && !reset ) {
             _checkpoint->readJSON(body);
             _checkpointJSON = body;
@@ -427,4 +424,4 @@ namespace litecore { namespace repl {
     }
 
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

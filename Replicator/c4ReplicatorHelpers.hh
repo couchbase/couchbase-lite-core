@@ -13,7 +13,7 @@
 #pragma once
 #include "c4ReplicatorTypes.h"
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     // Helper struct to make testing with collections easier
     struct C4ReplParamsOneCollection : C4ReplicatorParameters {
@@ -46,4 +46,4 @@ namespace litecore { namespace repl {
         C4ReplParamsDefaultCollection() : C4ReplParamsOneCollection{kC4DefaultCollectionSpec} {}
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

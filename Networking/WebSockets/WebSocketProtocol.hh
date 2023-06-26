@@ -42,6 +42,8 @@
 
 //COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
+#include "c4Log.h"
+#include "fleece/slice.hh"
 #include <limits>
 #ifdef __APPLE__
 #    include <libkern/OSByteOrder.h>
@@ -71,6 +73,7 @@
 //COUCHBASE: End of code adapted from Networking.h
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <cstdlib>
 #include "SecureRandomize.hh"
@@ -319,12 +322,13 @@ namespace uWS {
             dst[0]    = (std::byte)((flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0));
             if ( !(flags & SND_CONTINUATION) ) { dst[0] |= (std::byte)opCode; }
 
-            std::byte mask[4];
+            std::array<std::byte, 4> mask{};
+
             if ( !isServer ) {
                 ((uint8_t*)dst)[1] |= 0x80;
-                uint32_t random = litecore::RandomNumber();
-                memcpy(mask, &random, 4);
-                memcpy(dst + headerLength, &random, 4);
+                fleece::mutable_slice maskSlice(mask.data(), 4);
+                litecore::SecureRandomize(maskSlice);
+                memcpy(dst + headerLength, mask.data(), 4);
                 headerLength += 4;
             }
 
@@ -332,28 +336,28 @@ namespace uWS {
             memcpy(dst + headerLength, src, length);
 
             if ( !isServer ) {
-#if 1
-                // overwrites up to 3 bytes outside of the given buffer!
-                //WebSocketProtocol<isServer>::unmaskInplace(dst + headerLength, dst + headerLength + length, mask);
+                std::byte* start_byte = dst + headerLength;
+                std::byte* end_byte   = start_byte + length;
+                size_t     offset     = 0;
 
-                // this is not optimal
-                std::byte* start = dst + headerLength;
-                std::byte* stop  = start + length;
-                int        i     = 0;
-                while ( start != stop ) { (*start++) ^= mask[i++ % 4]; }
-#else
-                uint32_t mask_i32 = *reinterpret_cast<uint32_t*>(mask);
+                // Handle first x amount of bytes individually until we are aligned with the 4-byte alignment
+                for ( ; (reinterpret_cast<uintptr_t>(start_byte) & 3) != 0 && start_byte != end_byte; ++offset ) {
+                    *start_byte++ ^= mask[offset % 4];
+                }
 
-                auto*     start = reinterpret_cast<uint32_t*>(dst + headerLength);
-                uint32_t* end   = start + length / 4;
+                // Rotate mask by the offset we reached in the first loop to become memory-aligned
+                std::rotate(mask.begin(), mask.begin() + offset, mask.end());
 
+                // Process majority of bytes in chunks of 4 (until end or < 4 bytes away from end)
+                auto*     start = reinterpret_cast<uint32_t*>(start_byte);
+                uint32_t* end   = start + ((end_byte - start_byte) / 4);
+                uint32_t  mask_i32{};
+                std::memcpy(&mask_i32, mask.data(), 4);
                 while ( start != end ) { *start++ ^= mask_i32; }
 
-                // Handle remaining bytes (if length is not a multiple of 4)
-                auto*      start_byte = reinterpret_cast<std::byte*>(start);
-                std::byte* end_byte   = dst + headerLength + length;
-                for ( int i = 0; start_byte != end_byte; ++i, ++start_byte ) { *start_byte ^= mask[i % 4]; }
-#endif
+                // Process remaining bytes individually (if any)
+                start_byte = reinterpret_cast<std::byte*>(start);
+                for ( int i = 0; start_byte != end_byte; ++i ) { *start_byte++ ^= mask[i % 4]; }
             }
             return messageLength;
         }

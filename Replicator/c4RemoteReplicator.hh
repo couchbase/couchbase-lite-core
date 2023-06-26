@@ -45,7 +45,7 @@ namespace litecore {
                            C4String remoteDatabaseName)
             : C4ReplicatorImpl(db, params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
-            , _retryTimer(std::bind(&C4RemoteReplicator::retry, this, false)) {
+            , _retryTimer([this] { retry(false); }) {
             if ( params.socketFactory ) {
                 // Keep a copy of the C4SocketFactory struct in case original is invalidated:
                 _customSocketFactory = *params.socketFactory;
@@ -63,7 +63,7 @@ namespace litecore {
             }
         }
 
-        virtual bool retry(bool resetCount) override {
+        bool retry(bool resetCount) override {
             LOCK(_mutex);
             if ( resetCount ) _retryCount = 0;
             if ( _status.level >= kC4Connecting ) return true;
@@ -78,13 +78,13 @@ namespace litecore {
             return true;
         }
 
-        virtual void stop() noexcept override {
+        void stop() noexcept override {
             cancelScheduledRetry();
             C4ReplicatorImpl::stop();
         }
 
         // Called by the client when it determines the remote host is [un]reachable.
-        virtual void setHostReachable(bool reachable) noexcept override {
+        void setHostReachable(bool reachable) noexcept override {
             LOCK(_mutex);
             if ( !setStatusFlag(kC4HostReachable, reachable) ) return;
             logInfo("Notified that server is now %sreachable", (reachable ? "" : "un"));
@@ -93,13 +93,13 @@ namespace litecore {
                 cancelScheduledRetry();
         }
 
-        virtual void _suspend() noexcept override {
+        void _suspend() noexcept override {
             // called with _mutex locked
             cancelScheduledRetry();
             C4ReplicatorImpl::_suspend();
         }
 
-        virtual bool _unsuspend() noexcept override {
+        bool _unsuspend() noexcept override {
             // called with _mutex locked
             maybeScheduleRetry();
             return true;
@@ -107,9 +107,9 @@ namespace litecore {
 
 
       protected:
-        virtual alloc_slice URL() const noexcept override { return _url; }
+        alloc_slice URL() const noexcept override { return _url; }
 
-        virtual void createReplicator() override {
+        void createReplicator() override {
             auto dbOpenedAgain = _database->openAgain();
             _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
             auto dbAccess =
@@ -150,10 +150,10 @@ namespace litecore {
         }
 
         // Overridden to clear the retry count, so that after a disconnect we'll get more retries.
-        virtual void handleConnected() override { _retryCount = 0; }
+        void handleConnected() override { _retryCount = 0; }
 
         // Overridden to handle transient or network-related errors and possibly retry.
-        virtual void handleStopped() override {
+        void handleStopped() override {
             C4Error c4err = _status.error;
             if ( c4err.code == 0 ) return;
 

@@ -34,7 +34,7 @@ struct C4Replicator
 
     virtual void start(bool reset = false) noexcept = 0;
     virtual void stop() noexcept                    = 0;
-    bool         retry();
+    bool         retry() const;
 
     virtual void stopCallbacks() noexcept = 0;
 
@@ -52,7 +52,7 @@ struct C4Replicator
     bool        isDocumentPending(slice docID, C4CollectionSpec) const;
 
 #ifdef COUCHBASE_ENTERPRISE
-    C4Cert* C4NULLABLE getPeerTLSCertificate() const;
+    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const;
 #endif
 };
 

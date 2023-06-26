@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     /**
      * Tracks the state of replication, i.e. which sequences have been sent/received and which
@@ -47,13 +47,13 @@ namespace litecore { namespace repl {
       public:
         Checkpoint() { resetLocal(); }
 
-        Checkpoint(fleece::slice json) { readJSON(json); }
+        explicit Checkpoint(fleece::slice json) { readJSON(json); }
 
         void readJSON(fleece::slice json);
 
         void readDict(fleece::Dict dict);
 
-        fleece::alloc_slice toJSON() const;
+        [[nodiscard]] fleece::alloc_slice toJSON() const;
 
         bool validateWith(const Checkpoint& remoteSequences);
 
@@ -61,14 +61,14 @@ namespace litecore { namespace repl {
 
         /** The last fully-complete local sequence, such that it and all lesser sequences are
             complete. In other words, the sequence before the first pending sequence. */
-        C4SequenceNumber localMinSequence() const;
+        [[nodiscard]] C4SequenceNumber localMinSequence() const;
 
         /** The set of sequences that have been "completed": either pushed, or skipped, or else
             don't exist. */
-        const SequenceSet& completedSequences() const { return _completed; }
+        [[nodiscard]] const SequenceSet& completedSequences() const { return _completed; }
 
         /** Has this sequence been completed? */
-        bool isSequenceCompleted(C4SequenceNumber s) const { return _completed.contains(s); }
+        [[nodiscard]] bool isSequenceCompleted(C4SequenceNumber s) const { return _completed.contains(s); }
 
         /** Removes a sequence from the set of completed sequences. */
         void addPendingSequence(C4SequenceNumber s);
@@ -89,13 +89,13 @@ namespace litecore { namespace repl {
         }
 
         /** The number of uncompleted sequences up through the last sequence checked. */
-        size_t pendingSequenceCount() const;
+        [[nodiscard]] size_t pendingSequenceCount() const;
 
         //---- Remote sequences:
 
         /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
             complete. */
-        RemoteSequence remoteMinSequence() const { return _remote; }
+        [[nodiscard]] RemoteSequence remoteMinSequence() const { return _remote; }
 
         bool setRemoteMinSequence(const RemoteSequence&);
 
@@ -105,9 +105,9 @@ namespace litecore { namespace repl {
         void resetLocal();
         void updateLocalFromPending();
 
-        SequenceSet      _completed;    // Set of completed local sequences
-        C4SequenceNumber _lastChecked;  // Last local sequence checked in the db
-        RemoteSequence   _remote;       // Last completed remote sequence
+        SequenceSet      _completed;      // Set of completed local sequences
+        C4SequenceNumber _lastChecked{};  // Last local sequence checked in the db
+        RemoteSequence   _remote;         // Last completed remote sequence
     };
 
     // specialization where REV_LIST is std::vector<C4SequenceNumber>
@@ -120,4 +120,4 @@ namespace litecore { namespace repl {
         for ( auto rev : revs ) _completed.remove(rev);
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl
