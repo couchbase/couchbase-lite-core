@@ -10,14 +10,13 @@
 // the file licenses/APL2.txt.
 //
 
-#include "WebSocketImpl.hh"
-#include "WebSocketProtocol.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
-#include "Timer.hh"
+#include "Logging.hh"
+#include "WebSocketInterface.hh"
 #include <chrono>
 #include <functional>
 #include <string>
+#include <utility>
 
 using namespace std;
 using namespace fleece;
@@ -25,17 +24,18 @@ using namespace fleece;
 
 #pragma mark - WEBSOCKET:
 
-namespace litecore { namespace websocket {
+namespace litecore::websocket {
 
     LogDomain WSLogDomain("WS", LogLevel::Warning);
 
-    WebSocket::WebSocket(const alloc_slice& a, Role role) : _url(a), _role(role) {}
+    WebSocket::WebSocket(alloc_slice a, Role role) : _url(std::move(a)), _role(role) {}
 
     WebSocket::~WebSocket() = default;
 
     void WebSocket::connect(Retained<WeakHolder<Delegate>> weakDelegate) {
         DebugAssert(!_delegateWeakHolder);
-        _delegateWeakHolder = weakDelegate;
+        // Clang-Tidy suggests std::move, but it breaks the retain
+        _delegateWeakHolder = weakDelegate;  // NOLINT(performance-unnecessary-value-param)
         connect();
     }
 
@@ -46,4 +46,4 @@ namespace litecore { namespace websocket {
         return kReasonNames[reason];
     }
 
-}}  // namespace litecore::websocket
+}  // namespace litecore::websocket

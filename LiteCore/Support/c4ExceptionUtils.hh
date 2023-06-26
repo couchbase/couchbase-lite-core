@@ -11,12 +11,9 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4Private.h"
 #include "fleece/PlatformCompat.hh"  // for NOINLINE, ALWAYS_INLINE
 #include <atomic>
-
-
-extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions;
 
 namespace litecore {
 

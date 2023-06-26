@@ -657,14 +657,20 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C
 }
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithTemporaryKey();
+    {
+        ExpectingExceptions x;
+        pinnedCert = useServerTLSWithTemporaryKey();
+    }
     testRootLevel();
 }
 
 
 #        ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithPersistentKey();
+    {
+        ExpectingExceptions x;
+        pinnedCert = useServerTLSWithPersistentKey();
+    }
     testRootLevel();
 }
 #        endif

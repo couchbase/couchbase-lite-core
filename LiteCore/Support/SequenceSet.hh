@@ -35,26 +35,26 @@ namespace litecore {
         void clear() { _sequences.clear(); }
 
         /** Is the set empty? (This is faster than `size() == 0`.) */
-        bool empty() const { return _sequences.empty(); }
+        [[nodiscard]] bool empty() const { return _sequences.empty(); }
 
         /** The number of sequences in the set. */
-        size_t size() const {
+        [[nodiscard]] size_t size() const {
             size_t total = 0;
             for ( auto& range : _sequences ) total += range.second - range.first;
             return total;
         }
 
         /** The number of ranges of consecutive sequences in the set. */
-        size_t rangesCount() const { return _sequences.size(); }
+        [[nodiscard]] size_t rangesCount() const { return _sequences.size(); }
 
         /** Returns the lowest sequence in the set. If the set is empty, returns 0. */
-        sequence first() const { return empty() ? sequence(0) : _sequences.begin()->first; }
+        [[nodiscard]] sequence first() const { return empty() ? sequence(0) : _sequences.begin()->first; }
 
         /** Returns the highest sequence in the set. If the set is empty, returns 0. */
-        sequence last() const { return empty() ? sequence(0) : prev(_sequences.end())->second - 1; }
+        [[nodiscard]] sequence last() const { return empty() ? sequence(0) : prev(_sequences.end())->second - 1; }
 
         /** Is the sequence in the set? */
-        bool contains(sequence s) const {
+        [[nodiscard]] bool contains(sequence s) const {
             auto i = _sequences.upper_bound(s);  // first range with start > s
             if ( i == _sequences.begin() ) return false;
             i = prev(i);
@@ -143,12 +143,12 @@ namespace litecore {
             (one past the last sequence in the range.) */
         using const_iterator = Map::const_iterator;
 
-        const_iterator begin() const { return _sequences.begin(); }
+        [[nodiscard]] const_iterator begin() const { return _sequences.begin(); }
 
-        const_iterator end() const { return _sequences.end(); }
+        [[nodiscard]] const_iterator end() const { return _sequences.end(); }
 
         /** Returns a human-readable description, like "{1, 4, 7-9}". */
-        std::string to_string() const;
+        [[nodiscard]] std::string to_string() const;
 
       private:
         // Implementation of add; returns an iterator pointing to the range containing `s`

@@ -11,22 +11,17 @@
 //
 
 #include "LiteCoreTest.hh"
-#include "TestsCommon.hh"
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
-#include "PlatformIO.hh"
 #include "StringUtil.hh"
-#include "c4Private.h"
-#include "Backtrace.hh"
 #include "Encoder.hh"
 #include "Logging.hh"
 #include <csignal>
-#include <stdlib.h>
-#include <stdarg.h>
+#include <cstdlib>
+#include <cstdarg>
 #include <mutex>
 #include <thread>
 #include <chrono>
-#include "SecureRandomize.hh"
 #include "TempArray.hh"
 
 #if TARGET_OS_IPHONE
@@ -57,7 +52,7 @@ string stringWithFormat(const char* format, ...) {
     return str;
 }
 
-void ExpectException(litecore::error::Domain domain, int code, std::function<void()> lambda) {
+void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
     try {
         ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
@@ -117,7 +112,7 @@ TestFixture::~TestFixture() {
     }
 }
 
-unsigned TestFixture::warningsLogged() noexcept { return sWarningsLogged - _warningsAlreadyLogged; }
+unsigned TestFixture::warningsLogged() const noexcept { return sWarningsLogged - _warningsAlreadyLogged; }
 
 FilePath TestFixture::GetPath(const string& name, const string& extension) noexcept {
     static chrono::milliseconds unique;
@@ -131,7 +126,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
     TempArray(folderName, char, bufSize);
     snprintf(folderName, bufSize, "%s%" PRIms ".%s", name.c_str(), unique.count(), trimmedExtension);
 
-    const auto base = sTempDir[(const char*)folderName];
+    auto base = sTempDir[(const char*)folderName];
 
     return base;
 }
@@ -140,7 +135,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
 
 DataFile::Factory& DataFileTestFixture::factory() { return SQLiteDataFile::sqliteFactory(); }
 
-FilePath DataFileTestFixture::databasePath(const string baseName) {
+FilePath DataFileTestFixture::databasePath(const string& baseName) {
     return GetPath(baseName, factory().filenameExtension());
 }
 
@@ -191,7 +186,7 @@ sequence_t DataFileTestFixture::createDoc(KeyStore& s, slice docID, slice body, 
 }
 
 sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, DocumentFlags flags, ExclusiveTransaction& t,
-                                         function<void(fleece::impl::Encoder&)> writeProperties) {
+                                         const function<void(fleece::impl::Encoder&)>& writeProperties) {
     fleece::impl::Encoder enc;
     enc.beginDictionary();
     writeProperties(enc);

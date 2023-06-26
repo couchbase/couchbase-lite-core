@@ -41,7 +41,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
         ExclusiveTransaction t(db);
         createDoc("doc1", "{\"foo\": 1}", t);
-        createDoc("doc2", "{\"foo\": 2, \"bar\": 1}", t);
+        createDoc("doc2", R"({"foo": 2, "bar": 1})", t);
         t.commit();
     }
 

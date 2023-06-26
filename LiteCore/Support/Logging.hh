@@ -12,14 +12,13 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include "fleece/PlatformCompat.hh"
 #include "c4Compat.h"
 #include <atomic>
 #include <map>
 #include <string>
-#include <stdarg.h>
-#include <stdint.h>
-#include <inttypes.h>  //for stdint.h fmt specifiers
+#include <cstdarg>
+#include <cstdint>
+#include <cinttypes>  //for stdint.h fmt specifiers
 
 /*
     This is a configurable console-logging facility that lets logging be turned on and off independently for various subsystems or areas of the code. It's used similarly to printf:
@@ -60,7 +59,8 @@ namespace litecore {
 
     class LogDomain {
       public:
-        LogDomain(const char* name, LogLevel level = LogLevel::Info) : _level(level), _name(name), _next(sFirstDomain) {
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
+            : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
         }
 
@@ -119,7 +119,7 @@ namespace litecore {
         static std::string getObject(unsigned);
         unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
                                           const std::string& nickname, LogLevel level);
-        void               unregisterObject(unsigned obj);
+        static void        unregisterObject(unsigned obj);
         void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
       private:
@@ -204,7 +204,7 @@ namespace litecore {
         std::string loggingName() const;
 
       protected:
-        Logging(LogDomain& domain) : _domain(domain) {}
+        explicit Logging(LogDomain& domain) : _domain(domain) {}
 
         virtual ~Logging();
 

@@ -14,7 +14,6 @@
 #include "StringUtil.hh"
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
-#include "PlatformIO.hh"
 #include "FilePath.hh"
 #include "Error.hh"
 #include <string>
@@ -36,6 +35,8 @@
 
 #ifdef _MSC_VER
 #    include <winapifamily.h>
+// For strcasecmp
+#    include "PlatformIO.hh"
 #endif
 
 #define CBL_LOG_EXTENSION ".cbllog"
@@ -45,7 +46,7 @@ using namespace std::chrono;
 
 struct ScopedSetter {
     bool& _var;
-    bool  _origVal, _newVal;
+    bool  _origVal{};
 
     ScopedSetter(bool& var, bool toValue) : _var(var), _origVal(var) { _var = toValue; }
 
@@ -62,8 +63,8 @@ struct ScopedSetter {
 namespace litecore {
 
     LogDomain*       LogDomain::sFirstDomain = nullptr;
-    static LogDomain _ActorLog("Actor");
-    LogDomain&       ActorLog = _ActorLog;
+    static LogDomain ActorLog_("Actor");
+    LogDomain&       ActorLog = ActorLog_;
 
     LogLevel                     LogDomain::sCallbackMinLevel = LogLevel::Uninitialized;
     static LogDomain::Callback_t sCallback                    = LogDomain::defaultCallback;
@@ -415,10 +416,12 @@ namespace litecore {
         va_end(args);
     }
 
+    // Can't make this function static, it breaks the usage of __printflike.
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
     // Must have sLogMutex held
     void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char* fmt, va_list args) {
         auto     obj = getObject(objRef);
-        uint64_t pos = 0;
+        uint64_t pos;
 
         // Safe to store these in variables, since they only change in the rotateLog method
         // and the rotateLog method is only called here (and this method holds a mutex)
@@ -443,6 +446,8 @@ namespace litecore {
 
         if ( pos >= sMaxSize ) { Logging::rotateLog(level); }
     }
+
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     __printflike(3, 4) static void invokeCallback(LogDomain& domain, LogLevel level, const char* fmt, ...) {
         va_list args;

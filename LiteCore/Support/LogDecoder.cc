@@ -18,9 +18,9 @@
 #include <cstring>
 #include <chrono>
 #include <algorithm>
-#include "fleece/PlatformCompat.hh"
 #include "date/date.h"
 #include "ParseDate.hh"
+#include "NumConversion.hh"
 
 #if __APPLE__
 #    include <sys/time.h>
@@ -188,7 +188,7 @@ namespace litecore {
             }
 
             // Read the format string, then the parameters:
-            string format = readStringToken().c_str();
+            std::string format = readStringToken();
             for ( const char* c = format.c_str(); *c != '\0'; ++c ) {
                 if ( *c != '%' ) {
                     out << *c;
@@ -218,8 +218,8 @@ namespace litecore {
                         case 'd':
                         case 'i':
                             {
-                                bool    negative = _in.get() > 0;
-                                int64_t param    = readUVarInt();
+                                bool negative = _in.get() > 0;
+                                auto param    = narrow_cast<int64_t>(readUVarInt());
                                 if ( negative ) param = -param;
                                 if ( *c == 'c' ) out.put(char(param));
                                 else
@@ -255,11 +255,11 @@ namespace litecore {
                                 if ( minus && !dotStar ) {
                                     out << readStringToken();
                                 } else {
-                                    size_t size = (size_t)readUVarInt();
-                                    char   buf[200];
+                                    auto size = (size_t)readUVarInt();
+                                    char buf[200];
                                     while ( size > 0 ) {
                                         auto n = min(size, sizeof(buf));
-                                        _in.read(buf, n);
+                                        _in.read(buf, narrow_cast<std::streamsize>(n));
                                         if ( minus ) {
                                             constexpr size_t bufSize = 3;
                                             for ( size_t i = 0; i < n; ++i ) {
@@ -268,7 +268,7 @@ namespace litecore {
                                                 out << hex;
                                             }
                                         } else {
-                                            out.write(buf, n);
+                                            out.write(buf, narrow_cast<std::streamsize>(n));
                                         }
                                         size -= n;
                                     }
@@ -350,7 +350,7 @@ namespace litecore {
         kMaxVarintLen64 = 10,
     };
 
-    static size_t _GetUVarInt(slice buf, uint64_t* n) {
+    static size_t _getUVarInt(slice buf, uint64_t* n) {
         // NOTE: The public inline function GetUVarInt already decodes 1-byte varints,
         // so if we get here we can assume the varint is at least 2 bytes.
         auto     pos    = (const uint8_t*)buf.buf;
@@ -380,7 +380,7 @@ namespace litecore {
             *n = byte;
             return 1;
         }
-        return _GetUVarInt(buf, n);
+        return _getUVarInt(buf, n);
     }
 
     // End code extracted from varint.cc

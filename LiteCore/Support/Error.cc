@@ -14,15 +14,16 @@
 #include "Logging.hh"
 #include "Backtrace.hh"
 #include "FleeceException.hh"
-#include "PlatformIO.hh"
 #include "StringUtil.hh"
 #include "betterassert.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include "WebSocketInterface.hh"  // for Network error codes
+#include <array>
 #include <cerrno>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #ifdef _MSC_VER
 #    include <winsock2.h>
@@ -45,7 +46,6 @@
 #    include <sockpp/exception.h>
 #else
 #    include "c4Base.h"  // Ugly layering violation, but needed for using Error in other libs
-#    include "c4Private.h"
 #endif
 
 namespace litecore {
@@ -171,13 +171,10 @@ namespace litecore {
                                                       {0, /*must end with err=0*/ error::LiteCore, 0}};
 #endif
 
+    static const std::vector<codeMapping> kPOSIXMapping = {{ENOENT, error::LiteCore, error::NotFound}};
 
-    static const codeMapping kPOSIXMapping[] = {
-            {ENOENT, error::LiteCore, error::NotFound},
-            {0, /*must end with err=0*/ error::LiteCore, 0},
-    };
-
-    static const codeMapping kSQLiteMapping[] = {
+    // clang-format off
+    static const std::vector<codeMapping> kSQLiteMapping = {
             {SQLITE_PERM, error::LiteCore, error::NotWriteable},
             {SQLITE_BUSY, error::LiteCore, error::Busy},
             {SQLITE_LOCKED, error::LiteCore, error::Busy},
@@ -188,25 +185,23 @@ namespace litecore {
             {SQLITE_FULL, error::POSIX, ENOSPC},
             {SQLITE_CANTOPEN, error::LiteCore, error::CantOpenFile},
             {SQLITE_NOTADB, error::LiteCore, error::NotADatabaseFile},
-            {SQLITE_PERM, error::LiteCore, error::NotWriteable},
-            {0, /*must end with err=0*/ error::LiteCore, 0},
+            {SQLITE_PERM, error::LiteCore, error::NotWriteable}
     };
+    // clang-format on
     //TODO: Map the SQLite 'extended error codes' that give more detail about file errors
 
-    static const codeMapping kFleeceMapping[] = {
+    static const std::vector<codeMapping> kFleeceMapping = {
             {fleece::MemoryError, error::LiteCore, error::MemoryError},
             {fleece::JSONError, error::LiteCore, error::InvalidQuery},
-            {fleece::PathSyntaxError, error::LiteCore, error::InvalidQuery},
-            {0, /*must end with err=0*/ error::Fleece, 0},
-    };
+            {fleece::PathSyntaxError, error::LiteCore, error::InvalidQuery}};
 
-    __cold static bool mapError(error::Domain& domain, int& code, const codeMapping table[]) {
-        for ( const codeMapping* row = &table[0]; row->err != 0; ++row ) {
-            if ( row->err == code ) {
-                domain = row->domain;
-                code   = row->code;
-                return true;
-            }
+    __cold static bool mapError(error::Domain& domain, int& code, const std::vector<codeMapping>& table) {
+        const auto row =
+                std::find_if(table.begin(), table.end(), [&code](const codeMapping& cm) { return cm.err == code; });
+        if ( row != table.end() ) {
+            domain = row->domain;
+            code   = row->code;
+            return true;
         }
         return false;
     }
@@ -393,7 +388,7 @@ namespace litecore {
                 {
                     char buf[100];
                     mbedtls_strerror(code, buf, sizeof(buf));
-                    return string(buf);
+                    return {buf};
                 }
             default:
                 return "unknown error domain";
@@ -436,7 +431,8 @@ namespace litecore {
     }
 
     __cold error::error(error::Domain d, int c, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace)
-        : runtime_error(what), domain(d), code(getPrimaryCode(d, c)), backtrace(btrace) {
+        : runtime_error(what), domain(d), code(getPrimaryCode(d, c)), backtrace(std::move(btrace)) {
+        // Will only capture if `btrace` was nullptr.
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
 
@@ -495,11 +491,11 @@ namespace litecore {
         if ( auto e = dynamic_cast<const error*>(&re); e ) {
             return *e;
         } else if ( auto iae = dynamic_cast<const invalid_argument*>(&re); iae ) {
-            return error(LiteCore, InvalidParameter, what);
+            return {LiteCore, InvalidParameter, what};
         } else if ( auto faf = dynamic_cast<const fleece::assertion_failure*>(&re); faf ) {
-            return error(LiteCore, AssertionFailed, what);
+            return {LiteCore, AssertionFailed, what};
         } else if ( auto se = dynamic_cast<const SQLite::Exception*>(&re); se ) {
-            return error(SQLite, se->getExtendedErrorCode(), what);
+            return {SQLite, se->getExtendedErrorCode(), what};
         } else if ( auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe ) {
             error err(Fleece, fe->code, what);
             err.backtrace = fe->backtrace;
@@ -507,13 +503,13 @@ namespace litecore {
 #ifdef LITECORE_IMPL
         } else if ( auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr ) {
             int code = syserr->error();
-            return error((code < 0 ? MbedTLS : POSIX), code);
+            return {(code < 0 ? MbedTLS : POSIX), code};
         } else if ( auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&re); gx ) {
             if ( gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND ) {
-                return error(Network, websocket::kNetErrUnknownHost, "Unknown hostname \"" + gx->hostname() + "\"");
+                return {Network, websocket::kNetErrUnknownHost, "Unknown hostname \"" + gx->hostname() + "\""};
             } else {
-                return error(Network, websocket::kNetErrDNSFailure,
-                             "Error resolving hostname \"" + gx->hostname() + "\": " + what);
+                return {Network, websocket::kNetErrDNSFailure,
+                        "Error resolving hostname \"" + gx->hostname() + "\": " + what};
             }
 #endif
         } else {
@@ -523,13 +519,18 @@ namespace litecore {
 
     __cold error error::convertException(const std::exception& x) {
         if ( auto re = dynamic_cast<const std::runtime_error*>(&x); re ) return convertRuntimeError(*re);
-        if ( auto le = dynamic_cast<const std::logic_error*>(&x); le ) {
-            LiteCoreError code = AssertionFailed;
-            if ( dynamic_cast<const std::invalid_argument*>(le) != nullptr
-                 || dynamic_cast<const std::domain_error*>(le) != nullptr )
-                code = InvalidParameter;
-            return error(LiteCore, code, le->what());
+
+        if ( auto ia = dynamic_cast<const std::invalid_argument*>(&x); ia ) {
+            return {LiteCore, InvalidParameter, ia->what()};
         }
+        if ( auto de = dynamic_cast<const std::domain_error*>(&x); de ) {
+            return {LiteCore, InvalidParameter, de->what()};
+        }
+
+        if ( auto le = dynamic_cast<const std::logic_error*>(&x); le ) {
+            return {LiteCore, AssertionFailed, le->what()};
+        }
+
         return unexpectedException(x);
     }
 
@@ -549,7 +550,7 @@ namespace litecore {
 
     static std::function<void()> sNotableExceptionHook;
 
-    void error::setNotableExceptionHook(function<void()> hook) { sNotableExceptionHook = hook; }
+    void error::setNotableExceptionHook(function<void()> hook) { sNotableExceptionHook = std::move(hook); }
 
     __cold void error::_throw(unsigned skipFrames) {
         if ( sWarnOnError && !isUnremarkable() ) {
@@ -604,7 +605,7 @@ namespace litecore {
         if ( sWarnOnError ) {
             WarnError("%s (%s:%u, in %s)\n%s", messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
         }
-        throw err;
+        throw error(LiteCore, AssertionFailed, messageStr, err.backtrace);
     }
 
 }  // namespace litecore

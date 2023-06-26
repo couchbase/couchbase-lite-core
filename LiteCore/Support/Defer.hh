@@ -26,7 +26,7 @@ namespace litecore {
         bool active_;
 
       public:
-        ScopeGuard(Fun f) : f_(std::move(f)), active_(true) {}
+        explicit ScopeGuard(Fun f) : f_(std::move(f)), active_(true) {}
 
         ~ScopeGuard() {
             if ( active_ ) f_();

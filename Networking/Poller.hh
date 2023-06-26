@@ -17,10 +17,9 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#include "sockpp/platform.h"
 #include "sockpp/socket.h"
 
-namespace litecore { namespace net {
+namespace litecore::net {
     // This needs to stay here because of the platform variations of
     // socket_t and INVALID_SOCKET (Windows has them globally and
     // Unix has them in this namespace)
@@ -59,13 +58,13 @@ namespace litecore { namespace net {
         void    stop();
 
       private:
-        Poller(bool startNow) : Poller() {
+        explicit Poller(bool startNow) : Poller() {
             if ( startNow ) start();
         }
 
         bool poll();
         void callAndRemoveListener(int fd, Event);
-        void _interrupt(int fd);
+        void _interrupt(int fd) const;
 
         std::mutex                                            _mutex;
         std::unordered_map<socket_t, std::array<Listener, 3>> _listeners;  // array indexed by Event
@@ -76,4 +75,4 @@ namespace litecore { namespace net {
         socket_t _interruptWriteFD{INVALID_SOCKET};  // Other end of the pipe
     };
 
-}}  // namespace litecore::net
+}  // namespace litecore::net

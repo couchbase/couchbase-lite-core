@@ -148,7 +148,7 @@ namespace litecore {
         return str;
     }
 
-    FilePath::FilePath(string&& dirName, string&& fileName) : _dir(move(dirName)), _file(move(fileName)) {
+    FilePath::FilePath(string&& dirName, string&& fileName) : _dir(std::move(dirName)), _file(std::move(fileName)) {
         if ( _dir.empty() ) _dir = kCurrentDir;
         else if ( _dir[_dir.size() - 1] == kBackupSeparatorChar )
             _dir[_dir.size() - 1] = kSeparatorChar;
@@ -211,9 +211,9 @@ namespace litecore {
     FilePath FilePath::withExtension(const string& ext) const {
         Assert(!isDir());
         auto name = unextendedName();
-        if ( ext.empty() ) return FilePath(_dir, name);
+        if ( ext.empty() ) return {_dir, name};
         else
-            return FilePath(_dir, addExtension(name, ext));
+            return {_dir, addExtension(name, ext)};
     }
 
     FilePath FilePath::withExtensionIfNone(const string& ext) const {
@@ -226,24 +226,24 @@ namespace litecore {
         Assert(!isDir());
         if ( ext.empty() ) return *this;
         else
-            return FilePath(_dir, addExtension(_file, ext));
+            return {_dir, addExtension(_file, ext)};
     }
 
     FilePath FilePath::appendingToName(const std::string& suffix) const {
         if ( isDir() )
             // Cut off the trailing slash, it will get added back in the constructor
-            return FilePath(_dir.substr(0, _dir.size() - 1) + suffix, _file);
+            return {_dir.substr(0, _dir.size() - 1) + suffix, _file};
         else
-            return FilePath(_dir, _file + suffix);
+            return {_dir, _file + suffix};
     }
 
     FilePath FilePath::operator[](const string& name) const {
         Assert(isDir());
         if ( name.empty() ) return *this;
         else if ( name[name.size() - 1] == kSeparatorChar || name[name.size() - 1] == kBackupSeparatorChar )
-            return FilePath(_dir + name, "");
+            return {_dir + name, ""};
         else
-            return FilePath(_dir, name);
+            return {_dir, name};
     }
 
     string FilePath::fileOrDirName() const {
@@ -258,9 +258,9 @@ namespace litecore {
         return split.second;
     }
 
-    FilePath FilePath::fileNamed(const std::string& filename) const { return FilePath(_dir, filename); }
+    FilePath FilePath::fileNamed(const std::string& filename) const { return {_dir, filename}; }
 
-    FilePath FilePath::subdirectoryNamed(const std::string& dirname) const { return FilePath(_dir + dirname, ""); }
+    FilePath FilePath::subdirectoryNamed(const std::string& dirname) const { return {_dir + dirname, ""}; }
 
     FilePath FilePath::parentDir() const {
         if ( !isDir() ) return dir();
@@ -279,7 +279,7 @@ namespace litecore {
         chomp(p, kSeparatorChar);
         chomp(p, kBackupSeparatorChar);
         auto parentDir = splitPath(p).first;
-        return FilePath(parentDir, "");
+        return {parentDir, ""};
     }
 
     /* static */ FilePath FilePath::sharedTempDirectory(const string& location) {
@@ -356,7 +356,7 @@ namespace litecore {
         auto dir = opendir(_dir.c_str());
         if ( !dir ) error::_throwErrno();
         try {
-            while ( 1 ) {
+            while ( true ) {
                 struct dirent* result = readdir(dir);
                 if ( !result ) break;
                 string name(result->d_name);
@@ -561,7 +561,7 @@ namespace litecore {
         // Move the old item aside, to be deleted later:
         auto     parent = to.parentDir().path();
         FilePath trashDir(FilePath::sharedTempDirectory(parent)["CBL_Obsolete-"].mkTempDir());
-        FilePath trashPath(trashDir, to.fileOrDirName());
+        FilePath trashPath(std::string(trashDir), to.fileOrDirName());
         to.moveTo(trashPath);
 
         try {

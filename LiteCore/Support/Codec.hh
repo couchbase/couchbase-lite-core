@@ -12,12 +12,11 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include "fleece/Fleece.hh"
 #include "Logging.hh"
 #include "slice_stream.hh"
 #include <zlib.h>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
 
     /** Abstract encoder/decoder class. */
@@ -28,7 +27,7 @@ namespace litecore { namespace blip {
         using slice_istream = fleece::slice_istream;
 
         Codec();
-        virtual ~Codec() = default;
+        ~Codec() override = default;
 
         // See https://zlib.net/manual.html#Basic for info about modes
         enum class Mode : int {
@@ -74,7 +73,7 @@ namespace litecore { namespace blip {
       protected:
         using FlateFunc = int (*)(z_stream*, int);
 
-        ZlibCodec(FlateFunc flate) : _flate(flate) {}
+        explicit ZlibCodec(FlateFunc flate) : _flate(flate) {}
 
         void _write(const char* operation, slice_istream& input, slice_ostream& output, Mode,
                     size_t maxInput = SIZE_MAX);
@@ -94,8 +93,8 @@ namespace litecore { namespace blip {
             DefaultCompression = -1,
         };
 
-        Deflater(CompressionLevel = DefaultCompression);
-        ~Deflater();
+        explicit Deflater(CompressionLevel = DefaultCompression);
+        ~Deflater() override;
 
         void     write(slice_istream& input, slice_ostream& output, Mode = Mode::Default) override;
         unsigned unflushedBytes() const override;
@@ -108,9 +107,9 @@ namespace litecore { namespace blip {
     class Inflater final : public ZlibCodec {
       public:
         Inflater();
-        ~Inflater();
+        ~Inflater() override;
 
         void write(slice_istream& input, slice_ostream& output, Mode = Mode::Default) override;
     };
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

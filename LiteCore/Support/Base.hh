@@ -13,13 +13,12 @@
 #pragma once
 
 #include "fleece/slice.hh"
-#include "fleece/PlatformCompat.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/RefCounted.hh"
 #include "c4Base.h"
 #include <memory>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 

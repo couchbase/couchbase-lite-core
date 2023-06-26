@@ -13,7 +13,6 @@
 #include "Message.hh"
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
-#include "BLIPInternal.hh"
 #include "Codec.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"
@@ -22,15 +21,17 @@
 #include "varint.hh"
 #include "Instrumentation.hh"
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
+#include <memory>
 #include <sstream>
 
 #include <iostream>
+#include <utility>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
 
     // How many bytes to receive before sending an ACK
@@ -117,7 +118,7 @@ namespace litecore { namespace blip {
     MessageIn::MessageIn(Connection* connection, FrameFlags flags, MessageNo n, MessageProgressCallback onProgress,
                          MessageSize outgoingSize)
         : Message(flags, n), _connection(connection), _outgoingSize(outgoingSize), _propertiesRemaining(nullptr, 0) {
-        _onProgress = onProgress;
+        _onProgress = std::move(onProgress);
     }
 
     MessageIn::ReceiveState MessageIn::receivedFrame(Codec& codec, slice entireFrame, FrameFlags frameFlags) {
@@ -154,7 +155,7 @@ namespace litecore { namespace blip {
                 // Update my flags and allocate the Writer:
                 DebugAssert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-                _in.reset(new fleece::JSONEncoder);
+                _in    = std::make_unique<fleece::JSONEncoder>();
 
                 // Read just a few bytes to get the length of the properties (a varint at the
                 // start of the frame):
@@ -247,7 +248,7 @@ namespace litecore { namespace blip {
         }
     }
 
-    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, bool finalFrame) {
+    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, C4UNUSED bool finalFrame) {
         uint8_t buffer[4096];
         while ( frame.size > 0 ) {
             slice_ostream output(buffer, sizeof(buffer));
@@ -258,7 +259,7 @@ namespace litecore { namespace blip {
 
     void MessageIn::setProgressCallback(MessageProgressCallback callback) {
         lock_guard<mutex> lock(_receiveMutex);
-        _onProgress = callback;
+        _onProgress = std::move(callback);
     }
 
     bool MessageIn::isComplete() const {
@@ -345,7 +346,7 @@ namespace litecore { namespace blip {
             auto val      = endOfKey + 1;
             if ( val >= end ) break;  // illegal: missing value
             auto endOfVal = val + strlen(val);
-            if ( property == slice(key, endOfKey) ) return slice(val, endOfVal);
+            if ( property == slice(key, endOfKey) ) return {val, endOfVal};
             key = endOfVal + 1;
         }
         return nullslice;
@@ -370,8 +371,8 @@ namespace litecore { namespace blip {
     }
 
     Error MessageIn::getError() const {
-        if ( !isError() ) return Error();
-        return Error(property("Error-Domain"_sl), (int)intProperty("Error-Code"_sl), body());
+        if ( !isError() ) return {};
+        return {property("Error-Domain"_sl), (int)intProperty("Error-Code"_sl), body()};
     }
 
     string MessageIn::description() {
@@ -381,4 +382,4 @@ namespace litecore { namespace blip {
     }
 
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

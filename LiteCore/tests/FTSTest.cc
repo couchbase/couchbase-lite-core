@@ -12,7 +12,6 @@
 
 #include "DataFile.hh"
 #include "Query.hh"
-#include "Error.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
 
@@ -49,7 +48,7 @@ class FTSTest : public DataFileTestFixture {
         t.commit();
     }
 
-    void createDoc(ExclusiveTransaction& t, int i, string sentence) {
+    void createDoc(ExclusiveTransaction& t, int i, const string& sentence) {
         string docID = stringWithFormat("rec-%03d", i);
 
         fleece::impl::Encoder enc;
@@ -95,8 +94,6 @@ class FTSTest : public DataFileTestFixture {
         CHECK(row == expectedOrder.size());
     }
 };
-
-constexpr const char* const FTSTest::kStrings[5];
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     createIndex({"english", true});
@@ -461,7 +458,7 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
                   "'against']}")};
 
     int expectedMissing = 2;
-    for ( auto q : queries ) {
+    for ( const auto& q : queries ) {
         Retained<Query>           query = db->compileQuery(q);
         Retained<QueryEnumerator> results(query->createEnumerator(nullptr));
         CHECK(results->getRowCount() == 2);
@@ -481,7 +478,7 @@ TEST_CASE_METHOD(FTSTest, "No alias on MATCH", "[FTS][Query]") {
     createIndex({"english", true});
 
     const string indexSpecs[] = {"sentence", "testdb.sentence"};
-    for ( string spec : indexSpecs ) {
+    for ( const string& spec : indexSpecs ) {
         string q = R"-({"WHAT":[["._id"],[".sentence"]],"FROM":[{"AS":"testdb"}],"WHERE":["MATCH()",")-" + spec
                    + R"-(","'Dummie woman'"],"ORDER_BY":[["DESC",["RANK()","sentence"]]]})-";
         Retained<Query> query = db->compileQuery(q);  // just verify it compiles

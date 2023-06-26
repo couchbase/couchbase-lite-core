@@ -21,6 +21,7 @@ shift
 PROTOCOL="https"
 SG_EXEC="sync_gateway"
 CONFIG="config.json"
+SG_DB_NAME="scratch"
 
 # Handle optional arguments
 while test $# -gt 0
@@ -36,6 +37,7 @@ do
       ;;
     -d|--default)
       DEFAULT_COLL="YES"
+      SG_DB_NAME="scratch-30"
       ;;
     *)
       echo "UNKNOWN ARGUMENT"
@@ -49,7 +51,7 @@ done
 # Define the REST request to create the DB
 if [ -z $DEFAULT_COLL ]; then
 
-CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/scratch/' \
+CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/${SG_DB_NAME}/' \
  -H 'Content-Type: application/json' \
  -H 'Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==' \
  --data-raw '{\"num_index_replicas\": 0, \"bucket\": \"$BUCKET_NAME\", \"scopes\": {\"flowers\": {\"collections\": {\
@@ -59,7 +61,7 @@ CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/scratch/' \
 
 else
 
-CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/scratch/' \
+CURL_DB="curl -kL -X PUT '$PROTOCOL://localhost:4985/${SG_DB_NAME}/' \
  -H 'Content-Type: application/json' \
  -H 'Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==' \
  --data-raw '{\"num_index_replicas\": 0, \"bucket\": \"$BUCKET_NAME\"}'"
@@ -79,7 +81,7 @@ while [ $attempts -gt 0 ]
 do
   sleep 1
   # Attempt to get DB (waiting for SG DB to be UP)
-  sgup=$(curl -sIkL -X GET "$PROTOCOL://localhost:4985/scratch/" \
+  sgup=$(curl -sIkL -X GET "$PROTOCOL://localhost:4985/${SG_DB_NAME}/" \
  -H "Authorization: Basic QWRtaW5pc3RyYXRvcjpwYXNzd29yZA==" | head -n1 | cut -d$' ' -f2)
 
   code=${sgup:-0}

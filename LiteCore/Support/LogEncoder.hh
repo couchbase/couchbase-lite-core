@@ -14,9 +14,8 @@
 #include "Writer.hh"
 #include "Stopwatch.hh"
 #include "Timer.hh"
-#include "fleece/PlatformCompat.hh"
 #include "Logging.hh"
-#include <stdarg.h>
+#include <cstdarg>
 #include <iosfwd>
 #include <map>
 #include <memory>
@@ -62,12 +61,12 @@ namespace litecore {
         }
 
       private:
-        int64_t _timeElapsed() const;
-        void    _writeUVarInt(uint64_t);
-        void    _writeStringToken(const char* token);
-        void    _flush();
-        void    _scheduleFlush();
-        void    performScheduledFlush();
+        [[nodiscard]] int64_t _timeElapsed() const;
+        void                  _writeUVarInt(uint64_t);
+        void                  _writeStringToken(const char* token);
+        void                  _flush();
+        void                  _scheduleFlush();
+        void                  performScheduledFlush();
 
         std::mutex                           _mutex;
         fleece::Writer                       _writer;

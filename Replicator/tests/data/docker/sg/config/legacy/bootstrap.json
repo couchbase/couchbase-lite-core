@@ -1,0 +1,23 @@
+{
+  "bootstrap": {
+    "server": "couchbases://lite-core-cbs",
+    "server_tls_skip_verify": true,
+    "username": "admin",
+    "password": "password"
+  },
+  "api": {
+    "public_interface": ":4884",
+    "admin_interface": ":4885",
+    "https": {
+      "tls_cert_path": "cert/sg_cert.pem",
+      "tls_key_path": "cert/sg_key.pem"
+    }
+  },
+  "logging": {
+    "console": {
+      "enabled": true,
+      "log_level": "info",
+      "log_keys": ["*"]
+    }
+  } 
+}

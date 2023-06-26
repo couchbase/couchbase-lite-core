@@ -12,22 +12,21 @@
 
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
-#include "BLIPInternal.hh"
 #include "Codec.hh"
 #include "Error.hh"
-#include "varint.hh"
 #include <algorithm>
+#include <utility>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     static const size_t kDataBufferSize = 16384;
 
-    MessageOut::MessageOut(Connection* connection, FrameFlags flags, alloc_slice payload,
+    MessageOut::MessageOut(Connection* connection, FrameFlags flags, const alloc_slice& payload,
                            MessageDataSource&& dataSource, MessageNo number)
-        : Message(flags, number), _connection(connection), _contents(payload, move(dataSource)) {}
+        : Message(flags, number), _connection(connection), _contents(payload, std::move(dataSource)) {}
 
     void MessageOut::nextFrameToSend(Codec& codec, slice_ostream& dst, FrameFlags& outFlags) {
         outFlags = flags();
@@ -132,10 +131,10 @@ namespace litecore { namespace blip {
             return {nullslice, _contents.body()};  // (ACKs do not have properties)
     }
 
-    MessageOut::Contents::Contents(alloc_slice payload, MessageDataSource dataSource)
+    MessageOut::Contents::Contents(const alloc_slice& payload, MessageDataSource dataSource)
         : _payload(payload)
         , _unsentPayload(payload.buf, payload.size)
-        , _dataSource(move(dataSource))
+        , _dataSource(std::move(dataSource))
         , _unsentDataBuffer(nullslice) {
         DebugAssert(payload.size <= UINT32_MAX);
     }
@@ -188,4 +187,4 @@ namespace litecore { namespace blip {
         return {in, slice(in.end(), _payload.end())};
     }
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

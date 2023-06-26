@@ -11,7 +11,7 @@
 //
 
 #include <utility>
-
+#include "Stopwatch.hh"
 #include "LiveQuerier.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"

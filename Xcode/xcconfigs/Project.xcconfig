@@ -24,9 +24,9 @@ CLANG_STATIC_ANALYZER_MODE = shallow
 LITECORE_VERSION_STRING                            = 3.2.0
 LITECORE_BUILD_NUMBER                              = 0
 
-IPHONEOS_DEPLOYMENT_TARGET                         =  11.0
-MACOSX_DEPLOYMENT_TARGET                           = 10.12
-TVOS_DEPLOYMENT_TARGET                             =  11.0
+IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
+MACOSX_DEPLOYMENT_TARGET                           = 10.14
+TVOS_DEPLOYMENT_TARGET                             = 10.0
 ONLY_ACTIVE_ARCH                                   = YES
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator

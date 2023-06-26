@@ -13,17 +13,17 @@
 #pragma once
 #include "Base.hh"
 #include "FilePath.hh"
-#include <stdio.h>
+#include <cstdio>
 
 namespace litecore {
 
     /** A simple read-only seekable stream interface. */
     class ReadStream {
       public:
-        virtual ~ReadStream()                                  = default;
-        virtual uint64_t getLength() const                     = 0;
-        virtual size_t   read(void* dst NONNULL, size_t count) = 0;
-        virtual void     close()                               = 0;
+        virtual ~ReadStream()                                                = default;
+        [[nodiscard]] virtual uint64_t getLength() const                     = 0;
+        virtual size_t                 read(void* dst NONNULL, size_t count) = 0;
+        virtual void                   close()                               = 0;
 
         alloc_slice readAll();
     };
@@ -53,16 +53,16 @@ namespace litecore {
     /** Concrete ReadStream that reads a file. */
     class FileReadStream : public virtual SeekableReadStream {
       public:
-        FileReadStream(const FilePath& path) : FileReadStream(path, "rb") {}
+        explicit FileReadStream(const FilePath& path) : FileReadStream(path, "rb") {}
 
-        FileReadStream(FILE* file NONNULL) : _file(file) {}
+        explicit FileReadStream(FILE* file NONNULL) : _file(file) {}
 
-        virtual ~FileReadStream();
+        ~FileReadStream() override;
 
-        virtual uint64_t getLength() const override;
-        virtual void     seek(uint64_t pos) override;
-        virtual size_t   read(void* dst NONNULL, size_t count) override;
-        virtual void     close() override;
+        [[nodiscard]] uint64_t getLength() const override;
+        void                   seek(uint64_t pos) override;
+        size_t                 read(void* dst NONNULL, size_t count) override;
+        void                   close() override;
 
       protected:
         FileReadStream(const FilePath& path, const char* mode NONNULL);
@@ -81,11 +81,11 @@ namespace litecore {
       public:
         FileWriteStream(const FilePath& path, const char* mode NONNULL) : FileReadStream(path, mode) {}
 
-        FileWriteStream(FILE* file NONNULL) : FileReadStream(file) {}
+        explicit FileWriteStream(FILE* file NONNULL) : FileReadStream(file) {}
 
-        virtual void write(slice) override;
+        void write(slice) override;
 
-        virtual void close() override { FileReadStream::close(); }
+        void close() override { FileReadStream::close(); }
     };
 
 #ifdef _MSC_VER
