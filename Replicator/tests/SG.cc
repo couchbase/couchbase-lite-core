@@ -3,7 +3,6 @@
 //
 
 #include "SG.hh"
-#include "c4Test.hh"
 #include "c4Database.hh"
 #include <utility>
 #include <map>
@@ -11,6 +10,10 @@
 #include "StringUtil.hh"
 #include "Error.hh"
 #include "HTTPLogic.hh"
+#include "catch.hpp"
+
+using namespace std::string_literals;
+using namespace fleece;
 
 std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4CollectionSpec collectionSpec,
                                                   std::string path, slice body, bool admin, double timeout,

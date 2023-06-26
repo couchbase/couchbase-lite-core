@@ -347,13 +347,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
 
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push + Pull + (Push & Pull) SG",
                  "[.SyncServerCollection]") {
-    string       idPrefix  = timePrefix();
-    const string channelID = idPrefix;
+    string             idPrefix  = timePrefix();
+    const std::string& channelID = idPrefix;
     initTest({Lavenders, Roses, Tulips}, {channelID});
 
     enum { iPush, iPull, iPushPull };
 
-    constexpr slice body            = "{\"ans*wer\":42}"_sl;
+    constexpr slice body            = R"({"ans*wer":42})";
     alloc_slice     bodyWithChannel = SG::addChannelToJSON(body, "channels", {channelID});
     alloc_slice     localPrefix{idPrefix + "local-"};
     alloc_slice     remotePrefix{idPrefix + "remote-"};
@@ -485,7 +485,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
         jthread.thread    = std::thread(std::thread{[=]() mutable {
             for ( size_t i = 0; i < _collectionCount; ++i ) {
                 const string collName = string(_collectionSpecs[i].name);
-                const string docID    = idPrefix + "-" + collName + "-docko";
+                const string docID    = format("%s-%s-docko", idPrefix.c_str(), collName.c_str());
                 ReplicatorLoopbackTest::addRevs(_collections[i], 500ms, alloc_slice(docID), 1, 10, true,
                                                    ("db-"s + collName).c_str());
             }
@@ -708,7 +708,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
         collNames[i] = idPrefix + Options::collectionSpecToPath(_collectionSpecs[i]).asString();
         createFleeceRev(_collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
         createFleeceRev(_collections[i], slice(collNames[i]), revOrVersID("2-12121212", "1@cafe"),
-                        "{\"db\":\"remote\"}"_sl);
+                        R"({"db":"remote"})"_sl);
     }
 
     updateDocIDs();
@@ -725,7 +725,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Resolve Conflict SG", "[.SyncServe
     for ( size_t i = 0; i < _collectionCount; ++i ) {
         createFleeceRev(_collections[i], slice(collNames[i]), kRev1ID, "{}"_sl);
         createFleeceRev(_collections[i], slice(collNames[i]), revOrVersID("2-13131313", "1@babe"),
-                        "{\"db\":\"local\"}"_sl);
+                        R"({"db":"local"})"_sl);
     }
 
     updateDocIDs();  // Might need to delete this
@@ -915,7 +915,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Fi
             pullFilterPurge = 0;
         }
 
-        unsigned collIndex;
+        unsigned collIndex = -1;
     } cbContexts[2];
 
     Assert(2 == _collectionCount);
@@ -924,7 +924,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Fi
     // Setup pull filter to filter the removed rev:
     _pullFilter = [](C4CollectionSpec collectionSpec, C4String docID, C4String revID, C4RevisionFlags flags,
                      FLDict flbody, void* context) {
-        CBContext* ctx = (CBContext*)context;
+        auto* ctx = (CBContext*)context;
         ctx->pullFilterTotal++;
         if ( (flags & kRevPurged) == kRevPurged ) {
             ctx->pullFilterPurge++;
@@ -943,8 +943,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Fi
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
         for ( size_t i = 0; i < numDocs; ++i ) {
-            auto       doc = docs[i];
-            CBContext* ctx = (CBContext*)doc->collectionContext;
+            auto  doc = docs[i];
+            auto* ctx = (CBContext*)doc->collectionContext;
             ctx->docsEndedTotal++;
             if ( (doc->flags & kRevPurged) == kRevPurged ) { ctx->docsEndedPurge++; }
         }
@@ -1226,14 +1226,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServe
         // Create 3 docs and docs[1] is to be encrypted.
         TransactionHelper t(db);
         for ( unsigned i = 0; i < docs.size(); ++i ) {
-            switch ( i ) {
-                case 1:
-                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
-                    encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
-                                           std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
-                    break;
-                default:
-                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+            if ( i == 1 ) {
+                createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
+                                       std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
+            } else {
+                createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
             }
         }
     }
@@ -1272,7 +1270,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServe
     };
 
     ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
-    replParams.setPropertyEncryptor(propEncryptorError).setPropertyDecryptor(NULL);
+    replParams.setPropertyEncryptor(propEncryptorError).setPropertyDecryptor(nullptr);
 
     SECTION("LiteCoreDomain/kC4ErrorCrypto") {
         encContextMap->begin()->second.simulateError = C4Error{LiteCoreDomain, kC4ErrorCrypto};
@@ -1293,7 +1291,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServe
 
         // Try it again with good encryptor, but crypto errors will move the checkpoint
         // past the doc. The second attempt won't help.
-        replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(NULL);
+        replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(nullptr);
         replicate(replParams);
         CHECK(encContextMap->begin()->second.called == 0);
         fetchedIDs = fetch();
@@ -1335,14 +1333,12 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     {
         TransactionHelper t(db);
         for ( unsigned i = 0; i < docs.size(); ++i ) {
-            switch ( i ) {
-                case 1:
-                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
-                    encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
-                                           std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
-                    break;
-                default:
-                    createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+            if ( i == 1 ) {
+                createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
+                                       std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
+            } else {
+                createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
             }
         }
     }
@@ -1350,7 +1346,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     // Push the 3 documents to the remote
 
     ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
-    replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(NULL);
+    replParams.setPropertyEncryptor(propEncryptor).setPropertyDecryptor(nullptr);
     replicate(replParams);
 
     deleteAndRecreateDBAndCollections();
@@ -1360,7 +1356,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     decContextMap                  = std::make_unique<CipherContextMap>();
     replParams.collections[0].push = kC4Disabled;
     replParams.collections[0].pull = kC4OneShot;
-    replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptor);
+    replParams.setPropertyEncryptor(nullptr).setPropertyDecryptor(propDecryptor);
     decContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
                            std::forward_as_tuple(_collections[0], docs[1].c_str(), "xNum"));
     replicate(replParams);
@@ -1378,7 +1374,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
     deleteAndRecreateDBAndCollections();
     decContextMap->begin()->second.collection = _collections[0];
     decContextMap->begin()->second.called     = 0;
-    replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptorError);
+    replParams.setPropertyEncryptor(nullptr).setPropertyDecryptor(propDecryptorError);
     fetchedIDs.clear();
 
     SECTION("LiteCoreDomain, kC4ErrorCrypto") {
@@ -1400,7 +1396,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
 
         // Try it again with good decryptor, but crypto errors will move the checkpoint
         // past the doc. The second attempt won't help.
-        replParams.setPropertyEncryptor(NULL).setPropertyDecryptor(propDecryptor);
+        replParams.setPropertyEncryptor(nullptr).setPropertyDecryptor(propDecryptor);
         _expectedDocPullErrors = {};
         fetchedIDs.clear();
         replicate(replParams);
@@ -1589,8 +1585,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Disabled - Revoke Acces
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void*) {
         for ( size_t i = 0; i < numDocs; ++i ) {
-            auto       doc = docs[i];
-            CBContext* ctx = (CBContext*)doc->collectionContext;
+            auto  doc = docs[i];
+            auto* ctx = (CBContext*)doc->collectionContext;
             ctx->docsEndedTotal++;
             if ( (doc->flags & kRevPurged) == kRevPurged ) { ctx->docsEndedPurge++; }
         }
@@ -1669,7 +1665,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
     // Setup pull filter:
     C4ReplicatorValidationFunction pullFilter = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags,
                                                    FLDict flbody, void* context) {
-        CBContext* ctx = (CBContext*)context;
+        auto* ctx = (CBContext*)context;
         ctx->pullFilterTotal++;
         if ( (flags & kRevPurged) == kRevPurged ) {
             ctx->pullFilterPurge++;
@@ -1939,7 +1935,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "API Push Conflict SG", "[.SyncServ
     replicate(replParams);
 
     // Update doc 13 on the remote
-    string body = "{\"_rev\":\"" + originalRevID + "\",\"serverSideUpdate\":true}";
+    string body = R"({"_rev":")" + originalRevID + R"(","serverSideUpdate":true})";
     for ( auto& spec : _collectionSpecs ) { REQUIRE(_sg.upsertDoc(spec, doc13ID, slice(body), {})); }
 
     for ( auto& coll : _collections ) {
@@ -2266,7 +2262,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
 
     auto bodyOfNum = [&](bool good, int n) {
         char buf[80];
-        snprintf(buf, 80, "{\"isRejected\": \"%s\", \"num\": %d, \"channels\": [\"%s\"]}", good ? "false" : "true", n,
+        snprintf(buf, 80, R"({"isRejected": "%s", "num": %d, "channels": ["%s"]})", good ? "false" : "true", n,
                  channelID.c_str());
         return alloc_slice(buf);
     };
@@ -2378,7 +2374,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
 
         bool waitForThePush = WaitUntil(2s, [&]() {
             std::scoped_lock<std::mutex> lock(_mutex);
-            return _docPushErrors.size() > 0;
+            return !_docPushErrors.empty();
         });
         REQUIRE(waitForThePush);
 
@@ -2605,7 +2601,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.Syn
     for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
         char docID[kDocBufSize];
         snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
-        slice               docIDsl = slice(docID);
+        auto                docIDsl = slice(docID);
         TransactionHelper   t(db);
         C4Error             error;
         c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], docIDsl, false, kDocGetAll, ERROR_INFO(error));

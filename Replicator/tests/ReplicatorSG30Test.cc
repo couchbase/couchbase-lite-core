@@ -4,7 +4,6 @@
 
 #include "ReplicatorSG30Test.hh"
 #include "ReplicatorLoopbackTest.hh"
-#include "Base64.hh"
 
 TEST_CASE_METHOD(ReplicatorSG30Test, "Sync with Single Collection SG3.0", "[.SyncServer30]") {
     const string     idPrefix = timePrefix();
@@ -340,8 +339,7 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Resolve Conflict SG3.0", "[.SyncServer30]"
 
     collNames[0] = idPrefix + Options::collectionSpecToPath(_collectionSpecs[0]).asString();
     createFleeceRev(_collections[0], slice(collNames[0]), kRev1ID, "{}"_sl);
-    createFleeceRev(_collections[0], slice(collNames[0]), revOrVersID("2-12121212", "1@cafe"),
-                    "{\"db\":\"remote\"}"_sl);
+    createFleeceRev(_collections[0], slice(collNames[0]), revOrVersID("2-12121212", "1@cafe"), R"({"db":"remote"})"_sl);
 
     updateDocIDs();
 
@@ -355,7 +353,7 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Resolve Conflict SG3.0", "[.SyncServer30]"
     deleteAndRecreateDBAndCollections();
 
     createFleeceRev(_collections[0], slice(collNames[0]), kRev1ID, "{}"_sl);
-    createFleeceRev(_collections[0], slice(collNames[0]), revOrVersID("2-13131313", "1@babe"), "{\"db\":\"local\"}"_sl);
+    createFleeceRev(_collections[0], slice(collNames[0]), revOrVersID("2-13131313", "1@babe"), R"({"db":"local"})"_sl);
 
     updateDocIDs();
     replParams.setDocIDs(_docIDs);
@@ -686,8 +684,8 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Auto Purge Disabled - Revoke Access SG3.0"
     _enableDocProgressNotifications = true;
     _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void*) {
         for ( size_t i = 0; i < numDocs; ++i ) {
-            auto       doc = docs[i];
-            CBContext* ctx = (CBContext*)doc->collectionContext;
+            auto  doc = docs[i];
+            auto* ctx = (CBContext*)doc->collectionContext;
             ctx->docsEndedTotal++;
             if ( (doc->flags & kRevPurged) == kRevPurged ) { ctx->docsEndedPurge++; }
         }
@@ -761,7 +759,7 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Remove Doc From Channel SG3.0", "[.SyncSer
     // Setup pull filter:
     C4ReplicatorValidationFunction pullFilter = [](C4CollectionSpec, C4String, C4String, C4RevisionFlags flags,
                                                    FLDict flbody, void* context) {
-        CBContext* ctx = (CBContext*)context;
+        auto* ctx = (CBContext*)context;
         ctx->pullFilterTotal++;
         if ( (flags & kRevPurged) == kRevPurged ) {
             ctx->pullFilterPurge++;

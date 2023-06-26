@@ -13,7 +13,6 @@
 //
 
 #include "ReplicatorAPITest.hh"
-#include "c4Document+Fleece.h"
 #include "c4Collection.h"
 #include "c4ReplicatorHelpers.hh"
 #include "StringUtil.hh"
@@ -28,9 +27,6 @@ using namespace fleece;
 using namespace std;
 using namespace litecore;
 
-constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
-constexpr const C4String  ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
-        ReplicatorAPITest::kWikipedia1kDBName, ReplicatorAPITest::kProtectedDBName, ReplicatorAPITest::kImagesDBName;
 std::once_flag ReplicatorAPITest::once;
 
 TEST_CASE("URL Parsing", "[C]][Replicator]") {
@@ -44,25 +40,25 @@ TEST_CASE("URL Parsing", "[C]][Replicator]") {
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
-    REQUIRE(c4address_fromURL("ws://localhost/dbname"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("ws://localhost/dbname"_sl, &address, nullptr));
     CHECK(address.scheme == "ws"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 80);
     CHECK(address.path == "/dbname"_sl);
 
-    REQUIRE(c4address_fromURL("ws://localhost/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("ws://localhost/"_sl, &address, nullptr));
     CHECK(address.scheme == "ws"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 80);
     CHECK(address.path == "/"_sl);
 
-    REQUIRE(c4address_fromURL("http://192.168.7.20:59849/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("http://192.168.7.20:59849/"_sl, &address, nullptr));
     CHECK(address.scheme == "http"_sl);
     CHECK(address.hostname == "192.168.7.20"_sl);
     CHECK(address.port == 59849);
     CHECK(address.path == "/"_sl);
 
-    REQUIRE(c4address_fromURL("http://[fe80:2f::3c]:59849/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("http://[fe80:2f::3c]:59849/"_sl, &address, nullptr));
     CHECK(address.scheme == "http"_sl);
     CHECK(address.hostname == "fe80:2f::3c"_sl);
     CHECK(address.port == 59849);
@@ -96,7 +92,7 @@ TEST_CASE("URL Parsing", "[C]][Replicator]") {
     CHECK(address.port == 0);
     CHECK(address.path == "/path/to/dbname/"_sl);
 
-    REQUIRE(c4address_fromURL("wss://localhost/path/to/dbname/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("wss://localhost/path/to/dbname/"_sl, &address, nullptr));
     CHECK(address.scheme == "wss"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 443);
@@ -137,6 +133,8 @@ TEST_CASE("URL Generation", "[C]][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0, "/"_sl})) == "ws://foo.com/"_sl);
 }
+
+// NOLINTBEGIN(cppcoreguidelines-slicing)
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
@@ -531,8 +529,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    FLSliceResult options{};
-
     C4Error                             err;
     repl::C4ReplParamsDefaultCollection params;
     params.push            = kC4OneShot;
@@ -564,7 +560,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_WriteString(e, FLSTR("0000004"));
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
-        options                                 = FLEncoder_Finish(e, nullptr);
+        FLSliceResult options                   = FLEncoder_Finish(e, nullptr);
         params.replCollection.optionsDictFleece = C4Slice(options);
         FLEncoder_Free(e);
     }
@@ -618,7 +614,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
 
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
-    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
@@ -832,7 +827,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     C4Socket*       c4socket = nullptr;
     factory.context          = &c4socket;
     factory.open             = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
-        C4Socket** pp = (C4Socket**)context;
+        auto** pp = (C4Socket**)context;
         if ( *pp == nullptr ) {
             *pp = socket;
             // elongate the lifetime of C4Socket.
@@ -976,6 +971,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
         CHECK(nextID == docIDs[i]);
     }
 }
+
+// NOLINTEND(cppcoreguidelines-slicing)
 
 #    include "c4ReplicatorImpl.hh"
 

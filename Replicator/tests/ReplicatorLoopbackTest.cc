@@ -13,11 +13,9 @@
 //
 
 #include "ReplicatorLoopbackTest.hh"
-#include "Worker.hh"
 #include "DBAccessTestWrapper.hh"
 #include "Timer.hh"
 #include "c4Database.hh"
-#include "PrebuiltCopier.hh"
 #include "Base64.hh"
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
@@ -26,8 +24,6 @@
 
 using namespace litecore::actor;
 using namespace std;
-
-constexpr Timer::duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE("Options password logging redaction") {
     string          password("SEEKRIT");
@@ -205,7 +201,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
 
     runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
-    validateCheckpoints(db, db2, "{\"local\":102,\"remote\":100}", "2-cc");
+    validateCheckpoints(db, db2, R"({"local":102,"remote":100})", "2-cc");
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
@@ -314,7 +310,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     {
         TransactionHelper t(db2);
         C4Error           c4err;
-        alloc_slice       body = c4db_encodeJSON(db2, "{\"name\":\"obo\", \"gender\":-7}"_sl, &c4err);
+        alloc_slice       body = c4db_encodeJSON(db2, R"({"name":"obo", "gender":-7})"_sl, &c4err);
         REQUIRE(body.buf);
         createRev(_collDB2, "another"_sl, kRevID, body);
     }
@@ -444,7 +440,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     validateCheckpoints(db2, db, "{\"local\":100}");
 }
 
-static Replicator::Options pushOptionsWithProperty(const char* property, vector<string> array,
+static Replicator::Options pushOptionsWithProperty(const char* property, const vector<string>& array,
                                                    C4CollectionSpec collSpec = kC4DefaultCollectionSpec) {
     fleece::Encoder enc;
     enc.beginDict();
@@ -461,7 +457,7 @@ static Replicator::Options pushOptionsWithProperty(const char* property, vector<
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     // Test that replicators with different channel or docIDs options use different checkpoints
     // (#386)
-    createFleeceRev(_collDB1, "doc"_sl, kRevID, "{\"agent\":7}"_sl);
+    createFleeceRev(_collDB1, "doc"_sl, kRevID, R"({"agent":7})"_sl);
     _expectedDocumentCount = 1;
 
     runPushReplication();
@@ -711,7 +707,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
             attachments.reserve(1000);
             for ( int iAtt = 0; iAtt < kNumBlobsPerDoc; iAtt++ ) {
                 snprintf(body, bodyBufSize, "doc#%d attachment #%d", iDoc, iAtt);
-                attachments.push_back(body);
+                attachments.emplace_back(body);
             }
             snprintf(docid, docBufSize, "doc%03d", iDoc);
             addDocWithAttachments(db, _collSpec, c4str(docid), attachments, "text/plain");
@@ -1408,7 +1404,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
 
 #pragma mark - DELTA:
 
-static void mutateDoc(C4Collection* collection, slice docID, function<void(Dict, Encoder&)> mutator) {
+static void mutateDoc(C4Collection* collection, slice docID, const function<void(Dict, Encoder&)>& mutator) {
     C4Database*         db = c4coll_getDatabase(collection);
     TransactionHelper   t(db);
     C4Error             error;
@@ -1565,11 +1561,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
-    vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
-    vector<C4BlobKey> blobKeys;
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     {
         TransactionHelper t(db);
-        blobKeys               = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
+        addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     Log("-------- Push To db2 --------");
@@ -1644,13 +1639,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
-    vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
-    vector<C4BlobKey> blobKeys;
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     {
         TransactionHelper t(db);
         vector<string>    legacyNames{"attachment1", "attachment2", "attachment3"};
-        blobKeys =
-                addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain", &legacyNames, kRevKeepBody);
+        addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain", &legacyNames, kRevKeepBody);
         _expectedDocumentCount = 1;
     }
     Log("-------- Pull To db2 --------");
@@ -1713,11 +1706,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
-    vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
-    vector<C4BlobKey> blobKeys;
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     {
         TransactionHelper t(db);
-        blobKeys               = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
+        addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
     Log("-------- Push Doc To db2 --------");
@@ -1866,7 +1858,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
 struct TestEncryptorContext {
     slice docID;
     slice keyPath;
-    bool  called;
+    bool  called{};
 };
 
 static C4SliceResult testEncryptor(void* rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
