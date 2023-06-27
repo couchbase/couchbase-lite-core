@@ -80,7 +80,7 @@ from =
 
 dataSource =
     n:collectionName                    { n = dictWithCollectionArray(n); }
-		(AS? a:collectionAlias          { setAny(n, "AS"_sl, a); }
+		(AS? a:collectionAlias          { setAny(n, "AS"_sl, quoteIdentity(a)); }
 		)?                              { $$ = n; }
 
 collectionName  =
@@ -317,7 +317,7 @@ OP_PREFIX =
 
 property =
     '*'                                 { $$ = op(".");}
-  | a:collectionAlias '.' _ '*'         { $$ = op("." + a.as<string>() + ".");}
+  | a:collectionAlias '.' _ '*'         { $$ = op("." + quoteIdentity(a.as<string>()) + ".");}
   | p:propertyPath                      { $$ = op(p);}
 
 propertyPath =
@@ -333,7 +333,7 @@ propertyName
 
 indexTable =                            { a = string(""); }
     (a:collectionAlias _ '.' _ )?
-    i:indexName                         { string c = a.as<string>();
+    i:indexName                         { string c = quoteIdentity(a.as<string>());
                                           $$ = c.empty() ? i.as<string>() : c + "." + i.as<string>();
                                         }
 

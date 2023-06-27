@@ -126,7 +126,13 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select foo.bar[-1].baz") == "{'WHAT':[['.foo.bar[-1].baz']]}");
 
     CHECK(translate("SELECT *") == "{'WHAT':[['.']]}");
+    // The following query is correct in grammar, but it actully will return the "db" property of the
+    // default collection.
     CHECK(translate("SELECT db.*") == "{'WHAT':[['.db.']]}");
+    CHECK(translate("SELECT db.* FROM _ db") == "{'FROM':[{'AS':'db','COLLECTION':'_'}],'WHAT':[['.db.']]}");
+    // The database alias is back-quoted
+    CHECK(translate("SELECT `db.c`.* FROM _ AS `db.c`")
+          == "{'FROM':[{'AS':'db\\\\.c','COLLECTION':'_'}],'WHAT':[['.db\\\\.c.']]}");
 
     CHECK(translate("select $var") == "{'WHAT':[['$var']]}");
 
@@ -334,6 +340,22 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
           == "{'WHAT':[['AS',['_.',['meta()'],'.id'],'id']],'WHERE':['=',['_.',['meta()'],'.id'],['$ID']]}");
     CHECK(translate("SELECT META().id AS id WHERE id = $ID")
           == "{'WHAT':[['AS',['_.',['meta()'],'.id'],'id']],'WHERE':['=',['.id'],['$ID']]}");
+
+    tableNames.insert("kv_.store.customers");
+    tableNames.insert("kv_.store2.customers");
+
+    CHECK(translate("SELECT name FROM store.customers")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],'WHAT':[['.name']]}");
+    CHECK(translate("SELECT customers.name FROM store.customers")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],'WHAT':[['.customers.name']]}");
+    CHECK(translate("SELECT store.customers.name FROM store.customers")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],'WHAT':[['.store.customers.name']]}");
+    CHECK(translate("SELECT store.customers.name, store2.customers.name FROM store.customers"
+                    " JOIN store2.customers ON store.customers.name = store2.customers.name")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'COLLECTION':'customers','JOIN':'INNER',"
+             "'ON':['=',['.store.customers.name'],['.store2.customers.name']],'SCOPE':'store2'}],"
+             "'WHAT':[['.store.customers.name'],['.store2.customers.name']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
@@ -396,6 +418,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
+
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
     CHECK(translate("SELECT x FROM scope.coll ORDER BY y")
@@ -432,6 +455,26 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
                                     "a.name = b.y WHERE MATCH(c.ftsIndex, b.y)"),
                           "property 'c.ftsIndex' does not begin with a declared 'AS' alias");
     }
+
+    // database aliases can be quoted.
+    CHECK(translate("SELECT `first.collection`.x FROM coll AS `first.collection` "
+                    "JOIN scope.coll `second.collection` ON `first.collection`.name = `second.collection`.y "
+                    "WHERE MATCH(`first.collection`.ftsIndex, `second.collection`.y)")
+          == "{'FROM':[{'AS':'first\\\\.collection','COLLECTION':'coll'},"
+             "{'AS':'second\\\\.collection','COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.first\\\\.collection.name'],['.second\\\\.collection.y']],'SCOPE':'scope'}],"
+             "'WHAT':[['.first\\\\.collection.x']],"
+             "'WHERE':['MATCH()','first\\\\.collection.ftsIndex',['.second\\\\.collection.y']]}");
+    CHECK(translate("SELECT coll.x FROM coll JOIN scope.coll ON coll.name = scope.coll.y "
+                    "WHERE MATCH(coll.ftsIndex, scope.coll.y)")
+          == "{'FROM':[{'COLLECTION':'coll'},{'COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.coll.name'],['.scope.coll.y']],'SCOPE':'scope'}],"
+             "'WHAT':[['.coll.x']],'WHERE':['MATCH()','coll.ftsIndex',['.scope.coll.y']]}");
+    CHECK(translate("SELECT scope.coll.x FROM scope.coll JOIN coll ON scope.coll.name = coll.y "
+                    "WHERE MATCH(`scope.coll`.ftsIndex, coll.y)")
+          == "{'FROM':[{'COLLECTION':'coll','SCOPE':'scope'},{'COLLECTION':'coll','JOIN':'INNER',"
+             "'ON':['=',['.scope.coll.name'],['.coll.y']]}],"
+             "'WHAT':[['.scope.coll.x']],'WHERE':['MATCH()','scope\\\\.coll.ftsIndex',['.coll.y']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
