@@ -753,7 +753,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     auto roses1  = getCollection(db, Roses);
     auto tulips1 = getCollection(db, Tulips);
 
-    slice originalJSON = R"({"xNum":{"@type":"encryptable"_sl,"value":"123-45-6789"}})"_sl;
+    slice originalJSON = R"({"xNum":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
     {
         TransactionHelper t(db);
         createFleeceRev(roses1, "hiddenRose"_sl, kRevID, originalJSON);
@@ -810,7 +810,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
         } else {
             CHECK(!context->called);
             CHECK(props.toJSON(false, true)
-                  == R"({"encrypted$xNum":{"alg":"CB_MOBILE_CUSTOM"_sl,"ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
+                  == R"({"encrypted$xNum":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
 
             // Decrypt the "ciphertext" property by hand. We disabled decryption on the destination,
             // so the property won't be converted back from the server schema.
