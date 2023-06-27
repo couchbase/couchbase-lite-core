@@ -77,6 +77,9 @@ CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSo
 
 /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
+        \note This function may perform action in the calling thread that requires the transaction from the database
+              that was passed to the replicator instance, \p repl.
+
         @param repl  The C4Replicator instance.
         @param reset If true, the replicator will reset its checkpoint and start replication from the beginning
      */
