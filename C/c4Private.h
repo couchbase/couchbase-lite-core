@@ -62,9 +62,16 @@ void          _c4db_setDatabaseTag(C4Database* db, C4DatabaseTag dbTag) C4API;
 bool c4db_markSynced(C4Database* database, C4String docID, C4String revID, C4SequenceNumber sequence,
                      C4RemoteID remoteID, C4Error* C4NULLABLE outError) C4API;
 
+bool c4coll_markSynced(C4Collection* coll, C4String docID, C4String revID, C4SequenceNumber sequence,
+                       C4RemoteID remoteID, C4Error* C4NULLABLE outError) C4API;
+
 bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
                            C4RemoteID remoteDBID, const C4String docIDs[C4NONNULL], const C4String revIDs[C4NONNULL],
                            C4StringResult ancestors[C4NONNULL], C4Error* C4NULLABLE outError) C4API;
+
+bool c4coll_findDocAncestors(C4Collection* coll, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
+                             C4RemoteID remoteDBID, const C4String docIDs[C4NONNULL], const C4String revIDs[C4NONNULL],
+                             C4StringResult ancestors[C4NONNULL], C4Error* C4NULLABLE outError) C4API;
 
 /** Call this to use BuiltInWebSocket as the WebSocket implementation.
     (Only available if linked with libLiteCoreWebSocket) */

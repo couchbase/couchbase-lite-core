@@ -220,7 +220,11 @@ namespace litecore::repl {
                             rev->rejectedByRemote = true;
                             _db->markRevSynced(rev);
                         }
-                        finishedDocumentWithError(rev, c4err, !completed);
+                        // It's safe to not call finishedDocumentWithError if we are going to retry it
+                        // immediately. In this case, we don't put it into _docsEnded now. It wil be
+                        // taken care of after retry.
+                        //
+                        if ( retry != kRetryNow ) finishedDocumentWithError(rev, c4err, !completed);
 
                         // If this is a permanent failure, like a validation error or conflict,
                         // then I've completed my duty to push it.

@@ -16,7 +16,6 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
-#include "StringUtil.hh"
 #include <future>
 
 namespace litecore {

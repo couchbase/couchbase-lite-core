@@ -14,7 +14,7 @@
 
 #include "Record.hh"
 #include <algorithm>
-#include <limits.h>
+#include <climits>
 
 namespace litecore {
 
@@ -43,14 +43,14 @@ namespace litecore {
             Options() {}
         };
 
-        RecordEnumerator(KeyStore&, Options options = Options());
+        explicit RecordEnumerator(KeyStore&, Options options = Options());
         RecordEnumerator(KeyStore&, sequence_t since, Options options = Options());
 
-        RecordEnumerator(RecordEnumerator&& e) noexcept { *this = move(e); }
+        RecordEnumerator(RecordEnumerator&& e) noexcept { *this = std::move(e); }
 
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept {
             _store = e._store;
-            _impl  = move(e._impl);
+            _impl  = std::move(e._impl);
             return *this;
         }
 
@@ -63,35 +63,35 @@ namespace litecore {
         void close() noexcept;
 
         /** True if the enumerator is at a record, false if it's at the end. */
-        bool hasRecord() const FLPURE { return _record.key().buf != nullptr; }
+        [[nodiscard]] bool hasRecord() const FLPURE { return _record.key().buf != nullptr; }
 
         /** The current record. */
-        const Record& record() const FLPURE { return _record; }
+        [[nodiscard]] const Record& record() const FLPURE { return _record; }
 
         // Can treat an enumerator as a record pointer:
-        operator const Record*() const FLPURE { return hasRecord() ? &_record : nullptr; }
+        explicit operator const Record*() const FLPURE { return hasRecord() ? &_record : nullptr; }
 
         const Record* operator->() const FLPURE { return hasRecord() ? &_record : nullptr; }
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {
           public:
-            virtual ~Impl()                        = default;
-            virtual bool       next()              = 0;
-            virtual bool       read(Record&) const = 0;
-            virtual slice      key() const         = 0;
-            virtual sequence_t sequence() const    = 0;
+            virtual ~Impl()                                      = default;
+            virtual bool                     next()              = 0;
+            virtual bool                     read(Record&) const = 0;
+            [[nodiscard]] virtual slice      key() const         = 0;
+            [[nodiscard]] virtual sequence_t sequence() const    = 0;
         };
-
-      private:
-        friend class KeyStore;
 
         RecordEnumerator(const RecordEnumerator&)            = delete;  // no copying allowed
         RecordEnumerator& operator=(const RecordEnumerator&) = delete;  // no assignment allowed
 
-        KeyStore*        _store;   // The KeyStore I'm enumerating
-        Record           _record;  // Current record
-        unique_ptr<Impl> _impl;    // The storage-specific implementation
+      private:
+        friend class KeyStore;
+
+        KeyStore*        _store{};  // The KeyStore I'm enumerating
+        Record           _record;   // Current record
+        unique_ptr<Impl> _impl;     // The storage-specific implementation
     };
 
 }  // namespace litecore

@@ -277,14 +277,14 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
     try {
         if ( rev1 == rev2 ) return true;
         revidBuffer buf1, buf2;
-        return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.isEquivalentTo(buf2);
+        return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.getRevID().isEquivalentTo(buf2.getRevID());
     }
     catchAndWarn() return false;
 }
 
 unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     try {
-        return revidBuffer(revID).generation();
+        return revidBuffer(revID).getRevID().generation();
     }
     catchAndWarn() return 0;
 }

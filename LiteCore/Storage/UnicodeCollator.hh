@@ -42,7 +42,7 @@ namespace litecore {
         }
 
         /** Returns the name of the SQLite collator with these options. */
-        std::string sqliteName() const;
+        [[nodiscard]] std::string sqliteName() const;
 
         bool readSQLiteName(const char* name);
     };
@@ -59,7 +59,8 @@ namespace litecore {
         bool caseSensitive;
 
       protected:
-        CollationContext(const Collation& collation) : caseSensitive(collation.caseSensitive), canCompareASCII(true) {
+        explicit CollationContext(const Collation& collation)
+            : caseSensitive(collation.caseSensitive), canCompareASCII(true) {
             //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }
     };

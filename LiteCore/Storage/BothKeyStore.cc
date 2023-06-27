@@ -118,7 +118,7 @@ namespace litecore {
             , _bySequence(bySequence)
             , _descending(options.sortOption == kDescending) {}
 
-        virtual bool next() override {
+        bool next() override {
             // Advance the enumerator with the lowest key, or both if they're equal:
             if ( _cmp <= 0 ) {
                 if ( !_liveImpl->next() ) _liveImpl.reset();
@@ -151,11 +151,11 @@ namespace litecore {
             return true;
         }
 
-        virtual bool read(Record& record) const override { return _current->read(record); }
+        bool read(Record& record) const override { return _current->read(record); }
 
-        virtual slice key() const override { return _current->key(); }
+        [[nodiscard]] slice key() const override { return _current->key(); }
 
-        virtual sequence_t sequence() const override { return _current->sequence(); }
+        [[nodiscard]] sequence_t sequence() const override { return _current->sequence(); }
 
       private:
         unique_ptr<RecordEnumerator::Impl> _liveImpl, _deadImpl;      // Real enumerators

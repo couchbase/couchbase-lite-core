@@ -10,13 +10,13 @@
 // the file licenses/APL2.txt.
 //
 
+#include <utility>
+
 #include "LiveQuerier.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "DatabaseImpl.hh"
-#include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
-#include <inttypes.h>
 
 namespace litecore {
     using namespace actor;
@@ -57,7 +57,6 @@ namespace litecore {
     void LiveQuerier::start(const Query::Options& options) {
         _stopping = false;
         _lastTime = clock::now();
-        _stopping = false;
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
 
@@ -85,7 +84,7 @@ namespace litecore {
     }
 
     void LiveQuerier::getCurrentResult(LiveQuerier::CurrentResultCallback callback) {
-        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_currentResult), callback);
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_currentResult), std::move(callback));
     }
 
     // Database change (transaction committed) notification
@@ -178,7 +177,9 @@ namespace litecore {
         _delegate->liveQuerierUpdated(newQE, error);
     }
 
-    void LiveQuerier::_changeOptions(Query::Options options) {
+    // It seems to be a limitation of `Actor::enqueue()` that the function to enqueue cannot have reference parameters.
+    // NOLINTBEGIN(performance-unnecessary-value-param)
+    void LiveQuerier::_changeOptions(const Query::Options options) {
         if ( _stopping ) return;
 
         _currentEnumerator = nullptr;
@@ -187,5 +188,9 @@ namespace litecore {
         _runQuery(options);
     }
 
-    void LiveQuerier::_currentResult(CurrentResultCallback callback) { callback(_currentEnumerator, _currentError); }
+    void LiveQuerier::_currentResult(const CurrentResultCallback callback) {
+        callback(_currentEnumerator, _currentError);
+    }
+
+    // NOLINTEND(performance-unnecessary-value-param)
 }  // namespace litecore

@@ -12,11 +12,9 @@
 
 #pragma once
 #include "PublicKey.hh"
-#include "fleece/function_ref.hh"
 #include <initializer_list>
 #include <memory>
 #include <optional>
-#include <time.h>
 #include <utility>
 #include <vector>
 
@@ -24,7 +22,7 @@ struct mbedtls_x509_crt;
 struct mbedtls_x509_csr;
 struct mbedtls_asn1_sequence;
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
 
     /** An X.509 Distinguished Name encoded as a string in LDAP format. */
     class DistinguishedName : public fleece::alloc_slice {
@@ -37,12 +35,12 @@ namespace litecore { namespace crypto {
         /** Creates a subjectName from a list of key/value strings. */
         DistinguishedName(const Entry* begin NONNULL, const Entry* end NONNULL);
 
-        DistinguishedName(const std::vector<Entry>&);
+        explicit DistinguishedName(const std::vector<Entry>&);
 
         DistinguishedName(std::initializer_list<Entry> entries)
             : DistinguishedName(std::vector<Entry>(entries.begin(), entries.end())) {}
 
-        explicit DistinguishedName(fleece::alloc_slice s) : alloc_slice(s) {}
+        explicit DistinguishedName(fleece::alloc_slice s) : alloc_slice(std::move(s)) {}
 
         explicit DistinguishedName(fleece::slice s) : alloc_slice(s) {}
 
@@ -74,7 +72,7 @@ namespace litecore { namespace crypto {
     using SubjectAltName = std::pair<SANTag, fleece::alloc_slice>;
 
     /** An X.509 Subject Alternative Name entry. */
-    class SubjectAltNames : public std::vector<SubjectAltName> {
+    class SubjectAltNames {
       public:
         using Tag = SANTag;
 
@@ -84,11 +82,24 @@ namespace litecore { namespace crypto {
         SubjectAltNames() = default;
         explicit SubjectAltNames(::mbedtls_asn1_sequence*);
 
-        fleece::alloc_slice encode() const;
+        [[nodiscard]] fleece::alloc_slice encode() const;
+
+        [[nodiscard]] bool empty() const { return _names.empty(); }
+
+        //'''/;;;;''''''
+        [[nodiscard]] size_t size() const { return _names.size(); }
+
+        template <typename... Args>
+        void emplace_back(Args&&... args) {
+            _names.emplace_back(std::forward<Args>(args)...);
+        }
 
         fleece::alloc_slice operator[](Tag) const;
 
-        const SubjectAltName& operator[](size_t i) const { return vector<SubjectAltName>::operator[](i); }
+        const SubjectAltName& operator[](size_t i) const { return _names[i]; }
+
+      private:
+        std::vector<SubjectAltName> _names;
     };
 
     enum NSCertType : uint8_t {
@@ -114,7 +125,7 @@ namespace litecore { namespace crypto {
             unsigned          keyUsage{0};      // key usage flags (MBEDTLS_X509_KU_*)
             NSCertType        nsCertType{0};    // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
 
-            SubjectParameters(DistinguishedName dn) : subjectName(dn) {}
+            explicit SubjectParameters(DistinguishedName dn) : subjectName(std::move(std::move(dn))) {}
         };
 
         /** Parameters for signing a certificate, used when self-signing or signing a request. */
@@ -166,20 +177,23 @@ namespace litecore { namespace crypto {
         /** Creates and self-signs a certificate with the given options. */
         Cert(const SubjectParameters&, const IssuerParameters&, PrivateKey* keyPair NONNULL);
 
+        Cert(const DistinguishedName& dn, const IssuerParameters& isp, PrivateKey* keypair NONNULL)
+            : Cert(CertBase::SubjectParameters(dn), isp, keypair) {}
+
         /** Loads a certificate from persistent storage with the given subject public key. */
         static fleece::Retained<Cert> load(PublicKey*);
 
         /** Check if a certificate with the given subject public key exists in the persistent storage. */
         static bool exists(PublicKey*);
 
-        virtual bool isSigned() override { return true; }
+        bool isSigned() override { return true; }
 
-        bool                        isSelfSigned();
-        DistinguishedName           subjectName() override;
-        unsigned                    keyUsage() override;
-        NSCertType                  nsCertType() override;
-        SubjectAltNames             subjectAltNames() override;
-        virtual fleece::alloc_slice summary(const char* indent = "") override;
+        bool                isSelfSigned();
+        DistinguishedName   subjectName() override;
+        unsigned            keyUsage() override;
+        NSCertType          nsCertType() override;
+        SubjectAltNames     subjectAltNames() override;
+        fleece::alloc_slice summary(const char* indent = "") override;
 
         /** Returns the cert's creation and expiration times. */
         std::pair<time_t, time_t> validTimespan();
@@ -229,15 +243,15 @@ namespace litecore { namespace crypto {
 #endif
 
       protected:
-        virtual fleece::slice                derData() override;
-        virtual int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
-        virtual struct ::mbedtls_pk_context* keyContext() override;
+        fleece::slice                derData() override;
+        int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
+        struct ::mbedtls_pk_context* keyContext() override;
 
       private:
         friend class CertSigningRequest;
 
         Cert(Cert* prev NONNULL, mbedtls_x509_crt*);
-        ~Cert();
+        ~Cert() override;
         static fleece::alloc_slice create(const SubjectParameters&, PublicKey* subjectKey    NONNULL,
                                           const IssuerParameters&, PrivateKey* issuerKeyPair NONNULL,
                                           Cert* issuerCert = nullptr);
@@ -262,6 +276,9 @@ namespace litecore { namespace crypto {
         /** Creates a Certificate Signing Request, to be sent to a CA that will sign it. */
         CertSigningRequest(const Cert::SubjectParameters& params, PrivateKey* subjectKey);
 
+        CertSigningRequest(const DistinguishedName& dn, PrivateKey* subjectKey)
+            : CertSigningRequest(Cert::SubjectParameters(dn), subjectKey) {}
+
         /** Instantiates a request from pre-encoded DER or PEM data. */
         explicit CertSigningRequest(fleece::slice data);
 
@@ -278,10 +295,10 @@ namespace litecore { namespace crypto {
 
       protected:
         CertSigningRequest();
-        ~CertSigningRequest();
-        virtual struct ::mbedtls_pk_context* keyContext() override;
-        virtual fleece::slice                derData() override;
-        virtual int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
+        ~CertSigningRequest() override;
+        struct ::mbedtls_pk_context* keyContext() override;
+        fleece::slice                derData() override;
+        int                          writeInfo(char* buf, size_t bufSize, const char* indent) override;
 
       private:
         static fleece::alloc_slice create(const Cert::SubjectParameters&, PrivateKey* subjectKey);
@@ -291,4 +308,4 @@ namespace litecore { namespace crypto {
         std::unique_ptr<struct ::mbedtls_x509_csr> _csr;
     };
 
-}}  // namespace litecore::crypto
+}  // namespace litecore::crypto

@@ -21,6 +21,7 @@
 #include "fleece/function_ref.hh"
 #include "ParseDate.hh"
 #include "NumConversion.hh"
+#include "UnicodeCollator.hh"
 #include <regex>
 #include <cmath>
 #include <string>

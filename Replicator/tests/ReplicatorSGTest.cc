@@ -13,6 +13,7 @@
 #include "ReplicatorAPITest.hh"
 #include "CertHelper.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Index.h"
@@ -209,9 +210,13 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull", "[.SyncServer]") {
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Pull With Indexes", "[.SyncServer]") {
     // Indexes slow down doc insertion, so they affect replicator performance.
-    REQUIRE(c4db_createIndex(db, C4STR("Name"), C4STR("[[\".Name\"]]"), kC4FullTextIndex, nullptr, nullptr));
-    REQUIRE(c4db_createIndex(db, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4ValueIndex, nullptr, nullptr));
-    REQUIRE(c4db_createIndex(db, C4STR("Year"), C4STR("[[\".Year\"]]"), kC4ValueIndex, nullptr, nullptr));
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("Name"), C4STR("[[\".Name\"]]"), kC4JSONQuery, kC4FullTextIndex,
+                               nullptr, nullptr));
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4JSONQuery, kC4ValueIndex,
+                               nullptr, nullptr));
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("Year"), C4STR("[[\".Year\"]]"), kC4JSONQuery, kC4ValueIndex, nullptr,
+                               nullptr));
 
     _sg.remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
@@ -262,7 +267,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
 
     replicate(kC4Disabled, kC4OneShot);
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
     CHECK(doc->revID == kRev2ID);
@@ -281,7 +287,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
     }
 
     C4Error             error;
-    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc);
     alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
     CHECK(before);
@@ -295,7 +302,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
 
     replicate(kC4Disabled, kC4OneShot);
 
-    doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    doc = c4coll_getDoc(defaultColl, "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc);
     alloc_slice after = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
     CHECK(after);
@@ -337,7 +344,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     replicate(kC4Disabled, kC4OneShot);
 
     C4Error             error;
-    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, ERROR_INFO(error));
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, "Abstract"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc);
     Dict root   = c4doc_getProperties(doc);
     auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
@@ -365,7 +373,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 
     createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("0000013"), true, kDocGetAll, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, C4STR("0000013"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     C4Slice revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
@@ -386,7 +395,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     replicate(kC4Disabled, kC4OneShot);
 
     C4Log("-------- Checking Conflict --------");
-    doc = c4db_getDoc(db, C4STR("0000013"), true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(defaultColl, C4STR("0000013"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
     revID = C4STR("2-f000");
@@ -428,7 +437,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     replicate(kC4OneShot, kC4OneShot);
 
     // Verify doc:
-    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     C4Slice revID = C4STR("2-bbbb");
     CHECK(doc->revID == revID);
@@ -466,7 +476,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", R"({"count":1, "_rev":"1-1111"})");
 
     replicate(kC4Disabled, kC4OneShot);
-    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
@@ -477,7 +488,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     for ( const string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc", slice(body)); }
 
     replicate(kC4Disabled, kC4OneShot);
-    doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    doc = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
 }
@@ -485,6 +496,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
 TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]") {
     static constexpr int kNumDocs = 1000, kNumProps = 1000;
     flushScratchDatabase();
+    auto defaultColl = c4db_getDefaultCollection(db, nullptr);
 
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
@@ -520,7 +532,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "doc-%03d", docNo);
             C4Error             error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
+            c4::ref<C4Document> doc =
+                    c4coll_getDoc(defaultColl, slice(docID), false, kDocGetCurrentRev, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -556,6 +569,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
 
         C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
+        defaultColl = c4db_getDefaultCollection(db, nullptr);
         populateDB();
         C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
         Stopwatch st;
@@ -565,10 +579,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
         if ( pass == 2 ) timeWithDelta = time;
         else if ( pass == 3 )
             timeWithoutDelta = time;
-
         int                      n = 0;
         C4Error                  error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, nullptr, ERROR_INFO(error));
         REQUIRE(e);
         while ( c4enum_next(e, ERROR_INFO(error)) ) {
             C4DocumentInfo info;
@@ -594,7 +607,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
         importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     };
     populateDB();
-    auto numDocs = c4db_getDocumentCount(db);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    auto numDocs     = c4coll_getDocumentCount(defaultColl);
 
     C4Log("-------- Pushing to SG --------");
     replicate(kC4OneShot, kC4Disabled);
@@ -610,7 +624,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
             char docID[kDocBufSize];
             snprintf(docID, kDocBufSize, "%07u", docNo + 1);
             C4Error             error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
+            c4::ref<C4Document> doc =
+                    c4coll_getDoc(defaultColl, slice(docID), false, kDocGetCurrentRev, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -659,7 +674,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 
         int                      n = 0;
         C4Error                  error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, nullptr, ERROR_INFO(error));
         REQUIRE(e);
         while ( c4enum_next(e, ERROR_INFO(error)) ) {
             C4DocumentInfo info;
@@ -689,7 +704,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
         importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 0.0, false, nullptr, (size_t)numDocs);
     };
     populateDB();
-    REQUIRE(c4db_getDocumentCount(db) == numDocs);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == numDocs);
 
     C4Log("-------- Pushing to SG --------");
     replicate(kC4OneShot, kC4Disabled);
@@ -701,7 +717,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
         char buf[kDocBufSize];
         snprintf(buf, kDocBufSize, "%07u", docNo + 1);
         docIDs.emplace_back(buf);
-        c4::ref<C4Document> doc = c4doc_get(db, slice(buf), true, ERROR_INFO());
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, slice(buf), true, kDocGetCurrentRev, ERROR_INFO());
         REQUIRE(doc);
         revIDs.back().emplace_back(doc->revID);
     }
@@ -715,7 +731,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
             revIDs.emplace_back();
             for ( int docNo = 0; docNo < numDocs; ++docNo ) {
                 const char*         docID = docIDs[docNo].c_str();
-                c4::ref<C4Document> doc   = c4doc_get(db, slice(docID), true, ERROR_INFO());
+                c4::ref<C4Document> doc =
+                        c4coll_getDoc(defaultColl, slice(docID), true, kDocGetCurrentRev, ERROR_INFO());
                 REQUIRE(doc);
 
                 Dict        props = c4doc_getProperties(doc);
@@ -755,7 +772,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     while ( true ) {
         bool done = true;
         for ( slice docId : docIDs ) {
-            c4::ref<C4Document> doc   = c4doc_get(db, docId, true, ERROR_INFO());
+            c4::ref<C4Document> doc   = c4coll_getDoc(defaultColl, docId, true, kDocGetCurrentRev, ERROR_INFO());
             string              revid = string(doc->revID);
             std::istringstream  is(revid);
             int                 i;
@@ -837,7 +854,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
@@ -854,7 +872,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify the update:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
@@ -867,7 +885,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if doc1 is purged:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
@@ -928,7 +946,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -940,7 +959,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if doc1 is not purged as the revoked rev is filtered:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
@@ -998,7 +1017,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -1010,7 +1030,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if the doc1 is not purged as the auto purge is disabled:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     // No pull filter called
@@ -1071,7 +1091,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
     CHECK(_docsEnded == 0);
@@ -1085,7 +1106,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify the update:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
     CHECK(_docsEnded == 0);
@@ -1099,7 +1120,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if doc1 is purged:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(!doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
@@ -1158,7 +1179,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -1171,7 +1193,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if doc1 is not purged as the removed rev is filtered:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     CHECK(_counter == 1);
@@ -1228,7 +1250,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify:
-    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4Document> doc1        = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -1241,7 +1264,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     replicate(kC4Disabled, kC4OneShot);
 
     // Verify if the doc1 is not purged as the auto purge is disabled:
-    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    doc1 = c4coll_getDoc(defaultColl, "doc1"_sl, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc1);
     CHECK(_docsEnded == 1);
     // No pull filter called
@@ -1265,19 +1288,19 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "
     enc.writeString("frank");
     enc.endDict();
     enc.endDict();
-    _options = AllocedDict(enc.finish());
-
+    _options         = AllocedDict(enc.finish());
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     // Create a doc and push it:
     c4::ref<C4Document> doc;
     FLSlice             docID = C4STR("doc");
     {
         TransactionHelper t(db);
         C4Error           error;
-        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        doc = c4coll_createDoc(defaultColl, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
         CHECK(error.code == 0);
         REQUIRE(doc);
     }
-    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 1);
     replicate(kC4OneShot, kC4Disabled);
 
     // Delete the doc and push it:
@@ -1289,17 +1312,17 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "
         REQUIRE(doc);
         REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     }
-    CHECK(c4db_getDocumentCount(db) == 0);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
     replicate(kC4OneShot, kC4Disabled);
 
     // Apply a pull and verify that the document is not purged.
     replicate(kC4Disabled, kC4OneShot);
     C4Error error;
-    doc = c4db_getDoc(db, C4STR("doc"), true, kDocGetAll, ERROR_INFO(error));
+    doc = c4coll_getDoc(defaultColl, C4STR("doc"), true, kDocGetAll, ERROR_INFO(error));
     CHECK(error.code == 0);
     CHECK(doc != nullptr);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
-    CHECK(c4db_getDocumentCount(db) == 0);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Create Doc", "[.SyncServer]") {
@@ -1319,19 +1342,19 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Cr
     enc.writeString("frank");
     enc.endDict();
     enc.endDict();
-    _options = AllocedDict(enc.finish());
-
+    _options         = AllocedDict(enc.finish());
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     // Create a new doc and push it:
     c4::ref<C4Document> doc;
     FLSlice             docID = C4STR("doc");
     {
         TransactionHelper t(db);
         C4Error           error;
-        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        doc = c4coll_createDoc(defaultColl, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
         CHECK(error.code == 0);
         REQUIRE(doc);
     }
-    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 1);
     replicate(kC4OneShot, kC4Disabled);
 
     // Delete the doc and push it:
@@ -1343,26 +1366,26 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Cr
         REQUIRE(doc);
         REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     }
-    CHECK(c4db_getDocumentCount(db) == 0);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 0);
     replicate(kC4OneShot, kC4Disabled);
 
     // Create a new doc with the same id that was deleted:
     {
         TransactionHelper t(db);
         C4Error           error;
-        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        doc = c4coll_createDoc(defaultColl, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
         CHECK(error.code == 0);
         REQUIRE(doc);
     }
-    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 1);
 
     // Apply a pull and verify the document is not purged:
     replicate(kC4Disabled, kC4OneShot);
     C4Error             error;
-    c4::ref<C4Document> doc2 = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO(error));
+    c4::ref<C4Document> doc2 = c4coll_getDoc(defaultColl, docID, true, kDocGetAll, ERROR_INFO(error));
     CHECK(error.code == 0);
     CHECK(doc2 != nullptr);
-    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 1);
     CHECK(doc2->revID == doc->revID);
 }
 

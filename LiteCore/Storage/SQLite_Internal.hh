@@ -11,7 +11,8 @@
 //
 
 #pragma once
-#include "SQLiteDataFile.hh"
+#include "DataFile.hh"
+#include "fleece/slice.hh"
 #include "Logging.hh"
 #include <memory>
 
@@ -23,9 +24,9 @@ namespace SQLite {
     class Transaction;
 }  // namespace SQLite
 
-namespace fleece { namespace impl {
-        class SharedKeys;
-}}  // namespace fleece::impl
+namespace fleece::impl {
+    class SharedKeys;
+}  // namespace fleece::impl
 
 namespace litecore {
 
@@ -39,9 +40,9 @@ namespace litecore {
     // Little helper class that makes sure Statement objects get reset on exit
     class UsingStatement {
       public:
-        UsingStatement(SQLite::Statement& stmt) noexcept;
+        explicit UsingStatement(SQLite::Statement& stmt) noexcept;
 
-        UsingStatement(const std::unique_ptr<SQLite::Statement>& stmt) noexcept : UsingStatement(*stmt.get()) {}
+        explicit UsingStatement(const std::unique_ptr<SQLite::Statement>& stmt) noexcept : UsingStatement(*stmt) {}
 
         ~UsingStatement();
 

@@ -59,7 +59,7 @@ class C4DocEnumerator::Impl
     }
 
     bool getDocInfo(C4DocumentInfo* outInfo) noexcept {
-        if ( !*this ) return false;
+        if ( !this->hasRecord() ) return false;
 
         revid vers(record().version());
         if ( (_options.flags & kC4IncludeRevHistory) && vers.isVersion() ) _docRevID = vers.asVersionVector().asASCII();

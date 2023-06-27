@@ -14,7 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "PlatformIO.hh"
-#include <errno.h>
+#include <cerrno>
 #include <memory>
 
 namespace litecore {
@@ -58,7 +58,7 @@ namespace litecore {
         uint64_t curPos = ftello(_file);
         fseeko(_file, 0, SEEK_END);
         uint64_t fileSize = ftello(_file);
-        fseeko(_file, curPos, SEEK_SET);
+        fseeko(_file, static_cast<off_t>(curPos), SEEK_SET);
         checkErr(_file);
         return fileSize;
     }
@@ -66,7 +66,7 @@ namespace litecore {
     void FileReadStream::seek(uint64_t pos) {
         if ( !_file ) { return; }
 
-        fseeko(_file, pos, SEEK_SET);
+        fseeko(_file, static_cast<off_t>(pos), SEEK_SET);
         checkErr(_file);
     }
 

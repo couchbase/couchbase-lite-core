@@ -26,9 +26,9 @@
 
 #ifdef USE_COMMON_CRYPTO
 #    include <CommonCrypto/CommonDigest.h>
-#    define _CONTEXT ((CC_SHA1_CTX*)_context)
+#    define CCONTEXT ((CC_SHA1_CTX*)_context)
 #else
-#    define _CONTEXT ((mbedtls_sha1_context*)_context)
+#    define CCONTEXT ((mbedtls_sha1_context*)_context)
 #endif
 
 namespace litecore {
@@ -53,18 +53,18 @@ namespace litecore {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha1_context));
 #ifdef USE_COMMON_CRYPTO
         static_assert(sizeof(_context) >= sizeof(CC_SHA1_CTX));
-        CC_SHA1_Init(_CONTEXT);
+        CC_SHA1_Init(CCONTEXT);
 #else
-        mbedtls_sha1_init(_CONTEXT);
-        mbedtls_sha1_starts(_CONTEXT);
+        mbedtls_sha1_init(CCONTEXT);
+        mbedtls_sha1_starts(CCONTEXT);
 #endif
     }
 
     SHA1Builder& SHA1Builder::operator<<(fleece::slice s) {
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA1_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
+        CC_SHA1_Update(CCONTEXT, s.buf, (CC_LONG)s.size);
 #else
-        mbedtls_sha1_update(_CONTEXT, (unsigned char*)s.buf, s.size);
+        mbedtls_sha1_update(CCONTEXT, (unsigned char*)s.buf, s.size);
 #endif
         return *this;
     }
@@ -72,37 +72,37 @@ namespace litecore {
     void SHA1Builder::finish(void* result, size_t resultSize) {
         DebugAssert(resultSize == sizeof(SHA1::_bytes));
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA1_Final((uint8_t*)result, _CONTEXT);
+        CC_SHA1_Final((uint8_t*)result, CCONTEXT);
 #else
-        mbedtls_sha1_finish(_CONTEXT, (uint8_t*)result);
-        mbedtls_sha1_free(_CONTEXT);
+        mbedtls_sha1_finish(CCONTEXT, (uint8_t*)result);
+        mbedtls_sha1_free(CCONTEXT);
 #endif
     }
 
-#undef _CONTEXT
+#undef CCONTEXT
 #ifdef USE_COMMON_CRYPTO
 #    include <CommonCrypto/CommonDigest.h>
-#    define _CONTEXT ((CC_SHA256_CTX*)_context)
+#    define CCONTEXT ((CC_SHA256_CTX*)_context)
 #else
-#    define _CONTEXT ((mbedtls_sha256_context*)_context)
+#    define CCONTEXT ((mbedtls_sha256_context*)_context)
 #endif
 
     SHA256Builder::SHA256Builder() {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha256_context));
 #ifdef USE_COMMON_CRYPTO
         static_assert(sizeof(_context) >= sizeof(CC_SHA256_CTX));
-        CC_SHA256_Init(_CONTEXT);
+        CC_SHA256_Init(CCONTEXT);
 #else
-        mbedtls_sha256_init(_CONTEXT);
-        mbedtls_sha256_starts(_CONTEXT, 0);
+        mbedtls_sha256_init(CCONTEXT);
+        mbedtls_sha256_starts(CCONTEXT, 0);
 #endif
     }
 
     SHA256Builder& SHA256Builder::operator<<(fleece::slice s) {
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA256_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
+        CC_SHA256_Update(CCONTEXT, s.buf, (CC_LONG)s.size);
 #else
-        mbedtls_sha256_update(_CONTEXT, (unsigned char*)s.buf, s.size);
+        mbedtls_sha256_update(CCONTEXT, (unsigned char*)s.buf, s.size);
 #endif
         return *this;
     }
@@ -110,10 +110,10 @@ namespace litecore {
     void SHA256Builder::finish(void* result, size_t resultSize) {
         DebugAssert(resultSize == sizeof(SHA256::_bytes));
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA256_Final((uint8_t*)result, _CONTEXT);
+        CC_SHA256_Final((uint8_t*)result, CCONTEXT);
 #else
-        mbedtls_sha256_finish(_CONTEXT, (uint8_t*)result);
-        mbedtls_sha256_free(_CONTEXT);
+        mbedtls_sha256_finish(CCONTEXT, (uint8_t*)result);
+        mbedtls_sha256_free(CCONTEXT);
 #endif
     }
 

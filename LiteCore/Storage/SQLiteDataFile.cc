@@ -20,17 +20,14 @@
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
+#include "SQLiteCpp/SQLiteCpp.h"
 #include "BothKeyStore.hh"
-#include "Record.hh"
 #include "UnicodeCollator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SharedKeys.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
-#include "SecureRandomize.hh"
-#include "fleece/PlatformCompat.hh"
 #include "fleece/Fleece.hh"
 #include <mutex>
 #include <sqlite3.h>
@@ -105,7 +102,7 @@ namespace litecore {
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
-    static void sqlite3_log_callback(void* pArg, int errCode, const char* msg) {
+    static void sqlite3_log_callback(C4UNUSED void* pArg, int errCode, const char* msg) {
         if ( errCode == SQLITE_NOTICE_RECOVER_WAL ) return;  // harmless "recovered __ frames from WAL file" message
         int baseCode = errCode & 0xFF;
         if ( baseCode == SQLITE_SCHEMA )
@@ -131,7 +128,7 @@ namespace litecore {
     slice getColumnAsSlice(SQLite::Statement& stmt, int colIndex) {
         auto col = stmt.getColumn(colIndex);
         auto buf = col.getBlob();
-        return slice(buf, col.getBytes());
+        return {buf, static_cast<size_t>(col.getBytes())};
     }
 
     SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
@@ -187,9 +184,7 @@ namespace litecore {
         withFileLock([this] {
             // http://www.sqlite.org/pragma.html
             _schemaVersion = SchemaVersion((int)_sqlDb->execAndGet("PRAGMA user_version"));
-            bool isNew     = false;
             if ( _schemaVersion == SchemaVersion::None ) {
-                isNew = true;
                 // Configure persistent db settings, and create the schema.
                 // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
                 // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)
@@ -254,7 +249,7 @@ namespace litecore {
             if ( !upgradeSchema(SchemaVersion::WithDeletedTable, "Migrating deleted docs to `del_` tables", [&] {
                      // Migrate deleted docs to separate table:
                      _schemaVersion = SchemaVersion::WithDeletedTable;  // enable creating _del keystores
-                     for ( string keyStoreName : allKeyStoreNames() ) {
+                     for ( const string& keyStoreName : allKeyStoreNames() ) {
                          if ( keyStoreNameIsCollection(keyStoreName) ) {
                              Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
                              (void)getKeyStore(keyStoreName);  // creates the `_del` keystore
@@ -422,7 +417,7 @@ namespace litecore {
 
         // Since sqlite3_key_v2() does NOT attempt to read the database, we must do our own
         // verification that the encryption key is correct (or db is unencrypted, if no key given):
-        rc = sqlite3_exec(_sqlDb->getHandle(), "SELECT count(*) FROM sqlite_master", NULL, NULL, NULL);
+        rc = sqlite3_exec(_sqlDb->getHandle(), "SELECT count(*) FROM sqlite_master", nullptr, nullptr, nullptr);
         switch ( rc ) {
             case SQLITE_OK:
                 return true;
@@ -454,7 +449,7 @@ namespace litecore {
         }
 
         if ( newKey.size != kEncryptionKeySize[alg] ) error::_throw(error::InvalidParameter);
-        int rekeyResult = 0;
+        int rekeyResult;
         if ( alg == kNoEncryption ) {
             rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, nullptr, 0);
         } else {
@@ -613,7 +608,7 @@ namespace litecore {
     // Returns true if an index/table exists in the database with the given type and SQL schema OR
     // Returns true if the given sql is empty and the schema doesn't exist.
     bool SQLiteDataFile::schemaExistsWithSQL(const string& name, const string& type, const string& tableName,
-                                             const string& sql) {
+                                             const string& sql) const {
         string existingSQL;
         bool   existed = getSchema(name, type, tableName, existingSQL);
         if ( !sql.empty() ) return existed && existingSQL == sql;
@@ -796,9 +791,9 @@ namespace litecore {
         int64_t pageCount = intQuery("PRAGMA page_count");
         int64_t freePages = intQuery("PRAGMA freelist_count");
         logVerbose("Housekeeping: %lld of %lld pages free (%.0f%%)", (long long)freePages, (long long)pageCount,
-                   100.0 * freePages / pageCount);
+                   100.0 * static_cast<double>(freePages) / static_cast<double>(pageCount));
 
-        if ( !always && (pageCount == 0 || (float)freePages / pageCount < kVacuumFractionThreshold)
+        if ( !always && (pageCount == 0 || (float)freePages / static_cast<float>(pageCount) < kVacuumFractionThreshold)
              && (freePages * kPageSize < kVacuumSizeThreshold) )
             return;
 

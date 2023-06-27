@@ -271,7 +271,7 @@ CBL_CORE_API bool c4keypair_removePersistent(C4KeyPair*, C4Error* C4NULLABLE out
     @param outError  On failure, the error info will be stored here.
     @return  The key object, or NULL on failure. */
 CBL_CORE_API C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
-                                               struct C4ExternalKeyCallbacks callbacks, C4Error* C4NULLABLE outError);
+                                               C4ExternalKeyCallbacks callbacks, C4Error* C4NULLABLE outError);
 
 /** @} */
 

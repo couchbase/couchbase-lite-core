@@ -137,9 +137,6 @@ Data Structures</h2></td></tr>
 <tr class="memitem:ga77b1b96cbea3caea22c3abe202e8b615"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga77b1b96cbea3caea22c3abe202e8b615">c4stream_seek</a> (<a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *, uint64_t position, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
 <tr class="memdesc:ga77b1b96cbea3caea22c3abe202e8b615"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves to a random location in the stream; the next c4stream_read call will read from that location.  <br /></td></tr>
 <tr class="separator:ga77b1b96cbea3caea22c3abe202e8b615"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7e1505cde0f0b92a70c630c9b71eaddf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga7e1505cde0f0b92a70c630c9b71eaddf">c4stream_close</a> (<a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *)</td></tr>
-<tr class="memdesc:ga7e1505cde0f0b92a70c630c9b71eaddf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes a read-stream.  <br /></td></tr>
-<tr class="separator:ga7e1505cde0f0b92a70c630c9b71eaddf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Streamed Writes</h2></td></tr>
 <tr class="memitem:ga2822a63ba9d268bb6d16de40295408f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga2822a63ba9d268bb6d16de40295408f6">c4blob_openWriteStream</a> (<a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a> *, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
@@ -157,9 +154,6 @@ Data Structures</h2></td></tr>
 <tr class="memitem:gaa1699b6edc32d10e0ddb24d8360b82ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#gaa1699b6edc32d10e0ddb24d8360b82ca">c4stream_install</a> (<a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *, const <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *expectedKey, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
 <tr class="memdesc:gaa1699b6edc32d10e0ddb24d8360b82ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the data written to the stream as a finished blob to the store.  <br /></td></tr>
 <tr class="separator:gaa1699b6edc32d10e0ddb24d8360b82ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7aea7c227642415bfd207d72d22a26f0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___blobs.html#ga7aea7c227642415bfd207d72d22a26f0">c4stream_closeWriter</a> (<a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *)</td></tr>
-<tr class="memdesc:ga7aea7c227642415bfd207d72d22a26f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes a blob write-stream.  <br /></td></tr>
-<tr class="separator:ga7aea7c227642415bfd207d72d22a26f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
@@ -643,48 +637,6 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the number of bytes written to the stream. </p>
-
-</div>
-</div>
-<a id="ga7e1505cde0f0b92a70c630c9b71eaddf" name="ga7e1505cde0f0b92a70c630c9b71eaddf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7e1505cde0f0b92a70c630c9b71eaddf">&#9670;&#160;</a></span>c4stream_close()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4stream_close </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Closes a read-stream. </p>
-<p>(A NULL parameter is allowed.) </p>
-
-</div>
-</div>
-<a id="ga7aea7c227642415bfd207d72d22a26f0" name="ga7aea7c227642415bfd207d72d22a26f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7aea7c227642415bfd207d72d22a26f0">&#9670;&#160;</a></span>c4stream_closeWriter()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void c4stream_closeWriter </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Closes a blob write-stream. </p>
-<p>If c4stream_install was not already called (or was called but failed), the temporary file will be deleted without adding the blob to the store. (A NULL parameter is allowed, and is a no-op.) </p>
 
 </div>
 </div>
