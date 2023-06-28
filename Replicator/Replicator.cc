@@ -834,7 +834,7 @@ namespace litecore { namespace repl {
                 if (auto err = response->getError(); err.domain == "BLIP"_sl && err.code == 404) {
                     constexpr slice sg3_0_specific = "No handler for BLIP request"_sl;
                     if (err.message == sg3_0_specific) {
-                        logError("The Sync Gateway does not support named collections, configure your replicator using the default collection");
+                        logError("This Sync Gateway does not support named collections. Try configuring your replicator using the default collection");
                     }
                 }
                 return;
