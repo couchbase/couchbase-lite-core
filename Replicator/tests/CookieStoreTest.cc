@@ -183,7 +183,7 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
             "name=value; Max-Age=z7",
             "name=value; Max-Age=",
     };
-    for ( auto& badCookie : badCookies ) {
+    for ( const auto& badCookie : badCookies ) {
         INFO("Checking " << badCookie);
         Cookie c(badCookie, "example.com", "/");
         CHECK(!c);
