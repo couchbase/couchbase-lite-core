@@ -833,8 +833,20 @@ namespace litecore { namespace repl {
                 gotError(response);
                 if (auto err = response->getError(); err.domain == "BLIP"_sl && err.code == 404) {
                     constexpr slice sg3_0_specific = "No handler for BLIP request"_sl;
+                    constexpr slice lite3_0_specific = "no handler for message"_sl;
+                    enum {
+                        kUnknown,
+                        kSyncGwy,
+                        kP2PRemote
+                    } remote = kUnknown;
                     if (err.message == sg3_0_specific) {
-                        logError("This Sync Gateway does not support named collections. Try configuring your replicator using the default collection");
+                        remote = kSyncGwy;
+                    } else if (err.message == lite3_0_specific) {
+                        remote = kP2PRemote;
+                    }
+                    if (remote != kUnknown) {
+                        logError("%s%s", remote == kSyncGwy ? "This Sync Gateway" : "This Remote Peer",
+                                 " does not support named collections. Try configuring your replicator using the default collection");
                     }
                 }
                 return;
