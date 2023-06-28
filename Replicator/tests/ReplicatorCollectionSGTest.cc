@@ -15,6 +15,7 @@
 #include "ReplicatorCollectionSGTest.hh"
 #include "ReplicatorLoopbackTest.hh"
 #include "Base64.hh"
+#include "ReplicatorTypes.hh"
 #include <future>
 
 // Tests in this file, tagged by [.SyncServerCollection], are not done automatically in the
@@ -915,7 +916,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - w/ and w/o Fi
             pullFilterPurge = 0;
         }
 
-        unsigned collIndex = -1;
+        unsigned collIndex = kNotCollectionIndex;
     } cbContexts[2];
 
     Assert(2 == _collectionCount);

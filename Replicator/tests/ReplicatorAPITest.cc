@@ -612,8 +612,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
     CHECK(err.code == kC4ErrorNotOpen);
     c4slice_free(encodedDocIDs);
 
+    // Clear error
+    err = {};
+
     c4repl_start(_repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
