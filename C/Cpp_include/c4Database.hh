@@ -76,7 +76,7 @@ struct C4Database
 
     const Config& getConfiguration() const noexcept FLPURE { return _config; }
 
-    virtual alloc_slice getPeerID() const      = 0;
+    virtual alloc_slice getSourceID() const    = 0;
     virtual C4UUID      getPublicUUID() const  = 0;
     virtual C4UUID      getPrivateUUID() const = 0;
 
@@ -248,6 +248,7 @@ struct C4Database
     // These are used by the replicator:
     virtual C4RemoteID  getRemoteDBID(slice remoteAddress, bool canCreate) = 0;
     virtual alloc_slice getRemoteDBAddress(C4RemoteID remoteID)            = 0;
+    virtual alloc_slice getRevIDGlobalForm(slice revID)                    = 0;
 
     // Used only by the `cblite` tool:
     virtual alloc_slice rawQuery(slice sqliteQuery) = 0;

@@ -84,12 +84,12 @@ namespace litecore::repl {
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
         if ( _usingVersionVectors ) {
-            if ( _myPeerID.empty() ) {
+            if ( _mySourceID.empty() ) {
                 useLocked([&](C4Database* c4db) {
-                    if ( _myPeerID.empty() ) _myPeerID = string(c4db->getPeerID());
+                    if ( _mySourceID.empty() ) _mySourceID = string(c4db->getSourceID());
                 });
             }
-            replace(version, "*", _myPeerID);
+            replace(version, "*", _mySourceID);
         }
         return version;
     }
@@ -232,8 +232,10 @@ namespace litecore::repl {
             }
             enc.writeKey("stub"_sl);
             enc.writeBool(true);
-            enc.writeKey("revpos"_sl);
-            enc.writeInt(revpos);
+            if ( revpos > 0 ) {
+                enc.writeKey("revpos"_sl);
+                enc.writeInt(revpos);
+            }
             enc.endDict();
         });
         enc.endDict();

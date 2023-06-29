@@ -35,41 +35,43 @@ namespace litecore {
         ///              0 means just this Value itself, 1 includes its children, etc.
         void writeValue(fleece::Value v, int depth) {
             DebugAssert(depth >= 0);
-            if ( auto type = v.type(); type < kFLData ) {
+            auto type = v.type();
+            if ( type < kFLData ) {
                 _enc.writeValue(v);
-            } else if ( auto e = _written.find(v); e != _written.end() && e->second != 0 ) {
-                FLEncoder_WriteValueAgain(_enc, e->second);
-            } else
-                switch ( type ) {
-                    case kFLData:
-                        writeData(v.asData());
-                        break;
-                    case kFLArray:
-                        writeArray(v.asArray(), depth);
-                        break;
-                    case kFLDict:
-                        writeDict(v.asDict(), depth);
-                        break;
-                    default:
-                        DebugAssert(false, "Illegal Value type");
-                }
+                return;
+            }
+            if ( auto e = _written.find(v); e != _written.end() ) {
+                if ( FLEncoder_WriteValueAgain(_enc, e->second) ) return;
+            }
+            switch ( type ) {
+                case kFLData:
+                    writeData(v.asData());
+                    break;
+                case kFLArray:
+                    writeArray(v.asArray(), depth);
+                    break;
+                case kFLDict:
+                    writeDict(v.asDict(), depth);
+                    break;
+                default:
+                    DebugAssert(false, "Illegal Value type");
+            }
         }
 
       private:
         void writeData(slice data) {
-            if ( auto e = _writtenData.find(data); e != _writtenData.end() && e->second != 0 ) {
-                FLEncoder_WriteValueAgain(_enc, e->second);
-            } else {
-                _enc.writeData(data);
-                _writtenData[data] = FLEncoder_LastValueWritten(_enc);
+            if ( auto e = _writtenData.find(data); e != _writtenData.end() ) {
+                if ( FLEncoder_WriteValueAgain(_enc, e->second) ) return;
             }
+            _enc.writeData(data);
+            if ( auto pos = FLEncoder_LastValueWritten(_enc); pos != kFLNoWrittenValue ) _writtenData[data] = pos;
         }
 
         void writeArray(fleece::Array array, int depth) {
             _enc.beginArray(array.count());
             for ( fleece::Array::iterator i(array); i; ++i ) _writeChild(i.value(), depth);
             _enc.endArray();
-            _written[array] = FLEncoder_LastValueWritten(_enc);
+            rememberLast(array);
         }
 
         void writeDict(fleece::Dict dict, int depth) {
@@ -79,13 +81,17 @@ namespace litecore {
                 _writeChild(i.value(), depth);
             }
             _enc.endDict();
-            _written[dict] = FLEncoder_LastValueWritten(_enc);
+            rememberLast(dict);
         }
 
         void _writeChild(fleece::Value v, int depth) {
             if ( depth > 0 ) writeValue(v, depth - 1);
             else
                 _enc.writeValue(v);
+        }
+
+        void rememberLast(FLValue v) {
+            if ( auto pos = FLEncoder_LastValueWritten(_enc); pos != kFLNoWrittenValue ) _written[v] = pos;
         }
 
         fleece::SharedEncoder                _enc;

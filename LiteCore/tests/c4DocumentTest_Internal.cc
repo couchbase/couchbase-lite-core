@@ -89,51 +89,55 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 
     } else {
         // Version-vectors:
-        createRev(doc1, "3@100,10@8"_sl, kFleeceBody);
-        createRev(doc2, "3@100,10@8"_sl, kFleeceBody);
-        createRev(doc3, "3@300,30@8"_sl, kFleeceBody);
+        createRev(doc1, "3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl, kFleeceBody);
+        createRev(doc2, "3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl, kFleeceBody);
+        createRev(doc3, "3@CarolCarolCarolCarolCA; 30@BobBobBobBobBobBobBobA"_sl, kFleeceBody);
 
         // Doc I don't have yet:
-        CHECK(findDocAncestor("new"_sl, "3@300,30@8"_sl).empty());
+        CHECK(findDocAncestor("new"_sl, "3@CarolCarolCarolCarolCA; 30@BobBobBobBobBobBobBobA"_sl).empty());
 
         // Revision I already have:
-        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl) == "0");  // kRevSame
+        CHECK(findDocAncestor(doc1, "3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl) == "0");  // kRevSame
 
         // Require bodies:
-        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl, true) == "0");  // kRevSame
+        CHECK(findDocAncestor(doc1, "3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl, true)
+              == "0");  // kRevSame
 
         // Older revision:
-        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl) == "2");  // kRevNewer
+        CHECK(findDocAncestor(doc1, "2@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl) == "2");  // kRevNewer
 
         // Require bodies:
-        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == "2");
+        CHECK(findDocAncestor(doc1, "2@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl, true) == "2");
 
         // Newer revision:
-        CHECK(findDocAncestor(doc1, "11@8,3@100"_sl) == R"(1["3@100,10@8"])");
+        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA"_sl)
+              == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
 
         // Conflict:
-        CHECK(findDocAncestor(doc1, "4@100,9@8"_sl) == R"(3[])");
+        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA; 2@AliceAliceAliceAliceAA"_sl) == R"(3[])");
 
         // Single version:
-        CHECK(findDocAncestor(doc1, "10@8"_sl) == "2");
-        CHECK(findDocAncestor(doc1, "11@8"_sl) == "3[]");
-        CHECK(findDocAncestor(doc1, "1@99"_sl) == "3[]");
+        CHECK(findDocAncestor(doc1, "10@BobBobBobBobBobBobBobA"_sl) == "2");
+        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA"_sl) == "3[]");
+        CHECK(findDocAncestor(doc1, "1@DaveDaveDaveDaveDaveDA"_sl) == "3[]");
 
         // Limit number of results:
-        C4Slice newRevID = "11@8,3@100"_sl;
+        C4Slice newRevID = "11@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA"_sl;
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(ancestors[0]) == R"(1["3@100,10@8"])");
+        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
-        C4String revIDs[4] = {"9@100,10@8"_sl, "3@100,10@8"_sl, C4STR("17@17"), "1@99,3@300,30@8"_sl};
+        C4String revIDs[4] = {"9@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl,
+                              "3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"_sl, "17@ZegpoldZegpoldZegpoldA"_sl,
+                              "1@DaveDaveDaveDaveDaveDA; 3@CarolCarolCarolCarolCA, 30@BobBobBobBobBobBobBobA"_sl};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(ancestors[0]) == R"(1["3@100,10@8"])");
-        CHECK(alloc_slice(ancestors[1]) == "0");
+        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
+        CHECK(toString(ancestors[1]) == "0");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(ancestors[3]) == R"(1["3@300,30@8"])");
+        CHECK(toString(ancestors[3]) == R"(1["3@CarolCarolCarolCarolCA; 30@BobBobBobBobBobBobBobA"])");
     }
 }
 

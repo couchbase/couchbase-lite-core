@@ -76,11 +76,11 @@ class ReplicatorLoopbackTest
             kConflictRev2AID = "2-2a2a2a2a"_sl;
             kConflictRev2BID = "2-2b2b2b2b"_sl;
         } else {
-            kNonLocalRev1ID  = "1@cafe"_sl;
-            kNonLocalRev2ID  = "2@cafe"_sl;
-            kNonLocalRev3ID  = "3@cafe"_sl;
-            kConflictRev2AID = "1@babe1"_sl;
-            kConflictRev2BID = "1@babe2"_sl;
+            kNonLocalRev1ID  = "1@SarahCynthiaSylviaStow"_sl;
+            kNonLocalRev2ID  = "2@SarahCynthiaSylviaStow"_sl;
+            kNonLocalRev3ID  = "3@SarahCynthiaSylviaStow"_sl;
+            kConflictRev2AID = "1@NorbertHeisenbergVonQQ"_sl;
+            kConflictRev2BID = "1@MajorMajorMajorMajorQQ"_sl;
         }
     }
 
@@ -369,8 +369,8 @@ class ReplicatorLoopbackTest
             // Figure out which branch should win:
             if ( (localFlags & kRevDeleted) != (remoteFlags & kRevDeleted) )
                 remoteWins = (localFlags & kRevDeleted) == 0;  // deletion wins conflict
-            else if ( c4rev_getGeneration(localRevID) != c4rev_getGeneration(remoteRevID) )
-                remoteWins = c4rev_getGeneration(localRevID) < c4rev_getGeneration(remoteRevID);
+            else if ( c4rev_getTimestamp(localRevID) != c4rev_getTimestamp(remoteRevID) )
+                remoteWins = c4rev_getTimestamp(localRevID) < c4rev_getTimestamp(remoteRevID);
 
             Log("Resolving conflict in '%.*s': local=#%.*s (%02X), remote=#%.*s (%02X); %s wins", SPLAT(rev->docID),
                             SPLAT(localRevID), localFlags, SPLAT(remoteRevID), remoteFlags, (remoteWins ? "remote" : "local"));

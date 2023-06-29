@@ -123,7 +123,6 @@ namespace litecore::repl {
         unsigned              _blobsInFlight{0};               // # of blobs being sent
         std::deque<Retained<RevToSend>> _revQueue;             // Revs to send to peer but not sent yet
         RevToSendList                   _revsToRetry;          // Revs that failed with a transient error
-        string                          _myPeerID;
     };
 
 

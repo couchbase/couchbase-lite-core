@@ -11,9 +11,13 @@
 //
 
 #include "VersionVector.hh"
+#include "HybridClock.hh"
 #include "RevTree.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
+#include "slice_stream.hh"
+#include <iomanip>
+#include <thread>
 
 using namespace litecore;
 using namespace std;
@@ -21,14 +25,20 @@ using namespace std;
 namespace litecore {
     // Some implementations of "<<" to write to ostreams:
 
+    static inline std::ostream& operator<<(std::ostream& o, logicalTime t) {
+        return o << std::hex << uint64_t(t) << std::dec;
+    }
+
     /** Writes an ASCII representation of a Version to a stream.
      Note: This does not replace "*" with the local author's ID! */
-    static inline std::ostream& operator<<(std::ostream& o, const Version& v) { return o << v.asASCII(); }
+    static inline std::ostream& operator<<(std::ostream& o, const Version& v) {
+        return o << "Version(" << string(v.asASCII()) << ")";
+    }
 
     /** Writes an ASCII representation of a VersionVector to a stream.
      Note: This does not replace "*" with the local author's ID! */
     static inline std::ostream& operator<<(std::ostream& o, const VersionVector& vv) {
-        return o << string(vv.asASCII());
+        return o << "VersionVector(" << string(vv.asASCII()) << ")";
     }
 
     static inline std::ostream& operator<<(std::ostream& o, const optional<VersionVector>& vv) {
@@ -38,38 +48,190 @@ namespace litecore {
     }
 }  // namespace litecore
 
-// `_vers` suffix after a string literal makes it a Version
-//static Version operator "" _vers (const char *str NONNULL, size_t length) {
-//    return Version(slice(str, length));
-//}
+// `_ht` suffix after a numeric literal makes it a hybrid time.
+static logicalTime operator"" _ht(unsigned long long i) { return logicalTime{i}; }
 
-// `_vv` suffix after a string literal makes it a VersionVector
+// `_vv` suffix after a string literal makes it a VersionVector.
 static VersionVector operator"" _vv(const char* str NONNULL, size_t length) {
     if ( length == 0 ) return {};
     return VersionVector::fromASCII(slice(str, length));
 }
 
-static constexpr peerID Alice{0x100}, Bob{0x101}, Carol{0x102}, Dave{0x103}, Zegpold{0xFFFF};
+// `_pid` suffix after a base64 string literal makes it a SourceID.
+static SourceID operator"" _pid(const char* str NONNULL, size_t length) {
+    if ( length == 1 && str[0] == '*' ) return kMeSourceID;
+    SourceID id;
+    if ( !id.readASCII(slice(str, length)) ) throw std::invalid_argument("invalid SourceID");
+    return id;
+}
+
+// Some SourceIDs to test with. Any 22-character string in the base64 character set will work,
+// as long as the last character is 'A', 'Q', 'g' or 'w' (whose encodings end in 0000.)
+static const SourceID Alice   = "AliceAliceAliceAliceAA"_pid;
+static const SourceID Bob     = "BobBobBobBobBobBobBobA"_pid;
+static const SourceID Carol   = "CarolCarolCarolCarolCA"_pid;
+static const SourceID Dave    = "DaveDaveDaveDaveDaveDA"_pid;
+static const SourceID Zegpold = "ZegpoldZegpoldZegpoldA"_pid;
+
+
+#pragma mark - HYBRID CLOCK:
+
+TEST_CASE("Fake HybridClock", "[RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>());
+
+    CHECK(!clock.validTime(0_ht));
+
+    CHECK(clock.now() == 0x10000_ht);
+    auto n = clock.now();
+    CHECK(n == 0x20000_ht);
+    CHECK(clock.validTime(n));
+}
+
+TEST_CASE("HybridClock", "[RevIDs]") {
+    // Sanity check RealClockSource:
+    auto wallNow = uint64_t(RealClockSource{}.now());
+    CHECK(wallNow > 0x1773b22e5a655ca0);  // 20 July 2023
+    CHECK(wallNow < 0x3000000000000000);  // somewhere in 2079
+
+    HybridClock c;
+    auto        t  = c.now();
+    auto        t2 = c.now();
+    CHECK(t2 > t);
+    cout << "The time was " << t << ", then " << t2 << std::endl;
+
+    // Receive a fictitious timestamp from a peer that's 5 seconds ahead:
+    auto tSeen = logicalTime{uint64_t(t) + 5 * kNsPerSec};
+    CHECK(c.see(tSeen));
+    CHECK(c.now() > tSeen);
+
+    // Receive a bogus timestamp that's an hour ahead:
+    auto tBogus = logicalTime{uint64_t(t) + 3600 * kNsPerSec};
+    CHECK_FALSE(c.see(tBogus));
+
+    // Receive a bogus timestamp from before I even implemented HybridClock:
+    auto tBogusPast = 0x166c9b7676dd86a8_ht;
+    CHECK_FALSE(c.see(tBogusPast));
+
+    auto t3 = c.now();
+    CHECK(t3 > tSeen);
+    CHECK(t3 < tBogus);
+
+    uint64_t state = c.state();
+
+    double dState(state);
+    cout << "Error from double conversion is " << (state - uint64_t(dState)) << "ns" << endl;
+
+    // Reconstitute clock from its state:
+    HybridClock c2(state);
+    auto        t4 = c2.now();
+    CHECK(t4 > t3);
+    CHECK(uint64_t(t4) - uint64_t(t3) < 1e9);
+}
+
+#pragma mark - PEER ID:
+
+TEST_CASE("SourceID Binary", "[RevIDs]") {
+    for ( const uint8_t& b : kMeSourceID.bytes() ) { CHECK(b == 0); }
+
+    uint8_t xb = 0x1e;
+    for ( const uint8_t& b : kLegacyRevSourceID.bytes() ) {
+        CHECK(b == xb);
+        xb = 0;
+    }
+
+    SourceID id;
+    for ( size_t i = 0; i < sizeof(SourceID); ++i ) id.bytes()[i] = uint8_t(i + 1);
+    CHECK(id != kMeSourceID);
+    CHECK(id == id);
+
+    alloc_slice buf(100);
+    for ( int current = 0; current <= 1; ++current ) {
+        SourceID id2;
+        bool     isCurrent;
+        {
+            slice_ostream out(buf);
+            REQUIRE(kMeSourceID.writeBinary(out, current));
+            slice result = out.output();
+            CHECK(result.hexString() == (current ? "80" : "00"));
+
+            slice_istream in(result);
+            REQUIRE(id2.readBinary(in, &isCurrent));
+            CHECK(in.eof());
+            CHECK(id2 == kMeSourceID);
+            CHECK(isCurrent == current);
+        }
+        {
+            slice_ostream out(buf);
+            REQUIRE(kLegacyRevSourceID.writeBinary(out, current));
+            slice result = out.output();
+            CHECK(result.hexString() == (current ? "811e" : "011e"));
+
+            slice_istream in(result);
+            REQUIRE(id2.readBinary(in, &isCurrent));
+            CHECK(in.eof());
+            CHECK(id2 == kLegacyRevSourceID);
+            CHECK(isCurrent == current);
+        }
+        {
+            slice_ostream out(buf);
+            REQUIRE(id.writeBinary(out, current));
+            slice result = out.output();
+            CHECK(result.hexString()
+                  == (current ? "900102030405060708090a0b0c0d0e0f10" : "100102030405060708090a0b0c0d0e0f10"));
+
+            slice_istream in(result);
+            REQUIRE(id2.readBinary(in, &isCurrent));
+            CHECK(in.eof());
+            CHECK(id2 == id);
+            CHECK(isCurrent == current);
+        }
+    }
+}
+
+TEST_CASE("SourceID ASCII", "[RevIDs]") {
+    REQUIRE(kMeSourceID.asASCII() == "AAAAAAAAAAAAAAAAAAAAAA");
+    CHECK("*"_pid == kMeSourceID);
+    CHECK("*"_pid.isMe());
+
+    SourceID id;
+    CHECK(id == kMeSourceID);
+    CHECK(id.isMe());
+    CHECK_FALSE(id.readASCII("AAAAAAAAAAAAAAAAAAAAAB"));
+    CHECK_FALSE(id.readASCII("AAAAAAAAAAAAAAAAAAAAAC"));
+    CHECK_FALSE(id.readASCII("AAAAAAAAAAAAAAAAAAAAAD"));
+    CHECK_FALSE(id.readASCII("AAAAAAAAAAAAAAAAAAAAAI"));
+    REQUIRE(id.readASCII("AAAAAAAAAAAAAAAAAAAAAQ"));  // 'Q' in base64 is 110000
+    CHECK(id != kMeSourceID);
+    CHECK(!id.isMe());
+
+    CHECK(id.asASCII() == "AAAAAAAAAAAAAAAAAAAAAQ");
+}
+
+#pragma mark - VERSION VECTOR:
 
 TEST_CASE("Version", "[RevIDs]") {
-    Version v1(1, Alice), v2(1, Alice), v3(2, Alice), v4(1, Bob);
-    CHECK(v1.gen() == 1);
+    CHECK(Version(1_ht, kMeSourceID).asASCII() == "1@*");
+    CHECK(Version(2_ht, kLegacyRevSourceID).asASCII() == "2@?");
+
+    Version v1(1_ht, Alice), v2(1_ht, Alice), v3(2_ht, Alice), v4(1_ht, Bob);
+    CHECK(v1.time() == 1_ht);
     CHECK(v1.author() == Alice);
     CHECK(v1 == v2);
     CHECK(!(v1 == v3));
     CHECK(!(v1 == v4));
-    CHECK(v1.asASCII() == "1@100"_sl);
-    CHECK(Version("1@100") == v1);
-    CHECK(Version("1234@cafebabe") == Version(0x1234, peerID{0xcafebabe}));
-    CHECK(Version::compareGen(2, 1) == kNewer);
-    CHECK(Version::compareGen(2, 2) == kSame);
-    CHECK(Version::compareGen(2, 3) == kOlder);
+    CHECK(v1.asASCII() == "1@AliceAliceAliceAliceAA"_sl);
+    CHECK(Version("1@AliceAliceAliceAliceAA") == v1);
+    CHECK(Version("1234@cafebabecafebabecafebA") == Version(0x1234_ht, "cafebabecafebabecafebA"_pid));
+    CHECK(Version::compare(2_ht, 1_ht) == kNewer);
+    CHECK(Version::compare(2_ht, 2_ht) == kSame);
+    CHECK(Version::compare(2_ht, 3_ht) == kOlder);
 
-    Version me(0x3e, kMePeerID);
+    Version me(0x3e_ht, kMeSourceID);
     CHECK(me.asASCII() == "3e@*"_sl);
-    CHECK(me.asASCII(Alice) == "3e@100"_sl);
+    CHECK(me.asASCII(Alice) == "3e@AliceAliceAliceAliceAA"_sl);
     CHECK(Version("3e@*") == me);
-    CHECK(Version("3e@100", Alice) == me);
+    CHECK(Version("3e@AliceAliceAliceAliceAA", Alice) == me);
 }
 
 TEST_CASE("Empty VersionVector", "[RevIDs]") {
@@ -78,93 +240,225 @@ TEST_CASE("Empty VersionVector", "[RevIDs]") {
     CHECK(v.count() == 0);
     CHECK(v.versions().empty());
     CHECK(v.asASCII() == ""_sl);
-    CHECK(v.isExpanded());
     CHECK(v.asBinary().size == 1);
-    v.compactMyPeerID(Alice);
-    v.expandMyPeerID(Alice);
     CHECK(v.compareTo(v) == kSame);
 }
 
 TEST_CASE("VersionVector <-> String", "[RevIDs]") {
     VersionVector v = "3@*"_vv;
     CHECK(v.count() == 1);
-    CHECK(v[0] == Version(3, kMePeerID));
+    CHECK(v.currentVersions() == 1);
+    CHECK(v[0] == Version(3_ht, kMeSourceID));
     CHECK(v.asASCII() == "3@*");
-    CHECK(v.asASCII(Bob) == "3@101");
+    CHECK(v.asASCII(Bob) == "3@BobBobBobBobBobBobBobA");
 
-    v.readASCII("3@*,2@100,1@103,2@102");
+    v.readASCII("3@*, 2@AliceAliceAliceAliceAA,  1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA");
     CHECK(v.count() == 4);
-    CHECK(v[0] == Version(3, kMePeerID));
-    CHECK(v[1] == Version(2, Alice));
-    CHECK(v[2] == Version(1, Dave));
-    CHECK(v[3] == Version(2, Carol));
-    CHECK(v.asASCII() == "3@*,2@100,1@103,2@102");
-    CHECK(v.asASCII(Bob) == "3@101,2@100,1@103,2@102");
+    CHECK(v.currentVersions() == 1);
+    CHECK(v[0] == Version(3_ht, kMeSourceID));
+    CHECK(v[1] == Version(2_ht, Alice));
+    CHECK(v[2] == Version(1_ht, Dave));
+    CHECK(v[3] == Version(2_ht, Carol));
+    CHECK(v.asASCII() == "3@*; 2@AliceAliceAliceAliceAA, 1@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA");
+    CHECK(v.asASCII(Bob)
+          == "3@BobBobBobBobBobBobBobA; 2@AliceAliceAliceAliceAA, 1@DaveDaveDaveDaveDaveDA, "
+             "2@CarolCarolCarolCarolCA");
 
-    v.readASCII("3@101,2@100,1@103,2@102", Bob);
+    // Parse a vector that has the same peer twice, due to conflict resolution:
+    v.readASCII("4@BobBobBobBobBobBobBobA, 3@AliceAliceAliceAliceAA, 2@BobBobBobBobBobBobBobA; "
+                "1@CarolCarolCarolCarolCA",
+                Bob);
     CHECK(v.count() == 4);
-    CHECK(v[0] == Version(3, kMePeerID));
-    CHECK(v[1] == Version(2, Alice));
-    CHECK(v[2] == Version(1, Dave));
-    CHECK(v[3] == Version(2, Carol));
+    CHECK(v.currentVersions() == 3);
+    CHECK(v[0] == Version(4_ht, kMeSourceID));
+    CHECK(v[1] == Version(3_ht, Alice));
+    CHECK(v[2] == Version(2_ht, kMeSourceID));
+    CHECK(v[3] == Version(1_ht, Carol));
+
+    for ( uint8_t b : v.asBinary() ) fprintf(stderr, "0x%02X, ", b);
+    fprintf(stderr, "\n");
 }
 
 TEST_CASE("VersionVector <-> Binary", "[RevIDs]") {
-    static constexpr uint8_t kBytes[] = {0x00, 0x03, 0x00, 0x02, 0x80, 0x02, 0x01, 0x83, 0x02, 0x02, 0x82, 0x02};
-    static constexpr slice   kBinary(kBytes, sizeof(kBytes));
-    VersionVector            v;
+    static constexpr uint8_t kBytes[] = {
+            0x00, 0x07, 0x80, 0x03, 0x90, 0x02, 0x58, 0x9C, 0x78, 0x09, 0x62, 0x71, 0xE0, 0x25, 0x89, 0xC7, 0x80,
+            0x96, 0x27, 0x1E, 0x00, 0x03, 0x90, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB,
+            0xDE, 0x0D, 0xAB, 0xDE, 0x0C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x10, 0x09,
+            0xAA, 0xE8, 0x94, 0x26, 0xAB, 0xA2, 0x50, 0x9A, 0xAE, 0x89, 0x42, 0x6A, 0xBA, 0x25, 0x08};
+    static constexpr slice kBinary(kBytes, sizeof(kBytes));
+    VersionVector          v;
     v.readBinary(kBinary);
     CHECK(v.count() == 4);
-    CHECK(v.current() == Version(3, kMePeerID));
-    CHECK(v[0] == Version(3, kMePeerID));
-    CHECK(v[1] == Version(2, Alice));
-    CHECK(v[2] == Version(1, Dave));
-    CHECK(v[3] == Version(2, Carol));
-    CHECK(v.asASCII() == "3@*,2@100,1@103,2@102");
+    CHECK(v.current() == Version(3_ht, kMeSourceID));
+    CHECK(v[0] == Version(3_ht, kMeSourceID));
+    CHECK(v[1] == Version(2_ht, Alice));
+    CHECK(v[2] == Version(1_ht, Dave));
+    CHECK(v[3] == Version(2_ht, Carol));
+    CHECK(v.asASCII() == "3@*, 2@AliceAliceAliceAliceAA, 1@DaveDaveDaveDaveDaveDA; 2@CarolCarolCarolCarolCA");
     CHECK(v.asBinary() == kBinary);
 }
 
-TEST_CASE("VersionVector peers", "[RevIDs]") {
-    VersionVector v = "3@*,2@100,1@103,2@102"_vv;
-    CHECK(v.current() == Version(3, kMePeerID));
-    CHECK(v.genOfAuthor(Alice) == 2);
-    CHECK(v[Alice] == 2);
-    CHECK(v[kMePeerID] == 3);
-    CHECK(v[Zegpold] == 0);
+TEST_CASE("VersionVector authors", "[RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>(0, 0));
 
-    CHECK(v.isExpanded() == false);
-    v.expandMyPeerID(Bob);
-    CHECK(v.isExpanded() == true);
-    CHECK(v.asASCII() == "3@101,2@100,1@103,2@102");
+    VersionVector v = "4@*; 3@AliceAliceAliceAliceAA, 2@DaveDaveDaveDaveDaveDA, 1@CarolCarolCarolCarolCA"_vv;
+    CHECK(v.current() == Version(0x4_ht, kMeSourceID));
+    CHECK(v.timeOfAuthor(Alice) == 0x3_ht);
+    CHECK(v[Alice] == 0x3_ht);
+    CHECK(v[kMeSourceID] == 0x4_ht);
+    CHECK(v[Zegpold] == 0_ht);
 
-    v.incrementGen(Bob);
-    CHECK(v.asASCII() == "4@101,2@100,1@103,2@102");
-    v.incrementGen(Dave);
-    CHECK(v.asASCII() == "2@103,4@101,2@100,2@102");
-    v.incrementGen(Zegpold);
-    CHECK(v.asASCII() == "1@ffff,2@103,4@101,2@100,2@102");
+    CHECK(v.isAbsolute() == false);
+    v.makeAbsolute(Bob);
+    CHECK(v.isAbsolute() == true);
+    CHECK(v.asASCII()
+          == "4@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA, 2@DaveDaveDaveDaveDaveDA, "
+             "1@CarolCarolCarolCarolCA");
+
+    CHECK(v.updateClock(clock, true));
+    CHECK(clock.state() == 4);
+    v.addNewVersion(clock, Bob);
+    CHECK(v.asASCII()
+          == "5@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA, 2@DaveDaveDaveDaveDaveDA, 1@"
+             "CarolCarolCarolCarolCA");
+    v.addNewVersion(clock, Dave);
+    CHECK(v.asASCII()
+          == "6@DaveDaveDaveDaveDaveDA; 5@BobBobBobBobBobBobBobA, 3@AliceAliceAliceAliceAA, 1@"
+             "CarolCarolCarolCarolCA");
+    v.addNewVersion(clock, Zegpold);
+    CHECK(v.asASCII()
+          == "7@ZegpoldZegpoldZegpoldA; 6@DaveDaveDaveDaveDaveDA, 5@BobBobBobBobBobBobBobA, 3@"
+             "AliceAliceAliceAliceAA, 1@CarolCarolCarolCarolCA");
+}
+
+TEST_CASE("VersionVector With HybridClock", "[RevIDs]") {
+    HybridClock   clock;
+    VersionVector v;
+    v.addNewVersion(clock, kMeSourceID);
+    cout << v << endl;
+    std::this_thread::sleep_for(1ms);
+    v.addNewVersion(clock, Alice);
+    std::this_thread::sleep_for(1ms);
+    v.addNewVersion(clock, Bob);
+    v.addNewVersion(clock, Dave);
+    std::this_thread::sleep_for(1ms);
+    v.addNewVersion(clock, Zegpold);
+
+    auto ascii = v.asASCII(), binary = v.asBinary();
+    cout << "ASCII is " << ascii.size << " bytes:  " << ascii << endl;
+    cout << "Binary is " << binary.size << " bytes: " << binary << ", " << (binary.size / double(ascii.size) * 100.0)
+         << "% the size\n";
+
+    VersionVector v2 = VersionVector::fromBinary(binary);
+    CHECK(v2 == v);
+}
+
+TEST_CASE("VersionVector comparison", "[RevIDs]") {
+    VersionVector vEmpty;
+    CHECK(vEmpty == vEmpty);
+    VersionVector c1 = "1@CarolCarolCarolCarolCA"_vv;
+    CHECK(c1 == c1);
+    VersionVector d1 = "1@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA"_vv;
+    CHECK(c1 < d1);
+    CHECK(d1 > c1);
+
+    VersionVector c2 = "2@CarolCarolCarolCarolCA"_vv;
+    CHECK(c2 < d1);
+    CHECK(c2 > c1);
+
+    VersionVector z4 = "4@ZegpoldZegpoldZegpoldA, 1@CarolCarolCarolCarolCA"_vv;
+    CHECK(d1 % z4);
+    CHECK(z4 % d1);
+    CHECK(z4 > c1);
+    CHECK(z4 % c2);
 }
 
 TEST_CASE("VersionVector conflicts", "[RevIDs]") {
-    VersionVector v1 = "3@*,2@100,1@103,2@102"_vv;
-    CHECK(v1 == v1);
-    CHECK(v1 == "3@*,2@100,1@103,2@102"_vv);
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>(0, 0));
 
-    CHECK(v1 > "2@*,2@100,1@103,2@102"_vv);
-    CHECK(v1 > "2@100,1@103,2@102"_vv);
-    CHECK(v1 > "1@102"_vv);
+    VersionVector v1 = "6@*;2@AliceAliceAliceAliceAA,1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv;
+    CHECK(v1 == v1);
+    CHECK(v1 == "6@*;2@AliceAliceAliceAliceAA,1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv);
+
+    CHECK(v1 > "5@*;2@AliceAliceAliceAliceAA,1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv);
+    CHECK(v1 > "2@AliceAliceAliceAliceAA;1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv);
+    CHECK(v1 > "1@CarolCarolCarolCarolCA"_vv);
     CHECK(v1 > VersionVector());
 
-    CHECK(v1 < "2@103,3@*,2@100,2@102"_vv);
-    CHECK(v1 < "2@103,1@666,3@*,2@100,9@102"_vv);
+    CHECK(v1 < "2@DaveDaveDaveDaveDaveDA;6@*,2@AliceAliceAliceAliceAA,2@CarolCarolCarolCarolCA"_vv);
+    CHECK(v1
+          < "2@DaveDaveDaveDaveDaveDA;1@666666666666666666666A,6@*,2@AliceAliceAliceAliceAA,9@CarolCarolCarolCarolCA"_vv);
 
-    auto v3 = "4@100,1@103,2@102"_vv;
+    auto v3 = "4@AliceAliceAliceAliceAA;1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv;
+
     CHECK(v1.compareTo(v3) == kConflicting);
     CHECK(!(v1 == v3));
     CHECK(!(v1 < v3));
     CHECK(!(v1 > v3));
 
-    CHECK(v1.mergedWith(v3).asASCII() == "3@*,4@100,1@103,2@102");
+    // Merge them:
+    auto v13 = VersionVector::merge(v1, v3, clock);
+    CHECK(v13.asASCII() == "7@*, 6@*, 4@AliceAliceAliceAliceAA; 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+    CHECK(v13.isMerge());
+    CHECK(v13.currentVersions() == 3);
+    CHECK(v13[kMeSourceID] == 7_ht);
+
+    auto merged = v13.mergedVersions();
+    REQUIRE(merged.size() == 2);
+    CHECK(merged[0] == v13[1]);
+    CHECK(merged[1] == v13[2]);
+
+    // Check that merge-related methods do the right thing on non-merges:
+    CHECK(!v1.isMerge());
+    CHECK(v1.currentVersions() == 1);
+    CHECK(v1.mergedVersions().empty());
+
+    VersionVector vEmpty;
+    CHECK(!vEmpty.isMerge());
+    CHECK(vEmpty.currentVersions() == 0);
+    CHECK(vEmpty.mergedVersions().empty());
+}
+
+TEST_CASE("VersionVector update merge with two by me", "[RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>(0, 0));
+    auto vv = "7@*, 6@*, 4@AliceAliceAliceAliceAA; 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA"_vv;
+    // Update the version normally; there should only be one Version by me:
+    vv.addNewVersion(clock);
+    CHECK(vv.asASCII() == "8@*; 4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+}
+
+TEST_CASE("VersionVector update merge with two by other", "[RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>(0, 0));
+    auto vv =
+            "7@ZegpoldZegpoldZegpoldA, 6@ZegpoldZegpoldZegpoldA, 4@AliceAliceAliceAliceAA; 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA"_vv;
+    // Update the version normally; there should only be one Version by Zegpold:
+    vv.addNewVersion(clock);
+    CHECK(vv.asASCII()
+          == "1@*; 7@ZegpoldZegpoldZegpoldA, 4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA, "
+             "1@DaveDaveDaveDaveDaveDA");
+}
+
+// Special case where all Versions are part of the conflict
+TEST_CASE("VersionVector all-conflicts", "[RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>(0, 0));
+
+    auto v1 = "1@AliceAliceAliceAliceAA"_vv, v2 = "2@BobBobBobBobBobBobBobA"_vv;
+    auto v12 = VersionVector::merge(v1, v2, clock);
+    // ASCII form requires a trailing ';' to distinguish it from a non-merge vector:
+    CHECK(v12.asASCII() == "1@*, 2@BobBobBobBobBobBobBobA, 1@AliceAliceAliceAliceAA;");
+    CHECK(v12.isMerge());
+    CHECK(v12.currentVersions() == 3);
+
+    // Parse the trailing-';' form:
+    VersionVector vv = VersionVector::fromASCII(v12.asASCII());
+    CHECK(vv.isMerge());
+    CHECK(vv.currentVersions() == 3);
+    CHECK(vv.asASCII() == v12.asASCII());
 }
 
 TEST_CASE("VersionVector deltas", "[RevIDs]") {
@@ -182,21 +476,53 @@ TEST_CASE("VersionVector deltas", "[RevIDs]") {
         CHECK(!delta);
     };
 
-    testGoodDelta(""_vv, "4@aa,1@bb,2@cc"_vv);
-    testGoodDelta("4@aa,1@bb,2@cc"_vv, "4@aa,1@bb,2@cc"_vv);
-    testGoodDelta("4@aa,1@bb,2@cc"_vv, "3@cc,1@dd,4@aa,1@bb"_vv);
-    testGoodDelta("4@aa,1@bb,2@cc"_vv, "3@cc,5@aa,1@dd,1@bb"_vv);
+    testGoodDelta(""_vv, "4@aaaaaaaaaaaaaaaaaaaaaA, 1@bbbbbbbbbbbbbbbbbbbbbA, 2@cccccccccccccccccccccA"_vv);
+    testGoodDelta("4@aaaaaaaaaaaaaaaaaaaaaA, 1@bbbbbbbbbbbbbbbbbbbbbA, 2@cccccccccccccccccccccA"_vv,
+                  "4@aaaaaaaaaaaaaaaaaaaaaA, 1@bbbbbbbbbbbbbbbbbbbbbA, 2@cccccccccccccccccccccA"_vv);
+    testGoodDelta(
+            "4@aaaaaaaaaaaaaaaaaaaaaA, 1@bbbbbbbbbbbbbbbbbbbbbA, 2@cccccccccccccccccccccA"_vv,
+            "3@cccccccccccccccccccccA, 1@dddddddddddddddddddddA,4@aaaaaaaaaaaaaaaaaaaaaA, 1@bbbbbbbbbbbbbbbbbbbbbA"_vv);
+    testGoodDelta(
+            "4@aaaaaaaaaaaaaaaaaaaaaA,1@bbbbbbbbbbbbbbbbbbbbbA,2@cccccccccccccccccccccA"_vv,
+            "3@cccccccccccccccccccccA,5@aaaaaaaaaaaaaaaaaaaaaA,1@dddddddddddddddddddddA,1@bbbbbbbbbbbbbbbbbbbbbA"_vv);
 
-    testBadDelta("4@aa,1@bb,2@cc"_vv, ""_vv);
-    testBadDelta("4@aa,1@bb,2@cc"_vv, "1@bb,2@cc"_vv);
-    testBadDelta("4@aa,1@bb,2@cc"_vv, "5@aa"_vv);
+    testBadDelta("4@aaaaaaaaaaaaaaaaaaaaaA,1@bbbbbbbbbbbbbbbbbbbbbA,2@cccccccccccccccccccccA"_vv, ""_vv);
+    testBadDelta("4@aaaaaaaaaaaaaaaaaaaaaA,1@bbbbbbbbbbbbbbbbbbbbbA,2@cccccccccccccccccccccA"_vv,
+                 "1@bbbbbbbbbbbbbbbbbbbbbA,2@cccccccccccccccccccccA"_vv);
+    testBadDelta("4@aaaaaaaaaaaaaaaaaaaaaA,1@bbbbbbbbbbbbbbbbbbbbbA,2@cccccccccccccccccccccA"_vv,
+                 "5@aaaaaaaaaaaaaaaaaaaaaA"_vv);
+}
+
+TEST_CASE("VersionVector prune", "[RevIDs]") {
+    auto v = "7@ZegpoldZegpoldZegpoldA; 6@DaveDaveDaveDaveDaveDA, 5@BobBobBobBobBobBobBobA, "
+             "3@AliceAliceAliceAliceAA, 1@CarolCarolCarolCarolCA"_vv;
+
+    // no-op
+    auto v1 = v;
+    v1.prune(999);
+    CHECK(v1.count() == v.count());
+
+    // as small as possible:
+    v1 = v;
+    v1.prune(0);
+    CHECK(v1.asASCII() == "7@ZegpoldZegpoldZegpoldA");
+
+    // in between:
+    v1 = v;
+    v1.prune(3);
+    CHECK(v1.asASCII() == "7@ZegpoldZegpoldZegpoldA; 6@DaveDaveDaveDaveDaveDA, 5@BobBobBobBobBobBobBobA");
+
+    // use a `before` time:
+    v1 = v;
+    v1.prune(2, logicalTime(4));
+    CHECK(v1.asASCII() == "7@ZegpoldZegpoldZegpoldA; 6@DaveDaveDaveDaveDaveDA, 5@BobBobBobBobBobBobBobA");
 }
 
 #pragma mark - REVID:
 
 struct DigestTestCase {
     const char* str;
-    uint64_t    gen;
+    uint64_t    time;
     slice       digest;
     const char* hex;
 };
@@ -229,19 +555,20 @@ TEST_CASE("RevID Parsing", "[RevIDs]") {
             {"d-aa"},
             {"7-ax"},
             {" 1-aa"},
-            {"12345678123456789-aa"},  // gen too large; below is digest too large
+            {"12345678123456789-aa"},  // time too large; below is digest too large
             {"1-"
-             "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefd"
+             "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadb"
+             "eefdeadbeefdeadbeefd"
              "eadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"},
     };
 
     for ( auto c4se : kCases ) {
         INFO("Testing '" << c4se.str << "'");
         revidBuffer r;
-        if ( c4se.gen ) {
+        if ( c4se.time ) {
             CHECK(r.tryParse(slice(c4se.str)));
             CHECK(!r.getRevID().isVersion());
-            CHECK(r.getRevID().generation() == c4se.gen);
+            CHECK(r.getRevID().generation() == c4se.time);
             CHECK(r.getRevID().digest() == c4se.digest);
             CHECK(r.getRevID().expanded() == slice(c4se.str));
             CHECK(r.getRevID().hexString() == c4se.hex);
@@ -253,27 +580,33 @@ TEST_CASE("RevID Parsing", "[RevIDs]") {
 
 struct VersionTestCase {
     const char* str;
-    uint64_t    gen;
-    uint64_t    peer;
+    uint64_t    time;
+    SourceID    peer;
     const char* hex;
+    const char* revidStr;
 };
 
 TEST_CASE("RevID Version Parsing", "[RevIDs]") {
-    static constexpr VersionTestCase kCases[] = {
+    static const VersionTestCase kCases[] = {
             // good:
-            {"1@*", 0x1, 0x0, "000100"},
-            {"bff@3", 0xbff, 0x3, "00ff1703"},
-            {"c@c", 0xc, 0xc, "000c0c"},
-            {"d00d@*", 0xd00d, 0x0, "008da00300"},
-            {"d00d@*", 0xd00d, 0x0, "008da00300"},
-            {"ffffffffffffffff@1", 0xffffffffffffffff, 0x1, "00ffffffffffffffffff0101"},
-            {"1@ffffffffffffffff", 0x1, 0xffffffffffffffff, "0001ffffffffffffffffff01"},
+            {"1@*", 0x1, kMeSourceID, "000300"},
+            {"bff@AliceAliceAliceAliceAA", 0xbff, Alice, "00ff2f1002589c78096271e02589c78096271e00"},
+            {"c@BobBobBobBobBobBobBobA", 0xc, Bob, "0019100686c1a1b0686c1a1b0686c1a1b0686c"},
+            {"d00d@*", 0xd00d, kMeSourceID, "009bc00600"},
+            {"176cee53c5680000@*", 0x176cee53c5680000, kMeSourceID, "00d0959ee59ddb0b00"},
+
+            {"c@BobBobBobBobBobBobBobA, bff@AliceAliceAliceAliceAA", 0xc, Bob, "0019100686c1a1b0686c1a1b0686c1a1b0686c",
+             "c@BobBobBobBobBobBobBobA"},
+            {"c@BobBobBobBobBobBobBobA; bff@AliceAliceAliceAliceAA", 0xc, Bob, "0019100686c1a1b0686c1a1b0686c1a1b0686c",
+             "c@BobBobBobBobBobBobBobA"},
 
             // bad:
-            {"0@11"},                 // gen can't be 0
-            {"1@0"},                  // peerID can't be literal 0 (must be '*')
-            {"12345678123456789@*"},  // gen too large
-            {"1@12345678123456789"},  // peerID too large
+            {"0@AliceAliceAliceAliceAA"},     // time can't be 0
+            {"1@0"},                          // SourceID can't be literal 0 (must be '*')
+            {"12345678123456789@*"},          // time too large
+            {"1@AliceAliceAliceAliceAlice"},  // SourceID too long
+            {"1@AliceAlic!AliceAliceAA"},     // SourceID invalid base64
+            {"1@AliceAliceAliceAlice"},       // SourceID too short
             {"@"},
             {"*"},
             {"*@*"},
@@ -286,28 +619,28 @@ TEST_CASE("RevID Version Parsing", "[RevIDs]") {
             {"1@**"},
             {"1@1-"},
             {"1@-1"},
-            {"1@@aa"},
+            {"1@@AliceAliceAliceAliceAA"},
             {"@1@11"},
             {"@11"},
-            {"z@aa"},
+            {"z@AliceAliceAliceAliceAA"},
             {"7@ax"},
-            {" 1@aa"},
-            {"1 @aa"},
-            {"1@ aa"},
-            {"1@a a"},
-            {"1@aa "},
+            {" 1@AliceAliceAliceAliceAA"},
+            {"1 @AliceAliceAliceAliceAA"},
+            {"1@ AliceAliceAliceAliceAA"},
+            {"1@A liceAliceAliceAliceAA"},
+            {"1@AliceAliceAliceAliceAA "},
     };
 
     for ( auto c4se : kCases ) {
         INFO("Testing '" << c4se.str << "'");
         revidBuffer r;
-        if ( c4se.gen ) {
+        if ( c4se.time ) {
             CHECK(r.tryParse(slice(c4se.str)));
             CHECK(r.getRevID().isVersion());
-            //CHECK(r.generation() == c4se.gen);
-            CHECK(r.getRevID().asVersion().gen() == c4se.gen);
-            CHECK(r.getRevID().asVersion().author().id == c4se.peer);
-            CHECK(r.getRevID().expanded() == slice(c4se.str));
+            //CHECK(r.generation() == c4se.time);
+            CHECK(r.getRevID().asVersion().time() == logicalTime{c4se.time});
+            CHECK(r.getRevID().asVersion().author() == c4se.peer);
+            CHECK(r.getRevID().expanded() == slice(c4se.revidStr ? c4se.revidStr : c4se.str));
             CHECK(r.getRevID().hexString() == c4se.hex);
         } else {
             CHECK(!r.tryParse(slice(c4se.str)));
@@ -316,16 +649,16 @@ TEST_CASE("RevID Version Parsing", "[RevIDs]") {
 }
 
 TEST_CASE("RevID <-> Version", "[RevIDs]") {
-    VersionVector vv     = "11@100,2@101,1@666"_vv;
+    VersionVector vv     = "11@AliceAliceAliceAliceAA,2@BobBobBobBobBobBobBobA,1@666666666666666666666A"_vv;
     alloc_slice   vvData = vv.asBinary();
     revid         rev(vvData);
     CHECK(rev.isVersion());
-    CHECK(rev.asVersion() == Version(17, Alice));
+    CHECK(rev.asVersion() == Version(17_ht, Alice));
     CHECK(rev.asVersionVector() == vv);
-    CHECK(rev.expanded() == "11@100"_sl);  // revid only looks at the current Version
+    CHECK(rev.expanded() == "11@AliceAliceAliceAliceAA"_sl);  // revid only looks at the current Version
 
-    revidBuffer r(Version(17, Alice));
+    revidBuffer r(Version(17_ht, Alice));
     CHECK(r.getRevID().isVersion());
-    CHECK(r.getRevID().asVersion() == Version(17, Alice));
-    CHECK(r.getRevID().expanded() == "11@100"_sl);
+    CHECK(r.getRevID().asVersion() == Version(17_ht, Alice));
+    CHECK(r.getRevID().expanded() == "11@AliceAliceAliceAliceAA"_sl);
 }

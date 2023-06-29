@@ -165,6 +165,7 @@ _(optional)_ +
 _(optional)_ +
 `activeOnly`: Set to `true` if the requestor doesn't want to be sent tombstones.
 _(optional)_ +
+`versioning`: `rev-trees` (default) or `version-vectors`
 _other properties_: Named parameters for the filter function
 _(optional)_ +
 Body: JSON dictionary _(optional)_
@@ -249,7 +250,7 @@ would resolve it and push the merge.
 
 Response:
 
-`maxHistory`: Max length of revision history to send _(optional)_ +
+`maxHistory`: Max length of revision history to send _(optional; not used with version vectors)_ +
 Body: JSON array (see below)
 
 The response message indicates which revisions the recipient wants to

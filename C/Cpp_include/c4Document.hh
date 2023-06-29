@@ -29,6 +29,12 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
+enum class RevIDType {
+    Invalid,
+    Tree,
+    Version,
+};
+
 struct C4Document
     : public fleece::RefCounted
     , C4Base {
@@ -142,8 +148,11 @@ struct C4Document
     static bool             isValidDocID(slice) noexcept;
     static void             requireValidDocID(slice);  // throws kC4ErrorBadDocID
 
-    static bool     equalRevIDs(slice revID1, slice revID2) noexcept;
-    static unsigned getRevIDGeneration(slice revID) noexcept;
+    [[nodiscard]] static RevIDType typeOfRevID(slice) noexcept;
+    static void                    requireValidRevID(slice);  // throws kC4ErrorBadRevisionID
+    static bool                    equalRevIDs(slice revID1, slice revID2) noexcept;
+    static unsigned                getRevIDGeneration(slice revID) noexcept;
+    static uint64_t                getRevIDTimestamp(slice revID) noexcept;
 
     static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
 

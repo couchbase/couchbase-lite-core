@@ -19,35 +19,61 @@
 #include <optional>
 
 namespace litecore {
+    class HybridClock;
 
-    /** A version vector: an array of version identifiers in reverse chronological order.
-        Can be serialized either as a human-readable string or as binary data.
-        The string format is comma-separated Version strings (see above).
-        The binary format is consecutive binary Versions (see above). */
+    /** A version vector: an array of Versions in reverse chronological order (more or less.)
+
+        - The first Version is the **current** one that identifies the current revision.
+          It's the one used as a document's `revid`.
+        - The rest are **previous** versions that were once the current one. These have a well-
+          defined causal ordering with the current version, i.e. they all "happened before it."
+          They aren't needed in normal use, only to reconcile different revisions and
+          decide which one is newer or if they conflict. That's the same sort of role as the
+          revision history/tree used to have.
+        - Two of the non-current versions may be identified as **merge versions**: these were the
+          current versions of the conflicting documents that were merged to create the current one.
+          Marking these makes it possible to tell that two VersionVectors (and their associated
+          revisions) result from merging the same conflict.
+
+        A VersionVector can be serialized either as a human-readable string or as binary data.
+
+        The ASCII format is a sequence of ASCII Versions (see `Version` class docs);
+        the delimiter is a `,`, except for a `;` that separates the current and merge version(s)
+        from older ones. Spaces may follow a delimiter. As a special case there may be a trailing
+        `;` after the last Version to indicate that there are no non-merge versions.
+
+        The binary format is consecutive binary Versions (see `Version` class docs.)
+        Each encoded Version's auxiliary `current` flag indicates whether it's a current/merge
+        version or an older one; the current/merge ones come first.*/
     class VersionVector {
       public:
-        /** Returns a VersionVector parsed from ASCII; see `readASCII` for details. */
-        static VersionVector fromASCII(slice asciiString, peerID myPeerID = kMePeerID) {
+        using vec = fleece::smallVector<Version, 2>;
+
+#pragma mark - Creating / Parsing:
+
+        /// Returns a VersionVector parsed from ASCII; see `readASCII` for details.
+        [[nodiscard]] static VersionVector fromASCII(slice asciiString, SourceID mySourceID = kMeSourceID) {
             VersionVector v;
-            v.readASCII(asciiString, myPeerID);
+            v.readASCII(asciiString, mySourceID);
             return v;
         }
 
-        /** Returns a VersionVector parsed from binary data. */
-        static VersionVector fromBinary(slice binary) {
+        /** Returns a VersionVector parsed from binary data.
+            Throws BadRevisionID if parsing fails.  */
+        [[nodiscard]] static VersionVector fromBinary(slice binary) {
             VersionVector v;
             v.readBinary(binary);
             return v;
         }
 
-        /** Constructs an empty vector. */
+        /// Constructs an empty vector.
         VersionVector() = default;
 
         /** Parses textual form from ASCII data. Overwrites any existing state.
             Throws BadRevisionID if the string's not valid.
-            If `myPeerID` is given, then the string is expected to be in absolute
-            form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
-        void readASCII(slice asciiString, peerID myPeerID = kMePeerID);
+            If `mySourceID` is given, then the string is expected to be in absolute
+            form, with no "*" allowed. mySourceID in the string will be changed to kMeSourceID (0). */
+        void readASCII(slice asciiString, SourceID mySourceID = kMeSourceID);
 
         /** Assembles a version vector from its history, as a list of ASCII versions/vectors.
             This can take a few forms:
@@ -55,45 +81,62 @@ namespace litecore {
             - ["new version", "parent version vector"]
             - ["new version", "parent version", "grandparent version" ...]
             Throws BadRevisionID if the history isn't in a form it understands. */
-        void readHistory(const slice history[], size_t historyCount, peerID myPeerID = kMePeerID);
+        void readHistory(const slice history[], size_t historyCount, SourceID mySourceID = kMeSourceID);
 
-        /** Reads binary form. */
+        /** Reads binary form.  Overwrites any existing state.
+            Throws BadRevisionID if the data's not valid.*/
         void readBinary(slice binaryData);
 
-        /** Reads just the current (first) Version from the binary form. */
-        static Version readCurrentVersionFromBinary(slice binaryData);
+        /// Reads just the current (first) Version from the ASCII form.
+        [[nodiscard]] static std::optional<Version> readCurrentVersionFromASCII(slice asciiData);
 
-        /** Sets the vector to empty. */
-        void reset() { _vers.clear(); }
+        /// Reads just the current (first) Version from the binary form.
+        [[nodiscard]] static Version readCurrentVersionFromBinary(slice binaryData);
 
-        /** True if the vector is non-empty. */
+        /// Sets the vector to empty.
+        void clear() {
+            _vers.clear();
+            _nCurrent = 0;
+        }
+
+#pragma mark - Accessors:
+
+        /// True if the vector is non-empty.
         explicit operator bool() const { return count() > 0; }
 
-        using vec = fleece::smallVector<Version, 2>;
-
-        [[nodiscard]] size_t count() const { return _vers.size(); }
-
+        /// True if the vector is empty.
         [[nodiscard]] bool empty() const { return _vers.empty(); }
 
+        /// The number of Versions.
+        [[nodiscard]] size_t count() const { return _vers.size(); }
+
+        /// The Version at an index; 0 is current.
         const Version& operator[](size_t i) const { return _vers[i]; }
 
+        /// The current version. Throws an exception if empty.
         [[nodiscard]] const Version& current() const { return _vers.get(0); }
 
+        /// The array of Versions, as a `smallVector<Version>`.
         [[nodiscard]] const vec& versions() const { return _vers; }
 
-        /** Returns the generation count for the given author. */
-        [[nodiscard]] generation genOfAuthor(peerID) const;
+        /// True if the vector contains a Version with the given author.
+        bool contains(SourceID author) const { return timeOfAuthor(author) != logicalTime::none; }
 
-        generation operator[](peerID author) const { return genOfAuthor(author); }
+        /// Returns the logical timestamp for the given author, or else logicalTime::none. */
+        [[nodiscard]] logicalTime timeOfAuthor(SourceID) const;
 
-        //---- Comparisons:
+        /// Returns the logical timestamp for the given author, or else logicalTime::none. */
+        logicalTime operator[](SourceID author) const { return timeOfAuthor(author); }
 
-        /** Compares this vector to another. */
+#pragma mark - Comparisons:
+
+        /// Compares this vector to another.
         [[nodiscard]] versionOrder compareTo(const VersionVector&) const;
 
-        /** Is this vector newer than the other vector, if you ignore the peerID `ignoring`? */
-        [[nodiscard]] bool isNewerIgnoring(peerID ignoring, const VersionVector& other) const;
+        /// Is this vector newer than the other vector, if you ignore the SourceID `ignoring`?
+        [[nodiscard]] bool isNewerIgnoring(SourceID ignoring, const VersionVector& other) const;
 
+        // Comparison operators:
         bool operator==(const VersionVector& v) const { return compareTo(v) == kSame; }
 
         bool operator!=(const VersionVector& v) const { return !(*this == v); }
@@ -106,6 +149,9 @@ namespace litecore {
 
         bool operator>=(const VersionVector& v) const { return v <= *this; }
 
+        /// A made-up comparison operator for 'conflicts with':
+        bool operator%(const VersionVector& v) const { return compareTo(v) == kConflicting; }
+
         /** Compares with a single version, i.e. whether this vector is newer/older/same as a
             vector with the given current version. (Will never return kConflicting.) */
         [[nodiscard]] versionOrder compareTo(const Version&) const;
@@ -114,57 +160,97 @@ namespace litecore {
 
         bool operator>=(const Version& v) const { return compareTo(v) != kOlder; }
 
-        //---- Conversions:
+        using CompareBySourceFn = function_ref<bool(SourceID, logicalTime, logicalTime)>;
 
-        /** Generates binary form. */
-        [[nodiscard]] fleece::alloc_slice asBinary(peerID myID = kMePeerID) const;
+        /** For each SourceID found in either `this` or `other`, calls the callback with that ID
+            and its timestamps from `this` and `other` (`none` if not present.)
+            If the callback returns false, stops the iteration and returns false. */
+        static bool compareBySource(VersionVector const& v1, VersionVector const& v2, CompareBySourceFn callback);
+
+#pragma mark - Conversions:
+
+        /// Generates binary form.
+        [[nodiscard]] fleece::alloc_slice asBinary(SourceID myID = kMeSourceID) const;
 
         /** Converts the vector to a human-readable string.
             When sharing a vector with another peer, pass your actual peer ID in `myID`;
-            then occurrences of kMePeerID will be written as that ID.
+            then occurrences of kMeSourceID will be written as that ID.
             Otherwise they're written as '*'. */
-        [[nodiscard]] fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
+        [[nodiscard]] fleece::alloc_slice asASCII(SourceID myID = kMeSourceID) const;
 
-        bool                 writeASCII(slice_ostream&, peerID myID = kMePeerID) const;
+        /// Same as \ref asASCII but returns a `std::string`, for convenience.
+        [[nodiscard]] std::string asString() const;
+
+        /// Writes vector in ASCII form to a slice-stream.
+        /// If `myID` is given, occurrences of kMeSourceID will be written as that ID.
+        bool writeASCII(slice_ostream&, SourceID myID = kMeSourceID) const;
+
+        /// The maximum possible length in bytes of this vector's ASCII form.
         [[nodiscard]] size_t maxASCIILen() const;
 
-#if DEBUG
-        [[nodiscard]] std::string asString() const;
-#endif
+#pragma mark - Expanding "*":
 
-        //---- Expanding "*":
+        /** Returns true if none of the versions' authors are "*" (`kMeSourceID`). */
+        [[nodiscard]] bool isAbsolute() const;
 
-        /** Returns true if none of the versions' authors are "*". */
-        [[nodiscard]] bool isExpanded() const;
+        /** Replaces kMeSourceID ("*") with the given SourceID in the vector. */
+        void makeAbsolute(SourceID myID);
 
-        /** Replaces kMePeerID ("*") with the given peerID in the vector. */
-        void expandMyPeerID(peerID myID);
+        /** Replaces the given SourceID with kMeSourceID ("*") in the vector. */
+        void makeLocal(SourceID myID);
 
-        /** Replaces the given peerID with kMePeerID ("*") in the vector. */
-        void compactMyPeerID(peerID myID);
+#pragma mark - Operations:
 
-        //---- Operations:
+        /** Updates/creates the Version for an author, assigning it a newer logical time,
+            and moves it to the start of the vector.
+            `currentVersions` is reset to 1 (i.e. no merges.) */
+        bool addNewVersion(HybridClock&, SourceID = kMeSourceID);
 
-        /** Increments the generation count of the given author (or sets it to 1 if it didn't exist)
-            and moves it to the start of the vector. */
-        void incrementGen(peerID);
+        /** Truncates the vector by removing the oldest Versions.
+            It will never remove current or merged Versions.
+            @param maxCount  The number of Versions you want to keep.
+            @param before  If given, only Versions older than this will be removed; this means
+                            more than `maxCount` may remain. */
+        void prune(size_t maxCount, logicalTime before = logicalTime::endOfTime);
 
-        /** Truncates the vector to the maximum count `maxCount`. */
-        void limitCount(size_t maxCount);
-
-        /** Adds a version to the front of the vector.
+        /** Adds a version to the front of the vector, making it current.
             Any earlier version by the same author is removed.
-            If there's an equal or newer version by the same author, the call fails and returns false. */
+            `currentVersions` is reset to 1 (i.e. no merges.)
+            If there's an equal or newer version by the same author, fails and returns false. */
         bool add(Version);
 
-        /** Adds a Version at the _end_ of the vector (the oldest position.) */
-        void push_back(const Version&);
+        /// Updates the HybridClock, if necessary, so its `now` will be greater than any of this
+        /// vector's versions' times.
+        /// @param  clock  The clock to update.
+        /// @param anyone  If false (default), ignores versions not by kMeSourceID.
+        /// @return  True on success, false if a Version has an invalid timestamp.
+        [[nodiscard]] bool updateClock(HybridClock& clock, bool anyone = false) const;
 
-        /** Returns a new vector representing a merge of this vector and the argument.
-            All the authors in both are present, with the larger of the two generations. */
-        [[nodiscard]] VersionVector mergedWith(const VersionVector&) const;
+#pragma mark - Conflict Resolution:
 
-        //---- Deltas:
+        /** Returns a new vector representing a merge of two conflicting vectors.
+            - All the authors in both are present, with the larger of the two timestamps.
+            - The conflicting versions are moved to the front and marked as merges.
+            - A new version for "*" is prepended at the front.
+            - This operation is commutative.*/
+        [[nodiscard]] static VersionVector merge(const VersionVector& v1, const VersionVector& v2, HybridClock& clock);
+
+        /// True if this vector is the direct result of merging conflicting versions.
+        bool isMerge() const { return _nCurrent > 1; }
+
+        /** The number of Versions that are current or merges. These always come first.
+            The first Version in a vector is always current, so this property is always ≥ 1 unless
+            the vector is empty. If it's > 1, the versions after the first are merges. */
+        size_t currentVersions() const { return _nCurrent; }
+
+        /// Returns the merged conflicting versions in a merge vector. There are usually two.
+        /// Returns an empty vector if this is not a merge.
+        vec mergedVersions() const;
+
+        /// True if both vectors are merges and have the same mergedVersions.
+        bool mergesSameVersions(VersionVector const&) const;
+
+#pragma mark - Deltas:
 
         /** Creates a VersionVector expressing the changes from an earlier VersionVector to this one.
             If the other vector is not earlier or equal, `nullopt` is returned. */
@@ -177,17 +263,25 @@ namespace litecore {
                     The method is likely to return an incorrect vector, not throw an exception. */
         [[nodiscard]] VersionVector byApplyingDelta(const VersionVector& delta) const;
 
-      private:
-        VersionVector(vec::const_iterator begin, vec::const_iterator end) : _vers(begin, end) {}
-#if DEBUG
-        void validate() const;
-#else
-        void validate() const {}
-#endif
-        // Finds my version by this author and returns an iterator to it, else returns end()
-        [[nodiscard]] vec::iterator findPeerIter(peerID) const;
 
-        vec _vers;  // versions, in order
+      private:
+        explicit VersionVector(vec&& v, size_t nCur) : _vers(std::move(v)), _nCurrent(nCur) {}
+
+        explicit VersionVector(vec&& v) : VersionVector(std::move(v), !v.empty()) {}
+
+        VersionVector(vec::const_iterator begin, vec::const_iterator end)
+            : _vers(begin, end), _nCurrent(!_vers.empty()) {}
+
+        // Finds my version by this author and returns an iterator to it, else returns end()
+        [[nodiscard]] vec::iterator findPeerIter(SourceID) const;
+        [[nodiscard]] bool          replaceAuthor(SourceID old, SourceID nuu) noexcept;
+        void                        _removeAuthor(SourceID);
+        bool                        _add(Version const&);
+        void                        validate() const;
+        vec                         versionsBySource() const;
+
+        vec    _vers;          // versions, in order from latest to oldest.
+        size_t _nCurrent = 0;  // Number of current/merged versions including the first
     };
 
 }  // namespace litecore
