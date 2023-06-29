@@ -359,7 +359,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Dat
     C4DocEnumerator* e;
 
     createRev("doc-100"_sl, "1@*"_sl, kFleeceBody);
-    createRev("doc-100"_sl, "1@d00d"_sl, kFleeceBody);
+    createRev("doc-100"_sl, "1@DaveDaveDaveDaveDaveDA"_sl, kFleeceBody);
 
     C4EnumeratorOptions options     = kC4DefaultEnumeratorOptions;
     auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
@@ -369,7 +369,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Dat
     C4DocumentInfo info;
     REQUIRE(c4enum_getDocumentInfo(e, &info));
     CHECK(info.docID == "doc-100"_sl);
-    CHECK(info.revID == "1@d00d"_sl);  // Latest version only
+    CHECK(info.revID == "1@DaveDaveDaveDaveDaveDA"_sl);  // Latest version only
     c4enum_free(e);
 
     options.flags |= kC4IncludeRevHistory;
@@ -378,7 +378,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Dat
     REQUIRE(c4enum_next(e, WITH_ERROR()));
     REQUIRE(c4enum_getDocumentInfo(e, &info));
     CHECK(info.docID == "doc-100"_sl);
-    CHECK(info.revID == "1@d00d,1@*"_sl);  // Entire version vector
+    CHECK(info.revID == "1@DaveDaveDaveDaveDaveDA; 1@*"_sl);  // Entire version vector
     c4enum_free(e);
 }
 
@@ -717,7 +717,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C][Blob]"
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Only reference to first blob is gone
-    createRev(doc1ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    createNewRev(db, doc1ID, kC4SliceNull, kRevDeleted);
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
@@ -725,20 +725,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C][Blob]"
 
     // Two references exist to the second blob, so it should still
     // exist after deleting doc002
-    createRev(doc2ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    createNewRev(db, doc2ID, kC4SliceNull, kRevDeleted);
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // After deleting doc4 both blobs should be gone
-    createRev(doc4ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    createNewRev(db, doc4ID, kC4SliceNull, kRevDeleted);
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key2) == -1);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Delete doc with legacy attachment, and it too will be gone
-    createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    createNewRev(db, doc3ID, kC4SliceNull, kRevDeleted);
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key3) == -1);
 
@@ -1140,7 +1140,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO());
     REQUIRE(db);
 
-    // Note: The revID/version checks below hardcode the "legacy source ID", currently 0x7777777.
+    // Note: The revID/version checks below hardcode the "legacy source ID", currently
+    // 0x1e000000000000000000000000000000, represented in ASCII as "?".
     // If/when that's changed (in Database+Upgrade.cc), those checks will break.
 
     // Check doc 1:
@@ -1158,13 +1159,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 2:
     doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "3@7777777");
+    CHECK(slice(doc->revID) == "3@?");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "3@7777777");
+    CHECK(versionVector == "3@?");
     CHECK(doc->sequence == 9);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
-    CHECK(remoteVers == "3@7777777");
+    CHECK(remoteVers == "3@?");
     CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     c4doc_release(doc);
@@ -1174,11 +1175,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     REQUIRE(doc);
     CHECK(slice(doc->revID) == "1@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(versionVector == "1@*; 2@?");
     CHECK(doc->sequence == 11);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
-    CHECK(remoteVers == "2@7777777");
+    CHECK(remoteVers == "2@?");
     CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
     c4doc_release(doc);
@@ -1188,15 +1189,15 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     REQUIRE(doc);
     CHECK(slice(doc->revID) == "1@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(versionVector == "1@*; 2@?");
     CHECK(doc->sequence == 14);
     CHECK(doc->flags == (kDocConflicted | kDocExists));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
-    CHECK(remoteVers == "3@7777777");
+    CHECK(remoteVers == "3@?");
     REQUIRE(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "3@7777777");
+    CHECK(versionVector == "3@?");
     CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
     c4doc_release(doc);

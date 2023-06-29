@@ -17,6 +17,8 @@
 #include "c4DocumentTypes.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
+#include "HybridClock.hh"
+#include "VersionTypes.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/slice.hh"
 #include <mutex>
@@ -65,7 +67,9 @@ namespace litecore {
 
         fleece::impl::Encoder& sharedEncoder() const;
 
-        uint64_t myPeerID() const;
+        HybridClock& versionClock() const { return _versionClock; }
+
+        SourceID mySourceID() const;
 
         void resetUUIDs();
 
@@ -90,7 +94,7 @@ namespace litecore {
 
         alloc_slice getPath() const override { return alloc_slice(filePath()); }
 
-        alloc_slice getPeerID() const override;
+        alloc_slice getSourceID() const override;
 
         C4UUID getPublicUUID() const override { return getUUID(kPublicUUIDKey); }
 
@@ -126,6 +130,7 @@ namespace litecore {
 
         C4RemoteID  getRemoteDBID(slice remoteAddress, bool canCreate) override;
         alloc_slice getRemoteDBAddress(C4RemoteID remoteID) override;
+        alloc_slice getRevIDGlobalForm(slice revID) override;
 
         // DataFile::Delegate API:
 
@@ -187,7 +192,8 @@ namespace litecore {
         uint32_t                                  _maxRevTreeDepth{0};    // Max revision-tree depth
         std::recursive_mutex                      _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>                  _backgroundDB;          // for background operations
-        mutable uint64_t                          _myPeerID{0};           // My identifier in version vectors
+        mutable SourceID                          _mySourceID;            // My identifier in version vectors
+        mutable HybridClock                       _versionClock;          // Version-vector clock
     };
 
     static inline DatabaseImpl* asInternal(const C4Database* db) { return (DatabaseImpl*)db; }

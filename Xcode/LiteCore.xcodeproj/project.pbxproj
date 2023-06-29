@@ -201,6 +201,7 @@
 		275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
 		275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
 		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
+		275B2DF42A4A0A1A00B7215E /* HybridClock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B2DF32A4A0A1A00B7215E /* HybridClock.cc */; };
 		275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B35A4234E753800FE9CF0 /* Housekeeper.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
@@ -1133,6 +1134,9 @@
 		275A74D01ED3A4E1008CB57B /* Listener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Listener.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		275AA5D72A5F603800ABC172 /* VersionTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VersionTypes.hh; sourceTree = "<group>"; };
+		275B2DF22A4A0A1A00B7215E /* HybridClock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HybridClock.hh; sourceTree = "<group>"; };
+		275B2DF32A4A0A1A00B7215E /* HybridClock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HybridClock.cc; sourceTree = "<group>"; };
 		275B35A3234E753800FE9CF0 /* Housekeeper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Housekeeper.hh; sourceTree = "<group>"; };
 		275B35A4234E753800FE9CF0 /* Housekeeper.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Housekeeper.cc; sourceTree = "<group>"; };
 		275BF36B1F5F671C0051374A /* get_repo_version.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = get_repo_version.sh; sourceTree = "<group>"; };
@@ -2390,6 +2394,9 @@
 		2758D73F25C3638A000316A0 /* Version Vectors */ = {
 			isa = PBXGroup;
 			children = (
+				275B2DF22A4A0A1A00B7215E /* HybridClock.hh */,
+				275B2DF32A4A0A1A00B7215E /* HybridClock.cc */,
+				275AA5D72A5F603800ABC172 /* VersionTypes.hh */,
 				274B36D125B271F7001FC28D /* Version.cc */,
 				274B36D025B271F7001FC28D /* Version.hh */,
 				27027CD1255F4A9B00A96D7D /* VersionVector.cc */,
@@ -3994,44 +4001,44 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
-				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
-				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
-				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
+				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
-				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
+				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
+				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
-				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
+				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
-				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
-				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
-				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
+				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
+				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
+				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
 				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
-				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
-				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
-				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
+				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
+				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
+				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
+				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
+				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
-				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
-				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4388,6 +4395,7 @@
 				27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */,
 				27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
+				275B2DF42A4A0A1A00B7215E /* HybridClock.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,

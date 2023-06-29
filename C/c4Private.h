@@ -48,7 +48,7 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
     (The last column of each row is the internal SQLite rowid of the document.) */
 C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* C4NULLABLE error) C4API;
 
-C4StringResult c4db_getPeerID(C4Database* database) C4API;
+C4StringResult c4db_getSourceID(C4Database* database) C4API;
 
 typedef C4_ENUM(uint32_t, C4DatabaseTag){DatabaseTag_AppOpened,          DatabaseTag_DBAccess,
                                          DatabaseTag_C4RemoteReplicator, DatabaseTag_C4IncomingReplicator,

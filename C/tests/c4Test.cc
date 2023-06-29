@@ -185,7 +185,7 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 
     _dbConfig = {slice(TempDir()), kC4DB_Create};
     if ( testOption == VersionVectorOption ) {
-        _dbConfig.flags |= kC4DB_VersionVectors;
+        _dbConfig.flags |= kC4DB_VersionVectors | kC4DB_FakeVectorClock;
         kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID                        = C4STR("2@*");
         kRev3ID                        = C4STR("3@*");

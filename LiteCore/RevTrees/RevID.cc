@@ -39,9 +39,8 @@ namespace litecore {
     }
 
     unsigned revid::generation() const {
-        if ( isVersion() ) return unsigned(asVersion().gen());  //FIX: Should Version.gen change to uint32?
-        else
-            return generationAndDigest().first;
+        if ( isVersion() ) error::_throw(error::InvalidParameter, "version revids have no generations");
+        return generationAndDigest().first;
     }
 
     Version revid::asVersion() const {
@@ -62,7 +61,7 @@ namespace litecore {
 
     bool revid::operator<(const revid& other) const {
         if ( isVersion() ) {
-            return asVersion() < other.asVersion();
+            return Version::byAscendingTimes(asVersion(), other.asVersion());
         } else {
             auto [myGen, myDigest]       = generationAndDigest();
             auto [otherGen, otherDigest] = other.generationAndDigest();
@@ -139,8 +138,8 @@ namespace litecore {
 
     revidBuffer& revidBuffer::operator=(const Version& vers) noexcept {
         slice_ostream out(_buffer, sizeof(_buffer));
-        out.writeByte(0);
-        vers.writeBinary(out);
+        out.writeByte(0);  // flag indicating this is a binary VV
+        Assert(vers.writeBinary(out));
         *(slice*)&_revid = out.output();
         return *this;
     }
@@ -175,8 +174,7 @@ namespace litecore {
             return true;
         } else {
             // Vector type:
-            auto comma = ascii.findByteOrEnd(',');
-            auto vers  = Version::readASCII(slice(ascii.buf, comma));
+            auto vers = VersionVector::readCurrentVersionFromASCII(ascii);
             if ( !vers ) return false;
             *this = *vers;
             return true;

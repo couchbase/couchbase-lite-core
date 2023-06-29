@@ -167,12 +167,12 @@ namespace litecore::repl {
         std::mutex                    _tempSharedKeysMutex;            // Mutex for replacing _tempSharedKeys
         unsigned                      _tempSharedKeysInitialCount{0};  // Count when copied from db's keys
         C4RemoteID                    _remoteDBID{0};                  // ID # of remote DB in revision store
-        alloc_slice                   _remotePeerID;                   // peerID of remote peer
+        alloc_slice                   _remoteSourceID;                 // SourceID of remote peer
         bool const                    _disableBlobSupport;             // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;               // Pending revs to be marked as synced
         actor::Timer                  _timer;                          // Implements Batcher delay
         std::optional<AccessLockedDB> _insertionDB;                    // DB handle to use for insertions
-        std::string                   _myPeerID;
+        std::string                   _mySourceID;
         const bool                    _usingVersionVectors;  // True if DB uses version vectors
         std::atomic_flag              _closed = ATOMIC_FLAG_INIT;
     };

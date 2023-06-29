@@ -23,6 +23,8 @@ namespace litecore {
         kConflicted     = 0x02,  ///< Document is in conflict (multiple leaf revisions)
         kHasAttachments = 0x04,  ///< Document has one or more revisions with attachments/blobs
         kSynced         = 0x08,  ///< Document's current revision has been pushed to server
+
+        kRejected = 0x80  ///< Revision rejected by server (used only by VectorRecord)
     };
 
     static inline bool operator&(DocumentFlags a, DocumentFlags b) { return ((uint8_t)a & (uint8_t)b) != 0; }

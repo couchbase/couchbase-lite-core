@@ -21,6 +21,7 @@
 namespace litecore {
     class KeyStore;
     class ExclusiveTransaction;
+    class HybridClock;
     class Version;
     class VersionVector;
 
@@ -179,7 +180,7 @@ namespace litecore {
 
         /// Saves changes, if any, back to the KeyStore.
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
-        SaveResult save(ExclusiveTransaction& t);
+        SaveResult save(ExclusiveTransaction& t, HybridClock& versionClock);
 
         /// Returns the `body` and `extra` Record values representing the current in-memory state.
         /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.
@@ -214,7 +215,7 @@ namespace litecore {
         /// Generates a rev-tree revision ID given document properties, parent revision ID, and flags.
         static alloc_slice generateRevID(Dict, revid parentRevID, DocumentFlags);
         /// Generates a version-vector revision ID given parent vector.
-        static alloc_slice generateVersionVector(revid parentVersionVector);
+        static alloc_slice generateVersionVector(revid parentVersionVector, HybridClock&);
 
         std::string dump() const;               ///< Returns an ASCII dump of the object's state.
         void        dump(std::ostream&) const;  ///< Writes an ASCII dump of the object's state.

@@ -440,8 +440,8 @@ bool c4db_getUUIDs(C4Database* database, C4UUID* publicUUID, C4UUID* privateUUID
     });
 }
 
-C4StringResult c4db_getPeerID(C4Database* database) noexcept {
-    return tryCatch<C4StringResult>(nullptr, [&] { return C4StringResult(database->getPeerID()); });
+C4StringResult c4db_getSourceID(C4Database* database) noexcept {
+    return tryCatch<C4StringResult>(nullptr, [&] { return C4StringResult(database->getSourceID()); });
 }
 
 C4ExtraInfo c4db_getExtraInfo(C4Database* database) noexcept { return database->extraInfo; }
@@ -768,6 +768,8 @@ bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth, C4Error* outError) no
 bool c4rev_equal(C4Slice rev1, C4Slice rev2) noexcept { return C4Document::equalRevIDs(rev1, rev2); }
 
 unsigned c4rev_getGeneration(C4Slice revID) noexcept { return C4Document::getRevIDGeneration(revID); }
+
+uint64_t c4rev_getTimestamp(C4Slice revID) noexcept { return C4Document::getRevIDTimestamp(revID); }
 
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
     return C4Document::revisionFlagsFromDocFlags(docFlags);
