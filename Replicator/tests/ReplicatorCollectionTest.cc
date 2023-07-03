@@ -540,18 +540,20 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         addDocs(db2, Tulips, 2, "db2-Tulips-");
 
         std::mutex              mutex;
+        int                     stopped{0};
         std::condition_variable cv;
 
-        _callbackWhenIdle = [=, &jthread, &mutex, &cv]() {
+        _callbackWhenIdle = [=, &jthread, &mutex, &cv, &stopped]() {
             if ( jthread.thread.get_id() == std::thread::id() ) {
-                jthread.thread = thread(std::thread{[=, &mutex, &cv]() {
+                jthread.thread = thread(std::thread{[=, &mutex, &cv, &stopped]() {
                     addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
                     addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
                     addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
                     addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
                     std::unique_lock<std::mutex> lk(mutex);
-                    if ( cv.wait_for(lk, 10s) == std::cv_status::timeout ) {
+                    if ( !cv.wait_for(lk, 10s, [&stopped]() { return stopped == 1; }) ) {
                         // timed out. Stop the replicator to avoid hanging.
+                        stopped = 2;
                         _replClient->stop();
                     }
                 }});
@@ -568,10 +570,20 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
         // 3 revs from tulips to tulips2, 3 from tulips2 to tulips, total 6
         // 4 docs for push, 4docs for pull,                         total 8
-        _expectedDocumentCount = 20;
+        _expectedDocumentCount         = -1;  // disable checking document count in runReplicators.
+        unsigned expectedDocumentCount = 20;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        cv.notify_all();
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if ( stopped == 0 ) {
+                stopped = 1;
+                cv.notify_all();
+            } else if ( stopped == 2 ) {
+                UNSCOPED_INFO("The replicator is forced to stop after timeout");
+            }
+        }
 
+        CHECK(_statusReceived.progress.documentCount == expectedDocumentCount);
         CHECK(c4coll_getDocumentCount(roses) == 6);
         CHECK(c4coll_getDocumentCount(tulips) == 6);
         CHECK(c4coll_getDocumentCount(roses2) == 6);
