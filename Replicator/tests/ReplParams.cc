@@ -48,7 +48,7 @@ void ReplParams::addCollections(const std::vector<C4ReplicationCollection>& coll
 
 AllocedDict ReplParams::setOptions(const AllocedDict& params, const AllocedDict& options) {
     AllocedDict result = params;
-    for ( Dict::iterator i(options); i; ++i ) {
+    for ( Dict::iterator i(options.asDict()); i; ++i ) {
         result = repl::Options::updateProperties(result, i.keyString(), i.value());
     }
     return result;

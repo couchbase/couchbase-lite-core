@@ -84,7 +84,7 @@ class ReplicatorLoopbackTest
         }
     }
 
-    ~ReplicatorLoopbackTest() {
+    ~ReplicatorLoopbackTest() override {
         if ( _parallelThread ) _parallelThread->join();
         _replClient = _replServer = nullptr;
         C4Error error;
@@ -93,7 +93,7 @@ class ReplicatorLoopbackTest
     }
 
     // opts1 is the options for _db; opts2 is the options for _db2
-    void runReplicators(Replicator::Options opts1, Replicator::Options opts2, bool reset = false) {
+    void runReplicators(const Replicator::Options& opts1, const Replicator::Options& opts2, bool reset = false) {
         std::unique_lock<std::mutex> lock(_mutex);
 
         _gotResponse              = false;
@@ -221,7 +221,7 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
-    virtual void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
+    void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -233,9 +233,9 @@ class ReplicatorLoopbackTest
         }
     }
 
-    virtual void replicatorGotTLSCertificate(slice certData) override {}
+    void replicatorGotTLSCertificate(slice certData) override {}
 
-    virtual void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
+    void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -268,7 +268,7 @@ class ReplicatorLoopbackTest
         }
     }
 
-    virtual void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override {
+    void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -300,7 +300,7 @@ class ReplicatorLoopbackTest
         }
     }
 
-    virtual void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
+    void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -317,7 +317,7 @@ class ReplicatorLoopbackTest
             p.bytesCompleted, p.bytesTotal);
     }
 
-    virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus& status) override {
+    void replicatorConnectionClosed(Replicator* repl, const CloseStatus& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
@@ -426,8 +426,8 @@ class ReplicatorLoopbackTest
         return docNo - 1;
     }
 
-    static void addRevs(C4Collection* collection, duration interval, alloc_slice docID, int firstRev, int totalRevs,
-                        bool useFakeRevIDs, const char* logName) {
+    static void addRevs(C4Collection* collection, duration interval, const alloc_slice& docID, int firstRev,
+                        int totalRevs, bool useFakeRevIDs, const char* logName) {
         C4Database* db = c4coll_getDatabase(collection);
         for ( int i = 0; i < totalRevs; i++ ) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
@@ -439,7 +439,7 @@ class ReplicatorLoopbackTest
                 revID = isRevTrees(db) ? format("%d-ffff", revNo) : format("%d@*", revNo);
                 createRev(collection, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
-                string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
+                string json = format(R"({"db":"%p","i":%d})", db, revNo);
                 revID       = createFleeceRev(collection, docID, nullslice, slice(json));
             }
             Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
@@ -447,7 +447,7 @@ class ReplicatorLoopbackTest
         Log("-------- %s: Done creating revs --------", logName);
     }
 
-    static std::thread* runInParallel(std::function<void()> callback) {
+    static std::thread* runInParallel(const std::function<void()>& callback) {
         return new std::thread([=]() mutable { callback(); });
     }
 
@@ -459,7 +459,7 @@ class ReplicatorLoopbackTest
         }));
     }
 
-    void addRevsInParallel(duration interval, alloc_slice docID, int firstRev, int totalRevs,
+    void addRevsInParallel(duration interval, const alloc_slice& docID, int firstRev, int totalRevs,
                            bool useFakeRevIDs = true) {
         _parallelThread.reset(runInParallel([=]() {
             addRevs(_collDB1, interval, docID, firstRev, totalRevs, useFakeRevIDs, "db");
@@ -471,9 +471,9 @@ class ReplicatorLoopbackTest
 #pragma mark - VALIDATION:
 
     alloc_slice absoluteRevID(C4Document* doc) {
-        if ( isRevTrees() ) return alloc_slice(doc->revID);
+        if ( isRevTrees() ) return {doc->revID};
         else
-            return alloc_slice(c4doc_getRevisionHistory(doc, 999, nullptr, 0));
+            return {c4doc_getRevisionHistory(doc, 999, nullptr, 0)};
     }
 
 #define fastREQUIRE(EXPR)                                                                                              \
@@ -589,6 +589,8 @@ class ReplicatorLoopbackTest
     template <class SET>
     static std::vector<std::string> asVector(const SET& strings) {
         std::vector<std::string> out;
+        out.reserve(strings.size());
+        out.reserve(strings.size());
         for ( const std::string& s : strings ) out.push_back(s);
         return out;
     }
@@ -603,7 +605,7 @@ class ReplicatorLoopbackTest
     Retained<Replicator>                _replClient, _replServer;
     std::vector<alloc_slice>            _checkpointIDs;
     std::unique_ptr<std::thread>        _parallelThread;
-    bool                                _stopOnIdle{0};
+    bool                                _stopOnIdle{false};
     std::mutex                          _mutex;
     std::condition_variable             _cond;
     bool                                _replicatorClientFinished{false}, _replicatorServerFinished{false};

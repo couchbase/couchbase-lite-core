@@ -34,16 +34,13 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <utility>
 #include <variant>
 #include <vector>
 
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
-
-extern "C" {
-void C4RegisterBuiltInWebSocket();
-}
 
 class ReplicatorAPITest : public C4Test {
   public:
@@ -139,7 +136,7 @@ class ReplicatorAPITest : public C4Test {
 
         // TODO: Set proxy settings from _proxy
         // Copy any preexisting options:
-        for ( Dict::iterator i(_options); i; ++i ) {
+        for ( Dict::iterator i(_options.asDict()); i; ++i ) {
             enc.writeKey(i.keyString());
             enc.writeValue(i.value());
         }
@@ -147,8 +144,8 @@ class ReplicatorAPITest : public C4Test {
         return AllocedDict(enc.finish());
     }
 
-    void logState(C4ReplicatorStatus status) {
-        std::string flags = "";
+    static void logState(C4ReplicatorStatus status) {
+        std::string flags{};
         if ( status.flags & kC4WillRetry ) flags += "retry,";
         if ( status.flags & kC4HostReachable ) flags += "reachable,";
         if ( status.flags & kC4Suspended ) flags += "suspended,";
@@ -203,7 +200,7 @@ class ReplicatorAPITest : public C4Test {
         if ( !_headers ) {
             _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(_repl)));
             if ( !!_headers ) {
-                for ( Dict::iterator header(_headers); header; ++header )
+                for ( Dict::iterator header(_headers.asDict()); header; ++header )
                     C4Log("    %.*s: %.*s", SPLAT(header.keyString()), SPLAT(header.value().asString()));
             }
         }
@@ -258,7 +255,7 @@ class ReplicatorAPITest : public C4Test {
     using PushPull       = std::pair<C4ReplicatorMode, C4ReplicatorMode>;
     using C4ParamsSetter = std::function<void(C4ReplicatorParameters&)>;
 
-    bool startReplicator(std::variant<PushPull, C4ParamsSetter> varParams, C4Error* err) {
+    bool startReplicator(const std::variant<PushPull, C4ParamsSetter>& varParams, C4Error* err) {
         if ( !_prepareReplicator(varParams, err) ) { return false; }
         c4repl_start(_repl, false);
         return true;
@@ -343,7 +340,7 @@ class ReplicatorAPITest : public C4Test {
 
     void replicate(ReplParams& params, bool expectSuccess = true) { replicate(params.paramSetter(), expectSuccess); }
 
-    void replicate(std::variant<PushPull, C4ParamsSetter> params, bool expectSuccess = true) {
+    void replicate(const std::variant<PushPull, C4ParamsSetter>& params, bool expectSuccess = true) {
         if ( !startReplicator(params, &_errorBeforeStart) ) {
             DebugAssert(_repl == nullptr);
             if ( expectSuccess ) { CHECK(_errorBeforeStart.code == 0); }
@@ -390,8 +387,9 @@ class ReplicatorAPITest : public C4Test {
         }
     }
 
-    static std::vector<std::string> asVector(const std::set<std::string> strings) {
+    static std::vector<std::string> asVector(const std::set<std::string>& strings) {
         std::vector<std::string> out;
+        out.reserve(strings.size());
         for ( const std::string& s : strings ) out.push_back(s);
         return out;
     }

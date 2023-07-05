@@ -39,11 +39,12 @@ class SG {
     SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
 
     // Will return nullslice if your json was invalid
-    static alloc_slice addChannelToJSON(slice json, slice ckey, const std::vector<std::string>& channelIDs);
-    static alloc_slice addRevToJSON(slice json, const std::string& revID);
-    alloc_slice        getServerName() const;
+    static alloc_slice        addChannelToJSON(slice json, slice ckey, const std::vector<std::string>& channelIDs);
+    static alloc_slice        addRevToJSON(slice json, const std::string& revID);
+    [[nodiscard]] alloc_slice getServerName() const;
     // Flush should only be used with Walrus
     void flushDatabase() const;
+    // NOLINTBEGIN(modernize-use-nodiscard)
     bool createUser(const std::string& username, const std::string& password) const;
     bool deleteUser(const std::string& username) const;
     // Assign given channels to the user with given username, in the given collections
@@ -57,11 +58,14 @@ class SG {
     bool upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID, slice body,
                    const std::vector<std::string>& channelIDs, C4Error* err = nullptr) const;
     bool insertBulkDocs(C4CollectionSpec collectionSpec, slice docsDict, double timeout = 30.0) const;
+    // NOLINTEND(modernize-use-nodiscard)
+
     // Use this in the case that you want a doc which belongs to no channels
     // It's used in some tests in ReplicatorSGTest.cc to remove an existing doc from all channels
-    bool        upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
-                                           C4Error* err = nullptr) const;
-    alloc_slice getDoc(const std::string& docID, C4CollectionSpec collectionSpec = kC4DefaultCollectionSpec) const;
+    bool upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
+                                    C4Error* err = nullptr) const;
+    [[nodiscard]] alloc_slice getDoc(const std::string& docID,
+                                     C4CollectionSpec   collectionSpec = kC4DefaultCollectionSpec) const;
 
     void setAdminCredentials(const std::string& username, const std::string& password) {
         adminUsername = username;
@@ -107,9 +111,10 @@ class SG {
 #endif
 
   private:
-    std::unique_ptr<REST::Response> createRequest(const std::string& method, C4CollectionSpec collectionSpec,
-                                                  std::string path, slice body = nullslice, bool admin = false,
-                                                  double timeout = 5.0, bool logRequests = true) const;
+    [[nodiscard]] std::unique_ptr<REST::Response> createRequest(const std::string& method,
+                                                                C4CollectionSpec collectionSpec, std::string path,
+                                                                slice body = nullslice, bool admin = false,
+                                                                double timeout = 5.0, bool logRequests = true) const;
     alloc_slice runRequest(const std::string& method, C4CollectionSpec collectionSpec, const std::string& path,
                            slice body = nullslice, bool admin = false, C4Error* outError = nullptr,
                            HTTPStatus* outStatus = nullptr, double timeout = 5.0, bool logRequests = true) const;

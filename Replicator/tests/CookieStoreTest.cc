@@ -30,9 +30,9 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         Cookie c("name=", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "name");
-        CHECK(c.value == "");
+        CHECK(c.value.empty());
         CHECK(c.domain == "example.com");
-        CHECK(c.path == "");
+        CHECK(c.path.empty());
         CHECK(!c.secure);
         CHECK(!c.persistent());
         CHECK(!c.expired());
@@ -43,7 +43,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c.name == "name");
         CHECK(c.value == "value");
         CHECK(c.domain == "example.com");
-        CHECK(c.path == "");
+        CHECK(c.path.empty());
         CHECK(!c.secure);
         CHECK(!c.persistent());
         CHECK(!c.expired());
@@ -115,7 +115,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         }
 
         CHECK(c.domain == "example.com");
-        CHECK(c.path == "");
+        CHECK(c.path.empty());
         CHECK(c.persistent());
         CHECK(!c.expired());  // This check will fail starting in 2099...
     }
@@ -152,7 +152,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c.value == "y");
         CHECK(c.expires == 928923494);
         CHECK(c.domain == "example.com");
-        CHECK(c.path == "");
+        CHECK(c.path.empty());
         CHECK(c.persistent());
         CHECK(c.expired());
     }
@@ -161,9 +161,9 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
-        CHECK(abs(c.expires - (time(NULL) + 30)) <= 1);
+        CHECK(abs(c.expires - (time(nullptr) + 30)) <= 1);
         CHECK(c.domain == "example.com");
-        CHECK(c.path == "");
+        CHECK(c.path.empty());
         CHECK(c.persistent());
         CHECK(!c.expired());
     }
@@ -183,9 +183,9 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
             "name=value; Max-Age=z7",
             "name=value; Max-Age=",
     };
-    for ( int i = 0; i < sizeof(badCookies) / sizeof(badCookies[0]); ++i ) {
-        INFO("Checking " << badCookies[i]);
-        Cookie c(badCookies[i], "example.com", "/");
+    for ( const auto& badCookie : badCookies ) {
+        INFO("Checking " << badCookie);
+        Cookie c(badCookie, "example.com", "/");
         CHECK(!c);
     }
 }
@@ -211,7 +211,7 @@ TEST_CASE("CookieStore", "[Cookies]") {
     CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
     CHECK(store->cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2");
     CHECK(store->cookiesForRequest(kSecureRequest) == "x=y; e=mc^2");
-    CHECK(store->cookiesForRequest(kOtherHostRequest) == "");
+    CHECK(store->cookiesForRequest(kOtherHostRequest).empty());
 
     SECTION("Replace Cookie") {
         store->clearChanged();
@@ -253,7 +253,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "DatabaseCookies", "[Cookies]") {
     {
         // Set cookies:
         DatabaseCookies cookies(db);
-        CHECK(cookies.cookiesForRequest(kRequest) == "");
+        CHECK(cookies.cookiesForRequest(kRequest).empty());
         CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", string(slice(kRequest.hostname)),
                                 string(slice(kRequest.path))));
         CHECK(cookies.setCookie("name=value", string(slice(kRequest.hostname)), string(slice(kRequest.path))));
