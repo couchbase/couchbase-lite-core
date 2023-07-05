@@ -13,20 +13,16 @@
 #include "RESTListener.hh"
 #include "c4Private.h"
 #include "c4Collection.hh"
+#include "c4Document.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
-#include "c4Document.hh"
-#include "c4ReplicatorTypes.h"
-#include "Server.hh"
-#include "StringUtil.hh"
-#include "c4ExceptionUtils.hh"
 #include "fleece/Expert.hh"
 #include <functional>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace net;
 
 #pragma mark - ROOT HANDLERS:
@@ -241,11 +237,11 @@ namespace litecore { namespace REST {
 
         // Splice the _id and _rev into the start of the JSON:
         rq.setHeader("Content-Type", "application/json");
-        rq.write("{\"_id\":\"");
+        rq.write(R"({"_id":")");
         rq.write(docID);
-        rq.write("\",\"_rev\":\"");
+        rq.write(R"(","_rev":")");
         rq.write(revID);
-        if ( doc->selectedRev().flags & kRevDeleted ) rq.write("\",\"_deleted\":true");
+        if ( doc->selectedRev().flags & kRevDeleted ) rq.write(R"(","_deleted":true)");
         if ( json.size > 2 ) {
             rq.write("\",");
             slice suffix = json;
@@ -257,7 +253,7 @@ namespace litecore { namespace REST {
     }
 
     // Core code for create/update/delete operation on a single doc.
-    bool RESTListener::modifyDoc(Dict body, string docID, string revIDQuery, bool deleting, bool newEdits,
+    bool RESTListener::modifyDoc(Dict body, string docID, const string& revIDQuery, bool deleting, bool newEdits,
                                  C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept {
         try {
             if ( !deleting && !body ) {
@@ -321,7 +317,6 @@ namespace litecore { namespace REST {
                 if ( !doc ) return false;
                 t.commit();
             }
-            revID = slice(doc->selectedRev().revID);
 
             json.writeKey("ok"_sl);
             json.writeBool(true);
@@ -387,4 +382,4 @@ namespace litecore { namespace REST {
         t.commit();
     }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

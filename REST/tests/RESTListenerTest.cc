@@ -22,6 +22,7 @@
 #include "fleece/Mutable.hh"
 #include "ReplicatorAPITest.hh"
 #include <optional>
+#include <utility>
 
 using namespace litecore;
 using namespace litecore::net;
@@ -34,7 +35,7 @@ using namespace std;
 // this not part of Couchbase Lite directly anyway, but used in the cblite CLI
 // which is 64-bit only on Windows.
 
-static string to_str(FLSlice s) { return string((char*)s.buf, s.size); }
+static string to_str(FLSlice s) { return {(char*)s.buf, s.size}; }
 
 static string to_str(Value v) { return to_str(v.asString()); }
 
@@ -90,8 +91,8 @@ class C4RESTTest
         for ( Array::iterator i(urls); i; ++i ) callback(i->asString());
     }
 
-    unique_ptr<Response> request(string method, string uri, map<string, string> headersMap, slice body,
-                                 HTTPStatus expectedStatus) {
+    unique_ptr<Response> request(const string& method, const string& uri, const map<string, string>& headersMap,
+                                 slice body, HTTPStatus expectedStatus) {
         Encoder enc;
         enc.beginDict();
         for ( auto& h : headersMap ) {
@@ -123,10 +124,11 @@ class C4RESTTest
     }
 
     unique_ptr<Response> request(string method, string uri, HTTPStatus expectedStatus) {
-        return request(method, uri, {}, nullslice, expectedStatus);
+        return request(std::move(method), std::move(uri), {}, nullslice, expectedStatus);
     }
 
-    bool wait(std::shared_ptr<Response> response, C4ReplicatorActivityLevel activityLevel, unsigned timeoutSeconds) {
+    bool wait(const std::shared_ptr<Response>& response, C4ReplicatorActivityLevel activityLevel,
+              unsigned timeoutSeconds) {
         Dict           b                   = response->bodyAsJSON().asDict();
         unsigned       sid                 = (unsigned)b.get("session_id").asUnsigned();
         const unsigned pollIntervalSeconds = 1;
@@ -258,11 +260,9 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
         if ( intf ) {
             requestHostname           = string(slice(address.hostname));
             bool foundAddrInInterface = false;
-            bool addrIsIPv6           = false;
             for ( auto& addr : intf->addresses ) {
                 if ( string(addr) == requestHostname ) {
                     foundAddrInInterface = true;
-                    addrIsIPv6           = addr.isIPv6();
                     break;
                 }
             }
@@ -481,23 +481,23 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     }
 
     SECTION("POST") {
-        r = request("POST", dbPath, {{"Content-Type", "application/json"}}, "{\"year\": 1964}"_sl, HTTPStatus::Created);
+        r = request("POST", dbPath, {{"Content-Type", "application/json"}}, R"({"year": 1964})", HTTPStatus::Created);
         body  = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID.size >= 20);
     }
 
     SECTION("PUT") {
-        r     = request("PUT", dbPath + "/mydocument", {{"Content-Type", "application/json"}}, "{\"year\": 1964}"_sl,
+        r     = request("PUT", dbPath + "/mydocument", {{"Content-Type", "application/json"}}, R"({"year": 1964})",
                         HTTPStatus::Created);
         body  = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID == "mydocument"_sl);
 
-        request("PUT", dbPath + "/mydocument", {{"Content-Type", "application/json"}}, "{\"year\": 1977}"_sl,
+        request("PUT", dbPath + "/mydocument", {{"Content-Type", "application/json"}}, R"({"year": 1977})",
                 HTTPStatus::Conflict);
         request("PUT", dbPath + "/mydocument", {{"Content-Type", "application/json"}},
-                "{\"year\": 1977, \"_rev\":\"1-ffff\"}"_sl, HTTPStatus::Conflict);
+                R"({"year": 1977, "_rev":"1-ffff"})", HTTPStatus::Conflict);
     }
 
     CHECK(body["ok"].asBool() == true);
@@ -543,9 +543,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][Listener][C]") {
     CHECK(rows);
     CHECK(rows.count() == 0);
 
-    request("PUT", "/db/mydocument", {{"Content-Type", "application/json"}}, "{\"year\": 1964}"_sl,
-            HTTPStatus::Created);
-    request("PUT", "/db/foo", {{"Content-Type", "application/json"}}, "{\"age\": 17}"_sl, HTTPStatus::Created);
+    request("PUT", "/db/mydocument", {{"Content-Type", "application/json"}}, R"({"year": 1964})", HTTPStatus::Created);
+    request("PUT", "/db/foo", {{"Content-Type", "application/json"}}, R"({"age": 17})", HTTPStatus::Created);
 
     r    = request("GET", "/db/_all_docs", HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
@@ -823,10 +822,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)",
                  "[REST][Listener][C][.SyncServerCollectionHTTP]") {
     constexpr C4CollectionSpec   Roses  = {"roses"_sl, "flowers"_sl};
     constexpr C4CollectionSpec   Tulips = {"tulips"_sl, "flowers"_sl};
-    std::array<C4Collection*, 2> collections;
-    collections[0]  = db->createCollection(Roses);
-    collections[1]  = db->createCollection(Tulips);
-    string idPrefix = timePrefix();
+    std::array<C4Collection*, 2> collections{db->createCollection(Roses), db->createCollection(Tulips)};
+    string                       idPrefix = timePrefix();
     for ( auto& coll : collections ) { importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 0, idPrefix); }
 
     std::stringstream body;

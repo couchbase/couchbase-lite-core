@@ -14,13 +14,12 @@
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
 #include <vector>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
 
 
     Listener::Listener(const Config& config) : _config(config) {
@@ -36,7 +35,7 @@ namespace litecore { namespace REST {
 
         // Make the name legal as a URI component in the REST API.
         // It shouldn't be empty, nor start with an underscore, nor contain control characters.
-        if ( name.size() == 0 ) name = "db";
+        if ( name.empty() ) name = "db";
         else if ( name[0] == '_' )
             name[0] = '-';
         for ( char& c : name ) {
@@ -47,9 +46,7 @@ namespace litecore { namespace REST {
 
     bool Listener::isValidDatabaseName(const string& name) {
         if ( name.empty() || name.size() > 240 || name[0] == '_' ) return false;
-        for ( uint8_t c : name )
-            if ( iscntrl(c) ) return false;
-        return true;
+        return std::all_of(name.begin(), name.end(), [](auto& c) { return !iscntrl(c); });
     }
 
     bool Listener::registerDatabase(C4Database* db, optional<string> name) {
@@ -65,7 +62,7 @@ namespace litecore { namespace REST {
         return true;
     }
 
-    bool Listener::unregisterDatabase(std::string name) {
+    bool Listener::unregisterDatabase(const std::string& name) {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
         if ( i == _databases.end() ) return false;
@@ -138,8 +135,9 @@ namespace litecore { namespace REST {
     vector<string> Listener::databaseNames() const {
         lock_guard<mutex> lock(_mutex);
         vector<string>    names;
+        names.reserve(_databases.size());
         for ( auto& d : _databases ) names.push_back(d.first);
         return names;
     }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

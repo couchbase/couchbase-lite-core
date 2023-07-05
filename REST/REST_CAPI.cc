@@ -12,8 +12,6 @@
 
 #include "c4Listener.h"
 #include "c4Listener.hh"
-#include "c4Database.hh"
-#include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
 #include "fleece/Mutable.hh"
 

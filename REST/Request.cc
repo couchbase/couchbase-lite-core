@@ -14,7 +14,6 @@
 #include "HTTPLogic.hh"
 #include "Server.hh"
 #include "Writer.hh"
-#include "PlatformIO.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "netUtils.hh"
@@ -24,20 +23,25 @@
 #include <chrono>
 #include <cstdarg>
 #include <cinttypes>
+#include <memory>
+#include <utility>
+#include <utility>
 
 using namespace std;
 using namespace std::chrono;
 using namespace date;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace net;
 
 #pragma mark - REQUEST:
 
-    Request::Request(Method method, const string& path, const string& queries, websocket::Headers headers,
-                     fleece::alloc_slice body)
-        : Body(move(headers), body), _method(method), _path(path), _queries(queries) {}
+    Request::Request(Method method, string path, string queries, websocket::Headers headers, fleece::alloc_slice body)
+        : Body(std::move(headers), std::move(body))
+        , _method(method)
+        , _path(std::move(path))
+        , _queries(std::move(queries)) {}
 
     bool Request::readFromHTTP(slice httpData) {
         slice_istream in(httpData);
@@ -99,7 +103,7 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE STATUS LINE:
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
-        : _server(server), _socket(move(socket)) {
+        : _server(server), _socket(std::move(socket)) {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
             handleSocketError();
@@ -243,7 +247,7 @@ namespace litecore { namespace REST {
         _responseHeaderWriter.write("\r\n"_sl);
     }
 
-    void RequestResponse::addHeaders(map<string, string> headers) {
+    void RequestResponse::addHeaders(const map<string, string>& headers) {
         for ( auto& entry : headers ) setHeader(entry.first.c_str(), entry.second.c_str());
     }
 
@@ -290,7 +294,7 @@ namespace litecore { namespace REST {
     }
 
     fleece::JSONEncoder& RequestResponse::jsonEncoder() {
-        if ( !_jsonEncoder ) _jsonEncoder.reset(new fleece::JSONEncoder);
+        if ( !_jsonEncoder ) _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
         return *_jsonEncoder;
     }
 
@@ -330,13 +334,13 @@ namespace litecore { namespace REST {
         finish();
     }
 
-    void RequestResponse::onClose(std::function<void()>&& callback) { _socket->onClose(move(callback)); }
+    void RequestResponse::onClose(std::function<void()>&& callback) { _socket->onClose(std::move(callback)); }
 
     unique_ptr<ResponderSocket> RequestResponse::extractSocket() {
         finish();
-        return move(_socket);
+        return std::move(_socket);
     }
 
     string RequestResponse::peerAddress() { return _socket->peerAddress(); }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

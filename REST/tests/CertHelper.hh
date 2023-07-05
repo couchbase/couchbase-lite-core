@@ -13,14 +13,10 @@
 #pragma once
 #include "c4Certificate.h"
 #include "c4Certificate.hh"
-#include "Certificate.hh"
-#include "c4Private.h"
 #include "PublicKey.hh"  // just for PERSISTENT_PRIVATE_KEY_AVAILABLE
-
-#include "c4Test.hh"
-
-#include "c4CppUtils.hh"
 #include "StringUtil.hh"
+#include "c4Test.hh"
+#include "c4CppUtils.hh"
 using namespace fleece;
 
 struct Identity {

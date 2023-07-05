@@ -12,13 +12,8 @@
 
 #include "RESTListener.hh"
 #include "c4Database.hh"
-#include "c4Document.hh"
-#include "c4ExceptionUtils.hh"
-#include "c4Private.h"
 #include "c4Replicator.hh"
 #include "c4ListenerInternal.hh"
-#include "c4ReplicatorHelpers.hh"
-#include "Server.hh"
 #include "fleece/RefCounted.hh"
 #include "ReplicatorOptions.hh"
 #include "StringUtil.hh"
@@ -26,12 +21,12 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-#include <time.h>
+#include <ctime>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace net;
 
     class ReplicationTask : public RESTListener::Task {
@@ -99,9 +94,9 @@ namespace litecore { namespace REST {
         }
 
         ReplicationTask* findMatchingTask() {
-            for ( auto task : listener()->tasks() ) {
+            for ( const auto& task : listener()->tasks() ) {
                 // Note that either direction is considered a match
-                ReplicationTask* repl = dynamic_cast<ReplicationTask*>(task.get());
+                auto* repl = dynamic_cast<ReplicationTask*>(task.get());
                 if ( repl
                      && ((repl->_source == _source && repl->_target == _target)
                          || (repl->_source == _target && repl->_target == _source)) ) {
@@ -120,7 +115,7 @@ namespace litecore { namespace REST {
             return false;
         }
 
-        virtual bool finished() const override {
+        bool finished() const override {
             Lock lock(_mutex);
             return _finalResult != HTTPStatus::undefined;
         }
@@ -135,7 +130,7 @@ namespace litecore { namespace REST {
             return _message;
         }
 
-        virtual void writeDescription(fleece::JSONEncoder& json) override {
+        void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
 
             json.writeKey("type"_sl);
@@ -170,7 +165,8 @@ namespace litecore { namespace REST {
             }
 
             if ( _status.progress.unitsTotal > 0 ) {
-                double fraction = _status.progress.unitsCompleted * 100.0 / _status.progress.unitsTotal;
+                double fraction = narrow_cast<double>(_status.progress.unitsCompleted) * 100.0
+                                  / narrow_cast<double>(_status.progress.unitsTotal);
                 json.writeKey("progress"_sl);
                 json.writeInt(int64_t(fraction));
             }
@@ -238,11 +234,11 @@ namespace litecore { namespace REST {
 
         alloc_slice            _source, _target;
         alloc_slice            _user, _password;
-        bool                   _bidi, _continuous, _push;
+        bool                   _bidi, _continuous, _push{};
         mutable Mutex          _mutex;
         condition_variable_any _cv;
         Retained<C4Replicator> _repl;
-        C4ReplicatorStatus     _status;
+        C4ReplicatorStatus     _status{};
         alloc_slice            _message;
         HTTPStatus             _finalResult{HTTPStatus::undefined};
     };
@@ -340,4 +336,4 @@ namespace litecore { namespace REST {
     }
 
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST
