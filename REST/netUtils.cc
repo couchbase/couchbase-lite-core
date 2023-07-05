@@ -24,6 +24,7 @@
 // 'digittoint' function
 #ifndef __APPLE__
 #    include "StringUtil.hh"
+#    include "PlatformIO.hh"
 #endif
 
 namespace litecore::REST {
