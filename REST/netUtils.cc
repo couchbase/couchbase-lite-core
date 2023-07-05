@@ -21,6 +21,10 @@
 #include "NumConversion.hh"
 #include <cassert>
 #include <ctime>
+// 'digittoint' function
+#ifndef __APPLE__
+#    include "PlatformIO.hh"
+#endif
 
 namespace litecore::REST {
     using namespace std;
