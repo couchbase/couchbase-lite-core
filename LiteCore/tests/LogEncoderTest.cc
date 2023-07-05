@@ -15,6 +15,7 @@
 #include "LogDecoder.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
+#include "ParseDate.hh"
 #include "fleece/PlatformCompat.hh"
 #include <regex>
 #include <sstream>
@@ -23,6 +24,7 @@
 using namespace std;
 
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
+#define DATESTAMP_UTC "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
 
 constexpr size_t kFolderBufSize = 64;
@@ -55,6 +57,8 @@ static string dumpLog(const string& encoded, const vector<string>& levelNames) {
 }
 
 TEST_CASE("LogEncoder formatting", "[Log]") {
+    // For checking the timestamp in the path to the binary log file.
+    string logPath = litecore::createLogPath_forUnitTest(LogLevel::Info);
     stringstream out;
     {
         LogEncoder            logger(out, LogLevel::Info);
@@ -77,13 +81,40 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 
     regex expected(
             TIMESTAMP
-            "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+            "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
             "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
             "0x7fff5fbc\\n" TIMESTAMP
             "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n" TIMESTAMP
             "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
             "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
+
+    // We insert timestamp in milliseconds (w.r.t. UTC) in the path to the binary log files.
+    // We also add the timestamp inside the log. When decoded to string, it is
+    // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
+    // We want to ensure they are consistent. The timestamp prepended to each line is in the local time
+    // where the binary is decoded.
+    regex catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP_UTC ")"};
+    smatch m;
+    REQUIRE(regex_search(result, m, catchUTCTimeTag));
+    CHECK(m.size() == 2);
+    string utcTimeTag = m[1].str();
+    // Remove the weekday name
+    REQUIRE(regex_search(utcTimeTag, m, regex{"[^0-9]*"}));
+    string utctime = m.suffix().str();
+    auto utctimestampInLog = fleece::ParseISO8601Date(slice(utctime));
+    // From milliseconds to seconds
+    utctimestampInLog /= 1000;
+
+    REQUIRE(regex_search(logPath, m, regex{"cbl_info_([0-9]*)\\.cbllog$"}));
+    string timestampOnLogFilePath = m[1].str();
+    // chomp it to seconds
+    REQUIRE(timestampOnLogFilePath.length() > 3);
+    timestampOnLogFilePath = timestampOnLogFilePath.substr(0, timestampOnLogFilePath.length() - 3);
+
+    stringstream ss;
+    ss << utctimestampInLog;
+    CHECK(ss.str() == timestampOnLogFilePath);
 }
 
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
@@ -142,7 +173,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
-    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
                               "\\{1\\|Tweedledum\\} I'm Tweedledum\\n" TIMESTAMP
                               "\\{3\\|Tweedledee\\} I'm Tweedledee\\n" TIMESTAMP
                               "\\{2\\|rattle\\} and I'm the rattle\\n");
@@ -152,7 +183,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     result  = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
                                "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }

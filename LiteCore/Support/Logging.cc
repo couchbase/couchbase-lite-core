@@ -92,6 +92,11 @@ namespace litecore {
            << CBL_LOG_EXTENSION;
         return ss.str();
     }
+#ifdef LITECORE_CPPTEST
+    string createLogPath_forUnitTest(LogLevel level) {
+        return createLogPath(level);
+    }
+#endif
 
     static void setupFileOut() {
         for ( int i = 0; kLevelNames[i]; i++ ) {

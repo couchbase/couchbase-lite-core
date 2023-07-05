@@ -54,7 +54,7 @@ namespace litecore {
     void LogIterator::writeTimestamp(Timestamp t, ostream& out) {
         local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
         struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
+        tp += GetLocalTZOffset(&tmpTime, true);
         out << format("%T| ", tp);
     }
 
@@ -66,7 +66,7 @@ namespace litecore {
     string LogIterator::formatDate(Timestamp t) {
         local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
         struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
+        tp += GetLocalTZOffset(&tmpTime, true);
         stringstream out;
         out << format("%c", tp);
         return out.str();
@@ -151,9 +151,7 @@ namespace litecore {
         if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
             writeTimestamp({_startTime, 0}, out);
             local_time<seconds> tp{seconds(_startTime)};
-            struct tm           tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-            tp -= GetLocalTZOffset(&tmpTime, true);
-            out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
+            out << "---- Logging begins on " << format("%A %FT%TZ", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);
