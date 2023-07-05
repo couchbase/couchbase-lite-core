@@ -27,6 +27,10 @@
 #include <utility>
 #include <utility>
 
+#ifdef _MSC_VER
+#    include "PlatformIO.hh"
+#endif
+
 using namespace std;
 using namespace std::chrono;
 using namespace date;
