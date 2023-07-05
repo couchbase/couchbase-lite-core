@@ -23,7 +23,7 @@
 #include <ctime>
 // 'digittoint' function
 #ifndef __APPLE__
-#    include "PlatformIO.hh"
+#    include "StringUtil.hh"
 #endif
 
 namespace litecore::REST {
