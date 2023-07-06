@@ -24,7 +24,7 @@ C4API_BEGIN_DECLS
 CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) C4API;
 
 /** Starts a new listener. */
-CBL_CORE_API C4Listener* c4listener_start(const C4ListenerConfig* config, C4Error* C4NULLABLE error) C4API;
+CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerConfig* config, C4Error* C4NULLABLE error) C4API;
 
 /** Makes a database available from the network.
         @param listener  The listener that should share the database.
