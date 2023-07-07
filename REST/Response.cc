@@ -17,18 +17,14 @@
 #include "Address.hh"
 #include "c4Certificate.hh"
 #include "c4ExceptionUtils.hh"
-#include "Writer.hh"
 #include "Error.hh"
-#include "Logging.hh"
-#include "StringUtil.hh"
-#include "netUtils.hh"
 #include "Certificate.hh"
 #include <string>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace litecore::net;
     using namespace litecore::crypto;
 
@@ -68,7 +64,7 @@ namespace litecore { namespace REST {
         return *this;
     }
 
-    Response& Response::setHeaders(Doc headersDict) {
+    Response& Response::setHeaders(const Doc& headersDict) {
         return setHeaders(websocket::Headers(headersDict.root().asDict()));
     }
 
@@ -149,7 +145,6 @@ namespace litecore { namespace REST {
                         }
                         break;
                     case HTTPLogic::kRetry:
-                        break;
                     case HTTPLogic::kContinue:
                         break;
                     case HTTPLogic::kAuthenticate:
@@ -172,4 +167,4 @@ namespace litecore { namespace REST {
         return (_error.code == 0);
     }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

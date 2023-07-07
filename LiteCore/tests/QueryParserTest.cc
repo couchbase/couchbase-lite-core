@@ -582,6 +582,8 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM scope", "[Query][QueryParser]") {
     tableNames.insert("kv_.banned.books");
+    tableNames.insert("kv_.store.customers");
+    tableNames.insert("kv_.store2.customers");
 
     // Query a nonexistent scope:
     ExpectException(error::LiteCore, error::InvalidQuery, [&] {
@@ -599,18 +601,46 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM scope", "[Query][QueryParser
     // Query a collection in a scope:
     CHECK(parse("{WHAT: ['.books.title'], \
                   FROM: [{scope: 'banned', collection: 'books'}],\
-                 WHERE: ['=', ['.books.author'], ['$AUTHOR']]}")
-          == "SELECT fl_result(fl_value(books.body, 'title')) "
-             "FROM \"kv_.banned.books\" AS books "
-             "WHERE fl_value(books.body, 'author') = $_AUTHOR");
+                 WHERE: ['=', ['.banned.books.author'], ['$AUTHOR']]}")
+          == "SELECT fl_result(fl_value(\"banned.books\".body, 'title')) "
+             "FROM \"kv_.banned.books\" AS \"banned.books\" "
+             "WHERE fl_value(\"banned.books\".body, 'author') = $_AUTHOR");
     CHECK(usedTableNames == set<string>{"kv_.banned.books"});
 
     // Put the scope name in the collection string:
     CHECK(parse("{WHAT: ['.books.title'], \
                   FROM: [{collection: 'banned.books'}],\
                  WHERE: ['=', ['.books.author'], ['$AUTHOR']]}")
-          == "SELECT fl_result(fl_value(books.body, 'title')) "
-             "FROM \"kv_.banned.books\" AS books "
-             "WHERE fl_value(books.body, 'author') = $_AUTHOR");
+          == "SELECT fl_result(fl_value(\"banned.books\".body, 'title')) "
+             "FROM \"kv_.banned.books\" AS \"banned.books\" "
+             "WHERE fl_value(\"banned.books\".body, 'author') = $_AUTHOR");
     CHECK(usedTableNames == set<string>{"kv_.banned.books"});
+
+    CHECK(parse("{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],'WHAT':[['.name']]}")
+          == R"(SELECT fl_result(fl_value("store.customers".body, 'name')) FROM )"
+             R"("kv_.store.customers" AS "store.customers")");
+    CHECK(usedTableNames == set<string>{"kv_.store.customers"});
+
+    CHECK(parse("{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],"
+                "'WHAT':[['.customers.name']]}")
+          == R"(SELECT fl_result(fl_value("store.customers".body, 'name')) )"
+             R"(FROM "kv_.store.customers" AS "store.customers")");
+    CHECK(usedTableNames == set<string>{"kv_.store.customers"});
+
+    CHECK(parse("{'FROM':[{'COLLECTION':'customers','SCOPE':'store'}],"
+                "'WHAT':[['.store.customers.name']]}")
+          == R"(SELECT fl_result(fl_value("store.customers".body, 'name')) )"
+             R"(FROM "kv_.store.customers" AS "store.customers")");
+    CHECK(usedTableNames == set<string>{"kv_.store.customers"});
+
+    CHECK(parse("{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+                "{'COLLECTION':'customers','JOIN':'INNER','ON':['=',['.store.customers.name'],"
+                "['.store2.customers.name']],'SCOPE':'store2'}],"
+                "'WHAT':[['.store.customers.name'],['.store2.customers.name']]}")
+          == R"(SELECT fl_result(fl_value("store.customers".body, 'name')), )"
+             R"(fl_result(fl_value("store2.customers".body, 'name')) )"
+             R"(FROM "kv_.store.customers" AS "store.customers" INNER JOIN "kv_.store2.customers" )"
+             R"(AS "store2.customers" ON (fl_value("store.customers".body, 'name') )"
+             R"(= fl_value("store2.customers".body, 'name')))");
+    CHECK(usedTableNames == set<string>{"kv_.store.customers", "kv_.store2.customers"});
 }

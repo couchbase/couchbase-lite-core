@@ -131,6 +131,14 @@ namespace litecore {
         }
 
         Assert(entry == (const void*)result.end());
+        // Sanity check:
+        auto     rawRev = (const RawRevision*)result.buf;
+        unsigned count  = rawRev->count();
+        // c.f. RawRevision::decodeTree
+        if ( count > UINT16_MAX )
+            error::_throw(error::UnexpectedError,
+                          "RawRevision::encodeTree: too many revs in the revision tree. The limit is %u", UINT16_MAX);
+
         return result;
     }
 

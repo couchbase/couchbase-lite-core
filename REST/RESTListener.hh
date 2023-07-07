@@ -12,7 +12,6 @@
 
 #pragma once
 #include "c4DatabaseTypes.h"
-#include "c4Listener.hh"
 #include "Listener.hh"
 #include "Server.hh"
 #include "FilePath.hh"
@@ -22,7 +21,7 @@
 #include <set>
 #include <vector>
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using fleece::RefCounted;
     using fleece::Retained;
     class Server;
@@ -32,7 +31,7 @@ namespace litecore { namespace REST {
     class RESTListener : public Listener {
       public:
         explicit RESTListener(const Config&);
-        ~RESTListener();
+        ~RESTListener() override;
 
         virtual void stop();
 
@@ -42,9 +41,9 @@ namespace litecore { namespace REST {
         virtual std::vector<net::Address> addresses(C4Database*    dbOrNull = nullptr,
                                                     C4ListenerAPIs api      = kC4RESTAPI) const;
 
-        virtual int connectionCount() override;
+        int connectionCount() override;
 
-        virtual int activeConnectionCount() override { return (int)tasks().size(); }
+        int activeConnectionCount() override { return (int)tasks().size(); }
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
@@ -69,7 +68,7 @@ namespace litecore { namespace REST {
             void unregisterTask();
 
           protected:
-            virtual ~Task() = default;
+            ~Task() override = default;
 
             time_t _timeUpdated{0};
 
@@ -85,8 +84,8 @@ namespace litecore { namespace REST {
       protected:
         friend class Task;
 
-        Retained<net::TLSContext>  createTLSContext(const C4TLSConfig*);
-        Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
+        Retained<net::TLSContext>         createTLSContext(const C4TLSConfig*);
+        static Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
 
         Server* server() const { return _server.get(); }
 
@@ -113,8 +112,8 @@ namespace litecore { namespace REST {
         static std::string kServerName;
 
       private:
-        std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
-        bool                                     collectionGiven(RequestResponse&);
+        static std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
+        static bool                                     collectionGiven(RequestResponse&);
 
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
@@ -130,8 +129,8 @@ namespace litecore { namespace REST {
         void handleModifyDoc(RequestResponse&, C4Collection*);
         void handleBulkDocs(RequestResponse&, C4Collection*);
 
-        bool modifyDoc(fleece::Dict body, std::string docID, std::string revIDQuery, bool deleting, bool newEdits,
-                       C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
+        bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
+                       bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
 
         std::unique_ptr<FilePath>  _directory;
         const bool                 _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
@@ -141,4 +140,4 @@ namespace litecore { namespace REST {
         unsigned                   _nextTaskID{1};
     };
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

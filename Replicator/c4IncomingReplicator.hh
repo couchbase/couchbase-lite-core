@@ -15,7 +15,6 @@
 #pragma once
 #include "c4Private.h"
 #include "c4ReplicatorImpl.hh"
-#include "c4Socket+Internal.hh"
 
 namespace litecore {
     using namespace litecore::websocket;
@@ -27,9 +26,9 @@ namespace litecore {
                              WebSocket* openSocket NONNULL)
             : C4ReplicatorImpl(db, params), _openSocket(openSocket) {}
 
-        virtual alloc_slice URL() const noexcept override { return _openSocket->url(); }
+        alloc_slice URL() const noexcept override { return _openSocket->url(); }
 
-        virtual void createReplicator() override {
+        void createReplicator() override {
             Assert(_openSocket);
 
             auto dbOpenedAgain = _database->openAgain();
@@ -44,7 +43,7 @@ namespace litecore {
             _openSocket = nullptr;
         }
 
-        virtual bool _unsuspend() noexcept override {
+        bool _unsuspend() noexcept override {
             // Restarting doesn't make sense; do nothing
             return true;
         }

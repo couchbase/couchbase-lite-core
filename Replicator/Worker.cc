@@ -13,14 +13,13 @@
 #include "Worker.hh"
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
-#include "c4Private.h"
 #include "Increment.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "fleece/PlatformCompat.hh"
 #include "HTTPTypes.hh"
 #include <sstream>
 #include <thread>
+#include <utility>
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #    include <cxxabi.h>
@@ -90,7 +89,7 @@ namespace litecore::repl {
         , _connection(connection)
         , _parent(parent)
         , _options(options)
-        , _db(dbAccess)
+        , _db(std::move(dbAccess))
         , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
         , _collectionIndex(coll) {
@@ -116,7 +115,7 @@ namespace litecore::repl {
         return className;
     }
 
-    void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
+    void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
         if ( callback ) {
             increment(_pendingResponseCount);
             builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
@@ -133,7 +132,7 @@ namespace litecore::repl {
 
     blip::ErrorBuf Worker::c4ToBLIPError(C4Error err) {
         if ( !err.code ) return {};
-        slice       blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
+        auto        blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
         auto        code       = err.code;
         alloc_slice message(err.message());
 
@@ -306,7 +305,7 @@ namespace litecore::repl {
 
     const C4Collection* Worker::getCollection() const {
         Assert(collectionIndex() != kNotCollectionIndex);
-        Worker* nonConstThis = const_cast<Worker*>(this);
+        auto* nonConstThis = const_cast<Worker*>(this);
         return nonConstThis->replicator()->collection(collectionIndex());
     }
 }  // namespace litecore::repl

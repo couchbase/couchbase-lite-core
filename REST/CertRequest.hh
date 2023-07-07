@@ -13,7 +13,6 @@
 #pragma once
 #include "Certificate.hh"
 #include "Address.hh"
-#include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <functional>
 #include <memory>
@@ -30,7 +29,7 @@ namespace litecore::REST {
         using CompletionRoutine = std::function<void(crypto::Cert*, C4Error)>;
 
         void start(crypto::CertSigningRequest* csr NONNULL, const net::Address& address,
-                   fleece::AllocedDict networkConfig, CompletionRoutine);
+                   const fleece::AllocedDict& networkConfig, CompletionRoutine);
 
       private:
         void _run();

@@ -15,13 +15,8 @@
 #include "c4Socket.hh"
 #include "c4Socket+Internal.hh"
 #include "c4ExceptionUtils.hh"
-#include "c4Private.h"
 #include "c4Replicator.h"
 #include "c4Socket.h"
-#include "Address.hh"
-#include "Headers.hh"
-#include "Logging.hh"
-#include "StringUtil.hh"
 
 using namespace std;
 using namespace fleece;

@@ -18,8 +18,9 @@
 #include "fleece/slice.hh"
 #include <deque>
 #include <unordered_map>
+#include <utility>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     /** Top-level object managing the push side of replication (sending revisions.) */
     class Pusher final
@@ -38,7 +39,8 @@ namespace litecore { namespace repl {
 
         // Called by the puller's RevFinder, via the Replicator
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID) {
-            enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), docID, remoteAncestorRevID);
+            enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), std::move(docID),
+                    std::move(remoteAncestorRevID));
         }
 
         void onError(C4Error err) override;
@@ -49,15 +51,15 @@ namespace litecore { namespace repl {
       protected:
         friend class BlobDataSource;
 
-        virtual void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
+        void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
 
-        virtual void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {
+        void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {
             finishedDocumentWithError(rev, error, transient);
         }
 
-        virtual void          afterEvent() override;
-        virtual void          _connectionClosed() override;
-        virtual ActivityLevel computeActivityLevel() const override;
+        void          afterEvent() override;
+        void          _connectionClosed() override;
+        ActivityLevel computeActivityLevel() const override;
 
       private:
         void _start();
@@ -93,7 +95,7 @@ namespace litecore { namespace repl {
         void        maybeSendMoreRevs();
         void        retryRevs(RevToSendList, bool immediate);
         void        sendRevision(Retained<RevToSend>);
-        void        onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
+        void        onRevProgress(const Retained<RevToSend>& rev, const blip::MessageProgress&);
         void        couldntSendRevision(RevToSend* NONNULL);
         void        doneWithRev(RevToSend*, bool successful, bool pushed);
         alloc_slice createRevisionDelta(C4Document* doc NONNULL, RevToSend* request NONNULL, fleece::Dict root,
@@ -125,4 +127,4 @@ namespace litecore { namespace repl {
     };
 
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

@@ -14,7 +14,7 @@
 #include "Worker.hh"
 #include "Batcher.hh"
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     class Replicator;
     class RevToInsert;
 
@@ -38,4 +38,4 @@ namespace litecore { namespace repl {
         C4Collection*                              _insertionCollection{nullptr};
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

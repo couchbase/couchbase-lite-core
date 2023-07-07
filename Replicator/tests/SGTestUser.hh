@@ -21,18 +21,23 @@
 
 #pragma once
 
+#include <utility>
+
 #include "SG.hh"
-#include "Error.hh"
 #include "HTTPLogic.hh"
 
 class SG::TestUser {
   public:
     explicit TestUser() : _sg{nullptr}, _authHeader{nullslice} {}
 
-    explicit TestUser(SG& sg, const std::string& username, const std::vector<std::string>& channels = {"*"},
-                      const std::vector<C4CollectionSpec>& collectionSpecs = {kC4DefaultCollectionSpec},
-                      const std::string&                   password        = "password")
-        : _sg(&sg), _username(username), _password(password), _channels(channels), _collectionSpecs{collectionSpecs} {
+    explicit TestUser(SG& sg, std::string username, std::vector<std::string> channels = {"*"},
+                      std::vector<C4CollectionSpec> collectionSpecs = {kC4DefaultCollectionSpec},
+                      std::string                   password        = "password")
+        : _sg(&sg)
+        , _username(std::move(username))
+        , _password(std::move(password))
+        , _channels(std::move(channels))
+        , _collectionSpecs{std::move(collectionSpecs)} {
         _sg->createUser(_username, _password);
         _sg->assignUserChannel(_username, _collectionSpecs, _channels);
         _authHeader = HTTPLogic::basicAuth(_username, _password);
@@ -55,7 +60,7 @@ class SG::TestUser {
 
     TestUser& operator=(const TestUser& other);
 
-    alloc_slice authHeader() const { return _authHeader; }
+    [[nodiscard]] alloc_slice authHeader() const { return _authHeader; }
 
     bool addChannels(const std::vector<std::string>& channels);
     bool setChannels(const std::vector<std::string>& channels);

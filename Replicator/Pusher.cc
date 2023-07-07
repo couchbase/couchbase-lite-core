@@ -17,7 +17,6 @@
 #include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "HTTPTypes.hh"
 #include "c4ExceptionUtils.hh"
 #include <algorithm>
 
@@ -25,18 +24,16 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     Pusher::Pusher(Replicator* replicator, Checkpointer& checkpointer, CollectionIndex collIndex)
         : Worker(replicator, "Push", collIndex)
         , _continuous(_options->push(collectionIndex()) == kC4Continuous)
         , _checkpointer(checkpointer)
         , _changesFeed(*this, _options, *_db, &checkpointer) {
-        if ( _options->push(collectionIndex()) <= kC4Passive ) {
-            _proposeChanges      = false;
-            _proposeChangesKnown = true;
-        } else if ( _db->usingVersionVectors() ) {
-            // Always use "changes" with version vectors
+        if ( _options->push(collectionIndex()) <= kC4Passive
+             // Always use "changes" with version vectors
+             || _db->usingVersionVectors() ) {
             _proposeChanges      = false;
             _proposeChangesKnown = true;
         } else {
@@ -244,10 +241,11 @@ namespace litecore { namespace repl {
         bool proposedChanges = _proposeChanges;
 
         increment(_changeListsInFlight);
-        sendRequest(req, [this, changes = move(changes), proposedChanges](MessageProgress progress) mutable {
-            if ( progress.state == MessageProgress::kComplete )
-                handleChangesResponse(changes, progress.reply, proposedChanges);
-        });
+        sendRequest(req,
+                    [this, changes = std::move(changes), proposedChanges](const MessageProgress& progress) mutable {
+                        if ( progress.state == MessageProgress::kComplete )
+                            handleChangesResponse(changes, progress.reply, proposedChanges);
+                    });
     }
 
     void Pusher::encodeRevID(Encoder& enc, slice revID) {
@@ -324,7 +322,7 @@ namespace litecore { namespace repl {
         if ( Array ancestorArray = response.asArray(); ancestorArray ) {
             // Array of the peer's known ancestors:
             for ( Value a : ancestorArray ) change->addRemoteAncestor(a.asString());
-            _revQueue.push_back(change);
+            _revQueue.emplace_back(change);
             return true;
         } else if ( int64_t status = response.asInt(); status != 0 ) {
             // A nonzero integer is an error status, probably conflict:
@@ -351,7 +349,7 @@ namespace litecore { namespace repl {
 
         if ( status == 0 ) {
             change->noConflicts = true;
-            _revQueue.push_back(change);
+            _revQueue.emplace_back(change);
             return true;
         } else if ( status == 304 ) {
             // 304 means server has my rev already
@@ -502,7 +500,7 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
     void Pusher::_connectionClosed() {
-        auto conflicts = move(_conflictsIMightRetry);
+        auto conflicts = std::move(_conflictsIMightRetry);
         if ( !conflicts.empty() ) {
             // OK, now I must report these as conflicts:
             _conflictsIMightRetry.clear();
@@ -547,7 +545,7 @@ namespace litecore { namespace repl {
 
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
-        if ( !_revsToRetry.empty() && connected() && !isBusy() ) retryRevs(move(_revsToRetry), false);
+        if ( !_revsToRetry.empty() && connected() && !isBusy() ) retryRevs(std::move(_revsToRetry), false);
         Worker::afterEvent();
     }
 
@@ -564,10 +562,10 @@ namespace litecore { namespace repl {
         } else {
             _caughtUp                    = false;
             ChangesFeed::Changes changes = {};
-            changes.revs                 = move(revsToRetry);
+            changes.revs                 = std::move(revsToRetry);
             changes.lastSequence         = _lastSequenceRead;
-            gotChanges(move(changes));
+            gotChanges(std::move(changes));
         }
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

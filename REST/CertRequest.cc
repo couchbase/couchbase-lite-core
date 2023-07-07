@@ -10,6 +10,10 @@
 // the file licenses/APL2.txt.
 //
 
+#include <utility>
+
+#include <memory>
+
 #include "CertRequest.hh"
 #include "Response.hh"
 #include "Headers.hh"
@@ -23,14 +27,14 @@ namespace litecore::REST {
     using namespace litecore::websocket;
     using namespace litecore::crypto;
 
-    CertRequest::CertRequest() {}
+    CertRequest::CertRequest() = default;
 
-    void CertRequest::start(CertSigningRequest* csr, const Address& address, AllocedDict netConfig,
+    void CertRequest::start(CertSigningRequest* csr, const Address& address, const AllocedDict& netConfig,
                             CompletionRoutine onComplete) {
         Assert(!_response);
-        _response.reset(new Response(address, net::POST));
+        _response   = std::make_unique<Response>(address, net::POST);
         _csr        = csr;
-        _onComplete = onComplete;
+        _onComplete = std::move(onComplete);
 
         Dict  authDict = netConfig[kC4ReplicatorOptionAuthentication].asDict();
         slice authType = authDict[kC4ReplicatorAuthType].asString();
@@ -60,7 +64,7 @@ namespace litecore::REST {
         body.endDict();
         _response->setBody(body.finish());
 
-        _thread = std::thread(std::bind(&CertRequest::_run, this));
+        _thread = std::thread([this] { _run(); });
         retain(this);  // keep myself alive until I complete
     }
 

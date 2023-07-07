@@ -14,14 +14,11 @@
 #include "Replicator.hh"
 #include "Pusher.hh"
 #include "ReplicatorTuning.hh"
-#include "IncomingRev.hh"
 #include "DBAccess.hh"
 #include "Increment.hh"
 #include "VersionVector.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
-#include "c4Private.h"
-#include "c4ReplicatorTypes.h"
 #include "fleece/Fleece.hh"
 
 using namespace std;
@@ -52,7 +49,7 @@ namespace litecore::repl {
             logVerbose("Queued '%.*s' REQ#%" PRIu64 " (now %zu)", SPLAT(req->property("Profile"_sl)), req->number(),
                        _waitingChangesMessages.size() + 1);
             Signpost::begin(Signpost::handlingChanges, (uintptr_t)req->number());
-            _waitingChangesMessages.push_back(move(req));
+            _waitingChangesMessages.push_back(std::move(req));
         }
     }
 
@@ -98,7 +95,7 @@ namespace litecore::repl {
                     logInfo("Received %u changes", nChanges);
                 } else if ( willLog() ) {
                     alloc_slice firstSeq(changes[0].asArray()[0].toString());
-                    alloc_slice lastSeq(changes[nChanges - 1].asArray()[0].toString());
+                    alloc_slice lastSeq(changes.get(nChanges - 1).asArray()[0].toString());
                     logInfo("Received %u changes (seq '%.*s'..'%.*s')", nChanges, SPLAT(firstSeq), SPLAT(lastSeq));
                 }
 
@@ -124,8 +121,8 @@ namespace litecore::repl {
                 auto& encoder           = response.jsonBody();
                 auto  getConflictRevIDs = req->boolProperty(Pusher::kConflictIncludesRevProperty);
                 encoder.beginArray();
-                int requested = proposed ? findProposedRevs(changes, encoder, getConflictRevIDs, sequences)
-                                         : findRevs(changes, encoder, sequences);
+                unsigned requested = proposed ? findProposedRevs(changes, encoder, getConflictRevIDs, sequences)
+                                              : findRevs(changes, encoder, sequences);
                 encoder.endArray();
 
                 // CBL-1399: Important that the order be call expectSequences and *then* respond
@@ -133,7 +130,7 @@ namespace litecore::repl {
                 // applies to local to local replication where things can come back over the wire
                 // very quickly)
                 _numRevsBeingRequested += requested;
-                _delegate->expectSequences(move(sequences));
+                _delegate->expectSequences(std::move(sequences));
                 req->respond(response);
 
                 logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
@@ -162,7 +159,7 @@ namespace litecore::repl {
 
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
-    int RevFinder::findRevs(Array changes, JSONEncoder& encoder, vector<ChangeSequence>& sequences) {
+    unsigned RevFinder::findRevs(Array changes, JSONEncoder& encoder, vector<ChangeSequence>& sequences) {
         // Compile the docIDs/revIDs into parallel vectors:
         vector<slice>                 docIDs, revIDs;
         vector<Retained<RevToInsert>> revoked;
@@ -203,7 +200,7 @@ namespace litecore::repl {
             ++changeIndex;
         }
 
-        if ( !revoked.empty() ) _delegate->documentsRevoked(move(revoked));
+        if ( !revoked.empty() ) _delegate->documentsRevoked(std::move(revoked));
 
         // Ask the database to look up the ancestors:
         auto                collection = getCollection();
@@ -267,8 +264,8 @@ namespace litecore::repl {
     }
 
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
-    int RevFinder::findProposedRevs(Array changes, JSONEncoder& encoder, bool conflictIncludesRev,
-                                    vector<ChangeSequence>& sequences) {
+    unsigned RevFinder::findProposedRevs(Array changes, JSONEncoder& encoder, bool conflictIncludesRev,
+                                         vector<ChangeSequence>& sequences) {
         unsigned itemsWritten = 0, requested = 0;
         int      i = -1;
         for ( auto item : changes ) {
@@ -355,10 +352,11 @@ namespace litecore::repl {
             }
         } else {
             // Rev-trees:
-            if ( outCurrentRevID == parentRevID )
-                return 0;  // I don't have this revision and it's not a conflict, so I want it!
-            else if ( !parentRevID && (flags & kDocDeleted) )
-                return 0;  // Peer is creating a new doc; my doc is deleted, so that's OK
+            // I don't have this revision and it's not a conflict, so I want it!
+            if ( outCurrentRevID == parentRevID ||
+                 // Peer is creating a new doc; my doc is deleted, so that's OK
+                 (!parentRevID && (flags & kDocDeleted)) )
+                return 0;
             else
                 return 409;  // Peer's revID isn't current, so this is a conflict
         }

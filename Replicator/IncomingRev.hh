@@ -18,14 +18,14 @@
 #include <atomic>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     class Puller;
     class RevToInsert;
 
     /** Manages pulling a single document. */
     class IncomingRev final : public Worker {
       public:
-        IncomingRev(Puller* NONNULL);
+        explicit IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL, uint64_t bodySizeOfRemoteSequence);
@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
         // blob stuff:
         void fetchNextBlob();
         bool startBlob();
-        void writeToBlob(fleece::alloc_slice);
+        void writeToBlob(const fleece::alloc_slice&);
         void finishBlob();
         void blobGotError(C4Error);
         void notifyBlobProgress(bool always);
@@ -83,11 +83,11 @@ namespace litecore { namespace repl {
         std::vector<PendingBlob>                 _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;
         std::unique_ptr<C4WriteStream>           _writer;
-        uint64_t                                 _blobBytesWritten;
+        uint64_t                                 _blobBytesWritten{};
         actor::Timer::time                       _lastNotifyTime;
-        bool                                     _mayContainBlobs;
-        bool                                     _mayContainEncryptedProperties;
-        uint64_t                                 _bodySize;
+        bool                                     _mayContainBlobs{};
+        bool                                     _mayContainEncryptedProperties{};
+        uint64_t                                 _bodySize{};
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

@@ -13,15 +13,15 @@
 #pragma once
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
-#include "c4Listener.hh"
 #include "c4Database.hh"
+#include "c4ListenerTypes.h"
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
 #include <optional>
 #include <vector>
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
 
     /** Abstract superclass of network listeners that can serve access to databases.
         Subclassed by RESTListener. */
@@ -34,8 +34,8 @@ namespace litecore { namespace REST {
 
         static constexpr uint16_t kDefaultPort = 4984;
 
-        Listener(const Config& config);
-        virtual ~Listener() = default;
+        explicit Listener(const Config& config);
+        ~Listener() override = default;
 
         /** Determines whether a database name is valid for use as a URI path component.
             It must be nonempty, no more than 240 bytes long, not start with an underscore,
@@ -54,7 +54,7 @@ namespace litecore { namespace REST {
 
         /** Unregisters a database by name.
             The C4Database will be closed if there are no other references to it. */
-        bool unregisterDatabase(std::string name);
+        bool unregisterDatabase(const std::string& name);
 
         bool unregisterDatabase(C4Database* db);
 
@@ -87,4 +87,4 @@ namespace litecore { namespace REST {
         std::map<std::string, std::vector<CollectionSpec>>  _allowedCollections;
     };
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

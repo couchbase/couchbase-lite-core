@@ -18,7 +18,7 @@
 #include <deque>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     /** Receives "changes" messages, and tells its delegate (the Puller) which revisions in them are new
         and should be pulled. */
@@ -28,14 +28,14 @@ namespace litecore { namespace repl {
             RemoteSequence sequence;
             uint64_t       bodySize{0};
 
-            bool requested() const { return bodySize > 0; }
+            [[nodiscard]] bool requested() const { return bodySize > 0; }
         };
 
         class Delegate : public Worker {
           public:
             Delegate(Worker* parent, const char* namePrefix, CollectionIndex coll) : Worker(parent, namePrefix, coll) {}
 
-            virtual ~Delegate() = default;
+            ~Delegate() override = default;
             /** Tells the Delegate the peer has finished sending historical changes. */
             virtual void caughtUp() = 0;
             /** Tells the Delegate about the "rev" messages it will be receiving. */
@@ -66,12 +66,12 @@ namespace litecore { namespace repl {
         void handleMoreChanges();
         void handleChangesNow(blip::MessageIn* req);
 
-        int  findRevs(fleece::Array, fleece::JSONEncoder&, std::vector<ChangeSequence>&);
-        int  findProposedRevs(fleece::Array, fleece::JSONEncoder&, bool, std::vector<ChangeSequence>&);
-        int  findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID);
-        void _revReceived();
-        void _reRequestingRev();
-        void checkDocAndRevID(slice docID, slice revID);
+        unsigned findRevs(fleece::Array, fleece::JSONEncoder&, std::vector<ChangeSequence>&);
+        unsigned findProposedRevs(fleece::Array, fleece::JSONEncoder&, bool, std::vector<ChangeSequence>&);
+        int      findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID);
+        void     _revReceived();
+        void     _reRequestingRev();
+        void     checkDocAndRevID(slice docID, slice revID);
 
         Retained<Delegate>                    _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages;  // Queued 'changes' messages
@@ -80,4 +80,4 @@ namespace litecore { namespace repl {
         bool     _mustBeProposed{false};         // Do I handle only "proposedChanges"?
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

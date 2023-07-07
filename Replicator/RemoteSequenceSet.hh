@@ -15,7 +15,7 @@
 #include <map>
 #include <utility>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     /** A set of opaque remote sequence IDs, representing server-side database sequences.
         This is used by the replicator to keep track of which revisions are being pulled. */
@@ -27,13 +27,13 @@ namespace litecore { namespace repl {
         void clear(RemoteSequence since) {
             _sequences.clear();
             _nextOrder = 0;
-            _lastAdded = since;
+            _lastAdded = std::move(since);
             _first     = _sequences.end();
         }
 
-        bool empty() const { return _sequences.empty(); }
+        [[nodiscard]] bool empty() const { return _sequences.empty(); }
 
-        size_t size() const { return _sequences.size(); }
+        [[nodiscard]] size_t size() const { return _sequences.size(); }
 
         /** Returns the sequence before the earliest one still in the set. */
         RemoteSequence since() { return (_first != _sequences.end()) ? _first->second.prevSequence : _lastAdded; }
@@ -73,8 +73,8 @@ namespace litecore { namespace repl {
       private:
         // Updates _first to point to the earliest entry in _sequences
         void findFirst(size_t minOrderInSet) {
-            sequenceMap::iterator first         = _sequences.end();
-            size_t                minOrderSoFar = SIZE_MAX;
+            auto   first         = _sequences.end();
+            size_t minOrderSoFar = SIZE_MAX;
             // OPT: Slow linear scan. Keep a secondary collection sorted by order?
             for ( auto i = _sequences.begin(); i != _sequences.end(); ++i ) {
                 if ( i->second.order < minOrderSoFar ) {
@@ -100,4 +100,4 @@ namespace litecore { namespace repl {
         sequenceMap::iterator _first{};       // Points to the earliest sequence still in _sequences
     };
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

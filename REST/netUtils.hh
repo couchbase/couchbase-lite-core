@@ -13,7 +13,7 @@
 #pragma once
 #include "fleece/slice.hh"
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
 
     std::string URLDecode(fleece::slice str, bool isFormURLEncoded = true);
 
@@ -21,4 +21,4 @@ namespace litecore { namespace REST {
 
     std::string getURLQueryParam(fleece::slice queries, const char* name, char delimiter = '&', size_t occurrence = 0);
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

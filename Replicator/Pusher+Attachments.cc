@@ -10,6 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
+#include <utility>
+
 #include "Pusher.hh"
 #include "DBAccess.hh"
 #include "Increment.hh"
@@ -24,17 +26,17 @@ namespace litecore::repl {
 
     class BlobDataSource : public IMessageDataSource {
       public:
-        BlobDataSource(Pusher* pusher, unique_ptr<C4ReadStream>&& blob, const Replicator::BlobProgress& progress)
-            : _pusher(pusher), _repl(pusher->replicator()), _blob(move(blob)), _progress(progress) {}
+        BlobDataSource(Pusher* pusher, unique_ptr<C4ReadStream>&& blob, Replicator::BlobProgress progress)
+            : _pusher(pusher), _repl(pusher->replicator()), _blob(std::move(blob)), _progress(std::move(progress)) {}
 
         int operator()(void* buf, size_t capacity) override {
             // Callback to read bytes from the blob into the BLIP message:
             // For performance reasons this is NOT run on my actor thread, so it can't access
             // my state directly; instead it calls _attachmentSent() at the end.
-            bool    done      = false;
-            ssize_t bytesRead = -1;
+            bool    done = false;
+            ssize_t bytesRead;
             try {
-                bytesRead = _blob->read(buf, capacity);
+                bytesRead = narrow_cast<ssize_t>(_blob->read(buf, capacity));
                 _progress.bytesCompleted += bytesRead;
             } catch ( ... ) {
                 _progress.error = C4Error::fromCurrentException();
@@ -99,7 +101,7 @@ namespace litecore::repl {
         Retained<Replicator> repl = replicator();
         if ( progressNotificationLevel() >= 2 ) repl->onBlobProgress(progress);
 
-        reply.dataSource = make_unique<BlobDataSource>(this, move(blob), progress);
+        reply.dataSource = make_unique<BlobDataSource>(this, std::move(blob), progress);
         req->respond(reply);
     }
 
@@ -129,7 +131,6 @@ namespace litecore::repl {
         size_t                  bytesRead;
         while ( (bytesRead = blob->read(buf.get(), kBufSize)) > 0 ) sha << slice(buf.get(), bytesRead);
         buf.reset();
-        blob = nullptr;
 
         // Respond with the base64-encoded digest:
         C4BlobKey proofDigest;
