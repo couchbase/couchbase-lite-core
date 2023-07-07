@@ -69,7 +69,7 @@ namespace litecore::actor {
             if ( gen < _generation ) return {};
             _scheduled = false;
             ++_generation;
-            return move(_items);
+            return std::move(_items);
         }
 
       private:
