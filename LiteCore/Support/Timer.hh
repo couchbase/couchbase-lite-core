@@ -18,8 +18,10 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <utility>
+#include <utility>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
 
     /** An object that can trigger a callback at (approximately) a specific future time. */
     class Timer {
@@ -33,7 +35,7 @@ namespace litecore { namespace actor {
             The call happens on an unspecified background thread.
             It should not block, or it will delay all other timers from firing.
             It may call the Timer API, including re-scheduling itself. */
-        Timer(callback cb) : _callback(cb) {}
+        explicit Timer(callback cb) : _callback(std::move(std::move(cb))) {}
 
         /** Destructs a timer. If the timer was scheduled, and the destructor is called just as
             it fires, it is possible for the callback to be running (on another thread) while this
@@ -115,4 +117,4 @@ namespace litecore { namespace actor {
         Manager::map::iterator _entry;                // My map entry in Manager::_schedule
     };
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

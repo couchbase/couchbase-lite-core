@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Socket.hh"
 #include "WebSocketImpl.hh"
+#include "DBAccess.hh"
 
 struct c4Database;
 
@@ -20,8 +21,8 @@ namespace litecore { namespace repl {
 
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(websocket::URL, fleece::alloc_slice options,
-                                                           C4Database* NONNULL, const C4SocketFactory*,
-                                                           void*       nativeHandle = nullptr);
+                                                           std::shared_ptr<DBAccess>, const C4SocketFactory*,
+                                                           void* nativeHandle = nullptr);
 
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
@@ -34,7 +35,7 @@ namespace litecore { namespace repl {
         static const C4SocketFactory& registeredFactory();
 
         using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice options,
-                                                              C4Database* NONNULL);
+                                                              std::shared_ptr<DBAccess>);
         static void registerInternalFactory(InternalFactory);
 
         static Parameters convertParams(fleece::slice c4SocketOptions);

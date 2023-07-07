@@ -19,7 +19,6 @@
 #include <vector>
 #include <map>
 
-#include "sockpp/platform.h"  // Includes the system headers for sockaddr, etc.
 #include "sockpp/inet_address.h"
 #include "sockpp/inet6_address.h"
 
@@ -63,7 +62,7 @@ namespace litecore::net {
     IPAddress::IPAddress(const in6_addr& addr) noexcept : _family(AF_INET6) { _addr6() = addr; }
 
     optional<IPAddress> IPAddress::parse(const string& str) {
-        IPAddress addr;
+        IPAddress addr{};
         if ( ::inet_pton(AF_INET, str.c_str(), &addr._data) == 1 ) {
             addr._family = AF_INET;
         } else if ( ::inet_pton(AF_INET6, str.c_str(), &addr._data) == 1 ) {
@@ -219,7 +218,7 @@ namespace litecore::net {
         string hostName;
 #    if TARGET_OS_OSX
         // On macOS, we can get it from SystemConfiguration (not available on iOS)
-        if ( CFStringRef cfName = SCDynamicStoreCopyLocalHostName(NULL); cfName ) {
+        if ( CFStringRef cfName = SCDynamicStoreCopyLocalHostName(nullptr); cfName ) {
             nsstring_slice strsl(cfName);
             hostName = string(strsl);
         }
@@ -297,7 +296,7 @@ namespace litecore::net {
         struct ifaddrs*     addrs;
         if ( getifaddrs(&addrs) < 0 ) error::_throwErrno();
 
-        Interface* intf = nullptr;
+        Interface* intf;
         for ( auto a = addrs; a; a = a->ifa_next ) {
             auto nextIterator = results.find(a->ifa_name);
             if ( nextIterator == results.end() ) {
@@ -318,7 +317,7 @@ namespace litecore::net {
 #    endif
                     case AF_INET:
                     case AF_INET6:
-                        intf->addresses.push_back(*a->ifa_addr);
+                        intf->addresses.emplace_back(*a->ifa_addr);
                         break;
                 }
             }

@@ -23,6 +23,8 @@
 
 namespace litecore { namespace repl {
 
+    using namespace fleece;
+
     /** Replication configuration options */
     class Options final : public fleece::RefCounted {
       public:

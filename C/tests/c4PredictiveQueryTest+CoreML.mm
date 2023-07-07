@@ -45,7 +45,7 @@ public:
                bool required =true)
     :C4QueryTest(0, jsonFilename)
     {
-        if (@available(macOS 10.13, iOS 11.0, *)) {
+        if (@available(iOS 11.0, *)) {
             NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
             NSError *error;
             if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {

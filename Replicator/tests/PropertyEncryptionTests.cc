@@ -13,6 +13,7 @@
 #include "PropertyEncryption.hh"
 #include "c4Test.hh"
 #include "c4CppUtils.hh"
+#include "JSON5.hh"
 #include "c4ReplicatorTypes.h"
 #include "Base64.hh"
 #include "fleece/Mutable.hh"

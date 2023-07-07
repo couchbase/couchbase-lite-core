@@ -13,7 +13,6 @@
 #include "Version.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "varint.hh"
 #include "slice_stream.hh"
 #include <algorithm>
 

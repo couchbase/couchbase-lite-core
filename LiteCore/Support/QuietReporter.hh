@@ -17,13 +17,11 @@
 //
 
 #pragma once
-#include "c4Base.h"
-#include "c4Private.h"
+#include "TestsCommon.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "MultiLogDecoder.hh"
-#include "StringUtil.hh"
-#include "TestsCommon.hh"
+#include "c4Log.h"
 #include "CaseListReporter.hh"
 #include <fstream>
 #include <iostream>
@@ -39,13 +37,13 @@
 struct QuietReporter : public CaseListReporter {
     static std::string getDescription() { return "Suppresses most LiteCore logging until a test assertion fails"; }
 
-    QuietReporter(Catch::ReporterConfig const& config) : CaseListReporter(config) {
+    explicit QuietReporter(Catch::ReporterConfig const& config) : CaseListReporter(config) {
         InitTestLogging();
         litecore::error::setNotableExceptionHook([=]() { dumpBinaryLogs(); });
         sInstance = this;
     }
 
-    virtual ~QuietReporter() {
+    ~QuietReporter() override {
         if ( sInstance == this ) sInstance = nullptr;
     }
 
@@ -55,19 +53,19 @@ struct QuietReporter : public CaseListReporter {
 
     //---- Catch overrides
 
-    virtual void testCaseStarting(Catch::TestCaseInfo const& testInfo) override {
+    void testCaseStarting(Catch::TestCaseInfo const& testInfo) override {
         c4log_setCallbackLevel(kC4LogWarning);
         c4log_warnOnErrors(true);
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::testCaseStarting(testInfo);
     }
 
-    virtual void sectionStarting(Catch::SectionInfo const& sectionInfo) override {
+    void sectionStarting(Catch::SectionInfo const& sectionInfo) override {
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::sectionStarting(sectionInfo);
     }
 
-    virtual bool assertionEnded(Catch::AssertionStats const& assertionStats) override {
+    bool assertionEnded(Catch::AssertionStats const& assertionStats) override {
         if ( !assertionStats.assertionResult.isOk() ) dumpBinaryLogs();
         return CaseListReporter::assertionEnded(assertionStats);
     }
@@ -95,7 +93,7 @@ struct QuietReporter : public CaseListReporter {
 
     static inline QuietReporter* sInstance{nullptr};
 
-    litecore::LogIterator::Timestamp _caseStartTime;
+    litecore::LogIterator::Timestamp _caseStartTime{};
 };
 
 

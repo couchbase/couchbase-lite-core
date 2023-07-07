@@ -15,6 +15,7 @@
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "Batcher.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "Timer.hh"
 #include "access_lock.hh"
@@ -27,6 +28,7 @@
 #include <optional>
 
 namespace litecore { namespace repl {
+    using fleece::Retained;
     class ReplicatedRev;
     class UseCollection;
 
@@ -66,7 +68,7 @@ namespace litecore { namespace repl {
 
         bool usingVersionVectors() const { return _usingVersionVectors; }
 
-        string convertVersionToAbsolute(slice revID);
+        std::string convertVersionToAbsolute(slice revID);
 
         // (The "use" method is inherited from access_lock)
 
@@ -82,7 +84,7 @@ namespace litecore { namespace repl {
         void setDocRemoteAncestor(C4Collection* NONNULL, slice docID, slice revID);
 
         /** Returns the document enumerator for all unresolved docs present in the DB */
-        unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(C4Collection* NONNULL, bool orderByID);
+        std::unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(C4Collection* NONNULL, bool orderByID);
 
         /** Mark this revision as synced (i.e. the server's current revision) soon.
              NOTE: While this is queued, calls to C4Document::getRemoteAncestor() for this doc won't

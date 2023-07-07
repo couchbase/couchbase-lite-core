@@ -13,7 +13,6 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "RevTree.hh"
-#include "KeyStore.hh"
 #include "Endian.hh"
 #include <deque>
 #include <vector>
@@ -67,15 +66,15 @@ namespace litecore {
         // if HasData flag:
         //    char      data[];         // Contains the revision body (Fleece)
 
-        bool isValid() const { return size_BE != 0; }
+        [[nodiscard]] bool isValid() const { return size_BE != 0; }
 
-        slice body() const;
+        [[nodiscard]] slice body() const;
 
-        const RawRevision* next() const {
+        [[nodiscard]] const RawRevision* next() const {
             return (const RawRevision*)fleece::offsetby(this, fleece::endian::dec32(size_BE));
         }
 
-        unsigned count() const {
+        [[nodiscard]] unsigned count() const {
             unsigned count = 0;
             for ( const RawRevision* rev = this; rev->isValid(); rev = rev->next() ) ++count;
             return count;

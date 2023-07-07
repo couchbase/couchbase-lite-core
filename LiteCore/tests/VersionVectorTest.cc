@@ -45,7 +45,7 @@ namespace litecore {
 
 // `_vv` suffix after a string literal makes it a VersionVector
 static VersionVector operator"" _vv(const char* str NONNULL, size_t length) {
-    if ( length == 0 ) return VersionVector();
+    if ( length == 0 ) return {};
     return VersionVector::fromASCII(slice(str, length));
 }
 
@@ -76,7 +76,7 @@ TEST_CASE("Empty VersionVector", "[RevIDs]") {
     VersionVector v;
     CHECK(!v);
     CHECK(v.count() == 0);
-    CHECK(v.versions().size() == 0);
+    CHECK(v.versions().empty());
     CHECK(v.asASCII() == ""_sl);
     CHECK(v.isExpanded());
     CHECK(v.asBinary().size == 1);
@@ -168,7 +168,7 @@ TEST_CASE("VersionVector conflicts", "[RevIDs]") {
 }
 
 TEST_CASE("VersionVector deltas", "[RevIDs]") {
-    auto testGoodDelta = [&](VersionVector src, VersionVector dst) {
+    auto testGoodDelta = [&](const VersionVector& src, const VersionVector& dst) {
         INFO("src = '" << src << "' ; dst = '" << dst << "'");
         auto delta = dst.deltaFrom(src);
         REQUIRE(delta);
@@ -176,7 +176,7 @@ TEST_CASE("VersionVector deltas", "[RevIDs]") {
         CHECK(src.byApplyingDelta(*delta) == dst);
     };
 
-    auto testBadDelta = [&](VersionVector src, VersionVector dst) {
+    auto testBadDelta = [&](const VersionVector& src, const VersionVector& dst) {
         INFO("src = '" << src << "' ; dst = '" << dst << "'");
         auto delta = dst.deltaFrom(src);
         CHECK(!delta);

@@ -11,8 +11,6 @@
 //
 
 #pragma once
-#include "fleece/PlatformCompat.hh"
-
 
 #ifdef _MSC_VER
 
@@ -46,7 +44,7 @@ namespace litecore {
 
 #else
 
-#    include <stdio.h>
+#    include <cstdio>
 #    include <sys/stat.h>
 #    include <unistd.h>
 

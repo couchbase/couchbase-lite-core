@@ -33,6 +33,8 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 
+#include "private/ScopedFd.h"
+
 struct nlmsghdr;
 
 class NetlinkConnection {

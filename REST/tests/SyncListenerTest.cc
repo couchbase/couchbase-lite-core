@@ -188,7 +188,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listen
 
 #    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C]") {
-    _sg.pinnedCert = useServerTLSWithPersistentKey();
+    {
+        ExpectingExceptions x;
+        _sg.pinnedCert = useServerTLSWithPersistentKey();
+    }
     run();
 }
 #    endif

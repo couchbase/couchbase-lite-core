@@ -147,7 +147,11 @@ TEST_CASE("Self-signed cert with Subject Alternative Name", "[Certs]") {
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE("Persistent key and cert", "[Certs]") {
-    Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
+    Retained<PersistentPrivateKey> key;
+    {
+        ExpectingExceptions x;
+        key = PersistentPrivateKey::generateRSA(2048);
+    }
     cerr << "Public key raw data: " << key->publicKeyData(KeyFormat::Raw) << "\n";
     auto pubKeyData = key->publicKeyData(KeyFormat::DER);
     cerr << "Public key DER data: " << pubKeyData << "\n";
@@ -228,8 +232,12 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     const auto randomSerials = randomDigitStrings<16, 2>();
     // Create a keypair and a cert1:
-    Retained<PersistentPrivateKey> key1   = PersistentPrivateKey::generateRSA(2048);
-    Retained<PublicKey>            pubKey = key1->publicKey();
+    Retained<PersistentPrivateKey> key1;
+    {
+        ExpectingExceptions x;
+        key1 = PersistentPrivateKey::generateRSA(2048);
+    }
+    Retained<PublicKey> pubKey = key1->publicKey();
     CHECK(pubKey != nullptr);
 
     Cert::IssuerParameters issuerParams1;
@@ -260,8 +268,12 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
 #    endif
 
     // Create another keypair and cert2:
-    Retained<PersistentPrivateKey> key2    = PersistentPrivateKey::generateRSA(2048);
-    Retained<PublicKey>            pubKey2 = key2->publicKey();
+    Retained<PersistentPrivateKey> key2;
+    {
+        ExpectingExceptions x;
+        key2 = PersistentPrivateKey::generateRSA(2048);
+    }
+    Retained<PublicKey> pubKey2 = key2->publicKey();
     CHECK(pubKey2 != nullptr);
 
     Cert::IssuerParameters issuerParams2;
@@ -345,7 +357,10 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     CHECK(!Cert::exists("cert2"));
 
     // Save cert2:
-    cert2->save("cert2", true);
+    {
+        ExpectingExceptions x;
+        cert2->save("cert2", true);
+    }
     Retained<Cert> cert2a = Cert::loadCert("cert2");
     REQUIRE(cert2a);
     CHECK(cert2a->data() == cert2->data());
@@ -356,7 +371,10 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     CHECK(cert1b->data() == cert1->data());
 
     // Delete cert1:
-    Cert::deleteCert("cert1");
+    {
+        ExpectingExceptions x;
+        Cert::deleteCert("cert1");
+    }
     CHECK(!Cert::exists("cert1"));
 
     // Load cert2 again to make sure that it's still loaded:
@@ -365,7 +383,10 @@ TEST_CASE("Persistent cert chain", "[Certs]") {
     CHECK(cert2b->data() == cert2->data());
 
     // Delete cert2:
-    Cert::deleteCert("cert2");
+    {
+        ExpectingExceptions x;
+        Cert::deleteCert("cert2");
+    }
     CHECK(!Cert::exists("cert2"));
 }
 

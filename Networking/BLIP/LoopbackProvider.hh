@@ -26,7 +26,7 @@
 #include <cinttypes>
 #include <deque>
 
-namespace litecore { namespace websocket {
+namespace litecore::websocket {
     class LoopbackProvider;
 
     static constexpr size_t kSendBufferSize = 256 * 1024;
@@ -55,18 +55,18 @@ namespace litecore { namespace websocket {
             lc2->bind(lc1, responseHeaders);
         }
 
-        virtual void connect() override {
+        void connect() override {
             Assert(_driver);
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_connect));
         }
 
-        virtual bool send(fleece::slice msg, bool binary) override {
+        bool send(fleece::slice msg, bool binary) override {
             auto newValue = (_driver->_bufferedBytes += msg.size);
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_send), fleece::alloc_slice(msg), binary);
             return newValue <= kSendBufferSize;
         }
 
-        virtual void close(int status = 1000, fleece::slice message = fleece::nullslice) override {
+        void close(int status = 1000, fleece::slice message = fleece::nullslice) override {
             // Close() may be called before bind()
             if ( _driver ) {
                 _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_close), status, fleece::alloc_slice(message));
@@ -112,7 +112,7 @@ namespace litecore { namespace websocket {
             LoopbackMessage(LoopbackWebSocket* ws, SLICE data, bool binary)
                 : Message(data, binary), _size(data.size), _webSocket(ws) {}
 
-            ~LoopbackMessage() { _webSocket->ack(_size); }
+            ~LoopbackMessage() override { _webSocket->ack(_size); }
 
           private:
             size_t                      _size;
@@ -125,11 +125,11 @@ namespace litecore { namespace websocket {
             Driver(LoopbackWebSocket* ws, actor::delay_t latency)
                 : Actor(WSLogDomain), _webSocket(ws), _latency(latency) {}
 
-            virtual std::string loggingIdentifier() const override {
+            std::string loggingIdentifier() const override {
                 return _webSocket ? _webSocket->name() : "[Already closed]";
             }
 
-            virtual std::string loggingClassName() const override { return "LoopbackWS"; }
+            std::string loggingClassName() const override { return "LoopbackWS"; }
 
             void bind(LoopbackWebSocket* peer, const websocket::Headers& responseHeaders) {
                 // Called by LoopbackProvider::bind, which is called before my connect() method,
@@ -143,7 +143,7 @@ namespace litecore { namespace websocket {
           protected:
             enum class State { unconnected, peerConnecting, connecting, connected, closed };
 
-            ~Driver() { DebugAssert(!connected()); }
+            ~Driver() override { DebugAssert(!connected()); }
 
             virtual void _connect() {
                 // Pre-conditions:
@@ -191,7 +191,8 @@ namespace litecore { namespace websocket {
                 _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketConnect);
             }
 
-            virtual void _send(fleece::alloc_slice msg, bool binary) {
+            // Cannot use const& because it breaks Actor::enqueue
+            virtual void _send(fleece::alloc_slice msg, bool binary) {  // NOLINT(performance-unnecessary-value-param)
                 if ( _peer ) {
                     Assert(_state == State::connected);
                     logDebug("SEND: %s", formatMsg(msg, binary).c_str());
@@ -202,16 +203,21 @@ namespace litecore { namespace websocket {
                 }
             }
 
-            void _queueMessage(Retained<Message> message) { _msgWaitBuffer.push_back(message); }
+            // Cannot use const& because it breaks Actor::enqueue
+            void _queueMessage(Retained<Message> message)  // NOLINT(performance-unnecessary-value-param)
+            {
+                _msgWaitBuffer.push_back(message);
+            }
 
             void _dequeueMessage() {
-                Assert(_msgWaitBuffer.size() > 0);
+                Assert(!_msgWaitBuffer.empty());
                 Retained<Message> msg = _msgWaitBuffer.front();
                 _msgWaitBuffer.pop_front();
                 _received(msg);
             }
 
-            virtual void _received(Retained<Message> message) {
+            // Cannot use const& because it breaks Actor::enqueue
+            virtual void _received(Retained<Message> message) {  // NOLINT(performance-unnecessary-value-param)
                 if ( !connected() ) return;
                 logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
                 _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
@@ -226,7 +232,9 @@ namespace litecore { namespace websocket {
                 }
             }
 
-            virtual void _close(int status, fleece::alloc_slice message) {
+            // Cannot use const& because it breaks Actor::enqueue
+            virtual void _close(int                 status,
+                                fleece::alloc_slice message) {  // NOLINT(performance-unnecessary-value-param)
                 if ( _state != State::unconnected ) {
                     Assert(_state == State::connecting || _state == State::connected);
                     logInfo("CLOSE; status=%d", status);
@@ -236,7 +244,8 @@ namespace litecore { namespace websocket {
                 _closed({kWebSocketClose, status, message});
             }
 
-            virtual void _closed(CloseStatus status) {
+            // Cannot use const& because it breaks Actor::enqueue
+            virtual void _closed(CloseStatus status) {  // NOLINT(performance-unnecessary-value-param)
                 if ( _state == State::closed ) return;
                 if ( _state >= State::connecting ) {
                     logInfo("CLOSED with %-s %d: %.*s", status.reasonName(), status.code,
@@ -266,7 +275,7 @@ namespace litecore { namespace websocket {
                     }
                     desc << std::dec;
                 } else {
-                    desc.write((char*)msg.buf, size);
+                    desc.write((char*)msg.buf, narrow_cast<std::streamsize>(size));
                 }
 
                 if ( size < msg.size ) desc << "... [" << msg.size << "]";
@@ -286,4 +295,4 @@ namespace litecore { namespace websocket {
         };
     };
 
-}}  // namespace litecore::websocket
+}  // namespace litecore::websocket

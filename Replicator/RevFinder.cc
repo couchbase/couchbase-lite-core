@@ -22,7 +22,6 @@
 #include "Instrumentation.hh"
 #include "c4Private.h"
 #include "c4ReplicatorTypes.h"
-#include "BLIP.hh"
 #include "fleece/Fleece.hh"
 
 using namespace std;

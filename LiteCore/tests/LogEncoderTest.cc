@@ -29,9 +29,9 @@ constexpr size_t kFolderBufSize = 64;
 
 class LogObject : public Logging {
   public:
-    LogObject(const std::string& identifier) : Logging(DBLog), _identifier(identifier) {}
+    explicit LogObject(const std::string& identifier) : Logging(DBLog), _identifier(identifier) {}
 
-    LogObject(std::string&& identifier) : Logging(DBLog), _identifier(identifier) {}
+    explicit LogObject(std::string&& identifier) : Logging(DBLog), _identifier(identifier) {}
 
     void doLog(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info); }
 
@@ -43,7 +43,7 @@ class LogObject : public Logging {
     std::string _identifier;
 };
 
-static string dumpLog(string encoded, vector<string> levelNames) {
+static string dumpLog(const string& encoded, const vector<string>& levelNames) {
     cerr << "Encoded log is " << encoded.size() << " bytes\n";
     stringstream in(encoded);
     stringstream outDecoded;
@@ -212,7 +212,7 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     vector<string> infoFiles;
     int            totalCount = 0;
-    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath f) {
+    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath& f) {
         totalCount++;
         if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
@@ -287,7 +287,7 @@ TEST_CASE("Logging plaintext", "[Log]") {
     obj.doLog("This will be in plaintext");
 
     vector<string> infoFiles;
-    tmpLogDir.forEachFile([&infoFiles](const FilePath f) {
+    tmpLogDir.forEachFile([&infoFiles](const FilePath& f) {
         if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 

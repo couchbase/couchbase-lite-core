@@ -12,7 +12,6 @@
 
 #include "Pusher.hh"
 #include "DBAccess.hh"
-#include "BLIP.hh"
 #include "Increment.hh"
 #include "c4BlobStore.hh"
 #include "SecureDigest.hh"

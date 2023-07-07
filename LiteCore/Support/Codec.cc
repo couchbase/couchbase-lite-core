@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <mutex>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
     using namespace fleece;
 
 
@@ -126,7 +126,7 @@ namespace litecore { namespace blip {
 
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed", (origInput.size - input.size),
                 (origOutputSize - output.capacity()),
-                (origOutputSize - output.capacity()) * 100.0 / (origInput.size - input.size), unflushedBytes());
+                (origOutputSize - output.capacity()) * 100 / (origInput.size - input.size), unflushedBytes());
     }
 
     void Deflater::_writeAndFlush(slice_istream& input, slice_ostream& output) {
@@ -184,4 +184,4 @@ namespace litecore { namespace blip {
                  (int)((uint8_t*)output.next() - outStart), outStart);
     }
 
-}}  // namespace litecore::blip
+}  // namespace litecore::blip

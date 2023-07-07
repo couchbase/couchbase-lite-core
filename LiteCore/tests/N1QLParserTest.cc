@@ -14,7 +14,6 @@
 #include "n1ql_parser.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
-#include "fleece/Mutable.hh"
 #include <iostream>
 
 
@@ -158,7 +157,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT 17 != 'hi'") == "{'WHAT':[['!=',17,'hi']]}");
     CHECK(translate("SELECT 17 <>'hi'") == "{'WHAT':[['!=',17,'hi']]}");
 
-    CHECK(translate("SELECT 3+4) from stuff") == "");
+    CHECK(translate("SELECT 3+4) from stuff").empty());
 
     CHECK(translate("SELECT 17 IN (1, 2, 3)") == "{'WHAT':[['IN',17,['[]',1,2,3]]]}");
     CHECK(translate("SELECT 17 NOT IN (1, 2, 3)") == "{'WHAT':[['NOT IN',17,['[]',1,2,3]]]}");
@@ -178,9 +177,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
           == "{'ORDER_BY':[['RANK()','text']],'WHAT':[1],'WHERE':['MATCH()','text','word']}");
     CHECK(translate("SELECT 1 WHERE MATCH(`text`, 'word')") == "{'WHAT':[1],'WHERE':['MATCH()','text','word']}");
     CHECK(translate("SELECT 1 WHERE MATCH('text', 'word')")
-          == "");  // The first argument to MATCH must be an identifier.
+                  .empty());  // The first argument to MATCH must be an identifier.
     CHECK(translate("SELECT 1 WHERE MATCH(text, 'word') ORDER BY RANK('text')")
-          == "");  // The argument to RANK must be an identifier.
+                  .empty());  // The argument to RANK must be an identifier.
     //    CHECK(translate("SELECT 1 WHERE 'text' NOT MATCH 'word'") == "{'WHAT':[['NOT',['MATCH',['.text'],'word']]]}");
 
     CHECK(translate("SELECT 2 BETWEEN 1 AND 4") == "{'WHAT':[['BETWEEN',2,1,4]]}");
@@ -249,7 +248,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
-    CHECK(translate("SELECT squee()") == "");  // unknown name
+    CHECK(translate("SELECT squee()").empty());  // unknown name
 
     CHECK(translate("SELECT pi()") == "{'WHAT':[['pi()']]}");
     CHECK(translate("SELECT sin(1)") == "{'WHAT':[['sin()',1]]}");
@@ -265,8 +264,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
           == "{'WHAT':[['COLLATE',{'CASE':false},['=',['.name'],'fred']]]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE (UNICODE CASE NODIAC)")
           == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE NOCASE") == "");
-    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE FRED)") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE NOCASE").empty());
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE FRED)").empty());
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED")
           == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE) FRED")
@@ -275,7 +274,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
           == "{'WHAT':[['COLLATE',{'LOCALE':'se','UNICODE':true},['=',['.name'],'fred']]]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE NOUNICODE")
           == "{'WHAT':[['COLLATE',{'UNICODE':false},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE (NOUNICODE:se NOCASE DIAC)") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOUNICODE:se NOCASE DIAC)").empty());
     CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE unicode:se DIAC)")
           == "{'WHAT':[['COLLATE',{'CASE':false,'DIAC':true,'LOCALE':'se','UNICODE':true}"
              ",['=',['.name'],'fred']]]}");
@@ -287,14 +286,14 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT DISTINCT foo") == "{'DISTINCT':true,'WHAT':[['.foo']]}");
 
     CHECK(translate("SELECT foo bar") == "{'WHAT':[['AS',['.foo'],'bar']]}");
-    CHECK(translate("SELECT from where true") == "");
+    CHECK(translate("SELECT from where true").empty());
     CHECK(translate("SELECT `from` where true") == "{'WHAT':[['.from']],'WHERE':true}");
 
     CHECK(translate("SELECT foo, bar") == "{'WHAT':[['.foo'],['.bar']]}");
     CHECK(translate("SELECT foo as A, bar as B") == "{'WHAT':[['AS',['.foo'],'A'],['AS',['.bar'],'B']]}");
 
     CHECK(translate("SELECT foo WHERE 10") == "{'WHAT':[['.foo']],'WHERE':10}");
-    CHECK(translate("SELECT WHERE 10") == "");
+    CHECK(translate("SELECT WHERE 10").empty());
     CHECK(translate("SELECT foo WHERE foo = 'hi'") == "{'WHAT':[['.foo']],'WHERE':['=',['.foo'],'hi']}");
 
     CHECK(translate("SELECT foo GROUP BY bar") == "{'GROUP_BY':[['.bar']],'WHAT':[['.foo']]}");

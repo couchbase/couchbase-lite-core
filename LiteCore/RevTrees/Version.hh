@@ -70,10 +70,10 @@ namespace litecore {
         explicit Version(fleece::slice_istream& binary);
 
         /** The peer that created this version. */
-        const peerID author() const { return _author; }
+        [[nodiscard]] peerID author() const { return _author; }
 
         /** The generation count: the number of versions this peer has created. */
-        generation gen() const { return _gen; }
+        [[nodiscard]] generation gen() const { return _gen; }
 
         /** Max length of a Version in ASCII form. */
         static constexpr size_t kMaxASCIILength = 2 * 16 + 1;
@@ -84,7 +84,7 @@ namespace litecore {
             When sharing a version with another peer, pass your actual peer ID in `myID`;
             then if `author` is kMePeerID it will be written as that ID.
             Otherwise it's written as '*'. */
-        alloc_slice asASCII(peerID myID = kMePeerID) const;
+        [[nodiscard]] alloc_slice asASCII(peerID myID = kMePeerID) const;
 
         bool writeASCII(slice_ostream&, peerID myID = kMePeerID) const;
         bool writeBinary(slice_ostream&, peerID myID = kMePeerID) const;
@@ -94,7 +94,7 @@ namespace litecore {
 
         /** Compares with a version vector, i.e. whether a vector with this as its current version
             is newer/older/same as the target vector. (Will never return kConflicting.) */
-        versionOrder compareTo(const VersionVector&) const;
+        [[nodiscard]] versionOrder compareTo(const VersionVector&) const;
 
         bool operator==(const Version& v) const { return _gen == v._gen && _author == v._author; }
 
@@ -110,7 +110,7 @@ namespace litecore {
         void validate() const;
 
         peerID     _author;  // The ID of the peer who created this revision
-        generation _gen;     // The number of times this peer edited this revision
+        generation _gen{};   // The number of times this peer edited this revision
     };
 
 }  // namespace litecore

@@ -14,7 +14,7 @@
 #include "Logging.hh"
 #include <mutex>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
 
     void Actor::caughtException(const std::exception& x) {
         Warn("Caught exception in Actor %s: %s", actorName().c_str(), x.what());
@@ -30,6 +30,8 @@ namespace litecore { namespace actor {
         cond.wait(lock, [&] { return finished; });
     }
 
+    // Making this static breaks its usage in enqueue()
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
     void Actor::_waitTillCaughtUp(std::mutex* mut, std::condition_variable* cond, bool* finished) {
         std::lock_guard<std::mutex> lock(*mut);
         *finished = true;
@@ -39,5 +41,6 @@ namespace litecore { namespace actor {
         cond->notify_one();
     }
 
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

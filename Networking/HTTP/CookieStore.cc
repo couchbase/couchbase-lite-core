@@ -15,16 +15,14 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "fleece/PlatformCompat.hh"
 #include "fleece/Expert.hh"
 #include <iterator>
 #include <regex>
 #include <string>
-#include <time.h>
+#include <ctime>
 #include <chrono>
 #include <algorithm>
 #include "date/date.h"
-#include "ParseDate.hh"
 
 using namespace std;
 using namespace std::chrono;
@@ -119,7 +117,7 @@ namespace litecore::net {
             } else if ( key == "max-age" ) {
                 char* valEnd = &val[val.size()];
                 long  maxAge = strtol(&val[0], &valEnd, 10);
-                if ( valEnd != &val[val.size()] || val.size() == 0 ) {
+                if ( valEnd != &val[val.size()] || val.empty() ) {
                     Warn("Couldn't parse Max-Age in cookie");
                     return;
                 }
@@ -197,7 +195,7 @@ namespace litecore::net {
         for ( Array::iterator i(cookies); i; ++i ) {
             auto cookie = make_unique<const Cookie>(i.value().asDict());
             if ( cookie->valid() ) {
-                if ( !cookie->expired() ) _cookies.emplace_back(move(cookie));
+                if ( !cookie->expired() ) _cookies.emplace_back(std::move(cookie));
             } else {
                 Warn("Couldn't read a cookie from persisted cookie store!");
             }
@@ -245,14 +243,14 @@ namespace litecore::net {
         }
 
         lock_guard<mutex> lock(_mutex);
-        _addCookie(move(newCookie));
+        _addCookie(std::move(newCookie));
         return true;
     }
 
     void CookieStore::merge(slice data) {
         CookieStore       other(data);
         lock_guard<mutex> lock(_mutex);
-        for ( CookiePtr& cookie : other._cookies ) _addCookie(move(cookie));
+        for ( CookiePtr& cookie : other._cookies ) _addCookie(std::move(cookie));
     }
 
     void CookieStore::_addCookie(CookiePtr newCookie) {
@@ -276,7 +274,7 @@ namespace litecore::net {
         }
         // Add the new cookie:
         if ( newCookie->persistent() ) _changed = true;
-        _cookies.emplace_back(move(newCookie));
+        _cookies.emplace_back(std::move(newCookie));
     }
 
     void CookieStore::clearCookies() {

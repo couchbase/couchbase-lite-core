@@ -28,12 +28,12 @@ string QueryParserTest::parse(FLValue val) {
     return qp.SQL();
 }
 
-string QueryParserTest::parse(string json) {
+string QueryParserTest::parse(const string& json) {
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     return parse((FLValue)fleece::impl::Value::fromTrustedData(fleece));
 }
 
-string QueryParserTest::parseWhere(string json) {
+string QueryParserTest::parseWhere(const string& json) {
     QueryParser qp(*this, string(kC4DefaultCollectionName), kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
@@ -41,7 +41,7 @@ string QueryParserTest::parseWhere(string json) {
     return qp.SQL();
 }
 
-void QueryParserTest::mustFail(string json) {
+void QueryParserTest::mustFail(const string& json) {
     QueryParser qp(*this, string(kC4DefaultCollectionName), kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     ExpectException(error::LiteCore, error::InvalidQuery,

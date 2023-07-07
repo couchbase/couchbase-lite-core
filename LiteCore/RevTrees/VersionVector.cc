@@ -13,9 +13,9 @@
 
 #include "VersionVector.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
 #include "varint.hh"
 #include "slice_stream.hh"
+#include "NumConversion.hh"
 #include <algorithm>
 #include <unordered_map>
 
@@ -128,9 +128,7 @@ namespace litecore {
 
     versionOrder VersionVector::compareTo(const Version& v) const {
         auto mine = findPeerIter(v.author());
-        if ( mine == _vers.end() ) return kOlder;
-        else if ( mine->gen() < v.gen() )
-            return kOlder;
+        if ( mine == _vers.end() || mine->gen() < v.gen() ) return kOlder;
         else if ( mine->gen() == v.gen() && mine == _vers.begin() )
             return kSame;
         else
@@ -180,10 +178,9 @@ namespace litecore {
     }
 
     bool VersionVector::isNewerIgnoring(peerID ignoring, const VersionVector& other) const {
-        for ( const Version& v : _vers ) {
-            if ( v.author() != ignoring && v.gen() > other[v.author()] ) return true;
-        }
-        return false;
+        return std::any_of(_vers.begin(), _vers.end(), [&ignoring, other](auto& v) {
+            return v.author() != ignoring && v.gen() > other[v.author()];
+        });
     }
 
     vec::iterator VersionVector::findPeerIter(peerID author) const {
@@ -263,7 +260,7 @@ namespace litecore {
     // A hash table mapping peerID->generation, as an optimization for versionVector operations
     class versionMap {
       public:
-        versionMap(const vec& vec) {
+        explicit versionMap(const vec& vec) {
             _map.reserve(vec.size());
             for ( auto& v : vec ) add(v);
         }
@@ -308,7 +305,7 @@ namespace litecore {
         // Look through myself for a version equal to one in `src`:
         auto i = _vers.begin();
         for ( ; i != _vers.end(); ++i ) {
-            int64_t deltaGen = i->gen() - src[i->author()];
+            int64_t deltaGen = narrow_cast<int64_t>(i->gen()) - narrow_cast<int64_t>(src[i->author()]);
             if ( deltaGen == 0 ) break;  // found equal version; changes are done
             else if ( deltaGen < 0 )
                 return nullopt;  // src is newer (or a conflict), so fail

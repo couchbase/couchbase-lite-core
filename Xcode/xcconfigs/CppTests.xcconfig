@@ -19,6 +19,7 @@ PRODUCT_NAME                = LiteCoreCppTests
 HEADER_SEARCH_PATHS         = $(inherited)   $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/SQLiteCpp/include/   $(SRCROOT)/../vendor/fleece/vendor/catch/   $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../C/Cpp_include
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1
+GCC_PREPROCESSOR_DEFINITIONS[config=Test_EE] = $(GCC_PREPROCESSOR_DEFINITIONS) LITECORE_CPPTEST
 
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 

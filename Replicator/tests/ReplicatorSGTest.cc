@@ -186,7 +186,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Large-Docs DB", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Push 5000 Changes", "[.SyncServer]") {
-    string revID;
+    std::string revID;
     {
         TransactionHelper t(db);
         revID = createNewRev(db, "Doc"_sl, nullslice, kFleeceBody);
@@ -279,8 +279,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
-    std::vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
-    std::vector<C4BlobKey> blobKeys;
+    std::vector<std::string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    std::vector<C4BlobKey>   blobKeys;
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
@@ -321,7 +321,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
-    std::vector<string> attachments = {"Hey, this is an attachment!"};
+    std::vector<std::string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
         addDocWithAttachments("doc one"_sl, attachments, "text/plain");
@@ -364,7 +364,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
 }
 
 TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
-    const string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
+    const std::string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 
@@ -425,12 +425,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     _sg.remoteDBName = "scratch_allows_conflicts"_sl;
     flushScratchDatabase();
 
-    const std::array<string, 4> bodies = {R"({"_rev":"1-aaaa","foo":1})",
-                                          R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
-                                          R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
-                                          R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})"};
+    const std::array<std::string, 4> bodies = {R"({"_rev":"1-aaaa","foo":1})",
+                                               R"({"_revisions":{"start":2,"ids":["bbbb","aaaa"]},"foo":2.1})",
+                                               R"({"_revisions":{"start":2,"ids":["cccc","aaaa"]},"foo":2.2})",
+                                               R"({"_revisions":{"start":3,"ids":["dddd","cccc"]},"_deleted":true})"};
 
-    for ( const string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", slice(body)); }
+    for ( const std::string& body : bodies ) {
+        _sg.upsertDoc(kC4DefaultCollectionSpec, "doc?new_edits=false", slice(body));
+    }
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");
@@ -481,11 +483,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     REQUIRE(doc);
     CHECK(doc->revID == "1-1111"_sl);
 
-    const std::array<string, 3> bodies = {R"({"count":2, "_rev":"1-1111"})",
-                                          R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
-                                          R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"};
+    const std::array<std::string, 3> bodies = {R"({"count":2, "_rev":"1-1111"})",
+                                               R"({"count":3, "_rev":"2-c5557c751fcbfe4cd1f7221085d9ff70"})",
+                                               R"({"count":4, "_rev":"3-2284e35327a3628df1ca8161edc78999"})"};
 
-    for ( const string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc", slice(body)); }
+    for ( const std::string& body : bodies ) { _sg.upsertDoc(kC4DefaultCollectionSpec, "doc", slice(body)); }
 
     replicate(kC4Disabled, kC4OneShot);
     doc = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetCurrentRev, nullptr);
@@ -513,7 +515,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             }
             enc.endDict();
             alloc_slice body  = enc.finish();
-            string      revID = createNewRev(db, slice(docID), body);
+            std::string revID = createNewRev(db, slice(docID), body);
         }
     };
     populateDB();
@@ -695,8 +697,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     flushScratchDatabase();
     bool logRemoteRequests = false;
 
-    //    c4log_setCallbackLevel(kC4LogInfo);
-
     C4Log("-------- Populating local db --------");
     size_t numDocs    = 100;
     auto   populateDB = [&]() {
@@ -773,7 +773,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
         bool done = true;
         for ( slice docId : docIDs ) {
             c4::ref<C4Document> doc   = c4coll_getDoc(defaultColl, docId, true, kDocGetCurrentRev, ERROR_INFO());
-            string              revid = string(doc->revID);
+            std::string         revid = std::string(doc->revID);
             std::istringstream  is(revid);
             int                 i;
             is >> i;
@@ -804,9 +804,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
     flushScratchDatabase();
     if ( !requireSG3() ) return;  // skip test unless SG is ≥ 3.0
 
-    const string              channelIDa = "a";
-    const string              channelIDb = "b";
-    const std::vector<string> channelIDs = {channelIDa, channelIDb};
+    const std::string              channelIDa = "a";
+    const std::string              channelIDb = "b";
+    const std::vector<std::string> channelIDs = {channelIDa, channelIDb};
 
     // Create docs on SG:
     SG::TestUser testUser{_sg, "apera", channelIDs};
@@ -897,7 +897,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
     flushScratchDatabase();
     if ( !requireSG3() ) return;  // skip test unless SG is ≥ 3.0
 
-    const string channelID = "a";
+    const std::string channelID = "a";
 
     // Create temp user for test
     SG::TestUser testUser{_sg, "apefrr", {channelID}};
@@ -971,7 +971,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.Syn
     flushScratchDatabase();
     if ( !requireSG3() ) return;  // skip test unless SG is ≥ 3.0
 
-    const string channelID = "a";
+    const std::string channelID = "a";
 
     // Create temp user for test
     SG::TestUser testUser{_sg, "apdra", {channelID}};
@@ -1041,9 +1041,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel
     _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
-    const string              channelIDa = "a";
-    const string              channelIDb = "b";
-    const std::vector<string> channelIDs = {channelIDa, channelIDb};
+    const std::string              channelIDa = "a";
+    const std::string              channelIDb = "b";
+    const std::vector<std::string> channelIDs = {channelIDa, channelIDb};
 
     // Create temp user for test
     SG::TestUser testUser{_sg, "aperdfc", channelIDs};
@@ -1130,7 +1130,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision
     _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
-    const string channelID = "a";
+    const std::string channelID = "a";
 
     // Create temp user for test
     SG::TestUser testUser{_sg, "apefrr", {channelID}};
@@ -1203,7 +1203,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     _sg.remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
 
-    const string channelID = "a";
+    const std::string channelID = "a";
 
     // Create temp user for test
     SG::TestUser testUser{_sg, "apdrdfc", {channelID}};

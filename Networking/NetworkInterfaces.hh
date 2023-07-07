@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#include "fleece/slice.hh"
 #include <array>
 #include <memory>
 #include <optional>
@@ -31,44 +30,44 @@ namespace litecore::net {
     /// Represents an IP address of a network interface.
     class IPAddress {
       public:
-        IPAddress(const sockaddr&) noexcept;
-        IPAddress(const in_addr&) noexcept;
-        IPAddress(const in6_addr&) noexcept;
+        explicit IPAddress(const sockaddr&) noexcept;
+        explicit IPAddress(const in_addr&) noexcept;
+        explicit IPAddress(const in6_addr&) noexcept;
 
         static std::optional<IPAddress> parse(const std::string&);
 
-        int family() const { return _family; }  ///< AF_INET or AF_INET6
+        [[nodiscard]] int family() const { return _family; }  ///< AF_INET or AF_INET6
 
-        bool isIPv4() const;
-        bool isIPv6() const;
-        bool isLoopback() const;
-        bool isLinkLocal() const;
+        [[nodiscard]] bool isIPv4() const;
+        [[nodiscard]] bool isIPv6() const;
+        [[nodiscard]] bool isLoopback() const;
+        [[nodiscard]] bool isLinkLocal() const;
 
-        bool isRoutable() const { return scope() == kRoutable; }
+        [[nodiscard]] bool isRoutable() const { return scope() == kRoutable; }
 
         enum Scope { kLoopback, kLinkLocal, kRoutable };
 
-        Scope scope() const;
+        [[nodiscard]] Scope scope() const;
 
-        const in_addr&  addr4() const;
-        const in6_addr& addr6() const;
+        [[nodiscard]] const in_addr&  addr4() const;
+        [[nodiscard]] const in6_addr& addr6() const;
 
-        operator const in_addr&() const { return addr4(); }
+        explicit operator const in_addr&() const { return addr4(); }
 
-        operator const in6_addr&() const { return addr6(); }
+        explicit operator const in6_addr&() const { return addr6(); }
 
-        operator std::string() const;
+        explicit operator std::string() const;
 
-        std::unique_ptr<sockpp::sock_address> sockppAddress(uint16_t port) const;
-        bool                                  operator==(const IPAddress&) const;
+        [[nodiscard]] std::unique_ptr<sockpp::sock_address> sockppAddress(uint16_t port) const;
+        bool                                                operator==(const IPAddress&) const;
 
       private:
         IPAddress() = default;
         in_addr&  _addr4();
         in6_addr& _addr6();
 
-        std::array<int64_t, 2> _data;
-        uint8_t                _family;
+        std::array<int64_t, 2> _data{};
+        uint8_t                _family{};
     };
 
     /// Represents a network interface.
@@ -87,14 +86,14 @@ namespace litecore::net {
         static std::vector<IPAddress> primaryAddresses();
 
         std::string            name;
-        int                    flags = 0;  ///< IFF_UP, etc; see <net/if.h>
+        unsigned int           flags = 0;  ///< IFF_UP, etc; see <net/if.h>
         uint8_t                type  = 0;  ///< IFT_ETHER, etc; see <net/if.h>
         std::vector<IPAddress> addresses;  ///< Addresses in descending order of priority
 
-        bool isLoopback() const;
-        bool isRoutable() const;
+        [[nodiscard]] bool isLoopback() const;
+        [[nodiscard]] bool isRoutable() const;
 
-        const IPAddress& primaryAddress() const;
+        [[nodiscard]] const IPAddress& primaryAddress() const;
 
         void dump();
     };

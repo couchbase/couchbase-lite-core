@@ -12,7 +12,7 @@
 
 #include "QueryTest.hh"
 #include "PredictiveModel.hh"
-#include <math.h>
+#include <cmath>
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -23,13 +23,12 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
   public:
-    EightBall(DataFile* db) : db(db) {}
+    explicit EightBall(DataFile* db) : db(db) {}
 
     DataFile* const db;
     bool            allowCalls{true};
 
-    virtual alloc_slice prediction(const Dict* input, DataFile::Delegate* delegate,
-                                   C4Error* outError) noexcept override {
+    alloc_slice prediction(const Dict* input, DataFile::Delegate* delegate, C4Error* outError) noexcept override {
         //        Log("8-ball input: %s", input->toJSONString().c_str());
         CHECK(allowCalls);
         CHECK(delegate == db->delegate());
@@ -148,12 +147,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]"
         }
 
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{store->compileQuery(json5("{'WHAT': [['.num'], " + prediction
-                                                        + "],"
-                                                          " 'ORDER_BY': [['DESC', "
-                                                        + prediction
-                                                        + "],"
-                                                          "['DESC', ['.num']]] }"))};
+        std::stringstream sstr;
+        sstr << "{'WHAT': [['.num'], " << prediction << "],"
+             << " 'ORDER_BY': [['DESC', " << prediction << "],"
+             << "['DESC', ['.num']]] }";
+
+        Retained<Query> query{store->compileQuery(json5(sstr.str()))};
         string          explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 
@@ -174,6 +173,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]"
                                    94,  69, 22, 11, 59, 40, 87, 75, 32, 54, 7,  93, 19, 70, 44, 88, 58, 29, 13, 74,
                                    41,  92, 2,  55, 21, 71, 31, 89, 43, 6,  57, 73, 91, 12, 20, 30, 42, 56, 72, 90})));
     }
+
     PredictiveModel::unregister("8ball");
 }
 
@@ -202,12 +202,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][
         }
 
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{store->compileQuery(json5("{'WHAT': [['.num'], " + square
-                                                        + "],"
-                                                          " 'WHERE': ['AND', ['>=', "
-                                                        + square + ", 1], ['>=', " + even
-                                                        + ", 1]],"
-                                                          " 'ORDER_BY': [['DESC', ['.num']]] }"))};
+        std::stringstream sstr;
+        sstr << "{'WHAT': [['.num'], " << square << "],"
+             << " 'WHERE': ['AND', ['>=', " << square + ", 1], ['>=', " << even << ", 1]],"
+             << " 'ORDER_BY': [['DESC', ['.num']]] }";
+
+        Retained<Query> query{store->compileQuery(json5(sstr.str()))};
         string          explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 
@@ -250,13 +250,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predi
             model->allowCalls = false;
         }
 
+        std::stringstream sstr;
+        sstr << "{'WHAT': [['.num'], " << square << "],"
+             << " 'WHERE': ['AND', ['>=', " << square << ", 1], ['>=', " << even << ", 1]],"
+             << " 'ORDER_BY': [['DESC', ['.num']]] }";
+
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{store->compileQuery(json5("{'WHAT': [['.num'], " + square
-                                                        + "],"
-                                                          " 'WHERE': ['AND', ['>=', "
-                                                        + square + ", 1], ['>=', " + even
-                                                        + ", 1]],"
-                                                          " 'ORDER_BY': [['DESC', ['.num']]] }"))};
+        Retained<Query> query{store->compileQuery(json5(sstr.str()))};
         string          explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 

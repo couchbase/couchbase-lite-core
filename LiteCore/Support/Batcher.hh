@@ -11,7 +11,6 @@
 //
 
 #pragma once
-#include "Actor.hh"
 #include "Logging.hh"
 #include "Timer.hh"
 #include <atomic>
@@ -19,10 +18,11 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <vector>
 
-namespace litecore { namespace actor {
-
+namespace litecore::actor {
+    using fleece::Retained;
     static constexpr int AnyGen = INT_MAX;
 
     /** A simple queue that adds objects one at a time and sends them to its target in a batch. */
@@ -33,8 +33,8 @@ namespace litecore { namespace actor {
 
         Batcher(std::function<void(int gen)> processNow, std::function<void(int gen)> processLater,
                 Timer::duration latency = {}, size_t capacity = 0)
-            : _processNow(move(processNow))
-            , _processLater(move(processLater))
+            : _processNow(std::move(processNow))
+            , _processLater(std::move(processLater))
             , _latency(latency)
             , _capacity(capacity) {}
 
@@ -77,7 +77,7 @@ namespace litecore { namespace actor {
         Timer::duration              _latency;
         size_t                       _capacity;
         std::mutex                   _mutex;
-        Items                        _items;
+        Items                        _items{};
         int                          _generation{0};
         bool                         _scheduled{false};
     };
@@ -105,7 +105,7 @@ namespace litecore { namespace actor {
 
     class CountBatcher {
       public:
-        CountBatcher(std::function<void()> process) : _process(process) {}
+        explicit CountBatcher(std::function<void()> process) : _process(std::move(process)) {}
 
         /** Adds to the count. If the count was zero, it calls the process function. */
         void add(unsigned n = 1) {
@@ -133,4 +133,4 @@ namespace litecore { namespace actor {
     };
 
 
-}}  // namespace litecore::actor
+}  // namespace litecore::actor

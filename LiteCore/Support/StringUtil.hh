@@ -11,15 +11,21 @@
 //
 
 #pragma once
-#include "Base.hh"
-#include <ctype.h>
-#include <stdarg.h>
-#include <string.h>
+#include "fleece/function_ref.hh"
+#include "fleece/slice.hh"
+#include <cctype>
+#include <cstdarg>
+#include <cstring>
 #include <vector>
 #include <sstream>
 #include <string_view>
+#ifndef __printflike
+#    include "c4Compat.h"
+#endif
 
 namespace litecore {
+
+    using namespace fleece;
 
 #if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
     // Converts a decimal or hex digit to its integer equivalent (0..15), or 0 if not a digit.
@@ -37,14 +43,14 @@ namespace litecore {
 
     /** Writes a slice to a stream with the usual "<<" syntax */
     static inline std::ostream& operator<<(std::ostream& o, fleece::slice s) {
-        o.write((const char*)s.buf, s.size);
+        o.write((const char*)s.buf, static_cast<std::streamsize>(s.size));
         return o;
     }
 
     /** Like sprintf(), but returns a std::string */
     std::string format(const char* fmt NONNULL, ...) __printflike(1, 2);
 
-    std::string format(const std::string fmt, ...);
+    std::string format(std::string fmt, ...);
 
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char* fmt NONNULL, va_list) __printflike(1, 0);

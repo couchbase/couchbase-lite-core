@@ -61,7 +61,7 @@ namespace litecore::repl {
 
     void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) { sRegisteredInternalFactory = f; }
 
-    Retained<WebSocket> CreateWebSocket(websocket::URL url, alloc_slice options, C4Database* database,
+    Retained<WebSocket> CreateWebSocket(websocket::URL url, alloc_slice options, shared_ptr<DBAccess> database,
                                         const C4SocketFactory* factory, void* nativeHandle) {
         if ( !factory ) factory = sRegisteredFactory;
 
@@ -118,7 +118,7 @@ namespace litecore::repl {
                 this, "connect", std::string("_factory.open is ") + (_factory.open == nullptr ? "null" : "set"));
         if ( _factory.open ) {
             net::Address c4addr(url());
-            _factory.open(this, &c4addr, options().data(), _factory.context);
+            _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
         }
     }
 
