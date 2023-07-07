@@ -18,13 +18,16 @@
 //  This code is adapted from civetweb.c and CivetServer.cpp; see original license at end of file.
 
 #include "netUtils.hh"
-#include "c4Base.h"
-#include "PlatformIO.hh"
-#include "StringUtil.hh"
-#include <assert.h>
-#include <time.h>
+#include "NumConversion.hh"
+#include <cassert>
+#include <ctime>
+// 'digittoint' function
+#ifndef __APPLE__
+#    include "StringUtil.hh"
+#    include "PlatformIO.hh"
+#endif
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace std;
     using namespace fleece;
 
@@ -40,7 +43,7 @@ namespace litecore { namespace REST {
             } else if ( isFormURLEncoded && src[i] == '+' ) {
                 dst.push_back(' ');
             } else {
-                dst.push_back(src[i]);
+                dst.push_back(narrow_cast<char>(src[i]));
             }
         }
         return dst;
@@ -56,8 +59,8 @@ namespace litecore { namespace REST {
         }
 
         for ( ; src_len > 0; src++, src_len-- ) {
-            if ( isalnum(*src) || strchr(dont_escape, *src) != NULL ) {
-                dst.push_back(*src);
+            if ( isalnum(*src) || strchr(dont_escape, *src) != nullptr ) {
+                dst.push_back(narrow_cast<char>(*src));
             } else {
                 dst.push_back('%');
                 dst.push_back(hex[(*src) >> 4]);
@@ -78,7 +81,7 @@ namespace litecore { namespace REST {
         const char* end      = data + data_len;
 
         string dst;
-        if ( data == NULL || name == NULL || data_len == 0 ) { return dst; }
+        if ( data == nullptr || name == nullptr || data_len == 0 ) { return dst; }
         size_t name_len = strlen(name);
 
         // data is "var1=val1&var2=val2...". Find variable first
@@ -90,7 +93,7 @@ namespace litecore { namespace REST {
 
                 // Point s to the end of the value
                 const char* s = (const char*)memchr(p, delimiter, (size_t)(end - p));
-                if ( s == NULL ) { s = end; }
+                if ( s == nullptr ) { s = end; }
                 assert(s >= p);
 
                 // Decode variable into destination buffer
@@ -100,7 +103,7 @@ namespace litecore { namespace REST {
         return dst;
     }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST
 
 /* Copyright (c) 2013-2017 the Civetweb developers
  * Copyright (c) 2004-2013 Sergey Lyubka

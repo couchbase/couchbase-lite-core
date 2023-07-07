@@ -11,10 +11,11 @@
 //
 
 #pragma once
-#include "c4Listener.hh"
 #include "fleece/RefCounted.hh"
+#include "c4Log.h"
+#include "c4ListenerTypes.h"
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     class Listener;
 
 
@@ -25,4 +26,4 @@ namespace litecore { namespace REST {
     fleece::Retained<Listener>  NewListener(const C4ListenerConfig* config);
 
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

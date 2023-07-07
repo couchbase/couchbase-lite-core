@@ -28,7 +28,7 @@ class RESTClientTest : public ReplicatorAPITest {
     static const int numberOfOptions = 1;
 #endif
 
-    RESTClientTest(int option) : ReplicatorAPITest() {
+    explicit RESTClientTest(int option) : ReplicatorAPITest() {
         if ( option == 0 ) {
             _sg.proxy = nullptr;
             fprintf(stderr, "        --- No proxy ---\n");

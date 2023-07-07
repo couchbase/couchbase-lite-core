@@ -20,14 +20,14 @@ using namespace fleece;
 
 class ListenerHarness {
   public:
-    ListenerHarness(C4ListenerConfig conf) : config(conf) {}
+    explicit ListenerHarness(C4ListenerConfig conf) : config(conf) {}
 
     ~ListenerHarness() {
         _listener           = nullptr;  // stop listener
         gC4ExpectExceptions = false;
     }
 
-    C4Listener* listener() const { return _listener; }
+    [[nodiscard]] C4Listener* listener() const { return _listener; }
 
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -62,7 +62,7 @@ class ListenerHarness {
 
     alloc_slice useServerTLSWithTemporaryKey() {
         auto cert = useServerIdentity(_certHelper.temporaryServerIdentity);
-        return alloc_slice(c4cert_copyData(cert, false));
+        return {c4cert_copyData(cert, false)};
     }
 
     C4Cert* useClientTLSWithTemporaryKey() { return useClientIdentity(_certHelper.temporaryClientIdentity); }
@@ -72,7 +72,7 @@ class ListenerHarness {
     alloc_slice useServerTLSWithPersistentKey() {
         C4Log("Using server TLS w/persistent key for this test");
         auto cert = useServerIdentity(_certHelper.persistentServerIdentity());
-        return alloc_slice(c4cert_copyData(cert, false));
+        return {c4cert_copyData(cert, false)};
     }
 
     C4Cert* useClientTLSWithPersistentKey() { return useClientIdentity(_certHelper.persistentClientIdentity()); }

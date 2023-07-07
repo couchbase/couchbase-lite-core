@@ -13,19 +13,17 @@
 #pragma once
 #include "Response.hh"
 #include "HTTPTypes.hh"
-#include "fleece/PlatformCompat.hh"
-#include "StringUtil.hh"
 #include "Writer.hh"
 #include <functional>
 #include <map>
 #include <memory>
 #include <vector>
 
-namespace litecore { namespace net {
+namespace litecore::net {
     class ResponderSocket;
-}}  // namespace litecore::net
+}  // namespace litecore::net
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     class Server;
 
     /** Incoming HTTP request; read-only */
@@ -37,7 +35,7 @@ namespace litecore { namespace REST {
 
         bool isValid() const { return _method != Method::None; }
 
-        operator bool() const { return isValid(); }
+        explicit operator bool() const { return isValid(); }
 
         Method method() const { return _method; }
 
@@ -52,8 +50,7 @@ namespace litecore { namespace REST {
       protected:
         friend class Server;
 
-        Request(Method, const std::string& path, const std::string& queries, websocket::Headers headers,
-                fleece::alloc_slice body);
+        Request(Method, std::string path, std::string queries, websocket::Headers headers, fleece::alloc_slice body);
         Request() = default;
 
         bool readFromHTTP(fleece::slice httpData);  // data must extend at least to CRLF
@@ -75,7 +72,7 @@ namespace litecore { namespace REST {
 
         HTTPStatus status() const { return _status; }
 
-        HTTPStatus errorToStatus(C4Error);
+        static HTTPStatus errorToStatus(C4Error);
 
         // Response headers:
 
@@ -83,7 +80,7 @@ namespace litecore { namespace REST {
 
         void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
 
-        void addHeaders(std::map<std::string, std::string>);
+        void addHeaders(const std::map<std::string, std::string>&);
 
         // Response body:
 
@@ -146,4 +143,4 @@ namespace litecore { namespace REST {
         bool                                 _finished{false};  // Finished configuring the response?
     };
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST
