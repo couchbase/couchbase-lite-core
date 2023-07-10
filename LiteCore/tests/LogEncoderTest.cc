@@ -23,9 +23,9 @@
 
 using namespace std;
 
-#define DATESTAMP     "\\w+, \\d{2}/\\d{2}/\\d{2}"
-#define DATESTAMP_UTC "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
-#define TIMESTAMP     "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
+// These formats are used in the decoded log files. They are UTC times.
+#define DATESTAMP "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
+#define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\\| "
 
 constexpr size_t kFolderBufSize = 64;
 
@@ -83,7 +83,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 
     regex expected(
             TIMESTAMP
-            "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
+            "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
             "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
             "0x7fff5fbc\\n" TIMESTAMP
             "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n" TIMESTAMP
@@ -97,7 +97,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
     // We want to ensure they are consistent. The timestamp prepended to each line is in the local time
     // where the binary is decoded.
-    regex  catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP_UTC ")"};
+    regex  catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP ")"};
     smatch m;
     REQUIRE(regex_search(result, m, catchUTCTimeTag));
     CHECK(m.size() == 2);
@@ -177,7 +177,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
-    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
+    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
                               "\\{1\\|Tweedledum\\} I'm Tweedledum\\n" TIMESTAMP
                               "\\{3\\|Tweedledee\\} I'm Tweedledee\\n" TIMESTAMP
                               "\\{2\\|rattle\\} and I'm the rattle\\n");
@@ -187,7 +187,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     result  = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP_UTC " ----\\n" TIMESTAMP
+    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
                                "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
