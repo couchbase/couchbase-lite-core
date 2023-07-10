@@ -1018,7 +1018,6 @@
 		2744B331241854F2005A194D /* WebSocketImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketImpl.cc; sourceTree = "<group>"; };
 		2744B332241854F2005A194D /* WebSocketProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketProtocol.hh; sourceTree = "<group>"; };
 		2744B334241854F2005A194D /* Codec.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Codec.cc; sourceTree = "<group>"; };
-		2744B335241854F2005A194D /* ActorProperty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ActorProperty.hh; sourceTree = "<group>"; };
 		2744B336241854F2005A194D /* Async.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Async.cc; sourceTree = "<group>"; };
 		2744B337241854F2005A194D /* Actor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Actor.cc; sourceTree = "<group>"; };
 		2744B338241854F2005A194D /* ThreadedMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadedMailbox.hh; sourceTree = "<group>"; };
@@ -1028,7 +1027,6 @@
 		2744B33C241854F2005A194D /* Batcher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Batcher.hh; sourceTree = "<group>"; };
 		2744B33D241854F2005A194D /* ThreadUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadUtil.hh; sourceTree = "<group>"; };
 		2744B33E241854F2005A194D /* Codec.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Codec.hh; sourceTree = "<group>"; };
-		2744B33F241854F2005A194D /* ActorProperty.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorProperty.cc; sourceTree = "<group>"; };
 		2744B340241854F2005A194D /* Actor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Actor.hh; sourceTree = "<group>"; };
 		2744B341241854F2005A194D /* Async.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Async.hh; sourceTree = "<group>"; };
 		2744B342241854F2005A194D /* Channel.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Channel.cc; sourceTree = "<group>"; };
@@ -2090,14 +2088,12 @@
 		2744B36124185D24005A194D /* Actors */ = {
 			isa = PBXGroup;
 			children = (
-				2744B335241854F2005A194D /* ActorProperty.hh */,
 				2744B336241854F2005A194D /* Async.cc */,
 				2744B337241854F2005A194D /* Actor.cc */,
 				2744B338241854F2005A194D /* ThreadedMailbox.hh */,
 				2744B339241854F2005A194D /* GCDMailbox.hh */,
 				2744B33A241854F2005A194D /* ThreadedMailbox.cc */,
 				2744B33B241854F2005A194D /* GCDMailbox.cc */,
-				2744B33F241854F2005A194D /* ActorProperty.cc */,
 				2744B340241854F2005A194D /* Actor.hh */,
 				2744B341241854F2005A194D /* Async.hh */,
 				2744B342241854F2005A194D /* Channel.cc */,
