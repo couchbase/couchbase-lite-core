@@ -276,4 +276,5 @@ private:
 
         mutable unsigned _objectRef {0};
     };
-}
+}  // namespace litecore
+

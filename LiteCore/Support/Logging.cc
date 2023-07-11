@@ -504,8 +504,8 @@ namespace litecore {
             pos = encoder->tellp();
         } else if(file) {
             static char formatBuffer[2048];
-            size_t n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level]);
+            size_t      n = 0;
+            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
             LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
             if (objRef)
                 n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
