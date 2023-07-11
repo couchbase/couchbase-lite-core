@@ -15,6 +15,7 @@
 #include "LogDecoder.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
+#include "ParseDate.hh"
 #include "fleece/PlatformCompat.hh"
 #include <regex>
 #include <sstream>
@@ -22,8 +23,9 @@
 
 using namespace std;
 
-#define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
-#define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
+// These formats are used in the decoded log files. They are UTC times.
+#define DATESTAMP "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
+#define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\\| "
 
 constexpr size_t kFolderBufSize = 64;
 
@@ -55,6 +57,10 @@ static string dumpLog(const string& encoded, const vector<string>& levelNames) {
 }
 
 TEST_CASE("LogEncoder formatting", "[Log]") {
+    // For checking the timestamp in the path to the binary log file.
+#ifdef LITECORE_CPPTEST
+    string logPath = litecore::createLogPath_forUnitTest(LogLevel::Info);
+#endif
     stringstream out;
     {
         LogEncoder            logger(out, LogLevel::Info);
@@ -84,6 +90,34 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
             "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
             "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
+
+#ifdef LITECORE_CPPTEST
+    // We insert timestamp in milliseconds (w.r.t. UTC) in the path to the binary log files.
+    // We also add the timestamp inside the log. When decoded to string, it is
+    // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
+    // We want to ensure they are consistent.
+    regex  catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP ")"};
+    smatch m;
+    REQUIRE(regex_search(result, m, catchUTCTimeTag));
+    CHECK(m.size() == 2);
+    string utcTimeTag = m[1].str();
+    // Remove the weekday name
+    REQUIRE(regex_search(utcTimeTag, m, regex{"[^0-9]*"}));
+    string utctime           = m.suffix().str();
+    auto   utctimestampInLog = fleece::ParseISO8601Date(slice(utctime));
+    // From milliseconds to seconds
+    utctimestampInLog /= 1000;
+
+    REQUIRE(regex_search(logPath, m, regex{"cbl_info_([0-9]*)\\.cbllog$"}));
+    string timestampOnLogFilePath = m[1].str();
+    // chomp it to seconds
+    REQUIRE(timestampOnLogFilePath.length() > 3);
+    timestampOnLogFilePath = timestampOnLogFilePath.substr(0, timestampOnLogFilePath.length() - 3);
+
+    stringstream ss;
+    ss << utctimestampInLog;
+    CHECK(ss.str() == timestampOnLogFilePath);
+#endif
 }
 
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
