@@ -95,8 +95,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     // We insert timestamp in milliseconds (w.r.t. UTC) in the path to the binary log files.
     // We also add the timestamp inside the log. When decoded to string, it is
     // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
-    // We want to ensure they are consistent. The timestamp prepended to each line is in the local time
-    // where the binary is decoded.
+    // We want to ensure they are consistent.
     regex  catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP ")"};
     smatch m;
     REQUIRE(regex_search(result, m, catchUTCTimeTag));
