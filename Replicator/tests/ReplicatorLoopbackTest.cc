@@ -1928,6 +1928,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
         CHECK(clear == "\"123-45-6789\"");
     }
 }
+#endif  // COUCHBASE_ENTERPRISE
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
     Options opts       = GENERATE_COPY(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec),
@@ -1956,4 +1957,49 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "
     runReplicators(opts, serverOpts);
 }
 
-#endif  // COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]") {
+    // The new push property, "conflictIncludesRev", introduced by the resolution of CBL-2637,
+    // also fixed the scenrio of CBL-127.
+
+    FLSlice docID = C4STR("doc");
+    slice   jBody = R"({"name":"otherDB"})"_sl;
+    auto    revID = createFleeceRev(_collDB2, docID, nullslice, jBody);
+
+    _expectedDocumentCount = 1;
+    // Pre-conditions: db is empty, db2 has one doc.
+    runPushPullReplication();
+
+    // Post-conditions: db and db2 are sync'ed.
+    c4::ref<C4Document> docInDb1 = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> docInDb2 = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
+    string              revInDb1{(char*)docInDb1->revID.buf, docInDb1->revID.size};
+    string              revInDb2{(char*)docInDb2->revID.buf, docInDb2->revID.size};
+    REQUIRE(revInDb1 == revInDb2);
+    REQUIRE(revID == revInDb1);
+    REQUIRE(c4rev_getGeneration(slice(revID)) == 1);
+
+    // Modify the document in db
+    slice modifiedBody = R"({"name":"otherDB","modified":1})"_sl;
+    auto  revID_2      = createFleeceRev(_collDB1, docID, nullslice, modifiedBody);
+
+    Replicator::Options serverOpts = Replicator::Options::passive(_collSpec);
+    Replicator::Options clientOpts = Replicator::Options::pushing(kC4OneShot, _collSpec);
+
+    SECTION("Same Target Revision 1 Was Synced") {}
+    SECTION("Assign a New UID to the Target") {
+        // We are to push revision 2 but with different UID, the pusher lost track of the
+        // remote counterpart of revision 1. The property "conflictIncludesRev" attached to the
+        // "proposeChange" message helps to resolve it.
+        clientOpts.setProperty(kC4ReplicatorOptionRemoteDBUniqueID, "DifferentUID"_sl);
+    }
+
+    _expectedDocumentCount = 1;
+    runReplicators(clientOpts, serverOpts);
+    docInDb1 = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+    docInDb2 = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
+    revInDb1 = string{(char*)docInDb1->revID.buf, docInDb1->revID.size};
+    revInDb2 = string{(char*)docInDb2->revID.buf, docInDb2->revID.size};
+    CHECK(revInDb1 == revInDb2);
+    CHECK(revID_2 == revInDb1);
+    CHECK(c4rev_getGeneration(slice(revID_2)) == 2);
+}
