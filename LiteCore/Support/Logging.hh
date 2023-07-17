@@ -271,4 +271,7 @@ namespace litecore {
 
         mutable unsigned _objectRef{0};
     };
+#ifdef LITECORE_CPPTEST
+    std::string createLogPath_forUnitTest(LogLevel level);
+#endif
 }  // namespace litecore

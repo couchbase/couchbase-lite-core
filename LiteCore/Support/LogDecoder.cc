@@ -51,11 +51,15 @@ namespace litecore {
         return {secs, microsecs};
     }
 
-    void LogIterator::writeTimestamp(Timestamp t, ostream& out) {
+    void LogIterator::writeTimestamp(Timestamp t, ostream& out, bool inUtcTime) {
         local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
-        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
-        out << format("%T| ", tp);
+        const char*              fmt = "%TZ| ";
+        if ( !inUtcTime ) {
+            struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+            tp += GetLocalTZOffset(&tmpTime, true);
+            fmt = "%T| ";
+        }
+        out << format(fmt, tp);
     }
 
     void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream& out) {
@@ -66,7 +70,7 @@ namespace litecore {
     string LogIterator::formatDate(Timestamp t) {
         local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
         struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
+        tp += GetLocalTZOffset(&tmpTime, true);
         stringstream out;
         out << format("%c", tp);
         return out.str();
@@ -91,7 +95,7 @@ namespace litecore {
         while ( next() ) {
             auto ts = timestamp();
             if ( start && ts < *start ) continue;
-            writeTimestamp(ts, out);
+            writeTimestamp(ts, out, true);
 
             string levelName;
             if ( level() >= 0 && level() < levelNames.size() ) levelName = levelNames[level()];
@@ -149,11 +153,9 @@ namespace litecore {
     void LogDecoder::decodeTo(ostream& out, const std::vector<std::string>& levelNames,
                               std::optional<Timestamp> startingAt) {
         if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
-            writeTimestamp({_startTime, 0}, out);
+            writeTimestamp({_startTime, 0}, out, true);
             local_time<seconds> tp{seconds(_startTime)};
-            struct tm           tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-            tp -= GetLocalTZOffset(&tmpTime, true);
-            out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
+            out << "---- Logging begins on " << format("%A %FT%TZ", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);
