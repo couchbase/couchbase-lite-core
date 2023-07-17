@@ -68,7 +68,7 @@ class C4QueryTest : public C4Test {
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error        error;
-        auto           e = c4query_run(query, &options, c4str(bindings), ERROR_INFO(error));
+        auto           e = c4query_run(query, c4str(bindings), ERROR_INFO(error));
         REQUIRE(e);
         std::vector<Collected> results;
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) results.push_back(callback(e));

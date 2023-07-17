@@ -75,8 +75,8 @@ CBL_CORE_API void c4query_setParameters(C4Query* query, C4String encodedParamete
                         it overrides the parameters assigned by \ref c4query_setParameters.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
-CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query, const C4QueryOptions* C4NULLABLE options,
-                                                       C4String encodedParameters, C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query, C4String encodedParameters,
+                                                       C4Error* C4NULLABLE outError) C4API;
 
 /** Given a C4FullTextMatch from the enumerator, returns the entire text of the property that
         was matched. (The result depends only on the term's `dataSource` and `property` fields,
