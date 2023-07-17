@@ -13,16 +13,12 @@
 #include "RESTListener.hh"
 #include "c4Certificate.hh"
 #include "c4Database.hh"
-#include "c4Document.hh"
-#include "c4Collection.hh"
-#include "c4Private.h"
 #include "Server.hh"
 #include "TLSContext.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4ExceptionUtils.hh"
 #include "slice_stream.hh"
 
 using namespace std;
@@ -239,7 +235,7 @@ namespace litecore::REST {
                 ++i;
         }
 
-        return vector<Retained<Task>>(_tasks.begin(), _tasks.end());
+        return {_tasks.begin(), _tasks.end()};
     }
 
 #pragma mark - UTILITIES:

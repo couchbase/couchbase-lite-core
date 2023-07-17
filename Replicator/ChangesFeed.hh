@@ -49,7 +49,7 @@ namespace litecore::repl {
         };
 
         ChangesFeed(Delegate&, const Options* NONNULL, DBAccess& db, Checkpointer*);
-        ~ChangesFeed();
+        ~ChangesFeed() override;
 
         // Setup:
         void setContinuous(bool continuous) { _continuous = continuous; }
@@ -123,7 +123,7 @@ namespace litecore::repl {
 
         void setFindForeignAncestors(bool use) { _getForeignAncestors = use; }
 
-        virtual Changes getMoreChanges(unsigned limit) override MUST_USE_RESULT;
+        Changes getMoreChanges(unsigned limit) override MUST_USE_RESULT;
 
       protected:
         bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const override;

@@ -14,7 +14,6 @@
 #include "Base64.hh"
 #include "c4Collection.hh"
 #include "c4Database.hh"
-#include "c4Replicator.h"
 #include "fleece/Mutable.hh"
 
 static constexpr slice            GuitarsName = "guitars"_sl;
@@ -79,28 +78,29 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
                                    bool reset = false) {
         C4ReplicatorParameters params1{};
         params1.collectionCount = coll1.size();
-        if ( coll1.size() > 0 ) { params1.collections = coll1.data(); }
+        if ( !coll1.empty() ) { params1.collections = coll1.data(); }
         Options opts1 = Options(params1);
 
         C4ReplicatorParameters params2{};
         params2.collectionCount = coll2.size();
-        if ( coll2.size() > 0 ) { params2.collections = coll2.data(); }
+        if ( !coll2.empty() ) { params2.collections = coll2.data(); }
         Options opts2 = Options(params2);
 
         runReplicators(opts1, opts2, reset);
     }
 
-    Options replicatorOptions(vector<CollectionSpec> specs, C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
+    static Options replicatorOptions(vector<CollectionSpec> specs, C4ReplicatorMode pushMode,
+                                     C4ReplicatorMode pullMode) {
         vector<C4ReplicationCollection> coll = replCollections(specs, pushMode, pullMode);
         C4ReplicatorParameters          params{};
         params.collectionCount = coll.size();
-        if ( coll.size() > 0 ) { params.collections = coll.data(); }
+        if ( !coll.empty() ) { params.collections = coll.data(); }
         return Options(params);
     }
 
-    vector<CollectionSpec> getCollectionSpecs(C4Database* db, slice scope) {
+    static vector<CollectionSpec> getCollectionSpecs(C4Database* db, slice scope) {
         vector<CollectionSpec> specs;
-        db->forEachCollection(scope, [&](C4CollectionSpec spec) { specs.push_back(spec); });
+        db->forEachCollection(scope, [&](C4CollectionSpec spec) { specs.emplace_back(spec); });
         return specs;
     }
 
@@ -130,9 +130,9 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
       public:
         ResolvedDocument() = default;  // Resolved as a deleted doc
 
-        ResolvedDocument(C4Document* doc) : _doc(c4doc_retain(doc)) {}
+        explicit ResolvedDocument(C4Document* doc) : _doc(c4doc_retain(doc)) {}
 
-        ResolvedDocument(FLDict mergedProps) : _mergedProps(mergedProps) {}
+        explicit ResolvedDocument(FLDict mergedProps) : _mergedProps(mergedProps) {}
 
         C4Document* doc() { return _doc; }
 
@@ -143,10 +143,9 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
         RetainedDict        _mergedProps;
     };
 
-    void setConflictResolver(
-            C4Database* activeDB,
-            std::function<ResolvedDocument(CollectionSpec collection, C4Document* local, C4Document* remote)>
-                    resolver) {
+    void setConflictResolver(C4Database*                                                activeDB,
+                             const std::function<ResolvedDocument(CollectionSpec collection, C4Document* local,
+                                                                  C4Document* remote)>& resolver) {
         REQUIRE(activeDB);
 
         if ( !resolver ) {
@@ -227,8 +226,8 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
     }
 
   private:
-    vector<C4ReplicationCollection> replCollections(vector<CollectionSpec>& specs, C4ReplicatorMode pushMode,
-                                                    C4ReplicatorMode pullMode) {
+    static vector<C4ReplicationCollection> replCollections(vector<CollectionSpec>& specs, C4ReplicatorMode pushMode,
+                                                           C4ReplicatorMode pullMode) {
         vector<C4ReplicationCollection> colls(specs.size());
         for ( int i = 0; i < specs.size(); i++ ) {
             colls[i].collection = specs[i];
@@ -277,11 +276,11 @@ static std::set<string> getDocInfos(C4Database* db, C4CollectionSpec coll) {
 }
 
 struct CheckDBEntries {
-    CheckDBEntries(C4Database* db, C4Database* db2, vector<C4CollectionSpec> specs) : _db(db), _db2(db2) {
-        for ( auto i = 0; i < specs.size(); ++i ) {
-            _collSpecs.push_back(specs[i]);
-            _dbBefore.push_back(getDocInfos(_db, specs[i]));
-            _db2Before.push_back(getDocInfos(_db2, specs[i]));
+    CheckDBEntries(C4Database* db, C4Database* db2, const vector<C4CollectionSpec>& specs) : _db(db), _db2(db2) {
+        for ( auto& spec : specs ) {
+            _collSpecs.push_back(spec);
+            _dbBefore.push_back(getDocInfos(_db, spec));
+            _db2Before.push_back(getDocInfos(_db2, spec));
         }
     }
 
@@ -294,7 +293,7 @@ struct CheckDBEntries {
             CHECK(dbAfter[i].size() == _dbBefore[i].size());
             for ( auto& doc : _dbBefore[i] ) { CHECK(db2After[i].erase(doc) == 1); }
             for ( auto& doc : _db2Before[i] ) { CHECK(db2After[i].erase(doc) == 1); }
-            REQUIRE(db2After[i].size() == 0);
+            REQUIRE(db2After[i].empty());
         }
     }
 
@@ -328,7 +327,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Default}, {Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":10})");
     }
 
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
@@ -350,7 +349,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
     SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Default}, {Guitars, Default});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":10})");
     }
 }
 
@@ -377,7 +376,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Guitars}, {Guitars});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":10})");
     }
 
     SECTION("PUSH with MULTIPLE PASSIVE COLLECTIONS") {
@@ -399,7 +398,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
     SECTION("PUSH and PULL with MULTIPLE PASSIVE COLLECTIONS") {
         _expectedDocumentCount = 20;
         runPushPullReplication({Guitars}, {Default, Guitars});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":10})");
     }
 }
 
@@ -432,8 +431,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
     SECTION("PUSH and PULL") {
         _expectedDocumentCount = 60;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":20}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":20}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":20})");
+        validateCollectionCheckpoints(db, db2, 1, R"({"local":10,"remote":20})");
     }
 
     SECTION("PUSH CONTINUOUS") {
@@ -456,8 +455,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
         _expectedDocumentCount = 60;
         stopWhenIdle();
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        validateCollectionCheckpoints(db, db2, 0, "{\"local\":30,\"remote\":30}");
-        validateCollectionCheckpoints(db, db2, 1, "{\"local\":30,\"remote\":30}");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":30,"remote":30})");
+        validateCollectionCheckpoints(db, db2, 1, R"({"local":30,"remote":30})");
     }
 }
 
@@ -469,8 +468,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
 
     _expectedDocumentCount = 40;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":10,\"remote\":10}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":10,\"remote\":10}");
+    validateCollectionCheckpoints(db, db2, 0, R"({"local":10,"remote":10})");
+    validateCollectionCheckpoints(db, db2, 1, R"({"local":10,"remote":10})");
 
     addDocs(db, Roses, 1, "rose1");
     addDocs(db, Tulips, 2, "tulip1");
@@ -480,8 +479,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
 
     _expectedDocumentCount = 10;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":21,\"remote\":23}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":22,\"remote\":24}");
+    validateCollectionCheckpoints(db, db2, 0, R"({"local":21,"remote":23})");
+    validateCollectionCheckpoints(db, db2, 1, R"({"local":22,"remote":24})");
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
@@ -540,18 +539,20 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         addDocs(db2, Tulips, 2, "db2-Tulips-");
 
         std::mutex              mutex;
+        int                     stopped{0};
         std::condition_variable cv;
 
-        _callbackWhenIdle = [=, &jthread, &mutex, &cv]() {
+        _callbackWhenIdle = [=, &jthread, &mutex, &cv, &stopped]() {
             if ( jthread.thread.get_id() == std::thread::id() ) {
-                jthread.thread = thread(std::thread{[=, &mutex, &cv]() {
+                jthread.thread = thread(std::thread{[=, &mutex, &cv, &stopped]() {
                     addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
                     addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
                     addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
                     addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
                     std::unique_lock<std::mutex> lk(mutex);
-                    if ( cv.wait_for(lk, 10s) == std::cv_status::timeout ) {
+                    if ( !cv.wait_for(lk, 10s, [&stopped]() { return stopped == 1; }) ) {
                         // timed out. Stop the replicator to avoid hanging.
+                        stopped = 2;
                         _replClient->stop();
                     }
                 }});
@@ -568,10 +569,20 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
         // 3 revs from tulips to tulips2, 3 from tulips2 to tulips, total 6
         // 4 docs for push, 4docs for pull,                         total 8
-        _expectedDocumentCount = 20;
+        _expectedDocumentCount         = -1;  // disable checking document count in runReplicators.
+        unsigned expectedDocumentCount = 20;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        cv.notify_all();
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            if ( stopped == 0 ) {
+                stopped = 1;
+                cv.notify_all();
+            } else if ( stopped == 2 ) {
+                UNSCOPED_INFO("The replicator is forced to stop after timeout");
+            }
+        }
 
+        CHECK(_statusReceived.progress.documentCount == expectedDocumentCount);
         CHECK(c4coll_getDocumentCount(roses) == 6);
         CHECK(c4coll_getDocumentCount(tulips) == 6);
         CHECK(c4coll_getDocumentCount(roses2) == 6);
@@ -646,8 +657,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
     _expectedDocumentCount = 4;
     runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
-    validateCollectionCheckpoints(db, db2, 0, "{\"local\":1,\"remote\":1}");
-    validateCollectionCheckpoints(db, db2, 1, "{\"local\":1,\"remote\":1}");
+    validateCollectionCheckpoints(db, db2, 0, R"({"local":1,"remote":1})");
+    validateCollectionCheckpoints(db, db2, 1, R"({"local":1,"remote":1})");
 
     checkAttachments(db, blobKeys1a, attachments1);
     checkAttachments(db, blobKeys1b, attachments1);
@@ -688,10 +699,10 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
     // Update docs on both dbs and run pull replication:
-    createFleeceRev(roses1, "rose1"_sl, revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
-    createFleeceRev(roses2, "rose1"_sl, revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
-    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), "{\"db\":1}"_sl);
-    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), "{\"db\":2}"_sl);
+    createFleeceRev(roses1, "rose1"_sl, revOrVersID("2-12121212", "1@cafe"), R"({"db":1})"_sl);
+    createFleeceRev(roses2, "rose1"_sl, revOrVersID("2-13131313", "1@babe"), R"({"db":2})"_sl);
+    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), R"({"db":1})"_sl);
+    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), R"({"db":2})"_sl);
 
     // Pull from db (Passive) to db2 (Active)
     runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});
@@ -711,10 +722,10 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
 #ifdef COUCHBASE_ENTERPRISE
 
 struct CipherContext {
-    C4Collection* collection;
+    C4Collection* collection{};
     slice         docID;
     slice         keyPath;
-    bool          called;
+    bool          called{};
 };
 
 using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext*>;
@@ -793,14 +804,14 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     runReplicators(opts, serverOpts);
 
     // Check encryption on active replicator:
-    for ( auto i = encContexts.begin(); i != encContexts.end(); i++ ) {
-        CipherContext* context = i->second;
+    for ( auto& encContext : encContexts ) {
+        CipherContext* context = encContext.second;
         CHECK(context->called);
     }
 
     // Check decryption on passive replicator:
-    for ( auto i = decContexts.begin(); i != decContexts.end(); i++ ) {
-        auto                context = i->second;
+    for ( auto& decContext : decContexts ) {
+        auto                context = decContext.second;
         c4::ref<C4Document> doc = c4coll_getDoc(context->collection, context->docID, true, kDocGetAll, ERROR_INFO());
         REQUIRE(doc);
         Dict props = c4doc_getProperties(doc);

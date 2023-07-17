@@ -1180,7 +1180,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'Widgets'}]}"));
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
-    checkColumnTitles({"nested"});
+    checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"alias"});
 }

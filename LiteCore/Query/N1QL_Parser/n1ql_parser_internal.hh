@@ -206,10 +206,14 @@ namespace litecore::n1ql {
 
     // Property-path operations:
 
+    static string quoteIdentity(string id) {
+        replace(id, ".", "\\.");
+        replace(id, "$", "\\$");
+        return id;
+    }
 
     static string quoteProperty(string prop) {
-        replace(prop, ".", "\\.");
-        replace(prop, "$", "\\$");
+        prop = quoteIdentity(prop);
         prop.replace(0, 0, ".");
         return prop;
     }

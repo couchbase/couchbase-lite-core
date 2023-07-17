@@ -2084,10 +2084,30 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") 
     });
     t.commit();
 
-    string queryStr = string("SELECT customerId AS `$1` FROM ") + collectionName
-                      + " WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
-    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    CHECK(query->columnTitles() == vector<string>{"$1"});
+    Retained<Query> query;
+    int             SWITCH = GENERATE(0, 1);
+    switch ( SWITCH ) {
+        case 0:
+            {
+                string queryStr = string("SELECT customerId AS `$1` FROM ") + collectionName
+                                  + " WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                CHECK(query->columnTitles() == vector<string>{"$1"});
+            }
+            break;
+        case 1:
+            {
+                // collectionName = "_" | "_default.Secondary" | "scopey.subsidiary"
+                string queryStr = "SELECT "s + collectionName + ".customerId AS `scope.collection` FROM "
+                                  + collectionName + " WHERE test_id='alias_func' ORDER BY `scope.collection` LIMIT 2";
+                cout << queryStr << endl;
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                CHECK(query->columnTitles() == vector<string>{"scope.collection"});
+            }
+            break;
+        default:
+            break;
+    }
 
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
@@ -2161,7 +2181,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     string collectionAlias = collectionName;
-    if ( auto dot = collectionAlias.find('.'); dot != string::npos ) collectionAlias = collectionAlias.substr(dot + 1);
+    if ( auto dot = collectionAlias.find('.'); dot != string::npos ) collectionAlias = "`"s + collectionAlias + "`";
 
     query = store->compileQuery("SELECT meta(" + collectionAlias + ") from " + collectionName, QueryLanguage::kN1QL);
     e     = query->createEnumerator();

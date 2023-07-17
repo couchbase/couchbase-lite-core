@@ -17,7 +17,7 @@
 #include "c4ReplicatorTypes.h"
 #include "Error.hh"
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     enum class Dir { kPulling = 0, kPushing };
 
@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
             , sequence(sequence_)
             , collectionContext(collectionContext) {}
 
-        ~ReplicatedRev() = default;
+        ~ReplicatedRev() override = default;
     };
 
 #ifdef __GNUC__
@@ -86,4 +86,4 @@ namespace litecore { namespace repl {
 #    pragma GCC diagnostic pop
 #endif
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

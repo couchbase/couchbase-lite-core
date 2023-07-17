@@ -20,7 +20,7 @@
 
 #define SPARSE_CHECKPOINTS  // If defined, save entire sparse set to JSON
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using namespace std;
     using namespace fleece;
 
@@ -149,23 +149,23 @@ namespace litecore { namespace repl {
         return true;
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl
 
 namespace litecore {
 
-// The one SequenceSet method I didn't want in the header (because it drags in <stringstream>)
+    // The one SequenceSet method I didn't want in the header (because it drags in <stringstream>)
 
-std::string SequenceSet::to_string() const {
-    std::stringstream str;
-    str << "[";
-    int n = 0;
-    for ( auto& range : _sequences ) {
-        if ( n++ > 0 ) str << ", ";
-        str << uint64_t(range.first);
-        if ( range.second != range.first + 1 ) str << "-" << uint64_t((range.second - 1));
+    std::string SequenceSet::to_string() const {
+        std::stringstream str;
+        str << "[";
+        int n = 0;
+        for ( auto& range : _sequences ) {
+            if ( n++ > 0 ) str << ", ";
+            str << uint64_t(range.first);
+            if ( range.second != range.first + 1 ) str << "-" << uint64_t((range.second - 1));
+        }
+        str << "]";
+        return str.str();
     }
-    str << "]";
-    return str.str();
-}
 
 }  // namespace litecore

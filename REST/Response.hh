@@ -18,17 +18,18 @@
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <memory>
+#include <utility>
 
 struct C4Cert;
 struct C4KeyPair;
 
-namespace litecore { namespace net {
+namespace litecore::net {
     class HTTPLogic;
     struct ProxySpec;
     class TLSContext;
-}}  // namespace litecore::net
+}  // namespace litecore::net
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
 
     /** An incoming HTTP body. */
     class Body {
@@ -46,11 +47,12 @@ namespace litecore { namespace REST {
       protected:
         Body() = default;
 
-        Body(websocket::Headers headers, fleece::alloc_slice body) : _headers(headers), _body(body) {}
+        Body(websocket::Headers headers, fleece::alloc_slice body)
+            : _headers(std::move(headers)), _body(std::move(body)) {}
 
-        void setHeaders(websocket::Headers h) { _headers = h; }
+        void setHeaders(const websocket::Headers& h) { _headers = h; }
 
-        void setBody(fleece::alloc_slice body) { _body = body; }
+        void setBody(fleece::alloc_slice body) { _body = std::move(body); }
 
         websocket::Headers  _headers;
         fleece::alloc_slice _body;
@@ -62,7 +64,7 @@ namespace litecore { namespace REST {
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
       public:
-        Response(const net::Address&, net::Method = net::GET);
+        explicit Response(const net::Address&, net::Method = net::GET);
 
         Response(const std::string& scheme, const std::string& method, const std::string& hostname, uint16_t port,
                  const std::string& uri);
@@ -72,7 +74,7 @@ namespace litecore { namespace REST {
 
         ~Response();
 
-        Response& setHeaders(fleece::Doc headers);
+        Response& setHeaders(const fleece::Doc& headers);
         Response& setHeaders(const websocket::Headers& headers);
 
         Response& setAuthHeader(fleece::slice authHeader);
@@ -134,4 +136,4 @@ namespace litecore { namespace REST {
         C4Error                           _error{};
     };
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST

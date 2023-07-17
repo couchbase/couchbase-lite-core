@@ -13,8 +13,8 @@
 #pragma once
 
 #include "c4Replicator.hh"
-#include "c4DocEnumerator.hh"
 #include "c4Database.hh"
+#include "c4DocEnumeratorTypes.h"
 #include "c4Certificate.hh"
 #include "c4Internal.hh"
 #include "Replicator.hh"
@@ -47,7 +47,7 @@ namespace litecore {
         // submodule relationship to this one, so it's possible for it to get out of sync.
         static constexpr int API_VERSION = 4;
 
-        virtual void start(bool reset = false) noexcept override {
+        void start(bool reset = false) noexcept override {
             LOCK(_mutex);
             if ( _status.level == kC4Stopping ) {
                 logInfo("Rapid call to start() (stop() is not finished yet), scheduling a restart after stop() is "
@@ -147,7 +147,7 @@ namespace litecore {
             }
         }
 
-        virtual void stop() noexcept override {
+        void stop() noexcept override {
             LOCK(_mutex);
             _cancelStop = false;
             setStatusFlag(kC4Suspended, false);
@@ -171,7 +171,7 @@ namespace litecore {
 
         virtual void setProperties(AllocedDict properties) {
             LOCK(_mutex);
-            _options->properties = move(properties);
+            _options->properties = std::move(properties);
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)
@@ -196,7 +196,7 @@ namespace litecore {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-        C4Cert* getPeerTLSCertificate() const {
+        C4Cert* getPeerTLSCertificate() const override {
             LOCK(_mutex);
             if ( !_peerTLSCertificate && _peerTLSCertificateData ) {
                 _peerTLSCertificate     = C4Cert::fromData(_peerTLSCertificateData);
@@ -220,7 +220,7 @@ namespace litecore {
             _options->verify();
         }
 
-        virtual ~C4ReplicatorImpl() {
+        ~C4ReplicatorImpl() override {
             logInfo("Freeing C4BaseReplicator");
             // Tear down the Replicator instance -- this is important in the case where it was
             // never started, because otherwise there will be a bunch of ref cycles that cause many
@@ -228,13 +228,13 @@ namespace litecore {
             if ( _replicator ) _replicator->terminate();
         }
 
-        virtual std::string loggingClassName() const override { return "C4Replicator"; }
+        std::string loggingClassName() const override { return "C4Replicator"; }
 
         bool continuous(unsigned collectionIndex = 0) const noexcept {
             return _options->push(collectionIndex) == kC4Continuous || _options->pull(collectionIndex) == kC4Continuous;
         }
 
-        inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept { return (_status.flags & flag) != 0; }
+        inline bool statusFlag(C4ReplicatorStatusFlags flag) const noexcept { return (_status.flags & flag) != 0; }
 
         bool setStatusFlag(C4ReplicatorStatusFlags flag, bool on) noexcept {
             auto flags = _status.flags;
@@ -315,8 +315,7 @@ namespace litecore {
 
 
         // Replicator::Delegate method, notifying that the WebSocket has connected.
-        virtual void replicatorGotHTTPResponse(Replicator* repl, int status,
-                                               const websocket::Headers& headers) override {
+        void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
             LOCK(_mutex);
             if ( repl == _replicator ) {
                 Assert(!_responseHeaders);
@@ -324,7 +323,7 @@ namespace litecore {
             }
         }
 
-        virtual void replicatorGotTLSCertificate(slice certData) override {
+        void replicatorGotTLSCertificate(slice certData) override {
 #ifdef COUCHBASE_ENTERPRISE
             LOCK(_mutex);
             _peerTLSCertificateData = certData;
@@ -333,7 +332,7 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying that the status level or progress have changed.
-        virtual void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override {
+        void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override {
             Retained<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
 
             bool stopped, resume = false;
@@ -341,7 +340,7 @@ namespace litecore {
                 LOCK(_mutex);
                 if ( repl != _replicator ) return;
                 auto oldLevel = _status.level;
-                updateStatusFromReplicator(newStatus);
+                updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
                 if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) handleConnected();
                 if ( _status.level == kC4Stopped ) {
                     _replicator->terminate();
@@ -371,8 +370,7 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying that document(s) have finished.
-        virtual void replicatorDocumentsEnded(Replicator*                                 repl,
-                                              const std::vector<Retained<ReplicatedRev>>& revs) override {
+        void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override {
             if ( repl != _replicator ) return;
 
             auto                                nRevs = revs.size();
@@ -380,7 +378,7 @@ namespace litecore {
             docsEnded.reserve(nRevs);
             for ( int pushing = 0; pushing <= 1; ++pushing ) {
                 docsEnded.clear();
-                for ( auto rev : revs ) {
+                for ( const auto& rev : revs ) {
                     if ( (rev->dir() == Dir::kPushing) == pushing ) docsEnded.push_back(rev->asDocumentEnded());
                 }
                 if ( !docsEnded.empty() ) {
@@ -392,7 +390,7 @@ namespace litecore {
         }
 
         // Replicator::Delegate method, notifying of blob up/download progress.
-        virtual void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
+        void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override {
             if ( repl != _replicator ) return;
             auto onBlob = _onBlobProgress.load();
             if ( onBlob )
@@ -420,7 +418,7 @@ namespace litecore {
             if ( willLog() ) {
                 double progress = 0.0;
                 if ( status.progress.unitsTotal > 0 )
-                    progress = 100.0 * double(status.progress.unitsCompleted) / status.progress.unitsTotal;
+                    progress = 100.0 * double(status.progress.unitsCompleted) / double(status.progress.unitsTotal);
                 if ( status.error.code ) {
                     logError("State: %-s, progress=%.2f%%, error=%s", kC4ReplicatorActivityLevelNames[status.level],
                              progress, status.error.description().c_str());

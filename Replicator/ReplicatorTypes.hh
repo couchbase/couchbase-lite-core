@@ -13,15 +13,15 @@
 #pragma once
 #include "ReplicatedRev.hh"
 #include "fleece/Fleece.hh"
-#include "c4Base.hh"
-#include "c4BlobStore.hh"
+#include "c4BlobStoreTypes.h"
 #include <limits>
 #include <memory>
 #include <vector>
+#include <unordered_set>
 
 struct C4DocumentInfo;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using fleece::RefCounted;
     using fleece::Retained;
     using fleece::RetainedConst;
@@ -77,7 +77,7 @@ namespace litecore { namespace repl {
         alloc_slice historyString(C4Document*);
 
       protected:
-        ~RevToSend() = default;
+        ~RevToSend() override = default;
     };
 
     typedef std::vector<Retained<RevToSend>> RevToSendList;
@@ -109,7 +109,7 @@ namespace litecore { namespace repl {
         void notifyInserted();
 
       protected:
-        ~RevToInsert();
+        ~RevToInsert() override;
     };
 
     /** Metadata of a blob to download. */
@@ -123,4 +123,4 @@ namespace litecore { namespace repl {
 
     using CollectionIndex                               = unsigned;
     constexpr const CollectionIndex kNotCollectionIndex = std::numeric_limits<CollectionIndex>::max();
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

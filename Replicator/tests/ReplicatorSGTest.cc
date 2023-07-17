@@ -16,7 +16,6 @@
 #include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
-#include "c4Index.h"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
@@ -292,7 +291,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
     REQUIRE(doc);
     alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
     CHECK(before);
-    doc = nullptr;
     C4Log("Original doc: %.*s", SPLAT(before));
 
     replicate(kC4OneShot, kC4Disabled);
@@ -765,9 +763,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
 
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
 
-    C4ReplicatorStatus status;
     // Wait for Idle state
-    while ( (status = c4repl_getStatus(_repl)).level != kC4Idle ) { std::this_thread::sleep_for(1ms); }
+    while ( c4repl_getStatus(_repl).level != kC4Idle ) { std::this_thread::sleep_for(1ms); }
     // we wait for all documents to reach revision numUpdates + 1.
     while ( true ) {
         bool done = true;
@@ -788,6 +785,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     }
     // All documents reached target revisions. Now, stop it.
     c4repl_stop(_repl);
+    C4ReplicatorStatus status;
     while ( (status = c4repl_getStatus(_repl)).level != kC4Stopped ) { std::this_thread::sleep_for(1ms); }
 
     C4Log("-------- status.total=%lld, status.completed=%lld, status.docCount=%lld, number of documents in the "

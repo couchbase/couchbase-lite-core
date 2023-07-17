@@ -12,7 +12,6 @@
 
 #include "PropertyEncryption.hh"
 #include "c4Test.hh"
-#include "c4CppUtils.hh"
 #include "JSON5.hh"
 #include "c4ReplicatorTypes.h"
 #include "Base64.hh"
@@ -68,10 +67,10 @@ class PropEncryptionTest {
 
         if ( _returnError ) {
             *outError = {LiteCoreDomain, kC4ErrorCrypto};
-            return alloc_slice();
+            return {};
         }
 
-        if ( _returnNull ) { return alloc_slice(); }
+        if ( _returnNull ) { return {}; }
 
         return alloc_slice(kDefaultCiphertext);
     }
@@ -129,10 +128,10 @@ class PropDecryptionTest {
 
         if ( _returnError ) {
             *outError = {LiteCoreDomain, kC4ErrorCrypto};
-            return alloc_slice();
+            return {};
         }
 
-        if ( _returnNull ) { return alloc_slice(); }
+        if ( _returnNull ) { return {}; }
 
         return alloc_slice(kDefaultCleartext);
     }

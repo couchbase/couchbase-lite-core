@@ -17,17 +17,13 @@
 #include "DBAccess.hh"
 #include "fleece/Fleece.hh"
 #include "StringUtil.hh"
-#include "Instrumentation.hh"
 #include "c4ExceptionUtils.hh"
-#include "c4Private.h"
-#include "c4Document.hh"
-#include "c4ReplicatorTypes.h"
 
 using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
 
     Inserter::Inserter(Replicator* repl, CollectionIndex coll)
@@ -92,7 +88,7 @@ namespace litecore { namespace repl {
         } else {
             double t = st.elapsed();
             logInfo("Inserted %3zu revs in %6.2fms (%5.0f/sec) of which %4.1f%% was commit", revs->size(), t * 1000,
-                    revs->size() / t, commitTime / t * 100);
+                    (double)revs->size() / t, commitTime / t * 100);
         }
     }
 
@@ -124,7 +120,7 @@ namespace litecore { namespace repl {
                 alloc_slice bodyForDB;
                 if ( rev->deltaSrc ) {
                     // If this is a delta, put the JSON delta in the put-request:
-                    bodyForDB            = move(rev->deltaSrc);
+                    bodyForDB            = std::move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
                     put.deltaCB          = [](void* context, C4Document* doc, C4Slice delta,
                                      C4Error* outError) -> C4SliceResult {
@@ -149,10 +145,9 @@ namespace litecore { namespace repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                Retained<C4Document> doc =
-                        _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
-                            return insertionCollection()->putDocument(put, nullptr, outError);
-                        });
+                auto doc = _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
+                    return insertionCollection()->putDocument(put, nullptr, outError);
+                });
                 if ( !doc ) return false;
                 auto collPath = _options->collectionPath(collectionIndex());
                 logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64, SPLAT(rev->docID), SPLAT(collPath),
@@ -206,4 +201,4 @@ namespace litecore { namespace repl {
         return _insertionCollection;
     }
 
-}}  // namespace litecore::repl
+}  // namespace litecore::repl

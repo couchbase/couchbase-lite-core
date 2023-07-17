@@ -33,8 +33,8 @@ C4API_BEGIN_DECLS
                         input expression will be stored here (or -1 if not known/applicable.)
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
-CBL_CORE_API C4Query* c4query_new2(C4Database* database, C4QueryLanguage language, C4String expression,
-                                   int* C4NULLABLE outErrorPos, C4Error* C4NULLABLE error) C4API;
+CBL_CORE_API C4Query* C4NULLABLE c4query_new2(C4Database* database, C4QueryLanguage language, C4String expression,
+                                              int* C4NULLABLE outErrorPos, C4Error* C4NULLABLE error) C4API;
 
 /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
@@ -75,8 +75,8 @@ CBL_CORE_API void c4query_setParameters(C4Query* query, C4String encodedParamete
                         it overrides the parameters assigned by \ref c4query_setParameters.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
-CBL_CORE_API C4QueryEnumerator* c4query_run(C4Query* query, const C4QueryOptions* C4NULLABLE options,
-                                            C4String encodedParameters, C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query, const C4QueryOptions* C4NULLABLE options,
+                                                       C4String encodedParameters, C4Error* C4NULLABLE outError) C4API;
 
 /** Given a C4FullTextMatch from the enumerator, returns the entire text of the property that
         was matched. (The result depends only on the term's `dataSource` and `property` fields,
@@ -114,7 +114,8 @@ static inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE
 
 /** Checks whether the query results have changed since this enumerator was created;
         if so, returns a new enumerator. Otherwise returns NULL. */
-CBL_CORE_API C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4QueryEnumerator*  e,
+                                                               C4Error* C4NULLABLE outError) C4API;
 
 /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */

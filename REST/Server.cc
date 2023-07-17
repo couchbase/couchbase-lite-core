@@ -19,9 +19,8 @@
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
-#include "fleece/PlatformCompat.hh"
+#include <memory>
 #include <mutex>
 
 // TODO: Remove these pragmas when doc-comments in sockpp are fixed
@@ -31,7 +30,7 @@
 #include "sockpp/inet6_address.h"
 #pragma clang diagnostic pop
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace std;
     using namespace fleece;
     using namespace litecore::net;
@@ -45,7 +44,7 @@ namespace litecore { namespace REST {
 
             // The differences in naming for each platform are annoying for this struct
             // It's 128-bits, for crying out loud so let's just see if they are all zero...
-            uint64_t* ptr = (uint64_t*)&rawAddr;
+            auto* ptr = (uint64_t*)&rawAddr;
             return ptr[0] == 0 && ptr[1] == 0;
         }
 
@@ -106,7 +105,7 @@ namespace litecore { namespace REST {
 
         auto ifAddr = interfaceToAddress(networkInterface, port);
         _tlsContext = tlsContext;
-        _acceptor.reset(new acceptor(*ifAddr));
+        _acceptor   = std::make_unique<acceptor>(*ifAddr);
         if ( !*_acceptor ) error::_throw(error::POSIX, _acceptor->last_error());
         _acceptor->set_non_blocking();
         c4log(ListenerLog, kC4LogInfo, "Server listening on port %d", this->port());
@@ -154,8 +153,8 @@ namespace litecore { namespace REST {
                 sock.set_non_blocking(false);
                 // We are in the poller thread and go handle the client connection in a new thead to avoid
                 // blocking the polling thread.
-                thread handleThread([selfRetain = Retained<Server>{this}, sock = move(sock), this]() mutable {
-                    this->handleConnection(move(sock));
+                thread handleThread([selfRetain = Retained<Server>{this}, sock = std::move(sock), this]() mutable {
+                    this->handleConnection(std::move(sock));
                 });
                 handleThread.detach();
             }
@@ -168,7 +167,7 @@ namespace litecore { namespace REST {
 
     void Server::handleConnection(sockpp::stream_socket&& sock) {
         auto responder = make_unique<ResponderSocket>(_tlsContext);
-        if ( !responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS()) ) {
+        if ( !responder->acceptSocket(std::move(sock)) || (_tlsContext && !responder->wrapTLS()) ) {
             c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
                   responder->error().description().c_str());
             return;
@@ -181,7 +180,7 @@ namespace litecore { namespace REST {
             else
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", responder->peerAddress().c_str());
         }
-        RequestResponse rq(this, move(responder));
+        RequestResponse rq(this, std::move(responder));
         if ( rq.isValid() ) {
             dispatchRequest(&rq);
             rq.finish();
@@ -251,4 +250,4 @@ namespace litecore { namespace REST {
         }
     }
 
-}}  // namespace litecore::REST
+}  // namespace litecore::REST
