@@ -66,9 +66,8 @@ class C4QueryTest : public C4Test {
     template <class Collected>
     std::vector<Collected> runCollecting(const char* bindings, std::function<Collected(C4QueryEnumerator*)> callback) {
         REQUIRE(query);
-        C4QueryOptions options = kC4DefaultQueryOptions;
-        C4Error        error;
-        auto           e = c4query_run(query, c4str(bindings), ERROR_INFO(error));
+        C4Error error;
+        auto    e = c4query_run(query, c4str(bindings), ERROR_INFO(error));
         REQUIRE(e);
         std::vector<Collected> results;
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) results.push_back(callback(e));

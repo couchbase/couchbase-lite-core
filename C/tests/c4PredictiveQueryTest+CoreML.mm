@@ -73,7 +73,6 @@ public:
 
     void checkQueryError(const char *queryStr, const char *expectedErrorMessage) {
         compileSelect(json5(queryStr));
-        C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error = {};
         ExpectingExceptions x;
         auto e = c4query_run(query, nullslice, &error);
