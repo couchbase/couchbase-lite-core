@@ -31,7 +31,7 @@ namespace litecore {
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static C4Document* documentContaining(FLValue value);
+        static C4Document* C4NULLABLE documentContaining(FLValue value);
     };
 
 }  // namespace litecore
