@@ -141,12 +141,12 @@ struct C4Document
 
     static alloc_slice createDocID();
 
-    static constexpr size_t kGeneratedIDLength = 23;
-    static char*            generateID(char* outDocID, size_t bufferSize) noexcept;
+    static constexpr size_t    kGeneratedIDLength = 23;
+    [[nodiscard]] static char* generateID(char* outDocID, size_t bufferSize) noexcept;
 
-    static constexpr size_t kMaxDocIDLength = 240;
-    static bool             isValidDocID(slice) noexcept;
-    static void             requireValidDocID(slice);  // throws kC4ErrorBadDocID
+    static constexpr size_t   kMaxDocIDLength = 240;
+    [[nodiscard]] static bool isValidDocID(slice) noexcept;
+    static void               requireValidDocID(slice);  // throws kC4ErrorBadDocID
 
     [[nodiscard]] static RevIDType typeOfRevID(slice) noexcept;
     static void                    requireValidRevID(slice);  // throws kC4ErrorBadRevisionID
@@ -159,8 +159,8 @@ struct C4Document
     /// Returns the Document instance, if any, that contains the given Fleece value.
     static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
 
-    static bool isOldMetaProperty(slice propertyName) noexcept;
-    static bool hasOldMetaProperties(FLDict) noexcept;
+    [[nodiscard]] static bool isOldMetaProperty(slice propertyName) noexcept;
+    [[nodiscard]] static bool hasOldMetaProperties(FLDict) noexcept;
 
     static alloc_slice encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys);
 

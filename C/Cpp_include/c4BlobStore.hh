@@ -80,9 +80,12 @@ namespace C4Blob {
     /** Returns true if this dict (usually the root of a document) contains any blobs within. */
     bool dictContainsBlobs(FLDict C4NULLABLE) noexcept;
 
-    using FindBlobCallback = fleece::function_ref<bool(FLDict)>;
+    /** A callback informing the caller of a blob or attachment.
+        @param blobMeta  The blob/attachment's metadata Dict.
+        @returns  True to continue iterating, false to return ASAP. */
+    using FindBlobCallback = fleece::function_ref<bool(FLDict blobMeta)>;
 
-    /** Finds blob references in a Fleece Dict, recursively. */
+    /** Finds all blob references in a Fleece Dict, recursively. */
     bool findBlobReferences(FLDict C4NULLABLE, const FindBlobCallback&);
 
     /** Finds old-style attachment references, i.e. sub-dictionaries of "_attachments". */

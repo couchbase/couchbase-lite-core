@@ -122,7 +122,7 @@ struct C4Database
     virtual bool hasScope(C4String) const = 0;
 
     /// Returns the existing collection with the given name & scope, or nullptr if it doesn't exist.
-    virtual C4Collection* getCollection(CollectionSpec) const = 0;
+    virtual C4Collection* C4NULLABLE getCollection(CollectionSpec) const = 0;
 
     /// Creates and returns an empty collection with the given name in the given scope,
     /// or if one already exists, returns that.

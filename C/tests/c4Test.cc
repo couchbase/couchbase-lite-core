@@ -375,11 +375,14 @@ void C4Test::createConflictingRev(C4Collection* collection, C4Slice docID, C4Sli
     rq.revFlags                = flags;
     rq.save                    = true;
     C4Error error;
-    auto    doc = c4coll_putDoc(collection, &rq, nullptr, &error);
+    size_t  commonAncestor;
+    auto    doc = c4coll_putDoc(collection, &rq, &commonAncestor, &error);
     //    char buf[256];
     //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
-    C4Assert(doc != nullptr);
+    Assert(doc != nullptr, "createConflictingRev failed: %s", c4error_descriptionStr(error));
+    if ( commonAncestor == 0 )
+        C4Warn("createConflictingRev: doc %.*s rev %.*s already existed", SPLAT(docID), SPLAT(newRevID));
     c4doc_release(doc);
 }
 
