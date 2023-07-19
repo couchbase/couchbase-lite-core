@@ -960,8 +960,7 @@ void c4query_setParameters(C4Query* query, C4String encodedParameters) noexcept 
     query->setParameters(encodedParameters);
 }
 
-C4QueryEnumerator* c4query_run(C4Query* query, C4UNUSED const C4QueryOptions* C4NULLABLE options,
-                               C4Slice encodedParameters, C4Error* outError) noexcept {
+C4QueryEnumerator* c4query_run(C4Query* query, C4Slice encodedParameters, C4Error* outError) noexcept {
     return tryCatch<C4QueryEnumerator*>(outError, [&] { return query->createEnumerator(encodedParameters); });
 }
 

@@ -996,7 +996,7 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
         c4::ref<C4Query> query =
                 c4query_new2(db, kC4N1QLQuery, "SELECT n FROM _ WHERE even == true"_sl, nullptr, ERROR_INFO());
         REQUIRE(query);
-        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullslice, ERROR_INFO());
         REQUIRE(e);
         unsigned count = 0, total = 0;
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -1074,7 +1074,7 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
                 c4query_new2(db, kC4N1QLQuery, "SELECT firstName, lastName FROM _ ORDER BY firstName, lastName"_sl,
                              nullptr, ERROR_INFO());
         REQUIRE(query);
-        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullslice, ERROR_INFO());
         REQUIRE(e);
         unsigned    count         = 0;
         const char* fl_names[][2] = {{"fName", "lName"}, {"john", "foo"}};

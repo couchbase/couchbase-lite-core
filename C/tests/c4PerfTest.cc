@@ -129,7 +129,7 @@ class PerfTest : public C4Test {
         C4Error  error;
         C4Query* query = c4query_new2(db, kC4JSONQuery, c4str(whereStr), nullptr, ERROR_INFO(error));
         REQUIRE(query);
-        auto e = c4query_run(query, nullptr, kC4SliceNull, ERROR_INFO(error));
+        auto e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
         REQUIRE(e);
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
