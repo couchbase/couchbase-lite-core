@@ -221,17 +221,37 @@ TEST_CASE("Logging rollover", "[Log]") {
         tmpOut << "I" << endl;
     }
 
-
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
-    LogFileOptions       fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false};
+
+    int maxCount = 0;
+    SECTION("No Purge") {
+        // Allows 3 log files
+        maxCount = 2;
+    }
+    SECTION("Purge old logs") {
+        // Allows 2 log files.
+        // The first one, with serialNo=1, will be purged.
+        maxCount = 1;
+    }
+
+    LogFileOptions fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, maxCount, false};
+#ifdef LITECORE_CPPTEST
+    resetRotateSerialNo();
+#endif
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
+    // The following will trigger 2 rotations.
     for ( int i = 0; i < 1024; i++ ) {
         // Do a lot of logging, so that pruning also gets tested
         obj.doLog("This is line #%d in the log.", i);
         if ( i == 256 ) {
             // Otherwise the logging will happen to fast that
             // rollover won't have a chance to occur
+            this_thread::sleep_for(2s);
+        }
+        if ( i == 256 * 2 ) {
+            // To ensure we have 2 rotate events. If maxCount in the logOptions is 1,
+            // one file will be purged from the disk.
             this_thread::sleep_for(2s);
         }
     }
@@ -251,18 +271,116 @@ TEST_CASE("Logging rollover", "[Log]") {
         if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 
-    CHECK(totalCount == 8);  // 1 for each level besides info, 1 info, 1 "intheway", 1 "acbd"
-    REQUIRE(infoFiles.size() == 2);
-    stringstream out;
-    ifstream     fin(infoFiles[0], ios::binary);
-    LogDecoder   d1(fin);
-    d1.decodeTo(out, vector<string>{"", "", "INFO", "", ""});
+    CHECK(totalCount == 7 + maxCount);  // 1 for each level besides info, 2 or 3 info, 1 "intheway", 1 "acbd"
+    REQUIRE(infoFiles.size() == maxCount + 1);
 
-    out.str("");
-    // If obj ref rollover is not working then this will throw an exception
-    ifstream   fin2(infoFiles[1], ios::binary);
-    LogDecoder d2(fin2);
-    d2.decodeTo(out, vector<string>{"", "", "INFO", "", ""});
+    vector<std::array<string, 5>> lines;
+    auto                          getLines = [&](int f) {
+        stringstream out;
+        ifstream     fin(infoFiles[f], ios::binary);
+        LogDecoder   d(fin);
+        d.decodeTo(out, vector<string>{"", "", "INFO", "", ""});
+        lines.push_back({});
+        std::getline(out, lines.back()[0], '\n');  // header 1
+        std::getline(out, lines.back()[1], '\n');  // header 2
+        std::getline(out, lines.back()[2], '\n');  // initialMessage
+        std::getline(out, lines.back()[3], '\n');  // first line of the log
+        string last;
+        while ( std::getline(out, last, '\n') ) {
+            lines.back()[4] = last;  // last line of the log
+        }
+    };
+    for ( int n = 0; n < infoFiles.size(); ++n ) {
+        // If obj ref rollover is not working then this will throw an exception as n > 0
+        getLines(n);
+    }
+    REQUIRE(lines.size() == infoFiles.size());
+
+    auto findSerialNo = [&](int f) {
+        regex  regxSerialNo{R"(serialNo=([1-9][0-9]*))"};
+        smatch m;
+        // line 1 includes the serialNo
+        CHECK(regex_search(lines[f][1], m, regxSerialNo));
+        REQUIRE(m.size() == 2);
+        stringstream ss{m[1].str()};
+        int          ret = 0;
+        ss >> ret;
+        // serialNo starts from 1
+        CHECK((1 <= ret && ret <= 3));
+        return ret;
+    };
+    int bySerialNo[3]{-1, -1, -1};
+    for ( int n = 0; n < infoFiles.size(); ++n ) {
+        // serialNo 1-3 map to index 0-2
+        bySerialNo[findSerialNo(n) - 1] = n;
+    }
+    CHECK((maxCount == 1 ? bySerialNo[0] < 0 : bySerialNo[0] >= 0));
+    CHECK(bySerialNo[1] >= 0);
+    CHECK(bySerialNo[2] >= 0);
+
+    //    Example outputs:
+    //    ---------------
+    //        for (int n = 0; n < 3; ++n) {
+    //            if (bySerialNo[n] < 0) continue;
+    //            for (const auto& s : lines[bySerialNo[n]]) {
+    //                cout << s << endl;
+    //            }
+    //            cout << endl;
+    //        }
+    //    The above code outputs the following.
+    //
+    //    00:26:16.000000Z| ---- Logging begins on Thursday 2023-07-20T00:26:16Z ----
+    //    00:26:16.138985Z| INFO: ---- serialNo=1,logDirectory=/private/tmp/LiteCore_Tests_1689812776/Log_Rollover_1689812776,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=2 ----
+    //    00:26:16.139006Z| INFO: ---- Hello ----
+    //    00:26:16.139315Z| [DB] INFO: {1|dummy} This is line #0 in the log.
+    //    00:26:18.146657Z| [DB] INFO: {1} This is line #257 in the log.
+    //
+    //    00:26:18.000000Z| ---- Logging begins on Thursday 2023-07-20T00:26:18Z ----
+    //    00:26:18.147429Z| INFO: ---- serialNo=2,logDirectory=/private/tmp/LiteCore_Tests_1689812776/Log_Rollover_1689812776,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=2 ----
+    //    00:26:18.147463Z| INFO: ---- Hello ----
+    //    00:26:18.147587Z| [DB] INFO: {1|dummy} This is line #258 in the log.
+    //    00:26:20.152145Z| [DB] INFO: {1} This is line #513 in the log.
+    //
+    //    00:26:20.000000Z| ---- Logging begins on Thursday 2023-07-20T00:26:20Z ----
+    //    00:26:20.153720Z| INFO: ---- serialNo=3,logDirectory=/private/tmp/LiteCore_Tests_1689812776/Log_Rollover_1689812776,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=2 ----
+    //    00:26:20.153786Z| INFO: ---- Hello ----
+    //    00:26:20.153917Z| [DB] INFO: {1|dummy} This is line #514 in the log.
+    //    00:26:20.160590Z| [DB] INFO: {1} This is line #1023 in the log.
+
+    auto findLineNo = [&](int f) {
+        regex  regxLineNo{R"(This is line #([0-9]*) in the log)"};
+        smatch m;
+        CHECK(regex_search(lines[f][3], m, regxLineNo));
+        REQUIRE(m.size() == 2);
+        stringstream s1    = stringstream{m[1].str()};
+        int          begin = 0;
+        s1 >> begin;
+
+        CHECK(regex_search(lines[f][4], m, regxLineNo));
+        REQUIRE(m.size() == 2);
+        stringstream s2  = stringstream{m[1].str()};
+        int          end = 0;
+        s2 >> end;
+        return std::make_pair(begin, end);
+    };
+    int lineNo[3][2];
+    for ( int n = 0; n < 3; ++n ) {
+        // n corresponds to the serialNo.
+        if ( bySerialNo[n] < 0 ) {
+            // serialNo=1 is purged
+            lineNo[n][0] = -1;
+        } else {
+            std::tie(lineNo[n][0], lineNo[n][1]) = findLineNo(bySerialNo[n]);
+        }
+    }
+    if ( lineNo[0][0] >= 0 ) {
+        // first log file with serialNo = 1
+        CHECK(lineNo[0][0] == 0);
+        // Assert that line # continues.
+        CHECK(lineNo[0][1] + 1 == lineNo[1][0]);
+    }
+    CHECK(lineNo[1][1] + 1 == lineNo[2][0]);
+    CHECK(lineNo[2][1] == 1023);
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
@@ -316,6 +434,9 @@ TEST_CASE("Logging plaintext", "[Log]") {
 
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     LogFileOptions       fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true};
+#ifdef LITECORE_CPPTEST
+    litecore::resetRotateSerialNo();
+#endif
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
     obj.doLog("This will be in plaintext");
@@ -334,10 +455,18 @@ TEST_CASE("Logging plaintext", "[Log]") {
         lines.push_back(line);
     }
 
-    CHECK(lines[0] == "---- Hello ----");
-    CHECK(lines[1].find("[DB]") != string::npos);
-    CHECK(lines[1].find("{dummy#") != string::npos);
-    CHECK(lines[1].find("This will be in plaintext") != string::npos);
+    int n = 0;
+#ifdef LITECORE_CPPTEST
+    regex  checkHeader{R"(---- serialNo=1,logDirectory=[^,]*,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=5 ----)"};
+    smatch m;
+    CHECK(regex_match(lines[n++], m, checkHeader));
+#else
+    n++;
+#endif
+    CHECK(lines[n++] == "---- Hello ----");
+    CHECK(lines[n].find("[DB]") != string::npos);
+    CHECK(lines[n].find("{dummy#") != string::npos);
+    CHECK(lines[n].find("This will be in plaintext") != string::npos);
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
