@@ -142,7 +142,7 @@ class ReplicatorAPITest : public C4Test {
                     proxyType = slice(kC4ProxyTypeHTTP);
                 case ProxyType::HTTPS:
                     proxyType = slice(kC4ProxyTypeHTTPS);
-                // TODO: Once SOCKS is implemented (CBL-4715)
+                // If we ever support SOCKS
                 // case ProxyType::SOCKS:
                 //     proxyType = slice(kC4ProxyTypeSOCKS);
                 default:
