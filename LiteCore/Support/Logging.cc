@@ -72,8 +72,9 @@ namespace litecore {
     LogLevel                     LogDomain::sFileMinLevel     = LogLevel::None;
     unsigned                     LogDomain::slastObjRef{0};
     map<unsigned, string>        LogDomain::sObjNames;
-    static ofstream*             sFileOut[5]    = {};  // File per log level
-    static LogEncoder*           sLogEncoder[5] = {};
+    static ofstream*             sFileOut[5]        = {};  // File per log level
+    static LogEncoder*           sLogEncoder[5]     = {};
+    static unsigned              sRotateSerialNo[5] = {};
     static LogFileOptions        sCurrentOptions;
     static string                sLogDirectory;
     static int                   sMaxCount = 0;     // For rotation
@@ -94,6 +95,10 @@ namespace litecore {
     }
 #ifdef LITECORE_CPPTEST
     string createLogPath_forUnitTest(LogLevel level) { return createLogPath(level); }
+
+    void resetRotateSerialNo() {
+        for ( auto& no : sRotateSerialNo ) { no = 0; }
+    }
 #endif
 
     static void setupFileOut() {
@@ -159,6 +164,16 @@ namespace litecore {
         for ( int i = 0; i < 5; i++ ) { purgeOldLogs((LogLevel)i); }
     }
 
+    static string fileLogHeader(LogLevel level) {
+        std::stringstream ss;
+        ss << "serialNo=" << sRotateSerialNo[(int)level] << ","
+           << "logDirectory=" << sLogDirectory << ","
+           << "fileLogLevel=" << (int)LogDomain::fileLogLevel() << ","
+           << "fileMaxSize=" << sMaxSize << ","
+           << "fileMaxCount=" << sMaxCount;
+        return ss.str();
+    }
+
     void Logging::rotateLog(LogLevel level) {
         auto encoder = sLogEncoder[(int)level];
         auto file    = sFileOut[(int)level];
@@ -176,13 +191,19 @@ namespace litecore {
         const auto path      = createLogPath(level);
         sFileOut[(int)level] = new ofstream(path, ofstream::out | ofstream::trunc | ofstream::binary);
         if ( !sFileOut[(int)level]->good() ) { fprintf(stderr, "rotateLog fails to open %s\n", path.c_str()); }
+
+        sRotateSerialNo[(int)level]++;
         if ( encoder ) {
             auto newEncoder         = new LogEncoder(*sFileOut[(int)level], level);
             sLogEncoder[(int)level] = newEncoder;
-            newEncoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+            newEncoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(level).c_str());
+            if ( !sInitialMessage.empty() ) {
+                newEncoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+            }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
-            *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
+            *sFileOut[(int)level] << "---- " << fileLogHeader(level) << " ----" << endl;
+            if ( !sInitialMessage.empty() ) { *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl; }
         }
     }
 
@@ -215,6 +236,7 @@ namespace litecore {
         if ( teardown ) {
             teardownEncoders();
             teardownFileOut();
+            for ( auto& no : sRotateSerialNo ) { no++; };
         }
 
         sCurrentOptions = options;
@@ -230,14 +252,19 @@ namespace litecore {
             setupFileOut();
             if ( !options.isPlaintext ) { setupEncoders(); }
 
-            if ( !sInitialMessage.empty() ) {
-                if ( sLogEncoder[0] ) {
-                    for ( auto& encoder : sLogEncoder ) {
+            int8_t level = 0;
+            if ( sLogEncoder[0] ) {
+                for ( auto& encoder : sLogEncoder ) {
+                    encoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(LogLevel{level++}).c_str());
+                    if ( !sInitialMessage.empty() ) {
                         encoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
-                        encoder->flush();  // Make sure at least the magic bytes are present
                     }
-                } else {
-                    for ( auto& fout : sFileOut ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
+                    encoder->flush();  // Make sure at least the magic bytes are present
+                }
+            } else {
+                for ( auto& fout : sFileOut ) {
+                    *fout << "---- " << fileLogHeader(LogLevel{level++}) << " ----" << endl;
+                    if ( !sInitialMessage.empty() ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
                 }
             }
 

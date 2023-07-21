@@ -273,5 +273,6 @@ namespace litecore {
     };
 #ifdef LITECORE_CPPTEST
     std::string createLogPath_forUnitTest(LogLevel level);
+    void        resetRotateSerialNo();
 #endif
 }  // namespace litecore
