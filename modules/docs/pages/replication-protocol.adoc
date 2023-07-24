@@ -6,13 +6,12 @@
 Couchbase Mobile 2.0 Replication Protocol
 -----------------------------------------
 
-Jens Alfke — June 2017
+Contributors: Jens Alfke, Traun Leyden, Ben Brooks, Jim Borden
 
-Protocol version 1.2
+Protocol version 3
 
-This document specifies the new replication protocol in development for
-Couchbase Mobile 2.0. It supersedes the REST-based protocol inherited
-from CouchDB.  Updates after 2.0 will have their minimum version indicated.
+This document specifies the replication protocol in use by Couchbase Mobile
+2.0 and later. It supersedes the REST-based protocol inherited from CouchDB.
 
 Benefits of the new protocol are:
 
@@ -81,9 +80,9 @@ The client opens a WebSocket connection to the server at path
 This begins as an HTTP GET request, and goes through authentication as
 usual, then upgrades to WebSocket protocol.
 
-The WebSocket sub-protocol name "BLIP" (as sent in the
-`Sec-WebSocket-Protocol` header) is used to ensure that both client and
-server understand BLIP.
+The WebSocket sub-protocol name `BLIP_3+CBMobile_3`, sent in the
+`Sec-WebSocket-Protocol` header, is used to ensure that both client and
+server understand BLIP and the replicator protocol.
 
 [[message-types]]
 3. Message Types
@@ -115,7 +114,7 @@ aware (i.e. each collection can have its own checkpoint).  If this message is se
 
 Response:
 
-`rev`: The MVCC revision ID of the checkpoint +
+`rev`: The MVCC revision ID of the checkpoint (_not_ the same as a document revID!) +
 Body: JSON data of the checkpoint
 
 [[getCollections]]
@@ -165,7 +164,7 @@ _(optional)_ +
 _(optional)_ +
 `activeOnly`: Set to `true` if the requestor doesn't want to be sent tombstones.
 _(optional)_ +
-`versioning`: `rev-trees` (default) or `version-vectors`
+`versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
 Body: JSON dictionary _(optional)_
@@ -173,6 +172,10 @@ Body: JSON dictionary _(optional)_
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
 beginning if no `since` is given.  If a collection index is provided, that collections changes are used.  Otherwise, the default collection will be used if possible.
+
+The recipient MUST agree to the requested versioning type and use the corresponding syntax
+for revIDs and revision histories in its messages. (See <<revIDs,section 4>>.)
+If it cannot, it MUST respond with an error and close the connection.
 
 Note: A sequence ID can be any type of JSON value, so the `since`
 property MUST be JSON-encoded. In particular, if the sequence ID is a
@@ -222,7 +225,7 @@ occur, if the replication is continuous.
 
 Each change in the array is encoded as a nested array of the form
 `[sequence, docID, revID, deleted]`, i.e. sequence ID followed by
-document ID followed by revision ID followed by the deletion state
+document ID followed by <<revIDs,revision ID>> followed by the deletion state
 (which can be omitted if it's `false`.)
 
 The sequence IDs MUST be in forward chronological order but are
@@ -324,11 +327,11 @@ rev
 ^^^
 `collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
-`rev`: Revision ID _(optional)_ +
+`rev`: Revision ID _(optional)_ -- see the <<revIDs>> section. +
 `deleted`: true if the revision is a tombstone _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
 q.v.)_ +
-`history`: Revision history (comma-delimited list of revision IDs) +
+`history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
 Body: Document JSON
 `noconflicts`: true if the revision may not create a conflict _(optional; default is false)_  
 
@@ -461,8 +464,42 @@ from the client matches the digest it computed. If it doesn't match, the
 server can assume the client doesn't really have the attachment, and can
 reject the `rev` message with the revision containing it.)
 
+[[revIDs]]
+4. Revision IDs and Histories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Several of the messages contain document revision IDs, and the `rev` message includes a document's revision history. This section defines their syntax.
+
+A database uses one of two types of versioning: revision trees (older) or version vectors (new). They have different forms of revision IDs and histories. The active peer communicates which type is in use via the `versioning` property (or lack thereof) in its `subChanges` request.
+
+Revision Trees
+^^^^^^^^^^^^^^
+
+A revision ID consists of a positive decimal integer, followed by a hyphen (`-`), followed by 16-20 hexadecimal-encoded bytes (32-40 digits.) The first component is the generation count, the second the encoded digest.
+
+* The generation count is expected to be fairly small. It starts at 1 and might go into the millions.
+* The digest is generated by MD5 or SHA-1. It SHOULD not be larger than 20 bytes (40 digits.)
+
+A revision history consists of a series of one or more revision IDs delimited by commas, with optional whitespace after the comma. The generation number MUST decrease by one in successive revIDs.
+
+In the `rev` message the current revision is given its own property (`rev`), so to avoid redundancy the `history` property contains a history that omits the current revision.
+
+Version Vectors
+^^^^^^^^^^^^^^^
+
+A revision ID, also called a **version**, consists of a hexadecimal number of up to 16 digits, followed by an `@` sign, followed by 22 characters in the base64 alphabet (upper and lower case, digits, `+` and `/`.) The first component is the timestamp, the second the (base64-encoded) source ID.
+
+* The timestamp is usually a count of nanoseconds since the Unix epoch, currently around 2^60. It fits in a 64-bit integer. It SHOULD be interpreted as unsigned (although it won't overflow a signed integer for a century or more.) It MUST NOT be stored in an IEEE double or it will lose precision; for the same reason it SHOULD NOT be encoded in JSON as a number.
+* The source ID is a 128-bit (16-byte) number, most likely a UUID.
+
+A revision history is a **version vector**. It's a series of one or more versions delimited by either a comma or semicolon, with optional whitespace after. Most versions are separated by commas, but a semicolon is used to separate the _current_ and _merge_ version(s) from the _historical_ ones.
+
+The current version must come first, then zero or two merge versions, then zero or more historical versions. The current version is causally later than the rest, and the merge versions are causally later than the historical versions.
+
+In the `rev` message the current version is given its own property (`rev`), so to avoid redundancy the `history` property contains a version vector that omits the current version.
+
 [[algorithm]]
-4. Algorithm
+5. Algorithm
 ~~~~~~~~~~~~
 
 Here are informal descriptions of the flow of control of both push and
@@ -671,7 +708,7 @@ Pull interaction digram
 ```
 
 [[extensions]]
-5. Extensions
+6. Extensions
 ~~~~~~~~~~~~~
 
 The replication protocol can be extended with additional message types and properties.
