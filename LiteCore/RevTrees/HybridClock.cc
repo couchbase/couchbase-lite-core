@@ -14,11 +14,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "slice_stream.hh"
-#include <time.h>
-
-#ifdef _MSC_VER
-#    include <Windows.h>
-#endif
+#include <chrono>
 
 namespace litecore {
     using namespace std;
@@ -31,33 +27,13 @@ namespace litecore {
     static constexpr logicalTime kMaxValidTime{0x7fffffffffffffff};
 
     walltime_t RealClockSource::now() {
-#ifdef _MSC_VER
-        // https://stackoverflow.com/posts/51974214/revisions
-
-        static constexpr uint64_t MS_PER_SEC  = 1000ULL;  // MS = milliseconds
-        static constexpr uint64_t US_PER_MS   = 1000ULL;  // US = microseconds
-        static constexpr uint64_t HNS_PER_US  = 10ULL;    // HNS = hundred-nanoseconds
-        static constexpr uint64_t HNS_PER_SEC = (MS_PER_SEC * US_PER_MS * HNS_PER_US);
-        static constexpr uint64_t NS_PER_HNS  = (100ULL);  // NS = nanoseconds
-
-        FILETIME       ft;
-        ULARGE_INTEGER hnsTime;
-
-        GetSystemTimePreciseAsFileTime(&ft);
-
-        hnsTime.LowPart  = ft.dwLowDateTime;
-        hnsTime.HighPart = ft.dwHighDateTime;
-
-        // To get POSIX Epoch as baseline,
-        // subtract the number of hns intervals from Jan 1, 1601 to Jan 1, 1970.
-        hnsTime.QuadPart -= (11644473600ULL * HNS_PER_SEC);
-        return walltime_t{hnsTime.QuadPart * NS_PER_HNS};
-#else
-        timespec ts;
-        if ( ::clock_gettime(CLOCK_REALTIME, &ts) != 0 )
-            throw std::runtime_error("Can't get current time; clock_gettime failed");
-        return walltime_t{ts.tv_sec * kNsPerSec + ts.tv_nsec};
-#endif
+        // "The epoch of system_clock is unspecified, but most implementations use Unix Time".
+        // The unit test "RealClockSource" in VersionVectorTest.cc verifies this.
+        static_assert(sizeof(chrono::system_clock::rep) >= 8);          // must be at least 64-bit
+        static_assert(chrono::system_clock::period::den >= 1'000'000);  // microsecond resolution
+        auto t  = chrono::system_clock::now().time_since_epoch();
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t).count();
+        return walltime_t(ns);
     }
 
     walltime_t RealClockSource::minValid() const { return kMinValidTime; }
