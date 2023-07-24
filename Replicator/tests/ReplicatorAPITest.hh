@@ -134,7 +134,43 @@ class ReplicatorAPITest : public C4Test {
             enc.writeString(_sg.networkInterface);
         }
 
-        // TODO: Set proxy settings from _proxy
+        if ( _sg.proxy ) {
+            enc.writeKey(C4STR(kC4ReplicatorProxyType));
+            slice proxyType;
+            switch ( _sg.proxy->type ) {
+                case ProxyType::HTTP:
+                    proxyType = slice(kC4ProxyTypeHTTP);
+                case ProxyType::HTTPS:
+                    proxyType = slice(kC4ProxyTypeHTTPS);
+                // If we ever support SOCKS
+                // case ProxyType::SOCKS:
+                //     proxyType = slice(kC4ProxyTypeSOCKS);
+                default:
+                    proxyType = kC4ProxyTypeNone;
+            }
+            enc.writeString(proxyType);
+            if ( proxyType != slice(kC4ProxyTypeNone) ) {
+                enc.writeKey(kC4ReplicatorProxyHost);
+                enc.writeString(_sg.proxy->hostname);
+
+                enc.writeKey(kC4ReplicatorProxyPort);
+                enc.writeInt(_sg.proxy->port);
+
+                enc.writeKey(kC4ReplicatorProxyAuth);
+                enc.beginDict();
+
+                enc.writeKey(kC4ReplicatorAuthType);
+                enc.writeString(kC4AuthTypeBasic);
+
+                enc.writeKey(kC4ReplicatorAuthUserName);
+                enc.writeString(_sg.proxy->username);
+
+                enc.writeKey(kC4ReplicatorAuthPassword);
+                enc.writeString(_sg.proxy->password);
+
+                enc.endDict();
+            }
+        }
         // Copy any preexisting options:
         for ( Dict::iterator i(_options.asDict()); i; ++i ) {
             enc.writeKey(i.keyString());
