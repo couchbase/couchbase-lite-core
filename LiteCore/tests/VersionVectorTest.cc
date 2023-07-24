@@ -88,17 +88,28 @@ TEST_CASE("Fake HybridClock", "[RevIDs]") {
     CHECK(clock.validTime(n));
 }
 
-TEST_CASE("HybridClock", "[RevIDs]") {
+TEST_CASE("RealClockSource", "[RevIDs]") {
     // Sanity check RealClockSource:
     auto wallNow = uint64_t(RealClockSource{}.now());
     CHECK(wallNow > 0x1773b22e5a655ca0);  // 20 July 2023
     CHECK(wallNow < 0x3000000000000000);  // somewhere in 2079
+    cout << "RealClockSource time was " << wallNow << std::endl;
 
+    // Make sure the clock source has at least microsecond resolution:
+    for ( int attempt = 0; attempt < 10; ++attempt ) {
+        if ( wallNow % 1'000'000 != 0 ) break;
+        this_thread::sleep_for(123us);
+        wallNow = uint64_t(RealClockSource{}.now());
+    }
+    CHECK(wallNow % 1'000'000 != 0);
+}
+
+TEST_CASE("HybridClock", "[RevIDs]") {
     HybridClock c;
     auto        t  = c.now();
     auto        t2 = c.now();
     CHECK(t2 > t);
-    cout << "The time was " << t << ", then " << t2 << std::endl;
+    cout << "HybridClock time was " << t << ", then " << t2 << std::endl;
 
     // Receive a fictitious timestamp from a peer that's 5 seconds ahead:
     auto tSeen = logicalTime{uint64_t(t) + 5 * kNsPerSec};
