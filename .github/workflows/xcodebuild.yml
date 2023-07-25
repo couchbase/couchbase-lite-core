@@ -21,7 +21,9 @@ on:
 env:
   # Customize the Xcode configuration here (Release or Debug)
   # NOTE: If we decide to archive the build products we should build with RelWithDebInfo instead.
+  # Test_CE is a dupplicate of Debug except it has the c++ define, LITECORE_CPPTEST, activated.
   CONFIGURATION: Debug
+  CONFIGURATION_CPP: Test_CE
 
 jobs:
   build:
@@ -40,7 +42,7 @@ jobs:
         project: Xcode/LiteCore.xcodeproj
         scheme: LiteCore C++ Tests
         destination: platform=macOS
-        configuration: $CONFIGURATION
+        configuration: $CONFIGURATION_CPP
         action: build
 
     - name: "Build C4Tests"

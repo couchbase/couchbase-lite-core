@@ -68,7 +68,7 @@ namespace litecore {
         static Timestamp   now();
         static std::string formatDate(Timestamp);
         static void        writeISO8601DateTime(Timestamp, std::ostream&);
-        static void        writeTimestamp(Timestamp, std::ostream&);
+        static void        writeTimestamp(Timestamp, std::ostream&, bool inUtcTime = false);
         static void        writeHeader(const std::string& levelName, const std::string& domainName, std::ostream&);
     };
 
