@@ -576,11 +576,11 @@ namespace uWS {
 
 
     template <const bool isServer>
-    void WebSocketProtocol<isServer>::forceClose(void *user, const char* logTag) {
+    void WebSocketProtocol<isServer>::forceClose(void *user, const char* reason) {
         std::stringstream ss;
         ss << "WebSocketProtocol<" << (isServer ? "server" : "client") << ">::forceClose";
-        if (logTag) {
-            ss << "/" << logTag;
+        if (reason != nullptr) {
+            ss << reason;
         }
         _sock->logError("Protocol error: %s", ss.str().c_str());
         _sock->protocolError(slice(ss.str().c_str()));

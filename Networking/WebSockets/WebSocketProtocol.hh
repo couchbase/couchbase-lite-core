@@ -69,6 +69,13 @@
 #endif
 //COUCHBASE: End of code adapted from Networking.h
 
+//COUCHBASE: Begin of COUCHBASE_forceClose
+#define COUCHBASE_forceClose
+//COUCHBASE: End of COUCHBASE_forceClose
+#ifdef COUCHBASE_forceClose
+#include <sstream>
+#endif
+
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
@@ -160,18 +167,34 @@ private:
     inline bool consumeMessage(T payLength, char *&src, unsigned int &length, frameFormat frame, void *user) {
         if (getOpCode(frame)) {
             if (opStack == 1 || (!lastFin && getOpCode(frame) < 2)) {
-                forceClose(user, "cm-1");
+#ifdef COUCHBASE_forceClose
+                std::stringstream ss;
+                ss << "[opStack=1,lastFin=" << lastFin << ",frame=" <<frame << "]";
+                forceClose(user, ss.str().c_str());
+#else
+                forceClose(user);
+#endif
                 return true;
             }
             opCode[(unsigned char) ++opStack] = (OpCode) getOpCode(frame);
         } else if (opStack == -1) {
-            forceClose(user, "cm-2");
+#ifdef COUCHBASE_forceClose
+            forceClose(user, "[opStack=-1]");
+#else
+            forceClose(user);
+#endif
             return true;
         }
         lastFin = isFin(frame);
 
         if (payLength > SIZE_MAX || refusePayloadLength(user, (int)payLength)) {
-            forceClose(user, "cm-3");
+#ifdef COUCHBASE_forceClose
+            std::stringstream ss;
+            ss << "[payLength=" << payLength << "]";
+            forceClose(user, ss.str().c_str());
+#else
+            forceClose(user);
+#endif
             return true;
         }
 
@@ -413,7 +436,13 @@ public:
                 // invalid reserved bits / invalid opcodes / invalid control frames / set compressed frame
                 if ((rsv1(frame) && !setCompressed(user)) || rsv23(frame) || (getOpCode(frame) > 2 && getOpCode(frame) < 8) ||
                     getOpCode(frame) > 10 || (getOpCode(frame) > 2 && (!isFin(frame) || payloadLength(frame) > 125))) {
-                    forceClose(user, "cs-1");
+#ifdef COUCHBASE_forceClose
+                    std::stringstream ss;
+                    ss << "[frame=" << frame << "]";
+                    forceClose(user, ss.str().c_str());
+#else
+                    forceClose(user);
+#endif
                     return;
                 }
 
@@ -456,7 +485,12 @@ public:
     // events to be implemented by application (can't be inline currently)
     bool refusePayloadLength(void *user, int length);
     bool setCompressed(void *user);
-    void forceClose(void *user, const char* logTag);
+    void forceClose(void *user);
+#ifdef COUCHBASE_forceClose
+    void forceClose(void *user, const char* reason);
+#else
+    void forceClose(void *user);
+#endif
     bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user);
 };
 
