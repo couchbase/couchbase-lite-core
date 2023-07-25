@@ -169,7 +169,7 @@ private:
             if (opStack == 1 || (!lastFin && getOpCode(frame) < 2)) {
 #ifdef COUCHBASE_forceClose
                 std::stringstream ss;
-                ss << "[opStack=1,lastFin=" << lastFin << ",frame=" <<frame << "]";
+                ss << "[opStack=" << opStack << ",frame=" << frame << ",lastFin=" << lastFin << "]";
                 forceClose(user, ss.str().c_str());
 #else
                 forceClose(user);
@@ -179,7 +179,9 @@ private:
             opCode[(unsigned char) ++opStack] = (OpCode) getOpCode(frame);
         } else if (opStack == -1) {
 #ifdef COUCHBASE_forceClose
-            forceClose(user, "[opStack=-1]");
+            std::stringstream ss;
+            ss << "[frame=" << frame << "]";
+            forceClose(user, ss.str().c_str());
 #else
             forceClose(user);
 #endif
@@ -438,7 +440,7 @@ public:
                     getOpCode(frame) > 10 || (getOpCode(frame) > 2 && (!isFin(frame) || payloadLength(frame) > 125))) {
 #ifdef COUCHBASE_forceClose
                     std::stringstream ss;
-                    ss << "[frame=" << frame << "]";
+                    ss << "[frame=" << frame << ",opStack=" << opStack << "]";
                     forceClose(user, ss.str().c_str());
 #else
                     forceClose(user);
