@@ -160,18 +160,18 @@ private:
     inline bool consumeMessage(T payLength, char *&src, unsigned int &length, frameFormat frame, void *user) {
         if (getOpCode(frame)) {
             if (opStack == 1 || (!lastFin && getOpCode(frame) < 2)) {
-                forceClose(user);
+                forceClose(user, "cm-1");
                 return true;
             }
             opCode[(unsigned char) ++opStack] = (OpCode) getOpCode(frame);
         } else if (opStack == -1) {
-            forceClose(user);
+            forceClose(user, "cm-2");
             return true;
         }
         lastFin = isFin(frame);
 
         if (payLength > SIZE_MAX || refusePayloadLength(user, (int)payLength)) {
-            forceClose(user);
+            forceClose(user, "cm-3");
             return true;
         }
 
@@ -413,7 +413,7 @@ public:
                 // invalid reserved bits / invalid opcodes / invalid control frames / set compressed frame
                 if ((rsv1(frame) && !setCompressed(user)) || rsv23(frame) || (getOpCode(frame) > 2 && getOpCode(frame) < 8) ||
                     getOpCode(frame) > 10 || (getOpCode(frame) > 2 && (!isFin(frame) || payloadLength(frame) > 125))) {
-                    forceClose(user);
+                    forceClose(user, "cs-1");
                     return;
                 }
 
@@ -456,7 +456,7 @@ public:
     // events to be implemented by application (can't be inline currently)
     bool refusePayloadLength(void *user, int length);
     bool setCompressed(void *user);
-    void forceClose(void *user);
+    void forceClose(void *user, const char* logTag);
     bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user);
 };
 
