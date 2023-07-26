@@ -10,6 +10,10 @@
 // the file licenses/APL2.txt.
 //
 
+#include "StringUtil.hh"
+#include "c4Base.h"
+#include "c4Document+Fleece.h"
+#include "c4DocumentTypes.h"
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
@@ -909,15 +913,39 @@ static const string kVersionedFixturesSubDir = "db_versions/";
 // This isn't normally run. It creates a new database to check into C/tests/data/db_versions/.
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Maintenance]") {
     {
+        // Fetch BlobStore
+        C4Error      err{};
+        C4BlobStore* blobStore = c4db_getBlobStore(db, ERROR_INFO(err));
+        REQUIRE(blobStore);
+
+        // Base json body for doc blob attachments
+        std::string jsonBodyBase =
+                litecore::format("{attached: [{'%s':'%s', ", kC4ObjectTypeProperty, kC4ObjectType_Blob);
+
         TransactionHelper t(db);
-        constexpr size_t  docBufSize = 20, jsonBufSize = 100;
-        char              docID[docBufSize], json[jsonBufSize];
         for ( unsigned i = 1; i <= 100; i++ ) {
-            snprintf(docID, docBufSize, "doc-%03u", i);
-            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
-            createFleeceRev(db, slice(docID), kRevID, slice(json), (i <= 50 ? 0 : kRevDeleted));
+            std::string docID      = litecore::format("doc-%03u", i);
+            std::string attachment = litecore::format("I am blob #%03u", i);
+            C4BlobKey   key;
+            REQUIRE(c4blob_create(blobStore, fleece::slice(attachment), nullptr, &key, WITH_ERROR()));
+            C4SliceResult     keyStr = c4blob_keyToString(key);
+            std::stringstream json;
+            // Doc body blob information
+            json << jsonBodyBase << "digest: '" << string((char*)keyStr.buf, keyStr.size)
+                 << "', length: " << attachment.size() << ", content_type: 'text/plain'},]";
+
+            // Doc body data
+            json << ", " << litecore::format(R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
+
+            c4slice_free(keyStr);
+
+            std::string jsonStr = json5(json.str());
+
+            // Half the docs are marked as deleted
+            uint8_t flags = i <= 50 ? kRevHasAttachments : (kRevHasAttachments | kRevDeleted);
+
+            createFleeceRev(db, slice(docID), kRevID, slice(jsonStr), flags);
         }
-        // TODO: Create some blobs too
     }
     alloc_slice path     = c4db_getPath(db);
     string      filename = "NEW_UPGRADE_FIXTURE.cblite2";
