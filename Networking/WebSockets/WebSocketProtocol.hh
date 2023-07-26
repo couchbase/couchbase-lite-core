@@ -192,7 +192,7 @@ private:
         if (payLength > SIZE_MAX || refusePayloadLength(user, (int)payLength)) {
 #ifdef COUCHBASE_forceClose
             std::stringstream ss;
-            ss << "[payLength=" << payLength << "]";
+            ss << "[payLength=" << payLength << ",frame=" << frame << "]";
             forceClose(user, ss.str().c_str());
 #else
             forceClose(user);
