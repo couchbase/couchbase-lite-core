@@ -203,11 +203,11 @@ private:
         if (int(payLength) <= int(length - MESSAGE_HEADER)) {
             if (isServer) {
                 unmaskPreciseCopyMask(src, src + MESSAGE_HEADER, src + MESSAGE_HEADER - 4, (unsigned int)payLength);
-                if (handleFragment(src, (size_t)payLength, 0, opCode[(unsigned char) opStack], isFin(frame), user)) {
+                if (handleFragment(src, (size_t)payLength, 0, opCode[(unsigned char) opStack], isFin(frame), user, "hf-1")) {
                     return true;
                 }
             } else {
-                if (handleFragment(src + MESSAGE_HEADER, (size_t)payLength, 0, opCode[(unsigned char) opStack], isFin(frame), user)) {
+                if (handleFragment(src + MESSAGE_HEADER, (size_t)payLength, 0, opCode[(unsigned char) opStack], isFin(frame), user, "hf-2")) {
                     return true;
                 }
             }
@@ -232,7 +232,7 @@ private:
             } else {
                 src += MESSAGE_HEADER;
             }
-            handleFragment(src, length - MESSAGE_HEADER, remainingBytes, opCode[(unsigned char) opStack], isFin(frame), user);
+            handleFragment(src, length - MESSAGE_HEADER, remainingBytes, opCode[(unsigned char) opStack], isFin(frame), user, "hf-3");
             return true;
         }
     }
@@ -247,7 +247,7 @@ private:
                 }
             }
 
-            if (handleFragment(src, remainingBytes, 0, opCode[(unsigned char) opStack], lastFin, user)) {
+            if (handleFragment(src, remainingBytes, 0, opCode[(unsigned char) opStack], lastFin, user, "hf-4")) {
                 return false;
             }
 
@@ -265,7 +265,7 @@ private:
             }
 
             remainingBytes -= length;
-            if (handleFragment(src, length, remainingBytes, opCode[(unsigned char) opStack], lastFin, user)) {
+            if (handleFragment(src, length, remainingBytes, opCode[(unsigned char) opStack], lastFin, user, "hf-5")) {
                 return false;
             }
 
@@ -490,10 +490,11 @@ public:
     void forceClose(void *user);
 #ifdef COUCHBASE_forceClose
     void forceClose(void *user, const char* reason);
+    bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user, const char* logTag);
 #else
     void forceClose(void *user);
-#endif
     bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user);
+#endif
 };
 
 }
