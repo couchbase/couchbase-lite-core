@@ -12,7 +12,6 @@
 
 #include "StringUtil.hh"
 #include "c4Base.h"
-#include "c4Document+Fleece.h"
 #include "c4DocumentTypes.h"
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
@@ -935,7 +934,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
                  << "', length: " << attachment.size() << ", content_type: 'text/plain'},]";
 
             // Doc body data
-            json << ", " << litecore::format(R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
+            json << ", " << litecore::format(R"("n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
 
             c4slice_free(keyStr);
 
