@@ -89,7 +89,8 @@ namespace litecore { namespace websocket {
                             size_t length,
                             unsigned int remainingBytes,
                             int opCode,
-                            bool fin);
+                            bool fin,
+                            const char* logTag);
         bool receivedMessage(int opCode, fleece::alloc_slice message);
         bool receivedClose(fleece::slice);
         void deliverMessageToDelegate(fleece::slice data, bool binary);

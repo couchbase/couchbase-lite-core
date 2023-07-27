@@ -235,7 +235,8 @@ namespace litecore { namespace websocket {
                                        size_t length,
                                        unsigned int remainingBytes,
                                        int opCode,
-                                       bool fin)
+                                       bool fin,
+                                       const char* logTag)
     {
         // Beginning:
         if (!_curMessage) {
@@ -245,8 +246,10 @@ namespace litecore { namespace websocket {
         }
 
         // Body:
-        if (_curMessageLength + length > _curMessage.size)
+        if (_curMessageLength + length > _curMessage.size) {
+            warn("Overflow in WebSocketImpl::handleFragment%s%s", logTag == nullptr ? "" : "/", logTag == nullptr ? "" : logTag);
             return false; // overflow!
+        }
 
         // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
@@ -593,11 +596,12 @@ namespace uWS {
                                                      unsigned int remainingByteCount,
                                                      int opcode,
                                                      bool fin,
-                                                     void *user)
+                                                     void *user,
+                                                     const char* logTag)
     {
         // WebSocketProtocol expects this method to return true on error, but this confuses me
         // so I'm having my code return false on error, hence the `!`. --jpa
-        return ! _sock->handleFragment(data, length, remainingByteCount, opcode, fin);
+        return ! _sock->handleFragment(data, length, remainingByteCount, opcode, fin, logTag);
     }
 
 
