@@ -1207,6 +1207,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
     populate({"Widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
+    populate({"nested"_sl}, "nested.json");
 
     compileSelect(json5("{WHAT: ['.Widgets.title'], FROM: [{COLLECTION:'Widgets'}]}"));
     CHECK(run().size() == 100);
@@ -1228,6 +1229,9 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'Widgets'}]}"));
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
+    checkColumnTitles({"nested"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
+                        "{COLLECTION:'nested', JOIN:'INNER', ON: ['=', 1, 1]}]}"));
     checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"alias"});

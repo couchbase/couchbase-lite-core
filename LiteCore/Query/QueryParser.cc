@@ -903,7 +903,38 @@ namespace litecore {
                     title = format("$%u", ++anonCount);  // default for non-properties
                 } else if ( title == "*" ) {
                     title = _dbAlias;
-                }
+
+                    for ( bool done = false; !done; done = true ) {
+                        // special requirement: attempt to use sheer collection name if it's unambiguous.
+                        const auto& iter = _aliases.find(_dbAlias);
+                        require(iter != _aliases.end(), "alias must have been registered");
+
+                        // First, if the alias is derived implicitly from the collection,
+                        // as opposed to AS aliases
+                        if ( _dbAlias != DataFile::unescapeCollectionName(iter->second.collection) ) break;
+
+                        // Second, the collection is represented as collection path
+                        auto pathSeparator = DataFile::findCollectionPathSeparator(iter->second.collection);
+                        if ( pathSeparator == string::npos ) break;
+
+                        // Finally, there is no joined datasource that has the same collection name.
+                        string collectionName = iter->second.collection.substr(pathSeparator + 1);
+                        auto   it             = _aliases.begin();
+                        for ( ; it != _aliases.end(); ++it ) {
+                            if ( it->second.type != kJoinAlias ) continue;
+                            auto sep = DataFile::findCollectionPathSeparator(it->second.collection);
+                            if ( collectionName
+                                 == (sep == string::npos ? it->second.collection
+                                                         : it->second.collection.substr(sep + 1)) ) {
+                                break;
+                            }
+                        }
+                        if ( it != _aliases.end() ) break;
+
+                        // Assign the collection name to title
+                        title = DataFile::unescapeCollectionName(collectionName);
+                    }
+                }  //if ( title == "*" )
             }
 
             // Make the title unique:
