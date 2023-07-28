@@ -247,9 +247,9 @@ namespace litecore { namespace websocket {
 
         // Body:
         if (_curMessageLength + length > _curMessage.size) {
-            warn("Overflow in WebSocketImpl::handleFragment%s%s", logTag == nullptr ? "" : "/", logTag == nullptr ? "" : logTag);
-            return false; // overflow!
-        }
+            // We tried...but there is still more data, so resize
+            _curMessage.resize(_curMessageLength + length);
+        } 
 
         // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
