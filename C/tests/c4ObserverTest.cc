@@ -29,14 +29,14 @@ class C4ObserverTest : public C4Test {
             kDocBRev2        = "2-bbbb";
             kDocBRev2History = kDocBRev2;
         } else {
-            kDocARev1        = "1@aa";
-            kDocBRev1        = "1@bb";
-            kDocCRev1        = "1@cc";
-            kDocDRev1        = "1@dd";
-            kDocERev1        = "1@ee";
-            kDocARev2        = "1@b0b";
-            kDocBRev2        = "1@f00";
-            kDocBRev2History = "1@f00,1@bb";
+            kDocARev1        = "1@AliceAliceAliceAliceAA";
+            kDocBRev1        = "1@BobBobBobBobBobBobBobA";
+            kDocCRev1        = "1@CarolCarolCarolCarolCA";
+            kDocDRev1        = "1@DaveDaveDaveDaveDaveDA";
+            kDocERev1        = "1@EnidEnidEnidEnidEnidEA";
+            kDocARev2        = "1@BobBobBobBobBobBobBobA";
+            kDocBRev2        = "1@NorbertNorbertNorbertA";
+            kDocBRev2History = "1@NorbertNorbertNorbertA,1@BobBobBobBobBobBobBobA";
         }
     }
 #if SkipVersionVectorTest

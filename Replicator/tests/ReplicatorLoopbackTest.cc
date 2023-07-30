@@ -195,8 +195,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     Log("-------- Second Replication --------");
-    createRev(_collDB1, "0000001"_sl, kRev2ID, kFleeceBody);
-    createRev(_collDB1, "0000002"_sl, kRev2ID, kFleeceBody);
+    createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
+    createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runReplicators(Replicator::Options::pushpull(kC4OneShot, _collSpec), serverOpts);
@@ -269,7 +269,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     for ( unsigned i = 1; i <= 100; i += 2 ) {
         char docID[bufSize];
         snprintf(docID, bufSize, "%07u", i);
-        createRev(_collDB1, slice(docID), kRev2ID, nullslice, kRevDeleted);  // delete it
+        createNewRev(_collDB1, slice(docID), nullslice, kRevDeleted);  // delete it
     }
     _expectedDocumentCount = 50;
 
@@ -761,17 +761,40 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
 
     string json = getDocJSON(_collDB2, "att1"_sl);
     replace(json, '"', '\'');
-    CHECK(json
-          == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
-             "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
-             "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-             "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
-             "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-             "YBwk=','length':0,'revpos':1,'stub':true}},"
-             "'attached':[{'@type':'blob','content_type':'text/"
-             "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
-             "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
-             "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}");
+    if ( isRevTrees() ) {
+        CHECK(json
+              == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':"
+                 "true},"
+                 "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                 "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                 "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
+                 "vlWAYkK/"
+                 "YBwk=','length':0,'revpos':1,'stub':true}},"
+                 "'attached':[{'@type':'blob','content_type':'text/"
+                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                 "WXWZsCw48=','length':10},"
+                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                 "YBwk=','length':0}]}");
+    } else {
+        // (the only difference is that the 'revpos' properties are not present.)
+        CHECK(json
+              == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'stub':"
+                 "true},"
+                 "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                 "WXWZsCw48=','length':10,'stub':true},"
+                 "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
+                 "vlWAYkK/"
+                 "YBwk=','length':0,'stub':true}},"
+                 "'attached':[{'@type':'blob','content_type':'text/"
+                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                 "WXWZsCw48=','length':10},"
+                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                 "YBwk=','length':0}]}");
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]") {
@@ -779,7 +802,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys               = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain");  //legacy
+        blobKeys               = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments,
+                                                       "text/plain");  //legacy
         _expectedDocumentCount = 1;
     }
 
@@ -1038,10 +1062,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
 
         createRev(_collDB2, kDocID, kRev3ID, kFleeceBody);
     } else {
-        createRev(_collDB1, kDocID, "1@d00d"_sl, kFleeceBody);
+        createRev(_collDB1, kDocID, "1@DaveDaveDaveDaveDaveDA"_sl, kFleeceBody);
         createRev(_collDB1, kDocID, "1@*"_sl, kFleeceBody);
 
-        createRev(_collDB2, kDocID, "1@d00d"_sl, kFleeceBody);
+        createRev(_collDB2, kDocID, "1@DaveDaveDaveDaveDaveDA"_sl, kFleeceBody);
     }
 
     Log("-------- Second Replication db<->db2 --------");
@@ -1192,7 +1216,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     if ( isRevTrees() ) CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
     else
-        CHECK(mergedID == "2@*,1@babe2,1@babe1"_sl);
+        CHECK(mergedID == "2@*, 1@MajorMajorMajorMajorQQ, 1@NorbertHeisenbergVonQQ;"_sl);
 
     // Update the doc and push it to db2:
     createNewRev(_collDB1, docID, kFleeceBody);
@@ -1362,14 +1386,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     runPushReplication();
 
     // Update the docs differently in each db:
-    createFleeceRev(_collDB1, C4STR("conflict"), revOrVersID("2-12121212", "1@cafe"), C4STR("{\"db\": 1}"));
-    createFleeceRev(_collDB2, C4STR("conflict"), revOrVersID("2-13131313", "1@babe"), C4STR("{\"db\": 2}"));
-    createFleeceRev(_collDB1, C4STR("db-deleted"), revOrVersID("2-31313131", "1@cafe"), C4STR("{\"db\":2}"),
-                    kRevDeleted);
-    createFleeceRev(_collDB2, C4STR("db-deleted"), revOrVersID("2-32323232", "1@babe"), C4STR("{\"db\": 1}"));
-    createFleeceRev(_collDB1, C4STR("db2-deleted"), revOrVersID("2-41414141", "1@cafe"), C4STR("{\"db\": 1}"));
-    createFleeceRev(_collDB2, C4STR("db2-deleted"), revOrVersID("2-42424242", "1@babe"), C4STR("{\"db\":2}"),
-                    kRevDeleted);
+    createFleeceRev(_collDB1, C4STR("conflict"), revOrVersID("2-12121212", "1@ZegpoldZegpoldZegpoldA"),
+                    C4STR("{\"db\": 1}"));
+    createFleeceRev(_collDB2, C4STR("conflict"), revOrVersID("2-13131313", "1@BobBobBobBobBobBobBobA"),
+                    C4STR("{\"db\": 2}"));
+    createFleeceRev(_collDB1, C4STR("db-deleted"), revOrVersID("2-31313131", "1@ZegpoldZegpoldZegpoldA"),
+                    C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(_collDB2, C4STR("db-deleted"), revOrVersID("2-32323232", "1@BobBobBobBobBobBobBobA"),
+                    C4STR("{\"db\": 1}"));
+    createFleeceRev(_collDB1, C4STR("db2-deleted"), revOrVersID("2-41414141", "1@ZegpoldZegpoldZegpoldA"),
+                    C4STR("{\"db\": 1}"));
+    createFleeceRev(_collDB2, C4STR("db2-deleted"), revOrVersID("2-42424242", "1@BobBobBobBobBobBobBobA"),
+                    C4STR("{\"db\":2}"), kRevDeleted);
 
     // Now pull to db from db2, creating conflicts:
     C4Log("-------- Pull db <- db2 --------");
@@ -1383,8 +1411,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
 
     // verify only returns the conflicted documents, including the deleted ones.
     vector<C4Slice> docIDs   = {"conflict"_sl, "db-deleted"_sl, "db2-deleted"_sl};
-    vector<C4Slice> revIDs   = {revOrVersID("2-12121212", "1@cafe"), revOrVersID("2-31313131", "1@cafe"),
-                                revOrVersID("2-41414141", "1@cafe")};
+    vector<C4Slice> revIDs   = {revOrVersID("2-12121212", "1@ZegpoldZegpoldZegpoldA"),
+                                revOrVersID("2-31313131", "1@ZegpoldZegpoldZegpoldA"),
+                                revOrVersID("2-41414141", "1@ZegpoldZegpoldZegpoldA")};
     vector<bool>    deleteds = {false, true, false};
 
     C4Error err;
@@ -1601,38 +1630,55 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
     c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB2, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice         json = c4doc_bodyAsJSON(doc2, true, nullptr);
+
+    int    expectedNumDeltas = 1;
+    string expectedJson;
     if ( modifiedDigest ) {
-        // No delta used as delta size (including modified revpos of each attachments) > revisionSize * 1.2
-        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 0);
-        CHECK(string(json)
-              == "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":2,\"stub\":true},"
-                 "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
-                 "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
-                 "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
-                 "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10},"
-                 "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0}]}");
+        if ( isRevTrees() ) {
+            // No delta used in this situation, as delta size *including modified revpos of each
+            // attachment* > revisionSize * 1.2
+            expectedNumDeltas = 0;
+        }
+        expectedJson = "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
+                       "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                       "WXWZsCw48=\",\"length\":27,\"revpos\":2,\"stub\":true},"
+                       "\"blob_/attached/1\":{\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                       "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+                       "\"blob_/attached/2\":{\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                       "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
+                       "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+                       "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+                       "{\"@type\":\"blob\",\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                       "WXWZsCw48=\",\"length\":10},"
+                       "{\"@type\":\"blob\",\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                       "YBwk=\",\"length\":0}]}";
     } else {
-        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
-        CHECK(string(json)
-              == "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":2,\"stub\":true},"
-                 "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
-                 "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
-                 "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
-                 "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10},"
-                 "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0}]}");
+        expectedJson = "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
+                       "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":"
+                       "2,\"stub\":true},"
+                       "\"blob_/attached/1\":{\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                       "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+                       "\"blob_/attached/2\":{\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                       "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
+                       "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+                       "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
+                       "{\"@type\":\"blob\",\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                       "WXWZsCw48=\",\"length\":10},"
+                       "{\"@type\":\"blob\",\"content_type\":\"text/"
+                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                       "YBwk=\",\"length\":0}]}";
     }
+    if ( !isRevTrees() ) replace(expectedJson, "\"revpos\":2,", "");  // With version vectors there's no revpos
+
+    CHECK(DBAccessTestWrapper::numDeltasApplied() - before == expectedNumDeltas);
+    CHECK(string(json) == expectedJson);
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][Delta][blob]") {
@@ -1687,17 +1733,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
         CHECK(string(json)
               == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
                  "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
-                 "\"attachment2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                 "\"attachment2\":{\"content_type\":\"text/"
+                 "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
                  "WXWZsCw48=\",\"length\":10},"
-                 "\"attachment3\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                 "\"attachment3\":{\"content_type\":\"text/"
+                 "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
                  "YBwk=\",\"length\":0}}}");
     } else {
         CHECK(string(json)
               == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
                  "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
-                 "\"attachment2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                 "\"attachment2\":{\"content_type\":\"text/"
+                 "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
                  "WXWZsCw48=\",\"length\":10},"
-                 "\"attachment3\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                 "\"attachment3\":{\"content_type\":\"text/"
+                 "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
                  "YBwk=\",\"length\":0}}}");
     }
 }
@@ -1736,11 +1786,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     c4::ref<C4Document> doc  = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice         json = c4doc_bodyAsJSON(doc, true, nullptr);
     CHECK(string(json)
-          == "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+          == "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+             "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
              "WXWZsCw48=\",\"length\":27},"
-             "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+             "{\"@type\":\"blob\",\"content_type\":\"text/"
+             "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
              "WXWZsCw48=\",\"length\":10},"
-             "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+             "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/"
+             "vlWAYkK/"
              "YBwk=\",\"length\":0}]}");
 }
 
@@ -1773,10 +1826,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     REQUIRE(c4coll_getLastSequence(_collDB1) == 2);
     REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 
-    const slice kDoc1Rev2A = revOrVersID("2-1111111a", "1@1a1a");
-    const slice kDoc1Rev2B = revOrVersID("2-1111111b", "1@1b1b");
-    const slice kDoc2Rev2A = revOrVersID("2-1111111a", "1@2a2a");
-    const slice kDoc2Rev2B = revOrVersID("2-1111111b", "1@2b2b");
+    const slice kDoc1Rev2A = revOrVersID("2-1111111a", "1@AliceAliceAliceAliceAA");
+    const slice kDoc1Rev2B = revOrVersID("2-1111111b", "1@BobBobBobBobBobBobBobA");
+    const slice kDoc2Rev2A = revOrVersID("2-1111111a", "1@CarolCarolCarolCarolCA");
+    const slice kDoc2Rev2B = revOrVersID("2-1111111b", "1@DaveDaveDaveDaveDaveDA");
 
     createFleeceRev(_collDB1, C4STR("doc1"), kDoc1Rev2A, C4STR("{\"db\":1}"));
     createFleeceRev(_collDB2, C4STR("doc1"), kDoc1Rev2B, C4STR("{\"db\":2}"));
@@ -1828,7 +1881,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     }
 
     doc = c4coll_getDoc(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
-    CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "2@*"));
+    CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "3@*"));
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
     seq = C4SequenceNumber(isRevTrees() ? 8 : 6);
     CHECK(doc->sequence == seq);
@@ -1964,6 +2017,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
     FLSlice docID = C4STR("doc");
     slice   jBody = R"({"name":"otherDB"})"_sl;
     auto    revID = createFleeceRev(_collDB2, docID, nullslice, jBody);
+    if ( isRevTrees() ) { REQUIRE(c4rev_getGeneration(slice(revID)) == 1); }
 
     _expectedDocumentCount = 1;
     // Pre-conditions: db is empty, db2 has one doc.
@@ -1972,15 +2026,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
     // Post-conditions: db and db2 are sync'ed.
     c4::ref<C4Document> docInDb1 = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     c4::ref<C4Document> docInDb2 = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
-    string              revInDb1{(char*)docInDb1->revID.buf, docInDb1->revID.size};
-    string              revInDb2{(char*)docInDb2->revID.buf, docInDb2->revID.size};
+    string              revInDb1(alloc_slice(c4doc_getSelectedRevIDGlobalForm(docInDb1)));
+    string              revInDb2(alloc_slice(c4doc_getSelectedRevIDGlobalForm(docInDb2)));
     REQUIRE(revInDb1 == revInDb2);
-    REQUIRE(revID == revInDb1);
-    REQUIRE(c4rev_getGeneration(slice(revID)) == 1);
+    REQUIRE(revID == string(docInDb2->revID));
 
     // Modify the document in db
     slice modifiedBody = R"({"name":"otherDB","modified":1})"_sl;
     auto  revID_2      = createFleeceRev(_collDB1, docID, nullslice, modifiedBody);
+    if ( isRevTrees() ) { CHECK(c4rev_getGeneration(slice(revID_2)) == 2); }
 
     Replicator::Options serverOpts = Replicator::Options::passive(_collSpec);
     Replicator::Options clientOpts = Replicator::Options::pushing(kC4OneShot, _collSpec);
@@ -1997,9 +2051,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
     runReplicators(clientOpts, serverOpts);
     docInDb1 = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     docInDb2 = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
-    revInDb1 = string{(char*)docInDb1->revID.buf, docInDb1->revID.size};
-    revInDb2 = string{(char*)docInDb2->revID.buf, docInDb2->revID.size};
+    revInDb1 = alloc_slice(c4doc_getSelectedRevIDGlobalForm(docInDb1));
+    revInDb2 = alloc_slice(c4doc_getSelectedRevIDGlobalForm(docInDb2));
     CHECK(revInDb1 == revInDb2);
-    CHECK(revID_2 == revInDb1);
-    CHECK(c4rev_getGeneration(slice(revID_2)) == 2);
+    REQUIRE(revID_2 == string(docInDb1->revID));
 }

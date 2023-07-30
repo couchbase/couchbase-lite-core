@@ -397,6 +397,8 @@ c4repl_isValidRemote
 c4repl_getResponseHeaders
 c4repl_setSuspended
 
+c4rev_getTimestamp
+
 kC4ReplicatorActivityLevelNames
 
 c4address_fromURL

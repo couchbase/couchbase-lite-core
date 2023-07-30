@@ -560,6 +560,54 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]")
     c4queryenum_release(e);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with join", "[Query][C][FTS]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+
+    query = c4query_new2(db, kC4N1QLQuery,
+                         R"(SELECT * FROM _ WHERE gender = "female" AND )"
+                         R"(birthday = "1983-09-18" AND MATCH(byStreet, "Loop*"))"_sl,
+                         nullptr, ERROR_INFO(err));
+    REQUIRE(query);
+    auto e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    int count1 = 0;
+    while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count1; }
+    c4queryenum_release(e);
+    // There is exactly one entry satisfying the above criteria regarding gender, birthday and the street name
+    REQUIRE(count1 == 1);
+
+    c4query_release(query);
+    query = c4query_new2(db, kC4N1QLQuery, R"(SELECT count(*) FROM _ WHERE gender = "female")"_sl, nullptr,
+                         ERROR_INFO(err));
+    REQUIRE(query);
+    e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    REQUIRE(c4queryenum_next(e, ERROR_INFO()));
+    int64_t femaleCount = Array::iterator(e->columns)[0].asInt();
+    c4queryenum_release(e);
+    // There are exactly this many females in the database.
+    REQUIRE(femaleCount > 1);
+
+    c4query_release(query);
+    query = c4query_new2(db, kC4N1QLQuery,
+                         R"(SELECT a.name FROM _default AS a LEFT OUTER JOIN _default AS b ON b.gender = a.gender )"
+                         R"(WHERE a.birthday = "1983-09-18" AND MATCH(a.byStreet, "Loop*"))"_sl,
+                         nullptr, ERROR_INFO(err));
+    REQUIRE(query);
+    e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    int64_t count = 0;
+    while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count; }
+    c4queryenum_release(e);
+    // There is only one entry, who is female, that satisfies the left side of the outer join.
+    // Because of the WHERE clause, part a should have only one entry. The part b must match gener,
+    // so, total count should equals the number of all females in the database.
+    CHECK(count == femaleCount);
+}
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/723
     C4Error        err;
@@ -1159,6 +1207,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
     populate({"Widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
+    populate({"nested"_sl}, "nested.json");
 
     compileSelect(json5("{WHAT: ['.Widgets.title'], FROM: [{COLLECTION:'Widgets'}]}"));
     CHECK(run().size() == 100);
@@ -1180,6 +1229,9 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'Widgets'}]}"));
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
+    checkColumnTitles({"nested"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
+                        "{COLLECTION:'nested', JOIN:'INNER', ON: ['=', 1, 1]}]}"));
     checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"alias"});

@@ -80,17 +80,21 @@ namespace litecore::repl {
             return;
         }
 
-        auto gen   = C4Document::getRevIDGeneration(_rev->revID);  // returns 0 if revID is invalid
-        bool valid = (gen > 0);
-        if ( valid ) {
-            if ( _db->usingVersionVectors() ) {
+        bool valid = false;
+        switch ( C4Document::typeOfRevID(_rev->revID) ) {
+            case RevIDType::Invalid:
+                break;
+            case RevIDType::Tree:
+                if ( !_db->usingVersionVectors() ) {
+                    valid = true;
+                    if ( !_rev->historyBuf && C4Document::getRevIDGeneration(_rev->revID) > 1 )
+                        warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
+                }
+                break;
+            case RevIDType::Version:
                 // Incoming version IDs must be in absolute form (no '*')
-                valid = _rev->revID.findByte('@') && !_rev->revID.findByte('*');
-            } else {
-                valid = _rev->revID.findByte('-');
-                if ( valid && gen > 1 && !_rev->historyBuf )
-                    warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
-            }
+                valid = _db->usingVersionVectors() && !_rev->revID.findByte('*');
+                break;
         }
         if ( !valid ) {
             warn("Invalid version ID in 'rev': '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));

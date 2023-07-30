@@ -132,11 +132,13 @@ namespace litecore::repl {
                 msg.write("{}"_sl);
             } else {
                 auto& bodyEncoder = msg.jsonBody();
-                if ( sendLegacyAttachments )
-                    _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
-                                                        C4Document::getRevIDGeneration(request->revID));
-                else
+                if ( sendLegacyAttachments ) {
+                    unsigned revpos = 0;
+                    if ( !_db->usingVersionVectors() ) revpos = C4Document::getRevIDGeneration(request->revID);
+                    _db->encodeRevWithLegacyAttachments(bodyEncoder, root, revpos);
+                } else {
                     bodyEncoder.writeValue(root);
+                }
             }
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, [this, request](const MessageProgress& progress) { onRevProgress(request, progress); });
@@ -288,8 +290,9 @@ namespace litecore::repl {
         Doc legacyOld, legacyNew;
         if ( sendLegacyAttachments ) {
             // If server needs legacy attachment layout, transform the bodies:
-            Encoder enc;
-            auto    revPos = C4Document::getRevIDGeneration(request->revID);
+            Encoder  enc;
+            unsigned revPos = 0;
+            if ( !_db->usingVersionVectors() ) revPos = C4Document::getRevIDGeneration(request->revID);
             _db->encodeRevWithLegacyAttachments(enc, root, revPos);
             legacyNew = enc.finishDoc();
             root      = legacyNew.root().asDict();
@@ -297,7 +300,7 @@ namespace litecore::repl {
             if ( ancestorFlags & kRevHasAttachments ) {
                 enc.reset();
                 // Use revpos from the ancester's revID
-                revPos = C4Document::getRevIDGeneration(ancestorRevID);
+                if ( !_db->usingVersionVectors() ) revPos = C4Document::getRevIDGeneration(ancestorRevID);
                 _db->encodeRevWithLegacyAttachments(enc, ancestor, revPos);
                 legacyOld = enc.finishDoc();
                 ancestor  = legacyOld.root().asDict();
@@ -352,7 +355,7 @@ namespace litecore::repl {
             logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...", SPLAT(rev->docID),
                        SPLAT(rev->revID), SPLAT(newRev->revID), SPLAT(newRev->remoteAncestorRevID));
             bool ok = false;
-            if ( synced && getForeignAncestors()
+            if ( synced && getForeignAncestors() && !_db->usingVersionVectors()
                  && C4Document::getRevIDGeneration(newRev->revID) <= C4Document::getRevIDGeneration(rev->revID) ) {
                 // Don't send; it'll conflict with what's on the server
             } else {

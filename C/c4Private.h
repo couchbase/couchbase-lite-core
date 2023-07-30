@@ -48,7 +48,7 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
     (The last column of each row is the internal SQLite rowid of the document.) */
 C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* C4NULLABLE error) C4API;
 
-C4StringResult c4db_getPeerID(C4Database* database) C4API;
+C4StringResult c4db_getSourceID(C4Database* database) C4API;
 
 typedef C4_ENUM(uint32_t, C4DatabaseTag){DatabaseTag_AppOpened,          DatabaseTag_DBAccess,
                                          DatabaseTag_C4RemoteReplicator, DatabaseTag_C4IncomingReplicator,
@@ -64,10 +64,6 @@ bool c4db_markSynced(C4Database* database, C4String docID, C4String revID, C4Seq
 
 bool c4coll_markSynced(C4Collection* coll, C4String docID, C4String revID, C4SequenceNumber sequence,
                        C4RemoteID remoteID, C4Error* C4NULLABLE outError) C4API;
-
-bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
-                           C4RemoteID remoteDBID, const C4String docIDs[C4NONNULL], const C4String revIDs[C4NONNULL],
-                           C4StringResult ancestors[C4NONNULL], C4Error* C4NULLABLE outError) C4API;
 
 bool c4coll_findDocAncestors(C4Collection* coll, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
                              C4RemoteID remoteDBID, const C4String docIDs[C4NONNULL], const C4String revIDs[C4NONNULL],

@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
+#include "Version.hh"
 #include "fleece/FLExpert.h"
 #include "DeepIterator.hh"
 
@@ -273,6 +274,20 @@ char* C4Document::generateID(char* outDocID, size_t bufferSize) noexcept {
     return outDocID;
 }
 
+RevIDType C4Document::typeOfRevID(slice rev) noexcept {
+    revidBuffer buf;
+    if ( !buf.tryParse(rev) ) return RevIDType::Invalid;
+    else if ( buf.getRevID().isVersion() )
+        return RevIDType::Version;
+    else
+        return RevIDType::Tree;
+}
+
+void C4Document::requireValidRevID(slice rev) {
+    revidBuffer buf;
+    buf.parse(rev);  // throws BadRevisionID
+}
+
 bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
     try {
         if ( rev1 == rev2 ) return true;
@@ -285,6 +300,18 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
 unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     try {
         return revidBuffer(revID).getRevID().generation();
+    }
+    catchAndWarn() return 0;
+}
+
+uint64_t C4Document::getRevIDTimestamp(slice revID) noexcept {
+    try {
+        revidBuffer buf;
+        if ( !buf.tryParse(revID) ) return 0;
+        revid r = buf.getRevID();
+        if ( r.isVersion() ) return uint64_t(r.asVersion().time());
+        else
+            return r.generation();
     }
     catchAndWarn() return 0;
 }
