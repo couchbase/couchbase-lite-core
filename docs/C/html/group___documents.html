@@ -266,8 +266,11 @@ Enumerations</h2></td></tr>
 <tr class="memdesc:gad65f5e6c3139633ae780e22dd7818b06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Marks a revision as current for the given remote database.  <br /></td></tr>
 <tr class="separator:gad65f5e6c3139633ae780e22dd7818b06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga519b9b22df91f1946c16cc895a30acf8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga519b9b22df91f1946c16cc895a30acf8">c4rev_getGeneration</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID)</td></tr>
-<tr class="memdesc:ga519b9b22df91f1946c16cc895a30acf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a revision ID, returns its generation number (the decimal number before the hyphen), or zero if it's unparseable.  <br /></td></tr>
+<tr class="memdesc:ga519b9b22df91f1946c16cc895a30acf8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a tree-based revision ID, returns its generation number (the decimal number before the hyphen), or zero if it's unparseable.  <br /></td></tr>
 <tr class="separator:ga519b9b22df91f1946c16cc895a30acf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaed62cbbc4b37f2d7cca6fc5775485905"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaed62cbbc4b37f2d7cca6fc5775485905">c4rev_getTimestamp</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID)</td></tr>
+<tr class="memdesc:gaed62cbbc4b37f2d7cca6fc5775485905"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a revision ID that's a Version (of the form <code>time@peer</code>), returns its timestamp.  <br /></td></tr>
+<tr class="separator:gaed62cbbc4b37f2d7cca6fc5775485905"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabee60916a457336a99afca17471139e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gabee60916a457336a99afca17471139e9">c4rev_equal</a> (<a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> rev1, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> rev2)</td></tr>
 <tr class="memdesc:gabee60916a457336a99afca17471139e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if two revision IDs are equivalent.  <br /></td></tr>
 <tr class="separator:gabee60916a457336a99afca17471139e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1432,7 +1435,7 @@ Enumerations</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns a string encoding the selected revision's history, as comma-separate revision/version IDs in reverse chronological order. </p>
-<p>In a version-vector database this is of course the revision's version vector. It will be in global form (real peerID instead of "*") unless the <code>maxRevs</code> parameter is 0. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>In a version-vector database this is of course the revision's version vector. It will be in global form (real SourceID instead of "*") unless the <code>maxRevs</code> parameter is 0. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">doc</td><td>The document. </td></tr>
     <tr><td class="paramname">maxRevs</td><td>The maximum number of revisions to include in the result; or 0 for unlimited. </td></tr>
@@ -2202,7 +2205,30 @@ Enumerations</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Given a revision ID, returns its generation number (the decimal number before the hyphen), or zero if it's unparseable. </p>
+<p>Given a tree-based revision ID, returns its generation number (the decimal number before the hyphen), or zero if it's unparseable. </p>
+<dl class="section warning"><dt>Warning</dt><dd>This function does not support version-based revision IDs. Given one it returns zero, because the timestamp would be too big to return on platforms where <code>unsigned</code> is 32-bit. Use <a class="el" href="group___documents.html#gaed62cbbc4b37f2d7cca6fc5775485905">c4rev_getTimestamp</a> to support version-based revIDs. </dd></dl>
+
+</div>
+</div>
+<a id="gaed62cbbc4b37f2d7cca6fc5775485905" name="gaed62cbbc4b37f2d7cca6fc5775485905"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaed62cbbc4b37f2d7cca6fc5775485905">&#9670;&#160;</a></span>c4rev_getTimestamp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> uint64_t c4rev_getTimestamp </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>revID</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Given a revision ID that's a Version (of the form <code>time@peer</code>), returns its timestamp. </p>
+<p>This can be interpreted as the time the revision was created, in nanoseconds since the Unix epoch, but it's not necessarily exact.</p>
+<p>If this is a tree-based revision ID (of the form <code>gen-digest</code>), it returns the generation number. (This can be distinguished from a timestamp because it's much, much smaller! Timestamps will be at least 2^50, while generations rarely hit one million.) </p>
 
 </div>
 </div>
