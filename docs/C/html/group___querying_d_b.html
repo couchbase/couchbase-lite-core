@@ -113,11 +113,11 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga0cd086190d794b3ad1661e963e338a34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a suggested title for a column, which may be: An alias specified in an 'AS' modifier in the column definition A property name A function/operator that computes the column value, e.g.  <br /></td></tr>
 <tr class="separator:ga0cd086190d794b3ad1661e963e338a34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga82dbdfa68b124e92704893f4730ce7d2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga82dbdfa68b124e92704893f4730ce7d2">c4query_setParameters</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters)</td></tr>
-<tr class="memdesc:ga82dbdfa68b124e92704893f4730ce7d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the parameter values to use when running the query, if no parameters are given to <a class="el" href="group___querying_d_b.html#ga6cc4f87febb919ff90a30ff1b8cc205e">c4query_run</a>.  <br /></td></tr>
+<tr class="memdesc:ga82dbdfa68b124e92704893f4730ce7d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the parameter values to use when running the query, if no parameters are given to <a class="el" href="group___querying_d_b.html#gac6d631b1f4fbbf74fe398cb569078430">c4query_run</a>.  <br /></td></tr>
 <tr class="separator:ga82dbdfa68b124e92704893f4730ce7d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6cc4f87febb919ff90a30ff1b8cc205e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga6cc4f87febb919ff90a30ff1b8cc205e">c4query_run</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *options, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga6cc4f87febb919ff90a30ff1b8cc205e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a compiled query.  <br /></td></tr>
-<tr class="separator:ga6cc4f87febb919ff90a30ff1b8cc205e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac6d631b1f4fbbf74fe398cb569078430"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gac6d631b1f4fbbf74fe398cb569078430">c4query_run</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gac6d631b1f4fbbf74fe398cb569078430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a compiled query.  <br /></td></tr>
+<tr class="separator:gac6d631b1f4fbbf74fe398cb569078430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga93ef3e1c60fd9bf7bd7b4a817cd20caf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga93ef3e1c60fd9bf7bd7b4a817cd20caf">c4query_fullTextMatched</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, const <a class="el" href="struct_c4_full_text_match.html">C4FullTextMatch</a> *term, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga93ef3e1c60fd9bf7bd7b4a817cd20caf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <a class="el" href="struct_c4_full_text_match.html" title="Info about a match of a full-text query term.">C4FullTextMatch</a> from the enumerator, returns the entire text of the property that was matched.  <br /></td></tr>
 <tr class="separator:ga93ef3e1c60fd9bf7bd7b4a817cd20caf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -337,8 +337,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6cc4f87febb919ff90a30ff1b8cc205e" name="ga6cc4f87febb919ff90a30ff1b8cc205e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6cc4f87febb919ff90a30ff1b8cc205e">&#9670;&#160;</a></span>c4query_run()</h2>
+<a id="gac6d631b1f4fbbf74fe398cb569078430" name="gac6d631b1f4fbbf74fe398cb569078430"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac6d631b1f4fbbf74fe398cb569078430">&#9670;&#160;</a></span>c4query_run()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -348,12 +348,6 @@ Variables</h2></td></tr>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td>
           <td class="paramname"><em>query</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *&#160;</td>
-          <td class="paramname"><em>options</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -379,7 +373,6 @@ Variables</h2></td></tr>
 <p>NOTE: Queries will run much faster if the appropriate properties are indexed. Indexes must be created explicitly by calling <code>c4db_createIndex</code>. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">query</td><td>The compiled query to run. </td></tr>
-    <tr><td class="paramname">options</td><td>Query options; currently unused, just pass NULL. </td></tr>
     <tr><td class="paramname">encodedParameters</td><td>Options parameter values; if this parameter is not NULL, it overrides the parameters assigned by <a class="el" href="group___querying_d_b.html#ga82dbdfa68b124e92704893f4730ce7d2">c4query_setParameters</a>. </td></tr>
     <tr><td class="paramname">outError</td><td>On failure, will be set to the error status. </td></tr>
   </table>
@@ -415,7 +408,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Sets the parameter values to use when running the query, if no parameters are given to <a class="el" href="group___querying_d_b.html#ga6cc4f87febb919ff90a30ff1b8cc205e">c4query_run</a>. </p>
+<p>Sets the parameter values to use when running the query, if no parameters are given to <a class="el" href="group___querying_d_b.html#gac6d631b1f4fbbf74fe398cb569078430">c4query_run</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">query</td><td>The compiled query to run. </td></tr>
