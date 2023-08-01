@@ -247,12 +247,12 @@ TEST_CASE("Logging rollover", "[Log]") {
         if ( i == 256 ) {
             // Otherwise the logging will happen to fast that
             // rollover won't have a chance to occur
-            this_thread::sleep_for(2s);
+            this_thread::sleep_for(1s);
         }
         if ( i == 256 * 2 ) {
             // To ensure we have 2 rotate events. If maxCount in the logOptions is 1,
             // one file will be purged from the disk.
-            this_thread::sleep_for(2s);
+            this_thread::sleep_for(1s);
         }
     }
 
@@ -306,17 +306,15 @@ TEST_CASE("Logging rollover", "[Log]") {
         int          ret = 0;
         ss >> ret;
         // serialNo starts from 1
-        CHECK((1 <= ret && ret <= 3));
+        REQUIRE(1 <= ret);
         return ret;
     };
-    int bySerialNo[3]{-1, -1, -1};
+    std::map<int, int> bySerialNo;
     for ( int n = 0; n < infoFiles.size(); ++n ) {
-        // serialNo 1-3 map to index 0-2
-        bySerialNo[findSerialNo(n) - 1] = n;
+        // serialNo map to file index 0-2
+        bySerialNo.emplace(findSerialNo(n), n);
     }
-    CHECK((maxCount == 1 ? bySerialNo[0] < 0 : bySerialNo[0] >= 0));
-    CHECK(bySerialNo[1] >= 0);
-    CHECK(bySerialNo[2] >= 0);
+    CHECK((maxCount == 1 ? bySerialNo.size() == 2 : bySerialNo.size() == 3));
 
     //    Example outputs:
     //    ---------------
@@ -363,24 +361,32 @@ TEST_CASE("Logging rollover", "[Log]") {
         s2 >> end;
         return std::make_pair(begin, end);
     };
-    int lineNo[3][2];
-    for ( int n = 0; n < 3; ++n ) {
-        // n corresponds to the serialNo.
-        if ( bySerialNo[n] < 0 ) {
-            // serialNo=1 is purged
-            lineNo[n][0] = -1;
-        } else {
-            std::tie(lineNo[n][0], lineNo[n][1]) = findLineNo(bySerialNo[n]);
+
+    std::map<int, int[2]> lineNos;
+    for ( const auto& s2f : bySerialNo ) {
+        auto& ln               = lineNos[s2f.first];
+        std::tie(ln[0], ln[1]) = findLineNo(s2f.second);
+    }
+    REQUIRE(lineNos.size() == bySerialNo.size());
+
+    int lastSerial = 0;
+    for ( auto it = lineNos.begin(), prev = lineNos.end(); it != lineNos.end(); ++it ) {
+        if ( prev == lineNos.end() ) {
+            if ( it->first == 1 ) {
+                // SerialNo == 1
+                CHECK(it->second[0] == 0);
+            } else {
+                Log("%d log files are dropped", it->first - 1);
+            }
+            prev = it;
+            continue;
         }
+        CHECK(prev->first + 1 == it->first);          // SerialNos are sonsecutive
+        CHECK(prev->second[1] + 1 == it->second[0]);  // line numbers are consecutive
+        lastSerial = it->second[1];
+        prev       = it;
     }
-    if ( lineNo[0][0] >= 0 ) {
-        // first log file with serialNo = 1
-        CHECK(lineNo[0][0] == 0);
-        // Assert that line # continues.
-        CHECK(lineNo[0][1] + 1 == lineNo[1][0]);
-    }
-    CHECK(lineNo[1][1] + 1 == lineNo[2][0]);
-    CHECK(lineNo[2][1] == 1023);
+    CHECK(lastSerial == 1023);
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
