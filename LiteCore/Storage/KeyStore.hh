@@ -220,6 +220,7 @@ namespace litecore {
       private:
         friend class BothKeyStore;
         friend class BothEnumeratorImpl;
+        friend class BothUnorderedEnumeratorImpl;
         friend class DataFile;
         friend class RecordEnumerator;
         friend class Query;
