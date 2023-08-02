@@ -27,10 +27,24 @@ typedef C4_ENUM(uint32_t, C4IndexType){
         kC4FullTextIndex,    ///< Full-text index
         kC4ArrayIndex,       ///< Index of array values, for use with UNNEST
         kC4PredictiveIndex,  ///< Index of prediction() results (Enterprise Edition only)
+        kC4VectorIndex,      ///< Index of ML vector similarity.
 };
 
+/** Types of encoding (compression) to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorEncoding){
+        kC4VectorEncodingDefault,  ///< Use default encoding, which is currently SQ
+        kC4VectorEncodingNone,     ///< No encoding: 4 bytes per dimension, no data loss
+        kC4VectorEncodingSQ,       ///< Scalar Quantizer: 1 byte per dimension (recommended)
+};                                 // Values must match IndexSpec::VectorOptions::Encoding
+
+/** Options for vector indexes. */
+typedef struct C4VectorIndexOptions {
+    unsigned         numCentroids;  ///< Number of buckets to partition the vectors between
+    C4VectorEncoding encoding;      ///< Vector compression type
+} C4VectorIndexOptions;
+
 /** Options for indexes; these each apply to specific types of indexes. */
-typedef struct {
+typedef struct C4IndexOptions {
     /** Dominant language of text to be indexed; setting this enables word stemming, i.e.
         matching different cases of the same word ("big" and "bigger", for instance.)
         Can be an ISO-639 language code or a lowercase (English) language name; supported
@@ -61,6 +75,9 @@ typedef struct {
         To provide a custom list of words, use a string containing the words in lowercase
         separated by spaces. */
     const char* C4NULLABLE stopWords;
+
+    /** Options for vector indexes. */
+    C4VectorIndexOptions vector;
 } C4IndexOptions;
 
 /** @} */

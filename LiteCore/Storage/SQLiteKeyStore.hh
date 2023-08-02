@@ -124,14 +124,16 @@ namespace litecore {
         std::string subst(const char* sqlTemplate) const;
         void        setLastSequence(sequence_t seq);
         void        incrementPurgeCount();
-        void createTrigger(std::string_view triggerName, std::string_view triggerSuffix, std::string_view operation,
-                           std::string when, std::string_view statements);
-        bool createValueIndex(const IndexSpec&);
-        bool createIndex(const IndexSpec&, const std::string& sourceTableName,
-                         fleece::impl::ArrayIterator& expressions);
-        void _createFlagsIndex(const char* indexName NONNULL, DocumentFlags flag, bool& created);
-        bool createFTSIndex(const IndexSpec&);
-        bool createArrayIndex(const IndexSpec&);
+        void   createTrigger(std::string_view triggerName, std::string_view triggerSuffix, std::string_view operation,
+                             std::string when, std::string_view statements);
+        bool   createValueIndex(const IndexSpec&);
+        bool   createIndex(const IndexSpec&, const std::string& sourceTableName,
+                           fleece::impl::ArrayIterator& expressions);
+        void   _createFlagsIndex(const char* indexName NONNULL, DocumentFlags flag, bool& created);
+        bool   createFTSIndex(const IndexSpec&);
+        bool   createArrayIndex(const IndexSpec&);
+        bool   createVectorIndex(const IndexSpec&);
+        string findVectorIndexNameFor(const string& property);
         std::string createUnnestedTable(const fleece::impl::Value* arrayPath);
 
 #ifdef COUCHBASE_ENTERPRISE

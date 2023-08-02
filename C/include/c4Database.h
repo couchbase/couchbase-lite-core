@@ -44,6 +44,10 @@ CBL_CORE_API bool c4key_setPassword(C4EncryptionKey* encryptionKey, C4String pas
 CBL_CORE_API bool c4key_setPasswordSHA1(C4EncryptionKey* encryptionKey, C4String password,
                                         C4EncryptionAlgorithm alg) C4API;
 
+/** Registers a directory path to load extension libraries from, such as Vector Search.
+    Must be called before opening a database that will use an extension. */
+CBL_CORE_API void c4_setExtensionPath(C4String path) C4API;
+
 /** @} */
 
 //////// DATABASE API:

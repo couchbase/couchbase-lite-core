@@ -25,12 +25,17 @@ namespace litecore {
     using namespace fleece::impl;
 
     IndexSpec::IndexSpec(std::string name_, Type type_, alloc_slice expression_, QueryLanguage queryLanguage_,
-                         const Options* opt)
+                         Options opt)
         : name(std::move(name_))
         , type(type_)
         , expression(std::move(expression_))
         , queryLanguage(queryLanguage_)
-        , options(opt ? std::make_optional(*opt) : std::optional<Options>()) {}
+        , options(std::move(opt)) {
+        if ( auto whichOpts = options.index() ) {
+            if ( (type == kFullText && whichOpts != 1) || (type == kVector && whichOpts != 2) )
+                error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
+        }
+    }
 
     IndexSpec::IndexSpec(IndexSpec&&) = default;
     IndexSpec::~IndexSpec()           = default;

@@ -59,11 +59,13 @@ add_executable(
     LogEncoderTest.cc
     N1QLParserTest.cc
     PredictiveQueryTest.cc
+    PredictiveVectorQueryTest.cc
     QueryParserTest.cc
     QueryTest.cc
     SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
+    VectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
     ${TOP}REST/tests/RESTClientTest.cc

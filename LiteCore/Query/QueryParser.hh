@@ -66,7 +66,8 @@ namespace litecore {
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const   = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE
-            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const   = 0;
+            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson) const = 0;
 #endif
         };
 
@@ -104,14 +105,24 @@ namespace litecore {
 
         bool usesExpiration() const { return _checkedExpiration; }
 
-        string        expressionSQL(const Value*);
-        string        whereClauseSQL(const Value*, string_view dbAlias);
-        string        eachExpressionSQL(const Value*);
-        string        FTSExpressionSQL(const Value*);
+        string expressionSQL(const Value*);
+        string whereClauseSQL(const Value*, string_view dbAlias);
+        string eachExpressionSQL(const Value*);
+
+        string functionCallSQL(slice fnName, const Value* args);
+        /// Translates the JSON-parsed Value to a SQL expression for use in a FTS index.
+        string FTSExpressionSQL(const Value*);
+        /// Returns the column name of an FTS table to use for a MATCH expression.
         static string FTSColumnName(const Value* expression);
-        string        unnestedTableName(const Value* key) const;
-        string        predictiveIdentifier(const Value*) const;
-        string        predictiveTableName(const Value*) const;
+
+        string unnestedTableName(const Value* key) const;
+
+        string predictiveIdentifier(const Value*) const;
+        string predictiveTableName(const Value*) const;
+
+        /// Translates the JSON-parsed Value to blob-format vector for use by sqlite-vss.
+        string vectorExpressionSQL(const Value*);
+        string vectorIndexTableName(const Value* matchExpr);
 
       private:
         template <class T, class U>
@@ -224,10 +235,11 @@ namespace litecore {
 
         unsigned             findFTSProperties(const Value* root);
         void                 findPredictionCalls(const Value* root);
+        void                 addVectorSearchCTEs(const Value* root);
         const string&        indexJoinTableAlias(const string& key, const char* aliasPrefix = nullptr);
         const string&        FTSJoinTableAlias(const Value* matchLHS, bool canAdd = false);
         const string&        predictiveJoinTableAlias(const Value* expr, bool canAdd = false);
-        pair<string, string> FTSTableName(const Value* key) const;
+        pair<string, string> FTSTableName(const Value* key, bool vector = false) const;
         string               expressionIdentifier(const Array* expression, unsigned maxItems = 0) const;
         void                 findPredictiveJoins(const Value* node, vector<string>& joins);
         bool                 writeIndexedPrediction(const Array* node);
@@ -235,6 +247,9 @@ namespace litecore {
         void                     writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
         AliasMap::const_iterator verifyDbAlias(Path& property, string* error = nullptr) const;
         bool                     optimizeMetaKeyExtraction(ArrayIterator&);
+
+        void writeVectorMatchFn(ArrayIterator&);
+        void writeVectorDistanceFn(ArrayIterator&);
 
         const Delegate&          _delegate;                          // delegate object (SQLiteKeyStore)
         string                   _defaultTableName;                  // Name of the default table to use

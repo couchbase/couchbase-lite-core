@@ -11,12 +11,14 @@
 //
 
 #include "c4Base.h"
+#include "Error.hh"
 #include "FilePath.hh"
 #include "TestsCommon.hh"  // iwyu pragma: keep
 #include "fleece/PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "fleece/FLExpert.h"
 #include <atomic>
+#include <fstream>
 #include <mutex>
 #include <thread>
 
@@ -39,7 +41,9 @@ FilePath GetSystemTempDirectory() {
     CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
     return litecore::FilePath(convertedPath.m_psz, "");
 #else   // _MSC_VER
-    return {"/tmp", ""};
+    const char* tmp = getenv("TMPDIR");
+    if ( !tmp ) tmp = "/tmp";
+    return {tmp, ""};
 #endif  // _MSC_VER
 }
 
@@ -161,4 +165,26 @@ bool WaitUntil(chrono::milliseconds timeout, function_ref<bool()> predicate) {
     } while ( chrono::steady_clock::now() < deadline );
 
     return false;
+}
+
+bool ReadFileByLines(const string& path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
+    INFO("Reading lines from " << path);
+    fstream fd(path.c_str(), ios_base::in);
+    REQUIRE(fd);
+    vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
+    size_t       lineCount = 0;
+    while ( fd.good() ) {
+        if ( maxLines > 0 && lineCount == maxLines ) { break; }
+        // Ensure that buf.capacity (size_t/uint64) will not exceed limit of std::streamsize (int64)
+        DebugAssert(buf.capacity() <= std::numeric_limits<std::streamsize>::max());
+        fd.getline(buf.data(), buf.capacity());  // NOLINT(cppcoreguidelines-narrowing-conversions)
+        auto len = fd.gcount();
+        if ( len <= 0 ) break;
+        ++lineCount;
+        REQUIRE(buf[len - 1] == '\0');
+        --len;
+        if ( !callback({buf.data(), (size_t)len}) ) return false;
+    }
+    REQUIRE((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
+    return true;
 }
