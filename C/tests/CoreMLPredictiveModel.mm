@@ -312,6 +312,7 @@ namespace cbl {
             case MLFeatureTypeSequence:
 #endif
             case MLFeatureTypeInvalid:
+            default:
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);
                 return nil;
@@ -474,6 +475,7 @@ namespace cbl {
                 enc.writeNull();
                 break;
             case MLFeatureTypeInvalid:
+            default:
                 enc.writeNull();
                 break;
         }

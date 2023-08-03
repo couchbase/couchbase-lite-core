@@ -368,10 +368,10 @@ namespace litecore {
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         char *val = getenv((string("LiteCoreLog") + _name).c_str());
         if (val) {
-            static const char* const kLevelNames[] = {"debug", "verbose", "info",
+            static const char* const kEnvLevelNames[] = {"debug", "verbose", "info",
                 "warning", "error", "none", nullptr};
-            for (int i = 0; kLevelNames[i]; i++) {
-                if (0 == strcasecmp(val, kLevelNames[i]))
+            for (int i = 0; kEnvLevelNames[i]; i++) {
+                if (0 == strcasecmp(val, kEnvLevelNames[i]))
                     return LogLevel(i);
             }
             return LogLevel::Info;

@@ -126,20 +126,18 @@ namespace litecore {
         return (a < b) ? -1 : ((a > b) ? 1 : 0);
     }
 
-
-    // Enumerator implementation for BothKeyStore. It enumerates both KeyStores in parallel,
+    // Enumerator implementation for BothKeyStore when `includeDeleted` option is set
+    // and sorting is required.
+    // It enumerates both KeyStores in parallel,
     // always returning the lowest-sorting record (basically a merge-sort.)
-    class BothEnumeratorImpl : public RecordEnumerator::Impl {
-    public:
-        BothEnumeratorImpl(bool bySequence,
-                           sequence_t since,
-                           RecordEnumerator::Options options,
-                           KeyStore *liveStore, KeyStore *deadStore)
-        :_liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
-        ,_deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
-        ,_bySequence(bySequence)
-        ,_descending(options.sortOption == kDescending)
-        { }
+    class BothEnumeratorImpl final : public RecordEnumerator::Impl {
+      public:
+        BothEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
+                           KeyStore* deadStore)
+            : _liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
+            , _deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
+            , _bySequence(bySequence)
+            , _descending(options.sortOption == kDescending) {}
 
         virtual bool next() override {
             // Advance the enumerator with the lowest key, or both if they're equal:
@@ -158,8 +156,9 @@ namespace litecore {
                     _cmp = compare(_liveImpl->sequence(), _deadImpl->sequence());
                 else
                     _cmp = _liveImpl->key().compare(_deadImpl->key());
-                if (_descending) _cmp = -_cmp;
-            } else if (_liveImpl) {
+                if ( _descending ) _cmp = -_cmp;
+                Assert(_cmp != 0);
+            } else if ( _liveImpl ) {
                 _cmp = -1;
             } else if (_deadImpl) {
                 _cmp = 1;
@@ -187,23 +186,56 @@ namespace litecore {
         bool _bySequence, _descending;                              // Sorting by sequence?
     };
 
+    // Enumerator implementation for BothKeyStore when `includeDeleted` option is set
+    // but no sorting is needed. It simply enumerates the live store first, then the deleted.
+    // This avoids having to sort the underlying SQLite queries, which enables better use of
+    // indexes in `onlyConflicts` mode.
+    class BothUnorderedEnumeratorImpl final : public RecordEnumerator::Impl {
+      public:
+        BothUnorderedEnumeratorImpl(sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
+                                    KeyStore* deadStore)
+            : _impl(liveStore->newEnumeratorImpl(false, since, options))
+            , _since(since)
+            , _options(options)
+            , _deadStore(deadStore) {}
 
-    RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(bool bySequence,
-                                                            sequence_t since,
-                                                            RecordEnumerator::Options options)
-    {
+        bool next() override {
+            bool ok = _impl->next();
+            if ( !ok && _deadStore != nullptr ) {
+                _impl      = unique_ptr<RecordEnumerator::Impl>(_deadStore->newEnumeratorImpl(false, _since, _options));
+                _deadStore = nullptr;
+                ok         = _impl->next();
+            }
+            return ok;
+        }
+
+        bool read(Record& record) const override { return _impl->read(record); }
+
+        [[nodiscard]] slice key() const override { return _impl->key(); }
+
+        [[nodiscard]] sequence_t sequence() const override { return _impl->sequence(); }
+
+      private:
+        unique_ptr<RecordEnumerator::Impl> _impl;       // Current enumerator
+        KeyStore*                          _deadStore;  // The deleted store, before I switch to it
+        sequence_t                         _since;      // Starting sequence
+        RecordEnumerator::Options          _options;    // Enumerator options
+    };
+
+    RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
+                                                            RecordEnumerator::Options options) {
         bool isDefaultStore = (name() == DataFile::kDefaultKeyStoreName);
-        if (options.includeDeleted) {
-            if (options.sortOption == kUnsorted)
-                options.sortOption = kAscending;    // we need ordering to merge
-            return new BothEnumeratorImpl(bySequence, since, options,
-                                          _liveStore.get(), _deadStore.get());
+        if ( options.includeDeleted ) {
+            if ( options.sortOption == kUnsorted )
+                return new BothUnorderedEnumeratorImpl(since, options, _liveStore.get(), _deadStore.get());
+            else
+                return new BothEnumeratorImpl(bySequence, since, options, _liveStore.get(), _deadStore.get());
         } else {
-            if (!isDefaultStore) {
-                // For non default store, liveStore contains only live records. By assigning
-                // includeDeleted to true, we won't apply flag filter to filter out the deleted.
-                // For default store, however, liveStore may have deleted records.
-                options.includeDeleted = true;  // no need for enum to filter out deleted docs
+            if ( !isDefaultStore ) {
+                 // For non default store, liveStore contains only live records. By assigning
+                 // includeDeleted to true, we won't apply flag filter to filter out the deleted.
+                 // For default store, however, liveStore may have deleted records.
+                 options.includeDeleted = true;  // no need for enum to filter out deleted docs
             }
             return _liveStore->newEnumeratorImpl(bySequence, since, options);
         }
