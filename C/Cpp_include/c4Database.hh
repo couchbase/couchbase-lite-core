@@ -76,7 +76,7 @@ struct C4Database
 
     const Config& getConfiguration() const noexcept FLPURE { return _config; }
 
-    virtual alloc_slice getPeerID() const      = 0;
+    virtual alloc_slice getSourceID() const    = 0;
     virtual C4UUID      getPublicUUID() const  = 0;
     virtual C4UUID      getPrivateUUID() const = 0;
 
@@ -122,7 +122,7 @@ struct C4Database
     virtual bool hasScope(C4String) const = 0;
 
     /// Returns the existing collection with the given name & scope, or nullptr if it doesn't exist.
-    virtual C4Collection* getCollection(CollectionSpec) const = 0;
+    virtual C4Collection* C4NULLABLE getCollection(CollectionSpec) const = 0;
 
     /// Creates and returns an empty collection with the given name in the given scope,
     /// or if one already exists, returns that.
@@ -248,6 +248,7 @@ struct C4Database
     // These are used by the replicator:
     virtual C4RemoteID  getRemoteDBID(slice remoteAddress, bool canCreate) = 0;
     virtual alloc_slice getRemoteDBAddress(C4RemoteID remoteID)            = 0;
+    virtual alloc_slice getRevIDGlobalForm(slice revID)                    = 0;
 
     // Used only by the `cblite` tool:
     virtual alloc_slice rawQuery(slice sqliteQuery) = 0;

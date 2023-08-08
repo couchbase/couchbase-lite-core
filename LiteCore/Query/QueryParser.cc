@@ -540,11 +540,18 @@ namespace litecore {
             // The Prediction method also uses a separate table; only the separator is different.
             if ( idxAt == string::npos ) { idxAt = table.find(KeyStore::kPredictSeparator); }
             string coAlias;
+            auto [prefixBegin, prefixEnd] = _ftsTableAliases.equal_range(table);
             if ( idxAt != string::npos ) {
                 string collTable = table.substr(0, idxAt);
-                for ( auto& _aliase : _aliases ) {
-                    if ( _aliase.second.type == kResultAlias ) { continue; }
-                    if ( _aliase.second.tableName == collTable ) { coAlias = _aliase.first; }
+                for ( auto iter = _aliases.begin(); iter != _aliases.end(); ++iter ) {
+                    if ( iter->second.type == kResultAlias ) { continue; }
+                    if ( iter->second.tableName == collTable ) { coAlias = iter->first; }
+                    if ( prefixBegin != _ftsTableAliases.end()
+                         && std::find_if(prefixBegin, prefixEnd, [iter](const auto& i) {
+                                return i.second == iter->first;
+                            }) != prefixEnd ) {
+                        break;
+                    }
                 }
             }
             DebugAssert(!coAlias.empty());
@@ -896,7 +903,38 @@ namespace litecore {
                     title = format("$%u", ++anonCount);  // default for non-properties
                 } else if ( title == "*" ) {
                     title = _dbAlias;
-                }
+
+                    for ( bool done = false; !done; done = true ) {
+                        // special requirement: attempt to use sheer collection name if it's unambiguous.
+                        const auto& iter = _aliases.find(_dbAlias);
+                        require(iter != _aliases.end(), "alias must have been registered");
+
+                        // First, if the alias is derived implicitly from the collection,
+                        // as opposed to AS aliases
+                        if ( _dbAlias != DataFile::unescapeCollectionName(iter->second.collection) ) break;
+
+                        // Second, the collection is represented as collection path
+                        auto pathSeparator = DataFile::findCollectionPathSeparator(iter->second.collection);
+                        if ( pathSeparator == string::npos ) break;
+
+                        // Finally, there is no joined datasource that has the same collection name.
+                        string collectionName = iter->second.collection.substr(pathSeparator + 1);
+                        auto   it             = _aliases.begin();
+                        for ( ; it != _aliases.end(); ++it ) {
+                            if ( it->second.type != kJoinAlias ) continue;
+                            auto sep = DataFile::findCollectionPathSeparator(it->second.collection);
+                            if ( collectionName
+                                 == (sep == string::npos ? it->second.collection
+                                                         : it->second.collection.substr(sep + 1)) ) {
+                                break;
+                            }
+                        }
+                        if ( it != _aliases.end() ) break;
+
+                        // Assign the collection name to title
+                        title = DataFile::unescapeCollectionName(collectionName);
+                    }
+                }  //if ( title == "*" )
             }
 
             // Make the title unique:
@@ -1032,7 +1070,7 @@ namespace litecore {
         // Write the expression:
         auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
         Assert(!ftsTableAlias.empty());
-        _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0])) << " MATCH ";
+        _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0]).first) << " MATCH ";
         parseCollatableNode(operands[1]);
     }
 
@@ -1355,7 +1393,7 @@ namespace litecore {
 
         // Special case: in "rank(ftsName)" the param has to be a matchinfo() call:
         if ( op.caseEquivalent(kRankFnName) ) {
-            string fts = FTSTableName(operands[0]);
+            string fts = FTSTableName(operands[0]).first;
             auto   i   = _indexJoinTables.find(fts);
             if ( i == _indexJoinTables.end() ) fail("rank() can only be called on FTS indexes");
             _sql << "rank(matchinfo(" << i->second << "." << sqlIdentifier(i->first) << "))";
@@ -1781,17 +1819,23 @@ namespace litecore {
         });
     }
 
-    // Returns the FTS table name given the LHS of a MATCH expression.
-    string QueryParser::FTSTableName(const Value* key) const {
+    // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
+    pair<string, string> QueryParser::FTSTableName(const Value* key) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
         require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
-        auto iAlias = _aliases.end();
+        Path keyPathBeforeVerifyDbAlias = keyPath;
+        auto iAlias                     = _aliases.end();
 
         string outError;
         iAlias = verifyDbAlias(keyPath, &outError);
-        if ( iAlias == _aliases.end() ) {
+        slice prefix;
+        if ( iAlias != _aliases.end() ) {
+            ptrdiff_t diff = keyPathBeforeVerifyDbAlias.size() - keyPath.size();
+            Assert(diff < 2);
+            if ( diff > 0 ) prefix = keyPathBeforeVerifyDbAlias[0].keyStr();
+        } else {
             bool   uniq = true;
             string uniqAlias;
             for ( auto iter = _aliases.begin(); iter != _aliases.end(); ++iter ) {
@@ -1815,15 +1859,16 @@ namespace litecore {
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _delegate.FTSTableName(iAlias->second.tableName, indexName);
+        return {_delegate.FTSTableName(iAlias->second.tableName, indexName), string(prefix)};
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
     const string& QueryParser::FTSJoinTableAlias(const Value* matchLHS, bool canAdd) {
-        auto          tableName = FTSTableName(matchLHS);
-        const string& alias     = indexJoinTableAlias(tableName);
+        auto [tableName, prefix] = FTSTableName(matchLHS);
+        const string& alias      = indexJoinTableAlias(tableName);
         if ( !canAdd || !alias.empty() ) return alias;
         _ftsTables.push_back(tableName);
+        _ftsTableAliases.insert({tableName, prefix});
         return indexJoinTableAlias(tableName, "fts");
     }
 

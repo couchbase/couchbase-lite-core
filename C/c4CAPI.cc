@@ -440,8 +440,8 @@ bool c4db_getUUIDs(C4Database* database, C4UUID* publicUUID, C4UUID* privateUUID
     });
 }
 
-C4StringResult c4db_getPeerID(C4Database* database) noexcept {
-    return tryCatch<C4StringResult>(nullptr, [&] { return C4StringResult(database->getPeerID()); });
+C4StringResult c4db_getSourceID(C4Database* database) noexcept {
+    return tryCatch<C4StringResult>(nullptr, [&] { return C4StringResult(database->getSourceID()); });
 }
 
 C4ExtraInfo c4db_getExtraInfo(C4Database* database) noexcept { return database->extraInfo; }
@@ -478,19 +478,6 @@ C4SliceResult c4db_rawQuery(C4Database* database, C4String query, C4Error* outEr
 
 // LCOV_EXCL_STOP
 
-
-// only used by tests - not exposed to public API
-bool c4db_findDocAncestors(C4Database* database, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
-                           C4RemoteID remoteDBID, const C4String docIDs[], const C4String revIDs[],
-                           C4StringResult ancestors[], C4Error* outError) noexcept {
-    return tryCatch(outError, [&] {
-        vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
-        vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
-        auto vecAncestors = database->getDefaultCollection()->findDocAncestors(vecDocIDs, vecRevIDs, maxAncestors,
-                                                                               requireBodies, remoteDBID);
-        for ( unsigned i = 0; i < numDocs; ++i ) ancestors[i] = C4SliceResult(vecAncestors[i]);
-    });
-}
 
 // only used by tests - not exposed to public API
 bool c4coll_findDocAncestors(C4Collection* collection, unsigned numDocs, unsigned maxAncestors, bool requireBodies,
@@ -769,6 +756,8 @@ bool c4rev_equal(C4Slice rev1, C4Slice rev2) noexcept { return C4Document::equal
 
 unsigned c4rev_getGeneration(C4Slice revID) noexcept { return C4Document::getRevIDGeneration(revID); }
 
+uint64_t c4rev_getTimestamp(C4Slice revID) noexcept { return C4Document::getRevIDTimestamp(revID); }
+
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
     return C4Document::revisionFlagsFromDocFlags(docFlags);
 }
@@ -960,8 +949,7 @@ void c4query_setParameters(C4Query* query, C4String encodedParameters) noexcept 
     query->setParameters(encodedParameters);
 }
 
-C4QueryEnumerator* c4query_run(C4Query* query, C4UNUSED const C4QueryOptions* C4NULLABLE options,
-                               C4Slice encodedParameters, C4Error* outError) noexcept {
+C4QueryEnumerator* c4query_run(C4Query* query, C4Slice encodedParameters, C4Error* outError) noexcept {
     return tryCatch<C4QueryEnumerator*>(outError, [&] { return query->createEnumerator(encodedParameters); });
 }
 

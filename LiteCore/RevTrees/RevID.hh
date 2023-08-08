@@ -17,28 +17,32 @@ namespace litecore {
     class Version;
     class VersionVector;
 
-    /** A compressed revision ID. 
-        Since this is based on slice, it doesn't own the memory it points to.
+    /** A compressed revision ID in binary form.
+        Since this is based on `slice`, it doesn't own the memory it points to.
+        For an owning version, see \ref revidBuffer.
 
         There are two types of revision IDs: digests and versions.
 
-        **Digest form** is/was used by the revision-tree versioning system in Couchbase Mobile 1 and 2.
+        **Digest form** is/was used by the revision-tree versioning system.
         It consists of a generation count and an MD5 or SHA-1 digest.
         - The ASCII form looks like "123-cafebabedeadbeefdeadfade".
         - The binary form consists of the generation as a varint, followed by the digest as raw binary.
 
-        **Version form** is used by the version-vector system in [the upcoming] Couchbase Mobile 3.
-        It consists of a generation count and an integer "source ID" (or "peer ID".) The source ID zero is
-        reserved to mean "the local device/database".
-        - The ASCII form looks like "7b@cafebabe" -- note that the generation is hex, not decimal!
-          The source ID zero is represented as a '*' character, e.g. "7b-*".
-        - The binary form consists of a zero byte, the generation as a varint, and the source as a varint.
-          (The leading zero is to distinguish it from the digest form.)
+        **Version form** is used by the version-vector system in [the upcoming] Couchbase Mobile 3.x.
+        It consists of a logical timestamp and a UUID "source ID" (or "peer ID".)
+        - An all-zero source ID (`kMeSourceID`) is reserved to mean "the local device/database".
+        - The ASCII form combines a hex timestamp with a base64 source ID, separated by an `@`,
+          for example `1772c7cb27da0000@ZegpoldZegpoldZegpoldA`.
+          The source ID zero is represented as a '*' character.
+        - The binary form is, basically, a zero byte, the timestamp as a varint, and the source.
+          The leading zero is to distinguish it from the digest form. It's actually a bit more
+          complicated, to shave off a few bytes; see the comment in Version.cc.
         The version form is also represented by the `Version` class.
 
-        PLEASE NOTE: A revid in version form can store an entire version vector, since that format just
-        consists of multiple binary versions concatenated. HOWEVER, the `revid` API only gives information
-        about the first (current) version in the vector, except for the `asVersionVector` method. */
+        PLEASE NOTE: A revid in version form can store an entire version vector, since that format
+        just consists of multiple binary versions concatenated.
+        HOWEVER, the `revid` API only gives information about the first (current) version in the
+        vector, except for the `asVersionVector` method. */
     class revid : public slice {
       public:
         revid() : slice() {}
@@ -56,7 +60,7 @@ namespace litecore {
         /// - or if both are digest-based and are bitwise equal.
         [[nodiscard]] bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
-        /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
+        /// Returns true for version-vector style (time@peer), false for rev-tree style (gen-digest).
         [[nodiscard]] bool isVersion() const noexcept FLPURE { return size > 0 && (*this)[0] == 0; }
 
         //---- Tree revision IDs only
@@ -71,7 +75,7 @@ namespace litecore {
 
         //---- ASCII conversions:
         [[nodiscard]] alloc_slice expanded() const;
-        bool                      expandInto(slice_ostream& dst) const noexcept;
+        [[nodiscard]] bool        expandInto(slice_ostream& dst) const noexcept;
         [[nodiscard]] std::string str() const;
 
         explicit operator std::string() const { return str(); }
@@ -118,7 +122,7 @@ namespace litecore {
             Returns false if the string isn't parseable.
             \warning This will not parse an entire version vector, only its first component!
                     To parse the entire vector, call \ref VersionVector::fromASCII. */
-        bool tryParse(slice asciiString) noexcept;
+        [[nodiscard]] bool tryParse(slice asciiString) noexcept;
 
       private:
         uint8_t _buffer[42]{};

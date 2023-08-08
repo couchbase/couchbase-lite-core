@@ -63,11 +63,12 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLiteQuery.cc
         LiteCore/Query/SQLUtil.cc
         LiteCore/Query/N1QL_Parser/n1ql.cc
-        LiteCore/RevTrees/VectorRecord.cc
+        LiteCore/RevTrees/HybridClock.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc
         LiteCore/RevTrees/RevTreeRecord.cc
+        LiteCore/RevTrees/VectorRecord.cc
         LiteCore/RevTrees/Version.cc
         LiteCore/RevTrees/VersionVector.cc
         LiteCore/Storage/BothKeyStore.cc

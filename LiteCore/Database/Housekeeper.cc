@@ -53,9 +53,9 @@ namespace litecore {
         // but calling enqueue there appears to corrupt the whole object, giving
         // it a garbage ref count
         if ( !_bgdb && _collection && _collection->isValid() ) {
-            logInfo("Housekeeper: opening background database to monitor expiration...");
             _bgdb       = asInternal(_collection->getDatabase())->backgroundDatabase();
             _collection = nullptr;  // No longer needed, release the retain
+            logInfo("Housekeeper: opening background database to monitor expiration...");
         }
 
         if ( !_bgdb ) {

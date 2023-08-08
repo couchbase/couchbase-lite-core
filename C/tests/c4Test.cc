@@ -185,7 +185,7 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 
     _dbConfig = {slice(TempDir()), kC4DB_Create};
     if ( testOption == VersionVectorOption ) {
-        _dbConfig.flags |= kC4DB_VersionVectors;
+        _dbConfig.flags |= kC4DB_VersionVectors | kC4DB_FakeVectorClock;
         kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID                        = C4STR("2@*");
         kRev3ID                        = C4STR("3@*");
@@ -375,11 +375,14 @@ void C4Test::createConflictingRev(C4Collection* collection, C4Slice docID, C4Sli
     rq.revFlags                = flags;
     rq.save                    = true;
     C4Error error;
-    auto    doc = c4coll_putDoc(collection, &rq, nullptr, &error);
+    size_t  commonAncestor;
+    auto    doc = c4coll_putDoc(collection, &rq, &commonAncestor, &error);
     //    char buf[256];
     //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
-    C4Assert(doc != nullptr);
+    Assert(doc != nullptr, "createConflictingRev failed: %s", c4error_descriptionStr(error));
+    if ( commonAncestor == 0 )
+        C4Warn("createConflictingRev: doc %.*s rev %.*s already existed", SPLAT(docID), SPLAT(newRevID));
     c4doc_release(doc);
 }
 

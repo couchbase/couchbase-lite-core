@@ -25,6 +25,7 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
+#include "Version.hh"
 #include <functional>
 #include <memory>
 #include <unordered_set>
@@ -58,7 +59,9 @@ namespace litecore {
     }
 
     DatabaseImpl::DatabaseImpl(const FilePath& path, C4DatabaseConfig inConfig)
-        : C4Database(path.unextendedName(), std::string(path.parentDir()), inConfig), _encoder(new Encoder()) {}
+        : C4Database(path.unextendedName(), std::string(path.parentDir()), inConfig), _encoder(new Encoder()) {
+        if ( inConfig.flags & kC4DB_FakeVectorClock ) _versionClock.setSource(make_unique<FakeClockSource>(1, 0));
+    }
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath DatabaseImpl::findOrCreateBundle(const string& path, bool canCreate,
@@ -427,24 +430,15 @@ namespace litecore {
         t.commit();
     }
 
-    uint64_t DatabaseImpl::myPeerID() const {
-        if ( _myPeerID == 0 ) {
-            // Compute my peer ID from the first 64 bits of the public UUID.
-            auto uuid = const_cast<DatabaseImpl*>(this)->getUUID(kPublicUUIDKey);
-            memcpy(&_myPeerID, &uuid, sizeof(_myPeerID));
-            _myPeerID = endian::dec64(_myPeerID);
-            // Don't let it be zero:
-            if ( _myPeerID == 0 ) _myPeerID = 1;
+    SourceID DatabaseImpl::mySourceID() const {
+        if ( _mySourceID.isMe() ) {  // if it's all zero's it's uninitialized
+            C4UUID pub = const_cast<DatabaseImpl*>(this)->getUUID(kPublicUUIDKey);
+            memcpy(&_mySourceID, &pub, sizeof(_mySourceID));
         }
-        return _myPeerID;
+        return _mySourceID;
     }
 
-    alloc_slice DatabaseImpl::getPeerID() const {
-        constexpr size_t bufSize = 32;
-        char             buf[bufSize];
-        snprintf(buf, bufSize, "%" PRIx64, myPeerID());
-        return alloc_slice(buf);
-    }
+    alloc_slice DatabaseImpl::getSourceID() const { return alloc_slice(mySourceID().asASCII()); }
 
 #pragma mark - COLLECTIONS:
 
@@ -861,6 +855,15 @@ namespace litecore {
                               root->sharedKeys(), documentKeys);
             validateKeys(v);
         }
+    }
+
+    alloc_slice DatabaseImpl::getRevIDGlobalForm(slice revID) {
+        revidBuffer buf;
+        if ( !buf.tryParse(revID) ) return nullslice;
+        else if ( revid id = buf.getRevID(); id.isVersion() ) {
+            if ( Version vers = id.asVersion(); vers.author().isMe() ) return vers.asASCII(mySourceID());
+        }
+        return alloc_slice(revID);
     }
 
 #pragma mark - REPLICATION:

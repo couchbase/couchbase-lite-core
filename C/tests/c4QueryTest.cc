@@ -536,7 +536,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
                          nullptr, ERROR_INFO(err));
     REQUIRE(query);
     // Just test whether the enumerator starts without an error:
-    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
+    auto e = c4query_run(query, nullslice, ERROR_INFO(err));
     REQUIRE(e);
     c4queryenum_release(e);
 }
@@ -555,9 +555,57 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]")
                          nullptr, ERROR_INFO(err));
     REQUIRE(query);
     // Just test whether the enumerator starts without an error:
-    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
+    auto e = c4query_run(query, nullslice, ERROR_INFO(err));
     REQUIRE(e);
     c4queryenum_release(e);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with join", "[Query][C][FTS]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+
+    query = c4query_new2(db, kC4N1QLQuery,
+                         R"(SELECT * FROM _ WHERE gender = "female" AND )"
+                         R"(birthday = "1983-09-18" AND MATCH(byStreet, "Loop*"))"_sl,
+                         nullptr, ERROR_INFO(err));
+    REQUIRE(query);
+    auto e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    int count1 = 0;
+    while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count1; }
+    c4queryenum_release(e);
+    // There is exactly one entry satisfying the above criteria regarding gender, birthday and the street name
+    REQUIRE(count1 == 1);
+
+    c4query_release(query);
+    query = c4query_new2(db, kC4N1QLQuery, R"(SELECT count(*) FROM _ WHERE gender = "female")"_sl, nullptr,
+                         ERROR_INFO(err));
+    REQUIRE(query);
+    e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    REQUIRE(c4queryenum_next(e, ERROR_INFO()));
+    int64_t femaleCount = Array::iterator(e->columns)[0].asInt();
+    c4queryenum_release(e);
+    // There are exactly this many females in the database.
+    REQUIRE(femaleCount > 1);
+
+    c4query_release(query);
+    query = c4query_new2(db, kC4N1QLQuery,
+                         R"(SELECT a.name FROM _default AS a LEFT OUTER JOIN _default AS b ON b.gender = a.gender )"
+                         R"(WHERE a.birthday = "1983-09-18" AND MATCH(a.byStreet, "Loop*"))"_sl,
+                         nullptr, ERROR_INFO(err));
+    REQUIRE(query);
+    e = c4query_run(query, nullslice, ERROR_INFO(err));
+    REQUIRE(e);
+    int64_t count = 0;
+    while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count; }
+    c4queryenum_release(e);
+    // There is only one entry, who is female, that satisfies the left side of the outer join.
+    // Because of the WHERE clause, part a should have only one entry. The part b must match gener,
+    // so, total count should equals the number of all females in the database.
+    CHECK(count == femaleCount);
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]") {
@@ -591,7 +639,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
     C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH()\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
     query            = c4query_new2(db, kC4JSONQuery, queryStr, nullptr, ERROR_INFO(err));
     REQUIRE(query);
-    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
+    auto e = c4query_run(query, nullslice, ERROR_INFO(err));
     REQUIRE(e);
     CHECK(c4queryenum_getRowCount(e, WITH_ERROR(&err)) == 1);
     c4queryenum_release(e);
@@ -609,7 +657,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT", "[Query][C]") {
     REQUIRE(c4query_columnCount(query) == 2);
 
     C4Error error;
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
     while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -632,7 +680,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
     REQUIRE(c4query_columnCount(query) == 1);
 
     C4Error error;
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
     while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -652,7 +700,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Aggregate", "[Query][C]") {
     compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
     C4Error error;
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
     while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -676,7 +724,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
                                 ['max()', ['.name.last']]],\
                      GROUP_BY: [['.contact.address.state']]}"));
     C4Error error{};
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
     while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -708,7 +756,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
                          WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
                       ORDER_BY: [['.person.name.first']]}"));
     C4Error error;
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
     while ( c4queryenum_next(e, ERROR_INFO(error)) ) {
@@ -798,7 +846,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
-    auto    e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto    e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     REQUIRE(c4queryenum_next(e, WITH_ERROR(&error)));
     REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
@@ -843,7 +891,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE "
                                                  "fl_value(_doc.body, 'contact.address.state') = 'CA'"));
 
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+    auto e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     auto refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
     REQUIRE(!refreshed);
@@ -1159,6 +1207,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     TransactionHelper t(db);
     populate({"Widgets"_sl}, "wikipedia_100.json");
     populate({"nested"_sl, "small"_sl}, "nested.json");
+    populate({"nested"_sl}, "nested.json");
 
     compileSelect(json5("{WHAT: ['.Widgets.title'], FROM: [{COLLECTION:'Widgets'}]}"));
     CHECK(run().size() == 100);
@@ -1180,6 +1229,9 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'Widgets'}]}"));
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
+    checkColumnTitles({"nested"});
+    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
+                        "{COLLECTION:'nested', JOIN:'INNER', ON: ['=', 1, 1]}]}"));
     checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"alias"});
@@ -1328,7 +1380,7 @@ class CollatedQueryTest : public BigDBQueryTest {
 
     vector<string> run() {
         C4Error                    error;
-        c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
         REQUIRE(e);
         vector<string> results;
         while ( c4queryenum_next(e, ERROR_INFO(error)) ) {

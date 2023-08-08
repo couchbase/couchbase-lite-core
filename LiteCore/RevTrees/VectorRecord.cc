@@ -412,7 +412,7 @@ namespace litecore {
 
 #pragma mark - SAVING:
 
-    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction) {
+    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction, HybridClock& versionClock) {
         requireRemotes();
         auto [props, revID, flags] = currentRevision();
         props                      = nullptr;  // unused
@@ -427,7 +427,7 @@ namespace litecore {
                     generatedRev = generateRevID(_current.properties, revID, flags);
                     break;
                 case Versioning::Vectors:
-                    generatedRev = generateVersionVector(revID);
+                    generatedRev = generateVersionVector(revID, versionClock);
             }
             revID = revid(generatedRev);
             setRevID(revID);
@@ -513,9 +513,10 @@ namespace litecore {
         return alloc_slice(revidBuffer(generation, slice(digest)).getRevID());
     }
 
-    alloc_slice VectorRecord::generateVersionVector(revid parentRevID) {
-        VersionVector vec = parentRevID.asVersionVector();
-        vec.incrementGen(kMePeerID);
+    alloc_slice VectorRecord::generateVersionVector(revid parentRevID, HybridClock& versionClock) {
+        VersionVector vec;
+        if ( parentRevID ) vec = parentRevID.asVersionVector();
+        vec.addNewVersion(versionClock);
         return vec.asBinary();
     }
 

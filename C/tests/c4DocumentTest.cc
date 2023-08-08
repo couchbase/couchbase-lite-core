@@ -291,7 +291,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
     } else {
-        // The history is going to end with this database's peerID, a random 64-bit hex string,
+        // The history is going to end with this database's SourceID, a random 64-bit hex string,
         // so we don't know exactly what it will be. But it will start "2@".
         alloc_slice history = c4doc_getRevisionHistory(doc, 99, nullptr, 0);
         CHECK(history.hasPrefix("2@"));
@@ -514,7 +514,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         if ( isRevTrees() ) {
             kConflictRevID = C4STR("2-deadbeef");
         } else {
-            kConflictRevID = C4STR("1@cafebabe");
+            kConflictRevID = C4STR("1@CarolCarolCarolCarolCA");
         }
 
         C4Slice history[2] = {kConflictRevID, kExpectedRevID};
@@ -723,7 +723,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "LoadRevisions After Purge", "[Document][C]") {
 
         // Try to resolve a conflict:
         error = {};
-        CHECK(!c4doc_resolveConflict(curDoc, curDoc->revID, kRev2ID, nullslice, {}, &error));
+        CHECK(!c4doc_resolveConflict(curDoc, curDoc->revID, kRev4ID, nullslice, {}, &error));
         CHECK(error == expectedError);
 
         // Try to update the document:
@@ -814,8 +814,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         kRev1ID         = "1@*";
         kRev2ID         = "2@*";
         kRev3ID         = "3@*";
-        kRev3ConflictID = "3@cafe";
-        kRev4ConflictID = "4@cafe";
+        kRev3ConflictID = "3@CarolCarolCarolCarolCA";
+        kRev4ConflictID = "4@CarolCarolCarolCarolCA";
     }
 
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
@@ -913,9 +913,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK((int)doc->selectedRev.flags == 0);
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "4@cafe"_sl);
+            CHECK(doc->selectedRev.revID == "4@CarolCarolCarolCarolCA"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "4@cafe,2@*"_sl);
+            CHECK(vector == "4@CarolCarolCarolCarolCA; 2@*"_sl);
         }
 
         CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
@@ -926,7 +926,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         C4Log("--- Resolve, remote wins but merge vectors");
         // We have to update the local revision to get into this state.
         // Note we are NOT saving the doc, so we don't mess up the following test block.
-        slice           kSomeoneElsesVersion = "7@1a1a";
+        slice           kSomeoneElsesVersion = "7@AliceAliceAliceAliceAA";
         C4Slice         history[]            = {kSomeoneElsesVersion, kRev3ID};
         C4DocPutRequest rq                   = {};
         rq.existingRevision                  = true;
@@ -945,7 +945,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         CHECK((int)doc->selectedRev.flags == kRevLeaf);
         CHECK(doc->selectedRev.revID == "4@*"_sl);
         alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-        CHECK(vector == "4@*,4@cafe,7@1a1a"_sl);
+        CHECK(vector == "4@*, 7@AliceAliceAliceAliceAA, 4@CarolCarolCarolCarolCA;"_sl);
         CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
         CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
     }
@@ -977,9 +977,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK((int)doc->selectedRev.flags == 0);
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            CHECK(doc->selectedRev.revID == "5@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "4@*,4@cafe"_sl);
+            CHECK(vector == "5@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
 
         CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
@@ -1005,9 +1005,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK(!c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            CHECK(doc->selectedRev.revID == "6@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "4@*,4@cafe"_sl);
+            CHECK(vector == "6@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
     }
 
@@ -1035,9 +1035,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK(!c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            CHECK(doc->selectedRev.revID == "7@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "4@*,4@cafe"_sl);
+            CHECK(vector == "7@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
     }
 }

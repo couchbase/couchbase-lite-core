@@ -11,7 +11,9 @@
 //
 
 #include "Version.hh"
+#include "Base64.hh"
 #include "Error.hh"
+#include "HybridClock.hh"
 #include "StringUtil.hh"
 #include "slice_stream.hh"
 #include <algorithm>
@@ -21,71 +23,169 @@ namespace litecore {
     using namespace fleece;
 
 
-#pragma mark - VERSION:
+    static_assert(SourceID::kASCIILength == (sizeof(SourceID) * 4 + 2) / 3);
 
-    Version::Version(slice ascii, peerID myPeerID) {
-        if ( !_readASCII(ascii) ) throwBadASCII(ascii);
-        if ( _author == myPeerID ) _author = kMePeerID;  // Abbreviate my ID
+    string SourceID::asASCII() const {
+        string str = base64::encode({&_bytes, sizeof(_bytes)});
+        // Base64 encoding will always have a `==` suffix, so remove it:
+        DebugAssert(str.size() == kASCIILength + 2);
+        DebugAssert(hasSuffix(str, "=="));
+        str.resize(kASCIILength);
+        return str;
     }
 
-    Version::Version(slice_istream& data) {
-        optional<uint64_t> gen = data.readUVarInt(), id = data.readUVarInt();
-        if ( !gen || !id ) throwBadBinary();
-        _gen       = *gen;
-        _author.id = *id;
+    bool SourceID::writeASCII(fleece::slice_ostream& out) const { return out.write(asASCII()); }
+
+    bool SourceID::readASCII(fleece::slice s) {
+        if ( s.size != kASCIILength ) return false;
+
+        // Append the `==` suffix required by the base64 decoder:
+        char input[kASCIILength + 2];
+        s.copyTo(input);
+        input[kASCIILength] = input[kASCIILength + 1] = '=';
+
+        // Now decode. The decoder requires a buffer of size 18, though the result only occupies
+        // the first 16 bytes. If the other 2 bytes are nonzero, that means the final character
+        // of the input wasn't valid; checking for this prevents multiple base64 strings from
+        // decoding to the same binary SourceID, which could cause trouble.
+        char  output[18] = {0};
+        slice result     = base64::decode(slice(input, sizeof(input)), output, sizeof(output));
+        if ( result.size != sizeof(SourceID) || output[16] != 0 || output[17] != 0 ) return false;
+        result.copyTo(&_bytes);
+        return true;
+    }
+
+    /*  BINARY PEERID ENCODING:
+        First byte is the length of the following data: 0 or 16.
+        - Length 0 denotes this is "me"; nothing follows.
+        - Length 16 is a regular peer ID; the raw bytes follow. */
+
+    bool SourceID::writeBinary(fleece::slice_ostream& out, bool current) const {
+        uint8_t flag = current ? 0x80 : 0x00;
+        if ( isMe() ) return out.writeByte(0 | flag);
+        else if ( *this == kLegacyRevSourceID )
+            return out.writeByte(1 | flag) && out.writeByte(0x1e);
+        else
+            return out.writeByte(sizeof(_bytes) | flag) && out.write(&_bytes, sizeof(_bytes));
+    }
+
+    bool SourceID::readBinary(fleece::slice_istream& in, bool* current) {
+        uint8_t len = in.readByte();
+        *current    = (len & 0x80) != 0;
+        len &= 0x7F;
+        if ( len == 0 ) {
+            *this = kMeSourceID;
+            return true;
+        } else if ( len == 1 ) {
+            if ( uint8_t byte = in.readByte(); byte == 0x1e ) {
+                *this = kLegacyRevSourceID;
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return len == sizeof(_bytes) && in.readAll(&_bytes, len);
+        }
+    }
+
+#pragma mark - VERSION:
+
+    /*  BINARY HYBRIDTIME ENCODING:
+
+        WHEREAS the lowest 16 bits of a logicalTime are a counter that's only used to break ties
+            between equal time values; and
+        WHEREAS that counter is usually zero;
+        THEREFORE let the binary encoding add a LSB that's 1 when the counter's nonzero, and 0
+            when the counter is zero. In the latter case the 16 bits of the counter are omitted.
+    */
+
+    static uint64_t compress(logicalTime g) {
+        auto i = uint64_t(g);
+        if ( i & 0xFFFF ) return (i << 1) | 1;
+        else
+            return i >> 15;
+    }
+
+    static logicalTime decompress(uint64_t i) {
+        if ( i & 1 ) i >>= 1;  // If LSB is set, just remove it
+        else
+            i <<= 15;  // else add 15 more 0 bits
+        return logicalTime(i);
+    }
+
+    Version::Version(slice ascii, SourceID mySourceID) {
+        if ( !_readASCII(ascii) ) throwBadASCII(ascii);
+        if ( _author == mySourceID ) _author = kMeSourceID;  // Abbreviate my ID
+    }
+
+    Version::Version(slice_istream& in) {
+        optional<uint64_t> time = in.readUVarInt();
+        if ( !time ) throwBadBinary();
+        _time = decompress(*time);
+        LITECORE_UNUSED bool current;
+        if ( !_author.readBinary(in, &current) ) throwBadBinary();
         validate();
     }
 
-    /*static*/ optional<Version> Version::readASCII(slice ascii, peerID myPeerID) {
+    /*static*/ optional<Version> Version::readASCII(slice ascii, SourceID mySourceID) {
         Version vers;
         if ( !vers._readASCII(ascii) ) return nullopt;
-        if ( vers._author == myPeerID ) vers._author = kMePeerID;  // Abbreviate my ID
+        if ( vers._author == mySourceID ) vers._author = kMeSourceID;  // Abbreviate my ID
         return vers;
     }
 
     bool Version::_readASCII(slice ascii) noexcept {
         slice_istream in = ascii;
-        _gen             = in.readHex();
-        if ( in.readByte() != '@' || _gen == 0 ) return false;
+        _time            = logicalTime{in.readHex()};
+        if ( in.readByte() != '@' || _time == logicalTime::none ) return false;
         if ( in.peekByte() == '*' ) {
             in.readByte();
-            _author = kMePeerID;
+            _author = kMeSourceID;
+        } else if ( in.peekByte() == '?' ) {
+            in.readByte();
+            _author = kLegacyRevSourceID;
         } else {
-            _author.id = in.readHex();
-            if ( _author.id == 0 || _author == kMePeerID ) return false;
+            if ( !_author.readASCII(in.readAll(SourceID::kASCIILength)) ) return false;
+            if ( _author.isMe() ) return false;
         }
         return (in.size == 0);
     }
 
     void Version::validate() const {
-        if ( _gen == 0 ) error::_throw(error::BadRevisionID);
+        if ( _time == logicalTime::none ) error::_throw(error::BadRevisionID);
     }
 
-    bool Version::writeBinary(slice_ostream& out, peerID myID) const {
-        uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
-        return out.writeUVarInt(_gen) && out.writeUVarInt(id);
+    bool Version::writeBinary(slice_ostream& out, SourceID myID) const {
+        SourceID const& id = _author.isMe() ? myID : _author;
+        return out.writeUVarInt(compress(_time)) && id.writeBinary(out, false);
     }
 
-    bool Version::writeASCII(slice_ostream& out, peerID myID) const {
-        if ( !out.writeHex(_gen) || !out.writeByte('@') ) return false;
-        auto author = (_author != kMePeerID) ? _author : myID;
-        if ( author != kMePeerID ) return out.writeHex(author.id);
-        else
+    bool Version::writeASCII(slice_ostream& out, SourceID myID) const {
+        if ( !out.writeHex(uint64_t(_time)) || !out.writeByte('@') ) return false;
+        else if ( _author == kLegacyRevSourceID )
+            return out.writeByte('?');
+        else if ( auto& author = (_author.isMe()) ? myID : _author; author.isMe() )
             return out.writeByte('*');
+        else
+            return author.writeASCII(out);
     }
 
-    alloc_slice Version::asASCII(peerID myID) const {
+    alloc_slice Version::asASCII(SourceID myID) const {
         auto result =
                 slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream& out) { return writeASCII(out, myID); });
         Assert(result);
         return result;
     }
 
-    versionOrder Version::compareGen(generation a, generation b) {
+    versionOrder Version::compare(logicalTime a, logicalTime b) {
         if ( a > b ) return kNewer;
         else if ( a < b )
             return kOlder;
         return kSame;
+    }
+
+    bool Version::updateClock(HybridClock& clock, bool anyone) const {
+        return (!anyone && !_author.isMe()) || clock.see(_time);
     }
 
     void Version::throwBadBinary() { error::_throw(error::BadRevisionID, "Invalid binary version ID"); }

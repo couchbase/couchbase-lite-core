@@ -265,9 +265,8 @@ static std::set<string> getDocInfos(C4Database* db, C4CollectionSpec coll) {
         while ( c4enum_next(e, ERROR_INFO()) ) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
-            alloc_slice docID(info.docID);
-            alloc_slice revID(info.revID);
-            string      entry = docID.asString() + "/" + revID.asString();
+            alloc_slice revID = db->getRevIDGlobalForm(info.revID);
+            string      entry = slice(info.docID).asString() + "/" + revID.asString();
             ret.insert(entry);
         }
     }
@@ -291,9 +290,15 @@ struct CheckDBEntries {
             dbAfter.push_back(getDocInfos(_db, _collSpecs[i]));
             db2After.push_back(getDocInfos(_db2, _collSpecs[i]));
             CHECK(dbAfter[i].size() == _dbBefore[i].size());
-            for ( auto& doc : _dbBefore[i] ) { CHECK(db2After[i].erase(doc) == 1); }
-            for ( auto& doc : _db2Before[i] ) { CHECK(db2After[i].erase(doc) == 1); }
-            REQUIRE(db2After[i].empty());
+            for ( auto& doc : _dbBefore[i] ) {
+                INFO("Checking doc " << doc << " from db is in db2");
+                CHECK(db2After[i].erase(doc) == 1);
+            }
+            for ( auto& doc : _db2Before[i] ) {
+                INFO("Checking doc " << doc << " from db2 is in db2");
+                CHECK(db2After[i].erase(doc) == 1);
+            }
+            CHECK(db2After[i].size() == 0);
         }
     }
 
@@ -699,10 +704,10 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses});
 
     // Update docs on both dbs and run pull replication:
-    createFleeceRev(roses1, "rose1"_sl, revOrVersID("2-12121212", "1@cafe"), R"({"db":1})"_sl);
-    createFleeceRev(roses2, "rose1"_sl, revOrVersID("2-13131313", "1@babe"), R"({"db":2})"_sl);
-    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@cafe"), R"({"db":1})"_sl);
-    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@babe"), R"({"db":2})"_sl);
+    createFleeceRev(roses1, "rose1"_sl, revOrVersID("2-12121212", "1@CarolCarolCarolCarolCA"), "{\"db\":1}"_sl);
+    createFleeceRev(roses2, "rose1"_sl, revOrVersID("2-13131313", "1@BobBobBobBobBobBobBobA"), "{\"db\":2}"_sl);
+    createFleeceRev(tulips1, "tulip1"_sl, revOrVersID("2-12121212", "1@CarolCarolCarolCarolCA"), "{\"db\":1}"_sl);
+    createFleeceRev(tulips2, "tulip1"_sl, revOrVersID("2-13131313", "1@BobBobBobBobBobBobBobA"), "{\"db\":2}"_sl);
 
     // Pull from db (Passive) to db2 (Active)
     runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips});

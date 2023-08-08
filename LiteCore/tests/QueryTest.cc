@@ -559,6 +559,22 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     CHECK(!e->next());
 }
 
+TEST_CASE_METHOD(QueryTest, "Column Title of unqualified star", "[Query]") {
+    addNumberedDocs(1, 1);
+    string           sqls[][2] = {{"SELECT *         FROM                 _default._default", "_default"},
+                                  {"SELECT *         FROM                          _default", "_default"},
+                                  {"SELECT *         FROM                                 _", "_"},
+                                  {"SELECT * AS Star FROM                 _default._default", "Star"},
+                                  {"SELECT *         FROM _default._default AS MyCollection", "MyCollection"},
+                                  {"SELECT * Star    FROM _default._default AS MyCollection", "Star"}};
+    constexpr size_t sqlCount  = sizeof(sqls) / sizeof(string) / 2;
+    Retained<Query>  query;
+    for ( size_t i = 0; i < sqlCount; ++i ) {
+        query = store->compileQuery(sqls[i][0], litecore::QueryLanguage::kN1QL);
+        CHECK(query->columnTitles()[0] == sqls[i][1]);
+    }
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     // Create a doc with a blob property:
     {

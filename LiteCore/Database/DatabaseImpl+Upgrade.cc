@@ -27,10 +27,6 @@
 namespace litecore {
     using namespace std;
 
-
-    // The fake peer/source ID used for versions migrated from revIDs.
-    static constexpr peerID kLegacyPeerID{0x7777777};
-
     static constexpr const char* kNameOfVersioning[3] = {"v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
 
@@ -109,10 +105,10 @@ namespace litecore {
         VersionVector vv;
         int           localChanges = int(currentRev->revID.generation());
         if ( baseRev ) {
-            vv.add({baseRev->revID.generation(), kLegacyPeerID});
+            vv.add({logicalTime{baseRev->revID.generation()}, kLegacyRevSourceID});
             localChanges -= int(baseRev->revID.generation());
         }
-        if ( localChanges > 0 ) vv.add({generation(localChanges), kMePeerID});
+        if ( localChanges > 0 ) vv.add({logicalTime(localChanges), kMeSourceID});
         auto binaryVersion = vv.asBinary();
 
         // Propagate any saved remote revisions to the new document:
@@ -167,7 +163,8 @@ namespace litecore {
                 if ( rev->flags & Rev::kHasAttachments ) nuRev.flags |= DocumentFlags::kHasAttachments;
 
                 VersionVector vv;
-                vv.add({rev->revID.generation(), kLegacyPeerID});
+                //TODO: Can incorporate part of the revID digest into the gen, for better disambiguation. Result needs to be lower than a HLC timestamp though.
+                vv.add({logicalTime{rev->revID.generation()}, kLegacyRevSourceID});
                 binaryVers  = vv.asBinary();
                 nuRev.revID = revid(binaryVers);
             }

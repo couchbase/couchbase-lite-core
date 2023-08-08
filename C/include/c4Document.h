@@ -108,7 +108,7 @@ CBL_CORE_API C4Slice c4doc_getRevisionBody(C4Document* doc) C4API;
 /** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
         in reverse chronological order.
         In a version-vector database this is of course the revision's version vector. It will be in
-        global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        global form (real SourceID instead of "*") unless the `maxRevs` parameter is 0.
         @param doc  The document.
         @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
         @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
@@ -164,9 +164,21 @@ CBL_CORE_API C4SliceResult c4doc_getRemoteAncestor(C4Document* doc, C4RemoteID r
 CBL_CORE_API bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID remoteDatabase, C4String revID,
                                           C4Error* C4NULLABLE error) C4API;
 
-/** Given a revision ID, returns its generation number (the decimal number before
-        the hyphen), or zero if it's unparseable. */
+/** Given a tree-based revision ID, returns its generation number (the decimal number before
+        the hyphen), or zero if it's unparseable.
+    @warning This function does not support version-based revision IDs. Given one it returns zero,
+    because the timestamp would be too big to return on platforms where `unsigned` is 32-bit.
+    Use \ref c4rev_getTimestamp to support version-based revIDs. */
 CBL_CORE_API unsigned c4rev_getGeneration(C4String revID) C4API;
+
+/** Given a revision ID that's a Version (of the form `time@peer`), returns its timestamp.
+    This can be interpreted as the time the revision was created, in nanoseconds since the Unix
+    epoch, but it's not necessarily exact.
+
+    If this is a tree-based revision ID (of the form `gen-digest`), it returns the generation
+    number. (This can be distinguished from a timestamp because it's much, much smaller!
+    Timestamps will be at least 2^50, while generations rarely hit one million.)*/
+CBL_CORE_API uint64_t c4rev_getTimestamp(C4String revID) C4API;
 
 
 /** Returns true if two revision IDs are equivalent.

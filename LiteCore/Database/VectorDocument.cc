@@ -61,9 +61,9 @@ namespace litecore {
             _sequence = _doc.sequence();
         }
 
-        peerID myPeerID() const { return peerID{asInternal(database())->myPeerID()}; }
+        SourceID mySourceID() const { return SourceID{asInternal(database())->mySourceID()}; }
 
-        static alloc_slice _expandRevID(revid rev, peerID myID = kMePeerID) {
+        static alloc_slice _expandRevID(revid rev, SourceID myID = kMeSourceID) {
             if ( !rev ) return nullslice;
             return rev.asVersion().asASCII(myID);
         }
@@ -72,8 +72,8 @@ namespace litecore {
             if ( revID ) {
                 if ( revidBuffer binaryID(revID); binaryID.getRevID().isVersion() ) {
                     // If it's a version in global form, convert it to local form:
-                    if ( auto vers = binaryID.getRevID().asVersion(); vers.author() == myPeerID() )
-                        binaryID = Version(revID, myPeerID());
+                    if ( auto vers = binaryID.getRevID().asVersion(); vers.author() == mySourceID() )
+                        binaryID = Version(vers.time(), kMeSourceID);
                     return binaryID;
                 }
             }
@@ -86,7 +86,7 @@ namespace litecore {
             RemoteID remote = RemoteID::Local;
             if ( revID.findByte(',') ) {
                 // It's a version vector; look for an exact match:
-                VersionVector vers   = VersionVector::fromASCII(revID, myPeerID());
+                VersionVector vers   = VersionVector::fromASCII(revID, mySourceID());
                 alloc_slice   binary = vers.asBinary();
                 while ( auto rev = _doc.loadRemoteRevision(remote) ) {
                     if ( rev->revID == binary ) return {{remote, *rev}};
@@ -177,7 +177,7 @@ namespace litecore {
         }
 
         alloc_slice getSelectedRevIDGlobalForm() const override {
-            if ( auto rev = _selectedRevision(); rev ) return rev->versionVector().asASCII(myPeerID());
+            if ( auto rev = _selectedRevision(); rev ) return rev->versionVector().asASCII(mySourceID());
             else
                 return nullslice;
         }
@@ -186,9 +186,9 @@ namespace litecore {
                                        unsigned backToRevsCount) const override {
             if ( auto rev = _selectedRevision(); rev ) {
                 VersionVector vers = rev->versionVector();
-                if ( maxRevs > 0 && vers.count() > maxRevs ) vers.limitCount(maxRevs);
+                if ( maxRevs > 0 && vers.count() > maxRevs ) vers.prune(maxRevs);
                 // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
-                return vers.asASCII(maxRevs ? myPeerID() : kMePeerID);
+                return vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
             } else {
                 return nullslice;
             }
@@ -210,11 +210,13 @@ namespace litecore {
         }
 
         bool isRevRejected() override {
-            Assert(false, "not implemented");
-            return false;
+            auto rev = _selectedRevision();
+            return rev && (rev->flags & DocumentFlags::kRejected);
         }
 
-        void revIsRejected(slice revID) override { Assert(false, "not implemented"); }
+        void revIsRejected(slice revID) override {
+            if ( auto rev = _findRemote(revID) ) rev->second.flags |= DocumentFlags::kRejected;
+        }
 
 #pragma mark - EXISTENCE / LOADING:
 
@@ -292,7 +294,7 @@ namespace litecore {
 
             // Update the version vector:
             auto newVers = _currentVersionVector();
-            newVers.incrementGen(kMePeerID);
+            newVers.addNewVersion(asInternal(database())->versionClock());
             alloc_slice newRevID = newVers.asBinary();
             newRev.revID         = revid(newRevID);
 
@@ -309,7 +311,7 @@ namespace litecore {
             // Store in VectorRecord, and update C4Document properties:
             _doc.setCurrentRevision(newRev);
             _selectRemote(RemoteID::Local);
-            return _saveNewRev(rq, newRev, outError);
+            return _saveIfRequested(rq, outError);
         }
 
         // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
@@ -320,9 +322,18 @@ namespace litecore {
             if ( !fldoc ) return -1;
             newRev.properties = fldoc.asDict();
 
-            // Parse the history array:
+            // Parse the version vector from the history, and use it to update the db's clock:
             VersionVector newVers;
-            newVers.readHistory((slice*)rq.history, rq.historyCount, myPeerID());
+            newVers.readHistory((slice*)rq.history, rq.historyCount, mySourceID());
+            if ( !newVers.updateClock(asInternal(database())->versionClock()) ) {
+                if ( outError ) {
+                    alloc_slice vecStr = newVers.asASCII();
+                    *outError          = c4error_printf(LiteCoreDomain, kC4ErrorBadRevisionID,
+                                                        "Invalid timestamp in version vector %.*s", SPLAT(vecStr));
+                }
+                return -1;
+            }
+
             alloc_slice newVersBinary = newVers.asBinary();
             newRev.revID              = revid(newVersBinary);
 
@@ -346,13 +357,14 @@ namespace litecore {
                             "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)", SPLAT(_docID),
                             SPLAT(newVersStr), SPLAT(oldVersStr), kOrderName[order], rq.remoteDBID);
                 else if ( remote != RemoteID::Local )
-                    keyStore().dataFile()._logInfo(
-                            "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
-                            SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+                    keyStore().dataFile()._logInfo("putExistingRevision '%.*s' #%.*s ; currently "
+                                                   "#%.*s --> conflict (remote %d)",
+                                                   SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
                 else
-                    keyStore().dataFile()._logWarning(
-                            "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
-                            SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+                    keyStore().dataFile()._logWarning("putExistingRevision '%.*s' #%.*s ; "
+                                                      "currently #%.*s --> conflict (remote %d)",
+                                                      SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr),
+                                                      rq.remoteDBID);
             }
 
             switch ( order ) {
@@ -384,12 +396,12 @@ namespace litecore {
             _selectRemote(remote);
 
             // Save to DB, if requested:
-            if ( !_saveNewRev(rq, newRev, outError) ) return -1;
+            if ( !_saveIfRequested(rq, outError) ) return -1;
 
             return commonAncestor;
         }
 
-        bool _saveNewRev(const C4DocPutRequest& rq, const Revision& newRev, C4Error* outError) {
+        bool _saveIfRequested(const C4DocPutRequest& rq, C4Error* outError) {
             if ( rq.save && !save() ) {
                 c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
                 return false;
@@ -422,7 +434,7 @@ namespace litecore {
             // Construct a merged version vector:
             VersionVector localVersion = localRev.versionVector(), remoteVersion = remoteRev.versionVector(),
                           mergedVersion;
-            if ( !localWon && !mergedBody.buf && !localVersion.isNewerIgnoring(kMePeerID, remoteVersion) ) {
+            if ( !localWon && !mergedBody.buf && !localVersion.isNewerIgnoring(kMeSourceID, remoteVersion) ) {
                 // If there's no new merged body, and the local revision lost,
                 // and its only changes not in the remote version are by me, then
                 // just get rid of the local version and keep the remote one.
@@ -431,11 +443,8 @@ namespace litecore {
                 //       but currently there's no way of knowing.
                 mergedVersion = remoteVersion;
             } else {
-                if ( localWon ) mergedVersion = localVersion.mergedWith(remoteVersion);
-                else
-                    mergedVersion = remoteVersion.mergedWith(localVersion);
-                // We have to increment something to get a genuinely new version vector.
-                mergedVersion.incrementGen(kMePeerID);
+                mergedVersion =
+                        VersionVector::merge(localVersion, remoteVersion, asInternal(database())->versionClock());
             }
             alloc_slice mergedRevID = mergedVersion.asBinary();
 
@@ -465,9 +474,9 @@ namespace litecore {
 
         bool save(unsigned /*maxRevTreeDepth*/ = 0) override {
             requireValidDocID(_docID);
-            auto db = asInternal(collection()->getDatabase());
+            auto db = asInternal(database());
             db->mustBeInTransaction();
-            switch ( _doc.save(db->transaction()) ) {
+            switch ( _doc.save(db->transaction(), db->versionClock()) ) {
                 case VectorRecord::kNoSave:
                     return true;
                 case VectorRecord::kNoNewSequence:
@@ -520,7 +529,7 @@ namespace litecore {
         // Map docID->revID for faster lookup in the callback:
         unordered_map<slice, slice> revMap(docIDs.size());
         for ( ssize_t i = static_cast<ssize_t>(docIDs.size()) - 1; i >= 0; --i ) revMap[docIDs[i]] = revIDs[i];
-        const peerID myPeerID{asInternal(collection()->getDatabase())->myPeerID()};
+        const SourceID mySourceID{asInternal(collection()->getDatabase())->mySourceID()};
 
         // These variables get reused in every call to the callback but are declared outside to
         // avoid multiple construct/destruct calls:
@@ -538,7 +547,7 @@ namespace litecore {
             // --- It will be called once for each existing requested docID, in arbitrary order ---
 
             // Look up matching requested revID, and convert to encoded binary form:
-            requestedVec.readASCII(revMap[rec.key], myPeerID);
+            requestedVec.readASCII(revMap[rec.key], mySourceID);
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             auto cmp    = compareLocalRev(rec.version);
@@ -570,7 +579,7 @@ namespace litecore {
             VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
                 if ( delim.count() < maxAncestors && hasBody >= mustHaveBodies ) {
                     if ( !(compareLocalRev(aRev) & kNewer) ) {
-                        alloc_slice vector = localVec.asASCII(myPeerID);
+                        alloc_slice vector = localVec.asASCII(mySourceID);
                         if ( added.insert(vector).second )  // [skip duplicate vectors]
                             result << delim << '"' << vector << '"';
                     }

@@ -15,6 +15,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <algorithm>
 #include "betterassert.hh"
 
 namespace litecore {
@@ -136,6 +137,35 @@ namespace litecore {
                     }
                 }
             }
+        }
+
+        /** Creates an intersection with another sequence set to ensure that all missing
+            sequences get accounted for */
+        static SequenceSet intersection(const SequenceSet& s1, const SequenceSet& s2) {
+            SequenceSet retVal;
+            auto        i1 = s1.begin();
+            auto        i2 = s2.begin();
+
+            // Move through each of the sets and check if the current two are overlapping.
+            // If so, add the overlapping range and then check below which set(s) to advance.
+            while ( i1 != s1.end() && i2 != s2.end() ) {
+                auto start = std::max(i1->first, i2->first);
+                auto end   = std::min(i1->second, i2->second);
+                if ( start < end ) { retVal.add(start, end); }
+
+                // Need to evaluate this first before we advance anything
+                // If the first end value is less than the second, advance only the first iterator
+                // If the first end value is greater than the second, advance only the second iterator
+                // If equal, advance both
+                auto advanceFirst  = i1->second <= i2->second;
+                auto advanceSecond = i1->second >= i2->second;
+
+                if ( advanceFirst ) { ++i1; }
+
+                if ( advanceSecond ) { ++i2; }
+            }
+
+            return retVal;
         }
 
         /** Iteration is over pair<sequence,sequence> values, where the first sequence is the
