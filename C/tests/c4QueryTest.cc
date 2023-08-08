@@ -567,14 +567,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with join", "[Query][C][FTS]") 
                                kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
 
     query = c4query_new2(db, kC4N1QLQuery,
-                         R"(SELECT * FROM _ WHERE gender = "female" AND )"
+                         R"(SELECT count(*) FROM _ WHERE gender = "female" AND )"
                          R"(birthday = "1983-09-18" AND MATCH(byStreet, "Loop*"))"_sl,
                          nullptr, ERROR_INFO(err));
     REQUIRE(query);
     auto e = c4query_run(query, nullslice, ERROR_INFO(err));
     REQUIRE(e);
-    int count1 = 0;
-    while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count1; }
+    REQUIRE(c4queryenum_next(e, ERROR_INFO()));
+    auto count1 = Array::iterator(e->columns)[0].asInt();
     c4queryenum_release(e);
     // There is exactly one entry satisfying the above criteria regarding gender, birthday and the street name
     REQUIRE(count1 == 1);
@@ -603,7 +603,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with join", "[Query][C][FTS]") 
     while ( c4queryenum_next(e, ERROR_INFO()) ) { ++count; }
     c4queryenum_release(e);
     // There is only one entry, who is female, that satisfies the left side of the outer join.
-    // Because of the WHERE clause, part a should have only one entry. The part b must match gener,
+    // Because of the WHERE clause, part a should have only one entry. The part b must match gender,
     // so, total count should equals the number of all females in the database.
     CHECK(count == femaleCount);
 }
