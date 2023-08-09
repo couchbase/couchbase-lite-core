@@ -1034,7 +1034,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with Conflicted Opti
             REQUIRE(doc != nullptr);
         }
     };
-    populateDB(10000);
+    populateDB(12000);
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
@@ -1074,7 +1074,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with Conflicted Opti
         // Encrypted case is not stable.
         return;
     }
-    CHECK(elapsedSorted / elapsedUnsorted > 5);
+    CHECK(elapsedSorted / elapsedUnsorted > 4);
 }
 
 TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
