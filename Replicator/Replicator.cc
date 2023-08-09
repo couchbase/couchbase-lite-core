@@ -606,8 +606,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
-        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)",
-            status.reasonName(), status.code, SPLAT(status.message), _connectionState);
+        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d->%d)",
+            status.reasonName(), status.code, SPLAT(status.message), _connectionState, state);
         Signpost::mark(Signpost::replicatorDisconnect, uintptr_t(this));
 
         bool closedByPeer = (_connectionState != Connection::kClosing);
