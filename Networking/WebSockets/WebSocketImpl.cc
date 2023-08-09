@@ -198,7 +198,7 @@ namespace litecore { namespace websocket {
             if (data.empty() && !_closeReceived) {
                 // We assume empty data means a zero-length read, i.e. EOF
                 logError("Protocol error: Peer shutdown socket without a CLOSE message");
-                protocolError();
+                protocolError("Peer shutdown socket without a CLOSE message"_sl);
                 return;
             }
 
@@ -245,8 +245,10 @@ namespace litecore { namespace websocket {
         }
 
         // Body:
-        if (_curMessageLength + length > _curMessage.size)
-            return false; // overflow!
+        if (_curMessageLength + length > _curMessage.size) {
+            // We tried...but there is still more data, so resize
+            _curMessage.resize(_curMessageLength + length);
+        }
 
         // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
@@ -292,8 +294,8 @@ namespace litecore { namespace websocket {
 
 
     // Called from inside _protocol->consume(), with the _mutex locked
-    void WebSocketImpl::protocolError() {
-        _protocolError = true;
+    void WebSocketImpl::protocolError(slice message) {
+        _protocolError = message;
         closeSocket();
     }
 
@@ -454,6 +456,15 @@ namespace litecore { namespace websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
+        auto logErrorForStatus = [this](const char* msg, const CloseStatus& cstatus) {
+            if (cstatus.message.empty()) {
+                logError("%s (reason=%-s %d)", msg, cstatus.reasonName(), cstatus.code);
+            } else {
+                logError("%s (reason=%-s %d) %.*s", msg,
+                         cstatus.reasonName(), cstatus.code, SPLAT(cstatus.message));
+            }
+        };
+
         {
             lock_guard<mutex> lock(_mutex);
 
@@ -474,8 +485,10 @@ namespace litecore { namespace websocket {
             if (status.reason == kWebSocketClose) {
                 if (_timedOut)
                     status = {kNetworkError, kNetErrTimeout, nullslice};
-                else if (_protocolError)
-                    status = {kWebSocketClose, kCodeProtocolError, nullslice};
+                else if (_protocolError) {
+                    status = {kWebSocketClose, kCodeProtocolError, _protocolError};
+                    logErrorForStatus("WebSocketImpl::onClose", status);
+                }
             }
             
             if (_didConnect) {
@@ -486,9 +499,20 @@ namespace litecore { namespace websocket {
                     bool expected = (_closeSent && _closeReceived);
                     if (expected && clean)
                         logInfo("Socket disconnected cleanly");
-                    else
-                        logError("Unexpected or unclean socket disconnect! (reason=%-s %d)",
-                                 status.reasonName(), status.code);
+                    else {
+                        std::stringstream ss;
+                        ss << "Unexpected or unclean socket disconnect!";
+                        if (!_closeSent) {
+                            ss << " (close not sent";
+                        }
+                        if (!_closeReceived) {
+                            ss << (_closeSent ? " (" : "; ");
+                            ss << "close not received)";
+                        } else if (!_closeSent) {
+                            ss << ")";
+                        }
+                        logErrorForStatus(ss.str().c_str(), status);
+                    }
 
                     if (clean) {
                         status.reason = kWebSocketClose;
@@ -508,8 +532,7 @@ namespace litecore { namespace websocket {
                     if (clean)
                         logInfo("WebSocket closed normally");
                     else
-                        logError("WebSocket closed abnormally (reason=%-s %d)",
-                                 status.reasonName(), status.code);
+                        logErrorForStatus("WebSocket closed abnormally", status);
                 }
 
                 _timeConnected.stop();
@@ -518,8 +541,7 @@ namespace litecore { namespace websocket {
                     _bytesSent, _bytesReceived, t,
                     _bytesSent/t, _bytesReceived/t);
             } else {
-                logError("WebSocket failed to connect! (reason=%-s %d)",
-                         status.reasonName(), status.code);
+                logErrorForStatus("WebSocket failed to connect!", status);
             }
 
             _closed = true;
@@ -556,8 +578,14 @@ namespace uWS {
 
 
     template <const bool isServer>
-    void WebSocketProtocol<isServer>::forceClose(void *user) {
-        _sock->protocolError();
+    void WebSocketProtocol<isServer>::forceClose(void *user, const char* reason) {
+        std::stringstream ss;
+        ss << "WebSocketProtocol<" << (isServer ? "server" : "client") << ">::forceClose";
+        if (reason != nullptr) {
+            ss << reason;
+        }
+        _sock->logError("Protocol error: %s", ss.str().c_str());
+        _sock->protocolError(slice(ss.str().c_str()));
     }
 
 
