@@ -250,8 +250,9 @@ TEST_CASE("Logging rollover", "[Log]") {
             this_thread::sleep_for(1s);
         }
         if ( i == 256 * 2 ) {
-            // To ensure we have 2 rotate events. If maxCount in the logOptions is 1,
-            // one file will be purged from the disk.
+            // To help to get 2 rotate events. If maxCount in the logOptions is 1,
+            // one file will be purged from the disk. But we are guaranteed to
+            // get 2 flush events on all platforms.
             this_thread::sleep_for(1s);
         }
     }
@@ -271,8 +272,16 @@ TEST_CASE("Logging rollover", "[Log]") {
         if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 
-    CHECK(totalCount == 7 + maxCount);  // 1 for each level besides info, 2 or 3 info, 1 "intheway", 1 "acbd"
-    REQUIRE(infoFiles.size() == maxCount + 1);
+    // infoFiles.size(), log files at the Info level
+    // 4 additional log files, 1 for each level besides Info.
+    // 2 arbitrary files, "intheway" and "acbd", in particular
+    REQUIRE(totalCount == infoFiles.size() + 6);
+    // The rollover logic will cut a new file as its size reaches maxSize as specified in
+    // the LogFileOptions. However, we check the size by checking the number of bytes already
+    // flushed to the fstream. Therefore, the number of files that have actually been cut
+    // depends on when flush gets called. No matter how many files are generated, the number
+    // of files left on the disk is bounded by maxCount + 1.
+    CHECK(infoFiles.size() <= maxCount + 1);
 
     vector<std::array<string, 5>> lines;
     auto                          getLines = [&](int f) {
@@ -314,7 +323,9 @@ TEST_CASE("Logging rollover", "[Log]") {
         // serialNo map to file index 0-2
         bySerialNo.emplace(findSerialNo(n), n);
     }
-    CHECK((maxCount == 1 ? bySerialNo.size() == 2 : bySerialNo.size() == 3));
+    CHECK(bySerialNo.size() == infoFiles.size());
+    std::cout << "Number of Info log files = " << infoFiles.size() << ", max number is " << maxCount + 1 << ", "
+              << bySerialNo.begin()->first - 1 << " files are dropped" << std::endl;
 
     //    Example outputs:
     //    ---------------
@@ -369,24 +380,23 @@ TEST_CASE("Logging rollover", "[Log]") {
     }
     REQUIRE(lineNos.size() == bySerialNo.size());
 
-    int lastSerial = 0;
+    int lastLine = 0;
     for ( auto it = lineNos.begin(), prev = lineNos.end(); it != lineNos.end(); ++it ) {
         if ( prev == lineNos.end() ) {
             if ( it->first == 1 ) {
                 // SerialNo == 1
                 CHECK(it->second[0] == 0);
-            } else {
-                Log("%d log files are dropped", it->first - 1);
             }
-            prev = it;
+            prev     = it;
+            lastLine = it->second[1];
             continue;
         }
         CHECK(prev->first + 1 == it->first);          // SerialNos are sonsecutive
         CHECK(prev->second[1] + 1 == it->second[0]);  // line numbers are consecutive
-        lastSerial = it->second[1];
-        prev       = it;
+        lastLine = it->second[1];
+        prev     = it;
     }
-    CHECK(lastSerial == 1023);
+    CHECK(lastLine == 1023);
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
