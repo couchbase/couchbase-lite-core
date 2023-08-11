@@ -756,7 +756,9 @@ bool c4rev_equal(C4Slice rev1, C4Slice rev2) noexcept { return C4Document::equal
 
 unsigned c4rev_getGeneration(C4Slice revID) noexcept { return C4Document::getRevIDGeneration(revID); }
 
-uint64_t c4rev_getTimestamp(C4Slice revID) noexcept { return C4Document::getRevIDTimestamp(revID); }
+bool c4rev_getInfo(C4String revID, C4RevIDInfo* outInfo) noexcept {
+    return tryCatch(nullptr, [&] { *outInfo = C4Document::getRevIDInfo(revID); });
+}
 
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
     return C4Document::revisionFlagsFromDocFlags(docFlags);

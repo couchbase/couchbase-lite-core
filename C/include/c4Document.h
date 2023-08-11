@@ -105,10 +105,13 @@ CBL_CORE_API bool c4doc_hasRevisionBody(C4Document* doc) C4API;
                   the returned slice is invalidated the next time this function is called. */
 CBL_CORE_API C4Slice c4doc_getRevisionBody(C4Document* doc) C4API;
 
-/** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
+/** Returns a string encoding the selected revision's history, as comma-separated revision/version IDs
         in reverse chronological order.
-        In a version-vector database this is of course the revision's version vector. It will be in
-        global form (real SourceID instead of "*") unless the `maxRevs` parameter is 0.
+
+        \note In a version-vector database this is of course the revision's version vector. Be aware:
+        - There will likely be a `;` instead of a comma separating two of the versions.
+        - It will be in global form (real SourceID instead of "*") unless `maxRevs` is 0.
+
         @param doc  The document.
         @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
         @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
@@ -125,7 +128,8 @@ CBL_CORE_API C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned ma
         peer ID instead of the shorthand "*" character.) */
 CBL_CORE_API C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
-/** Selects the parent of the selected revision, if it's known, else returns NULL. */
+/** Selects the parent of the selected revision, if it's known, else returns false.
+    \note  This is not supported in a version-vector database and always returns false. */
 CBL_CORE_API bool c4doc_selectParentRevision(C4Document* doc) C4API;
 
 /** Selects the next revision in priority order.
@@ -138,7 +142,8 @@ CBL_CORE_API bool c4doc_selectNextRevision(C4Document* doc) C4API;
 CBL_CORE_API bool c4doc_selectNextLeafRevision(C4Document* doc, bool includeDeleted, bool withBody,
                                                C4Error* C4NULLABLE outError) C4API;
 
-/** Selects the common ancestor of two revisions. Returns false if none is found. */
+/** Selects the common ancestor of two revisions. Returns false if none is found.
+    \note  This is not supported in a version-vector database and always returns false. */
 CBL_CORE_API bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1ID, C4String rev2ID) C4API;
 
 /** Looks up or creates a numeric ID identifying a remote database, for use with
@@ -171,15 +176,9 @@ CBL_CORE_API bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID remoteData
     Use \ref c4rev_getTimestamp to support version-based revIDs. */
 CBL_CORE_API unsigned c4rev_getGeneration(C4String revID) C4API;
 
-/** Given a revision ID that's a Version (of the form `time@peer`), returns its timestamp.
-    This can be interpreted as the time the revision was created, in nanoseconds since the Unix
-    epoch, but it's not necessarily exact.
-
-    If this is a tree-based revision ID (of the form `gen-digest`), it returns the generation
-    number. (This can be distinguished from a timestamp because it's much, much smaller!
-    Timestamps will be at least 2^50, while generations rarely hit one million.)*/
-CBL_CORE_API uint64_t c4rev_getTimestamp(C4String revID) C4API;
-
+/** Fills out a C4RevIDInfo struct with information parsed from a revID.
+    Returns false if the revID is invalid. */
+CBL_CORE_API bool c4rev_getInfo(C4String revID, C4RevIDInfo* outInfo) C4API;
 
 /** Returns true if two revision IDs are equivalent.
         - Digest-based IDs are equivalent only if byte-for-byte equal.

@@ -62,6 +62,25 @@ typedef struct C4Revision {
     C4SequenceNumber sequence;  ///< Sequence number in database
 } C4Revision;
 
+/** Everything you could possibly want to know about a revision ID. Returned by \ref c4rev_getInfo. */
+typedef struct C4RevIDInfo {
+    bool isVersion;                 ///< True if this is a version-vector rev; false if tree-based
+    union {
+        struct {
+            uint64_t generation;    ///< The generation number (depth in tree)
+            C4String digestString;  ///< The displayed hex digest (points into the input revID)
+            uint8_t digest[20];     ///< The decoded binary digest; length is digestString.size/2
+        } tree;
+        struct {
+            uint64_t timestamp;     ///< The raw timestamp (nanoseconds since Unix epoch)
+            C4String sourceString;  ///< The displayed source ID (points into the input revID)
+            uint8_t source[16];     ///< The decoded binary source ID (128 bit UUID)
+            time_t clockTime;       ///< Timestamp converted to a C time value for easy formatting
+            unsigned legacyGen;     ///< Old generation # of a document upgraded to VVs; else 0
+        } version;
+    };
+} C4RevIDInfo;
+
 // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 // NOTE: Looking for C4Document itself? It's moved to c4DocumentStruct.h

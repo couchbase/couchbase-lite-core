@@ -16,6 +16,7 @@
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
 #include "slice_stream.hh"
+#include "c4DocumentTypes.h" // for C4RevIDInfo
 #include <iomanip>
 #include <thread>
 
@@ -217,6 +218,46 @@ TEST_CASE("SourceID ASCII", "[RevIDs]") {
     CHECK(!id.isMe());
 
     CHECK(id.asASCII() == "AAAAAAAAAAAAAAAAAAAAAQ");
+}
+
+TEST_CASE("RevID Info", "[RevIDs]") {
+    // Tree-based revID:
+    C4RevIDInfo info;
+    info = revidBuffer::getRevIDInfo("123-abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde");
+    CHECK(!info.isVersion);
+    CHECK(info.tree.generation == 123);
+    CHECK(info.tree.digestString == "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"_sl);
+    CHECK(slice(info.tree.digest, sizeof(info.tree.digest)).hexString() == "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde");
+
+    // Version by me:
+    info = revidBuffer::getRevIDInfo("177a6f04d70d0000@*");
+    CHECK(info.isVersion);
+    CHECK(info.version.timestamp == 0x177a6f04d70d0000);
+    CHECK(info.version.sourceString == "*"_sl);
+    CHECK( slice(info.version.source, sizeof(info.version.source)).hexString() == "00000000000000000000000000000000");
+    CHECK(info.version.clockTime == 1691786676);
+    CHECK(info.version.legacyGen == 0);
+
+    // Version by someone else:
+    info = revidBuffer::getRevIDInfo("177a6f04d70d0000@ZegpoldZegpoldZegpoldA");
+    CHECK(info.isVersion);
+    CHECK(info.version.timestamp == 0x177a6f04d70d0000);
+    CHECK(info.version.sourceString == "ZegpoldZegpoldZegpoldA"_sl);
+    CHECK( slice(info.version.source, sizeof(info.version.source)).hexString() == "65e829a257597a0a6895d65e829a2574");
+    CHECK(info.version.legacyGen == 0);
+
+    char timebuf[100];
+    strftime(timebuf, 100, "%F %T", gmtime(&info.version.clockTime));
+    CHECK(string(timebuf) == "2023-08-11 20:44:36");
+
+    // Legacy version upgraded from tree-based id:
+    info = revidBuffer::getRevIDInfo("177000000000007b@?");
+    CHECK(info.isVersion);
+    CHECK(info.version.timestamp == 0x177000000000007b);
+    CHECK(info.version.sourceString == "?"_sl);
+    CHECK( slice(info.version.source, sizeof(info.version.source)).hexString() == "1e000000000000000000000000000000");
+    CHECK(info.version.clockTime == 0);
+    CHECK(info.version.legacyGen == 123);
 }
 
 #pragma mark - VERSION VECTOR:

@@ -13,6 +13,8 @@
 #pragma once
 #include "Base.hh"
 
+struct C4RevIDInfo;
+
 namespace litecore {
     class Version;
     class VersionVector;
@@ -124,8 +126,13 @@ namespace litecore {
                     To parse the entire vector, call \ref VersionVector::fromASCII. */
         [[nodiscard]] bool tryParse(slice asciiString) noexcept;
 
+        /// Implementation of C4Document::getRevIDInfo and c4rev_getInfo.
+        /// Takes an ASCII revID, not a binary one!
+        static C4RevIDInfo getRevIDInfo(slice asciiRevID);
+
       private:
         uint8_t _buffer[42]{};
         revid   _revid;
     };
+
 }  // namespace litecore

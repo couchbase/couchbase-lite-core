@@ -329,6 +329,12 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CONFLICT HANDLING
 
+    static uint64_t getTimestamp(slice revid) {
+        C4RevIDInfo info;
+        Assert(c4rev_getInfo(revid, &info));
+        return info.tree.generation;
+    }
+
     // Installs a simple conflict handler equivalent to the one in CBL 2.0-2.5: it just picks one
     // side and tosses the other one out.
     void installConflictHandler() {
@@ -369,8 +375,8 @@ class ReplicatorLoopbackTest
             // Figure out which branch should win:
             if ( (localFlags & kRevDeleted) != (remoteFlags & kRevDeleted) )
                 remoteWins = (localFlags & kRevDeleted) == 0;  // deletion wins conflict
-            else if ( c4rev_getTimestamp(localRevID) != c4rev_getTimestamp(remoteRevID) )
-                remoteWins = c4rev_getTimestamp(localRevID) < c4rev_getTimestamp(remoteRevID);
+            else if ( getTimestamp(localRevID) != getTimestamp(remoteRevID) )
+                remoteWins = getTimestamp(localRevID) < getTimestamp(remoteRevID);
 
             Log("Resolving conflict in '%.*s': local=#%.*s (%02X), remote=#%.*s (%02X); %s wins", SPLAT(rev->docID),
                             SPLAT(localRevID), localFlags, SPLAT(remoteRevID), remoteFlags, (remoteWins ? "remote" : "local"));

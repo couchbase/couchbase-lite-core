@@ -18,6 +18,8 @@
 #ifndef __APPLE__
 #    include "StringUtil.hh"
 #endif
+#include "HybridClock.hh"
+#include "c4DocumentTypes.h" // for C4RevIDInfo
 #include <cmath>
 #include <climits>
 
@@ -180,5 +182,39 @@ namespace litecore {
             return true;
         }
     }
+
+
+    C4RevIDInfo revidBuffer::getRevIDInfo(slice inRevID) {
+        C4RevIDInfo info;
+        revidBuffer buf(inRevID);
+        revid rev(buf);
+        info.isVersion = rev.isVersion();
+        if (info.isVersion) {
+            Version vers = rev.asVersion();
+            info.version.timestamp = uint64_t(vers.time());
+            static_assert(sizeof(info.version.source) == sizeof(SourceID));
+            ::memcpy(info.version.source, &vers.author().bytes(), sizeof(info.version.source));
+            auto at = inRevID.findByte('@');
+            Assert(at);
+            info.version.sourceString = slice(at + 1, inRevID.end());
+            if (vers.author() == kLegacyRevSourceID) {
+                info.version.clockTime = 0;
+                info.version.legacyGen = unsigned(uint64_t(vers.time()) - uint64_t(kMinValidTime));
+            } else {
+                info.version.clockTime = asTimeT(walltime_t{info.version.timestamp});
+                info.version.legacyGen = 0;
+            }
+        } else {
+            info.tree.generation = rev.generation();
+            if (rev.digest().size > sizeof(info.tree.digest))
+                error::_throw(error::BadRevisionID);
+            rev.digest().copyTo(info.tree.digest);
+            auto dash = inRevID.findByte('-');
+            Assert(dash);
+            info.tree.digestString = slice(dash + 1, inRevID.end());
+        }
+        return info;
+    }
+
 
 }  // namespace litecore

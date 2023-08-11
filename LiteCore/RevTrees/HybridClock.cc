@@ -22,11 +22,20 @@ namespace litecore {
     walltime_t RealClockSource::now() {
         // "The epoch of system_clock is unspecified, but most implementations use Unix Time".
         // The unit test "RealClockSource" in VersionVectorTest.cc verifies this.
-        static_assert(sizeof(chrono::system_clock::rep) >= 8);          // must be at least 64-bit
-        static_assert(chrono::system_clock::period::den >= 1'000'000);  // microsecond resolution
-        auto t  = chrono::system_clock::now().time_since_epoch();
-        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t).count();
+        using namespace std::chrono;
+        static_assert(sizeof(system_clock::rep) >= 8);          // must be at least 64-bit
+        static_assert(system_clock::period::den >= 1'000'000);  // microsecond resolution
+        auto t  = system_clock::now().time_since_epoch();
+        auto ns = duration_cast<nanoseconds>(t).count();
         return walltime_t(ns);
+    }
+
+    time_t asTimeT(walltime_t t) {
+        // Basically the reverse of RealClockSource::now.
+        using namespace std::chrono;
+        auto us = duration_cast<system_clock::duration>(nanoseconds{uint64_t(t)});
+        system_clock::time_point epoch;
+        return system_clock::to_time_t(epoch + us);
     }
 
     walltime_t RealClockSource::minValid() const { return kMinValidTime; }

@@ -304,16 +304,8 @@ unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     catchAndWarn() return 0;
 }
 
-uint64_t C4Document::getRevIDTimestamp(slice revID) noexcept {
-    try {
-        revidBuffer buf;
-        if ( !buf.tryParse(revID) ) return 0;
-        revid r = buf.getRevID();
-        if ( r.isVersion() ) return uint64_t(r.asVersion().time());
-        else
-            return r.generation();
-    }
-    catchAndWarn() return 0;
+C4RevIDInfo C4Document::getRevIDInfo(slice inRevID) {
+    return revidBuffer::getRevIDInfo(inRevID);
 }
 
 C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {

@@ -152,7 +152,7 @@ struct C4Document
     static void                    requireValidRevID(slice);  // throws kC4ErrorBadRevisionID
     static bool                    equalRevIDs(slice revID1, slice revID2) noexcept;
     static unsigned                getRevIDGeneration(slice revID) noexcept;
-    static uint64_t                getRevIDTimestamp(slice revID) noexcept;
+    static C4RevIDInfo             getRevIDInfo(slice revID); // throws kC4ErrorBadRevisionID
 
     static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
 

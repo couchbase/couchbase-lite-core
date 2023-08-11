@@ -27,6 +27,10 @@ namespace litecore {
     /** Converts a wall-time to a number of seconds since the Unix epoch. */
     static inline double asSeconds(walltime_t t) { return double(t) / kNsPerSec; }
 
+    /** Converts a wall-time to a standard C `time_t` value that can be formatted.
+        \warning  `time_t` is generally only accurate down to the second. */
+    time_t asTimeT(walltime_t);
+
     /// Converts a logical timestamp to a number of seconds since the Unix epoch.
     /// This will not necessarily match the local time, even for a hybrid-time created locally;
     /// but it should at worst be slightly ahead. */
