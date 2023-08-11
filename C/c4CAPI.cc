@@ -204,7 +204,11 @@ bool c4db_hasScope(C4Database* db, C4String name) noexcept {
 
 C4Collection* C4NULLABLE c4db_getCollection(C4Database* db, C4CollectionSpec spec,
                                             C4Error* C4NULLABLE outError) noexcept {
-    return tryCatch<C4Collection*>(outError, [&]() -> C4Collection* C4NULLABLE { return db->getCollection(spec); });
+    return tryCatch<C4Collection*>(outError, [&]() -> C4Collection* C4NULLABLE {
+        auto coll = db->getCollection(spec);
+        if ( !coll ) c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
+        return coll;
+    });
 }
 
 C4Collection* c4db_createCollection(C4Database* db, C4CollectionSpec spec, C4Error* C4NULLABLE outError) noexcept {
