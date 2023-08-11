@@ -17,6 +17,13 @@ namespace litecore {
     /** A local wall-clock time expressed as a 64-bit count of nanoseconds since the Unix epoch. */
     enum class walltime_t : uint64_t { epoch = 0 };
 
+    /// An arbitrary timestamp that's the lowest we're willing to accept -- recent past, mid-2023.
+    static constexpr walltime_t kMinValidTime{0x1770000000000000};
+
+    /// Highest timestamp that could ever be valid; this is sometime in the year 2262.
+    /// This is a sanity check to detect obviously bogus values like negative numbers.
+    static constexpr logicalTime kMaxValidTime{0x7fffffffffffffff};
+
     /** Converts a wall-time to a number of seconds since the Unix epoch. */
     static inline double asSeconds(walltime_t t) { return double(t) / kNsPerSec; }
 
