@@ -5,7 +5,6 @@
 //
 
 #pragma once
-#include "VersionTypes.hh"
 #include <atomic>
 #include <memory>
 
@@ -19,6 +18,12 @@ namespace litecore {
 
     /// An arbitrary timestamp that's the lowest we're willing to accept -- recent past, mid-2023.
     static constexpr walltime_t kMinValidTime{0x1770000000000000};
+
+    /** A version's logical timestamp indicating when a peer last made a change.
+        This is not necessarily a real time; for most purposes it suffices that it just increases
+        monotonically for a given peer when they make changes.
+        In practice it's a "Hybrid Logical Timestamp" and close to real-time.*/
+    enum class logicalTime : uint64_t { none = 0, endOfTime = UINT64_MAX };
 
     /// Highest timestamp that could ever be valid; this is sometime in the year 2262.
     /// This is a sanity check to detect obviously bogus values like negative numbers.

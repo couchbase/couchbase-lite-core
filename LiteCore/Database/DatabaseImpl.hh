@@ -18,7 +18,7 @@
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "HybridClock.hh"
-#include "VersionTypes.hh"
+#include "SourceID.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/slice.hh"
 #include <mutex>
