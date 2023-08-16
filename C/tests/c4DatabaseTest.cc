@@ -934,32 +934,26 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
     C4Log("New fixture is at %s", string(fixturePath).c_str());
 }
 
-
-static void testUpdateDocInOlderDB(C4Database* db,
-                                   C4Slice docID,
-                                   C4RevisionFlags revFlags,
-                                   C4DocumentFlags expectedOriginalDocFlags,
-                                   C4DocumentFlags expectedNewDocFlags,
-                                   uint64_t expectedNewDocCounts)
-{
+static void testUpdateDocInOlderDB(C4Database* db, C4Slice docID, C4RevisionFlags revFlags,
+                                   C4DocumentFlags expectedOriginalDocFlags, C4DocumentFlags expectedNewDocFlags,
+                                   uint64_t expectedNewDocCounts) {
     TransactionHelper t(db);
-    
+
     C4Collection* coll = c4db_getDefaultCollection(db, ERROR_INFO());
-    auto seq = c4coll_getLastSequence(coll);
-    
+    auto          seq  = c4coll_getLastSequence(coll);
+
     C4Document* doc = c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc);
     REQUIRE(doc->flags == expectedOriginalDocFlags);
-    
+
     // Update:
     alloc_slice body;
-    if (revFlags | kRevDeleted)
-        body = kC4SliceNull;
+    if ( revFlags | kRevDeleted ) body = kC4SliceNull;
     else
         body = c4db_encodeJSON(db, "{\"ok\":\"go\"}"_sl, ERROR_INFO());
     C4Test::createNewRev(db, docID, doc->revID, body, revFlags);
     CHECK(c4coll_getLastSequence(coll) == (seq + 1));
-    
+
     // Check:
     c4doc_release(doc);
     doc = c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, ERROR_INFO());
@@ -967,25 +961,23 @@ static void testUpdateDocInOlderDB(C4Database* db,
     CHECK(doc->flags == expectedNewDocFlags);
     CHECK(doc->sequence == (seq + 1));
     CHECK(c4coll_getDocumentCount(coll) == expectedNewDocCounts);
-    
+
     c4doc_release(doc);
 }
 
 static void testEnumeratingDocsInOlderDB(C4Database* db, bool includeDeleted, bool isDescending) {
-    C4Error error;
+    C4Error             error;
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    if (includeDeleted)
-        options.flags |= kC4IncludeDeleted;
-    if (isDescending)
-        options.flags |= kC4Descending;
-        
+    if ( includeDeleted ) options.flags |= kC4IncludeDeleted;
+    if ( isDescending ) options.flags |= kC4Descending;
+
     c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
     REQUIRE(e);
-    unsigned totalDocs = includeDeleted ? 100 : 50;
-    unsigned i = isDescending ? totalDocs : 1;
-    constexpr size_t bufSize = 20;
-    char docID[bufSize];
-    while (c4enum_next(e, ERROR_INFO(&error))) {
+    unsigned         totalDocs = includeDeleted ? 100 : 50;
+    unsigned         i         = isDescending ? totalDocs : 1;
+    constexpr size_t bufSize   = 20;
+    char             docID[bufSize];
+    while ( c4enum_next(e, ERROR_INFO(&error)) ) {
         INFO("Checking enumeration #" << i);
         snprintf(docID, bufSize, "doc-%03u", i);
         C4DocumentInfo info;
@@ -998,11 +990,7 @@ static void testEnumeratingDocsInOlderDB(C4Database* db, bool includeDeleted, bo
     CHECK(i == (isDescending ? 0 : (totalDocs + 1)));
 }
 
-
-static void testOpeningOlderDBFixture(const string & dbPath,
-                                      C4DatabaseFlags withFlags,
-                                      int expectedErrorCode =0)
-{
+static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags withFlags, int expectedErrorCode = 0) {
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2   config = {slice(TempDir()), withFlags};
     C4Error             error;
@@ -1031,7 +1019,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     // Documents 51-100 are deleted (but still have those properties, which is unusual.)
 
     CHECK(c4coll_getDocumentCount(c4db_getDefaultCollection(db, ERROR_INFO())) == 50);
-    
+
     // Verify getting documents by ID:
     constexpr size_t bufSize = 20;
     char             docID[bufSize];
@@ -1075,7 +1063,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
         REQUIRE(e);
         unsigned i = 1;
-        while (c4enum_next(e, ERROR_INFO(&error))) {
+        while ( c4enum_next(e, ERROR_INFO(&error)) ) {
             INFO("Checking enumeration #" << i);
             snprintf(docID, bufSize, "doc-%03u", i);
             C4DocumentInfo info;
@@ -1090,39 +1078,39 @@ static void testOpeningOlderDBFixture(const string & dbPath,
 
     // Verify enumerating all documents:
     testEnumeratingDocsInOlderDB(db, true, false);
-    
+
     // Verify enumerating all documents in descending order:
     testEnumeratingDocsInOlderDB(db, true, true);
-    
+
     // Verify enumerating non-deleted documents:
     testEnumeratingDocsInOlderDB(db, true, false);
 
     // Verify enumerating non-deleted documents in descending order:
     testEnumeratingDocsInOlderDB(db, true, true);
-    
+
     // Update deleted doc:
     testUpdateDocInOlderDB(db, "doc-051"_sl, {}, (kDocDeleted | kDocExists), kDocExists, 51);
-    
+
     // Delete already-deleted doc:
     testUpdateDocInOlderDB(db, "doc-052"_sl, kRevDeleted, (kDocDeleted | kDocExists), (kDocDeleted | kDocExists), 51);
-    
+
     // Update non-deleted doc:
     testUpdateDocInOlderDB(db, "doc-051"_sl, {}, kDocExists, kDocExists, 51);
-    
+
     // Delete non-deleted doc:
     testUpdateDocInOlderDB(db, "doc-051"_sl, kRevDeleted, kDocExists, (kDocDeleted | kDocExists), 50);
-    
+
     // After updating, verify enumerating again:
-    
+
     // Verify enumerating all documents:
     testEnumeratingDocsInOlderDB(db, true, false);
-    
+
     // Verify enumerating all documents in descending order:
     testEnumeratingDocsInOlderDB(db, true, true);
-    
+
     // Verify enumerating non-deleted documents:
     testEnumeratingDocsInOlderDB(db, true, false);
-    
+
     // Verify enumerating non-deleted documents in descending order:
     testEnumeratingDocsInOlderDB(db, true, true);
 

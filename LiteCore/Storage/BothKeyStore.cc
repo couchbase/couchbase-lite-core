@@ -37,8 +37,7 @@ namespace litecore {
         // filter out the deleted ones. CBL-4377
         // For non-default stores, true is faster, and there are none anyway
         auto count = _liveStore->recordCount(includeDeleted || !isDefaultStore);
-        if (includeDeleted)
-            count += _deadStore->recordCount(true);
+        if ( includeDeleted ) count += _deadStore->recordCount(true);
         return count;
     }
 
@@ -140,8 +139,8 @@ namespace litecore {
                 if ( _bySequence ) _cmp = compare(_liveImpl->sequence(), _deadImpl->sequence());
                 else
                     _cmp = _liveImpl->key().compare(_deadImpl->key());
-                if (_descending) _cmp = -_cmp;
-            } else if (_liveImpl) {
+                if ( _descending ) _cmp = -_cmp;
+            } else if ( _liveImpl ) {
                 _cmp = -1;
             } else if ( _deadImpl ) {
                 _cmp = 1;
@@ -216,7 +215,7 @@ namespace litecore {
             else
                 return new BothEnumeratorImpl(bySequence, since, options, _liveStore.get(), _deadStore.get());
         } else {
-            if (!isDefaultStore) {
+            if ( !isDefaultStore ) {
                 // For non default store, liveStore contains only live records. By assigning
                 // includeDeleted to true, we won't apply flag filter to filter out the deleted.
                 // For default store, however, liveStore may have deleted records.
