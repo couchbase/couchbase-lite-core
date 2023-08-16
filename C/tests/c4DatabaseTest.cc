@@ -1229,7 +1229,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
     CHECK(c4rev_getTimestamp(doc->revID) == uint64_t(litecore::kMinValidTime) + 3);
-    CHECK(slice(doc->revID) == "1770000000000003@?"); // 0x1770000000000003 = kMinValidTime + 3
+    CHECK(slice(doc->revID) == "1770000000000003@?");  // 0x1770000000000003 = kMinValidTime + 3
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
     CHECK(versionVector == "1770000000000003@?");
     CHECK(doc->sequence == 9);
