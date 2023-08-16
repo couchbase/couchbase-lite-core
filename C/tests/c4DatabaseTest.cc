@@ -1204,12 +1204,8 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
 
-<<<<<<< HEAD
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
-=======
 // This one is failing due to CBL-4382
 TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[.failing][Database][Upgrade][C]") {
->>>>>>> 292fd3591 (CBL-4377: Not moving deleted docs when open database prior 3.1 (#1741))
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
