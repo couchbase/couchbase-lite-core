@@ -17,6 +17,7 @@
 //
 
 #include "BothKeyStore.hh"
+#include "DataFile.hh"
 #include "RecordEnumerator.hh"
 #include <memory>
 
@@ -31,7 +32,11 @@ namespace litecore {
     }
 
     uint64_t BothKeyStore::recordCount(bool includeDeleted) const {
-        auto count = _liveStore->recordCount(true);  // true is faster, and there are none anyway
+        bool isDefaultStore = (name() == DataFile::kDefaultKeyStoreName);
+        // For default keystore, _liveStore may contain deleted docs. We pass includeDeleted to _liveStore to
+        // filter out the deleted ones. CBL-4377
+        // For non-default stores, true is faster, and there are none anyway
+        auto count = _liveStore->recordCount(includeDeleted || !isDefaultStore);
         if ( includeDeleted ) count += _deadStore->recordCount(true);
         return count;
     }
@@ -134,7 +139,7 @@ namespace litecore {
                 if ( _bySequence ) _cmp = compare(_liveImpl->sequence(), _deadImpl->sequence());
                 else
                     _cmp = _liveImpl->key().compare(_deadImpl->key());
-                Assert(_cmp != 0);
+                if ( _descending ) _cmp = -_cmp;
             } else if ( _liveImpl ) {
                 _cmp = -1;
             } else if ( _deadImpl ) {
@@ -145,8 +150,6 @@ namespace litecore {
                 _current = nullptr;
                 return false;
             }
-
-            if ( _descending ) _cmp = -_cmp;
 
             // Pick the enumerator with the lowest key/sequence to be used next.
             // In case of a tie, pick the live one since it has priority.
@@ -205,13 +208,19 @@ namespace litecore {
 
     RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
                                                             RecordEnumerator::Options options) {
+        bool isDefaultStore = (name() == DataFile::kDefaultKeyStoreName);
         if ( options.includeDeleted ) {
             if ( options.sortOption == kUnsorted )
                 return new BothUnorderedEnumeratorImpl(since, options, _liveStore.get(), _deadStore.get());
             else
                 return new BothEnumeratorImpl(bySequence, since, options, _liveStore.get(), _deadStore.get());
         } else {
-            options.includeDeleted = true;  // no need for enum to filter out deleted docs
+            if ( !isDefaultStore ) {
+                // For non default store, liveStore contains only live records. By assigning
+                // includeDeleted to true, we won't apply flag filter to filter out the deleted.
+                // For default store, however, liveStore may have deleted records.
+                options.includeDeleted = true;  // no need for enum to filter out deleted docs
+            }
             return _liveStore->newEnumeratorImpl(bySequence, since, options);
         }
     }
