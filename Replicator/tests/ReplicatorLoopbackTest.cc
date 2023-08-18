@@ -1829,6 +1829,62 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
           "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
 }
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull+Pull", "[Pull][Delta][blob]") {
+    // Simulate SG which requires old-school "_attachments" property:
+    auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
+    c4log_setCallbackLevel(kC4LogDebug);
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        vector<string> legacyNames {"attachment1", "attachment2", "attachment3"};
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments, "text/plain",
+                                         &legacyNames,
+                                         kRevKeepBody);
+        _expectedDocumentCount = 1;
+    }
+    Log("-------- Pull To db2 --------");
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
+    validateCheckpoints(db2, db, "{\"remote\":1}");
+
+    Log("-------- Mutate Doc In db --------");
+    mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
+        rev["changed"_sl] = 1;
+    });
+
+    Log("-------- Pull To db2 Again --------");
+    _expectedDocumentCount = 1;
+    auto before = DBAccessTestWrapper::numDeltasApplied();
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
+    if (isRevTrees())       // VV does not currently send deltas from a passive replicator
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
+
+    auto hasAttachment = [](C4Collection* coll) {
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(coll, nullptr, ERROR_INFO());
+        while (c4enum_next(e, ERROR_INFO())) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            if (info.flags & kDocHasAttachments) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(hasAttachment(_collDB2));
+
+    Log("-------- Mutate Doc In db again --------");
+    mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
+        rev["changed"_sl] = 2;
+    });
+    Log("-------- Pull To db2 Againx2 --------");
+    before = DBAccessTestWrapper::numDeltasApplied();
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
+    if (isRevTrees())       // VV does not currently send deltas from a passive replicator
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
+    CHECK(hasAttachment(_collDB2));
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
     // CBSE-7341
     auto serverOpts = Replicator::Options::passive(_collSpec);

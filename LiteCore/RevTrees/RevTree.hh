@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
+#define CBL_4812_TEST
 
 namespace litecore {
 
@@ -185,7 +186,9 @@ namespace litecore {
 #if DEBUG
         void dump();
 #endif
-
+#ifdef CBL_4812_TEST
+        bool _dontRemoveNonLeafBodies {false};
+#endif
     protected:
         virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const FLPURE;
         bool isLatestRemoteRevision(const Rev* NONNULL) const FLPURE;

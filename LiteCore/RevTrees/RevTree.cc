@@ -482,6 +482,9 @@ void RevTree::resetConflictSequence(const Rev* winningRev) {
 
     // Remove bodies of already-saved revs that are no longer leaves:
     void RevTree::removeNonLeafBodies() {
+        if (_dontRemoveNonLeafBodies) {
+            return;
+        }
         for (Rev *rev : _revs) {
             if (rev->_body.size > 0 && !(rev->flags & (Rev::kLeaf | Rev::kNew | Rev::kKeepBody))) {
                 rev->removeBody();

@@ -79,6 +79,9 @@ namespace litecore {
 
             initRevID();
             selectCurrentRevision();
+#ifdef CBL_4812_TEST
+            _revTree._dontRemoveNonLeafBodies = (_collection->getDatabase()->getName() == "cbl_core_test");
+#endif
         }
 
         void initRevID() {

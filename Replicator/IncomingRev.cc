@@ -122,7 +122,18 @@ namespace litecore { namespace repl {
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
+        // If this is a delta, it may not contain "digest", but it can be in the delta src
+        // To be conservative, simply set it to true.
+#define CBL_4812_FIX
+#ifdef CBL_4812_FIX
+        if ( !_rev->deltaSrcRevID ) {
+            _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
+        } else {
+            _mayContainBlobs = true;
+        }
+#else
         _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
+#endif
         _mayContainEncryptedProperties = !_options->disablePropertyDecryption()
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
