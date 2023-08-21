@@ -36,7 +36,7 @@ namespace litecore {
             return _liveStore->read(rec, readBy, content) || _deadStore->read(rec, readBy, content);
         }
 
-        sequence_t set(const RecordUpdate& rec, bool updateSequence, ExclusiveTransaction& transaction) override;
+        sequence_t set(const RecordUpdate& rec, SetParams params, ExclusiveTransaction& transaction) override;
 
         void setKV(slice key, slice version, slice value, ExclusiveTransaction& transaction) override {
             _liveStore->setKV(key, version, value, transaction);

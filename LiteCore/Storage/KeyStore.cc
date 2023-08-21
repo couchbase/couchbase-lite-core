@@ -60,7 +60,8 @@ namespace litecore {
     }
 
     void KeyStore::set(Record& rec, bool updateSequence, ExclusiveTransaction& t) {
-        if ( auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0_seq ) {
+        RecordUpdate recUp{rec};
+        if ( auto seq = set(recUp, {recUp, updateSequence}, t); seq > 0_seq ) {
             rec.setExists();
             if ( updateSequence ) rec.updateSequence(seq);
             else

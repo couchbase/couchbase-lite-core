@@ -14,6 +14,7 @@
 #define LITECORE_CPP_API 1
 #include "IndexSpec.hh"
 #include "RecordEnumerator.hh"
+#include <bitset>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -102,18 +103,46 @@ namespace litecore {
 
         //////// Writing:
 
+        class SetParams : private std::bitset<8> {
+            enum { kUpdate, kInsert };
+
+          public:
+            SetParams() = default;
+
+            SetParams(bool updateSequence, bool insert) {
+                if ( updateSequence ) set(kUpdate);
+                if ( insert ) set(kInsert);
+            }
+
+            SetParams(const RecordUpdate& rec, bool updateSequence) {
+                if ( updateSequence ) set(kUpdate);
+                if ( uint64_t(rec.sequence) == 0 ) set(kInsert);
+            }
+
+            bool updateSequence() const { return test(kUpdate); }
+
+            bool insert() const { return test(kInsert); }
+
+          private:
+            friend class BothKeyStore;
+
+            void setUpdateSequence(bool b) { set(kUpdate, b); }
+
+            void setInsert(bool b) { set(kInsert, b); }
+        };
+
         /** Core setter for KeyStores _with_ sequences.
             The `sequence` and `subsequence` in the RecordUpdate must match the current values in
             the database, or the call will fail by returning 0 to indicate a conflict.
             (A nonexistent record's sequence and subsequence are considered to be 0.)
             @param rec  The properties of the record to save, including its _existing_ sequence
                         and subsequence.
-            @param updateSequence  If true, the record's sequence will be updated to the database's
-                        next consecutive sequence number. If false, the record's subsequence
-                        will be incremented.
+            @param params  If params.updateSequence() is true, the record's sequence will be updated to the database's
+                        next consecutive sequence number. Otherwise, the record's subsequence
+                        will be incremented. If params.insertNewRecord() is true, a new record will be added to the database. Otherwise, an existing record will be updated.
             @param transaction  The active transaction.
             @return  The record's new sequence number, or 0 if there is a conflict. */
-        virtual sequence_t set(const RecordUpdate& rec, bool updateSequence,
+        virtual sequence_t set(const RecordUpdate& rec, SetParams params,
                                ExclusiveTransaction& transaction) MUST_USE_RESULT = 0;
 
         /** Alternative `set` that takes a `Record` directly.
