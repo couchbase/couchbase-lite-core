@@ -136,10 +136,10 @@ namespace litecore { namespace repl {
                     // If this is a delta, put the JSON delta in the put-request:
                     bodyForDB = move(rev->deltaSrc);
                     put.deltaSourceRevID = rev->deltaSrcRevID;
-                    put.deltaCB = [](void *context, C4Document *doc,
-                                     C4Slice delta, C4Error *outError) -> C4SliceResult {
+                    put.deltaCB = [](void *context, C4Document *doc, C4Slice delta,
+                                     C4RevisionFlags *revFlags, C4Error *outError) -> C4SliceResult {
                         try {
-                            return ((Inserter*)context)->applyDeltaCallback(doc, delta, outError);
+                            return ((Inserter*)context)->applyDeltaCallback(doc, delta, revFlags, outError);
                         } catch (...) {
                             *outError = C4Error::fromCurrentException();
                             return {};
@@ -191,23 +191,45 @@ namespace litecore { namespace repl {
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
     C4SliceResult Inserter::applyDeltaCallback(C4Document *c4doc,
                                                C4Slice deltaJSON,
+                                               C4RevisionFlags *revFlags,
                                                C4Error *outError)
     {
         Doc doc = _db->applyDelta(c4doc, deltaJSON, true);
         alloc_slice body = doc.allocedData();
+        Dict root = doc.root().asDict();
+        FLSharedKeys sk = nullptr;
+        bool bodyChanged = false;
 
         if (!_db->disableBlobSupport()) {
             // After applying the delta, remove legacy attachment properties and any other
             // "_"-prefixed top level properties:
-            Dict root = doc.root().asDict();
             if (C4Document::hasOldMetaProperties(root)) {
                 body = nullslice;
                 try {
-                    FLSharedKeys sk = _db->insertionDB().useLocked()->getFleeceSharedKeys();
+                    sk = _db->insertionDB().useLocked()->getFleeceSharedKeys();
                     body = C4Document::encodeStrippingOldMetaProperties(root, sk);
+                    bodyChanged = true;
                 } catchAndWarn();
                 if (!body)
                     *outError = C4Error::make(WebSocketDomain, 500, "invalid legacy attachments");
+            }
+        }
+        if ( body && revFlags != nullptr ) {
+            bool hasAttachments = false;
+            if ( bodyChanged ) {
+                doc = Doc(body, kFLTrusted, sk);
+                root = doc.asDict();
+            }
+            // This is not optimal. Consider to add a method to DBAccess, hasBlobReferences
+            _db->findBlobReferences(root, true, [&](FLDeepIterator, Dict, const C4BlobKey&) {
+                hasAttachments = true;
+            });
+            if ( hasAttachments && !(*revFlags & kRevHasAttachments) ) {
+                *revFlags |= kRevHasAttachments;
+            } else if ( !hasAttachments && (*revFlags & kRevHasAttachments) ) {
+                // This shouldn't happen
+                DebugAssert(false);
+                *revFlags &= ~kRevHasAttachments;
             }
         }
         return C4SliceResult(body);
