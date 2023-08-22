@@ -78,9 +78,11 @@ typedef struct C4Revision {
     @param context  The same value given in the `C4DocPutRequest`'s `deltaCBContext` field.
     @param doc  The document; its selected revision is the one requested in the `deltaSourceRevID`.
     @param delta  The contents of the request's `body` or `allocedBody`.
+    @param revFlags If not nullptr, its value may be updated after the delta is applied.
     @param outError  If the callback fails, store an error here if it's non-NULL.
     @return  The body to store in the new revision, or a null slice on failure. */
-typedef C4SliceResult (*C4DocDeltaApplier)(void* context, C4Document* doc, C4Slice delta, C4Error* C4NULLABLE outError);
+typedef C4SliceResult (*C4DocDeltaApplier)(void* context, C4Document* doc, C4Slice delta,
+                                           C4RevisionFlags* C4NULLABLE revFlags, C4Error* C4NULLABLE outError);
 
 /** Parameters for adding a revision using c4doc_put. */
 typedef struct C4DocPutRequest {

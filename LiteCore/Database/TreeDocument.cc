@@ -416,6 +416,7 @@ namespace litecore {
 #pragma mark - INSERTING REVISIONS
 
         // Returns the body of the revision to be stored.
+        // Warning: we cast away const of rq to have rq.revFlags updated by deltaCB.
         alloc_slice requestBody(const C4DocPutRequest& rq, C4Error* outError) {
             alloc_slice body;
             if ( rq.deltaCB == nullptr ) {
@@ -435,7 +436,8 @@ namespace litecore {
                                                    SPLAT(rq.deltaSourceRevID));
                 } else {
                     slice delta = (rq.allocedBody.buf) ? slice(rq.allocedBody) : slice(rq.body);
-                    body        = rq.deltaCB(rq.deltaCBContext, this, delta, outError);
+                    body        = rq.deltaCB(rq.deltaCBContext, this, delta, const_cast<C4RevisionFlags*>(&rq.revFlags),
+                                             outError);
                 }
             }
 

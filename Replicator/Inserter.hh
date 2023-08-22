@@ -32,7 +32,8 @@ namespace litecore::repl {
 
         void          _insertRevisionsNow(int gen);
         bool          insertRevisionNow(RevToInsert* NONNULL, C4Error*);
-        C4SliceResult applyDeltaCallback(C4Document* doc NONNULL, C4Slice deltaJSON, C4Error* outError);
+        C4SliceResult applyDeltaCallback(C4Document* doc NONNULL, C4Slice deltaJSON, C4RevisionFlags* revFlags,
+                                         C4Error* outError);
 
         actor::ActorBatcher<Inserter, RevToInsert> _revsToInsert;  // Pending revs to be added to db
         C4Collection*                              _insertionCollection{nullptr};
