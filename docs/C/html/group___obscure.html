@@ -172,9 +172,9 @@ $(function() {
 <tr class="memitem:gaed3c4be1573ac10d2963eac1303f3e63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> intptr_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#gaed3c4be1573ac10d2963eac1303f3e63">FLEncoder_LastValueWritten</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>)</td></tr>
 <tr class="memdesc:gaed3c4be1573ac10d2963eac1303f3e63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an opaque reference to the last complete value written to the encoder, if possible.  <br /></td></tr>
 <tr class="separator:gaed3c4be1573ac10d2963eac1303f3e63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4d2ebcc6c8a3a6503bfb2c53038a6271"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#ga4d2ebcc6c8a3a6503bfb2c53038a6271">FLEncoder_WriteValueAgain</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>, intptr_t preWrittenValue)</td></tr>
-<tr class="memdesc:ga4d2ebcc6c8a3a6503bfb2c53038a6271"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes another reference (a "pointer") to an already-written value, given a reference previously returned from <a class="el" href="group___obscure.html#gaed3c4be1573ac10d2963eac1303f3e63">FLEncoder_LastValueWritten</a>.  <br /></td></tr>
-<tr class="separator:ga4d2ebcc6c8a3a6503bfb2c53038a6271"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaee3044548067f7cc1c30d2934ea7e268"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#gaee3044548067f7cc1c30d2934ea7e268">FLEncoder_WriteValueAgain</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>, intptr_t preWrittenValue)</td></tr>
+<tr class="memdesc:gaee3044548067f7cc1c30d2934ea7e268"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes another reference (a "pointer") to an already-written value, given a reference previously returned from <a class="el" href="group___obscure.html#gaed3c4be1573ac10d2963eac1303f3e63">FLEncoder_LastValueWritten</a>.  <br /></td></tr>
+<tr class="separator:gaee3044548067f7cc1c30d2934ea7e268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gacf84e96fcfc3cacfbb36b5fe58f52b50"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#gacf84e96fcfc3cacfbb36b5fe58f52b50">FLEncoder_Snip</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>)</td></tr>
 <tr class="memdesc:gacf84e96fcfc3cacfbb36b5fe58f52b50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the data written so far as a standalone Fleece document, whose root is the last value written.  <br /></td></tr>
 <tr class="separator:gacf84e96fcfc3cacfbb36b5fe58f52b50"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -185,6 +185,8 @@ $(function() {
 <tr class="memdesc:ga5126cc7724f776d8c22c664be3144a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">In a JSON encoder, adds a newline ('<br  />
 ') and prepares to start encoding another top-level object.  <br /></td></tr>
 <tr class="separator:ga5126cc7724f776d8c22c664be3144a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf82c2153f665ac714cd4779d226b9403"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#gaf82c2153f665ac714cd4779d226b9403">kFLNoWrittenValue</a>&#160;&#160;&#160;INTPTR_MIN</td></tr>
+<tr class="separator:gaf82c2153f665ac714cd4779d226b9403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Debugging Functions</h2></td></tr>
 <tr class="memitem:ga595e7e789bbf24503f4b023e2f2658e4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> const char *<a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#ga595e7e789bbf24503f4b023e2f2658e4">FLDump</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
@@ -198,6 +200,21 @@ $(function() {
 <tr class="separator:ga837c2f7b64da2852b867efc45b04eb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="gaf82c2153f665ac714cd4779d226b9403" name="gaf82c2153f665ac714cd4779d226b9403"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf82c2153f665ac714cd4779d226b9403">&#9670;&#160;</a></span>kFLNoWrittenValue</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kFLNoWrittenValue&#160;&#160;&#160;INTPTR_MIN</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Typedef Documentation</h2>
 <a id="ga170f671f7083341403f7530024ec5cfb" name="ga170f671f7083341403f7530024ec5cfb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga170f671f7083341403f7530024ec5cfb">&#9670;&#160;</a></span>FLSharedKeyScope</h2>
@@ -624,7 +641,7 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Returns an opaque reference to the last complete value written to the encoder, if possible. </p>
-<p>Fails (returning 0) if nothing has been written, or if the value is inline and can't be referenced this way &ndash; that only happens with small scalars or empty collections. </p>
+<p>Fails (returning kFLNoWrittenValue) if nothing has been written, or if the value is inline and can't be referenced this way &ndash; that only happens with small scalars or empty collections. </p>
 
 </div>
 </div>
@@ -670,14 +687,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga4d2ebcc6c8a3a6503bfb2c53038a6271" name="ga4d2ebcc6c8a3a6503bfb2c53038a6271"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4d2ebcc6c8a3a6503bfb2c53038a6271">&#9670;&#160;</a></span>FLEncoder_WriteValueAgain()</h2>
+<a id="gaee3044548067f7cc1c30d2934ea7e268" name="gaee3044548067f7cc1c30d2934ea7e268"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaee3044548067f7cc1c30d2934ea7e268">&#9670;&#160;</a></span>FLEncoder_WriteValueAgain()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> void FLEncoder_WriteValueAgain </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool FLEncoder_WriteValueAgain </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td>
           <td class="paramname">, </td>
@@ -697,7 +714,7 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Writes another reference (a "pointer") to an already-written value, given a reference previously returned from <a class="el" href="group___obscure.html#gaed3c4be1573ac10d2963eac1303f3e63">FLEncoder_LastValueWritten</a>. </p>
-<p>The effect is exactly the same as if you wrote the entire value again, except that the size of the encoded data only grows by 4 bytes. </p>
+<p>The effect is exactly the same as if you wrote the entire value again, except that the size of the encoded data only grows by 4 bytes. Returns false if the reference couldn't be written. </p>
 
 </div>
 </div>

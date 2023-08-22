@@ -168,7 +168,7 @@ namespace litecore {
         unsigned writeSelectListClause(const Dict* operands, slice key, const char* sql, bool aggregatesOK = false);
 
         void lookForDeleted(const Dict* select);
-        void writeDeletionTest(const string& alias);
+        void writeDeletionTest(const string& alias, bool isDeleted = false);
         void writeWhereClause(const Value* where);
 
         void       addDefaultAlias();
@@ -254,9 +254,10 @@ namespace litecore {
         vector<string>           _ftsTables;                         // FTS virtual tables being used
         std::multimap<string, string>
                 _ftsTableAliases;  // multimap from the FTS table to aliases that prefix the table in the query expression
-        unsigned  _1stCustomResultCol{0};          // Index of 1st result after _baseResultColumns
-        bool      _aggregatesOK{false};            // Are aggregate fns OK to call?
-        bool      _isAggregateQuery{false};        // Is this an aggregate query?
+        unsigned  _1stCustomResultCol{0};    // Index of 1st result after _baseResultColumns
+        bool      _aggregatesOK{false};      // Are aggregate fns OK to call?
+        bool      _isAggregateQuery{false};  // Is this an aggregate query?
+        bool      _checkedDeleted{false};
         bool      _checkedExpiration{false};       // Has query accessed _expiration meta-property?
         Collation _collation;                      // Collation in use during parse
         bool      _collationUsed{true};            // Emitted SQL "COLLATION" yet?

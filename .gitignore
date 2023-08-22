@@ -21,6 +21,11 @@ DerivedData/
 stripopts
 empty.cpp
 
+# clangd:
+.clangd
+.cache
+compile_commands.json
+
 # Huge performance-test files that have to be manually installed:
 C/tests/data/en-wikipedia-*.json
 C/tests/data/geoblocks.json

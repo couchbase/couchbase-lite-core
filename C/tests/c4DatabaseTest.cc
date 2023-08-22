@@ -10,14 +10,21 @@
 // the file licenses/APL2.txt.
 //
 
+#include "StringUtil.hh"
+#include "c4Base.h"
+#include "c4DocumentTypes.h"
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
 #include "c4IndexTypes.h"
 #include "c4Query.h"
 #include "c4Collection.h"
+#include "Error.hh"
 #include "FilePath.hh"
+#include "HybridClock.hh"
 #include "SecureRandomize.hh"
+#include "StringUtil.hh"
+#include "Stopwatch.hh"
 #include <cmath>
 #include <cerrno>
 #include <iostream>
@@ -909,15 +916,39 @@ static const string kVersionedFixturesSubDir = "db_versions/";
 // This isn't normally run. It creates a new database to check into C/tests/data/db_versions/.
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Maintenance]") {
     {
+        // Fetch BlobStore
+        C4Error      err{};
+        C4BlobStore* blobStore = c4db_getBlobStore(db, ERROR_INFO(err));
+        REQUIRE(blobStore);
+
+        // Base json body for doc blob attachments
+        std::string jsonBodyBase =
+                litecore::format("{attached: [{'%s':'%s', ", kC4ObjectTypeProperty, kC4ObjectType_Blob);
+
         TransactionHelper t(db);
-        constexpr size_t  docBufSize = 20, jsonBufSize = 100;
-        char              docID[docBufSize], json[jsonBufSize];
         for ( unsigned i = 1; i <= 100; i++ ) {
-            snprintf(docID, docBufSize, "doc-%03u", i);
-            snprintf(json, jsonBufSize, R"({"n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
-            createFleeceRev(db, slice(docID), kRevID, slice(json), (i <= 50 ? 0 : kRevDeleted));
+            std::string docID      = litecore::format("doc-%03u", i);
+            std::string attachment = litecore::format("I am blob #%03u", i);
+            C4BlobKey   key;
+            REQUIRE(c4blob_create(blobStore, fleece::slice(attachment), nullptr, &key, WITH_ERROR()));
+            C4SliceResult     keyStr = c4blob_keyToString(key);
+            std::stringstream json;
+            // Doc body blob information
+            json << jsonBodyBase << "digest: '" << string((char*)keyStr.buf, keyStr.size)
+                 << "', length: " << attachment.size() << ", content_type: 'text/plain'},]";
+
+            // Doc body data
+            json << ", " << litecore::format(R"("n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
+
+            c4slice_free(keyStr);
+
+            std::string jsonStr = json5(json.str());
+
+            // Half the docs are marked as deleted
+            uint8_t flags = i <= 50 ? kRevHasAttachments : (kRevHasAttachments | kRevDeleted);
+
+            createFleeceRev(db, slice(docID), kRevID, slice(jsonStr), flags);
         }
-        // TODO: Create some blobs too
     }
     alloc_slice path     = c4db_getPath(db);
     string      filename = "NEW_UPGRADE_FIXTURE.cblite2";
@@ -929,6 +960,62 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
     litecore::FilePath fixturePath(C4DatabaseTest::sFixturesDir + kVersionedFixturesSubDir + filename, "");
     litecore::FilePath(string(path), "").moveToReplacingDir(fixturePath, false);
     C4Log("New fixture is at %s", string(fixturePath).c_str());
+}
+
+static void testUpdateDocInOlderDB(C4Database* db, C4Slice docID, C4RevisionFlags revFlags,
+                                   C4DocumentFlags expectedOriginalDocFlags, C4DocumentFlags expectedNewDocFlags,
+                                   uint64_t expectedNewDocCounts) {
+    TransactionHelper t(db);
+
+    C4Collection* coll = c4db_getDefaultCollection(db, ERROR_INFO());
+    auto          seq  = c4coll_getLastSequence(coll);
+
+    C4Document* doc = c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, ERROR_INFO());
+    REQUIRE(doc);
+    REQUIRE(doc->flags == expectedOriginalDocFlags);
+
+    // Update:
+    alloc_slice body;
+    if ( revFlags | kRevDeleted ) body = kC4SliceNull;
+    else
+        body = c4db_encodeJSON(db, "{\"ok\":\"go\"}"_sl, ERROR_INFO());
+    C4Test::createNewRev(db, docID, doc->revID, body, revFlags);
+    CHECK(c4coll_getLastSequence(coll) == (seq + 1));
+
+    // Check:
+    c4doc_release(doc);
+    doc = c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, ERROR_INFO());
+    CHECK(doc);
+    CHECK(doc->flags == expectedNewDocFlags);
+    CHECK(doc->sequence == (seq + 1));
+    CHECK(c4coll_getDocumentCount(coll) == expectedNewDocCounts);
+
+    c4doc_release(doc);
+}
+
+static void testEnumeratingDocsInOlderDB(C4Database* db, bool includeDeleted, bool isDescending) {
+    C4Error             error;
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    if ( includeDeleted ) options.flags |= kC4IncludeDeleted;
+    if ( isDescending ) options.flags |= kC4Descending;
+
+    c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    REQUIRE(e);
+    unsigned         totalDocs = includeDeleted ? 100 : 50;
+    unsigned         i         = isDescending ? totalDocs : 1;
+    constexpr size_t bufSize   = 20;
+    char             docID[bufSize];
+    while ( c4enum_next(e, ERROR_INFO(&error)) ) {
+        INFO("Checking enumeration #" << i);
+        snprintf(docID, bufSize, "doc-%03u", i);
+        C4DocumentInfo info;
+        REQUIRE(c4enum_getDocumentInfo(e, &info));
+        CHECK(slice(info.docID) == slice(docID));
+        CHECK(((info.flags & kDocDeleted) != 0) == (i > 50));
+        i = i + (isDescending ? -1 : 1);
+    }
+    CHECK(error == C4Error{});
+    CHECK(i == (isDescending ? 0 : (totalDocs + 1)));
 }
 
 static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags withFlags, int expectedErrorCode = 0) {
@@ -950,10 +1037,16 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
         return;
     }
 
+    // There are 50 live documents. 50 deleted documents.
+    // getDocumentCount only counts live ones.
+    CHECK(50 == c4db_getDocumentCount(db));
+
     // These test databases contain 100 documents with IDs `doc1`...`doc100`.
     // Each doc has two properties: `n` whose integer value is the doc number (1..100)
     // and `even` whose boolean value is true iff `n` is even.
     // Documents 51-100 are deleted (but still have those properties, which is unusual.)
+
+    CHECK(c4coll_getDocumentCount(c4db_getDefaultCollection(db, ERROR_INFO())) == 50);
 
     // Verify getting documents by ID:
     constexpr size_t bufSize = 20;
@@ -991,6 +1084,64 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
         CHECK(i == 101);
     }
 
+    // Verify enumerating documents of live docs only
+    {
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags &= ~kC4IncludeDeleted;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+        REQUIRE(e);
+        unsigned i = 1;
+        while ( c4enum_next(e, ERROR_INFO(&error)) ) {
+            INFO("Checking enumeration #" << i);
+            snprintf(docID, bufSize, "doc-%03u", i);
+            C4DocumentInfo info;
+            REQUIRE(c4enum_getDocumentInfo(e, &info));
+            CHECK(slice(info.docID) == slice(docID));
+            CHECK((info.flags & kDocDeleted) == 0);
+            ++i;
+        }
+        CHECK(error == C4Error{});
+        CHECK(i == 51);
+    }
+
+    // Verify enumerating all documents:
+    testEnumeratingDocsInOlderDB(db, true, false);
+
+    // Verify enumerating all documents in descending order:
+    testEnumeratingDocsInOlderDB(db, true, true);
+
+    // Verify enumerating non-deleted documents:
+    testEnumeratingDocsInOlderDB(db, true, false);
+
+    // Verify enumerating non-deleted documents in descending order:
+    testEnumeratingDocsInOlderDB(db, true, true);
+
+    // Update deleted doc:
+    testUpdateDocInOlderDB(db, "doc-051"_sl, {}, (kDocDeleted | kDocExists), kDocExists, 51);
+
+    // Delete already-deleted doc:
+    testUpdateDocInOlderDB(db, "doc-052"_sl, kRevDeleted, (kDocDeleted | kDocExists), (kDocDeleted | kDocExists), 51);
+
+    // Update non-deleted doc:
+    testUpdateDocInOlderDB(db, "doc-051"_sl, {}, kDocExists, kDocExists, 51);
+
+    // Delete non-deleted doc:
+    testUpdateDocInOlderDB(db, "doc-051"_sl, kRevDeleted, kDocExists, (kDocDeleted | kDocExists), 50);
+
+    // After updating, verify enumerating again:
+
+    // Verify enumerating all documents:
+    testEnumeratingDocsInOlderDB(db, true, false);
+
+    // Verify enumerating all documents in descending order:
+    testEnumeratingDocsInOlderDB(db, true, true);
+
+    // Verify enumerating non-deleted documents:
+    testEnumeratingDocsInOlderDB(db, true, false);
+
+    // Verify enumerating non-deleted documents in descending order:
+    testEnumeratingDocsInOlderDB(db, true, true);
+
     // Verify a query:
     {
         c4::ref<C4Query> query =
@@ -1011,6 +1162,69 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     CHECK(c4db_delete(db, WITH_ERROR()));
 }
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with Conflicted Option", "[Database][Enumerator]") {
+    auto defaultColl = C4DatabaseTest::getCollection(db, kC4DefaultCollectionSpec);
+    auto populateDB  = [&](unsigned recordCount) -> void {
+        TransactionHelper t(db);
+
+        slice       body        = R"({"name":{"first":"Lue","last":"Laserna"}})"_sl;
+        alloc_slice encodedBody = c4db_encodeJSON(db, body, ERROR_INFO());
+        REQUIRE(encodedBody);
+        unsigned numDocs = 0;
+        for ( int i = 0; i < recordCount; ++i ) {
+            string docID = litecore::format("doc%07u", ++numDocs);
+            // Save document:
+            C4DocPutRequest rq      = {};
+            rq.docID                = slice(docID);
+            rq.allocedBody          = {(void*)encodedBody.buf, encodedBody.size};
+            rq.save                 = true;
+            c4::ref<C4Document> doc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO());
+            REQUIRE(doc != nullptr);
+        }
+    };
+    populateDB(12000);
+
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    options.flags &= ~kC4IncludeBodies;
+    options.flags &= ~kC4IncludeNonConflicted;
+    options.flags |= kC4IncludeDeleted;
+
+    // With the above options, particularly the option to include only the conflicted documents,
+    // the following option, kC4Unsorted, becomes very significant in terms of performance. This
+    // is because the option to get sorted result will kepp SQLite from using, or taking advantage of,
+    // the index we have on DocumentFlags kConflicted. It is most salient when there are a large
+    // number of documents with only few having conflicts.
+    // Motivated by DBAccess::unresolvedDocsEnumerator, c.f. CBL-4506
+
+    auto doIt = [&](bool sorted) -> double {
+        if ( sorted ) {
+            options.flags &= ~kC4Unsorted;
+        } else {
+            options.flags |= kC4Unsorted;
+        }
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
+        REQUIRE(e);
+        unsigned  count = 0;
+        C4Error   error;
+        Stopwatch sw;
+        while ( c4enum_next(e, ERROR_INFO(error)) ) { ++count; }
+        double elapsed = sw.lap();
+        REQUIRE(error == C4Error{});
+        REQUIRE(count == 0);
+        return elapsed;
+    };
+    double elapsedUnsorted = doIt(false);
+    double elapsedSorted   = doIt(true);
+    cout << "Enum with conflicted/sorted takes " << elapsedSorted << " sec, Enum With conflicted/unsorted takes "
+         << elapsedUnsorted << "sec, ratio = " << elapsedSorted / elapsedUnsorted << endl;
+    auto config = c4db_getConfig2(db);
+    if ( config->encryptionKey.algorithm != kC4EncryptionNone ) {
+        // Encrypted case is not stable.
+        return;
+    }
+    CHECK(elapsedSorted / elapsedUnsorted > 4);
+}
+
 TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
     // In 3.0 it's no longer possible to open 2.x databases without upgrading
@@ -1018,7 +1232,8 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
 
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+// This one is failing due to CBL-4382
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[.failing][Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
@@ -1102,7 +1317,7 @@ static void setRemoteRev(C4Database* db, slice docID, slice revID, C4RemoteID re
     c4doc_release(doc);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][RevIDs][C]") {
     if ( !isRevTrees() ) return;
 
     {
@@ -1134,24 +1349,26 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
 
     // Reopen database, upgrading to version vectors:
     C4DatabaseConfig2 config = dbConfig();
-    config.flags |= kC4DB_VersionVectors;
+    config.flags |= kC4DB_VersionVectors | kC4DB_FakeVectorClock;
     closeDB();
     C4Log("---- Reopening db with version vectors ---");
     db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO());
     REQUIRE(db);
 
-    // Note: The revID/version checks below hardcode the "legacy source ID", currently
-    // 0x1e000000000000000000000000000000, represented in ASCII as "?".
-    // If/when that's changed (in Database+Upgrade.cc), those checks will break.
+    // Note: The revID/version checks below hardcode the base timestamp used for upgrading legacy
+    // replicated revIDs. It's currently 0x1770000000000000 (see HybridClock.hh). If that value
+    // changes, or the scheme for converting rev-tree revIDs to versions changes, the values below
+    // need to change too.
+    REQUIRE(uint64_t(litecore::kMinValidTime) == 0x1770000000000000);
 
     // Check doc 1:
     C4Document* doc;
     auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
     doc                     = c4coll_getDoc(defaultColl, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "2@*");
+    CHECK(slice(doc->revID) == "1@*");
     alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-    CHECK(versionVector == "2@*");
+    CHECK(versionVector == "1@*");
     CHECK(doc->sequence == 7);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
     c4doc_release(doc);
@@ -1159,13 +1376,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 2:
     doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "3@?");
+    CHECK(c4rev_getTimestamp(doc->revID) == uint64_t(litecore::kMinValidTime) + 3);
+    CHECK(slice(doc->revID) == "1770000000000003@?");  // 0x1770000000000003 = kMinValidTime + 3
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "3@?");
+    CHECK(versionVector == "1770000000000003@?");
     CHECK(doc->sequence == 9);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
-    CHECK(remoteVers == "3@?");
+    CHECK(remoteVers == "1770000000000003@?");
     CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     c4doc_release(doc);
@@ -1173,9 +1391,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 3:
     doc = c4coll_getDoc(defaultColl, "doc-003"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "2@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*; 2@?");
+    CHECK(versionVector == "2@*; 1770000000000002@?");
     CHECK(doc->sequence == 11);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
@@ -1187,9 +1405,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 4:
     doc = c4coll_getDoc(defaultColl, "doc-004"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "3@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*; 2@?");
+    CHECK(versionVector == "3@*; 1770000000000002@?");
     CHECK(doc->sequence == 14);
     CHECK(doc->flags == (kDocConflicted | kDocExists));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
@@ -1205,9 +1423,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check deleted doc:
     doc = c4coll_getDoc(defaultColl, "doc-DEL"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "5@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*");
+    CHECK(versionVector == "5@*");
     CHECK(doc->sequence == 6);
     CHECK(doc->flags == (kDocDeleted | kDocExists));
     c4doc_release(doc);
