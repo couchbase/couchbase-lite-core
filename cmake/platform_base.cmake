@@ -63,7 +63,6 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLiteQuery.cc
         LiteCore/Query/SQLUtil.cc
         LiteCore/Query/N1QL_Parser/n1ql.cc
-        LiteCore/RevTrees/HybridClock.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc
@@ -114,6 +113,7 @@ function(set_litecore_source_base)
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc
         LiteCore/Support/FilePath.cc
+        LiteCore/Support/HybridClock.cc
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc

@@ -12,7 +12,8 @@
 
 #pragma once
 
-#include "VersionTypes.hh"
+#include "HybridClock.hh"
+#include "SourceID.hh"
 #include <optional>
 
 namespace litecore {

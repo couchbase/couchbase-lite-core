@@ -21,6 +21,7 @@
 #include "c4Collection.h"
 #include "Error.hh"
 #include "FilePath.hh"
+#include "HybridClock.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
@@ -1316,7 +1317,7 @@ static void setRemoteRev(C4Database* db, slice docID, slice revID, C4RemoteID re
     c4doc_release(doc);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][RevIDs][C]") {
     if ( !isRevTrees() ) return;
 
     {
@@ -1348,24 +1349,26 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
 
     // Reopen database, upgrading to version vectors:
     C4DatabaseConfig2 config = dbConfig();
-    config.flags |= kC4DB_VersionVectors;
+    config.flags |= kC4DB_VersionVectors | kC4DB_FakeVectorClock;
     closeDB();
     C4Log("---- Reopening db with version vectors ---");
     db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO());
     REQUIRE(db);
 
-    // Note: The revID/version checks below hardcode the "legacy source ID", currently
-    // 0x1e000000000000000000000000000000, represented in ASCII as "?".
-    // If/when that's changed (in Database+Upgrade.cc), those checks will break.
+    // Note: The revID/version checks below hardcode the base timestamp used for upgrading legacy
+    // replicated revIDs. It's currently 0x1770000000000000 (see HybridClock.hh). If that value
+    // changes, or the scheme for converting rev-tree revIDs to versions changes, the values below
+    // need to change too.
+    REQUIRE(uint64_t(litecore::kMinValidTime) == 0x1770000000000000);
 
     // Check doc 1:
     C4Document* doc;
     auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
     doc                     = c4coll_getDoc(defaultColl, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "2@*");
+    CHECK(slice(doc->revID) == "1@*");
     alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-    CHECK(versionVector == "2@*");
+    CHECK(versionVector == "1@*");
     CHECK(doc->sequence == 7);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
     c4doc_release(doc);
@@ -1373,13 +1376,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 2:
     doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "3@?");
+    CHECK(c4rev_getTimestamp(doc->revID) == uint64_t(litecore::kMinValidTime) + 3);
+    CHECK(slice(doc->revID) == "1770000000000003@?");  // 0x1770000000000003 = kMinValidTime + 3
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "3@?");
+    CHECK(versionVector == "1770000000000003@?");
     CHECK(doc->sequence == 9);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
-    CHECK(remoteVers == "3@?");
+    CHECK(remoteVers == "1770000000000003@?");
     CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     c4doc_release(doc);
@@ -1387,9 +1391,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 3:
     doc = c4coll_getDoc(defaultColl, "doc-003"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "2@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*; 2@?");
+    CHECK(versionVector == "2@*; 1770000000000002@?");
     CHECK(doc->sequence == 11);
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
@@ -1401,9 +1405,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check doc 4:
     doc = c4coll_getDoc(defaultColl, "doc-004"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "3@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*; 2@?");
+    CHECK(versionVector == "3@*; 1770000000000002@?");
     CHECK(doc->sequence == 14);
     CHECK(doc->flags == (kDocConflicted | kDocExists));
     CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
@@ -1419,9 +1423,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     // Check deleted doc:
     doc = c4coll_getDoc(defaultColl, "doc-DEL"_sl, true, kDocGetAll, ERROR_INFO());
     REQUIRE(doc);
-    CHECK(slice(doc->revID) == "1@*");
+    CHECK(slice(doc->revID) == "5@*");
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-    CHECK(versionVector == "1@*");
+    CHECK(versionVector == "5@*");
     CHECK(doc->sequence == 6);
     CHECK(doc->flags == (kDocDeleted | kDocExists));
     c4doc_release(doc);

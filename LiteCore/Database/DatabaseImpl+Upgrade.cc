@@ -99,16 +99,18 @@ namespace litecore {
         auto baseRev    = commonAncestor(currentRev, remoteRev);
 
         // Create a version vector:
-        // - If there's a remote base revision, use its generation with the legacy peer ID.
-        // - Add the current rev's generation (relative to the remote base, if any)
-        //   with the local 'me' peer ID.
+        // - If there's a remote base revision, create a fake Version for it:
+        //   - timestamp is the minimum valid time plus the old rev's generation number
+        //   - author is `kLegacyRevSourceID`
+        // - If there are local unpushed changes, add a new Version with current time & my ID.
         VersionVector vv;
         int           localChanges = int(currentRev->revID.generation());
         if ( baseRev ) {
-            vv.add({logicalTime{baseRev->revID.generation()}, kLegacyRevSourceID});
+            logicalTime fakeLegacyTimestamp{uint64_t(kMinValidTime) + baseRev->revID.generation()};
+            vv.add({fakeLegacyTimestamp, kLegacyRevSourceID});
             localChanges -= int(baseRev->revID.generation());
         }
-        if ( localChanges > 0 ) vv.add({logicalTime(localChanges), kMeSourceID});
+        if ( localChanges > 0 ) vv.addNewVersion(db->versionClock());
         auto binaryVersion = vv.asBinary();
 
         // Propagate any saved remote revisions to the new document:
