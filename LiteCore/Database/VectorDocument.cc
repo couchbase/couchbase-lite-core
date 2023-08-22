@@ -315,7 +315,8 @@ namespace litecore {
             return docFlags;
         }
 
-        
+
+        // Warning: we cast away const of rq to have rq.revFlags updated by deltaCB.
         fleece::Doc _newProperties(const C4DocPutRequest &rq, C4Error *outError) {
             alloc_slice body;
             if (rq.deltaCB == nullptr) {
@@ -336,7 +337,7 @@ namespace litecore {
                                         SPLAT(rq.deltaSourceRevID));
                     return nullptr;
                 } else {
-                    body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);
+                    body = rq.deltaCB(rq.deltaCBContext, this, delta, const_cast<C4RevisionFlags*>(&rq.revFlags), outError);
                 }
             }
             return _newProperties(body);
