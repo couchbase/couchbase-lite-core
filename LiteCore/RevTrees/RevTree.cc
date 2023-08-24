@@ -606,6 +606,28 @@ void RevTree::resetConflictSequence(const Rev* winningRev) {
         return false;
     }
 
+    bool RevTree::ensureConflictStateConsistent() {
+        if (hasConflict()) {
+            sort();
+            bool recovered = false;
+            // _revs[0] is current rev after sort
+            for (auto rev = _revs.begin() + 1; rev != _revs.end(); rev++) {
+                auto f = (*rev)->flags;
+                // a undeleted, non-closed, unconflict leaf rev
+                if ((f & Rev::kLeaf) &&
+                    !(f & Rev::kClosed) &&
+                    !(f & Rev::kDeleted) &&
+                    !(f & Rev::kIsConflict)) {
+                        (*rev)->addFlag(Rev::kIsConflict);
+                        recovered = true;
+                   }
+            }
+            _changed |= recovered;
+            return recovered;
+        }
+        return false;
+    }
+
     void RevTree::saved(sequence_t newSequence) {
         for (Rev *rev : _revs) {
             rev->clearFlag(Rev::kNew);
