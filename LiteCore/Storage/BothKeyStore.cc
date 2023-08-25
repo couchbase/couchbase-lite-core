@@ -41,21 +41,25 @@ namespace litecore {
         return count;
     }
 
-    sequence_t BothKeyStore::set(const RecordUpdate& rec, SetParams params, ExclusiveTransaction& t) {
+    sequence_t BothKeyStore::set(const RecordUpdate& rec, SetOptions flags, ExclusiveTransaction& t) {
         bool deleting = (rec.flags & DocumentFlags::kDeleted);
         auto target   = (deleting ? _deadStore : _liveStore).get();  // the store to update
         auto other    = (deleting ? _liveStore : _deadStore).get();
 
-        // At this level, insertion of a new record must pick a new sequence.
-        Assert(params.updateSequence() || !params.insert());
+        auto insert = [](const RecordUpdate& rec, const SetOptions& flags) {
+            return rec.sequence == 0_seq || flags & kInsert;
+        };
 
-        if ( params.insert() ) {
+        // At this level, insertion of a new record must pick a new sequence.
+        Assert(flags & kUpdateSequence || !insert(rec, flags));
+
+        if ( insert(rec, flags) ) {
             // Request should succeed only if doc _doesn't_ exist yet, so check other KeyStore:
             if ( other->get(rec.key, kMetaOnly).exists() ) return 0_seq;
         }
 
         // Forward the 'set' to the target store:
-        auto seq = target->set(rec, params, t);
+        auto seq = target->set(rec, flags, t);
 
         if ( seq == 0_seq && rec.sequence > 0_seq ) {
             // Conflict. Maybe record is currently in the other KeyStore; if so, delete it & retry
@@ -63,8 +67,7 @@ namespace litecore {
             if ( other->del(rec.key, t, rec.sequence, rec.subsequence) ) {
                 // We move a record from one sub-store to the other one by deleting it from
                 // one store and inserting it to the other one while keeping the seqquence.
-                params.setInsert(true);
-                seq = target->set(rec, params, t);
+                seq = target->set(rec, SetOptions(flags | kInsert), t);
                 if ( seq != sequence_t::None && expiry != expiration_t::None ) {
                     target->setExpiration(rec.key, expiry);
                 }
