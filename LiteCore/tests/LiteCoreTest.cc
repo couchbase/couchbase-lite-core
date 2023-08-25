@@ -180,7 +180,7 @@ DataFileTestFixture::~DataFileTestFixture() {
 
 sequence_t DataFileTestFixture::createDoc(KeyStore& s, slice docID, slice body, ExclusiveTransaction& t) {
     RecordUpdate rec(docID, body);
-    auto         seq = s.set(rec, {rec, true}, t);
+    auto         seq = s.set(rec, KeyStore::kUpdateSequence, t);
     CHECK(seq != 0_seq);
     return seq;
 }
@@ -195,7 +195,7 @@ sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, Documen
 
     if ( toStore.capabilities().sequences ) {
         RecordUpdate rec(docID, body, flags);
-        return toStore.set(rec, {rec, true}, t);
+        return toStore.set(rec, KeyStore::kUpdateSequence, t);
     } else {
         toStore.setKV(docID, body, t);
         return 0_seq;

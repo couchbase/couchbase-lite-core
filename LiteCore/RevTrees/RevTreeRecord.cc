@@ -192,7 +192,7 @@ namespace litecore {
             newRec.body  = newBody;
             newRec.extra = newExtra;
 
-            sequence = _store.set(newRec, {newRec, createSequence}, transaction);
+            sequence = _store.set(newRec, KeyStore::flagUpdateSequence(createSequence), transaction);
             if ( sequence == 0_seq ) return kConflict;  // Conflict
 
             if ( createSequence ) _rec.updateSequence(sequence);
