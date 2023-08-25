@@ -480,6 +480,8 @@ TEST_CASE("Logging plaintext", "[Log]") {
     n++;
 #endif
     CHECK(lines[n++] == "---- Hello ----");
+    regex utctimeRe{"^" TIMESTAMP};
+    CHECK(regex_search(lines[n], utctimeRe));
     CHECK(lines[n].find("[DB]") != string::npos);
     CHECK(lines[n].find("{dummy#") != string::npos);
     CHECK(lines[n].find("This will be in plaintext") != string::npos);
