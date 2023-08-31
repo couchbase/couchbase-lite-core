@@ -69,6 +69,13 @@
 #endif
 //COUCHBASE: End of code adapted from Networking.h
 
+//COUCHBASE: Begin of COUCHBASE_forceClose
+#define COUCHBASE_forceClose
+//COUCHBASE: End of COUCHBASE_forceClose
+#ifdef COUCHBASE_forceClose
+#include <sstream>
+#endif
+
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
@@ -160,18 +167,36 @@ private:
     inline bool consumeMessage(T payLength, char *&src, unsigned int &length, frameFormat frame, void *user) {
         if (getOpCode(frame)) {
             if (opStack == 1 || (!lastFin && getOpCode(frame) < 2)) {
+#ifdef COUCHBASE_forceClose
+                std::stringstream ss;
+                ss << "[opStack=" << opStack << ",frame=" << frame << ",lastFin=" << lastFin << "]";
+                forceClose(user, ss.str().c_str());
+#else
                 forceClose(user);
+#endif
                 return true;
             }
             opCode[(unsigned char) ++opStack] = (OpCode) getOpCode(frame);
         } else if (opStack == -1) {
+#ifdef COUCHBASE_forceClose
+            std::stringstream ss;
+            ss << "[frame=" << frame << "]";
+            forceClose(user, ss.str().c_str());
+#else
             forceClose(user);
+#endif
             return true;
         }
         lastFin = isFin(frame);
 
         if (payLength > SIZE_MAX || refusePayloadLength(user, (int)payLength)) {
+#ifdef COUCHBASE_forceClose
+            std::stringstream ss;
+            ss << "[payLength=" << payLength << ",frame=" << frame << "]";
+            forceClose(user, ss.str().c_str());
+#else
             forceClose(user);
+#endif
             return true;
         }
 
@@ -413,7 +438,13 @@ public:
                 // invalid reserved bits / invalid opcodes / invalid control frames / set compressed frame
                 if ((rsv1(frame) && !setCompressed(user)) || rsv23(frame) || (getOpCode(frame) > 2 && getOpCode(frame) < 8) ||
                     getOpCode(frame) > 10 || (getOpCode(frame) > 2 && (!isFin(frame) || payloadLength(frame) > 125))) {
+#ifdef COUCHBASE_forceClose
+                    std::stringstream ss;
+                    ss << "[frame=" << frame << ",opStack=" << opStack << "]";
+                    forceClose(user, ss.str().c_str());
+#else
                     forceClose(user);
+#endif
                     return;
                 }
 
@@ -458,6 +489,9 @@ public:
     bool setCompressed(void *user);
     void forceClose(void *user);
     bool handleFragment(char *data, size_t length, unsigned int remainingBytes, int opCode, bool fin, void *user);
+#ifdef COUCHBASE_forceClose
+    void forceClose(void *user, const char* reason);
+#endif
 };
 
 }
