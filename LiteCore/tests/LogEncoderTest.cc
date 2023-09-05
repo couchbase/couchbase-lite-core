@@ -247,12 +247,13 @@ TEST_CASE("Logging rollover", "[Log]") {
         if ( i == 256 ) {
             // Otherwise the logging will happen to fast that
             // rollover won't have a chance to occur
-            this_thread::sleep_for(2s);
+            this_thread::sleep_for(1s);
         }
         if ( i == 256 * 2 ) {
-            // To ensure we have 2 rotate events. If maxCount in the logOptions is 1,
-            // one file will be purged from the disk.
-            this_thread::sleep_for(2s);
+            // To help to get 2 rotate events. If maxCount in the logOptions is 1,
+            // one file will be purged from the disk. But we are guaranteed to
+            // get 2 flush events on all platforms.
+            this_thread::sleep_for(1s);
         }
     }
 
@@ -271,8 +272,16 @@ TEST_CASE("Logging rollover", "[Log]") {
         if ( f.path().find("info") != string::npos ) { infoFiles.push_back(f.path()); }
     });
 
-    CHECK(totalCount == 7 + maxCount);  // 1 for each level besides info, 2 or 3 info, 1 "intheway", 1 "acbd"
-    REQUIRE(infoFiles.size() == maxCount + 1);
+    // infoFiles.size(), log files at the Info level
+    // 4 additional log files, 1 for each level besides Info.
+    // 2 arbitrary files, "intheway" and "acbd", in particular
+    REQUIRE(totalCount == infoFiles.size() + 6);
+    // The rollover logic will cut a new file as its size reaches maxSize as specified in
+    // the LogFileOptions. However, we check the size by checking the number of bytes already
+    // flushed to the fstream. Therefore, the number of files that have actually been cut
+    // depends on when flush gets called. No matter how many files are generated, the number
+    // of files left on the disk is bounded by maxCount + 1.
+    CHECK(infoFiles.size() <= maxCount + 1);
 
     vector<std::array<string, 5>> lines;
     auto                          getLines = [&](int f) {
@@ -306,17 +315,17 @@ TEST_CASE("Logging rollover", "[Log]") {
         int          ret = 0;
         ss >> ret;
         // serialNo starts from 1
-        CHECK((1 <= ret && ret <= 3));
+        REQUIRE(1 <= ret);
         return ret;
     };
-    int bySerialNo[3]{-1, -1, -1};
+    std::map<int, int> bySerialNo;
     for ( int n = 0; n < infoFiles.size(); ++n ) {
-        // serialNo 1-3 map to index 0-2
-        bySerialNo[findSerialNo(n) - 1] = n;
+        // serialNo map to file index 0-2
+        bySerialNo.emplace(findSerialNo(n), n);
     }
-    CHECK((maxCount == 1 ? bySerialNo[0] < 0 : bySerialNo[0] >= 0));
-    CHECK(bySerialNo[1] >= 0);
-    CHECK(bySerialNo[2] >= 0);
+    CHECK(bySerialNo.size() == infoFiles.size());
+    std::cout << "Number of Info log files = " << infoFiles.size() << ", max number is " << maxCount + 1 << ", "
+              << bySerialNo.begin()->first - 1 << " files are dropped" << std::endl;
 
     //    Example outputs:
     //    ---------------
@@ -363,24 +372,31 @@ TEST_CASE("Logging rollover", "[Log]") {
         s2 >> end;
         return std::make_pair(begin, end);
     };
-    int lineNo[3][2];
-    for ( int n = 0; n < 3; ++n ) {
-        // n corresponds to the serialNo.
-        if ( bySerialNo[n] < 0 ) {
-            // serialNo=1 is purged
-            lineNo[n][0] = -1;
-        } else {
-            std::tie(lineNo[n][0], lineNo[n][1]) = findLineNo(bySerialNo[n]);
+
+    std::map<int, int[2]> lineNos;
+    for ( const auto& s2f : bySerialNo ) {
+        auto& ln               = lineNos[s2f.first];
+        std::tie(ln[0], ln[1]) = findLineNo(s2f.second);
+    }
+    REQUIRE(lineNos.size() == bySerialNo.size());
+
+    int lastLine = 0;
+    for ( auto it = lineNos.begin(), prev = lineNos.end(); it != lineNos.end(); ++it ) {
+        if ( prev == lineNos.end() ) {
+            if ( it->first == 1 ) {
+                // SerialNo == 1
+                CHECK(it->second[0] == 0);
+            }
+            prev     = it;
+            lastLine = it->second[1];
+            continue;
         }
+        CHECK(prev->first + 1 == it->first);          // SerialNos are sonsecutive
+        CHECK(prev->second[1] + 1 == it->second[0]);  // line numbers are consecutive
+        lastLine = it->second[1];
+        prev     = it;
     }
-    if ( lineNo[0][0] >= 0 ) {
-        // first log file with serialNo = 1
-        CHECK(lineNo[0][0] == 0);
-        // Assert that line # continues.
-        CHECK(lineNo[0][1] + 1 == lineNo[1][0]);
-    }
-    CHECK(lineNo[1][1] + 1 == lineNo[2][0]);
-    CHECK(lineNo[2][1] == 1023);
+    CHECK(lastLine == 1023);
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
@@ -464,6 +480,8 @@ TEST_CASE("Logging plaintext", "[Log]") {
     n++;
 #endif
     CHECK(lines[n++] == "---- Hello ----");
+    regex utctimeRe{"^" TIMESTAMP};
+    CHECK(regex_search(lines[n], utctimeRe));
     CHECK(lines[n].find("[DB]") != string::npos);
     CHECK(lines[n].find("{dummy#") != string::npos);
     CHECK(lines[n].find("This will be in plaintext") != string::npos);

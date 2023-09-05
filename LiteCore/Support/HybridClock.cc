@@ -19,13 +19,6 @@
 namespace litecore {
     using namespace std;
 
-    // An arbitrary timestamp that's the lowest we're willing to accept -- 27 June 2023, noonish.
-    static constexpr walltime_t kMinValidTime{0x176c9a6fd6900000};
-
-    // Highest timestamp that could ever be valid; this is sometime in the year 2262.
-    // This is a sanity check to detect obviously bogus values like negative numbers.
-    static constexpr logicalTime kMaxValidTime{0x7fffffffffffffff};
-
     walltime_t RealClockSource::now() {
         // "The epoch of system_clock is unspecified, but most implementations use Unix Time".
         // The unit test "RealClockSource" in VersionVectorTest.cc verifies this.

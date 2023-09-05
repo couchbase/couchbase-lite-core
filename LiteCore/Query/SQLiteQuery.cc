@@ -324,18 +324,20 @@ namespace litecore {
         const FullTextTerms& fullTextTerms() override {
             _fullTextTerms.clear();
             uint64_t dataSource = _iter->asArray()->get(kFTSRowidCol)->asInt();
-            // The offsets() function returns a string of space-separated numbers in groups of 4.
-            string      offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
-            const char* termStr = offsets.c_str();
-            while ( *termStr ) {
-                uint32_t n[4];
-                for ( unsigned int& i : n ) {
-                    char* next;
-                    i       = (uint32_t)strtol(termStr, &next, 10);
-                    termStr = next;
+            if ( kFTSRowidCol < _1stCustomResultColumn ) {
+                // The offsets() function returns a string of space-separated numbers in groups of 4.
+                string      offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
+                const char* termStr = offsets.c_str();
+                while ( *termStr ) {
+                    uint32_t n[4];
+                    for ( unsigned int& i : n ) {
+                        char* next;
+                        i       = (uint32_t)strtol(termStr, &next, 10);
+                        termStr = next;
+                    }
+                    _fullTextTerms.push_back({dataSource, n[0], n[1], n[2], n[3]});
+                    // {rowid, key #, term #, byte offset, byte length}
                 }
-                _fullTextTerms.push_back({dataSource, n[0], n[1], n[2], n[3]});
-                // {rowid, key #, term #, byte offset, byte length}
             }
             return _fullTextTerms;
         }

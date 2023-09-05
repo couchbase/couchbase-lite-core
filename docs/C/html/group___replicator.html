@@ -2035,7 +2035,9 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Tells a replicator to start. </p>
-<p>Ignored if it's not in the Stopped state. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
+<p>Ignored if it's not in the Stopped state. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd>
+<dd>
+Do not call this function while a transaction is open on the same database as it can deadlock when <code>repl</code> tries to acquire the database.</dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">repl</td><td>The C4Replicator instance. </td></tr>

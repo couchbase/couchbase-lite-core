@@ -1134,7 +1134,7 @@
 		275A74D01ED3A4E1008CB57B /* Listener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Listener.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
-		275AA5D72A5F603800ABC172 /* VersionTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VersionTypes.hh; sourceTree = "<group>"; };
+		275AA5D72A5F603800ABC172 /* SourceID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SourceID.hh; sourceTree = "<group>"; };
 		275B2DF22A4A0A1A00B7215E /* HybridClock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HybridClock.hh; sourceTree = "<group>"; };
 		275B2DF32A4A0A1A00B7215E /* HybridClock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HybridClock.cc; sourceTree = "<group>"; };
 		275B35A3234E753800FE9CF0 /* Housekeeper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Housekeeper.hh; sourceTree = "<group>"; };
@@ -2282,6 +2282,8 @@
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
+				275B2DF22A4A0A1A00B7215E /* HybridClock.hh */,
+				275B2DF32A4A0A1A00B7215E /* HybridClock.cc */,
 				27700DFD1FB642B80005D48E /* Increment.hh */,
 				27FB0C37205B177100987D9C /* Instrumentation.hh */,
 				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
@@ -2394,9 +2396,7 @@
 		2758D73F25C3638A000316A0 /* Version Vectors */ = {
 			isa = PBXGroup;
 			children = (
-				275B2DF22A4A0A1A00B7215E /* HybridClock.hh */,
-				275B2DF32A4A0A1A00B7215E /* HybridClock.cc */,
-				275AA5D72A5F603800ABC172 /* VersionTypes.hh */,
+				275AA5D72A5F603800ABC172 /* SourceID.hh */,
 				274B36D125B271F7001FC28D /* Version.cc */,
 				274B36D025B271F7001FC28D /* Version.hh */,
 				27027CD1255F4A9B00A96D7D /* VersionVector.cc */,

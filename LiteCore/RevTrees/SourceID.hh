@@ -1,5 +1,5 @@
 //
-// VersionTypes.hh
+// SourceID.hh
 //
 // Copyright © 2023 Couchbase. All rights reserved.
 //
@@ -22,15 +22,6 @@ namespace fleece {
 }  // namespace fleece
 
 namespace litecore {
-
-    // Types used by VersionVector, Version and HybridClock.
-
-
-    /** A version's logical timestamp indicating when a peer last made a change.
-        This is not necessarily a real time; for most purposes it suffices that it just increases
-        monotonically for a given peer when they make changes.
-        In practice it's a "Hybrid Logical Timestamp" and close to real-time; see HybridClock.hh.*/
-    enum class logicalTime : uint64_t { none = 0, endOfTime = UINT64_MAX };
 
     /** Unique 128-bit identifier of a client or server that created a Version.
         An all-zeroes instance (kMeSourceID) stands for the local client's ID. */
