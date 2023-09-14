@@ -28,12 +28,34 @@ namespace litecore { namespace repl {
     static std::atomic_int sMaxOpenWriters {0};
 #endif
 
+//#define FETCH_DANGLING_BLOBS
+
     // Looks for another blob to download; when they're all done, finishes up the revision.
     void IncomingRev::fetchNextBlob() {
+        // Invariant: _danglingBlobBegin == _pendingBlobs.begin() + n, for some n where 0 <= n && n <= _pendingBlobs.size()
+#ifdef FETCH_DANGLING_BLOBS
         while (_blob != _pendingBlobs.end()) {
+#else
+        while (_blob != _danglingBlobBegin) {
+#endif
             if (startBlob())
                 return;
             ++_blob;
+        }
+
+        if (_blob != _pendingBlobs.end()) {
+            string errmsg = "The rev(" + _rev->docID.asString() + "/" + _rev->revID.asString() + ") contains blobs (";
+            bool first = true;
+            for (std::vector<PendingBlob>::const_iterator iter = _blob; iter != _pendingBlobs.end(); ++iter) {
+                if (!first) errmsg += ",";
+                errmsg += iter->key.digestString();
+                first = false;
+            }
+            errmsg += ") that are not in the remote.";
+            C4Error c4Error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, slice(errmsg));
+            logError("Error: %s", c4Error.description().c_str());
+            failWithError(c4Error);
+            return;
         }
 
         // All blobs completed, now finish:

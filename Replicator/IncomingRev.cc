@@ -51,8 +51,7 @@ namespace litecore { namespace repl {
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
-        _blob = _pendingBlobs.end();
-
+        _danglingBlobBegin = _blob = _pendingBlobs.end();
     }
 
 
@@ -237,6 +236,21 @@ namespace litecore { namespace repl {
             }
         }
 
+        // Save the attachments in _attachments
+        std::optional<set<string>> attachmentsFromSG;
+        Value legacyAttachments = root[C4Blob::kLegacyAttachmentsProperty];
+        if (Dict attachments = legacyAttachments.asDict(); attachments) {
+            attachmentsFromSG.emplace();
+            for (Dict::iterator it(attachments); it; ++it) {
+                if (Dict v = it.value().asDict(); v) {
+                    auto digest = v[C4Blob::kDigestProperty];
+                    if (digest.asString()) {
+                        attachmentsFromSG->emplace(digest.asString());
+                    }
+                }
+            }
+        }
+
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc.
         // This also re-encodes the document if it was modified by the decryptor.
@@ -273,16 +287,31 @@ namespace litecore { namespace repl {
         // Call the custom validation function if any:
         if (!performPullValidation(root)) {
             _pendingBlobs.clear();
-            _blob = _pendingBlobs.end();
+            _danglingBlobBegin = _blob = _pendingBlobs.end();
             return;
         }
 
-        // Request the first blob, or if there are none, insert the revision into the DB:
-        if (!_pendingBlobs.empty()) {
-            fetchNextBlob();
-        } else {
-            insertRevision();
+        _danglingBlobBegin = _pendingBlobs.end();
+        if (attachmentsFromSG.has_value()) {
+            vector<PendingBlob> dangled;
+            for (auto iter = _pendingBlobs.begin(); iter != _pendingBlobs.end();) {
+                auto digest = iter->key.digestString();
+                if (attachmentsFromSG->find(digest) == attachmentsFromSG->end()) {
+                    dangled.push_back(*iter);
+                    iter = _pendingBlobs.erase(iter);
+                } else {
+                    ++iter;
+                }
+            }
+            for (const auto& b: dangled) {
+                _pendingBlobs.push_back(b);
+            }
+            _blob = _pendingBlobs.begin();
+            _danglingBlobBegin = _blob + (_pendingBlobs.size() - dangled.size());
         }
+
+        Assert(!_pendingBlobs.empty() || _blob == _pendingBlobs.end());
+        fetchNextBlob();
     }
 
     // Calls the custom pull validator if available.
@@ -368,7 +397,7 @@ namespace litecore { namespace repl {
         Assert(_pendingCallbacks == 0);
         closeBlobWriter();
         _pendingBlobs.clear();
-        _blob = _pendingBlobs.end();
+        _danglingBlobBegin = _blob = _pendingBlobs.end();
         _rev->trim();
 
         _puller->revWasHandled(this);
