@@ -20,6 +20,7 @@
 #include "c4Document.hh"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
+#include "FleeceImpl.hh"
 #include "fleece/Mutable.hh"
 #include <atomic>
 #include <deque>
@@ -51,8 +52,7 @@ namespace litecore { namespace repl {
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
-        _blob = _pendingBlobs.end();
-
+        _danglingBlobBegin = _blob = _pendingBlobs.end();
     }
 
 
@@ -119,7 +119,66 @@ namespace litecore { namespace repl {
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
-        _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
+        auto checkBlob = [](bool isDelta, alloc_slice jsonBody) -> bool {
+            alloc_slice fleeceBody = impl::JSONConverter::convertJSON(jsonBody);
+            Value v = FLValue_FromData((C4Slice)fleeceBody, kFLTrusted);
+            Dict dictBody = v.asDict();
+            if (!dictBody) {
+                // It should be a dictionary. But in case, simply fallback to the old way.
+                return jsonBody.containsBytes("\"digest\""_sl);
+            }
+
+            for (DeepIterator iter(dictBody); iter; ++iter) {
+                if (iter.key() == C4Blob::kLegacyAttachmentsProperty) {
+                    //_attachments
+
+                    if (isDelta) {
+                        if (Array arr = iter.value().asArray(); arr) {
+                            // _attachments: [] or [ [new value] ]
+                            // Either, _attachments as a whole is deleted or added.
+                            return true;
+                        }
+                    }
+                    iter.skipChildren();
+                    if (Dict attachments = iter.value().asDict(); attachments) {
+                        for (Dict::iterator attIter(attachments); attIter; ++attIter) {
+                            if (Dict att = attIter.value().asDict(); att) {
+                                if (att.get(C4Blob::kDigestProperty)) {
+                                    return true;
+                                }
+                            } else if (isDelta) {
+                                if (Array arr = attIter.value().asArray()) {
+                                    // deleted or added new one
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Other than _attachments
+
+                    if (Dict dict = iter.value().asDict(); dict) {
+                        if (C4Blob::isBlob(dict) && dict.get(C4Blob::kDigestProperty)) {
+                            return true;
+                        }
+                    } else if (isDelta) {
+                        if (Array arr = iter.value().asArray(); arr && arr.count() == 1) {
+                            if (Dict newValue = arr[0].asDict(); newValue) {
+                                if (C4Blob::isBlob(newValue) && newValue.get(C4Blob::kDigestProperty)) {
+                                    return true;
+                                }
+                            }
+                        }
+                        // We only detect when a new blob is added. We cannot know whether a removed
+                        // element is a blob without checking with the delta base. It should not
+                        // affect what we want to do with result.
+                    }
+                }
+            }
+            return false;
+        };
+        _mayContainBlobs = checkBlob(!(_rev->deltaSrcRevID == nullslice), jsonBody);
+
         _mayContainEncryptedProperties = !_options.disablePropertyDecryption()
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
@@ -237,6 +296,21 @@ namespace litecore { namespace repl {
             }
         }
 
+        // Save the attachments in _attachments
+        std::optional<set<string>> attachmentsFromSG;
+        Value legacyAttachments = root[C4Blob::kLegacyAttachmentsProperty];
+        if (Dict attachments = legacyAttachments.asDict(); attachments) {
+            attachmentsFromSG.emplace();
+            for (Dict::iterator it(attachments); it; ++it) {
+                if (Dict v = it.value().asDict(); v) {
+                    auto digest = v[C4Blob::kDigestProperty];
+                    if (digest.asString()) {
+                        attachmentsFromSG->emplace(digest.asString());
+                    }
+                }
+            }
+        }
+
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc.
         // This also re-encodes the document if it was modified by the decryptor.
@@ -273,16 +347,31 @@ namespace litecore { namespace repl {
         // Call the custom validation function if any:
         if (!performPullValidation(root)) {
             _pendingBlobs.clear();
-            _blob = _pendingBlobs.end();
+            _danglingBlobBegin = _blob = _pendingBlobs.end();
             return;
         }
 
-        // Request the first blob, or if there are none, insert the revision into the DB:
-        if (!_pendingBlobs.empty()) {
-            fetchNextBlob();
-        } else {
-            insertRevision();
+        _danglingBlobBegin = _pendingBlobs.end();
+        if (attachmentsFromSG.has_value()) {
+            vector<PendingBlob> dangled;
+            for (auto iter = _pendingBlobs.begin(); iter != _pendingBlobs.end();) {
+                auto digest = iter->key.digestString();
+                if (attachmentsFromSG->find(digest) == attachmentsFromSG->end()) {
+                    dangled.push_back(*iter);
+                    iter = _pendingBlobs.erase(iter);
+                } else {
+                    ++iter;
+                }
+            }
+            for (const auto& b: dangled) {
+                _pendingBlobs.push_back(b);
+            }
+            _blob = _pendingBlobs.begin();
+            _danglingBlobBegin = _blob + (_pendingBlobs.size() - dangled.size());
         }
+
+        Assert(!_pendingBlobs.empty() || _blob == _pendingBlobs.end());
+        fetchNextBlob();
     }
 
     // Calls the custom pull validator if available.
@@ -333,7 +422,7 @@ namespace litecore { namespace repl {
     }
 
     void IncomingRev::failWithError(C4Error err) {
-        warn("failed with error: %s", err.description().c_str());
+        logError("failed with error: %s", err.description().c_str());
         Assert(err.code != 0);
         _rev->error = err;
         finish();
@@ -367,7 +456,7 @@ namespace litecore { namespace repl {
         Assert(_pendingCallbacks == 0);
         closeBlobWriter();
         _pendingBlobs.clear();
-        _blob = _pendingBlobs.end();
+        _danglingBlobBegin = _blob = _pendingBlobs.end();
         _rev->trim();
 
         _puller->revWasHandled(this);
