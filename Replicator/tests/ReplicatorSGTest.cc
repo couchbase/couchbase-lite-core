@@ -1649,3 +1649,57 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Set Invalid Network Interface", "[.SyncServe
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ENXIO);
 }
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Dangling Blobs", "[.SyncServer]") {
+    std::vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    std::vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    REQUIRE(doc);
+    alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
+    CHECK(before);
+    doc = nullptr;
+    C4Log("Original doc: %.*s", SPLAT(before));
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    HTTPStatus status;
+    alloc_slice result = _sg.sendRemoteRequest("GET", C4CollectionSpec{}, "/scratch/att1", &status, &error);
+    REQUIRE(status == HTTPStatus::OK);
+
+    FLError flError = kFLNoError;
+    MutableDict rev1 = FLMutableDict_NewFromJSON(result, &flError);
+    REQUIRE(flError == kFLNoError);
+
+    const char* rev1Body = R"--({"_attachments":{"blob_/attached/0":{"content_type":"text/plain","digest":"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=","length":27,"revpos":1,"stub":true},"blob_/attached/1":{"content_type":"text/plain","digest":"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=","length":10,"revpos":1,"stub":true},"blob_/attached/2":{"content_type":"text/plain","digest":"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=","length":0,"revpos":1,"stub":true}},"_id":"att1","_rev":"1-b98a25d09a549dc2f68ac7b6a1acaf4da55e0f0d","attached":[{"@type":"blob","content_type":"text/plain","digest":"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=","length":27},{"@type":"blob","content_type":"text/plain","digest":"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=","length":10},{"@type":"blob","content_type":"text/plain","digest":"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=","length":0}]})--";
+
+    // Notice that _attachments has 2 attachments in rev2Body, instead of 3 in rev1Body
+    const char* rev2Body = R"--({"_attachments":{"blob_/attached/1":{"content_type":"text/plain","digest":"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=","length":10,"revpos":1,"stub":true},"blob_/attached/2":{"content_type":"text/plain","digest":"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=","length":0,"revpos":1,"stub":true}},"_id":"att1","_rev":"1-b98a25d09a549dc2f68ac7b6a1acaf4da55e0f0d","attached":[{"@type":"blob","content_type":"text/plain","digest":"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=","length":27},{"@type":"blob","content_type":"text/plain","digest":"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=","length":10},{"@type":"blob","content_type":"text/plain","digest":"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=","length":0}]})--";
+
+    REQUIRE(rev1.toJSONString() == rev1Body);
+
+    Dict _attachments = rev1.get("_attachments"_sl).asDict();
+    REQUIRE(_attachments);
+    MutableDict attachmentsMinus1 = _attachments.asMutable();
+    auto key0 = attachmentsMinus1.begin().key();
+    attachmentsMinus1.remove(key0.asString());
+    // rev1 is changed by attachmentsMinus1
+    REQUIRE(rev1.toJSONString() == rev2Body);
+
+    _sg.upsertDoc({}, "att1", rev1.toJSON());
+
+    C4Log("-------- Deleting and re-creating database --------");
+    deleteAndRecreateDB();
+
+    // The following Pull should fail because the first attachment is deleted in the remote.
+    _expectedDocPullErrors = { "att1" };
+    replicate(kC4Disabled, kC4OneShot);
+
+    doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    CHECK(!doc);
+}

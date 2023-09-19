@@ -334,7 +334,7 @@ namespace litecore { namespace repl {
     }
 
     void IncomingRev::failWithError(C4Error err) {
-        warn("failed with error: %s", err.description().c_str());
+        logError("failed with error: %s", err.description().c_str());
         Assert(err.code != 0);
         _rev->error = err;
         finish();

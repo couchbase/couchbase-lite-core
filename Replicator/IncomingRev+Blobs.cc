@@ -76,7 +76,14 @@ namespace litecore { namespace repl {
                         auto err = progress.reply->getError();
                         logError("Got error response: %.*s %d '%.*s'",
                                  SPLAT(err.domain), err.code, SPLAT(err.message));
-                        blobGotError(blipToC4Error(err));
+                        // c.f. CBL-4898
+                        std::optional<Error> cblErr;
+                        string errbuf;
+                        if (err.domain == "HTTP"_sl && err.code == 403) {
+                            errbuf = format("Blob in \"%.*s\" with digest \"%s\" is not in attachments.", SPLAT(_blob->docID), _blob->key.digestString().c_str());
+                            cblErr.emplace(err.domain, err.code, slice(errbuf));
+                        }
+                        blobGotError(blipToC4Error(cblErr.value_or(err)));
                     } else {
                         bool complete = progress.state == MessageProgress::kComplete;
                         auto data = progress.reply->extractBody();
