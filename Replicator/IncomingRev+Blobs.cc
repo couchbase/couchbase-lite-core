@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
                         std::optional<Error> cblErr;
                         string errbuf;
                         if (err.domain == "HTTP"_sl && err.code == 403) {
-                            errbuf = format("Blob in \"%.*s\" with digest \"%s\" is not in attachments.", SPLAT(_blob->docID), _blob->key.digestString().c_str());
+                            errbuf = format("There is no content for the blob with digest %s in the attachments for document %.*s",  _blob->key.digestString().c_str(), SPLAT(_blob->docID));
                             cblErr.emplace(err.domain, err.code, slice(errbuf));
                         }
                         blobGotError(blipToC4Error(cblErr.value_or(err)));
