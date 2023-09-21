@@ -52,7 +52,8 @@ namespace litecore { namespace repl {
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
-        _danglingBlobBegin = _blob = _pendingBlobs.end();
+        _blob = _pendingBlobs.end();
+
     }
 
 
@@ -347,11 +348,11 @@ namespace litecore { namespace repl {
         // Call the custom validation function if any:
         if (!performPullValidation(root)) {
             _pendingBlobs.clear();
-            _danglingBlobBegin = _blob = _pendingBlobs.end();
+            _blob = _pendingBlobs.end();
             return;
         }
 
-        _danglingBlobBegin = _pendingBlobs.end();
+        std::vector<PendingBlob>::const_iterator danglingBlobBegin = _pendingBlobs.end();
         if (attachmentsFromSG.has_value()) {
             vector<PendingBlob> dangled;
             for (auto iter = _pendingBlobs.begin(); iter != _pendingBlobs.end();) {
@@ -367,11 +368,36 @@ namespace litecore { namespace repl {
                 _pendingBlobs.push_back(b);
             }
             _blob = _pendingBlobs.begin();
-            _danglingBlobBegin = _blob + (_pendingBlobs.size() - dangled.size());
+            danglingBlobBegin = _blob + (_pendingBlobs.size() - dangled.size());
         }
 
-        Assert(!_pendingBlobs.empty() || _blob == _pendingBlobs.end());
-        fetchNextBlob();
+        // danglingBlobBegin == _pendingBlobs.begin() + n, for some n where 0 <= n && n <= _pendingBlobs.size()
+        if (danglingBlobBegin != _pendingBlobs.end()) {
+            bool plural = (_pendingBlobs.end() - danglingBlobBegin) > 1;
+            string errmsg = "There ";
+            if (plural) {
+                errmsg += "are no contents for the blobs with digests ";
+            } else {
+                errmsg += "is no content for the blob with digest ";
+            }
+            bool first = true;
+            for (std::vector<PendingBlob>::const_iterator iter = danglingBlobBegin; iter != _pendingBlobs.end(); ++iter) {
+                if (!first) errmsg += ", ";
+                errmsg += iter->key.digestString();
+                first = false;
+            }
+            errmsg += " in the attachments for document " + _rev->docID.asString();
+            C4Error c4Error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, slice(errmsg));
+            failWithError(c4Error);
+            return;
+        }
+
+        // Request the first blob, or if there are none, insert the revision into the DB:
+        if (!_pendingBlobs.empty()) {
+            fetchNextBlob();
+        } else {
+            insertRevision();
+        }
     }
 
     // Calls the custom pull validator if available.
@@ -456,7 +482,7 @@ namespace litecore { namespace repl {
         Assert(_pendingCallbacks == 0);
         closeBlobWriter();
         _pendingBlobs.clear();
-        _danglingBlobBegin = _blob = _pendingBlobs.end();
+        _blob = _pendingBlobs.end();
         _rev->trim();
 
         _puller->revWasHandled(this);

@@ -30,31 +30,10 @@ namespace litecore { namespace repl {
 
     // Looks for another blob to download; when they're all done, finishes up the revision.
     void IncomingRev::fetchNextBlob() {
-        // Invariant: _danglingBlobBegin == _pendingBlobs.begin() + n, for some n where 0 <= n && n <= _pendingBlobs.size()
-        while (_blob != _danglingBlobBegin) {
+        while (_blob != _pendingBlobs.end()) {
             if (startBlob())
                 return;
             ++_blob;
-        }
-
-        if (_blob != _pendingBlobs.end()) {
-            bool plural = (_pendingBlobs.end() - _danglingBlobBegin) > 1;
-            string errmsg = "There ";
-            if (plural) {
-                errmsg += "are no contents for the blobs with digests ";
-            } else {
-                errmsg += "is no content for the blob with digest ";
-            }
-            bool first = true;
-            for (std::vector<PendingBlob>::const_iterator iter = _blob; iter != _pendingBlobs.end(); ++iter) {
-                if (!first) errmsg += ", ";
-                errmsg += iter->key.digestString();
-                first = false;
-            }
-            errmsg += " in the attachments for document " + _rev->docID.asString();
-            C4Error c4Error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, slice(errmsg));
-            failWithError(c4Error);
-            return;
         }
 
         // All blobs completed, now finish:
