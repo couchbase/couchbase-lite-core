@@ -121,6 +121,10 @@ namespace litecore { namespace repl {
             _revMessage = nullptr;
 
         auto checkBlob = [](bool isDelta, alloc_slice jsonBody) -> bool {
+            if (!isDelta){
+                return jsonBody.containsBytes("\"digest\""_sl);
+            }
+
             alloc_slice fleeceBody = impl::JSONConverter::convertJSON(jsonBody);
             Value v = FLValue_FromData((C4Slice)fleeceBody, kFLTrusted);
             Dict dictBody = v.asDict();
@@ -133,28 +137,26 @@ namespace litecore { namespace repl {
                 if (iter.key() == C4Blob::kLegacyAttachmentsProperty) {
                     //_attachments
 
-                    if (isDelta) {
-                        if (Array arr = iter.value().asArray(); arr) {
-                            // _attachments: [] or [ [new value] ]
-                            // Either, _attachments as a whole is deleted or added.
-                            return true;
-                        }
+                    if (Array arr = iter.value().asArray(); arr) {
+                        // _attachments: [] or [ new value ]
+                        // JSON diff syntax for overwrite or delete
+                        return true;
                     }
-                    iter.skipChildren();
                     if (Dict attachments = iter.value().asDict(); attachments) {
                         for (Dict::iterator attIter(attachments); attIter; ++attIter) {
                             if (Dict att = attIter.value().asDict(); att) {
                                 if (att.get(C4Blob::kDigestProperty)) {
                                     return true;
                                 }
-                            } else if (isDelta) {
-                                if (Array arr = attIter.value().asArray()) {
-                                    // deleted or added new one
-                                    return true;
-                                }
+                            } else if (Array arr = attIter.value().asArray(); arr) {
+                                // _attachments: { blob_/attached/1: [] or [ new value ] }
+                                // JSON diff syntax for overwrite or delete
+                                return true;
                             }
                         }
                     }
+                    // We already inspected _attachments.
+                    iter.skipChildren();
                 } else {
                     // Other than _attachments
 
@@ -162,12 +164,11 @@ namespace litecore { namespace repl {
                         if (C4Blob::isBlob(dict) && dict.get(C4Blob::kDigestProperty)) {
                             return true;
                         }
-                    } else if (isDelta) {
-                        if (Array arr = iter.value().asArray(); arr && arr.count() == 1) {
-                            if (Dict newValue = arr[0].asDict(); newValue) {
-                                if (C4Blob::isBlob(newValue) && newValue.get(C4Blob::kDigestProperty)) {
-                                    return true;
-                                }
+                    } else if (Array arr = iter.value().asArray(); arr && arr.count() == 1) {
+                        // JSON diff syntax for overwrite: [ newValue ]
+                        if (Dict newValue = arr[0].asDict(); newValue) {
+                            if (C4Blob::isBlob(newValue) && newValue.get(C4Blob::kDigestProperty)) {
+                                return true;
                             }
                         }
                         // We only detect when a new blob is added. We cannot know whether a removed
@@ -178,14 +179,14 @@ namespace litecore { namespace repl {
             }
             return false;
         };
-        _mayContainBlobs = checkBlob(!(_rev->deltaSrcRevID == nullslice), jsonBody);
+        _mayContainBlobChanges = checkBlob(!(_rev->deltaSrcRevID == nullslice), jsonBody);
 
         _mayContainEncryptedProperties = !_options.disablePropertyDecryption()
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
-                                  || _mayContainBlobs || _mayContainEncryptedProperties)
+                                  || _mayContainBlobChanges || _mayContainEncryptedProperties)
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
             parseAndInsert(move(jsonBody));
@@ -227,7 +228,7 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options.pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
+        } else if (_options.pullValidator || _mayContainBlobChanges || _mayContainEncryptedProperties) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, it may contain new blobs to download, or it may
             // have properties to decrypt.
@@ -330,7 +331,7 @@ namespace litecore { namespace repl {
         _rev->doc = fleeceDoc;
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        if (_mayContainBlobs) {
+        if (_mayContainBlobChanges) {
             _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
                 // Note: this flag is set here after we applied the delta above in this method.
                 // If _mayContainBlobs is false, we will apply the delta in deltaCB. The flag will
@@ -352,28 +353,18 @@ namespace litecore { namespace repl {
             return;
         }
 
-        std::vector<PendingBlob>::const_iterator danglingBlobBegin = _pendingBlobs.end();
+        std::vector<PendingBlob> danglingBlobs;
         if (attachmentsFromSG.has_value()) {
-            vector<PendingBlob> dangled;
-            for (auto iter = _pendingBlobs.begin(); iter != _pendingBlobs.end();) {
-                auto digest = iter->key.digestString();
-                if (attachmentsFromSG->find(digest) == attachmentsFromSG->end()) {
-                    dangled.push_back(*iter);
-                    iter = _pendingBlobs.erase(iter);
-                } else {
-                    ++iter;
+            for (const auto& blob: _pendingBlobs) {
+                auto digest = blob.key.digestString();
+                if (attachmentsFromSG->find(digest) != attachmentsFromSG->end()) {
+                    danglingBlobs.push_back(blob);
                 }
             }
-            for (const auto& b: dangled) {
-                _pendingBlobs.push_back(b);
-            }
-            _blob = _pendingBlobs.begin();
-            danglingBlobBegin = _blob + (_pendingBlobs.size() - dangled.size());
         }
 
-        // danglingBlobBegin == _pendingBlobs.begin() + n, for some n where 0 <= n && n <= _pendingBlobs.size()
-        if (danglingBlobBegin != _pendingBlobs.end()) {
-            bool plural = (_pendingBlobs.end() - danglingBlobBegin) > 1;
+        if (! danglingBlobs.empty()) {
+            bool plural = danglingBlobs.size() > 1;
             string errmsg = "There ";
             if (plural) {
                 errmsg += "are no contents for the blobs with digests ";
@@ -381,9 +372,9 @@ namespace litecore { namespace repl {
                 errmsg += "is no content for the blob with digest ";
             }
             bool first = true;
-            for (std::vector<PendingBlob>::const_iterator iter = danglingBlobBegin; iter != _pendingBlobs.end(); ++iter) {
+            for (const auto& blob : danglingBlobs) {
                 if (!first) errmsg += ", ";
-                errmsg += iter->key.digestString();
+                errmsg += blob.key.digestString();
                 first = false;
             }
             errmsg += " in the attachments for document " + _rev->docID.asString();
