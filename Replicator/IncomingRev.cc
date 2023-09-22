@@ -357,7 +357,7 @@ namespace litecore { namespace repl {
         if (attachmentsFromSG.has_value()) {
             for (const auto& blob: _pendingBlobs) {
                 auto digest = blob.key.digestString();
-                if (attachmentsFromSG->find(digest) != attachmentsFromSG->end()) {
+                if (attachmentsFromSG->find(digest) == attachmentsFromSG->end()) {
                     danglingBlobs.push_back(blob);
                 }
             }
