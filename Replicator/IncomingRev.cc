@@ -161,20 +161,14 @@ namespace litecore { namespace repl {
                     // Other than _attachments
 
                     if (Dict dict = iter.value().asDict(); dict) {
-                        if (C4Blob::isBlob(dict) && dict.get(C4Blob::kDigestProperty)) {
+                        if (C4Blob::isBlob(dict)) {
+                            // newly added blob will be found here.
                             return true;
                         }
-                    } else if (Array arr = iter.value().asArray(); arr && arr.count() == 1) {
-                        // JSON diff syntax for overwrite: [ newValue ]
-                        if (Dict newValue = arr[0].asDict(); newValue) {
-                            if (C4Blob::isBlob(newValue) && newValue.get(C4Blob::kDigestProperty)) {
-                                return true;
-                            }
-                        }
-                        // We only detect when a new blob is added. We cannot know whether a removed
-                        // element is a blob without checking with the delta base. It should not
-                        // affect what we want to do with result.
                     }
+                    // We only detect when a new blob is added. We cannot know whether a removed
+                    // element is a blob without checking with the delta base. It should not
+                    // affect what we want to do with result.
                 }
             }
             return false;
