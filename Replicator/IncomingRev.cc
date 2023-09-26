@@ -215,6 +215,9 @@ namespace litecore { namespace repl {
         // First create a Fleece document:
         Doc fleeceDoc;
         C4Error err = {};
+        
+        bool cbl_4944_appliedDelta = false;
+        
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError encodeErr;
@@ -240,6 +243,7 @@ namespace litecore { namespace repl {
                                               "Couldn't apply delta: Don't have body of '%.*s' #%.*s",
                                               SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
                 }
+                cbl_4944_appliedDelta = true;
             } catch (...) {
                 err = C4Error::fromCurrentException();
             }
@@ -316,6 +320,14 @@ namespace litecore { namespace repl {
             alloc_slice body = C4Document::encodeStrippingOldMetaProperties(root, sk);
             if (!body) {
                 failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                {
+                    string msg = "rev body: " + root.toJSONString() + (cbl_4944_appliedDelta ? ", " : ", no ")
+                    + "delta applied" + (cbl_4944_appliedDelta ? ": " : ".");
+                    if (cbl_4944_appliedDelta) {
+                        msg += jsonBody.asString();
+                    }
+                    logError("[CBL-4944] WebSocket/500, %s", msg.c_str());
+                }
                 return;
             }
             fleeceDoc = Doc(body, kFLTrusted, sk);
@@ -323,10 +335,10 @@ namespace litecore { namespace repl {
         }
 
         _rev->doc = fleeceDoc;
-
+        bool cbl_4944_findNilLength = false;
         // Check for blobs, and queue up requests for any I don't have yet:
         if (_mayContainBlobChanges) {
-            _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+            _db->findBlobReferences(root, true, [=,&cbl_4944_findNilLength](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
                 // Note: this flag is set here after we applied the delta above in this method.
                 // If _mayContainBlobs is false, we will apply the delta in deltaCB. The flag will
                 // updated inside the callback after the delta is applied.
@@ -337,7 +349,22 @@ namespace litecore { namespace repl {
                                          blob["length"_sl].asUnsigned(),
                                          C4Blob::isLikelyCompressible(blob)});
                 _blob = _pendingBlobs.begin();
+                if (!blob["length"_sl]) {
+                    cbl_4944_findNilLength = true;
+                }
             });
+            {
+                // CBL-4944
+                if (cbl_4944_findNilLength) {
+                    string rootJson = root.toJSONString();
+                    string msg = "Rev body: " + root.toJSONString() + (cbl_4944_appliedDelta ? ", " : ", no ")
+                    + "delta applied" + (cbl_4944_appliedDelta ? ": " : ".");
+                    if (cbl_4944_appliedDelta) {
+                        msg += jsonBody.asString();
+                    }
+                    warn("Find blob with nill length in IncomingRev::parseAndInsert. %s", msg.c_str());
+                }
+            }
         }
 
         // Call the custom validation function if any:

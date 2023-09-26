@@ -234,6 +234,14 @@ namespace litecore { namespace repl {
                 // TODO: Should skip this entry if a blob with the same digest exists
                 enc.writeKey(key);
                 enc.writeValue(i.value());
+                {
+                    // CBL-4944
+                    if (Value v = i.value(); v) {
+                        if (Dict d = v.asDict(); d && !d.get("length"_sl)) {
+                            warn("Find attachment with nil length in DBAccess::encodeRevWithLegacyAttachments, %s", d.toJSONString().c_str());
+                        }
+                    }
+                }
             }
         }
 
@@ -245,11 +253,22 @@ namespace litecore { namespace repl {
             string attName = string("blob_") + string(path);
             enc.writeKey(slice(attName));
             enc.beginDict();
+            bool cbl_4944_findLength = false;
             for (Dict::iterator i(blob); i; ++i) {
                 slice key = i.keyString();
+                if (key == "length"_sl) {
+                    cbl_4944_findLength = true;
+                }
                 if (key != C4Document::kObjectTypeProperty && key != "stub"_sl) {
                     enc.writeKey(key);
                     enc.writeValue(i.value());
+                }
+            }
+            {
+                // CBL-4944
+                if (!cbl_4944_findLength) {
+                    Dict d = blob;
+                    warn("Find blob with nil length in DBAccess::encodeRevWithLegacyAttachments, %s", d.toJSONString().c_str());
                 }
             }
             enc.writeKey("stub"_sl);
@@ -381,7 +400,13 @@ namespace litecore { namespace repl {
 
         if (!result) {
             if (flErr == kFLInvalidData)
+            {
+                {
+                    // CBL-4944
+                    logError("LiteCore/Invalid delta, base: %s, delta: %s", srcRoot.toJSONString().c_str(), deltaJSON.asString().c_str());
+                }
                 error::_throw(error::CorruptDelta, "Invalid delta");
+            }
             else
                 error::_throw(error::Fleece, flErr);
         }

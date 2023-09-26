@@ -59,6 +59,12 @@ namespace litecore { namespace legacy_attachments {
                 auto attachment = Value::asDict(i.value());
                 if (!attachment)
                     continue;
+                {
+                    // CBL-4944
+                    if (!attachment->get("length"_sl)) {
+                        C4Warn("Find attahcment with nil length in legacy_attachments::encodeStrippingOldMetaProperties: %s", attachment->toJSONString().c_str());
+                    }
+                }
                 auto attDigest = attachment->get(C4Blob::kDigestProperty);
                 const Dict *blob = nullptr;
 
@@ -92,6 +98,14 @@ namespace litecore { namespace legacy_attachments {
         Encoder enc;
         enc.setSharedKeys(sk);
         enc.writeValue(root, [&](const Value *key, const Value *value) {
+            {
+                // CBL-4944
+                if (const Dict* valDict = Value::asDict(value); C4Blob::isBlob(FLDict(valDict))) {
+                    if (!valDict->get("length"_sl)) {
+                        C4Warn("Find blob with nil length in legacy_attachments::encodeStrippingOldMetaProperties: %s", valDict->toJSONString().c_str());
+                    }
+                }
+            }
             if (removeThese.find(value) != removeThese.end()) {
                 // remove this entirely
                 return true;
