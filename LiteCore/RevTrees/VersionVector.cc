@@ -154,7 +154,9 @@ namespace litecore {
         return Version(in);
     }
 
-    size_t VersionVector::maxASCIILen() const { return _vers.size() * (Version::kMaxASCIILength + 1); }
+    // The size of the separator is 2. There are size() - 1 separator.
+    // Plus, there may be a trailing semi-colon of size 1.
+    size_t VersionVector::maxASCIILen() const { return _vers.size() * (Version::kMaxASCIILength + 2); }
 
     bool VersionVector::writeASCII(slice_ostream& out, SourceID myID) const {
         size_t i = 0;
