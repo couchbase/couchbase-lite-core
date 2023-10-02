@@ -130,7 +130,7 @@ namespace litecore {
         newRec.sequence    = revTree.sequence();
         newRec.subsequence = revTree.record().subsequence();
         //TODO: Find conflicts and add them to newRec.extra
-        Assert(db->defaultKeyStore().set(newRec, false, t) > 0_seq);
+        Assert(db->defaultKeyStore().set(newRec, KeyStore::flagUpdateSequence(false), t) > 0_seq);
 
         LogVerbose(DBLog, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra", SPLAT(rec.key()),
                    revid(rec.version()).str().c_str(), string(vv.asASCII()).c_str(), newRec.body.size,

@@ -280,11 +280,13 @@ namespace litecore::net {
     }
 
     HTTPLogic::Disposition HTTPLogic::handleUpgrade() {
-        if ( !_isWebSocket ) return failure(WebSocketDomain, kCodeProtocolError);
+        if ( !_isWebSocket )
+            return failure(WebSocketDomain, kCodeProtocolError, "HTTPLogic::handleUpgrade/not websocket"_sl);
 
         if ( _responseHeaders["Connection"_sl].caseEquivalentCompare("upgrade"_sl) != 0
              || _responseHeaders["Upgrade"_sl] != "websocket"_sl ) {
-            return failure(WebSocketDomain, kCodeProtocolError, "Server failed to upgrade connection"_sl);
+            return failure(WebSocketDomain, kCodeProtocolError,
+                           "HTTPLogic::handleUpgrade/Server failed to upgrade connection"_sl);
         }
 
         // Check if server selected protocol from Sec-Websocket-Protocol is matched with
@@ -297,7 +299,8 @@ namespace litecore::net {
 
         // Check the returned nonce:
         if ( _responseHeaders["Sec-Websocket-Accept"_sl] != slice(webSocketKeyResponse(_webSocketNonce)) )
-            return failure(WebSocketDomain, kCodeProtocolError, "Server returned invalid nonce"_sl);
+            return failure(WebSocketDomain, kCodeProtocolError,
+                           "HTTPLogic::handleUpgrade/Server returned invalid nonce"_sl);
 
         return kSuccess;
     }

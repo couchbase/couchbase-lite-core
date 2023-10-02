@@ -72,7 +72,7 @@ namespace litecore::websocket {
 
         ~WebSocketImpl() override;
         std::string loggingIdentifier() const override;
-        void        protocolError();
+        void        protocolError(slice message = nullslice);
 
         // These methods have to be implemented in subclasses:
         virtual void closeSocket()                                   = 0;
@@ -120,7 +120,7 @@ namespace litecore::websocket {
         std::unique_ptr<actor::Timer>   _responseTimer;
         std::chrono::seconds            _curTimeout{};
         bool                            _timedOut{false};
-        bool                            _protocolError{false};
+        alloc_slice                     _protocolError;
         bool                            _didConnect{false};
         uint8_t                         _opToSend{};
         fleece::alloc_slice             _msgToSend;

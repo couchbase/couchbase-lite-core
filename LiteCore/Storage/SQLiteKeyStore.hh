@@ -59,7 +59,7 @@ namespace litecore {
 
         bool read(Record& rec, ReadBy, ContentOption) const override;
 
-        sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
+        sequence_t set(const RecordUpdate&, SetOptions, ExclusiveTransaction&) override;
         void       setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
         bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq,
