@@ -16,7 +16,8 @@ source "$SRCROOT/build_setup.sh" mbedtls
 # Set up the CMake build options:
 CMAKE_OPTS="$CMAKE_OPTS \
             -DENABLE_PROGRAMS=0 \
-            -DENABLE_TESTING=0"
+            -DENABLE_TESTING=0 \
+            -DMBEDTLS_FATAL_WARNINGS=0"
 
 if [[ "$CONFIGURATION" == Release* ]]
 then
