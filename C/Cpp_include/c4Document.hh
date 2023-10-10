@@ -132,7 +132,7 @@ struct C4Document
     /** Adds a new revision to this document in the database, and returns a
         new document instance that has the new revision.
         If the database already contains a conflicting revision, returns nullptr. */
-    virtual Retained<C4Document> update(slice revBody, C4RevisionFlags) const;
+    virtual Retained<C4Document> update(slice revBody, C4RevisionFlags, uint32_t maxRevTreeDepth = 0) const;
 
     /** Saves changes to the document. Returns false on conflict. */
     virtual bool save(unsigned maxRevTreeDepth = 0) = 0;

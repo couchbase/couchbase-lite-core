@@ -167,7 +167,7 @@ alloc_slice C4Document::createDocID() {
     return alloc_slice(C4Document::generateID(docID, sizeof(docID)));
 }
 
-Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) const {
+Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags, uint32_t maxRevTreeDepth = 0) const {
     auto db = asInternal(database());
     db->mustBeInTransaction();
     db->validateRevisionBody(revBody);
@@ -181,6 +181,7 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
     rq.history                = (C4String*)&parentRev;
     rq.historyCount           = 1;
     rq.save                   = true;
+    rq.maxRevTreeDepth        = maxRevTreeDepth;
 
     if ( loadRevisions() ) {
         // First the fast path: try to save directly via putNewRevision. Do this on a copy, not on
