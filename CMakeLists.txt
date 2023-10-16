@@ -155,6 +155,7 @@ add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 
 set(ENABLE_PROGRAMS OFF CACHE INTERNAL "Build mbed TLS programs.")
 set(ENABLE_TESTING OFF CACHE INTERNAL "Build mbed TLS tests.")
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE INTERNAL "") # Work around doc-comment syntax warnings
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
