@@ -51,6 +51,7 @@ typedef C4_ENUM(uint8_t, C4DocContentLevel){
         kDocGetMetadata,    ///< Only get revID and flags
         kDocGetCurrentRev,  ///< Get current revision body but not other revisions/remotes
         kDocGetAll,         ///< Get everything
+        kDocGetUpgraded,    ///< Get everything, upgrade to latest format (version vectors)
 };                          // Note: Same as litecore::ContentOption
 
 // Ignore warning about not initializing members, it must be this way to be C-compatible
