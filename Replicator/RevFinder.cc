@@ -220,7 +220,10 @@ namespace litecore::repl {
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
+                auto collSpec = getCollection()->getSpec();
+                logInfo("SG revoking: %.*s.%.*s.%.*s/%.*s with mode %u", SPLAT(collSpec.scope), SPLAT(collSpec.name), SPLAT(docID),
+                        SPLAT(revID), mode);
+                revoked.emplace_back(new RevToInsert(docID, revID, mode, collSpec,
                     _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }

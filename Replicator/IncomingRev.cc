@@ -264,6 +264,8 @@ namespace litecore { namespace repl {
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
         if (root["_removed"_sl].asBool()) {
+            logInfo("SG removing: %.*s.%.*s.%.*s/%.*s", SPLAT(_rev->collectionSpec.scope), SPLAT(_rev->collectionSpec.name),
+                    SPLAT(_rev->docID), SPLAT(_rev->revID));
             _rev->flags |= kRevPurged;
             if (!_options->enableAutoPurge()) {
                 finish();
