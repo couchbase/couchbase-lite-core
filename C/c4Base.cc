@@ -53,10 +53,10 @@ bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }  // LCOV_EXCL_L
 static string getBuildInfo() {
     static string commit;
 #ifdef COUCHBASE_ENTERPRISE
-    if ( commit.empty() ) { commit = format("%.8s+%.8s", GitCommitEE, GitCommit); }
+    if ( commit.empty() ) { commit = format("%.16s+%.16s", GitCommitEE, GitCommit); }
     static const char* ee = "EE ";
 #else
-    if ( commit.empty() ) { commit = format("%.8s", GitCommit); }
+    if ( commit.empty() ) { commit = format("%.16s", GitCommit); }
     static const char* ee = "";
 #endif
 #if LiteCoreOfficial
@@ -79,10 +79,10 @@ C4StringResult c4_getVersion() C4API {
 #else
 #    ifdef COUCHBASE_ENTERPRISE
     static const char* ee     = "-EE";
-    string             commit = format("%.8s+%.8s", GitCommitEE, GitCommit);
+    string             commit = format("%.16s+%.16s", GitCommitEE, GitCommit);
 #    else
     static const char* ee     = "";
-    string             commit = format("%.8s", GitCommit);
+    string             commit = format("%.16s", GitCommit);
 #    endif
     if ( strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0) )
         vers = format("%s%s (%s%.1s)", LiteCoreVersion, ee, commit.c_str(), GitDirty);
