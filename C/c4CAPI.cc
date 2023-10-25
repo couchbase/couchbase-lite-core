@@ -30,6 +30,7 @@
 #include "c4Replicator.h"
 #include "c4Private.h"
 #include "NumConversion.hh"
+#include "StringUtil.hh"
 #include <sstream>
 
 using namespace std;
@@ -301,8 +302,11 @@ bool c4coll_moveDoc(C4Collection* coll, C4String docID, C4Collection* toCollecti
 bool c4coll_purgeDoc(C4Collection* coll, C4String docID, C4Error* C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(coll, outError, false);
     try {
-        if ( coll->purgeDocument(docID) ) return true;
-        else
+        if ( coll->purgeDocument(docID) ) {
+            C4CollectionSpec spec = c4coll_getSpec(coll);
+            Log("Purge doc \"%.*s.%.*s.%.*s\"", SPLAT(spec.scope), SPLAT(spec.name), SPLAT(docID));
+            return true;
+        } else
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
     }
     catchError(outError) return false;
@@ -333,6 +337,8 @@ C4Timestamp c4coll_nextDocExpiration(C4Collection* coll) noexcept {
 
 int64_t c4coll_purgeExpiredDocs(C4Collection* coll, C4Error* C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(coll, outError, 0);
+    C4CollectionSpec spec = c4coll_getSpec(coll);
+    Log("Purge expired docs in collection \"%.*s.%.*s\"", SPLAT(spec.scope), SPLAT(spec.name));
     return tryCatch<int64_t>(outError, [=] { return coll->purgeExpiredDocs(); });
 }
 
