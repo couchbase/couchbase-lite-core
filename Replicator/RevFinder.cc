@@ -201,7 +201,7 @@ namespace litecore::repl {
             slice revID = change[2].asString();
             int64_t deletion = change[3].asInt();
             uint64_t bodySize = change[4].asUnsigned();
-            
+
             // Validate docID and revID:
             checkDocAndRevID(docID, revID);
 
@@ -220,7 +220,10 @@ namespace litecore::repl {
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
+                auto collSpec = getCollection()->getSpec();
+                logInfo("SG revoked access to rev \"%.*s.%.*s.%.*s/%.*s\" with deletion %lld", SPLAT(collSpec.scope), SPLAT(collSpec.name), SPLAT(docID),
+                        SPLAT(revID), deletion);
+                revoked.emplace_back(new RevToInsert(docID, revID, mode, collSpec,
                     _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
