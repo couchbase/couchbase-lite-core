@@ -221,8 +221,8 @@ namespace litecore::repl {
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
                 auto collSpec = getCollection()->getSpec();
-                logInfo("SG revoking: %.*s.%.*s.%.*s/%.*s with mode %u", SPLAT(collSpec.scope), SPLAT(collSpec.name), SPLAT(docID),
-                        SPLAT(revID), mode);
+                logInfo("SG revoked access to doc \"%.*s.%.*s.%.*s/%.*s\" with deletion %lld", SPLAT(collSpec.scope), SPLAT(collSpec.name), SPLAT(docID),
+                        SPLAT(revID), deletion);
                 revoked.emplace_back(new RevToInsert(docID, revID, mode, collSpec,
                     _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});

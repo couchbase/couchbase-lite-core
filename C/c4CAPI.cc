@@ -374,7 +374,7 @@ bool c4coll_purgeDoc(C4Collection *coll,
     try {
         if (coll->purgeDocument(docID)) {
             C4CollectionSpec spec = c4coll_getSpec(coll);
-            Log("API purge doc: %.*s.%.*s.%.*s", SPLAT(spec.scope), SPLAT(spec.name), SPLAT(docID));
+            Log("Purge doc \"%.*s.%.*s.%.*s\"", SPLAT(spec.scope), SPLAT(spec.name), SPLAT(docID));
             return true;
         } else
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
@@ -417,7 +417,7 @@ C4Timestamp c4coll_nextDocExpiration(C4Collection *coll) noexcept {
 int64_t c4coll_purgeExpiredDocs(C4Collection *coll, C4Error * C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(coll, outError, 0);
     C4CollectionSpec spec = c4coll_getSpec(coll);
-    Log("API purgeExpired in collection: %.*s.%.*s", SPLAT(spec.scope), SPLAT(spec.name));
+    Log("Purge expired docs in collection \"%.*s.%.*s\"", SPLAT(spec.scope), SPLAT(spec.name));
     return tryCatch<int64_t>(outError, [=]{
         return coll->purgeExpiredDocs();
     });
