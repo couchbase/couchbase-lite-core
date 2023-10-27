@@ -72,6 +72,7 @@ namespace litecore {
 
             switch ( _contentLoaded ) {
                 case kEntireBody:
+                case kUpgrade:
                     RevTree::decode(_rec.body(), _rec.extra(), _rec.sequence());
                     if ( auto cur = currentRevision(); cur && (_rec.flags() & DocumentFlags::kSynced) ) {
                         // The kSynced flag is set when the document's current revision is pushed

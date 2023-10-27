@@ -204,7 +204,7 @@ namespace litecore {
         /** Updates/creates the Version for an author, assigning it a newer logical time,
             and moves it to the start of the vector.
             `currentVersions` is reset to 1 (i.e. no merges.) */
-        bool addNewVersion(HybridClock&, SourceID = kMeSourceID);
+        void addNewVersion(HybridClock&, SourceID = kMeSourceID);
 
         /** Truncates the vector by removing the oldest Versions.
             It will never remove current or merged Versions.
@@ -216,8 +216,8 @@ namespace litecore {
         /** Adds a version to the front of the vector, making it current.
             Any earlier version by the same author is removed.
             `currentVersions` is reset to 1 (i.e. no merges.)
-            If there's an equal or newer version by the same author, fails and returns false. */
-        bool add(Version);
+            If there's an equal or newer version by the same author, throws. */
+        void add(Version);
 
         /// Updates the HybridClock, if necessary, so its `now` will be greater than any of this
         /// vector's versions' times.
@@ -272,11 +272,12 @@ namespace litecore {
         VersionVector(vec::const_iterator begin, vec::const_iterator end)
             : _vers(begin, end), _nCurrent(!_vers.empty()) {}
 
+        static fleece::slice_istream openBinary(slice data);
         // Finds my version by this author and returns an iterator to it, else returns end()
         [[nodiscard]] vec::iterator findPeerIter(SourceID) const;
         [[nodiscard]] bool          replaceAuthor(SourceID old, SourceID nuu) noexcept;
         void                        _removeAuthor(SourceID);
-        bool                        _add(Version const&);
+        void                        _add(Version const&);
         void                        validate() const;
         vec                         versionsBySource() const;
 

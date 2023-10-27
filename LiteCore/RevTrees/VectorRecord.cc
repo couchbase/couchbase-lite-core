@@ -19,6 +19,8 @@
 #include "Error.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
+#include "RawRevTree.hh"
+#include "RevTree.hh"
 #include "fleece/Expert.hh"
 #include <ostream>
 #include <sstream>
@@ -92,7 +94,7 @@ namespace litecore {
 
     VersionVector Revision::versionVector() const { return VersionVector::fromBinary(revID); }
 
-    VectorRecord::VectorRecord(KeyStore& store, Versioning versioning, const Record& rec)
+    VectorRecord::VectorRecord(KeyStore& store, const Record& rec)
         : _store(store)
         , _docID(rec.key())
         , _sequence(rec.sequence())
@@ -100,7 +102,7 @@ namespace litecore {
         , _revID(rec.version())
         , _docFlags(rec.flags())
         , _whichContent(rec.contentLoaded())
-        , _versioning(versioning) {
+        , _versioning(Versioning::Vectors) {
         _current.revID = revid(_revID);
         _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
         if ( rec.exists() ) {
@@ -114,37 +116,46 @@ namespace litecore {
         }
     }
 
-    VectorRecord::VectorRecord(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
-        : VectorRecord(store, v, store.get(docID, whichContent)) {}
+    VectorRecord::VectorRecord(KeyStore& store, slice docID, ContentOption whichContent)
+        : VectorRecord(store, store.get(docID, whichContent)) {}
 
-    VectorRecord::VectorRecord(const VectorRecord& other)
-        : VectorRecord(other._store, other._versioning, other.originalRecord()) {}
+    VectorRecord::VectorRecord(const VectorRecord& other) : VectorRecord(other._store, other.originalRecord()) {}
 
     VectorRecord::~VectorRecord() = default;
 
     void VectorRecord::readRecordBody(const alloc_slice& body) {
-        if ( body ) {
-            _bodyDoc            = newLinkedFleeceDoc(body);
-            _current.properties = _bodyDoc.asDict();
-            if ( !_current.properties )
-                error::_throw(error::CorruptRevisionData, "VectorRecord reading properties error");
+        if ( body && !revid(_revID).isVersion() && RawRevision::isRevTree(body) ) {
+            // doc is still in v2.x format, with body & rev-tree in `body`, and no `extra`:
+            importRevTree(body, nullslice);
         } else {
-            _bodyDoc = nullptr;
-            if ( _whichContent != kMetaOnly ) _current.properties = Dict::emptyDict();
-            else
-                _current.properties = nullptr;
+            if ( body ) {
+                _bodyDoc            = newLinkedFleeceDoc(body, kFLTrusted);
+                _current.properties = _bodyDoc.asDict();
+                if ( !_current.properties )
+                    error::_throw(error::CorruptRevisionData, "VectorRecord reading properties error");
+            } else {
+                _bodyDoc = nullptr;
+                if ( _whichContent != kMetaOnly ) _current.properties = Dict::emptyDict();
+                else
+                    _current.properties = nullptr;
+            }
+            _currentProperties = _current.properties;  // retains it
         }
-        _currentProperties = _current.properties;  // retains it
     }
 
     void VectorRecord::readRecordExtra(const alloc_slice& extra) {
-        if ( extra ) {
-            _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
-        } else
-            _extraDoc = nullptr;
-        _revisions        = _extraDoc.asArray();
-        _mutatedRevisions = nullptr;
-        if ( extra && !_revisions ) error::_throw(error::CorruptRevisionData, "VectorRecord readRecordExtra error");
+        if ( extra && !revid(_revID).isVersion() ) {
+            // This doc hasn't been upgraded; `extra` is still in old RevTree format
+            importRevTree(_bodyDoc.allocedData(), extra);
+        } else {
+            if ( extra ) {
+                _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
+            } else
+                _extraDoc = nullptr;
+            _revisions        = _extraDoc.asArray();
+            _mutatedRevisions = nullptr;
+            if ( extra && !_revisions ) error::_throw(error::CorruptRevisionData, "VectorRecord readRecordExtra error");
+        }
 
         // The kSynced flag is set when the document's current revision is pushed to remote #1.
         // This is done instead of updating the doc body, for reasons of speed. So when loading
@@ -154,6 +165,100 @@ namespace litecore {
             _docFlags -= DocumentFlags::kSynced;
             _changed = false;
         }
+    }
+
+    // Parses `extra` column as an old-style RevTree and adds the revisions.
+    void VectorRecord::importRevTree(alloc_slice body, alloc_slice extra) {
+        LogToAt(DBLog, Verbose, "VectorRecord: importing '%.*s' as RevTree", SPLAT(docID()));
+        bool wasChanged = _changed;
+        _versioning     = Versioning::RevTrees;
+        _extraDoc       = fleece::Doc(extra, kFLTrustedDontParse, sharedKeys());
+        RevTree    revTree(body, extra, sequence());
+        const Rev* curRev = revTree.currentRevision();
+        if ( _docFlags & DocumentFlags::kSynced ) revTree.setLatestRevisionOnRemote(1, curRev);
+
+        if ( !extra ) {
+            // This is a v2.x document with body & rev-tree in `body`, and no `extra`:
+            Assert(!_bodyDoc);
+            _bodyDoc            = newLinkedFleeceDoc(body, kFLTrustedDontParse);
+            FLValue bodyProps   = FLValue_FromData(curRev->body(), kFLTrusted);
+            _current.properties = Value(bodyProps).asDict();
+            if ( !_current.properties )
+                error::_throw(error::CorruptRevisionData, "VectorRecord reading 2.x properties error");
+            _currentProperties = _current.properties;  // retains it
+        }
+
+        // Propagate any saved remote revisions to the new document:
+        auto& remoteRevMap = revTree.remoteRevisions();
+        for ( auto [id, rev] : remoteRevMap ) {
+            Revision    nuRev;
+            MutableDict nuProps;
+            if ( rev == curRev ) {
+                nuRev = currentRevision();
+            } else {
+                if ( rev->body() ) {
+                    auto props       = fleece::ValueFromData(rev->body(), kFLTrusted).asDict();
+                    nuProps          = props.mutableCopy(kFLDeepCopyImmutables);
+                    nuRev.properties = nuProps;
+                }
+                nuRev.revID = rev->revID;
+                nuRev.flags = {};
+                if ( rev->flags & Rev::kDeleted ) nuRev.flags |= DocumentFlags::kDeleted;
+                if ( rev->flags & Rev::kHasAttachments ) nuRev.flags |= DocumentFlags::kHasAttachments;
+            }
+            setRemoteRevision(RemoteID(id), nuRev);
+        }
+
+        // Determine which remote, if any, the current rev is based on:
+        _parentOfLocal = 0;
+        for ( const Rev* rev = curRev; rev && !_parentOfLocal; rev = rev->parent ) {
+            for ( auto [id, rem] : remoteRevMap ) {
+                if ( rem == rev ) {
+                    _parentOfLocal = id;
+                    break;
+                }
+            }
+        }
+
+        _changed = wasChanged;
+
+        if ( _whichContent == kUpgrade ) upgradeVersioning();
+    }
+
+    // Changes old-style revIDs into Versions, and the document's revID to a VersionVector.
+    void VectorRecord::upgradeVersioning() {
+        if ( _versioning != Versioning::RevTrees ) return;
+
+        LogToAt(DBLog, Verbose, "VectorRecord: upgrading '%.*s' to version vectors", SPLAT(docID()));
+        bool wasChanged = _changed;
+
+        // Update current revID to a version vector with 1 or 2 components:
+        VersionVector vv;
+        Version       meVers = Version::legacyVersion(revID(), kMeSourceID);
+        if ( _parentOfLocal > 0 ) {
+            auto parent = loadRemoteRevision(RemoteID(_parentOfLocal));
+            vv.add(Version::legacyVersion(parent->revID, kLegacyRevSourceID));
+            if ( revID() != parent->revID ) vv.add(meVers);
+        } else {
+            vv.add(meVers);
+        }
+        setRevID(revid(vv.asBinary()));
+        if ( DBLog.willLog(LogLevel::Verbose) ) {
+            LogToAt(DBLog, Verbose, "VectorRecord: '%.*s' revid is now %s", SPLAT(docID()), vv.asString().c_str());
+        }
+
+        // Update each remote revision's version:
+        RemoteID rid = loadNextRemoteID(RemoteID::Local);
+        while ( auto rev = loadRemoteRevision(rid) ) {
+            Version     vers = Version::legacyVersion(rev->revID, kLegacyRevSourceID);
+            revidBuffer buf(vers);
+            rev->revID = buf.getRevID();
+            setRemoteRevision(rid, rev);
+            rid = loadNextRemoteID(rid);
+        }
+
+        _versioning = Versioning::Vectors;
+        _changed    = wasChanged;
     }
 
     bool VectorRecord::loadData(ContentOption which) {
@@ -167,7 +272,8 @@ namespace litecore {
         auto oldWhich = _whichContent;
         _whichContent = which;
         if ( which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly ) readRecordBody(rec.body());
-        if ( which == kEntireBody && oldWhich < kEntireBody ) readRecordExtra(rec.extra());
+        if ( which >= kEntireBody && oldWhich < kEntireBody ) readRecordExtra(rec.extra());
+        if ( _versioning == Versioning::RevTrees && which == kUpgrade ) upgradeVersioning();
         return true;
     }
 
@@ -566,17 +672,18 @@ namespace litecore {
     // VectorRecord that owns the Doc.
     class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
       public:
-        LinkedFleeceDoc(const alloc_slice& fleeceData, fleece::impl::SharedKeys* sk, VectorRecord* document_)
-            : fleece::impl::Doc(fleeceData, Doc::kTrusted, sk), document(document_) {}
+        LinkedFleeceDoc(const alloc_slice& fleeceData, FLTrust trust, fleece::impl::SharedKeys* sk,
+                        VectorRecord* document_)
+            : fleece::impl::Doc(fleeceData, Doc::Trust(trust), sk), document(document_) {}
 
         VectorRecord* const document;
     };
 
     FLSharedKeys VectorRecord::sharedKeys() const { return (FLSharedKeys)_store.dataFile().documentKeys(); }
 
-    Doc VectorRecord::newLinkedFleeceDoc(const alloc_slice& body) {
+    Doc VectorRecord::newLinkedFleeceDoc(const alloc_slice& body, FLTrust trust) {
         auto sk = _store.dataFile().documentKeys();
-        return (FLDoc) new LinkedFleeceDoc(body, sk, this);
+        return (FLDoc) new LinkedFleeceDoc(body, trust, sk, this);
     }
 
     VectorRecord* VectorRecord::containing(Value value) {
@@ -612,6 +719,8 @@ namespace litecore {
     }
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
+        if ( !revid(rec.version).isVersion() ) return forAllLegacyRevIDs(rec, callback);
+
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
         if ( rec.extra.size > 0 ) {
             fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
@@ -625,6 +734,46 @@ namespace litecore {
                 }
             }
         }
+    }
+
+    /*static*/ void VectorRecord::forAllLegacyRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
+        RevTree    revTree(rec.body, rec.extra, rec.sequence);
+        const Rev* curRev   = revTree.currentRevision();
+        bool       foundCur = false;
+        for ( auto [id, rev] : revTree.remoteRevisions() ) {
+            auto vers = Version::legacyVersion(rev->revID, kLegacyRevSourceID);
+            callback(RemoteID(id), revidBuffer(vers).getRevID(), rev->isBodyAvailable());
+            if ( rev == curRev ) foundCur = true;
+        }
+        // Finally the local version:
+        if ( !foundCur ) {
+            auto vers = Version::legacyVersion(curRev->revID, kMeSourceID);
+            callback(RemoteID::Local, revidBuffer(vers).getRevID(), curRev->isBodyAvailable());
+        }
+    }
+
+    // Given a record that hasn't been upgraded, synthesize a version vector for it.
+    /*static*/ VersionVector VectorRecord::createLegacyVersionVector(const RecordUpdate& rec) {
+        RevTree    revTree(rec.body, rec.extra, rec.sequence);
+        const Rev* curRev = revTree.currentRevision();
+
+        // Look at the current rev's ancestry, finding the first that comes from a remote:
+        VersionVector vv;
+        bool          curIsNew = true;
+        for ( const Rev* rev = curRev; rev && vv.empty(); rev = rev->parent ) {
+            for ( auto [id, rem] : revTree.remoteRevisions() ) {
+                if ( rem == rev ) {
+                    // This rev came from a remote, so add a legacy version:
+                    vv.add(Version::legacyVersion(rev->revID, kLegacyRevSourceID));
+                    if ( rev == curRev ) curIsNew = false;
+                }
+            }
+        }
+        if ( curIsNew ) {
+            // If the current rev didn't come from a remote, add a legacy version authored by me:
+            vv.add(Version::legacyVersion(rec.version, kMeSourceID));
+        }
+        return vv;
     }
 
 }  // namespace litecore

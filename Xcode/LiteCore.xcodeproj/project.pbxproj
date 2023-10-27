@@ -209,6 +209,7 @@
 		275E9905238360B200EA516B /* Checkpointer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E98FF238360B200EA516B /* Checkpointer.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
+		27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */; };
 		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
@@ -1162,6 +1163,7 @@
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
 		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
+		27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorVVUpgradeTest.cc; sourceTree = "<group>"; };
 		2762A00C22EA65E200F9AB18 /* Certificate.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Certificate.hh; sourceTree = "<group>"; };
 		2762A00D22EA65E200F9AB18 /* Certificate.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Certificate.cc; sourceTree = "<group>"; };
 		2762A01422EB7CC800F9AB18 /* CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertificateTest.cc; sourceTree = "<group>"; };
@@ -2466,6 +2468,7 @@
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */,
+				27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
@@ -4032,6 +4035,7 @@
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
+				27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
 				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
 				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,

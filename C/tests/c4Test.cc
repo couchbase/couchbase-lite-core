@@ -422,12 +422,13 @@ string C4Test::createNewRev(C4Collection* coll, C4Slice docID, C4Slice curRevID,
     rq.save            = true;
     C4Error error;
     auto    doc = c4coll_putDoc(coll, &rq, nullptr, &error);
-    //if (!doc) {
-    //char buf[256];
-    //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
-    //}
-    //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
-    C4Assert(doc != nullptr);
+    if ( !doc ) {
+        // can't use Catch (CHECK, REQUIRE) on bg threads
+        alloc_slice bt = c4error_getBacktrace(error);
+        if ( bt ) C4Log("Error backtrace:\n%.*s", FMTSLICE(bt));
+        char buf[256];
+        C4Assert(doc != nullptr, c4error_getDescriptionC(error, buf, sizeof(buf)));
+    }
     string revID((char*)doc->revID.buf, doc->revID.size);
     c4doc_release(doc);
     return revID;

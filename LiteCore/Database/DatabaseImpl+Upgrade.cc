@@ -24,12 +24,15 @@
 #include <utility>
 #include <vector>
 
+#define ENABLE_VV_UPGRADE 0
+
 namespace litecore {
     using namespace std;
 
     static constexpr const char* kNameOfVersioning[3] = {"v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
 
+#if ENABLE_VV_UPGRADE
     static void upgradeToVersionVectors(DatabaseImpl*, const Record&, RevTreeRecord&, ExclusiveTransaction&);
     static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl*, Record, RevTreeRecord&,
                                                             alloc_slice currentVersion);
@@ -42,12 +45,19 @@ namespace litecore {
         }
         return nullptr;
     }
+#endif
 
     void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning, C4DocumentVersioning newVersioning,
                                                  ExclusiveTransaction& t) {
+#if !ENABLE_VV_UPGRADE
+        // Don't upgrade to version vectors; let it happen lazily.
+        if ( newVersioning == kC4VectorVersioning ) newVersioning = kC4TreeVersioning;
+#endif
+
         if ( newVersioning == curVersioning ) return;
         if ( newVersioning < curVersioning )
             error::_throw(error::Unimplemented, "Cannot downgrade document versioning");
+
         if ( _config.flags & (kC4DB_ReadOnly | kC4DB_NoUpgrade) )
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
 
@@ -82,8 +92,10 @@ namespace litecore {
                     if ( isVersionVector(rec) ) continue;
                     RevTreeRecord revTree(defaultKeyStore(), rec);
                     if ( newVersioning == kC4VectorVersioning ) {
+#if ENABLE_VV_UPGRADE
                         // Upgrade from rev-trees (v2 or v3) to version-vectors:
                         upgradeToVersionVectors(this, rec, revTree, t);
+#endif
                     } else {
                         // Upgrading v2 rev-trees to new db schema with `extra` column;
                         // simply resave and RevTreeRecord will use the new schema:
@@ -100,6 +112,7 @@ namespace litecore {
         LogTo(DBLog, "\t%" PRIu64 " documents upgraded, now committing changes...", docCount);
     }
 
+#if ENABLE_VV_UPGRADE
     // Upgrades a Record from rev-trees to version vectors.
     static void upgradeToVersionVectors(DatabaseImpl* db, const Record& rec, RevTreeRecord& revTree,
                                         ExclusiveTransaction& t) {
@@ -157,7 +170,7 @@ namespace litecore {
         rec.setExtra(nullslice);
 
         // Instantiate a VectorRecord for this document, without reading the database:
-        VectorRecord nuDoc(db->defaultKeyStore(), Versioning::RevTrees, rec);
+        VectorRecord nuDoc(db->defaultKeyStore(), rec);
         nuDoc.setEncoder(db->sharedFleeceEncoder());
 
         // Add each remote revision:
@@ -185,6 +198,6 @@ namespace litecore {
 
         return nuDoc.encodeBodyAndExtra();
     }
-
+#endif  // ENABLE_VV_UPGRADE
 
 }  // namespace litecore

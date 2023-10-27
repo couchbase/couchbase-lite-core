@@ -14,6 +14,7 @@
 #include "Base64.hh"
 #include "Error.hh"
 #include "HybridClock.hh"
+#include "RevID.hh"
 #include "StringUtil.hh"
 #include "slice_stream.hh"
 #include <algorithm>
@@ -22,6 +23,10 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+    Version Version::legacyVersion(slice revID, SourceID source) {
+        auto gen = revid(revID).generation();
+        return Version(logicalTime(uint64_t(kMinValidTime) + gen), source);
+    };
 
     static_assert(SourceID::kASCIILength == (sizeof(SourceID) * 4 + 2) / 3);
 
