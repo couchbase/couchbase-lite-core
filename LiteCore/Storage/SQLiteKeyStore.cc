@@ -272,7 +272,7 @@ namespace litecore {
         stmt.exec();
     }
 
-    sequence_t SQLiteKeyStore::set(const RecordUpdate& rec, bool updateSequence, ExclusiveTransaction&) {
+    sequence_t SQLiteKeyStore::set(const RecordUpdate& rec, SetOptions flags, ExclusiveTransaction&) {
         DebugAssert(rec.key.size > 0);
         DebugAssert(_capabilities.sequences);
 
@@ -315,7 +315,7 @@ namespace litecore {
 
             const char*        opName;
             SQLite::Statement* stmt;
-            if ( rec.sequence == 0_seq ) {
+            if ( rec.sequence == 0_seq || flags & SetOptions::kInsert ) {
                 // Insert only:
                 stmt   = &compileCached("INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
                                           " VALUES (?, ?, ?, ?, ?, ?)");
@@ -331,7 +331,7 @@ namespace litecore {
 
             sequence_t seq;
             int64_t    rawFlags = int(rec.flags);
-            if ( updateSequence ) {
+            if ( flags & kUpdateSequence ) {
                 seq = lastSequence() + 1;
             } else {
                 Assert(rec.sequence > 0_seq);
@@ -380,7 +380,7 @@ namespace litecore {
                 ret = 0_seq;  // condition wasn't met, i.e. conflict
                 break;
             }
-            if ( updateSequence ) setLastSequence(seq);
+            if ( flags & kUpdateSequence ) setLastSequence(seq);
 
             ret = seq;
         } while ( tryAgain );

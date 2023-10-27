@@ -42,8 +42,6 @@
 
 //COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
-#include "c4Log.h"
-#include "fleece/slice.hh"
 #include <limits>
 #ifdef __APPLE__
 #    include <libkern/OSByteOrder.h>
@@ -71,6 +69,13 @@
 #    include <arpa/inet.h>
 #endif
 //COUCHBASE: End of code adapted from Networking.h
+
+//COUCHBASE: Begin of COUCHBASE_forceClose
+#define COUCHBASE_forceClose
+//COUCHBASE: End of COUCHBASE_forceClose
+#ifdef COUCHBASE_forceClose
+#    include <sstream>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -148,18 +153,35 @@ namespace uWS {
         inline bool consumeMessage(T payLength, std::byte*& src, size_t& length, frameFormat frame, void* user) {
             if ( getOpCode(frame) ) {
                 if ( opStack == 1 || (!lastFin && getOpCode(frame) < 2) ) {
+#ifdef COUCHBASE_forceClose
+                    std::stringstream ss;
+                    ss << "[opStack=" << opStack << ",frame=" << frame << ",lastFin=" << lastFin << "]";
+                    forceClose(user, ss.str().c_str());
+#else
                     forceClose(user);
+#endif
                     return true;
                 }
                 opCode[++opStack] = (OpCode)getOpCode(frame);
             } else if ( opStack == -1 ) {
+#ifdef COUCHBASE_forceClose
+                std::stringstream ss;
+                ss << "[frame=" << frame << "]";
+                forceClose(user, ss.str().c_str());
+#else
                 forceClose(user);
-                return true;
+#endif
             }
             lastFin = isFin(frame);
 
             if ( payLength > SIZE_MAX || refusePayloadLength(user, payLength) ) {
+#ifdef COUCHBASE_forceClose
+                std::stringstream ss;
+                ss << "[payLength=" << payLength << ",frame=" << frame << "]";
+                forceClose(user, ss.str().c_str());
+#else
                 forceClose(user);
+#endif
                 return true;
             }
 
@@ -395,7 +417,13 @@ namespace uWS {
                     if ( (rsv1(frame) && !setCompressed(user)) || rsv23(frame)
                          || (getOpCode(frame) > 2 && getOpCode(frame) < 8) || getOpCode(frame) > 10
                          || (getOpCode(frame) > 2 && (!isFin(frame) || payloadLength(frame) > 125)) ) {
+#ifdef COUCHBASE_forceClose
+                        std::stringstream ss;
+                        ss << "[frame=" << frame << ",opStack=" << opStack << "]";
+                        forceClose(user, ss.str().c_str());
+#else
                         forceClose(user);
+#endif
                         return;
                     }
 
@@ -438,6 +466,9 @@ namespace uWS {
         void forceClose(void* user);
         bool handleFragment(std::byte* data, size_t length, size_t remainingByteCount, uint8_t opcode, bool fin,
                             void* user);
+#ifdef COUCHBASE_forceClose
+        void forceClose(void* user, const char* reason);
+#endif
     };
 
 }  // namespace uWS

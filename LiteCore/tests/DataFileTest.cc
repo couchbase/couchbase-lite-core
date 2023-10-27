@@ -78,7 +78,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]") 
         RecordUpdate         rec(key, "body"_sl);
         rec.version = "version"_sl;
         rec.extra   = "extra"_sl;
-        CHECK(store->set(rec, true, t) == 1_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 1_seq);
         t.commit();
     }
     CHECK(store->lastSequence() == 1_seq);
@@ -171,7 +171,7 @@ static void createNumberedDocs(KeyStore* store, int n = 100, bool withAssertions
     for ( int i = 1; i <= n; i++ ) {
         string       docID = stringWithFormat("rec-%03d", i);
         RecordUpdate rec(docID, docID);
-        sequence_t   seq = store->set(rec, true, t);
+        sequence_t   seq = store->set(rec, KeyStore::kUpdateSequence, t);
         if ( withAssertions ) {
             REQUIRE(seq == (sequence_t)i);
             REQUIRE(store->get(slice(docID)).body() == slice(docID));
@@ -240,7 +240,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "[
             RecordUpdate update(docID, "", DocumentFlags::kDeleted);
             update.sequence = sequence_t(i);
             update.version  = "2-0000";
-            sequence_t seq  = store->set(update, true, t);
+            sequence_t seq  = store->set(update, KeyStore::kUpdateSequence, t);
             CHECK(seq == sequence_t(100 + i / 10));
         }
         t.commit();
@@ -437,12 +437,12 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
         ExclusiveTransaction t(db);
         RecordUpdate         rec(key, "initialvalue"_sl);
         rec.sequence = oldSeq;
-        newSeq       = store->set(rec, true, t);
+        newSeq       = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(newSeq == 1_seq);
 
         rec.body     = "wronginitialvalue"_sl;
         rec.sequence = oldSeq;
-        auto badSeq  = store->set(rec, true, t);
+        auto badSeq  = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(badSeq == 0_seq);
         t.commit();
     }
@@ -454,7 +454,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
         ExclusiveTransaction t(db);
         RecordUpdate         rec(key, "updatedvalue"_sl);
         rec.sequence = newSeq;
-        newSeq       = store->set(rec, true, t);
+        newSeq       = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(newSeq == 2_seq);
         t.commit();
     }
@@ -469,11 +469,11 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
         RecordUpdate         rec(key, "", DocumentFlags::kDeleted);
         rec.version  = "3-00";
         rec.sequence = 0_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = 666_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = newSeq;
-        newSeq       = store->set(rec, true, t);
+        newSeq       = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(newSeq == 3_seq);
         t.commit();
     }
@@ -490,11 +490,11 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
         RecordUpdate         rec(key, "", DocumentFlags::kDeleted);
         rec.version  = "4-000";
         rec.sequence = 0_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = 2_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = newSeq;
-        newSeq       = store->set(rec, true, t);
+        newSeq       = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(newSeq == 4_seq);
         t.commit();
     }
@@ -509,11 +509,11 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
         ExclusiveTransaction t(db);
         RecordUpdate         rec(key, "recreated");
         rec.sequence = 0_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = 2_seq;
-        CHECK(store->set(rec, true, t) == 0_seq);
+        CHECK(store->set(rec, KeyStore::kUpdateSequence, t) == 0_seq);
         rec.sequence = newSeq;
-        newSeq       = store->set(rec, true, t);
+        newSeq       = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(newSeq == 5_seq);
         t.commit();
     }
@@ -532,7 +532,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]"
         RecordUpdate rec("key", "value", DocumentFlags::kHasAttachments);
         rec.version    = "version";
         rec.extra      = "extra";
-        sequence_t seq = store->set(rec, true, t);
+        sequence_t seq = store->set(rec, KeyStore::kUpdateSequence, t);
         CHECK(seq == 2_seq);
         t.commit();
     }

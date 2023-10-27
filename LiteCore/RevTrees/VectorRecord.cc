@@ -444,7 +444,7 @@ namespace litecore {
         rec.extra       = extra;
         rec.sequence    = _sequence;
         rec.subsequence = _subsequence;
-        auto seq        = _store.set(rec, updateSequence, transaction);
+        auto seq        = _store.set(rec, KeyStore::flagUpdateSequence(updateSequence), transaction);
         if ( seq == 0_seq ) return kConflict;
 
         _sequence    = seq;

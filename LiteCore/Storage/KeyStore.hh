@@ -102,18 +102,23 @@ namespace litecore {
 
         //////// Writing:
 
+        enum SetOptions : uint32_t { kUpdateSequence = 0x01, kInsert = 0x02 };
+
+        inline static constexpr SetOptions flagUpdateSequence(bool b) { return b ? kUpdateSequence : SetOptions(0); }
+
         /** Core setter for KeyStores _with_ sequences.
             The `sequence` and `subsequence` in the RecordUpdate must match the current values in
             the database, or the call will fail by returning 0 to indicate a conflict.
             (A nonexistent record's sequence and subsequence are considered to be 0.)
             @param rec  The properties of the record to save, including its _existing_ sequence
                         and subsequence.
-            @param updateSequence  If true, the record's sequence will be updated to the database's
-                        next consecutive sequence number. If false, the record's subsequence
-                        will be incremented.
+            @param flags  If flags&kUpdateSequence is true, the record's sequence will be updated to the database's
+                        next consecutive sequence number. Otherwise, the record's subsequence
+                        will be incremented. If flags&kInsert is true, a new record will be added to the KeyStore regardless of rec.sequence.
+                        Otherwise, a new record is inserted only if rec.sequence == 0.
             @param transaction  The active transaction.
             @return  The record's new sequence number, or 0 if there is a conflict. */
-        virtual sequence_t set(const RecordUpdate& rec, bool updateSequence,
+        virtual sequence_t set(const RecordUpdate& rec, SetOptions flags,
                                ExclusiveTransaction& transaction) MUST_USE_RESULT = 0;
 
         /** Alternative `set` that takes a `Record` directly.

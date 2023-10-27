@@ -65,11 +65,21 @@ namespace litecore {
                 options.sortOption     = kUnsorted;
                 options.includeDeleted = true;
                 options.contentOption  = kEntireBody;
+
+                // CBL-4840: When a document with `kDeleted` flag is upgraded to version vectors, it will be placed
+                // in `del_` keystore. If the original rev-tree doc was not in `del_` keystore, the BothKeyStore
+                // enumerator may attempt to read it again once it reaches the `del_` keystore. We can prevent
+                // this from causing an error by making sure we don't bother parsing any records that have already
+                // been upgraded to VV.
+                auto isVersionVector = [](const Record& rec) { return revid(rec.version()).isVersion(); };
+
                 RecordEnumerator e(_dataFile->getKeyStore(ksName), options);
                 while ( e.next() ) {
                     // Read the doc as a RevTreeRecord. This will correctly read both the old 2.x style
                     // record (with no `extra`) and the new 3.x style.
                     const Record& rec = e.record();
+                    // CBL-4840
+                    if ( isVersionVector(rec) ) continue;
                     RevTreeRecord revTree(defaultKeyStore(), rec);
                     if ( newVersioning == kC4VectorVersioning ) {
                         // Upgrade from rev-trees (v2 or v3) to version-vectors:
@@ -130,7 +140,7 @@ namespace litecore {
         newRec.sequence    = revTree.sequence();
         newRec.subsequence = revTree.record().subsequence();
         //TODO: Find conflicts and add them to newRec.extra
-        Assert(db->defaultKeyStore().set(newRec, false, t) > 0_seq);
+        Assert(db->defaultKeyStore().set(newRec, KeyStore::flagUpdateSequence(false), t) > 0_seq);
 
         LogVerbose(DBLog, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra", SPLAT(rec.key()),
                    revid(rec.version()).str().c_str(), string(vv.asASCII()).c_str(), newRec.body.size,

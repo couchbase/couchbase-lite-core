@@ -78,12 +78,24 @@ namespace litecore {
             return i / 0x8000;
     }
 
+    // CBL-4956 :
+    // GCC Warns about maybe using unitialized value i when calling this decompress(int64_t i)
+    // function from readBinary(slice data) with the unchecked dereferenced value (* operator)
+    // This warning is benign as the code in decompress() already checked if 'g'
+    // contains the value or not. However, this causes an error when the code is built
+    // with some GCC, so need suppress it.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+
     static int64_t decompress(int64_t i) {
         if ( i & 1 ) i >>= 1;  // If LSB is set, just remove it
         else
             i *= 0x8000;  // else add 15 more 0 bits
         return i;
     }
+
+#pragma GCC diagnostic pop
 
     void VersionVector::readBinary(slice data) {
         clear();
@@ -154,7 +166,9 @@ namespace litecore {
         return Version(in);
     }
 
-    size_t VersionVector::maxASCIILen() const { return _vers.size() * (Version::kMaxASCIILength + 1); }
+    // The size of the separator is 2. There are size() - 1 separator.
+    // Plus, there may be a trailing semi-colon of size 1.
+    size_t VersionVector::maxASCIILen() const { return _vers.size() * (Version::kMaxASCIILength + 2); }
 
     bool VersionVector::writeASCII(slice_ostream& out, SourceID myID) const {
         size_t i = 0;

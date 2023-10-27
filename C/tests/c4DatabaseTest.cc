@@ -1232,8 +1232,8 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
 
-// This one is failing due to CBL-4382
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[.failing][Database][Upgrade][C]") {
+// This one is failing due to CBL-4840
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
