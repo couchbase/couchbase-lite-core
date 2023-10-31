@@ -118,6 +118,7 @@ namespace litecore::repl {
         using FindBlobCallback = fleece::function_ref<void(FLDeepIterator, Dict blob, const C4BlobKey& key)>;
         /** Finds all blob references in the dict, at any depth. */
         void findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback) const;
+        bool hasBlobReferences(Dict root) const;
 
         /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
         void encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) const;
