@@ -351,9 +351,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     CHECK(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
-    if(keepBody) {
-        REQUIRE(docBodyEquals(doc, updatedBody));
-    }
+    if ( keepBody ) { REQUIRE(docBodyEquals(doc, updatedBody)); }
     c4doc_release(doc);
 
     // Compact the database:
@@ -364,9 +362,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     REQUIRE(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
-    if(!keepBody) {
-        CHECK(c4doc_getRevisionBody(doc) == kC4SliceNull);
-    }
+    if ( !keepBody ) { CHECK(c4doc_getRevisionBody(doc) == kC4SliceNull); }
     c4doc_release(doc);
 
     // Make sure history still works after compaction:
@@ -662,7 +658,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     c4doc_release(doc);
     doc = getDoc(docID, kDocGetAll);
 
-    REQUIRE(doc->revID == history[0]); 
+    REQUIRE(doc->revID == history[0]);
     REQUIRE(doc->selectedRev.revID == history[0]);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
