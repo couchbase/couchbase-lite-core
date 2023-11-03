@@ -10,6 +10,10 @@
 // the file licenses/APL2.txt.
 //
 
+#include "c4Database.h"
+#include "c4DatabaseTypes.h"
+#include "c4Document.h"
+#include "c4DocumentTypes.h"
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Collection.h"
 #include "c4DocEnumerator.h"
@@ -19,6 +23,7 @@
 #include <iostream>
 #include <vector>
 
+#include "catch.hpp"
 #include "sqlite3.h"
 
 #ifdef _MSC_VER
@@ -184,12 +189,11 @@ class C4DatabaseInternalTest : public C4Test {
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     if ( !isRevTrees() ) return;
 
+    const bool keepBody = GENERATE(true, false);
+
     C4Error     c4err;
     alloc_slice body        = json2fleece("{'foo':1, 'bar':false}");
     alloc_slice updatedBody = json2fleece("{'foo':1, 'bar':false, 'status':'updated!'}");
-
-    // Make sure the database-changed notifications have the right data in them (see issue #93)
-    // TODO: Observer
 
     // Get a nonexistent document:
     REQUIRE(c4doc_get(db, C4STR("nonexistent"), true, &c4err) == NULL);
@@ -215,7 +219,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
 
     // Now update it:
-    doc = putDoc(docID, revID1, updatedBody, kRevKeepBody);
+    doc = putDoc(docID, revID1, updatedBody, keepBody ? kRevKeepBody : 0);
     REQUIRE(doc->docID == docID);
     REQUIRE(docBodyEquals(doc, updatedBody));
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
@@ -347,20 +351,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     CHECK(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
-    REQUIRE(docBodyEquals(doc, updatedBody));
+    if ( keepBody ) { REQUIRE(docBodyEquals(doc, updatedBody)); }
     c4doc_release(doc);
 
     // Compact the database:
     REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR(&c4err)));
 
-    // Make sure old rev is missing:
+    // Make sure old rev is null after compaction
     doc = c4coll_getDoc(defaultColl, docID, true, kDocGetCurrentRev, ERROR_INFO(&c4err));
     REQUIRE(doc);
     REQUIRE(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
-    // TODO: c4db_compact() implementation is still work in progress.
-    //       Following line should be activated after implementation.
-    // REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    if ( !keepBody ) { CHECK(c4doc_getRevisionBody(doc) == kC4SliceNull); }
     c4doc_release(doc);
 
     // Make sure history still works after compaction:
@@ -523,8 +525,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     if ( !isRevTrees() ) return;
 
-    // TODO: Observer
-
     C4String       docID                 = C4STR("MyDocID");
     alloc_slice    body                  = json2fleece("{'message':'hi'}");
     const size_t   historyCount          = 4;
@@ -560,7 +560,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     doc = getDoc(docID, kDocGetAll);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
-    //TODO - conflict check
 
     // Add an unrelated document:
     C4String       otherDocID                      = C4STR("AnotherDocID");
@@ -651,35 +650,27 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     c4enum_free(e);
     REQUIRE(counter == 3);
 
-
     // Verify that compaction leaves the document history:
-    // TODO: compact() is not fully implemented
-    //    error = {};
-    //    REQUIRE(c4db_compact(db, WITH_ERROR(ERROR_INFO(error))));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR(error)));
 
     // Delete the current winning rev, leaving the other one:
     doc = putDoc(docID, conflictHistory[0], kC4SliceNull, kRevDeleted);
     c4doc_release(doc);
-    doc = getDoc(docID);
-    //TODO: Uncomment once https://github.com/couchbase/couchbase-lite-core/issues/57 is fixed
-    //REQUIRE(doc->revID == history[0]); // 4-4444 should be current??
-    //REQUIRE(doc->selectedRev.revID == history[0]);
-    //verifyRev(doc, history, historyCount, body);
+    doc = getDoc(docID, kDocGetAll);
+
+    REQUIRE(doc->revID == history[0]);
+    REQUIRE(doc->selectedRev.revID == history[0]);
+    verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
 
     // Delete the remaining rev:
     doc = putDoc(docID, history[0], kC4SliceNull, kRevDeleted);
     c4doc_release(doc);
-    // TODO: Need to implement following tests
 }
 
 // test07_RevTreeConflict
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTreeConflict", "[Database][C]") {
     if ( !isRevTrees() ) return;
-
-    // Track the latest database-change notification that's posted:
-
-    // TODO: Observer
 
     C4String       docID                 = C4STR("MyDocID");
     alloc_slice    body                  = json2fleece("{'message':'hi'}");
