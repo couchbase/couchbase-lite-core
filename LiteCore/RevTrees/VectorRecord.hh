@@ -40,6 +40,9 @@ namespace litecore {
         /// - kHasAttachments: Properties include references to blobs.
         DocumentFlags flags{};
 
+        /// Returns true if `revID` is a version vector, false if it's a tree-based revid.
+        bool hasVersionVector() const;
+
         /// Returns the current (first) version of the version vector encoded in the `revID`.
         [[nodiscard]] Version version() const;
 
@@ -149,7 +152,7 @@ namespace litecore {
 
         /// If this doc uses RevTree versioning, this is the RemoteID that is the current
         /// revision's closest ancestor. (If none is, returns Local.)
-        RemoteID legacyTreeParent() const { return RemoteID(_parentOfLocal); }
+        RemoteID legacyTreeParent() const;
 
         //---- Modifying the document:
 
@@ -218,6 +221,10 @@ namespace litecore {
         /// Same as \ref nextRemoteID, but loads the document's remote revisions if not in memory yet.
         RemoteID loadNextRemoteID(RemoteID);
 
+        using ForAllRevsCallback = function_ref<void(RemoteID, Revision const&)>;
+
+        void forAllRevs(const ForAllRevsCallback&) const;
+
         using ForAllRevIDsCallback = function_ref<void(RemoteID, revid, bool hasBody)>;
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
@@ -274,7 +281,6 @@ namespace litecore {
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
         Versioning                   _versioning;           // RevIDs or VersionVectors?
-        int                          _parentOfLocal{};      // (only used in imported revtree)
         bool                         _changed{false};       // Set to true on explicit change
         bool                         _revIDChanged{false};  // Has setRevID() been called?
         ContentOption                _whichContent;         // Which parts of record are available

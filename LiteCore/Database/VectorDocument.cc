@@ -196,25 +196,47 @@ namespace litecore {
 
         alloc_slice getRevisionHistory(unsigned maxRevs, const slice backToRevs[],
                                        unsigned backToRevsCount) const override {
+            alloc_slice result;
             if ( auto rev = _selectedRevision(); rev ) {
-                if ( _doc.versioning() == Versioning::Vectors ) {
+                unsigned curGen;
+                if ( rev->hasVersionVector() ) {
                     VersionVector vers = rev->versionVector();
                     if ( maxRevs > 0 && vers.count() > maxRevs ) vers.prune(maxRevs);
                     // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
-                    return vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
+                    result = vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
+                    curGen = UINT_MAX;
                 } else {
-                    string history = rev->revID.str();
-                    if ( _remoteID == RemoteID::Local ) {
-                        if ( RemoteID parID = _doc.legacyTreeParent(); parID != RemoteID::Local ) {
-                            auto parent = _doc.remoteRevision(parID);
-                            if ( parent.value().revID != rev->revID ) { history += ", " + parent->revID.str(); }
-                        }
-                    }
-                    return alloc_slice(history);
+                    result = rev->revID.expanded();
+                    curGen = rev->revID.generation();
                 }
-            } else {
-                return nullslice;
+
+                if (loadRevisions()) {
+                    // Look for a legacy ancestor revision: the one with the deepest tree-based
+                    // ID, yet shallower than the current one, that's not a conflict:
+                    unsigned maxGen = 0;
+                    revid ancestorRevID;
+                    _doc.forAllRevs([&](RemoteID rem, Revision const& otherRev) {
+                        if (!otherRev.revID.isVersion() && !(otherRev.flags & DocumentFlags::kConflicted)) {
+                            if (auto gen = otherRev.revID.generation(); gen < curGen && gen > maxGen) {
+                                maxGen = gen;
+                                ancestorRevID = otherRev.revID;
+                            }
+                        }
+                    });
+
+                    if (ancestorRevID) {
+                        // Append it to the history/vector:
+                        slice delimiter;
+                        if (rev->hasVersionVector() && !result.findByte(';'))
+                            delimiter = "; "_sl;
+                        else
+                            delimiter = ", "_sl;
+                        result.append(delimiter);
+                        result.append(ancestorRevID.expanded());
+                    }
+                }
             }
+            return result;
         }
 
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
@@ -263,7 +285,10 @@ namespace litecore {
 
         VersionVector _currentVersionVector() {
             auto curRevID = _doc.revID();
-            return curRevID ? curRevID.asVersionVector() : VersionVector();
+            if (curRevID && curRevID.isVersion())
+                return curRevID.asVersionVector();
+            else
+                return VersionVector();
         }
 
         static DocumentFlags convertNewRevisionFlags(C4RevisionFlags revFlags) {

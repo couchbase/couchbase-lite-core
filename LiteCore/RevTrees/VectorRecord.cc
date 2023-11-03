@@ -90,6 +90,8 @@ namespace litecore {
     static constexpr slice kRevIDKey         = "@";
     static constexpr slice kRevFlagsKey      = "&";
 
+    bool Revision::hasVersionVector() const {return revID.isVersion();}
+
     Version Revision::version() const { return VersionVector::readCurrentVersionFromBinary(revID); }
 
     VersionVector Revision::versionVector() const { return VersionVector::fromBinary(revID); }
@@ -205,19 +207,9 @@ namespace litecore {
                 nuRev.flags = {};
                 if ( rev->flags & Rev::kDeleted ) nuRev.flags |= DocumentFlags::kDeleted;
                 if ( rev->flags & Rev::kHasAttachments ) nuRev.flags |= DocumentFlags::kHasAttachments;
+                if ( rev->flags & Rev::kIsConflict ) nuRev.flags |= DocumentFlags::kConflicted;
             }
             setRemoteRevision(RemoteID(id), nuRev);
-        }
-
-        // Determine which remote, if any, the current rev is based on:
-        _parentOfLocal = 0;
-        for ( const Rev* rev = curRev; rev && !_parentOfLocal; rev = rev->parent ) {
-            for ( auto [id, rem] : remoteRevMap ) {
-                if ( rem == rev ) {
-                    _parentOfLocal = id;
-                    break;
-                }
-            }
         }
 
         _changed = wasChanged;
@@ -231,18 +223,12 @@ namespace litecore {
 
         LogToAt(DBLog, Verbose, "VectorRecord: upgrading '%.*s' to version vectors", SPLAT(docID()));
         bool wasChanged = _changed;
-
+#if 0
         // Update current revID to a version vector with 1 or 2 components:
         VersionVector vv;
-        Version       meVers = Version::legacyVersion(revID(), kMeSourceID);
-        if ( _parentOfLocal > 0 ) {
-            auto parent = loadRemoteRevision(RemoteID(_parentOfLocal));
-            vv.add(Version::legacyVersion(parent->revID, kLegacyRevSourceID));
-            if ( revID() != parent->revID ) vv.add(meVers);
-        } else {
-            vv.add(meVers);
-        }
+        vv.add(Version(revID()));
         setRevID(revid(vv.asBinary()));
+
         if ( DBLog.willLog(LogLevel::Verbose) ) {
             LogToAt(DBLog, Verbose, "VectorRecord: '%.*s' revid is now %s", SPLAT(docID()), vv.asString().c_str());
         }
@@ -257,8 +243,22 @@ namespace litecore {
             rid = loadNextRemoteID(rid);
         }
 
+#endif
         _versioning = Versioning::Vectors;
         _changed    = wasChanged;
+    }
+
+    // Given a record that hasn't been upgraded, synthesize a version vector for it.
+    /*static*/ VersionVector VectorRecord::createLegacyVersionVector(const RecordUpdate& rec) {
+        Assert(false);//TEMP
+#if 0
+        RevTree    revTree(rec.body, rec.extra, rec.sequence);
+        const Rev* curRev = revTree.currentRevision();
+
+        VersionVector vv;
+//        vv.add(Version::legacyVersion(curRev->revID, kLegacyRevSourceID));
+        return vv;
+#endif
     }
 
     bool VectorRecord::loadData(ContentOption which) {
@@ -285,8 +285,8 @@ namespace litecore {
         if ( _sequence > 0_seq ) rec.setExists();
         rec.setVersion(_revID);
         rec.setFlags(_docFlags);
-        if ( _bodyDoc ) rec.setBody(_bodyDoc.allocedData());
-        if ( _extraDoc ) rec.setExtra(_extraDoc.allocedData());
+        rec.setBody(_bodyDoc.allocedData());
+        rec.setExtra(_extraDoc.allocedData());
         rec.setContentLoaded(_whichContent);
         return rec;
     }
@@ -342,6 +342,16 @@ namespace litecore {
         mustLoadRemotes();
         return nextRemoteID(remote);
     }
+
+    void VectorRecord::forAllRevs(const ForAllRevsCallback& callback) const {
+        RemoteID rem = RemoteID::Local;
+        optional<Revision> rev;
+        while ((rev = remoteRevision(rem))) {
+            callback(rem, *rev);
+            rem = nextRemoteID(rem);
+        }
+    }
+
 
     // If _revisions is not mutable, makes a mutable copy and assigns it to _mutatedRevisions.
     void VectorRecord::mutateRevisions() {
@@ -630,7 +640,7 @@ namespace litecore {
 
     void VectorRecord::dump(ostream& out) const {
         out << "\"" << (string)docID() << "\" #" << uint64_t(sequence()) << " ";
-        uint32_t nRevs = _revisions.count();
+        uint32_t nRevs = std::max(_revisions.count(), uint32_t(1));
         for ( uint32_t i = 0; i < nRevs; ++i ) {
             optional<Revision> rev = remoteRevision(RemoteID(i));
             if ( rev ) {
@@ -647,6 +657,8 @@ namespace litecore {
                 }
             }
         }
+        if (_whichContent < kEntireBody)
+            out << "[other revs not loaded]";
     }
 
     string VectorRecord::dump() const {
@@ -719,7 +731,7 @@ namespace litecore {
     }
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
-        if ( !revid(rec.version).isVersion() ) return forAllLegacyRevIDs(rec, callback);
+//        if ( !revid(rec.version).isVersion() ) return forAllLegacyRevIDs(rec, callback);
 
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
         if ( rec.extra.size > 0 ) {
@@ -736,6 +748,7 @@ namespace litecore {
         }
     }
 
+#if 0
     /*static*/ void VectorRecord::forAllLegacyRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
         RevTree    revTree(rec.body, rec.extra, rec.sequence);
         const Rev* curRev   = revTree.currentRevision();
@@ -747,33 +760,9 @@ namespace litecore {
         }
         // Finally the local version:
         if ( !foundCur ) {
-            auto vers = Version::legacyVersion(curRev->revID, kMeSourceID);
+            auto vers = Version::legacyVersion(curRev->revID, kLegacyRevSourceID);
             callback(RemoteID::Local, revidBuffer(vers).getRevID(), curRev->isBodyAvailable());
         }
     }
-
-    // Given a record that hasn't been upgraded, synthesize a version vector for it.
-    /*static*/ VersionVector VectorRecord::createLegacyVersionVector(const RecordUpdate& rec) {
-        RevTree    revTree(rec.body, rec.extra, rec.sequence);
-        const Rev* curRev = revTree.currentRevision();
-
-        // Look at the current rev's ancestry, finding the first that comes from a remote:
-        VersionVector vv;
-        bool          curIsNew = true;
-        for ( const Rev* rev = curRev; rev && vv.empty(); rev = rev->parent ) {
-            for ( auto [id, rem] : revTree.remoteRevisions() ) {
-                if ( rem == rev ) {
-                    // This rev came from a remote, so add a legacy version:
-                    vv.add(Version::legacyVersion(rev->revID, kLegacyRevSourceID));
-                    if ( rev == curRev ) curIsNew = false;
-                }
-            }
-        }
-        if ( curIsNew ) {
-            // If the current rev didn't come from a remote, add a legacy version authored by me:
-            vv.add(Version::legacyVersion(rec.version, kMeSourceID));
-        }
-        return vv;
-    }
-
+#endif
 }  // namespace litecore
