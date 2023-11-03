@@ -63,6 +63,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRec
     CHECK(doc.sequence() == 0_seq);
     CHECK(doc.docID() == "Nuu");
     CHECK(doc.revID() == nullslice);
+    CHECK(doc.lastLegacyRevID() == nullslice);
     CHECK(doc.flags() == DocumentFlags::kNone);
 
     Dict properties = doc.properties();
@@ -104,6 +105,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 1_seq);
         CHECK(doc.revID().str() == "10000@*");
+        CHECK(doc.lastLegacyRevID() == nullslice);
         CHECK(doc.flags() == DocumentFlags::kHasAttachments);
         CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
         CHECK(!doc.changed());
@@ -124,6 +126,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 2_seq);
         CHECK(doc.revID().str() == "20000@*");
+        CHECK(doc.lastLegacyRevID() == nullslice);
         CHECK(doc.flags() == DocumentFlags::kNone);
         CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!doc.changed());

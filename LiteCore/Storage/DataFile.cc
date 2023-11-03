@@ -129,6 +129,13 @@ namespace litecore {
 
     string DataFile::loggingIdentifier() const { return _path.path(); }
 
+    void DataFile::_log(LogLevel level, const char* format, ...) const {
+        va_list args;
+        va_start(args, format);
+        _logv(level, format, args);
+        va_end(args);
+    }
+
     uint64_t DataFile::fileSize() { return filePath().dataSize(); }
 
     void DataFile::close(bool forDelete) {

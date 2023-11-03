@@ -93,4 +93,8 @@ namespace litecore {
         kConflicting = kOlder | kNewer  // The vectors conflict
     };
 
+    static inline versionOrder mkOrder(bool newer, bool older) {
+        return versionOrder((newer ? kNewer : kSame) | (older ? kOlder : kSame));
+    }
+
 }  // namespace litecore

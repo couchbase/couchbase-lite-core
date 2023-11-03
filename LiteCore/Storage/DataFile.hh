@@ -178,7 +178,9 @@ namespace litecore {
 
         void _logVerbose(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char* format, ...) const override __printflike(2, 3){LOGBODY(Debug)}
+        void _logDebug(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Debug) }
+
+        void _log(LogLevel level, const char* format, ...) const override __printflike(3, 4);
 
         //////// SHARED OBJECTS:
 
