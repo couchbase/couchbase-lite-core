@@ -1418,161 +1418,83 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
 
     auto defaultColl = c4db_getDefaultCollection(db, nullptr);
 
-    SECTION("Read-Only") {
-        // Check doc 1:
-        C4Document* doc;
-        doc = c4coll_getDoc(defaultColl, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "2-c001d00d");
-        alloc_slice history(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-        CHECK(history == "2-c001d00d");
-        CHECK(doc->sequence == 7);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
-        c4doc_release(doc);
+    // Check doc 1:
+    C4Document* doc;
+    doc = c4coll_getDoc(defaultColl, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "2-c001d00d");
+    alloc_slice history(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+    CHECK(history == "2-c001d00d");
+    CHECK(doc->sequence == 7);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
+    c4doc_release(doc);
 
-        // Check doc 2:
-        doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "3-deadbeef");
-        history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(history == "3-deadbeef");
-        CHECK(doc->sequence == 9);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
-        alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "3-deadbeef");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
-        c4doc_release(doc);
-
-        // Check doc 3:
-        doc = c4coll_getDoc(defaultColl, "doc-003"_sl, true, kDocGetAll, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "3-deadbeef");
-        history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(history == "3-deadbeef, 2-c001d00d");
-        CHECK(doc->sequence == 11);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
-        remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "2-c001d00d");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
-        c4doc_release(doc);
-
-        // Check doc 4:
-        doc = c4coll_getDoc(defaultColl, "doc-004"_sl, true, kDocGetAll, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "3-deadbeef");
-        history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(history == "3-deadbeef");  // parent 2-c001d00d doesn't show up bc it isn't a remote
-        CHECK(doc->sequence == 14);
-        CHECK(doc->flags == (kDocConflicted | kDocExists));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
-        remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "3-cc");
-        REQUIRE(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(history == "3-cc");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
-        c4doc_release(doc);
-
-        // Check deleted doc:
-        doc = c4coll_getDoc(defaultColl, "doc-DEL"_sl, true, kDocGetAll, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "1-abcd");
-        history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(history == "1-abcd");
-        CHECK(doc->sequence == 6);
-        CHECK(doc->flags == (kDocDeleted | kDocExists));
-        c4doc_release(doc);
-    }
-
-    SECTION("Upgrading") {
-        // Note: The revID/version checks below hardcode the base timestamp used for upgrading legacy
-        // replicated revIDs. It's currently 0x1770000000000000 (see HybridClock.hh). If that value
-        // changes, or the scheme for converting rev-tree revIDs to versions changes, the values below
-        // need to change too.
-        REQUIRE(uint64_t(litecore::kMinValidTime) == 0x1770000000000000);
-
-        // Check doc 1:
-        C4Document* doc;
-        doc = c4coll_getDoc(defaultColl, "doc-001"_sl, true, kDocGetUpgraded, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "1770000000000002@*");
-        alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-        CHECK(versionVector == "1770000000000002@*");
-        CHECK(doc->sequence == 7);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
-        c4doc_release(doc);
-
-        // Check doc 2:
-        doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetUpgraded, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(c4rev_getTimestamp(doc->revID) == uint64_t(litecore::kMinValidTime) + 3);
-        CHECK(slice(doc->revID) == "1770000000000003@?");  // 0x1770000000000003 = kMinValidTime + 3
-        versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(versionVector == "1770000000000003@?");
-        CHECK(doc->sequence == 9);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
-        alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "1770000000000003@?");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
-
+    // Check doc 2:
+    doc = c4coll_getDoc(defaultColl, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "3-deadbeef");
+    history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(history == "3-deadbeef");
+    CHECK(doc->sequence == 9);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
+    alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3-deadbeef");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
+    {
         // update & save it:
-        {
-            TransactionHelper t(db);
-            C4Document*       newDoc = c4doc_update(doc, kFleeceBody, 0, ERROR_INFO());
-            REQUIRE(newDoc);
-            CHECK(slice(newDoc->revID) > "178532e35bcd0001@*");
-            alloc_slice newVersionVector(c4doc_getRevisionHistory(newDoc, 0, nullptr, 0));
-            CHECK(newVersionVector.hasSuffix("@*; 1770000000000003@?"));
-            c4doc_release(newDoc);
-        }
-        c4doc_release(doc);
-
-        // Check doc 3:
-        doc = c4coll_getDoc(defaultColl, "doc-003"_sl, true, kDocGetUpgraded, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "1770000000000003@*");
-        versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(versionVector == "1770000000000003@*; 1770000000000002@?");
-        CHECK(doc->sequence == 11);
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
-        remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "1770000000000002@?");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
-        c4doc_release(doc);
-
-        // Check doc 4:
-        doc = c4coll_getDoc(defaultColl, "doc-004"_sl, true, kDocGetUpgraded, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "1770000000000003@*");
-        versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(versionVector == "1770000000000003@*");
-        CHECK(doc->sequence == 14);
-        CHECK(doc->flags == (kDocConflicted | kDocExists));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
-        remoteVers = c4doc_getRemoteAncestor(doc, 1);
-        CHECK(remoteVers == "1770000000000003@?");
-        REQUIRE(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(versionVector == "1770000000000003@?");
-        CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
-        CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
-        c4doc_release(doc);
-
-        // Check deleted doc:
-        doc = c4coll_getDoc(defaultColl, "doc-DEL"_sl, true, kDocGetUpgraded, ERROR_INFO());
-        REQUIRE(doc);
-        CHECK(slice(doc->revID) == "1770000000000001@*");
-        versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
-        CHECK(versionVector == "1770000000000001@*");
-        CHECK(doc->sequence == 6);
-        CHECK(doc->flags == (kDocDeleted | kDocExists));
-        c4doc_release(doc);
+        TransactionHelper t(db);
+        C4Document*       newDoc = c4doc_update(doc, kFleeceBody, 0, ERROR_INFO());
+        REQUIRE(newDoc);
+        CHECK(slice(newDoc->revID).hasSuffix("@*"));
+        CHECK(slice(newDoc->revID) > "178532e35bcd0001@*");
+        alloc_slice newVersionVector(c4doc_getRevisionHistory(newDoc, 0, nullptr, 0));
+        CHECK(newVersionVector.hasSuffix("@*; 3-deadbeef"));
+        c4doc_release(newDoc);
     }
+    c4doc_release(doc);
+
+    // Check doc 3:
+    doc = c4coll_getDoc(defaultColl, "doc-003"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "3-deadbeef");
+    history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(history == "3-deadbeef, 2-c001d00d");
+    CHECK(doc->sequence == 11);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "2-c001d00d");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
+    c4doc_release(doc);
+
+    // Check doc 4:
+    doc = c4coll_getDoc(defaultColl, "doc-004"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "3-deadbeef");
+    history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(history == "3-deadbeef");  // parent 2-c001d00d doesn't show up bc it isn't a remote
+    CHECK(doc->sequence == 14);
+    CHECK(doc->flags == (kDocConflicted | kDocExists));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3-cc");
+    REQUIRE(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(history == "3-cc");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
+    c4doc_release(doc);
+
+    // Check deleted doc:
+    doc = c4coll_getDoc(defaultColl, "doc-DEL"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1-abcd");
+    history = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(history == "1-abcd");
+    CHECK(doc->sequence == 6);
+    CHECK(doc->flags == (kDocDeleted | kDocExists));
+    c4doc_release(doc);
 }
 
 // CBL-3706: Previously, calling these functions after deleting the default collection causes

@@ -44,34 +44,16 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
     void upgrade() {
         upgrade(db, _collDB1);
         upgrade(db2, _collDB2);
+        syncDBConfig();
     }
 };
 
-/* FIXME: This test is disabled because it exposes a design issue with version vector upgrades
-    and P2P replication. I need more time to think about a proper fix.
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
+    //- db pushes docs to db2. Both are still on rev-trees.
+    //- db and db2 both upgrade to version vectors.
+    //- db updates two of the docs it pushed, and creates a new one.
+    //- db pushes to db2 again.
 
-    The scenario is:
-    - Database A pushes docs to peer B. Both are still on rev-trees.
-    - A and B both upgrade to version vectors.
-    - A updates one of the docs it pushed.
-    - A pushes to B again.
-    This should succeed, but instead B reports a conflict.
-
-    In database A, when the doc is upgraded by the replicator its version vector looks like
-    (`yyyy@AAAA`, xxxx@?), where `AAAA` is database A's UUID and `?` is the generic "pre-existing rev"
-    UUID. That's because database A knows the first revision exists elsewhere (it's marked with
-    the "remote #1" marker), while the second revision doesn't.
-
-    However, in database B, the doc's version vector is (`xxxx@BBBB`). That's because database B
-    doesn't remember that the revision came from elsewhere. When a passive replicator saves
-    incoming revisions, it doesn't have a remote-ID to tag them with. That hasn't been an issue,
-    until now.
-
-    So the upshot is that the version vector A sends conflicts with the version vector B has.
-    B sees that it has a version from AAAA, but is missing the version from BBBB.
-    --Jens
- */
-TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[.disabled]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
@@ -83,11 +65,35 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[.disabled]"
     upgrade();
     createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
     createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
-    _expectedDocumentCount = 2;
+    createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
+    _expectedDocumentCount = 3;
 
     Log("-------- Second Replication --------");
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
 
     compareDatabases();
-    validateCheckpoints(db, db2, "{\"local\":102}");
+    validateCheckpoints(db, db2, "{\"local\":103}");
+}
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull]") {
+    //- db pushes docs to db2. Both are still on rev-trees.
+    //- db and db2 both upgrade to version vectors.
+    //- db updates two of the docs it pushed, and creates a new one.
+    //- db pushes to db2 again.
+
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
+    _expectedDocumentCount = 100;
+    Log("-------- First Replication --------");
+    runPullReplication();
+
+    upgrade();
+    createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
+    createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
+    createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
+    _expectedDocumentCount = 3;
+
+    Log("-------- Second Replication --------");
+    runPullReplication();
+
+    compareDatabases();
 }
