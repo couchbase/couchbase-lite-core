@@ -635,10 +635,10 @@ namespace litecore {
     // Scope::containing to look up where a Fleece Value* is, we can track it back to the
     // VectorRecord that owns the Doc.
     class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
-      public:
+    public:
         LinkedFleeceDoc(const alloc_slice& fleeceData, FLTrust trust, fleece::impl::SharedKeys* sk,
                         VectorRecord* document_)
-            : fleece::impl::Doc(fleeceData, Doc::Trust(trust), sk), document(document_) {}
+        : fleece::impl::Doc(fleeceData, Doc::Trust(trust), sk), document(document_) {}
 
         VectorRecord* const document;
     };
@@ -683,38 +683,33 @@ namespace litecore {
     }
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
-//        if ( !revid(rec.version).isVersion() ) return forAllLegacyRevIDs(rec, callback);
-
-        callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
-        if ( rec.extra.size > 0 ) {
-            fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
-            Array               remotes = ValueFromData(rec.extra, kFLTrusted).asArray();
-            int                 n       = 0;
-            for ( Array::iterator i(remotes); i; ++i, ++n ) {
-                if ( n > 0 ) {
-                    Dict remote = i.value().asDict();
-                    if ( slice revID = remote[kRevIDKey].asData(); revID )
-                        callback(RemoteID(n), revid(revID), remote[kRevPropertiesKey] != nullptr);
+        if ( revid(rec.version).isVersion() ) {
+            callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
+            if ( rec.extra.size > 0 ) {
+                fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
+                Array               remotes = ValueFromData(rec.extra, kFLTrusted).asArray();
+                int                 n       = 0;
+                for ( Array::iterator i(remotes); i; ++i, ++n ) {
+                    if ( n > 0 ) {
+                        Dict remote = i.value().asDict();
+                        if ( slice revID = remote[kRevIDKey].asData(); revID )
+                            callback(RemoteID(n), revid(revID), remote[kRevPropertiesKey] != nullptr);
+                    }
+                }
+            }
+        } else {
+            // Legacy RevTree record:
+            RevTree    revTree(rec.body, rec.extra, rec.sequence);
+            const Rev* curRev   = revTree.currentRevision();
+            // First the local version:
+            callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
+            // Then the remotes:
+            for ( auto [id, rev] : revTree.remoteRevisions() ) {
+                if ( rev != curRev ) {
+                    callback(RemoteID(id), rev->revID, rev->isBodyAvailable());
                 }
             }
         }
     }
 
-#if 0
-    /*static*/ void VectorRecord::forAllLegacyRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
-        RevTree    revTree(rec.body, rec.extra, rec.sequence);
-        const Rev* curRev   = revTree.currentRevision();
-        bool       foundCur = false;
-        for ( auto [id, rev] : revTree.remoteRevisions() ) {
-            auto vers = Version::legacyVersion(rev->revID, kLegacyRevSourceID);
-            callback(RemoteID(id), revidBuffer(vers).getRevID(), rev->isBodyAvailable());
-            if ( rev == curRev ) foundCur = true;
-        }
-        // Finally the local version:
-        if ( !foundCur ) {
-            auto vers = Version::legacyVersion(curRev->revID, kLegacyRevSourceID);
-            callback(RemoteID::Local, revidBuffer(vers).getRevID(), curRev->isBodyAvailable());
-        }
-    }
-#endif
 }  // namespace litecore

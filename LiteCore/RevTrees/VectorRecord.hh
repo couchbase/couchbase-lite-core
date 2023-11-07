@@ -252,7 +252,6 @@ namespace litecore {
         bool                           propertiesChanged() const;
         void                           clearPropertiesChanged() const;
         void                           updateDocFlags();
-        static void                    forAllLegacyRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
         KeyStore&                    _store;                // The database KeyStore
         FLEncoder                    _encoder{nullptr};     // Database shared Fleece Encoder

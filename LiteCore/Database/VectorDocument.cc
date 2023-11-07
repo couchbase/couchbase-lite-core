@@ -335,6 +335,32 @@ namespace litecore {
             return fldoc;
         }
 
+        pair<VersionVector,revidBuffer> readHistory(const slice history[], size_t historyCount) {
+            VersionVector vec;
+            revidBuffer legacyID;
+
+            Assert(historyCount > 0);
+            if (slice lastHistory = history[historyCount-1]; !revid(lastHistory).isVersion()) {
+                // The last history item may be a legacy tree-based revid:
+                legacyID.parse(lastHistory);
+                --historyCount;
+                if (historyCount == 0)
+                    error::_throw(error::BadRevisionID, "Invalid version history (only a legacy revid)");
+            }
+
+            if ( historyCount == 1 ) {
+                vec.readASCII(history[0]);  // -> Single vector (or single version)
+            } else if ( historyCount == 2 ) {
+                vec.readASCII(history[1]);
+                vec.add(Version(history[0]));  // -> New version plus parent vector
+            } else if (historyCount > 2) {
+                for ( ssize_t i = historyCount - 1; i >= 0; --i )
+                    vec.add(Version(history[i]));  // -> List of versions
+            }
+
+            return {vec, legacyID};
+        }
+
         // Handles `c4doc_put` when `rq.existingRevision` is false (a regular save.)
         // The caller has already done most of the checking, incl. MVCC.
         bool putNewRevision(const C4DocPutRequest& rq, C4Error* outError) override {
@@ -374,7 +400,8 @@ namespace litecore {
 
             // Parse the version vector from the history, and use it to update the db's clock:
             VersionVector newVers;
-            newVers.readHistory((slice*)rq.history, rq.historyCount, mySourceID());
+            revidBuffer legacyRev;
+            tie(newVers, legacyRev) = readHistory((slice*)rq.history, rq.historyCount);
             if ( !newVers.updateClock(asInternal(database())->versionClock()) ) {
                 if ( outError ) {
                     alloc_slice vecStr = newVers.asASCII();
@@ -387,35 +414,33 @@ namespace litecore {
             alloc_slice newVersBinary = newVers.asBinary();
             newRev.revID              = revid(newVersBinary);
 
-            // Does it fit the current revision?
+            // Compare it with the current document revision:
             auto remote         = RemoteID(rq.remoteDBID);
             int  commonAncestor = 1;
-            auto order          = kNewer;
-            if ( _doc.exists() ) {
-                // See whether to update the local revision:
-                order = newVers.compareTo(_currentVersionVector());
+            versionOrder order;
+            if (!_doc.exists()) {
+                // Doc is new:
+                order = kNewer;
+            } else if (VersionVector curVers = _currentVersionVector(); curVers.empty()) {
+                // Doc has only legacy revisions:
+                revid curRev = _doc.revID();
+                if (legacyRev.getRevID() != curRev)
+                    order = kConflicting;
+                else if (newVers.empty() )
+                    order = kSame;
+                else
+                    order = kNewer;
+            } else {
+                // Doc has version vector already:
+                if (newVers.empty() ) {
+                    order = kConflicting;
+                } else {
+                    order = newVers.compareTo(curVers); // compare 2 vectors
+                }
             }
 
-            // Log the update. Normally verbose, but a conflict is info (if from the replicator)
-            // or error (if local).
-            if ( DBLog.willLog(LogLevel::Verbose) || order == kConflicting ) {
-                static constexpr const char* kOrderName[4] = {"same", "older", "newer", "conflict"};
-                alloc_slice                  newVersStr    = newVers.asASCII();
-                alloc_slice                  oldVersStr    = _currentVersionVector().asASCII();
-                if ( order != kConflicting )
-                    keyStore().dataFile()._logVerbose(
-                            "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)", SPLAT(_docID),
-                            SPLAT(newVersStr), SPLAT(oldVersStr), kOrderName[order], rq.remoteDBID);
-                else if ( remote != RemoteID::Local )
-                    keyStore().dataFile()._logInfo("putExistingRevision '%.*s' #%.*s ; currently "
-                                                   "#%.*s --> conflict (remote %d)",
-                                                   SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
-                else
-                    keyStore().dataFile()._logWarning("putExistingRevision '%.*s' #%.*s ; "
-                                                      "currently #%.*s --> conflict (remote %d)",
-                                                      SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr),
-                                                      rq.remoteDBID);
-            }
+            if ( DBLog.willLog(LogLevel::Verbose) || order == kConflicting )
+                logPutExisting(newVers, order, remote);
 
             switch ( order ) {
                 case kSame:
@@ -449,6 +474,28 @@ namespace litecore {
             if ( !_saveIfRequested(rq, outError) ) return -1;
 
             return commonAncestor;
+        }
+
+        // Log the update. Normally verbose, but a conflict is info (if from the replicator)
+        // or error (if local).
+        void logPutExisting(VersionVector const& newVers, versionOrder order, RemoteID remote) {
+            static constexpr const char* kOrderName[4] = {"same", "older", "newer", "conflict"};
+            alloc_slice                  newVersStr    = newVers.asASCII();
+            alloc_slice                  oldVersStr    = _doc.revID().expanded();
+            auto& df = keyStore().dataFile();
+            if ( order != kConflicting )
+                df._logVerbose("putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)",
+                               SPLAT(_docID),
+                               SPLAT(newVersStr), SPLAT(oldVersStr), kOrderName[order], remote);
+            else if ( remote != RemoteID::Local )
+                df._logInfo("putExistingRevision '%.*s' #%.*s ; currently "
+                            "#%.*s --> conflict (remote %d)",
+                            SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), remote);
+            else
+                df._logWarning("putExistingRevision '%.*s' #%.*s ; "
+                               "currently #%.*s --> conflict (remote %d)",
+                               SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr),
+                               remote);
         }
 
         bool _saveIfRequested(const C4DocPutRequest& rq, C4Error* outError) {
@@ -600,18 +647,20 @@ namespace litecore {
             requestedVec.readASCII(revMap[rec.key], mySourceID);
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
+            versionOrder cmp;
             bool recUsesVVs = revid(rec.version).isVersion();
             if ( recUsesVVs ) {
                 localVec.readBinary(rec.version);
+                cmp    = localVec.compareTo(requestedVec);
             } else {
                 // Doc still has a legacy tree-based revID. Convert to a VV
-                localVec = VectorRecord::createLegacyVersionVector(rec);
+                //TEMP localVec = VectorRecord::createLegacyVersionVector(rec);
+                cmp = kOlder;
             }
-            auto cmp    = localVec.compareTo(requestedVec);
             auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:
-            if ( remoteDBID != 0 ) {
+            if ( remoteDBID != 0 && recUsesVVs ) {
                 VectorRecord::forAllRevIDs(rec, [&](RemoteID remote, revid aRev, bool hasBody) {
                     if ( remote > RemoteID::Local && compareLocalRev(aRev) == kSame ) {
                         if ( hasBody ) status |= kRevsHaveLocal;
@@ -635,11 +684,15 @@ namespace litecore {
             delimiter             delim(",");
             VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
                 if ( delim.count() < maxAncestors && hasBody >= mustHaveBodies ) {
-                    if ( !(compareLocalRev(aRev) & kNewer) ) {
-                        alloc_slice vector = localVec.asASCII(mySourceID);
-                        if ( added.insert(vector).second )  // [skip duplicate vectors]
-                            result << delim << '"' << vector << '"';
+                    alloc_slice vector;
+                    if (recUsesVVs) {
+                        if ( !(compareLocalRev(aRev) & kNewer) )
+                            vector = localVec.asASCII(mySourceID);
+                    } else {
+                        vector = aRev.expanded();
                     }
+                    if ( vector && added.insert(vector).second )  // [skip duplicate vectors]
+                        result << delim << '"' << vector << '"';
                 }
             });
 

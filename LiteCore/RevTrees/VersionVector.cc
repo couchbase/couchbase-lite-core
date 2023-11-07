@@ -221,27 +221,6 @@ namespace litecore {
         return Version::readASCII(str);
     }
 
-    void VersionVector::readHistory(const slice history[], size_t historyCount, SourceID mySourceID) {
-        Assert(historyCount > 0);
-        readASCII(history[0], mySourceID);
-        if ( historyCount == 1 ) return;  // -> Single version vector (or single version)
-        if ( count() > 1 )
-            error::_throw(error::BadRevisionID, "Invalid version history (vector followed by other history)");
-        if ( historyCount == 2 ) {
-            Version newVers = _vers[0];
-            readASCII(history[1], mySourceID);
-            _add(newVers);  // -> New version plus parent vector
-        } else {
-            for ( size_t i = 1; i < historyCount; ++i ) {
-                Version parentVers(history[i], mySourceID);
-                if ( auto time = timeOfAuthor(parentVers.author()); time == logicalTime::none )
-                    _vers.push_back(parentVers);
-                else if ( time <= parentVers.time() )
-                    error::_throw(error::BadRevisionID, "Invalid version history (increasing logicalTime)");
-            }
-        }  // -> List of versions
-    }
-
 #pragma mark - OPERATIONS:
 
     versionOrder VersionVector::compareTo(const Version& v) const {
