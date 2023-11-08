@@ -18,6 +18,7 @@
 #include "Batcher.hh"
 #include <deque>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace litecore::repl {
@@ -66,10 +67,11 @@ namespace litecore::repl {
         void                  _start(RemoteSequence sinceSequence);
         void                  _expectSequences(std::vector<RevFinder::ChangeSequence>);
         void                  _documentsRevoked(std::vector<Retained<RevToInsert>>);
+        void                  handleRevoked(const Retained<RevToInsert>&);
         void                  handleRev(Retained<blip::MessageIn>);
         void                  handleNoRev(Retained<blip::MessageIn>);
         Retained<IncomingRev> makeIncomingRev();
-        void                  startIncomingRev(blip::MessageIn* NONNULL);
+        void                  startIncomingRev(const Retained<blip::MessageIn>&);
         void                  maybeStartIncomingRevs();
         void                  _revsWereProvisionallyHandled();
         void                  _revsFinished(int gen);
@@ -86,8 +88,9 @@ namespace litecore::repl {
         bool           _caughtUp{false};     // Got all historic sequences, now up to date
         bool           _fatalError{false};   // Have I gotten a fatal error?
 
-        RemoteSequenceSet                          _missingSequences;    // Known sequences I need to pull
-        std::deque<Retained<blip::MessageIn>>      _waitingRevMessages;  // Queued 'rev' messages
+        RemoteSequenceSet _missingSequences;  // Known sequences I need to pull
+        std::deque<std::variant<Retained<blip::MessageIn>, Retained<RevToInsert>>>
+                                                   _waitingRevMessages;  // Queued 'rev' messages
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
         actor::ActorCountBatcher<Puller>           _provisionallyHandledRevs;
         actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;

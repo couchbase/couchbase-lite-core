@@ -19,6 +19,7 @@
 
 #include "Puller.hh"
 #include "Replicator.hh"
+#include "ReplicatorTypes.hh"
 #include "RevFinder.hh"
 #include "Inserter.hh"
 #include "IncomingRev.hh"
@@ -137,11 +138,28 @@ namespace litecore::repl {
     }
 
     // We lost access to some documents; they need to be purged locally.
+    // Although first it must join the queue with any other revs.
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
         for ( auto& rev : revs ) {
-            Retained<IncomingRev> inc = makeIncomingRev();
-            if ( inc ) inc->handleRevokedDoc(rev);
+            if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                 && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) {
+                handleRevoked(rev);
+            } else {
+                logDebug("Delaying handling doc purge for '%.*s' [%zu waiting]", SPLAT(rev->docID),
+                         _waitingRevMessages.size() + 1);
+                if ( _waitingRevMessages.empty() ) {
+                    Signpost::begin(Signpost::revsBackPressure);
+                    logVerbose("Back pressure started for changes messages");
+                }
+                _waitingRevMessages.emplace_back(std::move(rev));
+            }
         }
+    }
+
+    // Now actually handle revoked doc which has been waiting in the queue
+    void Puller::handleRevoked(const Retained<RevToInsert>& rev) {
+        Retained<IncomingRev> inc = makeIncomingRev();
+        if ( inc ) { inc->handleRevokedDoc(rev); }
     }
 
     // Received an incoming "rev" message, which contains a revision body to insert
@@ -156,7 +174,7 @@ namespace litecore::repl {
                 Signpost::begin(Signpost::revsBackPressure);
                 logVerbose("Back pressure started for changes messages");
             }
-            _waitingRevMessages.push_back(std::move(msg));
+            _waitingRevMessages.emplace_back(std::move(msg));
         }
     }
 
@@ -173,7 +191,7 @@ namespace litecore::repl {
     }
 
     // Actually process an incoming "rev" now:
-    void Puller::startIncomingRev(MessageIn* msg) {
+    void Puller::startIncomingRev(const Retained<MessageIn>& msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
         Retained<IncomingRev> inc = makeIncomingRev();
@@ -207,13 +225,25 @@ namespace litecore::repl {
     void Puller::maybeStartIncomingRevs() {
         while ( connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
                 && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs && !_waitingRevMessages.empty() ) {
-            auto msg = _waitingRevMessages.front();
-            _waitingRevMessages.pop_front();
-            if ( _waitingRevMessages.empty() ) {
-                Signpost::end(Signpost::revsBackPressure);
-                logVerbose("Back pressure ended for changes messages");
+            // Waiting Rev is either regular rev message (MessageIn) or revoked rev (RevToInsert)
+            auto waiting = _waitingRevMessages.front();
+            if ( waiting.index() == 0 ) {
+                auto msg = std::get<Retained<blip::MessageIn>>(waiting);
+                _waitingRevMessages.pop_front();
+                if ( _waitingRevMessages.empty() ) {
+                    Signpost::end(Signpost::revsBackPressure);
+                    logVerbose("Back pressure ended for changes messages");
+                }
+                startIncomingRev(msg);
+            } else {
+                auto revoked = std::get<Retained<RevToInsert>>(waiting);
+                _waitingRevMessages.pop_front();
+                if ( _waitingRevMessages.empty() ) {
+                    Signpost::end(Signpost::revsBackPressure);
+                    logVerbose("Back pressure ended for changes messages");
+                }
+                handleRevoked(revoked);
             }
-            startIncomingRev(msg);
         }
     }
 

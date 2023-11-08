@@ -28,7 +28,7 @@ namespace litecore::repl {
         explicit IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
-        void handleRev(blip::MessageIn* revMessage NONNULL, uint64_t bodySizeOfRemoteSequence);
+        void handleRev(Retained<blip::MessageIn> msg, uint64_t bodySize);
         void handleRevokedDoc(RevToInsert*);
 
         RevToInsert* rev() const { return _rev; }

@@ -22,6 +22,7 @@
 #include <atomic>
 #include <deque>
 #include <set>
+#include <utility>
 
 using namespace std;
 using namespace fleece;
@@ -49,13 +50,13 @@ namespace litecore::repl {
 
     // Read the 'rev' message, then parse either synchronously or asynchronously.
     // This runs on the caller's (Puller's) thread.
-    void IncomingRev::handleRev(blip::MessageIn* msg, uint64_t bodySize) {
+    void IncomingRev::handleRev(Retained<blip::MessageIn> msg, uint64_t bodySize) {
         reinitialize();
         _bodySize = bodySize;
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
-        _revMessage         = msg;
+        _revMessage         = std::move(msg);
         _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
                                               _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
                                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
