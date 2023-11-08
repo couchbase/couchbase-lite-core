@@ -18,6 +18,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
+#include "Message.hh"
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
 #include "RevFinder.hh"
@@ -227,14 +228,13 @@ namespace litecore::repl {
                 && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs && !_waitingRevMessages.empty() ) {
             // Waiting Rev is either regular rev message (MessageIn) or revoked rev (RevToInsert)
             auto waiting = _waitingRevMessages.front();
-            if ( waiting.index() == 0 ) {
-                auto msg = std::get<Retained<blip::MessageIn>>(waiting);
+            if ( const auto* msg = std::get_if<Retained<blip::MessageIn>>(&waiting) ) {
                 _waitingRevMessages.pop_front();
                 if ( _waitingRevMessages.empty() ) {
                     Signpost::end(Signpost::revsBackPressure);
                     logVerbose("Back pressure ended for changes messages");
                 }
-                startIncomingRev(msg);
+                startIncomingRev(*msg);
             } else {
                 auto revoked = std::get<Retained<RevToInsert>>(waiting);
                 _waitingRevMessages.pop_front();
