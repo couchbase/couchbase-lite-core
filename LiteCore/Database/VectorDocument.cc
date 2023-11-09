@@ -369,9 +369,9 @@ namespace litecore {
             }
 
             if ( historyCount == 1 ) {
-                vec.readASCII(history[0]);  // -> Single vector (or single version)
+                vec.readASCII(history[0], mySourceID());  // -> Single vector (or single version)
             } else if ( historyCount == 2 ) {
-                vec.readASCII(history[1]);
+                vec.readASCII(history[1], mySourceID());
                 vec.add(Version(history[0]));  // -> New version plus parent vector
             } else if (historyCount > 2) {
                 for ( ssize_t i = historyCount - 1; i >= 0; --i )

@@ -310,9 +310,10 @@ namespace litecore {
     }
 
     void VersionVector::add(Version v) {
-        if ( auto t = timeOfAuthor(v.author()); t >= v.time() )
+        if ( auto t = timeOfAuthor(v.author()); t > v.time() )
             error::_throw(error::BadRevisionID, "New version timestamp is older than current one");
-        _add(v);
+        else if (t < v.time())
+            _add(v);
     }
 
     void VersionVector::_add(Version const& v) {
