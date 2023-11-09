@@ -88,6 +88,7 @@ namespace litecore {
     // Keys in revision dicts (deliberately tiny and ineligible for SharedKeys, to save space.)
     static constexpr slice kRevPropertiesKey = ".";
     static constexpr slice kRevIDKey         = "@";
+    static constexpr slice kLegacyRevIDKey   = "-";
     static constexpr slice kRevFlagsKey      = "&";
 
     bool Revision::hasVersionVector() const {return revID.isVersion();}
@@ -101,7 +102,8 @@ namespace litecore {
         , _docID(rec.key())
         , _sequence(rec.sequence())
         , _subsequence(rec.subsequence())
-        , _revID(rec.version())
+        , _savedRevID(rec.version())
+        , _revID(_savedRevID)
         , _docFlags(rec.flags())
         , _whichContent(rec.contentLoaded())
          {
@@ -235,7 +237,7 @@ namespace litecore {
         rec.updateSequence(_sequence);
         rec.updateSubsequence(_subsequence);
         if ( _sequence > 0_seq ) rec.setExists();
-        rec.setVersion(_revID);
+        rec.setVersion(_savedRevID);
         rec.setFlags(_docFlags);
         rec.setBody(_bodyDoc.allocedData());
         rec.setExtra(_extraDoc.allocedData());
@@ -317,7 +319,6 @@ namespace litecore {
     // Returns the MutableDict for a revision.
     // If it's not mutable yet, replaces it with a mutable copy.
     MutableDict VectorRecord::mutableRevisionDict(RemoteID remote) {
-        Assert(remote > RemoteID::Local);
         mutateRevisions();
         if ( _mutatedRevisions.count() <= int(remote) ) _mutatedRevisions.resize(int(remote) + 1);
         MutableDict revDict = _mutatedRevisions.getMutableDict(int(remote));
@@ -415,7 +416,7 @@ namespace litecore {
         if ( newRevID != _current.revID ) {
             _revID         = alloc_slice(newRevID);
             _current.revID = revid(_revID);
-            _changed = _revIDChanged = true;
+            _changed = true;
         }
     }
 
@@ -428,6 +429,12 @@ namespace litecore {
             updateDocFlags();
         }
     }
+
+    revid VectorRecord::lastLegacyRevID() const {
+        requireRemotes();
+        return revid(_revisions[0].asDict()[kLegacyRevIDKey].asData());
+    }
+
 
 #pragma mark - CHANGE HANDLING:
 
@@ -489,23 +496,24 @@ namespace litecore {
 
         // If the revID hasn't been changed but the local properties have, generate a new revID:
         alloc_slice generatedRev;
-        if ( newRevision && !_revIDChanged ) {
-            switch ( _versioning ) {
-                case Versioning::RevTrees:
-                    generatedRev = generateRevID(_current.properties, revID, flags);
-                    break;
-                case Versioning::Vectors:
-                    generatedRev = generateVersionVector(revID, versionClock);
-            }
+        if ( newRevision && _revID == _savedRevID) {
+            generatedRev = generateVersionVector(revID, versionClock);
             revID = revid(generatedRev);
             setRevID(revID);
-            Log("Generated revID '%s'", revID.str().c_str());
+            LogTo(DBLog, "Doc %.*s generated revID '%s'", FMTSLICE(_docID), revID.str().c_str());
+        }
+
+        Assert(revID.isVersion());
+        if (_savedRevID && !revid(_savedRevID).isVersion()) {
+            LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'",
+                    FMTSLICE(_docID), revid(_savedRevID).str().c_str(), revID.str().c_str());
+            mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(_savedRevID);
         }
 
         alloc_slice body, extra;
         tie(body, extra) = encodeBodyAndExtra();
 
-        bool updateSequence = (_sequence == 0_seq || _revIDChanged);
+        bool updateSequence = (_sequence == 0_seq || _revID != _savedRevID);
         Assert(revID);
         RecordUpdate rec(_docID, body, _docFlags);
         rec.version     = revID;
@@ -517,7 +525,8 @@ namespace litecore {
 
         _sequence    = seq;
         _subsequence = updateSequence ? 0 : _subsequence + 1;
-        _changed = _revIDChanged = false;
+        _savedRevID = _revID;
+        _changed = false;
 
         // Update Fleece Doc to newly saved data:
         MutableDict mutableProperties = _current.properties.asMutable();
@@ -551,11 +560,17 @@ namespace litecore {
         } else {
             enc.beginArray();
             DeDuplicateEncoder ddenc(enc);
-            // Write current rev:
+            // Write current rev. The body dict will be written first; then we snip that as the
+            // record's `body` property, and the encoder will write the rest of the `extra` with
+            // a back-pointer into the `body`.
             enc.beginDict();
             enc.writeKey(kRevPropertiesKey);
             ddenc.writeValue(_current.properties, 1);
             body = alloc_slice(FLEncoder_Snip(enc));
+            if (revid legacy = lastLegacyRevID()) {
+                enc.writeKey(kLegacyRevIDKey);
+                enc.writeData(legacy);
+            }
             enc.endDict();
 
             // Write other revs:

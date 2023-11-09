@@ -142,6 +142,16 @@ namespace litecore {
         slice currentRevisionData() const;
 
 
+        /// The versioning system used by the document. Will be Vector unless the Record read
+        /// from the db was still in rev-tree format.
+        Versioning versioning() const FLPURE { return _versioning; }
+
+        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
+        void upgradeVersioning();
+
+        /// The document's last tree-based revid, before the first version-vectored rev was added.
+        /// (`nullslice` if it still has a legacy revid, or never had one.)
+        revid lastLegacyRevID() const FLPURE;
 
         //---- Modifying the document:
 
@@ -259,6 +269,7 @@ namespace litecore {
         sequence_t                   _sequence;             // The Record's sequence
         uint64_t                     _subsequence;          // The Record's subsequence
         DocumentFlags                _docFlags;             // Document-level flags
+        alloc_slice                  _savedRevID;           // Revision ID saved in db (may == _revID)
         alloc_slice                  _revID;                // Current revision ID backing store
         Revision                     _current;              // Current revision
         fleece::RetainedValue        _currentProperties;    // Retains local properties
@@ -268,7 +279,6 @@ namespace litecore {
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
         Versioning                   _versioning;           // RevIDs or VersionVectors?
         bool                         _changed{false};       // Set to true on explicit change
-        bool                         _revIDChanged{false};  // Has setRevID() been called?
         ContentOption                _whichContent;         // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };

@@ -52,7 +52,7 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
     //- db pushes docs to db2. Both are still on rev-trees.
     //- db and db2 both upgrade to version vectors.
-    //- db updates one of the docs it pushed.
+    //- db updates two of the docs it pushed, and creates a new one.
     //- db pushes to db2 again.
 
     auto serverOpts = Replicator::Options::passive(_collSpec);
@@ -66,11 +66,36 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
     upgrade();
     createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
     createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
-    _expectedDocumentCount = 2;
+    createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
+    _expectedDocumentCount = 3;
 
     Log("-------- Second Replication --------");
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
 
     compareDatabases();
-    validateCheckpoints(db, db2, "{\"local\":102}");
+    validateCheckpoints(db, db2, "{\"local\":103}");
+}
+
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull]") {
+    //- db pushes docs to db2. Both are still on rev-trees.
+    //- db and db2 both upgrade to version vectors.
+    //- db updates two of the docs it pushed, and creates a new one.
+    //- db pushes to db2 again.
+
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
+    _expectedDocumentCount = 100;
+    Log("-------- First Replication --------");
+    runPullReplication();
+
+    upgrade();
+    createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
+    createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
+    createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
+    _expectedDocumentCount = 3;
+
+    Log("-------- Second Replication --------");
+    runPullReplication();
+
+    compareDatabases();
 }
