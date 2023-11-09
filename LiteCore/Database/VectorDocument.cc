@@ -338,8 +338,6 @@ namespace litecore {
         // Handles `c4doc_put` when `rq.existingRevision` is false (a regular save.)
         // The caller has already done most of the checking, incl. MVCC.
         bool putNewRevision(const C4DocPutRequest& rq, C4Error* outError) override {
-            _doc.upgradeVersioning();
-
             // Update the flags:
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
@@ -368,8 +366,6 @@ namespace litecore {
 
         // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
         int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
-            _doc.upgradeVersioning();
-
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
             Doc fldoc    = _newProperties(rq, outError);

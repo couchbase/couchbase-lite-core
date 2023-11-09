@@ -104,7 +104,7 @@ namespace litecore {
         , _revID(rec.version())
         , _docFlags(rec.flags())
         , _whichContent(rec.contentLoaded())
-        , _versioning(Versioning::Vectors) {
+         {
         _current.revID = revid(_revID);
         _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
         if ( rec.exists() ) {
@@ -173,7 +173,6 @@ namespace litecore {
     void VectorRecord::importRevTree(alloc_slice body, alloc_slice extra) {
         LogToAt(DBLog, Verbose, "VectorRecord: importing '%.*s' as RevTree", SPLAT(docID()));
         bool wasChanged = _changed;
-        _versioning     = Versioning::RevTrees;
         _extraDoc       = fleece::Doc(extra, kFLTrustedDontParse, sharedKeys());
         RevTree    revTree(body, extra, sequence());
         const Rev* curRev = revTree.currentRevision();
@@ -213,52 +212,6 @@ namespace litecore {
         }
 
         _changed = wasChanged;
-
-        if ( _whichContent == kUpgrade ) upgradeVersioning();
-    }
-
-    // Changes old-style revIDs into Versions, and the document's revID to a VersionVector.
-    void VectorRecord::upgradeVersioning() {
-        if ( _versioning != Versioning::RevTrees ) return;
-
-        LogToAt(DBLog, Verbose, "VectorRecord: upgrading '%.*s' to version vectors", SPLAT(docID()));
-        bool wasChanged = _changed;
-#if 0
-        // Update current revID to a version vector with 1 or 2 components:
-        VersionVector vv;
-        vv.add(Version(revID()));
-        setRevID(revid(vv.asBinary()));
-
-        if ( DBLog.willLog(LogLevel::Verbose) ) {
-            LogToAt(DBLog, Verbose, "VectorRecord: '%.*s' revid is now %s", SPLAT(docID()), vv.asString().c_str());
-        }
-
-        // Update each remote revision's version:
-        RemoteID rid = loadNextRemoteID(RemoteID::Local);
-        while ( auto rev = loadRemoteRevision(rid) ) {
-            Version     vers = Version::legacyVersion(rev->revID, kLegacyRevSourceID);
-            revidBuffer buf(vers);
-            rev->revID = buf.getRevID();
-            setRemoteRevision(rid, rev);
-            rid = loadNextRemoteID(rid);
-        }
-
-#endif
-        _versioning = Versioning::Vectors;
-        _changed    = wasChanged;
-    }
-
-    // Given a record that hasn't been upgraded, synthesize a version vector for it.
-    /*static*/ VersionVector VectorRecord::createLegacyVersionVector(const RecordUpdate& rec) {
-        Assert(false);//TEMP
-#if 0
-        RevTree    revTree(rec.body, rec.extra, rec.sequence);
-        const Rev* curRev = revTree.currentRevision();
-
-        VersionVector vv;
-//        vv.add(Version::legacyVersion(curRev->revID, kLegacyRevSourceID));
-        return vv;
-#endif
     }
 
     bool VectorRecord::loadData(ContentOption which) {
@@ -273,7 +226,6 @@ namespace litecore {
         _whichContent = which;
         if ( which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly ) readRecordBody(rec.body());
         if ( which >= kEntireBody && oldWhich < kEntireBody ) readRecordExtra(rec.extra());
-        if ( _versioning == Versioning::RevTrees && which == kUpgrade ) upgradeVersioning();
         return true;
     }
 

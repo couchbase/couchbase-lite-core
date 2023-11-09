@@ -141,18 +141,7 @@ namespace litecore {
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
 
-        //---- Versioning:
 
-        /// The versioning system used by the document. Will be Vector unless the Record read
-        /// from the db was still in rev-tree format.
-        Versioning versioning() const FLPURE { return _versioning; }
-
-        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
-        void upgradeVersioning();
-
-        /// If this doc uses RevTree versioning, this is the RemoteID that is the current
-        /// revision's closest ancestor. (If none is, returns Local.)
-        RemoteID legacyTreeParent() const;
 
         //---- Modifying the document:
 
@@ -229,8 +218,6 @@ namespace litecore {
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
-
-        static VersionVector createLegacyVersionVector(const RecordUpdate&);
 
         //---- For testing:
 
