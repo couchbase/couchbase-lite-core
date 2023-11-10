@@ -230,8 +230,8 @@ namespace litecore {
 
         virtual bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
-        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char* format, va_list) const;
+        virtual void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
+        void         _logv(LogLevel level, const char* format, va_list) const;
 
         inline void _logAt(LogLevel level, const char* format, va_list args) const {
             if ( _usuallyFalse(this->willLog(level)) ) this->_logv(level, format, args);
