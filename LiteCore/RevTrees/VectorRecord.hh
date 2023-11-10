@@ -141,7 +141,6 @@ namespace litecore {
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
 
-
         /// The versioning system used by the document. Will be Vector unless the Record read
         /// from the db was still in rev-tree format.
         Versioning versioning() const FLPURE { return _versioning; }
@@ -263,23 +262,23 @@ namespace litecore {
         void                           clearPropertiesChanged() const;
         void                           updateDocFlags();
 
-        KeyStore&                    _store;                // The database KeyStore
-        FLEncoder                    _encoder{nullptr};     // Database shared Fleece Encoder
-        alloc_slice                  _docID;                // The docID
-        sequence_t                   _sequence;             // The Record's sequence
-        uint64_t                     _subsequence;          // The Record's subsequence
-        DocumentFlags                _docFlags;             // Document-level flags
-        alloc_slice                  _savedRevID;           // Revision ID saved in db (may == _revID)
-        alloc_slice                  _revID;                // Current revision ID backing store
-        Revision                     _current;              // Current revision
-        fleece::RetainedValue        _currentProperties;    // Retains local properties
-        fleece::Doc                  _bodyDoc;              // If saved, a Doc of the Fleece body
-        fleece::Doc                  _extraDoc;             // Fleece Doc holding record `extra`
-        fleece::Array                _revisions;            // Top-level parsed body; stores revs
-        mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
-        Versioning                   _versioning;           // RevIDs or VersionVectors?
-        bool                         _changed{false};       // Set to true on explicit change
-        ContentOption                _whichContent;         // Which parts of record are available
+        KeyStore&                    _store;              // The database KeyStore
+        FLEncoder                    _encoder{nullptr};   // Database shared Fleece Encoder
+        alloc_slice                  _docID;              // The docID
+        sequence_t                   _sequence;           // The Record's sequence
+        uint64_t                     _subsequence;        // The Record's subsequence
+        DocumentFlags                _docFlags;           // Document-level flags
+        alloc_slice                  _savedRevID;         // Revision ID saved in db (may == _revID)
+        alloc_slice                  _revID;              // Current revision ID backing store
+        Revision                     _current;            // Current revision
+        fleece::RetainedValue        _currentProperties;  // Retains local properties
+        fleece::Doc                  _bodyDoc;            // If saved, a Doc of the Fleece body
+        fleece::Doc                  _extraDoc;           // Fleece Doc holding record `extra`
+        fleece::Array                _revisions;          // Top-level parsed body; stores revs
+        mutable fleece::MutableArray _mutatedRevisions;   // Mutable version of `_revisions`
+        Versioning                   _versioning;         // RevIDs or VersionVectors?
+        bool                         _changed{false};     // Set to true on explicit change
+        ContentOption                _whichContent;       // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };
 }  // namespace litecore

@@ -13,6 +13,7 @@
 #include "VectorDocument.hh"
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
+#include "VersionVectorWithLegacy.hh"
 #include "CollectionImpl.hh"
 #include "c4Database.hh"
 #include "DatabaseImpl.hh"
@@ -207,19 +208,19 @@ namespace litecore {
                     // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
                     result = vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
                     curGen = UINT_MAX;
-                    nRevs = unsigned(vers.count());
+                    nRevs  = unsigned(vers.count());
                 } else {
                     result = rev->revID.expanded();
                     curGen = rev->revID.generation();
-                    nRevs = 1;
+                    nRevs  = 1;
                 }
 
-                if ((nRevs < maxRevs || maxRevs == 0) && loadRevisions()) {
+                if ( (nRevs < maxRevs || maxRevs == 0) && loadRevisions() ) {
                     // Look for legacy ancestor revisions:
                     vector<revid> ancestors;
-                    if (_remoteID == RemoteID::Local) {
+                    if ( _remoteID == RemoteID::Local ) {
                         // Start with the doc's last legacy rev:
-                        if (revid lastRevID = _doc.lastLegacyRevID()) {
+                        if ( revid lastRevID = _doc.lastLegacyRevID() ) {
                             ancestors.push_back(lastRevID);
                             curGen = lastRevID.generation();
                         }
@@ -228,29 +229,26 @@ namespace litecore {
                     // Search the remotes for earlier legacy revs that aren't conflicts:
                     revid ancestorRevID;
                     _doc.forAllRevs([&](RemoteID rem, Revision const& otherRev) {
-                        if (!otherRev.revID.isVersion()
-                                && otherRev.revID.generation() < curGen
-                                && !(otherRev.flags & DocumentFlags::kConflicted)) {
+                        if ( !otherRev.revID.isVersion() && otherRev.revID.generation() < curGen
+                             && !(otherRev.flags & DocumentFlags::kConflicted) ) {
                             ancestors.push_back(otherRev.revID);
                         }
                     });
 
                     // Sort by decending generation:
                     std::sort(ancestors.begin(), ancestors.end(),
-                              [](revid r1, revid r2) {return r1.generation() > r2.generation();});
-                    if (maxRevs > 0)
-                        ancestors.resize(std::min(ancestors.size(), size_t(maxRevs - nRevs)));
+                              [](revid r1, revid r2) { return r1.generation() > r2.generation(); });
+                    if ( maxRevs > 0 ) ancestors.resize(std::min(ancestors.size(), size_t(maxRevs - nRevs)));
 
                     // Now append these ancestors to the history, skipping dups:
                     slice delimiter = ", "_sl;
-                    if (rev->hasVersionVector() && !result.findByte(';'))
-                        delimiter = "; "_sl;
+                    if ( rev->hasVersionVector() && !result.findByte(';') ) delimiter = "; "_sl;
                     revid lastAncestor;
-                    for (revid ancestor : ancestors) {
-                        if (ancestor != lastAncestor) {
+                    for ( revid ancestor : ancestors ) {
+                        if ( ancestor != lastAncestor ) {
                             result.append(delimiter);
                             result.append(ancestor.expanded());
-                            delimiter = ", "_sl;
+                            delimiter    = ", "_sl;
                             lastAncestor = ancestor;
                         }
                     }
@@ -305,8 +303,7 @@ namespace litecore {
 
         VersionVector _currentVersionVector() {
             auto curRevID = _doc.revID();
-            if (curRevID && curRevID.isVersion())
-                return curRevID.asVersionVector();
+            if ( curRevID && curRevID.isVersion() ) return curRevID.asVersionVector();
             else
                 return VersionVector();
         }
@@ -614,10 +611,10 @@ namespace litecore {
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            bool recUsesVVs = revid(rec.version).isVersion();
+            bool         recUsesVVs = revid(rec.version).isVersion();
             if ( recUsesVVs ) {
                 localVec.readBinary(rec.version);
-                cmp    = localVec.compareTo(requestedVec);
+                cmp = localVec.compareTo(requestedVec);
             } else {
                 // Doc still has a legacy tree-based revID
                 cmp = kOlder;
@@ -650,9 +647,8 @@ namespace litecore {
             VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
                 if ( delim.count() < maxAncestors && hasBody >= mustHaveBodies ) {
                     alloc_slice vector;
-                    if (recUsesVVs) {
-                        if ( !(compareLocalRev(aRev) & kNewer) )
-                            vector = localVec.asASCII(mySourceID);
+                    if ( recUsesVVs ) {
+                        if ( !(compareLocalRev(aRev) & kNewer) ) vector = localVec.asASCII(mySourceID);
                     } else {
                         vector = aRev.expanded();
                     }

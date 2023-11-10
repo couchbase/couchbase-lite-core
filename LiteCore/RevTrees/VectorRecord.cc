@@ -91,7 +91,7 @@ namespace litecore {
     static constexpr slice kLegacyRevIDKey   = "-";
     static constexpr slice kRevFlagsKey      = "&";
 
-    bool Revision::hasVersionVector() const {return revID.isVersion();}
+    bool Revision::hasVersionVector() const { return revID.isVersion(); }
 
     Version Revision::version() const { return VersionVector::readCurrentVersionFromBinary(revID); }
 
@@ -105,8 +105,7 @@ namespace litecore {
         , _savedRevID(rec.version())
         , _revID(_savedRevID)
         , _docFlags(rec.flags())
-        , _whichContent(rec.contentLoaded())
-         {
+        , _whichContent(rec.contentLoaded()) {
         _current.revID = revid(_revID);
         _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
         if ( rec.exists() ) {
@@ -298,14 +297,13 @@ namespace litecore {
     }
 
     void VectorRecord::forAllRevs(const ForAllRevsCallback& callback) const {
-        RemoteID rem = RemoteID::Local;
+        RemoteID           rem = RemoteID::Local;
         optional<Revision> rev;
-        while ((rev = remoteRevision(rem))) {
+        while ( (rev = remoteRevision(rem)) ) {
             callback(rem, *rev);
             rem = nextRemoteID(rem);
         }
     }
-
 
     // If _revisions is not mutable, makes a mutable copy and assigns it to _mutatedRevisions.
     void VectorRecord::mutateRevisions() {
@@ -416,7 +414,7 @@ namespace litecore {
         if ( newRevID != _current.revID ) {
             _revID         = alloc_slice(newRevID);
             _current.revID = revid(_revID);
-            _changed = true;
+            _changed       = true;
         }
     }
 
@@ -434,7 +432,6 @@ namespace litecore {
         requireRemotes();
         return revid(_revisions[0].asDict()[kLegacyRevIDKey].asData());
     }
-
 
 #pragma mark - CHANGE HANDLING:
 
@@ -496,17 +493,17 @@ namespace litecore {
 
         // If the revID hasn't been changed but the local properties have, generate a new revID:
         alloc_slice generatedRev;
-        if ( newRevision && _revID == _savedRevID) {
+        if ( newRevision && _revID == _savedRevID ) {
             generatedRev = generateVersionVector(revID, versionClock);
-            revID = revid(generatedRev);
+            revID        = revid(generatedRev);
             setRevID(revID);
             LogTo(DBLog, "Doc %.*s generated revID '%s'", FMTSLICE(_docID), revID.str().c_str());
         }
 
         Assert(revID.isVersion());
-        if (_savedRevID && !revid(_savedRevID).isVersion()) {
-            LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'",
-                    FMTSLICE(_docID), revid(_savedRevID).str().c_str(), revID.str().c_str());
+        if ( _savedRevID && !revid(_savedRevID).isVersion() ) {
+            LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'", FMTSLICE(_docID),
+                    revid(_savedRevID).str().c_str(), revID.str().c_str());
             mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(_savedRevID);
         }
 
@@ -525,8 +522,8 @@ namespace litecore {
 
         _sequence    = seq;
         _subsequence = updateSequence ? 0 : _subsequence + 1;
-        _savedRevID = _revID;
-        _changed = false;
+        _savedRevID  = _revID;
+        _changed     = false;
 
         // Update Fleece Doc to newly saved data:
         MutableDict mutableProperties = _current.properties.asMutable();
@@ -567,7 +564,7 @@ namespace litecore {
             enc.writeKey(kRevPropertiesKey);
             ddenc.writeValue(_current.properties, 1);
             body = alloc_slice(FLEncoder_Snip(enc));
-            if (revid legacy = lastLegacyRevID()) {
+            if ( revid legacy = lastLegacyRevID() ) {
                 enc.writeKey(kLegacyRevIDKey);
                 enc.writeData(legacy);
             }
@@ -624,8 +621,7 @@ namespace litecore {
                 }
             }
         }
-        if (_whichContent < kEntireBody)
-            out << "[other revs not loaded]";
+        if ( _whichContent < kEntireBody ) out << "[other revs not loaded]";
     }
 
     string VectorRecord::dump() const {
@@ -650,10 +646,10 @@ namespace litecore {
     // Scope::containing to look up where a Fleece Value* is, we can track it back to the
     // VectorRecord that owns the Doc.
     class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
-    public:
+      public:
         LinkedFleeceDoc(const alloc_slice& fleeceData, FLTrust trust, fleece::impl::SharedKeys* sk,
                         VectorRecord* document_)
-        : fleece::impl::Doc(fleeceData, Doc::Trust(trust), sk), document(document_) {}
+            : fleece::impl::Doc(fleeceData, Doc::Trust(trust), sk), document(document_) {}
 
         VectorRecord* const document;
     };
@@ -715,14 +711,12 @@ namespace litecore {
         } else {
             // Legacy RevTree record:
             RevTree    revTree(rec.body, rec.extra, rec.sequence);
-            const Rev* curRev   = revTree.currentRevision();
+            const Rev* curRev = revTree.currentRevision();
             // First the local version:
             callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
             // Then the remotes:
             for ( auto [id, rev] : revTree.remoteRevisions() ) {
-                if ( rev != curRev ) {
-                    callback(RemoteID(id), rev->revID, rev->isBodyAvailable());
-                }
+                if ( rev != curRev ) { callback(RemoteID(id), rev->revID, rev->isBodyAvailable()); }
             }
         }
     }

@@ -218,7 +218,7 @@ class C4Test {
     [[nodiscard]] const C4DatabaseConfig2& dbConfig() const { return _dbConfig; }
 
     void syncDBConfig();
-    
+
     [[nodiscard]] C4StorageEngine storageType() const { return _storage; }
 
     [[nodiscard]] bool isSQLite() const { return storageType() == kC4SQLiteStorageEngine; }

@@ -51,7 +51,7 @@ namespace litecore::repl {
         C4Error              c4err = {};
         Dict                 root;
         auto                 collection = getCollection();
-        Retained<C4Document> doc = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetAll);
+        Retained<C4Document> doc        = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetAll);
         if ( doc ) {
             if ( doc->selectRevision(request->revID, true) ) root = doc->getProperties();
             if ( root ) request->flags = doc->selectedRev().flags;

@@ -273,9 +273,9 @@ namespace litecore {
         void                        validate() const;
         vec                         versionsBySource() const;
 
-        vec    _vers;          // versions, in order from latest to oldest.
-        size_t _nCurrent = 0;  // Number of current/merged versions including the first
-        alloc_slice _revID;     // legacy (tree-based) revision ID, if any
+        vec         _vers;          // versions, in order from latest to oldest.
+        size_t      _nCurrent = 0;  // Number of current/merged versions including the first
+        alloc_slice _revID;         // legacy (tree-based) revision ID, if any
     };
 
 }  // namespace litecore
