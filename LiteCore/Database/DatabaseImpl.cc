@@ -193,8 +193,9 @@ namespace litecore {
 
         // Yup, mismatch confirmed, so deal with it:
         if ( versDoc.exists() ) {
-            // Existing db versioning does not match runtime config!
-            upgradeDocumentVersioning(curVersioning, newVersioning, transaction());
+            // Pass for existing database. We can handle documents of old versions in
+            // database opended as VectorVersioning or TreeVersioning.
+            // upgradeDocumentVersioning(curVersioning, newVersioning, transaction());
         } else if ( _config.flags & kC4DB_Create ) {
             // First-time initialization:
             (void)generateUUID(kPublicUUIDKey);
@@ -205,10 +206,6 @@ namespace litecore {
         }
 
         // Store new versioning:
-        if ( !versDoc.exists() && newVersioning == kC4TreeVersioning_v2 ) {
-            // If this is a new db, all docs will have the new v3 tree versioning.
-            newVersioning = kC4TreeVersioning;
-        }
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
         setInfo(versDoc);
         t.commit();

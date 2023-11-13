@@ -110,6 +110,7 @@ namespace litecore {
             }
         }
         LogTo(DBLog, "\t%" PRIu64 " documents upgraded, now committing changes...", docCount);
+        DebugAssert(docCount == 0, "Should not upgrade all documents when openning the database.");
     }
 
 #if ENABLE_VV_UPGRADE
