@@ -128,7 +128,6 @@
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
-		273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273D25F62564666A008643D2 /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273D25F52564666A008643D2 /* VectorDocument.cc */; };
 		273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
@@ -945,7 +944,6 @@
 		2734F619206ABEB000C982FF /* ReplicatorTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTypes.cc; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
 		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
-		273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "DatabaseImpl+Upgrade.cc"; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		273B541823037A8400E4FC19 /* unix_acceptor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = unix_acceptor.h; sourceTree = "<group>"; };
@@ -2522,7 +2520,6 @@
 			children = (
 				27E3DD571DB8524300F2872D /* DatabaseImpl.cc */,
 				27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */,
-				273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */,
 				2760FBC826210AA0000F34C5 /* CollectionImpl.hh */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
@@ -4362,7 +4359,6 @@
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
-				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,

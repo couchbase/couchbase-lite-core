@@ -191,18 +191,15 @@ namespace litecore {
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         if ( versDoc.exists() && curVersioning >= newVersioning ) return curVersioning;
 
-        // Yup, mismatch confirmed, so deal with it:
-        if ( versDoc.exists() ) {
-            // Pass for existing database. We can handle documents of old versions in
-            // database opended as VectorVersioning or TreeVersioning.
-            // upgradeDocumentVersioning(curVersioning, newVersioning, transaction());
-        } else if ( _config.flags & kC4DB_Create ) {
-            // First-time initialization:
-            (void)generateUUID(kPublicUUIDKey);
-            (void)generateUUID(kPrivateUUIDKey);
-        } else {
-            // Should never occur (existing db must have its versioning marked!)
-            error::_throw(error::WrongFormat);
+        if ( !versDoc.exists() ) {
+            if ( _config.flags & kC4DB_Create ) {
+                // First-time initialization:
+                (void)generateUUID(kPublicUUIDKey);
+                (void)generateUUID(kPrivateUUIDKey);
+            } else {
+                // Should never occur (existing db must have its versioning marked!)
+                error::_throw(error::WrongFormat);
+            }
         }
 
         // Store new versioning:

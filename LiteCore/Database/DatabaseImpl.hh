@@ -176,8 +176,6 @@ namespace litecore {
         C4Collection* getOrCreateCollection(CollectionSpec, bool canCreate);
 
         C4DocumentVersioning checkDocumentVersioning();
-        void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu, ExclusiveTransaction&);
-        alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
         using CollectionsMap = std::unordered_map<CollectionSpec, Retained<C4Collection>>;
 
