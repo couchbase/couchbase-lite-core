@@ -472,6 +472,21 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
             enc.writeString("avoid");
             enc.endDictionary();
             enc.endArray();
+            enc.writeKey("str]ing]");
+            enc.writeInt(10);
+            enc.writeKey("string[1]");
+            enc.beginDictionary();
+            enc.writeKey("arr");
+            enc.beginArray();
+            enc.beginDictionary();
+            enc.writeKey("string[3]");
+            enc.beginDictionary();
+            enc.writeKey("simpleID");
+            enc.writeInt(20);
+            enc.endDictionary();
+            enc.endDictionary();
+            enc.endArray();
+            enc.endDictionary();
         });
         t.commit();
     }
@@ -501,6 +516,27 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     CHECK(rowsInQuery(json5("{WHERE: ['ANY', 'a', ['.oids'],\
                                            ['=', ['?a.$oid'], 'avoid']]}"))
           == 1);
+
+    Retained<Query>           query;
+    Retained<QueryEnumerator> e;
+    if ( option == 0 ) {
+        query = store->compileQuery("SELECT `str]ing]` FROM _"_sl, QueryLanguage::kN1QL);
+    } else {
+        query = store->compileQuery(json5("{WHAT: ['.str]ing]']}"), QueryLanguage::kJSON);
+    }
+    REQUIRE(query);
+    e = query->createEnumerator();
+    CHECK(e->columns().count() == 1);
+    CHECK(e->columns()[0]->asInt() == 10);
+    if ( option == 0 ) {
+        query = store->compileQuery("SELECT `string[1]`.arr[0].`string[3]`.simpleID FROM _"_sl, QueryLanguage::kN1QL);
+    } else {
+        query = store->compileQuery(json5("{WHAT: ['.string\\\\[1].arr[0].string\\\\[3].simpleID']}"),
+                                    QueryLanguage::kJSON);
+    }
+    e = query->createEnumerator();
+    CHECK(e->columns().count() == 1);
+    CHECK(e->columns()[0]->asInt() == 20);
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
