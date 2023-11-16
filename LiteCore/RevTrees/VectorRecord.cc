@@ -762,6 +762,7 @@ namespace litecore {
         bool          curIsNew = true;
         for ( const Rev* rev = curRev; rev && vv.empty(); rev = rev->parent ) {
             for ( auto [id, rem] : revTree.remoteRevisions() ) {
+                (void)id;
                 if ( rem == rev ) {
                     // This rev came from a remote, so add a legacy version:
                     vv.add(Version::legacyVersion(rev->revID, kLegacyRevSourceID));
