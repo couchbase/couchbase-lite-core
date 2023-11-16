@@ -16,6 +16,7 @@
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
 #include "Stopwatch.hh"
+#include "c4DatabaseTypes.h"
 #include <array>
 #include <optional>
 #include <utility>
@@ -46,14 +47,14 @@ namespace litecore::repl {
         Replicator(const shared_ptr<DBAccess>&, websocket::WebSocket* NONNULL, Delegate&, Options* NONNULL);
 
         struct BlobProgress {
-            Dir         dir;
-            alloc_slice collectionName;
-            alloc_slice docID;
-            alloc_slice docProperty;
-            C4BlobKey   key;
-            uint64_t    bytesCompleted;
-            uint64_t    bytesTotal;
-            C4Error     error;
+            Dir              dir;
+            C4CollectionSpec collSpec;
+            alloc_slice      docID;
+            alloc_slice      docProperty;
+            C4BlobKey        key;
+            uint64_t         bytesCompleted;
+            uint64_t         bytesTotal;
+            C4Error          error;
         };
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
