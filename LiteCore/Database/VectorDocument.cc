@@ -199,60 +199,49 @@ namespace litecore {
                                        unsigned backToRevsCount) const override {
             alloc_slice result;
             if ( auto rev = _selectedRevision(); rev ) {
-                unsigned nRevs;
-                unsigned curGen;
-                // First write the versions in the version vector, or the current legacy rev:
-                if ( rev->hasVersionVector() ) {
-                    VersionVector vers = rev->versionVector();
-                    if ( maxRevs > 0 && vers.count() > maxRevs ) vers.prune(maxRevs);
-                    // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
-                    result = vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
-                    curGen = UINT_MAX;
-                    nRevs  = unsigned(vers.count());
-                } else {
-                    result = rev->revID.expanded();
-                    curGen = rev->revID.generation();
-                    nRevs  = 1;
-                }
-
-                if ( (nRevs < maxRevs || maxRevs == 0) && loadRevisions() ) {
-                    // Look for legacy ancestor revisions:
-                    vector<revid> ancestors;
+                // First get the version vector of the selected revision:
+                VersionVecWithLegacy vvl(rev->revID);
+                if ((backToRevsCount > 0 || _doc.lastLegacyRevID() || !vvl.legacy.empty()) && loadRevisions() ) {
+                    // If current rev or peer have legacy revids, look for legacy ancestors:
                     if ( _remoteID == RemoteID::Local ) {
                         // Start with the doc's last legacy rev:
-                        if ( revid lastRevID = _doc.lastLegacyRevID() ) {
-                            ancestors.push_back(lastRevID);
-                            curGen = lastRevID.generation();
-                        }
+                        if ( revid lastRevID = _doc.lastLegacyRevID() )
+                            vvl.legacy.emplace_back(lastRevID);
                     }
 
                     // Search the remotes for earlier legacy revs that aren't conflicts:
+                    unsigned curGen = UINT_MAX;
+                    if (!vvl.legacy.empty())
+                        curGen = revid(vvl.legacy.back()).generation();
                     revid ancestorRevID;
                     _doc.forAllRevs([&](RemoteID rem, Revision const& otherRev) {
                         if ( !otherRev.revID.isVersion() && otherRev.revID.generation() < curGen
-                             && !(otherRev.flags & DocumentFlags::kConflicted) ) {
-                            ancestors.push_back(otherRev.revID);
+                            && !(otherRev.flags & DocumentFlags::kConflicted) ) {
+                            vvl.legacy.emplace_back(otherRev.revID);
                         }
                     });
 
-                    // Sort by decending generation:
-                    std::sort(ancestors.begin(), ancestors.end(),
-                              [](revid r1, revid r2) { return r1.generation() > r2.generation(); });
-                    if ( maxRevs > 0 ) ancestors.resize(std::min(ancestors.size(), size_t(maxRevs - nRevs)));
-
-                    // Now append these ancestors to the history, skipping dups:
-                    slice delimiter = ", "_sl;
-                    if ( rev->hasVersionVector() && !result.findByte(';') ) delimiter = "; "_sl;
-                    revid lastAncestor;
-                    for ( revid ancestor : ancestors ) {
-                        if ( ancestor != lastAncestor ) {
-                            result.append(delimiter);
-                            result.append(ancestor.expanded());
-                            delimiter    = ", "_sl;
-                            lastAncestor = ancestor;
+                    // Sort legacy revs, remove dups, and stop after any revid in `backToRevs`:
+                    vvl.sortLegacy();
+                    slice lastRev;
+                    auto endBack = &backToRevs[backToRevsCount];
+                    for (auto i = vvl.legacy.begin(); i != vvl.legacy.end();) {
+                        if (*i == lastRev) {
+                            i = vvl.legacy.erase(i); // remove duplicate
+                        } else if (std::find(backToRevs, endBack, *i) != endBack) {
+                            vvl.legacy.erase(i + 1, vvl.legacy.end()); // stop here
+                            break;
+                        } else {
+                            lastRev = *i++;
                         }
                     }
                 }
+
+                // Finally convert to ASCII list.
+                // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
+                stringstream out;
+                vvl.write(out, maxRevs ? mySourceID() : kMeSourceID);
+                result = alloc_slice(out.str());
             }
             return result;
         }
@@ -383,7 +372,7 @@ namespace litecore {
 
         // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
         int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
-            VersionVecWithLegacy curVers(_doc);
+            VersionVecWithLegacy curVers(_doc, RemoteID::Local);
             VersionVecWithLegacy newVers((slice*)rq.history, rq.historyCount, mySourceID());
             auto                 remote = RemoteID(rq.remoteDBID);
 

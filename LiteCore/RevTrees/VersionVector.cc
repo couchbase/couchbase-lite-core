@@ -195,7 +195,7 @@ namespace litecore {
         return result;
     }
 
-    string VersionVector::asString() const { return std::string(asASCII()); }
+    string VersionVector::asString(SourceID myID) const { return std::string(asASCII(myID)); }
 
     void VersionVector::readASCII(slice str, SourceID mySourceID) {
         clear();

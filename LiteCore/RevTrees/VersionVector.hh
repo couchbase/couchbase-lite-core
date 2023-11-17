@@ -171,7 +171,7 @@ namespace litecore {
         [[nodiscard]] fleece::alloc_slice asASCII(SourceID myID = kMeSourceID) const;
 
         /// Same as \ref asASCII but returns a `std::string`, for convenience.
-        [[nodiscard]] std::string asString() const;
+        [[nodiscard]] std::string asString(SourceID myID = kMeSourceID) const;
 
         /// Writes vector in ASCII form to a slice-stream.
         /// If `myID` is given, occurrences of kMeSourceID will be written as that ID.
