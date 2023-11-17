@@ -141,13 +141,6 @@ namespace litecore {
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
 
-        /// The versioning system used by the document. Will be Vector unless the Record read
-        /// from the db was still in rev-tree format.
-        Versioning versioning() const FLPURE { return _versioning; }
-
-        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
-        void upgradeVersioning();
-
         /// The document's last tree-based revid, before the first version-vectored rev was added.
         /// (`nullslice` if it still has a legacy revid, or never had one.)
         revid lastLegacyRevID() const FLPURE;
@@ -276,7 +269,6 @@ namespace litecore {
         fleece::Doc                  _extraDoc;           // Fleece Doc holding record `extra`
         fleece::Array                _revisions;          // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;   // Mutable version of `_revisions`
-        Versioning                   _versioning;         // RevIDs or VersionVectors?
         bool                         _changed{false};     // Set to true on explicit change
         ContentOption                _whichContent;       // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)

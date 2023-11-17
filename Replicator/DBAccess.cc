@@ -410,7 +410,7 @@ namespace litecore::repl {
     }
 
     Doc DBAccess::applyDelta(C4Collection* collection, slice docID, slice baseRevID, slice deltaJSON) {
-        Retained<C4Document> doc = getDoc(collection, docID, kDocGetUpgraded);
+        Retained<C4Document> doc = getDoc(collection, docID, kDocGetAll);
         if ( !doc ) error::_throw(error::NotFound);
         if ( !doc->selectRevision(baseRevID, true) || !doc->loadRevisionBody() ) return nullptr;
         return applyDelta(doc, deltaJSON, false);
