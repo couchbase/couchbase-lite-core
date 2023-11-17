@@ -68,8 +68,6 @@ namespace litecore {
     bool SourceID::writeBinary(fleece::slice_ostream& out, bool current) const {
         uint8_t flag = current ? 0x80 : 0x00;
         if ( isMe() ) return out.writeByte(0 | flag);
-        else if ( *this == kLegacyRevSourceID )
-            return out.writeByte(1 | flag) && out.writeByte(0x1e);
         else
             return out.writeByte(sizeof(_bytes) | flag) && out.write(&_bytes, sizeof(_bytes));
     }
@@ -81,13 +79,6 @@ namespace litecore {
         if ( len == 0 ) {
             *this = kMeSourceID;
             return true;
-        } else if ( len == 1 ) {
-            if ( uint8_t byte = in.readByte(); byte == 0x1e ) {
-                *this = kLegacyRevSourceID;
-                return true;
-            } else {
-                return false;
-            }
         } else {
             return len == sizeof(_bytes) && in.readAll(&_bytes, len);
         }
@@ -146,9 +137,6 @@ namespace litecore {
         if ( in.peekByte() == '*' ) {
             in.readByte();
             _author = kMeSourceID;
-        } else if ( in.peekByte() == '?' ) {
-            in.readByte();
-            _author = kLegacyRevSourceID;
         } else {
             if ( !_author.readASCII(in.readAll(SourceID::kASCIILength)) ) return false;
             if ( _author.isMe() ) return false;
@@ -167,8 +155,6 @@ namespace litecore {
 
     bool Version::writeASCII(slice_ostream& out, SourceID myID) const {
         if ( !out.writeHex(uint64_t(_time)) || !out.writeByte('@') ) return false;
-        else if ( _author == kLegacyRevSourceID )
-            return out.writeByte('?');
         else if ( auto& author = (_author.isMe()) ? myID : _author; author.isMe() )
             return out.writeByte('*');
         else
