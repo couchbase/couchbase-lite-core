@@ -635,6 +635,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
 
     initTest({Roses, Tulips, Lavenders});
 
+    // Make sure blob callbacks are used
+    _enableBlobProgressNotifications = true;
+
     std::vector<vector<C4BlobKey>> blobKeys{_collectionCount};  // blobKeys1a, blobKeys1b;
 
     vector<string> attachments1 = {idPrefix + "Attachment A", idPrefix + "Attachment B", idPrefix + "Attachment Z"};
@@ -651,6 +654,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push and Pull Attachments SG", "[.
     updateDocIDs();
     ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
     replParams.setDocIDs(_docIDs);
+    replParams.setBlobProgressCallback([](C4Replicator*, bool, C4CollectionSpec collectionSpec, C4String, C4String,
+                                          C4BlobKey, uint64_t, uint64_t, C4Error, void* C4NULLABLE) {
+        C4Assert((collectionSpec == Roses || collectionSpec == Tulips || collectionSpec == Lavenders));
+    });
     replicate(replParams);
 
     C4Log("-------- Checking docs and attachments --------");

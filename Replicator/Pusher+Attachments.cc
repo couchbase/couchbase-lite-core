@@ -99,6 +99,13 @@ namespace litecore::repl {
         logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)", SPLAT(digest), blob->getLength(),
                    reply.compressed);
         Retained<Replicator> repl = replicator();
+
+        auto collIndex = Worker::getCollectionIndex(*req);
+        if ( collIndex != kNotCollectionIndex ) {
+            auto collSpec     = repl->collection(collIndex)->getSpec();
+            progress.collSpec = collSpec;
+        }
+
         if ( progressNotificationLevel() >= 2 ) repl->onBlobProgress(progress);
 
         reply.dataSource = make_unique<BlobDataSource>(this, std::move(blob), progress);
