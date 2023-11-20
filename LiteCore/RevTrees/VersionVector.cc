@@ -97,12 +97,21 @@ namespace litecore {
 
 #pragma GCC diagnostic pop
 
+    slice_istream VersionVector::openBinary(slice data) {
+        slice_istream in(data);
+        if ( in.size < 1 ) {
+            Version::throwBadBinary();
+        } else if ( in.readByte() != 0 ) {
+            error::_throw(error::BadRevisionID, "Invalid binary version ID (looks like a legacy revID)");
+        }
+        return in;
+    }
+
     void VersionVector::readBinary(slice data) {
         clear();
-        slice_istream in(data);
-        if ( in.size < 1 || in.readByte() != 0 ) Version::throwBadBinary();
-        uint64_t time = 0;
-        int      n    = 0;
+        slice_istream in   = openBinary(data);
+        uint64_t      time = 0;
+        int           n    = 0;
         while ( in.size > 0 ) {
             if ( n++ == 0 ) {
                 // First timestamp is encoded as-is:
@@ -161,8 +170,7 @@ namespace litecore {
     }
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
-        slice_istream in(data);
-        if ( data.size < 1 || in.readByte() != 0 ) Version::throwBadBinary();
+        slice_istream in = openBinary(data);
         return Version(in);
     }
 
@@ -222,7 +230,7 @@ namespace litecore {
         if ( historyCount == 2 ) {
             Version newVers = _vers[0];
             readASCII(history[1], mySourceID);
-            add(newVers);  // -> New version plus parent vector
+            _add(newVers);  // -> New version plus parent vector
         } else {
             for ( size_t i = 1; i < historyCount; ++i ) {
                 Version parentVers(history[i], mySourceID);
@@ -315,18 +323,20 @@ namespace litecore {
 #endif
     }
 
-    bool VersionVector::addNewVersion(HybridClock& clock, SourceID author) {
+    void VersionVector::addNewVersion(HybridClock& clock, SourceID author) {
         if ( auto t = timeOfAuthor(author); t > logicalTime::none )
-            if ( !clock.see(t) ) return false;
-        return _add(Version(clock.now(), author));
+            if ( !clock.see(t) )
+                error::_throw(error::CorruptRevisionData, "Document version vector contains invalid timestamp");
+        _add(Version(clock.now(), author));
     }
 
-    bool VersionVector::add(Version v) {
-        if ( auto t = timeOfAuthor(v.author()); t >= v.time() ) return false;
-        return _add(v);
+    void VersionVector::add(Version v) {
+        if ( auto t = timeOfAuthor(v.author()); t >= v.time() )
+            error::_throw(error::BadRevisionID, "New version timestamp is older than current one");
+        _add(v);
     }
 
-    bool VersionVector::_add(Version const& v) {
+    void VersionVector::_add(Version const& v) {
         if ( !empty() ) {
             // Remove any existing version(s) by v's author.
             // Also remove any second (merged) version by the current version's author.
@@ -343,7 +353,6 @@ namespace litecore {
 #if DEBUG
         validate();
 #endif
-        return true;
     }
 
     void VersionVector::makeLocal(SourceID myID) {

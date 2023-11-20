@@ -146,6 +146,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
                                     "ON orders.test_id = other.test_id ORDER BY custId"),
                           "property 'custId' does not begin with a declared 'AS' alias");
     }
+
+    // Quoting special chars in properties
+    CHECK(translate("select `string[0]`") == "{'WHAT':[['.string\\\\[0]']]}");
+    CHECK(translate("select `string[0]`.arr[2].`string[3]`.simpleID")
+          == "{'WHAT':[['.string\\\\[0].arr[2].string\\\\[3].simpleID']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {

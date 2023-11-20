@@ -401,7 +401,7 @@ namespace litecore::repl {
     bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend* rev, slice receivedRevID) {
         if ( !_proposeChanges ) return false;
         try {
-            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetAll);
+            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetUpgraded);
             if ( doc && C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 if ( receivedRevID && receivedRevID != rev->remoteAncestorRevID ) {
                     // Remote ancestor received in proposeChanges response, so try with

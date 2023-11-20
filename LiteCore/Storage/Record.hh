@@ -50,6 +50,7 @@ namespace litecore {
         kMetaOnly,        // Skip `extra` and `body`
         kCurrentRevOnly,  // Skip `extra`
         kEntireBody,      // Everything
+        kUpgrade,         // Get everything, upgrade to latest format (version vectors)
     };
 
     /** The unit of storage in a DataFile: a key, version and body (all opaque blobs);

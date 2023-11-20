@@ -33,6 +33,9 @@ namespace litecore {
         /** Constructs a Version from a timestamp and peer ID. */
         Version(logicalTime t, SourceID p) : _author(p), _time(t) { validate(); }
 
+        /** Converts a legacy rev-tree revID (in binary form) to a Version. */
+        static Version legacyVersion(slice binaryRevID, SourceID source);
+
 #pragma mark - Accessors:
 
         /** The peer that created this version. */

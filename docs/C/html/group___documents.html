@@ -117,13 +117,14 @@ Enumerations</h2></td></tr>
 <tr class="memitem:gadb2bbf97a307f0e83b226949404ad268"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gadb2bbf97a307f0e83b226949404ad268">C4DocContentLevel</a> : uint8_t { <a class="el" href="group___documents.html#ggadb2bbf97a307f0e83b226949404ad268aa193da04a392b6716e45f03da586a3a8">kDocGetMetadata</a>
 , <a class="el" href="group___documents.html#ggadb2bbf97a307f0e83b226949404ad268a563fac3ef7d12fcd99f7dc14fb3594ad">kDocGetCurrentRev</a>
 , <a class="el" href="group___documents.html#ggadb2bbf97a307f0e83b226949404ad268a55db2d58e4348e82d4e7c89edeb35182">kDocGetAll</a>
+, <a class="el" href="group___documents.html#ggadb2bbf97a307f0e83b226949404ad268af5fc4795f5374f1b7ce29d15290b4b18">kDocGetUpgraded</a>
  }</td></tr>
 <tr class="separator:gadb2bbf97a307f0e83b226949404ad268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Creating and Updating Documents</h2></td></tr>
-<tr class="memitem:gadcd3f114b7d34dd637ea2d74da1d17b3"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gadcd3f114b7d34dd637ea2d74da1d17b3">C4DocDeltaApplier</a>) (void *context, <a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> delta, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gadcd3f114b7d34dd637ea2d74da1d17b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional callback to <code>c4doc_put</code> that generates the new revision body, based on an earlier revision body and the body of the <code><a class="el" href="struct_c4_doc_put_request.html" title="Parameters for adding a revision using c4doc_put.">C4DocPutRequest</a></code>.  <br /></td></tr>
-<tr class="separator:gadcd3f114b7d34dd637ea2d74da1d17b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae5b532bf50eb06f7ddb7cfb592ac5c0d"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gae5b532bf50eb06f7ddb7cfb592ac5c0d">C4DocDeltaApplier</a>) (void *context, <a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> delta, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> *revFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gae5b532bf50eb06f7ddb7cfb592ac5c0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional callback to <code>c4doc_put</code> that generates the new revision body, based on an earlier revision body and the body of the <code><a class="el" href="struct_c4_doc_put_request.html" title="Parameters for adding a revision using c4doc_put.">C4DocPutRequest</a></code>.  <br /></td></tr>
+<tr class="separator:gae5b532bf50eb06f7ddb7cfb592ac5c0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Fleece-related</h2></td></tr>
 <tr class="memitem:gae792c5cd06fe87cf7ec82768f5e8c710"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gae792c5cd06fe87cf7ec82768f5e8c710">c4doc_getProperties</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
@@ -436,14 +437,14 @@ Enumerations</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="gadcd3f114b7d34dd637ea2d74da1d17b3" name="gadcd3f114b7d34dd637ea2d74da1d17b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadcd3f114b7d34dd637ea2d74da1d17b3">&#9670;&#160;</a></span>C4DocDeltaApplier</h2>
+<a id="gae5b532bf50eb06f7ddb7cfb592ac5c0d" name="gae5b532bf50eb06f7ddb7cfb592ac5c0d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae5b532bf50eb06f7ddb7cfb592ac5c0d">&#9670;&#160;</a></span>C4DocDeltaApplier</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>(* C4DocDeltaApplier) (void *context, <a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> delta, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td>
+          <td class="memname">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>(* C4DocDeltaApplier) (void *context, <a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> delta, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> *revFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -454,6 +455,7 @@ Enumerations</h2></td></tr>
     <tr><td class="paramname">context</td><td>The same value given in the <code><a class="el" href="struct_c4_doc_put_request.html" title="Parameters for adding a revision using c4doc_put.">C4DocPutRequest</a></code>'s <code>deltaCBContext</code> field. </td></tr>
     <tr><td class="paramname">doc</td><td>The document; its selected revision is the one requested in the <code>deltaSourceRevID</code>. </td></tr>
     <tr><td class="paramname">delta</td><td>The contents of the request's <code>body</code> or <code>allocedBody</code>. </td></tr>
+    <tr><td class="paramname">revFlags</td><td>If not nullptr, its value may be updated after the delta is applied. </td></tr>
     <tr><td class="paramname">outError</td><td>If the callback fails, store an error here if it's non-NULL. </td></tr>
   </table>
   </dd>
@@ -496,6 +498,8 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="ggadb2bbf97a307f0e83b226949404ad268a563fac3ef7d12fcd99f7dc14fb3594ad" name="ggadb2bbf97a307f0e83b226949404ad268a563fac3ef7d12fcd99f7dc14fb3594ad"></a>kDocGetCurrentRev&#160;</td><td class="fielddoc"><p>Get current revision body but not other revisions/remotes. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="ggadb2bbf97a307f0e83b226949404ad268a55db2d58e4348e82d4e7c89edeb35182" name="ggadb2bbf97a307f0e83b226949404ad268a55db2d58e4348e82d4e7c89edeb35182"></a>kDocGetAll&#160;</td><td class="fielddoc"><p>Get everything. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ggadb2bbf97a307f0e83b226949404ad268af5fc4795f5374f1b7ce29d15290b4b18" name="ggadb2bbf97a307f0e83b226949404ad268af5fc4795f5374f1b7ce29d15290b4b18"></a>kDocGetUpgraded&#160;</td><td class="fielddoc"><p>Get everything, upgrade to latest format (version vectors) </p>
 </td></tr>
 </table>
 

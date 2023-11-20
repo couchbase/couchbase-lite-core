@@ -85,10 +85,10 @@ namespace litecore {
 
         /// Reads a document given a Record. If the document doesn't exist, the resulting VectorRecord will be
         /// empty, with an empty `properties` Dict and a null revision ID.
-        VectorRecord(KeyStore&, Versioning, const Record&);
+        VectorRecord(KeyStore&, const Record&);
 
         /// Reads a document given the docID.
-        VectorRecord(KeyStore& store, Versioning, slice docID, ContentOption = kEntireBody);
+        VectorRecord(KeyStore& store, slice docID, ContentOption = kEntireBody);
 
         VectorRecord(const VectorRecord&);
 
@@ -137,6 +137,19 @@ namespace litecore {
 
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
+
+        //---- Versioning:
+
+        /// The versioning system used by the document. Will be Vector unless the Record read
+        /// from the db was still in rev-tree format.
+        Versioning versioning() const FLPURE { return _versioning; }
+
+        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
+        void upgradeVersioning();
+
+        /// If this doc uses RevTree versioning, this is the RemoteID that is the current
+        /// revision's closest ancestor. (If none is, returns Local.)
+        RemoteID legacyTreeParent() const { return RemoteID(_parentOfLocal); }
 
         //---- Modifying the document:
 
@@ -210,6 +223,8 @@ namespace litecore {
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
+        static VersionVector createLegacyVersionVector(const RecordUpdate&);
+
         //---- For testing:
 
         /// Generates a rev-tree revision ID given document properties, parent revision ID, and flags.
@@ -227,9 +242,10 @@ namespace litecore {
         class LinkedFleeceDoc;
 
         FLSharedKeys                   sharedKeys() const;
-        fleece::Doc                    newLinkedFleeceDoc(const alloc_slice& body);
+        fleece::Doc                    newLinkedFleeceDoc(const alloc_slice&, FLTrust);
         void                           readRecordBody(const alloc_slice& body);
         void                           readRecordExtra(const alloc_slice& extra);
+        void                           importRevTree(alloc_slice body, alloc_slice extra);
         Record                         originalRecord() const;
         void                           requireBody() const;
         void                           requireRemotes() const;
@@ -242,6 +258,7 @@ namespace litecore {
         bool                           propertiesChanged() const;
         void                           clearPropertiesChanged() const;
         void                           updateDocFlags();
+        static void                    forAllLegacyRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
         KeyStore&                    _store;                // The database KeyStore
         FLEncoder                    _encoder{nullptr};     // Database shared Fleece Encoder
@@ -257,6 +274,7 @@ namespace litecore {
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
         Versioning                   _versioning;           // RevIDs or VersionVectors?
+        int                          _parentOfLocal{};      // (only used in imported revtree)
         bool                         _changed{false};       // Set to true on explicit change
         bool                         _revIDChanged{false};  // Has setRevID() been called?
         ContentOption                _whichContent;         // Which parts of record are available

@@ -192,8 +192,11 @@ namespace litecore::repl {
                 // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
                 // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
-                auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, revID, mode, getCollection()->getSpec(),
+                auto mode     = (deletion < 4) ? RevocationMode::kRevokedAccess : RevocationMode::kRemovedFromChannel;
+                auto collSpec = getCollection()->getSpec();
+                logInfo("SG revoked access to rev \"%.*s.%.*s.%.*s/%.*s\" with deletion %lld", SPLAT(collSpec.scope),
+                        SPLAT(collSpec.name), SPLAT(docID), SPLAT(revID), deletion);
+                revoked.emplace_back(new RevToInsert(docID, revID, mode, collSpec,
                                                      _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }

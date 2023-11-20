@@ -33,6 +33,7 @@ class QueryTest : public DataFileTestFixture {
     static const int numberOfOptions = 3;
 
     string collectionName;
+    int    option{0};
 
   protected:
     QueryTest() : QueryTest(0) {}
@@ -40,7 +41,7 @@ class QueryTest : public DataFileTestFixture {
     static unsigned alter2;
     static unsigned alter3;
 
-    explicit QueryTest(int option) {
+    explicit QueryTest(int option) : option(option) {
         static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
         logSection(kSectionNames[option]);
         unsigned jump;

@@ -8,7 +8,7 @@ var searchData=
   ['c4database_5',['C4Database',['../group___base.html#gae046b9267a473fdc31471b022fc94676',1,'c4Base.h']]],
   ['c4databasechange_6',['C4DatabaseChange',['../group___observer.html#ga1a4e9d32cb3fc53098f1e8bed57cb629',1,'c4DocumentTypes.h']]],
   ['c4databaseobserver_7',['C4DatabaseObserver',['../group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac',1,'c4Base.h']]],
-  ['c4docdeltaapplier_8',['C4DocDeltaApplier',['../group___documents.html#gadcd3f114b7d34dd637ea2d74da1d17b3',1,'c4DocumentTypes.h']]],
+  ['c4docdeltaapplier_8',['C4DocDeltaApplier',['../group___documents.html#gae5b532bf50eb06f7ddb7cfb592ac5c0d',1,'c4DocumentTypes.h']]],
   ['c4docenumerator_9',['C4DocEnumerator',['../group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca',1,'c4Base.h']]],
   ['c4documentobserver_10',['C4DocumentObserver',['../group___base.html#ga8a4ef01035322ff935bae1ea30a9199e',1,'c4Base.h']]],
   ['c4documentobservercallback_11',['C4DocumentObserverCallback',['../group___observer.html#ga89ca8018d3641e08bc06b986aea8fae8',1,'c4Observer.h']]],

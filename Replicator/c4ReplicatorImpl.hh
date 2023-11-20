@@ -394,9 +394,8 @@ namespace litecore {
             if ( repl != _replicator ) return;
             auto onBlob = _onBlobProgress.load();
             if ( onBlob )
-                onBlob(this, (p.dir == Dir::kPushing), {nullslice, nullslice},  // TODO: Collection support
-                       p.docID, p.docProperty, p.key, p.bytesCompleted, p.bytesTotal, p.error,
-                       _options->callbackContext);
+                onBlob(this, (p.dir == Dir::kPushing), p.collSpec, p.docID, p.docProperty, p.key, p.bytesCompleted,
+                       p.bytesTotal, p.error, _options->callbackContext);
         }
 
         // ---- Responding to state changes
