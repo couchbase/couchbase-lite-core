@@ -252,13 +252,13 @@ namespace litecore::repl {
     // Callback from an IncomingRev when it's been written to the db, but before the commit
     void Puller::_revsWereProvisionallyHandled() {
         auto count = _provisionallyHandledRevs.take();
-        decrement(_activeIncomingRevs, count);
         if ( count > 0 ) {
+            decrement(_activeIncomingRevs, count);
             _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
         }
         count = _provisionallyHandledRevoked.take();
-        decrement(_activeIncomingRevoked, count);
         if ( count > 0 ) {
+            decrement(_activeIncomingRevoked, count);
             _logVerbose("%u revocations were provisionally handled; down to %u active", count, _activeIncomingRevoked);
         }
         maybeStartIncomingRevs();
@@ -276,6 +276,7 @@ namespace litecore::repl {
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
         if ( !revs ) { return; }
+        unsigned numRevoked = 0;
         for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
@@ -285,12 +286,15 @@ namespace litecore::repl {
                 decrement(_unfinishedIncomingRevs);
             } else {
                 if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevoked);
-                decrement(_unfinishedIncomingRevoked);
+                numRevoked++;
             }
             if ( !passive() ) completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
             inc->reset();
         }
+
+        decrement(_unfinishedIncomingRevoked, numRevoked);
+        _revFinder->revokedHandled(numRevoked);
 
         ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
         if ( capacity > 0 )

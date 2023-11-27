@@ -66,6 +66,17 @@ namespace litecore::repl {
         }
     }
 
+    void RevFinder::_revokedHandled(unsigned count) {
+        decrement(_numRevokedBeingHandled, count);
+
+        // Process waiting "changes" messages if not throttled:
+        while ( !_waitingChangesMessages.empty() && pullerHasCapacity() ) {
+            auto req = _waitingChangesMessages.front();
+            _waitingChangesMessages.pop_front();
+            handleChangesNow(req);
+        }
+    }
+
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn* req) {
         try {
@@ -203,7 +214,10 @@ namespace litecore::repl {
             ++changeIndex;
         }
 
-        if ( !revoked.empty() ) _delegate->documentsRevoked(std::move(revoked));
+        if ( !revoked.empty() ) {
+            increment(_numRevokedBeingHandled, (unsigned)revoked.size());
+            _delegate->documentsRevoked(std::move(revoked));
+        }
 
         // Ask the database to look up the ancestors:
         auto                collection = getCollection();
