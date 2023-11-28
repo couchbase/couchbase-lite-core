@@ -152,14 +152,6 @@ namespace litecore { namespace repl {
 
             _findExistingConflicts();
 
-            // Get the remote DB ID:
-            slice key;
-            // Assertion: _collections.size() > 0
-            // All _checkpointer's share the same key.
-            key = _subRepls[0].checkpointer->remoteDBIDString();
-            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
-            logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
-
             bool goOn = true;
             for (CollectionIndex i = 0; goOn && i < _subRepls.size(); ++i) {
                 // if any getLocalCheckpoint fails, the replicator would already be stopped.
@@ -1306,6 +1298,14 @@ namespace litecore { namespace repl {
         }
         _pushStatus = isPushBusy ? kC4Busy : kC4Stopped;
         _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
+
+        // Get the remote DB ID:
+        slice key;
+        // Assertion: _collections.size() > 0
+        // All _checkpointer's share the same key.
+        key = _subRepls[0].checkpointer->remoteDBIDString();
+        C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
+        logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
     }
 
     void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
