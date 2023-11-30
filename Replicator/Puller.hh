@@ -38,10 +38,17 @@ namespace litecore::repl {
         }
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled(const bool revoked) {
-            if ( !revoked ) _provisionallyHandledRevs.add(1);
-            else
-                _provisionallyHandledRevoked.add(1);
+        template <bool revoked>
+        void revWasProvisionallyHandled();
+
+        template <>
+        void revWasProvisionallyHandled<true>() {
+            _provisionallyHandledRevoked.add(1);
+        }
+
+        template <>
+        void revWasProvisionallyHandled<false>() {
+            _provisionallyHandledRevs.add(1);
         }
 
         void revWasHandled(IncomingRev* inc NONNULL);
@@ -67,12 +74,13 @@ namespace litecore::repl {
         void          activityLevelChanged(ActivityLevel level);
 
       private:
-        void                  _start(RemoteSequence sinceSequence);
-        void                  _expectSequences(std::vector<RevFinder::ChangeSequence>);
-        void                  _documentsRevoked(std::vector<Retained<RevToInsert>>);
-        void                  handleRev(Retained<blip::MessageIn>);
-        void                  handleNoRev(Retained<blip::MessageIn>);
-        Retained<IncomingRev> makeIncomingRev(bool revoked);
+        void _start(RemoteSequence sinceSequence);
+        void _expectSequences(std::vector<RevFinder::ChangeSequence>);
+        void _documentsRevoked(std::vector<Retained<RevToInsert>>);
+        void handleRev(Retained<blip::MessageIn>);
+        void handleNoRev(Retained<blip::MessageIn>);
+        template <bool revoked>
+        Retained<IncomingRev> makeIncomingRev();
         void                  startIncomingRev(blip::MessageIn* NONNULL);
         void                  startRevoked(RevToInsert* NONNULL);
         void                  maybeStartIncomingRevs();

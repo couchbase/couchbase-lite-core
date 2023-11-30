@@ -2727,9 +2727,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
 
     // Before CBL-5033 changes, finalDoc is inserted after finalRevoked, because revoked come from earlier changes
     //  message, and block queue until all revoked are inserted.
-    // After CBL-5033, finalDoc is inserted first, because once we start receiving "rev" messages, they take
-    //  priority over any waiting revoked.
-
+    // After CBL-5033, finalDoc is inserted first, because the code flow gives slight preference to regular revs.
+    //
     // Wait until doc is inserted
     while ( !finalDoc ) {
         finalDoc     = c4coll_getDoc(_collections[0], slice(finalDocID), true, kDocGetCurrentRev, nullptr);

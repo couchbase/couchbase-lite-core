@@ -290,7 +290,7 @@ namespace litecore::repl {
         // Actor event queue, so it runs on the Inserter's thread, NOT the IncomingRev's! Thus, it
         // needs to pay attention to thread-safety.
         _provisionallyInserted = true;
-        _puller->revWasProvisionallyHandled(revoked);
+        revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
     // Called by the Inserter after the revision is safely committed to disk.
