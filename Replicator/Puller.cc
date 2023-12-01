@@ -288,7 +288,7 @@ namespace litecore::repl {
             inc->reset();
         }
 
-        if (numRevoked > 0) {
+        if ( numRevoked > 0 ) {
             decrement(_unfinishedIncomingRevoked, numRevoked);
             _revFinder->revokedHandled(numRevoked);
         }

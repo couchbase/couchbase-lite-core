@@ -39,16 +39,12 @@ namespace litecore::repl {
 
         // Called only by IncomingRev
         template <bool revoked>
-        void revWasProvisionallyHandled();
-
-        template <>
-        void revWasProvisionallyHandled<true>() {
-            _provisionallyHandledRevoked.add(1);
-        }
-
-        template <>
-        void revWasProvisionallyHandled<false>() {
-            _provisionallyHandledRevs.add(1);
+        void revWasProvisionallyHandled() {
+            if constexpr ( revoked ) {
+                _provisionallyHandledRevoked.add(1);
+            } else {
+                _provisionallyHandledRevs.add(1);
+            }
         }
 
         void revWasHandled(IncomingRev* inc NONNULL);
