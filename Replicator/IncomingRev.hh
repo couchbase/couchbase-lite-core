@@ -40,7 +40,7 @@ namespace litecore::repl {
         void reset();
 
         // Called by the Inserter:
-        void revisionProvisionallyInserted();
+        void revisionProvisionallyInserted(bool revoked);
         void revisionInserted();
 
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
