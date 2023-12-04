@@ -211,7 +211,6 @@ namespace litecore {
                     // Search the remotes for earlier legacy revs that aren't conflicts:
                     unsigned curGen = UINT_MAX;
                     if ( !vvl.legacy.empty() ) curGen = revid(vvl.legacy.back()).generation();
-                    revid ancestorRevID;
                     _doc.forAllRevs([&](RemoteID rem, Revision const& otherRev) {
                         if ( !otherRev.revID.isVersion() && otherRev.revID.generation() < curGen
                              && !(otherRev.flags & DocumentFlags::kConflicted) ) {
