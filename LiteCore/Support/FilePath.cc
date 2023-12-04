@@ -24,6 +24,8 @@
 #include <thread>
 #include <algorithm>
 #include <mutex>
+#include <iostream>
+#include <fstream>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -50,9 +52,38 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
+static int cppCopyfile(const char* from, const char* to)
+{
+    try {
+        std::ifstream fromFS(from, std::ios::binary);
+        if (!fromFS) {
+            Warn("Error opening source file %s.", from);
+            return -1;
+        }
+
+        std::ofstream toFS(to, std::ios::binary);
+        if (!toFS) {
+            Warn("Error opening destination file %s.", to);
+            return -1;
+        }
+
+        // Copy content from source to destination
+        toFS << fromFS.rdbuf();
+
+        // Close the files
+        fromFS.close();
+        toFS.close();
+    } catch(std::exception& exc) {
+        Warn("copyfile caught an exception, %s.", exc.what());
+        return -1;
+    }
+    return 0;
+}
+
 #ifdef __linux__
 static int copyfile(const char* from, const char* to)
 {
+#if 0
     int read_fd, write_fd;
     off_t offset = 0;
     struct stat stat_buf;
@@ -114,6 +145,9 @@ static int copyfile(const char* from, const char* to)
     }
     
     return 0;
+#else
+    return cppCopyfile(from, to);
+#endif
 }
 #elif defined(_MSC_VER)
 typedef HRESULT (WINAPI *CopyFileFunc)(_In_ PCWSTR, _In_ PCWSTR, _In_opt_  COPYFILE2_EXTENDED_PARAMETERS *);
@@ -142,6 +176,11 @@ static int copyfile(const char* from, const char* to)
     }
     
     return 0;
+}
+#else
+static int copyfile(const char* from, const char* to)
+{
+    return cppCopyfile(from, to);
 }
 #endif
 
@@ -605,7 +644,7 @@ namespace litecore {
         std::string from = path();
         const char *fromPathStr = from.c_str(), *toPathStr = to.c_str();
         int result = 0;
-#if __APPLE__
+#if 0//__APPLE__
         // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
         // Unfortunately there seems to be a bug in the iOS 9 simulator where, if this flag is
         // used, the resulting files have zero length. (See #473)
