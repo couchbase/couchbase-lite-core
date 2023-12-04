@@ -63,10 +63,10 @@ namespace litecore { namespace repl {
 
             for (RevToInsert *rev : *revs) {
                 C4Error docErr;
-                bool docSaved = insertRevisionNow(rev, &docErr);
-                rev->trimBody();                // don't need body any more
-                if (docSaved) {
-                    rev->owner->revisionProvisionallyInserted();
+                bool    docSaved = insertRevisionNow(rev, &docErr);
+                rev->trimBody();  // don't need body any more
+                if ( docSaved ) {
+                    rev->owner->revisionProvisionallyInserted(rev->revocationMode != RevocationMode::kNone);
                 } else {
                     // Notify owner of a rev that failed:
                     string desc = docErr.description();

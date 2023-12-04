@@ -2436,3 +2436,110 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap",
         REQUIRE(revID.hasPrefix(to_string(numRevs1 + numInitialRevs) + "-"));
     }
 }
+
+// CBL-5033
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "[.SyncServerCollection]") {
+    string       idPrefix        = timePrefix();
+    const string channelID       = idPrefix + "ch";
+    const string channelIDrevoke = channelID + "-revk";
+    initTest({Tulips}, {channelIDrevoke, channelID}, "test_user");
+
+    static constexpr int kNumDocs = 1000, kNumProps = 10;
+    static constexpr int kDocBufSize = 80;
+
+    // -------- Populating local db --------
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        std::srand(123456);  // start random() sequence at a known place //NOLINT(cert-msc51-cpp)
+        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%sdoc-revk-%03d", idPrefix.c_str(), docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for ( int p = 0; p < kNumProps; ++p ) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(std::rand());  // NOLINT(cert-msc50-cpp)
+            }
+            enc.writeKey("channels"_sl);
+            enc.beginArray();
+            enc.writeString(channelIDrevoke);
+            enc.endArray();
+            enc.endDict();
+            alloc_slice body  = enc.finish();
+            string      revID = createNewRev(_collections[0], slice(docID), body);
+        }
+    };
+    populateDB();
+
+    // Push to remote
+    ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
+    replicate(replParams);
+
+    // Insert some docs to SG
+    {
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
+            char docID[kDocBufSize];
+            snprintf(docID, kDocBufSize, "%sdoc-%03d", idPrefix.c_str(), docNo);
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("channels"_sl);
+            enc.beginArray();
+            enc.writeString(channelID);
+            enc.endArray();
+            for ( int p = 0; p < kNumProps; ++p ) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(std::rand());  // NOLINT(cert-msc50-cpp)
+            }
+            enc.endDict();
+        }
+        enc.endArray();
+        enc.endDict();
+        _sg.insertBulkDocs(Tulips, enc.finish());
+    }
+
+    // Revoke access to first set of docs (by setting channel to other channel)
+    _testUser.setChannels({channelID});
+
+    // Pull revoked + docs that were inserted to SG
+    replParams.setPushPull(kC4Disabled, kC4OneShot);
+    startReplicator(replParams.paramSetter(), nullptr);
+
+    // Wait for repl to start
+    waitForStatus(kC4Busy);
+
+    std::string         finalRevokedID = idPrefix + "doc-revk-999";
+    std::string         finalDocID     = idPrefix + "doc-999";
+    c4::ref<C4Document> finalRevoked;
+    c4::ref<C4Document> finalDoc;
+
+    // Before CBL-5033 changes, finalDoc is inserted after finalRevoked, because revoked come from earlier changes
+    //  message, and block queue until all revoked are inserted.
+    // After CBL-5033, finalDoc is inserted first, because the code flow gives slight preference to regular revs.
+    //
+    // Wait until doc is inserted
+    while ( !finalDoc ) {
+        finalDoc     = c4coll_getDoc(_collections[0], slice(finalDocID), true, kDocGetCurrentRev, nullptr);
+        finalRevoked = c4coll_getDoc(_collections[0], slice(finalRevokedID), true, kDocGetCurrentRev, nullptr);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    // Assert that final doc to be revoked hasn't been revoked yet
+    REQUIRE(finalRevoked);
+
+    while ( finalRevoked ) {
+        finalRevoked = c4coll_getDoc(_collections[0], slice(finalRevokedID), true, kDocGetCurrentRev, nullptr);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
+    REQUIRE(!finalRevoked);
+
+    waitForStatus(kC4Stopped);
+
+    _repl = nullptr;
+}

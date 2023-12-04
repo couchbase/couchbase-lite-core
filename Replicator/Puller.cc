@@ -42,13 +42,13 @@ namespace litecore { namespace repl {
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
-    ,_inserter(new Inserter(replicator, coll))
-    ,_revFinder(new RevFinder(replicator, this, coll))
-    ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-    ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
-    {
-        replicator->registerWorkerHandler(this, "rev",      &Puller::handleRev);
-        replicator->registerWorkerHandler(this, "norev",    &Puller::handleNoRev);
+        , _inserter(new Inserter(replicator, coll))
+        , _revFinder(new RevFinder(replicator, this, coll))
+        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
+        , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
+        replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
         if (!passive() && _options->noIncomingConflicts())
@@ -152,10 +152,16 @@ namespace litecore { namespace repl {
 
     // We lost access to some documents; they need to be purged locally.
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
-        for (auto &rev : revs) {
-            Retained<IncomingRev> inc = makeIncomingRev();
-            if (inc)
-                inc->handleRevokedDoc(rev);
+        for ( auto& rev : revs ) {
+            if ( _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
+                 && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+                startRevoked(rev);
+            } else {
+                logDebug("Delaying handling revocation for '%.*s' [%zu waiting]", SPLAT(rev->docID),
+                         _waitingRevoked.size() + 1);
+                if ( _waitingRevoked.empty() ) { logVerbose("Back pressure started for revocations"); }
+                _waitingRevoked.push_back(std::move(rev));
+            }
         }
     }
 
@@ -195,23 +201,34 @@ namespace litecore { namespace repl {
     void Puller::startIncomingRev(MessageIn *msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
-        Retained<IncomingRev> inc = makeIncomingRev();
-        if (inc) {
+        Retained<IncomingRev> inc = makeIncomingRev<false>();
+        if ( inc ) {
             slice sequenceStr = msg->property(slice("sequence"));
             inc->handleRev(msg, _missingSequences.bodySizeOfSequence(RemoteSequence(sequenceStr)));  // ... will call _revWasHandled when it's finished
         }
     }
 
+    // Actually process a revocation now
+    void Puller::startRevoked(RevToInsert* rev) {
+        Retained<IncomingRev> inc = makeIncomingRev<true>();
+        if ( inc ) inc->handleRevokedDoc(rev);
+    }
 
     // Sets up an IncomingRev object to handle a revision.
+    template <bool revoked>
     Retained<IncomingRev> Puller::makeIncomingRev() {
         if(!connected()) {
             // Connection already closed, continuing would cause a crash
             logVerbose("makeIncomingRev called after connection close, ignoring...");
             return nullptr;
         }
-        increment(_activeIncomingRevs);
-        increment(_unfinishedIncomingRevs);
+        if constexpr ( revoked ) {
+            increment(_activeIncomingRevoked);
+            increment(_unfinishedIncomingRevoked);
+        } else {
+            increment(_activeIncomingRevs);
+            increment(_unfinishedIncomingRevs);
+        }
 
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
@@ -235,14 +252,28 @@ namespace litecore { namespace repl {
             }
             startIncomingRev(msg);
         }
+        while ( !_waitingRevoked.empty() && _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
+                && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+            auto rev = _waitingRevoked.front();
+            _waitingRevoked.pop_front();
+            if ( _waitingRevMessages.empty() ) { logVerbose("Back pressure ended for revocations"); }
+            startRevoked(rev);
+        }
     }
 
 
     // Callback from an IncomingRev when it's been written to the db, but before the commit
     void Puller::_revsWereProvisionallyHandled() {
         auto count = _provisionallyHandledRevs.take();
-        decrement(_activeIncomingRevs, count);
-        _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
+        if ( count > 0 ) {
+            decrement(_activeIncomingRevs, count);
+            _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
+        }
+        count = _provisionallyHandledRevoked.take();
+        if ( count > 0 ) {
+            decrement(_activeIncomingRevoked, count);
+            _logVerbose("%u revocations were provisionally handled; down to %u active", count, _activeIncomingRevoked);
+        }
         maybeStartIncomingRevs();
     }
 
@@ -259,21 +290,28 @@ namespace litecore { namespace repl {
 
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
-        if (!revs) {
-            return;
-        }
-        for (IncomingRev *inc : *revs) {
+        if ( !revs ) { return; }
+        unsigned numRevoked = 0;
+        for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
-            if (!inc->wasProvisionallyInserted())
-                decrement(_activeIncomingRevs);
             auto rev = inc->rev();
-            if (!passive())
-                completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
+            if ( rev->revocationMode == RevocationMode::kNone ) {
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
+                decrement(_unfinishedIncomingRevs);
+            } else {
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevoked);
+                numRevoked++;
+            }
+            if ( !passive() ) completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
             inc->reset();
         }
-        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
+
+        if ( numRevoked > 0 ) {
+            decrement(_unfinishedIncomingRevoked, numRevoked);
+            _revFinder->revokedHandled(numRevoked);
+        }
 
         ssize_t capacity = tuning::kMaxIncomingRevs - _spareIncomingRevs.size();
         if (capacity > 0)
@@ -354,7 +392,7 @@ namespace litecore { namespace repl {
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
-        if (_unfinishedIncomingRevs > 0) {
+        if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
             // CBL-221: Crash when scheduling document ended events
             level = kC4Busy;
         } else if (_fatalError || !connected()) {
