@@ -54,16 +54,17 @@ using namespace litecore;
 
 static int cppCopyfile(const char* from, const char* to)
 {
+    Warn("cppCopyfile from \"%s\" to \"%s\"", from, to);
     try {
         std::ifstream fromFS(from, std::ios::binary);
         if (!fromFS) {
-            Warn("Error opening source file %s.", from);
+            Warn("Error opening source file \"%s\".", from);
             return -1;
         }
 
         std::ofstream toFS(to, std::ios::binary);
         if (!toFS) {
-            Warn("Error opening destination file %s.", to);
+            Warn("Error opening destination file \"%s\".", to);
             return -1;
         }
 
@@ -74,7 +75,7 @@ static int cppCopyfile(const char* from, const char* to)
         fromFS.close();
         toFS.close();
     } catch(std::exception& exc) {
-        Warn("copyfile caught an exception, %s.", exc.what());
+        Warn("copyfile caught an exception, \"%s\".", exc.what());
         return -1;
     }
     return 0;
@@ -468,12 +469,15 @@ namespace litecore {
                 if (!result)
                     break;
                 string name(result->d_name);
+                printf("[dbg]forEachMatch name=\"%s\"\n", name.c_str());
                 if (_file.empty() || name.find(_file) == 0) {
                     if (is_dir(result, _dir)) {
                         if (name == "." || name == "..")
                             continue;
+                        printf("[dbg]forEachMatch enter dir \"%s\"\n", (_dir+name+"/").c_str());
                         fn(FilePath(_dir + name + '/', ""));
                     } else {
+                        printf("[dbg]forEachMatch enter file \"%s\"\n", (_dir+name).c_str());
                         fn(FilePath(_dir,name));
                     }
                 }
@@ -643,6 +647,7 @@ namespace litecore {
     void FilePath::copyTo(const string &to) const {
         std::string from = path();
         const char *fromPathStr = from.c_str(), *toPathStr = to.c_str();
+        printf("[dbg]FilePath::copyTo from \"%s\" to \"%s\".\n", fromPathStr, toPathStr);
         int result = 0;
 #if 0//__APPLE__
         // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
@@ -669,6 +674,7 @@ namespace litecore {
         if (result != 0) {
             error::_throwErrno("Couldn't copy file from %s to %s", fromPathStr, toPathStr);
         }
+        printf("[dbg]FilePath::copyTo END\n");
     }
 
     void FilePath::moveTo(const string &to) const {
