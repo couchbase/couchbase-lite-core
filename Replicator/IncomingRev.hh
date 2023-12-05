@@ -85,7 +85,7 @@ namespace litecore::repl {
         std::unique_ptr<C4WriteStream>           _writer;
         uint64_t                                 _blobBytesWritten{};
         actor::Timer::time                       _lastNotifyTime;
-        bool                                     _mayContainBlobs{};
+        bool                                     _mayContainBlobChanges{};
         bool                                     _mayContainEncryptedProperties{};
         uint64_t                                 _bodySize{};
     };
