@@ -30,6 +30,13 @@ namespace litecore {
             Warn("No database exists at %s, cannot copy!", from.path().c_str());
             error::_throw(error::Domain::LiteCore, kC4ErrorNotFound);
         }
+        // normalize "from". It should be a diectory of the database bundle.
+        std::string fpath = from.path();
+        if (fpath.back() != '/') {
+            printf("[dbg]CopyPrebuiltDB, from is normalized\n");
+            fpath += "/";
+        }
+        FilePath normalizedFrom = FilePath{fpath};
 
         if (to.exists()) {
             Warn("Database already exists at %s, cannot copy!", to.path().c_str());
@@ -41,7 +48,7 @@ namespace litecore {
         
         FilePath temp = FilePath::sharedTempDirectory(to.parentDir()).mkTempDir();
         temp.delRecursive();
-        from.copyTo(temp);
+        normalizedFrom.copyTo(temp);
 
         {
             Retained<C4Database> db;
