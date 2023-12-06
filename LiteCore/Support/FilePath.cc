@@ -662,12 +662,14 @@ namespace litecore {
         }
 #else
         if (isDir()) {
+            printf("[dbg]FilePath::copyTo is Dir |%s|%s|\n", _dir.c_str(), _file.c_str());
             FilePath toPath(to);
             toPath.mkdir();
             forEachFile([&toPath](const FilePath &f) {
                 f.copyTo(toPath[f.fileOrDirName() + (f.isDir() ? "/" : "")]);
             });
         } else {
+            printf("[dbg]FilePath::copyTo is NOT Dir |%s|%s|\n", _dir.c_str(), _file.c_str());
             result = copyfile(fromPathStr, toPathStr);
         }
 #endif
