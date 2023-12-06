@@ -571,6 +571,7 @@ namespace litecore {
                           SPLAT(newRev->revID.expanded()), effect);
                 }
                 _revTree.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
+                _revTree.keepBody(newRev);
             }
 
             if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID))) {

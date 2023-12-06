@@ -115,7 +115,7 @@ SG::sendRemoteRequest(const std::string &method, std::string path, slice body, b
     HTTPStatus status;
     C4Error error;
     alloc_slice response = runRequest(method, path, body, admin, &error, &status, 5.0, logRequests);
-    if (error.code)
+    if (error.code && error.code != (int)expectedStatus)
         FAIL(std::string("Error: ") + error.description());
     INFO(std::string("Status: ") + std::to_string((int)status));
     Assert(status == expectedStatus);
@@ -185,7 +185,7 @@ SG::runRequest(const std::string &method, const std::string &path, slice body, b
     } else {
         Assert(r->error().code != 0);
         if(outStatus)
-            *outStatus = HTTPStatus::undefined;
+            *outStatus = r->status();
         if(outError)
             *outError = r->error();
 

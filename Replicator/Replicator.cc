@@ -138,12 +138,12 @@ namespace litecore { namespace repl {
 
             _findExistingConflicts();
 
-            if (_options.push > kC4Passive || _options.pull > kC4Passive) {
-                // Get the remote DB ID:
-                slice key = _checkpointer.remoteDBIDString();
-                C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
-                logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
+            // Get the remote DB ID:
+            slice key = _checkpointer.remoteDBIDString();
+            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
+            logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
 
+            if (_options.push > kC4Passive || _options.pull > kC4Passive) {
                 // Get the checkpoints:
                 if (getLocalCheckpoint(reset)) {
                     getRemoteCheckpoint(false);

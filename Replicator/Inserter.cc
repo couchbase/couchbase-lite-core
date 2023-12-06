@@ -146,16 +146,10 @@ namespace litecore { namespace repl {
                         }
                     };
                     put.deltaCBContext = this;
-                    // Preserve rev body as the source of a future delta I may push back:
-                    put.revFlags |= kRevKeepBody;
                 } else {
                     // If not a delta, encode doc body using database's real sharedKeys:
                     bodyForDB = _db->reEncodeForDatabase(rev->doc);
                     rev->doc = nullptr;
-                    // Preserve rev body as the source of a future delta I may push back:
-                    if (bodyForDB.size >= tuning::kMinBodySizeForDelta
-                        && !_options.disableDeltaSupport())
-                        put.revFlags |= kRevKeepBody;
                 }
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
