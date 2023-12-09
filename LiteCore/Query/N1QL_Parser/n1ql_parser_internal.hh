@@ -313,7 +313,7 @@ namespace litecore::n1ql {
             // Patterns:
             "regexp_contains", "regexp_like", "regexp_position", "regexp_replace",
             // Strings:
-            "contains", "length", "lower", "ltrim", "rtrim", "trim", "upper",
+            "contains", "length", "lower", "ltrim", "rtrim", "trim", "upper", "concat",
             // Types:
             "isarray", "isatom", "isboolean", "isnumber", "isobject", "isstring", "type", "toarray", "toatom",
             "toboolean", "tonumber", "toobject", "tostring", "is_array", "is_atom", "is_boolean", "is_number",

@@ -769,6 +769,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
 
     CHECK(queryWhat("['concat()', 'goodbye ', null, ' world']") == "\"goodbye null world\"");
     CHECK(queryWhat("['concat()', 'goodbye', ['.bogus'], 'world']") == "null");
+    CHECK(queryWhat("['concat()', 'goodbye', ' ', ['.num'], ' ', ['.type']]") == "\"goodbye 1 number\"");
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
