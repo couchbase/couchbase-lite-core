@@ -54,7 +54,7 @@ namespace litecore::repl {
                 bool    docSaved = insertRevisionNow(rev, &docErr);
                 rev->trimBody();  // don't need body any more
                 if ( docSaved ) {
-                    rev->owner->revisionProvisionallyInserted();
+                    rev->owner->revisionProvisionallyInserted(rev->revocationMode != RevocationMode::kNone);
                 } else {
                     // Notify owner of a rev that failed:
                     string desc = docErr.description();
