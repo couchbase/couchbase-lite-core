@@ -557,6 +557,11 @@ namespace litecore {
 
             keyStore->addExpiration();
             deletedStore->addExpiration();
+
+            // Add index on sequences
+            // Requiement for RevTreeRecord::read()
+            keyStore->createSequenceIndex();
+            deletedStore->createSequenceIndex();
             
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"

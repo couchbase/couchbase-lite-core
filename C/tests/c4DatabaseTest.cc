@@ -1474,3 +1474,61 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Re-open database with an index", "[Datab
     REQUIRE(c4coll_deleteIndex(darthColl, "byAnswer"_sl, ERROR_INFO()));
     REQUIRE(c4coll_deleteIndex(darthColl, "byResult"_sl, ERROR_INFO()));
 }
+
+#define BENCH(expr)                                                            \
+  [&]() {                                                                      \
+    auto start = std::chrono::system_clock::now();                             \
+    expr;                                                                      \
+    auto end = std::chrono::system_clock::now();                               \
+    return end - start;                                                        \
+  }()
+
+// CBL-5241 / CBL-5254
+// Before the fix associated with this ticket, c4doc_update performs a SCAN query 
+// when fetching rev-tree, due to the lack of sequence index. This means the update
+// would get increasingly slower for every doc existing in the DB.
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "c4doc_update sequence index perf", "[Database][C]") {
+    auto coll = REQUIRED(c4db_getDefaultCollection(db, nullptr));
+
+    C4DocContentLevel fetchLevel = kDocGetAll;
+
+    // Doc fetched with kDocGetAll will not need to perform rev-tree fetch 
+    // during c4doc_update
+    SECTION("kDocGetAll") {}
+
+    // Doc fetched with kDocGetCurrentRev will need to fetch rev-tree during
+    // c4doc_update. If there is no sequence index, this will take a long time.
+    SECTION("kDocGetCurrentRev") { fetchLevel = kDocGetCurrentRev; }
+
+    auto upsertDocs = [&](size_t count) {
+        TransactionHelper t(db);
+        size_t doc_count = c4db_getDocumentCount(db);
+        char docID_buf[32]{};
+        C4Document *doc;
+        for (size_t i = 0; i < count; ++i) {
+            snprintf(docID_buf, 32, "doc%zu", doc_count + i);
+            doc = c4coll_createDoc(coll, slice{docID_buf}, kFleeceBody, 0,
+                                   ERROR_INFO());
+            c4doc_release(doc);
+        }
+
+        for (size_t i = 0; i < count; ++i) {
+            snprintf(docID_buf, 32, "doc%zu", doc_count + i);
+            doc = c4coll_getDoc(coll, slice{docID_buf}, true, fetchLevel,
+                                ERROR_INFO());
+            C4Document* updated_doc = c4doc_update(doc, kFleeceBody, 0, ERROR_INFO());
+            REQUIRE(updated_doc);
+            REQUIRE(c4doc_getRevisionBody(updated_doc) == kFleeceBody);
+            c4doc_release(doc);
+            c4doc_release(updated_doc);
+        }
+    };
+
+    const std::chrono::duration<double> time1 = BENCH(upsertDocs(20000));
+    const std::chrono::duration<double> time2 = BENCH(upsertDocs(20000));
+
+    // It should take a similar time for both.
+    // If not, it probably means the sequence index is not being used by the
+    //  revtree fetch query in c4doc_update.
+    REQUIRE(time2.count() < time1.count() * 2);
+}
