@@ -53,13 +53,13 @@ class ReplicatorLoopbackTest
 
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
-    ReplicatorLoopbackTest()
 #if SkipVersionVectorTest
-        : C4Test(0)
+    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(0) {}
 #else
-        : C4Test(GENERATE(0, 1))
+    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(GENERATE(0, 1)) {}
 #endif
-        , db2(createDatabase("2")) {
+
+    ReplicatorLoopbackTest(int which) : C4Test(which), db2(createDatabase("2")) {
         // Change tuning param so that tests will actually create deltas, despite using small
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;

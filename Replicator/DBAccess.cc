@@ -188,6 +188,22 @@ namespace litecore::repl {
         FLDeepIterator_Free(i);
     }
 
+    bool DBAccess::hasBlobReferences(Dict root) const {
+        // This method is non-static because it references _disableBlobSupport, but it's
+        // thread-safe.
+        bool           found = false;
+        FLDeepIterator i     = FLDeepIterator_New(root);
+        for ( ; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i) ) {
+            C4BlobKey blobKey;
+            if ( isBlobOrAttachment(i, &blobKey, _disableBlobSupport) ) {
+                found = true;
+                break;
+            }
+        }
+        FLDeepIterator_Free(i);
+        return found;
+    }
+
     void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) const {
         enc.beginDict();
 
@@ -394,7 +410,7 @@ namespace litecore::repl {
     }
 
     Doc DBAccess::applyDelta(C4Collection* collection, slice docID, slice baseRevID, slice deltaJSON) {
-        Retained<C4Document> doc = getDoc(collection, docID, kDocGetAll);
+        Retained<C4Document> doc = getDoc(collection, docID, kDocGetUpgraded);
         if ( !doc ) error::_throw(error::NotFound);
         if ( !doc->selectRevision(baseRevID, true) || !doc->loadRevisionBody() ) return nullptr;
         return applyDelta(doc, deltaJSON, false);

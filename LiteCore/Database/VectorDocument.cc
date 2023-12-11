@@ -31,12 +31,11 @@ namespace litecore {
         , public InstanceCountedIn<VectorDocument> {
       public:
         VectorDocument(C4Collection* coll, slice docID, ContentOption whichContent)
-            : C4Document(coll, alloc_slice(docID)), _doc(keyStore(), Versioning::Vectors, docID, whichContent) {
+            : C4Document(coll, alloc_slice(docID)), _doc(keyStore(), docID, whichContent) {
             _initialize();
         }
 
-        VectorDocument(C4Collection* coll, const Record& doc)
-            : C4Document(coll, doc.key()), _doc(keyStore(), Versioning::Vectors, doc) {
+        VectorDocument(C4Collection* coll, const Record& doc) : C4Document(coll, doc.key()), _doc(keyStore(), doc) {
             _initialize();
         }
 
@@ -65,39 +64,52 @@ namespace litecore {
 
         static alloc_slice _expandRevID(revid rev, SourceID myID = kMeSourceID) {
             if ( !rev ) return nullslice;
-            return rev.asVersion().asASCII(myID);
+            else if ( rev.isVersion() )
+                return rev.asVersion().asASCII(myID);
+            else
+                return rev.expanded();
         }
 
         revidBuffer _parseRevID(slice revID) const {
             if ( revID ) {
-                if ( revidBuffer binaryID(revID); binaryID.getRevID().isVersion() ) {
+                revidBuffer binaryID(revID);
+                if ( binaryID.getRevID().isVersion() ) {
                     // If it's a version in global form, convert it to local form:
                     if ( auto vers = binaryID.getRevID().asVersion(); vers.author() == mySourceID() )
                         binaryID = Version(vers.time(), kMeSourceID);
-                    return binaryID;
                 }
+                return binaryID;
             }
             error::_throw(error::BadRevisionID, "Not a version string: '%.*s'", SPLAT(revID));
         }
 
 #pragma mark - SELECTING REVISIONS:
 
-        optional<pair<RemoteID, Revision>> _findRemote(slice revID) {
+        optional<pair<RemoteID, Revision>> _findRemote(slice asciiRevID) {
             RemoteID remote = RemoteID::Local;
-            if ( revID.findByte(',') ) {
+            if ( asciiRevID.findByte(',') ) {
                 // It's a version vector; look for an exact match:
-                VersionVector vers   = VersionVector::fromASCII(revID, mySourceID());
+                VersionVector vers   = VersionVector::fromASCII(asciiRevID, mySourceID());
                 alloc_slice   binary = vers.asBinary();
                 while ( auto rev = _doc.loadRemoteRevision(remote) ) {
                     if ( rev->revID == binary ) return {{remote, *rev}};
                     remote = _doc.loadNextRemoteID(remote);
                 }
             } else {
-                // It's a single version, so find a vector that starts with it:
-                Version vers = _parseRevID(revID).getRevID().asVersion();
-                while ( auto rev = _doc.loadRemoteRevision(remote) ) {
-                    if ( rev->revID && rev->version() == vers ) return {{remote, *rev}};
-                    remote = _doc.loadNextRemoteID(remote);
+                revidBuffer buf   = _parseRevID(asciiRevID);
+                revid       revID = buf.getRevID();
+                if ( revID.isVersion() ) {
+                    // It's a single version, so find a vector that starts with it:
+                    Version vers = revID.asVersion();
+                    while ( auto rev = _doc.loadRemoteRevision(remote) ) {
+                        if ( rev->revID && rev->version() == vers ) return {{remote, *rev}};
+                        remote = _doc.loadNextRemoteID(remote);
+                    }
+                } else {
+                    while ( auto rev = _doc.loadRemoteRevision(remote) ) {
+                        if ( rev->revID == revID ) return {{remote, *rev}};
+                        remote = _doc.loadNextRemoteID(remote);
+                    }
                 }
             }
             return nullopt;
@@ -185,10 +197,21 @@ namespace litecore {
         alloc_slice getRevisionHistory(unsigned maxRevs, const slice backToRevs[],
                                        unsigned backToRevsCount) const override {
             if ( auto rev = _selectedRevision(); rev ) {
-                VersionVector vers = rev->versionVector();
-                if ( maxRevs > 0 && vers.count() > maxRevs ) vers.prune(maxRevs);
-                // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
-                return vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
+                if ( _doc.versioning() == Versioning::Vectors ) {
+                    VersionVector vers = rev->versionVector();
+                    if ( maxRevs > 0 && vers.count() > maxRevs ) vers.prune(maxRevs);
+                    // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
+                    return vers.asASCII(maxRevs ? mySourceID() : kMeSourceID);
+                } else {
+                    string history = rev->revID.str();
+                    if ( _remoteID == RemoteID::Local ) {
+                        if ( RemoteID parID = _doc.legacyTreeParent(); parID != RemoteID::Local ) {
+                            auto parent = _doc.remoteRevision(parID);
+                            if ( parent.value().revID != rev->revID ) { history += ", " + parent->revID.str(); }
+                        }
+                    }
+                    return alloc_slice(history);
+                }
             } else {
                 return nullslice;
             }
@@ -250,6 +273,7 @@ namespace litecore {
             return docFlags;
         }
 
+        // Warning: we cast away const of rq to have rq.revFlags updated by deltaCB.
         fleece::Doc _newProperties(const C4DocPutRequest& rq, C4Error* outError) {
             alloc_slice body;
             if ( rq.deltaCB == nullptr ) {
@@ -270,7 +294,8 @@ namespace litecore {
                                                    SPLAT(rq.deltaSourceRevID));
                     return nullptr;
                 } else {
-                    body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);
+                    body = rq.deltaCB(rq.deltaCBContext, this, delta, const_cast<C4RevisionFlags*>(&rq.revFlags),
+                                      outError);
                 }
             }
             return _newProperties(body);
@@ -288,6 +313,8 @@ namespace litecore {
         // Handles `c4doc_put` when `rq.existingRevision` is false (a regular save.)
         // The caller has already done most of the checking, incl. MVCC.
         bool putNewRevision(const C4DocPutRequest& rq, C4Error* outError) override {
+            _doc.upgradeVersioning();
+
             // Update the flags:
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
@@ -316,6 +343,8 @@ namespace litecore {
 
         // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
         int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
+            _doc.upgradeVersioning();
+
             Revision newRev;
             newRev.flags = convertNewRevisionFlags(rq.revFlags);
             Doc fldoc    = _newProperties(rq, outError);
@@ -550,7 +579,14 @@ namespace litecore {
             requestedVec.readASCII(revMap[rec.key], mySourceID);
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
-            auto cmp    = compareLocalRev(rec.version);
+            bool recUsesVVs = revid(rec.version).isVersion();
+            if ( recUsesVVs ) {
+                localVec.readBinary(rec.version);
+            } else {
+                // Doc still has a legacy tree-based revID. Convert to a VV
+                localVec = VectorRecord::createLegacyVersionVector(rec);
+            }
+            auto cmp    = localVec.compareTo(requestedVec);
             auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:

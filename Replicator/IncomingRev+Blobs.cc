@@ -131,11 +131,12 @@ namespace litecore::repl {
     // Sends periodic notifications to the Replicator if desired.
     void IncomingRev::notifyBlobProgress(bool always) {
         if ( progressNotificationLevel() < 2 ) return;
-        auto now = actor::Timer::clock::now();
+        auto collSpec = getCollection()->getSpec();
+        auto now      = actor::Timer::clock::now();
         if ( always || now - _lastNotifyTime > 250ms ) {
             _lastNotifyTime = now;
             Replicator::BlobProgress prog{Dir::kPulling,
-                                          nullslice,  // TODO: Collection support
+                                          collSpec,
                                           _blob->docID,
                                           _blob->docProperty,
                                           _blob->key,

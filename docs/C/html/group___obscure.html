@@ -70,10 +70,18 @@ $(function() {
 </div>
 
 <div class="header">
+  <div class="summary">
+<a href="#define-members">Macros</a>  </div>
   <div class="headertitle"><div class="title">Rarely-needed or advanced functions</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:ga3c31f2f1cd332c075607a50c225e75cf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___obscure.html#ga3c31f2f1cd332c075607a50c225e75cf">kFLTrustedDontParse</a>&#160;&#160;&#160;<a class="el" href="group__types.html#gaa17999d04c6b0a89a07c5db13d154673">FLTrust</a>(-1)</td></tr>
+<tr class="memdesc:ga3c31f2f1cd332c075607a50c225e75cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">For use with <a class="el" href="group__reading.html#gad10fc44cbabd14bd4eea34e480c7712b">FLDoc_FromResultData</a>.  <br /></td></tr>
+<tr class="separator:ga3c31f2f1cd332c075607a50c225e75cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Shared Keys</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p>FLSharedKeys represents a mapping from short strings to small integers in the range [0...2047].</p>
 <p>It's used by FLDict to abbreviate dictionary keys. A shared key can be stored in a fixed two bytes and is faster to compare against. However, the same mapping has to be used when encoding and when accessing the Dict.</p>
@@ -212,6 +220,23 @@ $(function() {
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga3c31f2f1cd332c075607a50c225e75cf" name="ga3c31f2f1cd332c075607a50c225e75cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3c31f2f1cd332c075607a50c225e75cf">&#9670;&#160;</a></span>kFLTrustedDontParse</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kFLTrustedDontParse&#160;&#160;&#160;<a class="el" href="group__types.html#gaa17999d04c6b0a89a07c5db13d154673">FLTrust</a>(-1)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>For use with <a class="el" href="group__reading.html#gad10fc44cbabd14bd4eea34e480c7712b">FLDoc_FromResultData</a>. </p>
+<p>This option prevents the function from parsing the data at all; you are responsible for locating the FLValues in it. This is for the case where you have trusted data in a custom format that contains Fleece- encoded data within it. You still need an FLDoc to access the data safely (especially to retain FLValues), but it can't be parsed as-is. </p>
 
 </div>
 </div>

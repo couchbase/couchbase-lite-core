@@ -209,7 +209,7 @@ namespace litecore {
         else
             rec.setBody(getColumnAsSlice(stmt, RecordColumn::BodyOrSize));
 
-        if ( content == kEntireBody ) rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
+        if ( content >= kEntireBody ) rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
         else
             rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(RecordColumn::ExtraOrSize));
     }

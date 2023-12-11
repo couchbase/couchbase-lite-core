@@ -207,9 +207,23 @@ namespace litecore::n1ql {
     // Property-path operations:
 
     static string quoteIdentity(string id) {
-        replace(id, ".", "\\.");
-        replace(id, "$", "\\$");
-        return id;
+        auto isSpecialChar = [](char c) -> bool {
+            switch ( c ) {
+                case '.':
+                case '$':
+                case '[':
+                    return true;
+                default:
+                    return false;
+            }
+        };
+
+        string ret;
+        for ( char c : id ) {
+            if ( isSpecialChar(c) ) { ret += '\\'; }
+            ret += c;
+        }
+        return ret;
     }
 
     static string quoteProperty(string prop) {

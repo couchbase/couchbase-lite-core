@@ -13,6 +13,7 @@
 //
 
 #pragma once
+#include "c4ReplicatorTypes.h"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
@@ -354,7 +355,9 @@ class ReplicatorAPITest : public C4Test {
         }
         if ( !_repl ) return false;
 
-        if ( _enableDocProgressNotifications ) {
+        if ( _enableBlobProgressNotifications ) {
+            REQUIRE(c4repl_setProgressLevel(_repl, kC4ReplProgressPerAttachment, err));
+        } else if ( _enableDocProgressNotifications ) {
             REQUIRE(c4repl_setProgressLevel(_repl, kC4ReplProgressPerDocument, err));
         }
 
@@ -433,6 +436,7 @@ class ReplicatorAPITest : public C4Test {
     c4::ref<C4Database>                         db2;
     AllocedDict                                 _options;
     bool                                        _enableDocProgressNotifications{false};
+    bool                                        _enableBlobProgressNotifications{false};
     C4ReplicatorValidationFunction              _pushFilter{nullptr};
     C4ReplicatorValidationFunction              _pullFilter{nullptr};
     C4ReplicatorDocumentsEndedCallback          _onDocsEnded{nullptr};

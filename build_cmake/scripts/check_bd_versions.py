@@ -93,11 +93,11 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
     return True
 
 def main(manifest_path: Path, branch: str) -> int:
-    # git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"{branch}..HEAD"]).decode("ascii")
-    # for line in git.splitlines():
-    #     if line.lstrip().startswith("!NO_BD_GITHUB"):
-    #         print("Scan disabled by commit message, skipping...")
-    #         return 0
+    git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"origin/{branch}..HEAD"]).decode("ascii")
+    for line in git.splitlines():
+        if line.lstrip().startswith("!NO_BD_GITHUB"):
+            print("Scan disabled by commit message, skipping...")
+            return 0
     
     if not manifest_path.exists() or not manifest_path.is_file():
         print("!!! Blackduck manifest not found, aborting...")
