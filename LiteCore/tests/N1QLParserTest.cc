@@ -268,6 +268,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
 
     CHECK(translate("SELECT count(*)") == "{'WHAT':[['count()',['.']]]}");
     CHECK(translate("SELECT count(db.*)") == "{'WHAT':[['count()',['.db.']]]}");
+    CHECK(translate("SELECT concat(a, b)") == "{'WHAT':[['concat()',['.a'],['.b']]]}");
+    CHECK(translate("SELECT concat('hello', \"world\", ' ', concat(true, 123.45 , sin(1)))")
+          == "{'WHAT':[['concat()','hello','world',' ',['concat()',true,123.45,['sin()',1]]]]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
