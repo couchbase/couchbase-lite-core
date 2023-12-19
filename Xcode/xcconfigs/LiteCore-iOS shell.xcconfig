@@ -1,0 +1,14 @@
+//
+//  LiteCore-iOS shell.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 12/19/23.
+//  Copyright © 2023 Couchbase. All rights reserved.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "CppTests.xcconfig"
+
+CODE_SIGNING_ALLOWED = YES // overrides included value
