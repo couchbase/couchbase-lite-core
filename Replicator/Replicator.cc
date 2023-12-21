@@ -130,13 +130,16 @@ namespace litecore { namespace repl {
     void Replicator::start(bool reset, bool synchronous) {
         if (synchronous)
             _start(reset);
-        else
+        else {
+            logInfo("~15947: Enqueueing Replicator::_start...");
             enqueue(FUNCTION_TO_QUEUE(Replicator::_start), reset);
+        }
     }
 
 
     void Replicator::_start(bool reset) {
         try {
+            logInfo("~15947: Replicator::_start called");
             Assert(_connectionState == Connection::kClosed);
             Signpost::begin(Signpost::replication, uintptr_t(this));
             _connectionState = Connection::kConnecting;

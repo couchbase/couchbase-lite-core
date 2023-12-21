@@ -12,6 +12,9 @@
 
 #pragma once
 #include "Error.hh"
+#include "Logging.hh"
+#include <chrono>
+#include <sstream>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
@@ -31,6 +34,25 @@
 #define ACTORS_USE_MANIFESTS 0
 
 namespace litecore { namespace actor {
+#ifdef ACTORS_USE_GCD
+    class GCDMailbox;
+#else
+    class ThreadedMailbox;
+#endif
+    struct TaskDbg {
+        static std::mutex _activeTaskMut;
+#ifdef ACTORS_USE_GCD
+        static std::vector<const GCDMailbox*> _activeTasks;
+        static void activeTask(unsigned tid, const GCDMailbox* mbx) {
+#else
+        static std::vector<const ThreadedMailbox*> _activeTasks;
+        static void activeTask(unsigned tid, const ThreadedMailbox* mbx) {
+#endif
+            std::scoped_lock<std::mutex> lock(_activeTaskMut);
+            _activeTasks[tid] = mbx;
+        }
+        static std::string dumpTasks();
+    };
 
     /** A simple thread-safe producer/consumer queue. */
     template <class T>
@@ -45,7 +67,7 @@ namespace litecore { namespace actor {
             If the queue is empty, blocks until another thread adds something to the queue.
             If the queue is closed and empty, returns a default (zero) T.
             @param empty  Will be set to true if the queue is now empty. */
-        T pop(bool &empty)               {return pop(empty, true);}
+        T pop(bool &empty, unsigned taskID)               {return pop(empty, true, taskID);}
 
         /** Pops the next value from the end of the queue.
             If the queue is empty, immediately returns a default (zero) T.
@@ -55,9 +77,9 @@ namespace litecore { namespace actor {
         /** Pops the next value from the end of the queue.
             If the queue is empty, blocks until another thread adds something to the queue.
             If the queue is closed and empty, returns a default (zero) T. */
-        T pop() {
+        T pop(unsigned taskID) {
             bool more;
-            return pop(more);
+            return pop(more, taskID);
         }
 
         /** Returns the front item of the queue without popping it. The queue MUST be non-empty. */
@@ -74,7 +96,7 @@ namespace litecore { namespace actor {
         mutable std::mutex _mutex;
         
     private:
-        T pop(bool &empty, bool wait);
+        T pop(bool &empty, bool wait, unsigned taskID);
 
         std::condition_variable _cond;
         std::queue<T> _queue;
@@ -99,11 +121,16 @@ namespace litecore { namespace actor {
 
 
     template <class T>
-    T Channel<T>::pop(bool &empty, bool wait) {
+    T Channel<T>::pop(bool &empty, bool wait, unsigned taskID) {
+        using namespace std::chrono_literals;
         std::unique_lock<std::mutex> lock(_mutex);
-        while (wait && _queue.empty() && !_closed)
-            _cond.wait(lock);
+        while (wait && _queue.empty() && !_closed) {
+            if (_cond.wait_for(lock, 2s) == std::cv_status::timeout) {
+                Log("Task %d waiting for channel queue\nTask Threads: %s", taskID, TaskDbg::dumpTasks().c_str());
+            }
+        }
         if (_queue.empty()) {
+            Warn("Unexpected empty queue in Channel::pop");
             empty = true;
             return T();
         } else {

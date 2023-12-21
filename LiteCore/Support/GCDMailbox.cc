@@ -13,6 +13,7 @@
 #include "GCDMailbox.hh"
 #include "Actor.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <algorithm>
 #include <sstream>
 #include "betterassert.hh"
@@ -20,7 +21,22 @@
 using namespace std;
 
 namespace litecore { namespace actor {
-
+#ifdef ACTORS_USE_GCD
+    std::string TaskDbg::dumpTasks() {
+        std::scoped_lock<std::mutex> lock(_activeTaskMut);
+        std::stringstream ss;
+        for (size_t i = 0; i < _activeTasks.size(); ++i) {
+            string s = format("Task %d: %s(%p)", (int)i+1, (_activeTasks[i] == nullptr ? "Not Active" : _activeTasks[i]->name().c_str()), _activeTasks[i]);
+            if (i > 0) {
+                ss << "\n";
+            }
+            ss << s;
+        }
+        return ss.str();
+    }
+    std::vector<const GCDMailbox*> TaskDbg::_activeTasks;
+    std::mutex TaskDbg::_activeTaskMut;
+#endif
 
 #if ACTORS_TRACK_STATS
 #define beginLatency()  fleece::Stopwatch st

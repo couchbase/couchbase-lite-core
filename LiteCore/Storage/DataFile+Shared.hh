@@ -115,9 +115,16 @@ namespace litecore {
 
         void setTransaction(ExclusiveTransaction* t) {
             Assert(t);
+            bool condWait = false;
             unique_lock<mutex> lock(_transactionMutex);
-            while (_transaction != nullptr)
+            while (_transaction != nullptr) {
+                logInfo("DataFile::Shared (%p) wait on condition");
+                condWait = true;
                 _transactionCond.wait(lock);
+            }
+            if (condWait) {
+                logInfo("DataFile::Shared (%p) out of wait");
+            }
             _transaction = t;
         }
 

@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "Timer.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <future>
 #include <random>
 #include <map>
@@ -39,6 +40,21 @@ namespace litecore { namespace actor {
 #define endBusy()
 #define SELF            this
 #endif
+
+    std::string TaskDbg::dumpTasks() {
+        std::scoped_lock<std::mutex> lock(_activeTaskMut);
+        std::stringstream ss;
+        for (size_t i = 0; i < _activeTasks.size(); ++i) {
+            string s = format("Task %d: %s(%p)", (int)i+1, (_activeTasks[i] == nullptr ? "Not Active" : _activeTasks[i]->name().c_str()), _activeTasks[i]);
+            if (i > 0) {
+                ss << "\n";
+            }
+            ss << s;
+        }
+        return ss.str();
+    }
+    std::vector<const ThreadedMailbox*> TaskDbg::_activeTasks;
+    std::mutex TaskDbg::_activeTaskMut;
 
 #pragma mark - SCHEDULER:
 
@@ -81,6 +97,7 @@ namespace litecore { namespace actor {
             LogTo(ActorLog, "Starting Scheduler<%p> with %u threads", this, _numThreads);
             for (unsigned id = 1; id <= _numThreads; id++)
                 _threadPool.emplace_back([this,id]{task(id);});
+            TaskDbg::_activeTasks.resize(_numThreads, nullptr);
         }
     }
     
@@ -103,9 +120,11 @@ namespace litecore { namespace actor {
         snprintf(name, bufSize, "CBL Scheduler#%u", taskID);
         SetThreadName(name);
         ThreadedMailbox *mailbox;
-        while ((mailbox = _queue.pop()) != nullptr) {
+        while ((mailbox = _queue.pop(taskID)) != nullptr) {
             LogVerbose(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
+            TaskDbg::activeTask(taskID-1, mailbox);
             mailbox->performNextMessage();
+            TaskDbg::activeTask(taskID-1, nullptr);
             mailbox = nullptr;
         }
         LogTo(ActorLog, "   task %d finished", taskID);
@@ -251,13 +270,13 @@ namespace litecore { namespace actor {
 
     void ThreadedMailbox::performNextMessage() {
         LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
-        DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
+        Assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
         sCurrentActor = _actor;
         auto &fn = front();
         fn();
         sCurrentActor = nullptr;
         
-        DebugAssert(--_active == 0);
+        Assert(--_active == 0);
 
         bool empty;
         popNoWaiting(empty);
