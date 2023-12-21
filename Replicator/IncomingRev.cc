@@ -182,10 +182,13 @@ namespace litecore { namespace repl {
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
-        if (_options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize
-                                  || _mayContainBlobChanges || _mayContainEncryptedProperties)
-            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
-        else
+        if (_options->pullFilter(collectionIndex()) ||
+            jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges ||
+            _mayContainEncryptedProperties) {
+            logInfo("~15947: Enqueueing IncomingRev::parseAndInsert...");
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert),
+                    std::move(jsonBody));
+        } else
             parseAndInsert(std::move(jsonBody));
     }
 
@@ -215,6 +218,7 @@ namespace litecore { namespace repl {
 
 
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
+        logInfo("~15947: Called IncomingRev::parseAndInsert");
         // First create a Fleece document:
         Doc fleeceDoc;
         C4Error err = {};

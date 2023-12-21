@@ -319,6 +319,7 @@ namespace litecore {
                     _replicator->loggingName().c_str(), std::string(*_options).c_str());
             _selfRetain = this; // keep myself alive till Replicator stops
             updateStatusFromReplicator(_replicator->status());
+            logInfo("~15947: updateStatusFromReplicator succeeded");
             _responseHeaders = nullptr;
             _replicator->start(reset);
             return true;

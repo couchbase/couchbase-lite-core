@@ -67,9 +67,7 @@ namespace litecore { namespace actor {
         std::string const _name;
 
         int _delayedEventCount {0};
-#if DEBUG
         std::atomic_int _active {0};
-#endif
 
 #if ACTORS_TRACK_STATS
         int32_t _callCount {0};

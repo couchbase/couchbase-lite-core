@@ -251,13 +251,13 @@ namespace litecore { namespace actor {
 
     void ThreadedMailbox::performNextMessage() {
         LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
-        DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
+        Assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
         sCurrentActor = _actor;
         auto &fn = front();
         fn();
         sCurrentActor = nullptr;
         
-        DebugAssert(--_active == 0);
+        Assert(--_active == 0);
 
         bool empty;
         popNoWaiting(empty);
