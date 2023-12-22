@@ -36,7 +36,11 @@ namespace litecore { namespace actor {
 //        cond.wait(lock, [&]{return finished;});
         while (!finished) {
             if (cond.wait_for(lock, 2s) == std::cv_status::timeout) {
-                logInfo("Actor %s(%p) timed out waiting...\nTask Threads: %s", actorName().c_str(), this, TaskDbg::dumpTasks().c_str());
+#ifndef ACTORS_USE_GCD
+                warn("Actor %s(%p) timed out waiting...\nTask Threads: %s\nScheduler's queue size: %lu", actorName().c_str(), this, TaskDbg::dumpTasks().c_str(), Scheduler::sharedScheduler()->queueSize());
+#else
+                warn("Actor %s(%p) timed out waiting...\nTask Threads: %s", actorName().c_str(), this, TaskDbg::dumpTasks().c_str());
+#endif
             }
         }
     }

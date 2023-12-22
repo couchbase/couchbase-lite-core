@@ -129,7 +129,7 @@ namespace litecore { namespace actor {
         std::unique_lock<std::mutex> lock(_mutex);
         while (wait && _queue.empty() && !_closed) {
             if (_cond.wait_for(lock, 2s) == std::cv_status::timeout) {
-                Log("Task %d waiting for channel queue\nTask Threads: %s", taskID, TaskDbg::dumpTasks().c_str());
+                Warn("Task %d waiting for channel queue\nTask Threads: %s", taskID, TaskDbg::dumpTasks().c_str());
             }
         }
         if (_queue.empty()) {
