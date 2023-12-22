@@ -72,7 +72,7 @@ namespace litecore { namespace actor {
         /** Pops the next value from the end of the queue.
             If the queue is empty, immediately returns a default (zero) T.
             @param empty  Will be set to true if the queue is now empty. */
-        T popNoWaiting(bool &empty)      {return pop(empty, false);}
+        T popNoWaiting(bool &empty)      {return pop(empty, false, std::numeric_limits<unsigned>::max());}
 
         /** Pops the next value from the end of the queue.
             If the queue is empty, blocks until another thread adds something to the queue.
@@ -122,6 +122,9 @@ namespace litecore { namespace actor {
 
     template <class T>
     T Channel<T>::pop(bool &empty, bool wait, unsigned taskID) {
+        // Pre-condition:
+        Assert(taskID < std::numeric_limits<unsigned>::max() || !wait, "pre-condition of Channel::pop(bool,bool,unsigned)");
+
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> lock(_mutex);
         while (wait && _queue.empty() && !_closed) {
