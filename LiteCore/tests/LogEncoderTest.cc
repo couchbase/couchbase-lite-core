@@ -195,7 +195,7 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     CHECK(!result.empty());
 }
 
-TEST_CASE("Logging rollover", "[Log]") {
+TEST_CASE("Logging rollover", "[.xLog]") {
     auto now = chrono::milliseconds(time(nullptr));
     char folderName[kFolderBufSize];
     snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
