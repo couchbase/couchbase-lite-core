@@ -1627,3 +1627,71 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
         CHECK(c4rev_getGeneration(doc->revID) == 1);
     }
 }
+
+TEST_CASE_METHOD(ReplicatorSGTest, "KeepBody of Latest Synced Rev", "[.SyncServer]") {
+    std::string revID;
+    slice       docID = "Doc"_sl;
+    {
+        TransactionHelper t(db);
+        revID = createNewRev(db, docID, nullslice, kFleeceBody);
+    }
+
+    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    REQUIRE(c4rev_getGeneration(doc->revID) == 1);
+    CHECK(doc->selectedRev.flags == kRevLeaf);
+
+    // Push rev 1-
+    replicate(kC4OneShot, kC4Disabled);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    REQUIRE(std::string(doc->revID) == revID);
+    CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));  // After push, we have kRevKeepBody
+
+    {
+        // Modify rev 1 at SG
+        Dict        props = c4doc_getProperties(doc);
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("_id"_sl);
+        enc.writeString(docID);
+        enc.writeKey("_rev"_sl);
+        enc.writeString(revID);
+        for ( Dict::iterator i(props); i; ++i ) {
+            enc.writeKey(i.keyString());
+            auto value = i.value();
+            enc.writeValue(value);
+        }
+        enc.writeKey("newKey"_sl);
+        enc.writeString("newValue"_sl);
+        enc.endDict();
+
+        FLError     flError;
+        alloc_slice res    = _sg.sendRemoteRequest("PUT", docID.asString(), enc.finish(), false, HTTPStatus::OK, false);
+        fleece::Doc resDoc = Doc::fromJSON(res, &flError);
+        REQUIRE(flError == kFLNoError);
+        Dict resDict = resDoc.root().asDict();
+        REQUIRE(resDict);
+        REQUIRE((resDict.get("ok").asBool()));
+        REQUIRE(c4rev_getGeneration(resDict.get("rev").asString()) == 2);
+    }
+
+    // Pull to get rev2
+    replicate(kC4Disabled, kC4OneShot);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    REQUIRE(c4rev_getGeneration(doc->revID) == 2);
+    CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));
+    REQUIRE(c4doc_selectParentRevision(doc));
+    REQUIRE(c4rev_getGeneration(doc->selectedRev.revID) == 1);
+    CHECK(doc->selectedRev.flags == 0);  // rev-1's KeepBody is cleared.
+
+    replicate(kC4OneShot, kC4Disabled);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    REQUIRE(doc);
+    REQUIRE(c4rev_getGeneration(doc->revID) == 2);
+    CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));
+    REQUIRE(c4doc_selectParentRevision(doc));
+    REQUIRE(c4rev_getGeneration(doc->selectedRev.revID) == 1);
+    CHECK(doc->selectedRev.flags == 0);  // rev-1's KeepBody is cleared.
+}
