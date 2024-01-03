@@ -40,6 +40,9 @@ namespace litecore {
         /// - kHasAttachments: Properties include references to blobs.
         DocumentFlags flags{};
 
+        /// Returns true if `revID` is a version vector, false if it's a tree-based revid.
+        bool hasVersionVector() const;
+
         /// Returns the current (first) version of the version vector encoded in the `revID`.
         [[nodiscard]] Version version() const;
 
@@ -138,18 +141,9 @@ namespace litecore {
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
 
-        //---- Versioning:
-
-        /// The versioning system used by the document. Will be Vector unless the Record read
-        /// from the db was still in rev-tree format.
-        Versioning versioning() const FLPURE { return _versioning; }
-
-        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
-        void upgradeVersioning();
-
-        /// If this doc uses RevTree versioning, this is the RemoteID that is the current
-        /// revision's closest ancestor. (If none is, returns Local.)
-        RemoteID legacyTreeParent() const { return RemoteID(_parentOfLocal); }
+        /// The document's last tree-based revid, before the first version-vectored rev was added.
+        /// (`nullslice` if it still has a legacy revid, or never had one.)
+        revid lastLegacyRevID() const FLPURE;
 
         //---- Modifying the document:
 
@@ -218,12 +212,14 @@ namespace litecore {
         /// Same as \ref nextRemoteID, but loads the document's remote revisions if not in memory yet.
         RemoteID loadNextRemoteID(RemoteID);
 
+        using ForAllRevsCallback = function_ref<void(RemoteID, Revision const&)>;
+
+        void forAllRevs(const ForAllRevsCallback&) const;
+
         using ForAllRevIDsCallback = function_ref<void(RemoteID, revid, bool hasBody)>;
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
-
-        static VersionVector createLegacyVersionVector(const RecordUpdate&);
 
         //---- For testing:
 
@@ -258,26 +254,23 @@ namespace litecore {
         bool                           propertiesChanged() const;
         void                           clearPropertiesChanged() const;
         void                           updateDocFlags();
-        static void                    forAllLegacyRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
-        KeyStore&                    _store;                // The database KeyStore
-        FLEncoder                    _encoder{nullptr};     // Database shared Fleece Encoder
-        alloc_slice                  _docID;                // The docID
-        sequence_t                   _sequence;             // The Record's sequence
-        uint64_t                     _subsequence;          // The Record's subsequence
-        DocumentFlags                _docFlags;             // Document-level flags
-        alloc_slice                  _revID;                // Current revision ID backing store
-        Revision                     _current;              // Current revision
-        fleece::RetainedValue        _currentProperties;    // Retains local properties
-        fleece::Doc                  _bodyDoc;              // If saved, a Doc of the Fleece body
-        fleece::Doc                  _extraDoc;             // Fleece Doc holding record `extra`
-        fleece::Array                _revisions;            // Top-level parsed body; stores revs
-        mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
-        Versioning                   _versioning;           // RevIDs or VersionVectors?
-        int                          _parentOfLocal{};      // (only used in imported revtree)
-        bool                         _changed{false};       // Set to true on explicit change
-        bool                         _revIDChanged{false};  // Has setRevID() been called?
-        ContentOption                _whichContent;         // Which parts of record are available
+        KeyStore&                    _store;              // The database KeyStore
+        FLEncoder                    _encoder{nullptr};   // Database shared Fleece Encoder
+        alloc_slice                  _docID;              // The docID
+        sequence_t                   _sequence;           // The Record's sequence
+        uint64_t                     _subsequence;        // The Record's subsequence
+        DocumentFlags                _docFlags;           // Document-level flags
+        alloc_slice                  _savedRevID;         // Revision ID saved in db (may == _revID)
+        alloc_slice                  _revID;              // Current revision ID backing store
+        Revision                     _current;            // Current revision
+        fleece::RetainedValue        _currentProperties;  // Retains local properties
+        fleece::Doc                  _bodyDoc;            // If saved, a Doc of the Fleece body
+        fleece::Doc                  _extraDoc;           // Fleece Doc holding record `extra`
+        fleece::Array                _revisions;          // Top-level parsed body; stores revs
+        mutable fleece::MutableArray _mutatedRevisions;   // Mutable version of `_revisions`
+        bool                         _changed{false};     // Set to true on explicit change
+        ContentOption                _whichContent;       // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };
 }  // namespace litecore
