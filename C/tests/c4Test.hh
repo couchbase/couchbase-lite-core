@@ -177,7 +177,7 @@ void C4ExpectException(C4ErrorDomain domain, int code, const std::function<void(
 #pragma mark - C4TEST BASE CLASS:
 
 #ifndef SkipVersionVectorTest
-#    define SkipVersionVectorTest 1
+#    define SkipVersionVectorTest 0
 #endif
 
 /// Base test fixture class for C4 tests. Creates a new empty C4Database in its setUp method,
