@@ -27,8 +27,15 @@ typedef C4_ENUM(uint32_t, C4IndexType){
         kC4FullTextIndex,    ///< Full-text index
         kC4ArrayIndex,       ///< Index of array values, for use with UNNEST
         kC4PredictiveIndex,  ///< Index of prediction() results (Enterprise Edition only)
-        kC4VectorIndex,      ///< Index of ML vector similarity.
+        kC4VectorIndex,      ///< Index of ML vector similarity (Enterprise Edition only)
 };
+
+/** Distance metric to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorMetric){
+        kC4VectorMetricDefault,    ///< Use default metric, Euclidean
+        kC4VectorMetricEuclidean,  ///< Euclidean distance (squared)
+        kC4VectorMetricCosine,     ///< Cosine distance (1.0 - cosine similarity)
+};                                 // Values must match IndexSpec::VectorOptions::Metric
 
 /** Types of encoding (compression) to use in vector indexes. */
 typedef C4_ENUM(uint32_t, C4VectorEncoding){
@@ -40,6 +47,7 @@ typedef C4_ENUM(uint32_t, C4VectorEncoding){
 /** Options for vector indexes. */
 typedef struct C4VectorIndexOptions {
     unsigned         numCentroids;  ///< Number of buckets to partition the vectors between
+    C4VectorMetric   metric;        ///< Distance metric
     C4VectorEncoding encoding;      ///< Vector compression type
 } C4VectorIndexOptions;
 

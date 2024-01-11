@@ -120,7 +120,7 @@ namespace litecore {
         string predictiveIdentifier(const Value*) const;
         string predictiveTableName(const Value*) const;
 
-        /// Translates the JSON-parsed Value to blob-format vector for use by sqlite-vss.
+        /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
         string vectorExpressionSQL(const Value*);
         string vectorIndexTableName(const Value* matchExpr);
 

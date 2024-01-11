@@ -29,12 +29,13 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    // Vector search index for ML / predictive query, using the sqlite-vss extension.
-    // sqlite-vss documentation: https://github.com/asg017/sqlite-vss/blob/main/docs.md
+    // Vector search index for ML / predictive query, using the vectorsearch extension.
+    // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
 
     static constexpr const char* kVectorEncodingNames[] = {nullptr, "none", "PQ", "SQ"};
+    static constexpr const char* kVectorMetricNames[]   = {nullptr, "euclidean2", "cosine"};
 
-    // Creates a vector-similarity index using the sqlite-vss extension.
+    // Creates a vector-similarity index.
     bool SQLiteKeyStore::createVectorIndex(const IndexSpec& spec) {
         auto vectorTableName = db().auxiliaryTableName(tableName(), KeyStore::kVectorSeparator, spec.name);
 
@@ -53,6 +54,9 @@ namespace litecore {
             IndexSpec::VectorOptions options;
             if ( IndexSpec::VectorOptions const* o = spec.vectorOptions() ) { options = *o; }
             createStmt << "centroids=" << options.numCentroids << ",minToTrain=" << options.numCentroids * 25;
+            if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
+                createStmt << ",metric=" << kVectorMetricNames[options.metric];
+            }
             if ( options.encoding != IndexSpec::VectorOptions::DefaultEncoding ) {
                 createStmt << ",encoding=" << kVectorEncodingNames[options.encoding];
             }

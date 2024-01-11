@@ -400,7 +400,7 @@ namespace litecore {
                         ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
                         ftsOpt.disableStemming  = indexOptions->disableStemming;
                         ftsOpt.stopWords        = indexOptions->stopWords;
-                        options = ftsOpt;
+                        options                 = ftsOpt;
                         break;
                     }
                 case kC4VectorIndex:

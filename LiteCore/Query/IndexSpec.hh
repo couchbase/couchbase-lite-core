@@ -48,6 +48,12 @@ namespace litecore {
 
         /// Options for a vector index.
         struct VectorOptions {
+            enum Metric {
+                DefaultMetric,  ///< Use default metric, Euclidean
+                Euclidean,      ///< Euclidean distance (squared)
+                Cosine,         ///< Cosine distance (1.0 - cosine similarity)
+            };                  // Note: values must match C4VectorMetric in c4IndexTypes.h
+
             enum Encoding {
                 DefaultEncoding,  ///< Use default encoding, which is currently SQ
                 NoEncoding,       ///< No encoding; 4 bytes per dimension, no data loss
@@ -55,6 +61,7 @@ namespace litecore {
             };                    // Note: values must match C4VectorEncoding in c4IndexTypes.h
 
             unsigned numCentroids{2048};         ///< Number of centroids/buckets to divide the index into
+            Metric   metric{DefaultMetric};      ///< Distance metric
             Encoding encoding{DefaultEncoding};  ///< Vector encoding/compression
         };
 
