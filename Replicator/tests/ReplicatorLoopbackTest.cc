@@ -1318,7 +1318,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous][Conflict]") {
     // temporarily disable it for VV
-    if (!isRevTrees()) return;
+    if ( !isRevTrees() ) return;
 
     // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
     //       But both sides are rapidly changing the single document.
