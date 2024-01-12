@@ -80,9 +80,15 @@ function(setup_litecore_build_unix)
         -Wformat=2
         -fstack-protector
         -D_FORTIFY_SOURCE=2
+        $<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
         $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
         $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+
+    target_link_options(
+        LiteCoreObjects PUBLIC 
+        $<$<CONFIG:Debug>:-fsanitize=address>
     )
 
     target_compile_options(BLIPObjects PRIVATE 
@@ -90,9 +96,15 @@ function(setup_litecore_build_unix)
         -Wformat=2
         -fstack-protector
         -D_FORTIFY_SOURCE=2
+        $<$<CONFIG:Debug>:-fsanitize=address;-fno-omit-frame-pointer>
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
         $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
         $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+
+    target_link_options(
+        BLIPObjects PUBLIC 
+        $<$<CONFIG:Debug>:-fsanitize=address>
     )
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
