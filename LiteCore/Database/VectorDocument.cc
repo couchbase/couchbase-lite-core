@@ -207,7 +207,7 @@ namespace litecore {
                     if ( _remoteID == RemoteID::Local ) {
                         if ( RemoteID parID = _doc.legacyTreeParent(); parID != RemoteID::Local ) {
                             auto parent = _doc.remoteRevision(parID);
-                            if ( parent.value().revID != rev->revID ) { history += ", " + parent->revID.str(); }
+                            if ( parent && parent->revID != rev->revID ) { history += ", " + parent->revID.str(); }
                         }
                     }
                     return alloc_slice(history);
