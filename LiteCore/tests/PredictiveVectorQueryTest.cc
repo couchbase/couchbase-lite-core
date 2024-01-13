@@ -83,7 +83,7 @@ class PredictiveVectorQueryTest : public QueryTest {
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options = {.numCentroids = 16};
+        IndexSpec::VectorOptions options(16);
         IndexSpec                spec("factorsindex", IndexSpec::kVector,
                                       alloc_slice(json5("[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]")),
                                       QueryLanguage::kJSON, options);

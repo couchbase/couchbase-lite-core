@@ -406,9 +406,12 @@ namespace litecore {
                 case kC4VectorIndex:
                     if ( indexOptions ) {
                         IndexSpec::VectorOptions vecOpt;
-                        vecOpt.numCentroids = indexOptions->vector.numCentroids;
-                        vecOpt.encoding     = IndexSpec::VectorOptions::Encoding(indexOptions->vector.encoding);
-                        options             = vecOpt;
+                        vecOpt.metric          = IndexSpec::VectorOptions::Metric(indexOptions->vector.metric);
+                        vecOpt.numCentroids    = indexOptions->vector.numCentroids;
+                        vecOpt.encoding        = IndexSpec::VectorOptions::Encoding(indexOptions->vector.encoding);
+                        vecOpt.minTrainingSize = indexOptions->vector.minTrainingSize;
+                        vecOpt.maxTrainingSize = indexOptions->vector.maxTrainingSize;
+                        options                = vecOpt;
                     }
                     break;
                 default:

@@ -55,14 +55,25 @@ namespace litecore {
             };                  // Note: values must match C4VectorMetric in c4IndexTypes.h
 
             enum Encoding {
-                DefaultEncoding,  ///< Use default encoding, which is currently SQ
+                DefaultEncoding,  ///< Use default encoding, which is currently SQ8Bit
                 NoEncoding,       ///< No encoding; 4 bytes per dimension, no data loss
-                SQEncoding,       ///< Scalar Quantizer; 1 byte per dimension (recommended)
+                SQ8BitEncoding,   ///< Scalar Quantizer; 8 bits per dimension (recommended)
+                SQ6BitEncoding,   ///< Scalar Quantizer; 6 bits per dimension
+                SQ4BitEncoding,   ///< Scalar Quantizer; 4 bits per dimension
             };                    // Note: values must match C4VectorEncoding in c4IndexTypes.h
 
-            unsigned numCentroids{2048};         ///< Number of centroids/buckets to divide the index into
+            unsigned numCentroids;               ///< Number of centroids/buckets to divide the index into
             Metric   metric{DefaultMetric};      ///< Distance metric
             Encoding encoding{DefaultEncoding};  ///< Vector encoding/compression
+            unsigned minTrainingSize;            ///< Min # of vectors to train index on
+            unsigned maxTrainingSize;            ///< Max # of vectors to train index on
+
+            VectorOptions(unsigned numCentroids_ = 2048)
+                : numCentroids(numCentroids_)
+                , minTrainingSize(25 * numCentroids_)
+                , maxTrainingSize(256 * numCentroids_) {}
+
+            void validate();
         };
 
         /// Index options. If not empty (the first state), must match the index type.

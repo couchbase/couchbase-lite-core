@@ -43,8 +43,7 @@ class VectorQueryTest : public QueryTest {
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options;
-        options.numCentroids = 256;
+        IndexSpec::VectorOptions options(256);
         IndexSpec spec("vecIndex", IndexSpec::kVector, alloc_slice(json5("[ ['.vector'] ]")), QueryLanguage::kJSON,
                        options);
         store->createIndex(spec);

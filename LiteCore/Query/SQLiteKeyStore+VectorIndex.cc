@@ -32,7 +32,8 @@ namespace litecore {
     // Vector search index for ML / predictive query, using the vectorsearch extension.
     // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
 
-    static constexpr const char* kVectorEncodingNames[] = {nullptr, "none", "PQ", "SQ"};
+    static constexpr const char* kVectorEncodingNames[] = {nullptr,     "none",      "PQ",
+                                                           "SQ,bits=8", "SQ,bits=6", "SQ,bits=4"};
     static constexpr const char* kVectorMetricNames[]   = {nullptr, "euclidean2", "cosine"};
 
     // Creates a vector-similarity index.
@@ -53,7 +54,9 @@ namespace litecore {
             createStmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
             IndexSpec::VectorOptions options;
             if ( IndexSpec::VectorOptions const* o = spec.vectorOptions() ) { options = *o; }
-            createStmt << "centroids=" << options.numCentroids << ",minToTrain=" << options.numCentroids * 25;
+            options.validate();
+            createStmt << "centroids=" << options.numCentroids << ",minToTrain=" << options.minTrainingSize
+                       << ",maxToTrain=" << options.maxTrainingSize;
             if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
                 createStmt << ",metric=" << kVectorMetricNames[options.metric];
             }

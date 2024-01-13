@@ -39,16 +39,20 @@ typedef C4_ENUM(uint32_t, C4VectorMetric){
 
 /** Types of encoding (compression) to use in vector indexes. */
 typedef C4_ENUM(uint32_t, C4VectorEncoding){
-        kC4VectorEncodingDefault,  ///< Use default encoding, which is currently SQ
-        kC4VectorEncodingNone,     ///< No encoding: 4 bytes per dimension, no data loss
-        kC4VectorEncodingSQ,       ///< Scalar Quantizer: 1 byte per dimension (recommended)
+        kC4VectorEncodingDefault,  ///< Use default encoding, which is currently SQ8
+        kC4VectorEncodingNone,     ///< No encoding: 32 bits per dimension, no data loss
+        kC4VectorEncodingSQ8,      ///< Scalar Quantizer: 8 bits per dimension (default)
+        kC4VectorEncodingSQ6,      ///< Scalar Quantizer: 6 bits per dimension
+        kC4VectorEncodingSQ4,      ///< Scalar Quantizer: 4 bits per dimension
 };                                 // Values must match IndexSpec::VectorOptions::Encoding
 
 /** Options for vector indexes. */
 typedef struct C4VectorIndexOptions {
-    unsigned         numCentroids;  ///< Number of buckets to partition the vectors between
-    C4VectorMetric   metric;        ///< Distance metric
-    C4VectorEncoding encoding;      ///< Vector compression type
+    unsigned         numCentroids;     ///< Number of buckets to partition the vectors between
+    C4VectorMetric   metric;           ///< Distance metric
+    C4VectorEncoding encoding;         ///< Vector compression type
+    unsigned         minTrainingSize;  ///< Minimum # of vectors to train index (>= 25*numCentroids)
+    unsigned         maxTrainingSize;  ///< Maximum # of vectors to train index on (<= 256*numCentroids)
 } C4VectorIndexOptions;
 
 /** Options for indexes; these each apply to specific types of indexes. */
