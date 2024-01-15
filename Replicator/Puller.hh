@@ -38,7 +38,14 @@ namespace litecore::repl {
         }
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled() { _provisionallyHandledRevs.add(1); }
+        template <bool revoked>
+        void revWasProvisionallyHandled() {
+            if constexpr ( revoked ) {
+                _provisionallyHandledRevoked.add(1);
+            } else {
+                _provisionallyHandledRevs.add(1);
+            }
+        }
 
         void revWasHandled(IncomingRev* inc NONNULL);
         void revReRequested(uint64_t missingBodySize);
@@ -63,13 +70,15 @@ namespace litecore::repl {
         void          activityLevelChanged(ActivityLevel level);
 
       private:
-        void                  _start(RemoteSequence sinceSequence);
-        void                  _expectSequences(std::vector<RevFinder::ChangeSequence>);
-        void                  _documentsRevoked(std::vector<Retained<RevToInsert>>);
-        void                  handleRev(Retained<blip::MessageIn>);
-        void                  handleNoRev(Retained<blip::MessageIn>);
+        void _start(RemoteSequence sinceSequence);
+        void _expectSequences(std::vector<RevFinder::ChangeSequence>);
+        void _documentsRevoked(std::vector<Retained<RevToInsert>>);
+        void handleRev(Retained<blip::MessageIn>);
+        void handleNoRev(Retained<blip::MessageIn>);
+        template <bool revoked>
         Retained<IncomingRev> makeIncomingRev();
         void                  startIncomingRev(blip::MessageIn* NONNULL);
+        void                  startRevoked(RevToInsert* NONNULL);
         void                  maybeStartIncomingRevs();
         void                  _revsWereProvisionallyHandled();
         void                  _revsFinished(int gen);
@@ -88,8 +97,10 @@ namespace litecore::repl {
 
         RemoteSequenceSet                          _missingSequences;    // Known sequences I need to pull
         std::deque<Retained<blip::MessageIn>>      _waitingRevMessages;  // Queued 'rev' messages
+        std::deque<Retained<RevToInsert>>          _waitingRevoked;      // Queued revoked docs
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
         actor::ActorCountBatcher<Puller>           _provisionallyHandledRevs;
+        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevoked;
         actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
@@ -101,9 +112,11 @@ namespace litecore::repl {
 #endif
         Retained<Inserter>          _inserter;
         mutable Retained<RevFinder> _revFinder;
-        unsigned                    _pendingRevMessages{0};  // # of 'rev' msgs expected but not yet being processed
-        unsigned                    _activeIncomingRevs{0};  // # of IncomingRev workers running
+        unsigned                    _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
+        unsigned                    _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
+        unsigned                    _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs
         unsigned                    _unfinishedIncomingRevs{0};
+        unsigned                    _unfinishedIncomingRevoked{0};
     };
 
 
