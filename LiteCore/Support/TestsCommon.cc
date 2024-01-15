@@ -39,7 +39,9 @@ FilePath GetSystemTempDirectory() {
     CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
     return litecore::FilePath(convertedPath.m_psz, "");
 #else   // _MSC_VER
-    return {"/tmp", ""};
+    const char* tmp = getenv("TMPDIR");
+    if ( !tmp ) tmp = "/tmp";
+    return {tmp, ""};
 #endif  // _MSC_VER
 }
 

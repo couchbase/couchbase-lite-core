@@ -301,6 +301,7 @@ namespace litecore::repl {
 
                 assert(_tempSharedKeys);
             }
+            _tempSharedKeys.disableCaching();
             return _tempSharedKeys;
         });
     }
