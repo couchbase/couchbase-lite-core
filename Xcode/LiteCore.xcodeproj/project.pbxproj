@@ -397,15 +397,8 @@
 		27EED1462B335576009AD1AA /* c4DocumentTest_Internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */; };
 		27EED14A2B335595009AD1AA /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
 		27EED14B2B3355A6009AD1AA /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27505DDC256335B000123115 /* VersionVectorTest.cc */; };
-		27EED14C2B3355BB009AD1AA /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
-		27EED14D2B3355CF009AD1AA /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 		27EED14E2B3355D4009AD1AA /* ReplicatorVVUpgradeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */; };
-		27EED14F2B3355E5009AD1AA /* PropertyEncryptionTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */; };
-		27EED1502B3355F3009AD1AA /* c4CollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D163C26124A030018D39C /* c4CollectionTest.cc */; };
-		27EED1512B335606009AD1AA /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		27EED1522B33560A009AD1AA /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
-		27EED1532B33560E009AD1AA /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
-		27EED1542B335612009AD1AA /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -502,12 +495,9 @@
 		27FE0CEB24BE6E7900A36EC2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
 		27FE0CEC24BE6E9A00A36EC2 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27FE0CED24BE6E9A00A36EC2 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		27FE0CEE24BE7C2A00A36EC2 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
-		27FE0CF124BE7C2A00A36EC2 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
-		27FE0CF324BE7C2A00A36EC2 /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
 		27FE0CF424BE7C2A00A36EC2 /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		27FE0CF524BE7C2A00A36EC2 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27FE0CF624BE7C2A00A36EC2 /* QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6737C1EC78144008F50C4 /* QueryTest.cc */; };
@@ -657,48 +647,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 2752B26A233D76000014AD9D;
 			remoteInfo = mbedTLS;
-		};
-		2763F7092B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 27628CE02AC79954004C3740;
-			remoteInfo = VectorSearch;
-		};
-		2763F70B2B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 271B6B512AE71E0800525247;
-			remoteInfo = CouchbaseLiteVectorSearch;
-		};
-		2763F70D2B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 27628F362ACF6A7D004C3740;
-			remoteInfo = SQLiteCpp;
-		};
-		2763F70F2B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 2723C18C2B1E55C000946161;
-			remoteInfo = SQLiteCppExtension;
-		};
-		2763F7112B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 273E67EE2AF069320057C19B;
-			remoteInfo = SQLite;
-		};
-		2763F7132B4E21A800B23A91 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 278054DD2B3226DF009630D8;
-			remoteInfo = "VectorSearch-iOS-Test";
 		};
 		27732CE11D734EFB006D3802 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -996,7 +944,6 @@
 		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
 		272BA50423F61389000EB6E8 /* c4QueryImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryImpl.hh; sourceTree = "<group>"; };
 		272BA50A23F61591000EB6E8 /* c4Query.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Query.hh; sourceTree = "<group>"; };
-		272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = VectorSearch.xcodeproj; path = "mobile-vector-search/VectorSearch.xcodeproj"; sourceTree = "<group>"; };
 		272F00E3226FC15D00E62F72 /* BackgroundDB.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BackgroundDB.hh; sourceTree = "<group>"; };
 		272F00E9226FC15D00E62F72 /* BackgroundDB.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BackgroundDB.cc; sourceTree = "<group>"; };
 		272F00F42273D45000E62F72 /* LiveQuerier.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiveQuerier.hh; sourceTree = "<group>"; };
@@ -2590,19 +2537,6 @@
 			path = "ios-cmake";
 			sourceTree = "<group>";
 		};
-		2763F7012B4E21A800B23A91 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				2763F70A2B4E21A800B23A91 /* VectorSearch */,
-				2763F70C2B4E21A800B23A91 /* CouchbaseLiteVectorSearch.dylib */,
-				2763F70E2B4E21A800B23A91 /* libVectorSearch-SQLiteCpp.a */,
-				2763F7102B4E21A800B23A91 /* libVectorSearch-SQLiteCppExtension.a */,
-				2763F7122B4E21A800B23A91 /* libSQLite.a */,
-				2763F7142B4E21A800B23A91 /* VectorSearch-iOS-Test.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		276683B31DC7DCBC00E3F187 /* Database */ = {
 			isa = PBXGroup;
 			children = (
@@ -2987,7 +2921,6 @@
 				27AFF38F23036A7100B4D6C4 /* socketpp */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
-				272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */,
 				2744B3602418566F005A194D /* zlib */,
 			);
 			name = vendor;
@@ -3823,10 +3756,6 @@
 					ProductGroup = 27FA09B61D70ADE8005888AA /* Products */;
 					ProjectRef = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
 				},
-				{
-					ProductGroup = 2763F7012B4E21A800B23A91 /* Products */;
-					ProjectRef = 272BB1DC2B1E7F96006139E6 /* VectorSearch.xcodeproj */;
-				},
 			);
 			projectRoot = "";
 			targets = (
@@ -3856,48 +3785,6 @@
 			fileType = archive.ar;
 			path = libFleeceMutableObjC.a;
 			remoteRef = 272B1BE71FB13B7500F56620 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F70A2B4E21A800B23A91 /* VectorSearch */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = VectorSearch;
-			remoteRef = 2763F7092B4E21A800B23A91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F70C2B4E21A800B23A91 /* CouchbaseLiteVectorSearch.dylib */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.dylib";
-			path = CouchbaseLiteVectorSearch.dylib;
-			remoteRef = 2763F70B2B4E21A800B23A91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F70E2B4E21A800B23A91 /* libVectorSearch-SQLiteCpp.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = "libVectorSearch-SQLiteCpp.a";
-			remoteRef = 2763F70D2B4E21A800B23A91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F7102B4E21A800B23A91 /* libVectorSearch-SQLiteCppExtension.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = "libVectorSearch-SQLiteCppExtension.a";
-			remoteRef = 2763F70F2B4E21A800B23A91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F7122B4E21A800B23A91 /* libSQLite.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libSQLite.a;
-			remoteRef = 2763F7112B4E21A800B23A91 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		2763F7142B4E21A800B23A91 /* VectorSearch-iOS-Test.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = "VectorSearch-iOS-Test.app";
-			remoteRef = 2763F7132B4E21A800B23A91 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		27744B3321406D1B00399DCA /* libfleece.dylib */ = {
