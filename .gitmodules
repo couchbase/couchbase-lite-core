@@ -25,6 +25,3 @@
 [submodule "tools"]
 	path = tools
 	url = https://github.com/couchbaselabs/litecore-download-script
-[submodule "vendor/mobile-vector-search"]
-	path = vendor/mobile-vector-search
-	url = https://github.com/couchbaselabs/mobile-vector-search.git
