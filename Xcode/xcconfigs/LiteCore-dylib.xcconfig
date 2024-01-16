@@ -19,6 +19,6 @@ EXPORTED_SYMBOLS_FILE           = $(C4_EXPORT_FILENAME_$(CONFIGURATION))
 
 PRODUCT_NAME                    = LiteCore
 
-GCC_PREPROCESSOR_DEFINITIONS    = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
+GCC_PREPROCESSOR_DEFINITIONS    = $(inherited) LITECORE_IMPL   // For SQLiteCpp
 
 OTHER_LDFLAGS                   = -ObjC -lmbedtls -lmbedcrypto -lmbedx509

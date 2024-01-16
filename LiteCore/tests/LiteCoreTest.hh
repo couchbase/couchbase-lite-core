@@ -16,6 +16,7 @@
 #include "TestsCommon.hh"
 #include "c4Base.hh"
 #include "Error.hh"
+#include "fleece/function_ref.hh"
 #include "Logging.hh"
 #include <array>
 #include <functional>
@@ -131,12 +132,12 @@ class DataFileTestFixture
     };
 
     sequence_t writeDoc(slice docID, DocumentFlags flags, ExclusiveTransaction& t,
-                        std::function<void(fleece::impl::Encoder&)> fn) {
-        return writeDoc(*store, docID, flags, t, std::move(fn));
+                        std::function<void(fleece::impl::Encoder&)> fn, bool inOuterDict = true) {
+        return writeDoc(*store, docID, flags, t, std::move(fn), inOuterDict);
     }
 
     static sequence_t writeDoc(KeyStore&, slice docID, DocumentFlags, ExclusiveTransaction&,
-                               const std::function<void(fleece::impl::Encoder&)>&);
+                               const std::function<void(fleece::impl::Encoder&)>&, bool inOuterDict = true);
 
     [[nodiscard]] string databaseName() const override { return _databaseName; }
 

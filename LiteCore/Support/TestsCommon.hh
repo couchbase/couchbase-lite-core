@@ -39,6 +39,9 @@ litecore::FilePath GetSystemTempDirectory();
 /** Returns a temporary directory for use by this test run. */
 litecore::FilePath GetTempDirectory();
 
+/** Reads a text file, passing each line to the callback function. */
+bool ReadFileByLines(const std::string& path, fleece::function_ref<bool(FLSlice)> callback, size_t maxLines);
+
 /** Initializes logging for tests, both binary and console. */
 void InitTestLogging();
 

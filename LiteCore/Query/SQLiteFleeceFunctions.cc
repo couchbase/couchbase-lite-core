@@ -122,7 +122,7 @@ namespace litecore {
         }
     }
 
-    // fl_fts_value(body, propertyPath) -> blob data
+    // fl_fts_value(body, propertyPath) -> text data
     static void fl_fts_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
@@ -136,7 +136,7 @@ namespace litecore {
 
             const string resultStr = result.str();
             setResultTextFromSlice(ctx, slice(resultStr.substr(0, resultStr.size() - 1)));
-        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
+        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_fts_value: exception!", -1); }
     }
 
     // fl_unnested_value(unnestTableBody [, propertyPath]) -> propertyValue
@@ -498,6 +498,88 @@ namespace litecore {
         } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_callback: exception!", -1); }
     }
 
+#pragma mark - VECTOR (ML) SEARCH:
+
+    // Subroutine that converts a Fleece Value to a raw vector and puts it in the SQLite result.
+    // On error it returns the message as a string; on success, nullptr.
+    static const char* encodeVector(sqlite3_context* ctx, const fleece::impl::Value* value) {
+        if ( auto array = value->asArray() ) {
+            size_t        n = array->count();
+            vector<float> vec(n);
+            size_t        i = 0;
+            for ( ArrayIterator iter(array); iter; ++iter ) {
+                if ( auto item = iter.value(); item->type() == kNumber ) {
+                    vec[i++] = item->asFloat();
+                } else {
+                    return "array contains a non-numeric value";
+                }
+            }
+            setResultBlobFromData(ctx, slice{vec.data(), vec.size() * sizeof(float)}, kPlainBlobSubtype);
+            return nullptr;
+        } else if ( auto data = value->asData() ) {
+            if ( data.size > 0 && data.size % sizeof(float) == 0 ) {
+                setResultBlobFromData(ctx, data, kPlainBlobSubtype);
+                return nullptr;
+            } else {
+                return "data is wrong length to be a raw vector";
+            }
+        } else {
+            return "value cannot be encoded as a vector";
+        }
+    }
+
+    static const char* encodeVector(sqlite3_context* ctx, sqlite3_value* arg) {
+        if ( const Value* flVal = fleeceParam(ctx, arg, false) ) {
+            return encodeVector(ctx, flVal);
+        } else if ( sqlite3_value_type(arg) == SQLITE_BLOB && sqlite3_value_subtype(arg) == kPlainBlobSubtype ) {
+            if ( auto len = sqlite3_value_bytes(arg); len > 0 && len % sizeof(float) == 0 ) {
+                // Raw blob, multiple of 4 bytes long:
+                sqlite3_result_subtype(ctx, kPlainBlobSubtype);
+                sqlite3_result_value(ctx, arg);
+                return nullptr;
+            } else {
+                return "raw vector data length not multiple of 4";
+            }
+        } else {
+            return "value cannot be encoded as a vector";
+        }
+    }
+
+    // fl_vector_value(body, propertyPath) -> blob data (array of float32)
+    // fl_vector_value(expression)         -> blob data (array of float32)
+    // NOTE: This is used when indexing docs for a vector index, so invalid data should produce
+    //       a NULL result instead of an error.
+    static void fl_vector_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+        const char* errorMsg = nullptr;
+        if ( argc == 2 ) {
+            QueryFleeceScope scope(ctx, argv);
+            if ( scope.root ) {
+                errorMsg = encodeVector(ctx, scope.root);
+                if ( errorMsg )
+                    Warn("fl_vector_value: Property '%s' %s; ignoring", sqlite3_value_text(argv[1]), errorMsg);
+            } else {
+                sqlite3_result_null(ctx);  // missing property
+            }
+        } else if ( argc == 1 ) {
+            errorMsg = encodeVector(ctx, argv[0]);
+            if ( errorMsg && sqlite3_value_type(argv[0]) != SQLITE_NULL )
+                Warn("fl_vector_value: %s; ignoring", errorMsg);
+        } else {
+            // Wrong parameter count is an internal error, so it should fail.
+            sqlite3_result_error(ctx, "Wrong number of arguments to fl_vector_value", -1);
+            return;
+        }
+
+        if ( errorMsg ) sqlite3_result_null(ctx);
+    }
+
+    // encode_vector(fleece_array or raw blob) -> blob data (array of float32)
+    // This converts target vectors passed to a vector query. May return an error.
+    static void encode_vector(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+        const char* errorMsg = encodeVector(ctx, argv[0]);
+        if ( errorMsg ) sqlite3_result_error(ctx, errorMsg, -1);
+    }
+
 #pragma mark - REGISTRATION:
 
 
@@ -517,6 +599,8 @@ namespace litecore {
                                                        {"array_of", -1, array_of},
                                                        {"dict_of", -1, dict_of},
                                                        {"fl_callback", 7, fl_callback},
+                                                       {"fl_vector_value", -1, fl_vector_value},
+                                                       {"encode_vector", 1, encode_vector},
                                                        {}};
 
     const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[] = {{"fl_unnested_value", -1, fl_unnested_value}, {}};

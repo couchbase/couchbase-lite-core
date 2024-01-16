@@ -50,6 +50,10 @@ struct C4Database
 
     using Config = C4DatabaseConfig2;
 
+    /** Registers a directory path to load extension libraries from, such as Vector Search.
+        Must be called before opening a database that will use an extension. */
+    static void setExtensionPath(slice path);
+
     static bool exists(slice name, slice inDirectory);
     static void copyNamed(slice sourcePath, slice destinationName, const Config&);
     static bool deleteNamed(slice name, slice inDirectory);

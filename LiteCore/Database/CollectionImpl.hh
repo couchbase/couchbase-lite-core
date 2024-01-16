@@ -389,13 +389,36 @@ namespace litecore {
 
 #pragma mark - INDEXES:
 
-
-        static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
-
         void createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                          const C4IndexOptions* indexOptions = nullptr) override {
+            IndexSpec::Options options;
+            switch ( indexType ) {
+                case kC4FullTextIndex:
+                    if ( indexOptions ) {
+                        IndexSpec::FTSOptions ftsOpt;
+                        ftsOpt.language         = indexOptions->language;
+                        ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
+                        ftsOpt.disableStemming  = indexOptions->disableStemming;
+                        ftsOpt.stopWords        = indexOptions->stopWords;
+                        options                 = ftsOpt;
+                        break;
+                    }
+                case kC4VectorIndex:
+                    if ( indexOptions ) {
+                        IndexSpec::VectorOptions vecOpt;
+                        vecOpt.metric          = IndexSpec::VectorOptions::Metric(indexOptions->vector.metric);
+                        vecOpt.numCentroids    = indexOptions->vector.numCentroids;
+                        vecOpt.encoding        = IndexSpec::VectorOptions::Encoding(indexOptions->vector.encoding);
+                        vecOpt.minTrainingSize = indexOptions->vector.minTrainingSize;
+                        vecOpt.maxTrainingSize = indexOptions->vector.maxTrainingSize;
+                        options                = vecOpt;
+                    }
+                    break;
+                default:
+                    break;
+            }
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
-                                   (const IndexSpec::Options*)indexOptions);
+                                   options);
         }
 
         void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }

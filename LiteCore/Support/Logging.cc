@@ -80,6 +80,7 @@ namespace litecore {
     static int                   sMaxCount = 0;     // For rotation
     static int64_t               sMaxSize  = 1024;  // For rotation
     static string                sInitialMessage;   // For rotation, goes at top of each log
+    static unsigned              sWarningCount, sErrorCount;
     static mutex                 sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
@@ -475,6 +476,10 @@ namespace litecore {
         }
 
         if ( pos >= sMaxSize ) { Logging::rotateLog(level); }
+
+        if ( level == LogLevel::Warning ) sWarningCount++;
+        else if ( level == LogLevel::Error )
+            sErrorCount++;
     }
 
     // NOLINTEND(readability-convert-member-functions-to-static)

@@ -361,6 +361,8 @@ C4SliceResult c4coll_getIndexesInfo(C4Collection* coll, C4Error* C4NULLABLE outE
 
 #pragma mark - DATABASE:
 
+void c4_setExtensionPath(C4String path) noexcept { C4Database::setExtensionPath(path); }
+
 bool c4db_exists(C4String name, C4String inDirectory) noexcept { return C4Database::exists(name, inDirectory); }
 
 bool c4key_setPassword(C4EncryptionKey* outKey, C4String password, C4EncryptionAlgorithm alg) noexcept {

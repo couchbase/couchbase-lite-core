@@ -223,6 +223,12 @@ namespace litecore {
             require(numMatches <= _ftsTables.size(), "Sorry, multiple MATCHes of the same property are not allowed");
         }
 
+#ifdef COUCHBASE_ENTERPRISE
+        // Process VECTOR_DISTANCE() calls using an index if available.
+        // This may write a "WITH ..." (CTS) expression to _sql.
+        addVectorSearchCTEs(operands);
+#endif
+
         // Add the indexed prediction() calls to _indexJoinTables now
         findPredictionCalls(operands);
 
@@ -573,14 +579,23 @@ namespace litecore {
 
         // Add joins to index tables (FTS, predictive):
         for ( auto& ftsTable : _indexJoinTables ) {
-            auto& table = ftsTable.first;
-            auto& alias = ftsTable.second;
-            auto  idxAt = table.find(KeyStore::kIndexSeparator);
+            auto&       table          = ftsTable.first;
+            auto&       alias          = ftsTable.second;
+            string_view docidCol       = "docid";
+            auto        idxAt          = table.find(KeyStore::kIndexSeparator);
+            bool        writeTableName = true;
             // Encoded in the name of the index table is collection against which the index
             // is created. "docID" of this table is to match the "rowid" of the collection table.
             // The left-side of the separator is the original collection.
             // The Prediction method also uses a separate table; only the separator is different.
             if ( idxAt == string::npos ) { idxAt = table.find(KeyStore::kPredictSeparator); }
+            if ( idxAt == string::npos ) {
+                idxAt = table.find(KeyStore::kVectorSeparator);
+                if ( idxAt != string::npos ) {
+                    docidCol       = "rowid";
+                    writeTableName = false;  // vector index is already given an alias in a WITH stmt
+                }
+            }
             string coAlias;
             auto [prefixBegin, prefixEnd] = _ftsTableAliases.equal_range(table);
             if ( idxAt != string::npos ) {
@@ -602,8 +617,9 @@ namespace litecore {
                 Warn("The collecion is not specified. Hacked it to default.");
                 coAlias = _dbAlias;
             }
-            _sql << " JOIN " << sqlIdentifier(table) << " AS " << alias << " ON " << alias
-                 << ".docid = " << sqlIdentifier(coAlias) << ".rowid";
+            _sql << " JOIN ";
+            if ( writeTableName ) _sql << sqlIdentifier(table) << " AS ";
+            _sql << alias << " ON " << alias << "." << docidCol << " = " << sqlIdentifier(coAlias) << ".rowid";
         }
     }
 
@@ -1469,9 +1485,19 @@ namespace litecore {
             return;
         }
 
-        // Special case: "prediction()" may be indexed:
 #ifdef COUCHBASE_ENTERPRISE
-        if ( op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode) ) return;
+        if ( op.caseEquivalent(kPredictionFnName) ) {
+            // Special case: "prediction()" may be indexed:
+            if ( writeIndexedPrediction((const Array*)_curNode) ) return;
+        } else if ( op.caseEquivalent(kVectorMatchFnName) ) {
+            // Special case: "vector_match()":
+            writeVectorMatchFn(operands);
+            return;
+        } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
+            // Special case: "vector_distance()":
+            writeVectorDistanceFn(operands);
+            return;
+        }
 #endif
 
         if ( !_collationUsed && spec->wants_collation ) {
@@ -1567,6 +1593,7 @@ namespace litecore {
     void QueryParser::writeFunctionGetter(slice fn, const Value* source, const Value* param) {
         Path property = propertyFromNode(source);
         if ( property.empty() ) {
+            // If source is not a property path, pass it directly to fn:
             _sql << fn << "(";
             parseNode(source);
             if ( param ) {
@@ -1857,11 +1884,15 @@ namespace litecore {
         return SQL();
     }
 
-    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+    std::string QueryParser::functionCallSQL(slice fnName, const fleece::impl::Value* args) {
         reset();
         addDefaultAlias();
-        writeFunctionGetter(kFTSValueFnName, ftsExpr);
+        writeFunctionGetter(fnName, args);
         return SQL();
+    }
+
+    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+        return functionCallSQL(kFTSValueFnName, ftsExpr);
     }
 
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
@@ -1890,7 +1921,7 @@ namespace litecore {
     }
 
     // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
-    pair<string, string> QueryParser::FTSTableName(const Value* key) const {
+    pair<string, string> QueryParser::FTSTableName(const Value* key, bool vector) const {
         Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
@@ -1929,7 +1960,17 @@ namespace litecore {
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return {_delegate.FTSTableName(iAlias->second.tableName, indexName), string(prefix)};
+        string tableName;
+#ifdef COUCHBASE_ENTERPRISE
+        if ( vector ) {
+            tableName = _delegate.vectorTableName(iAlias->second.tableName, key->toJSONString());
+        } else
+#endif
+        {
+            DebugAssert(!vector);
+            tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
+        }
+        return {tableName, string(prefix)};
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
@@ -2002,6 +2043,8 @@ namespace litecore {
 
 #ifndef COUCHBASE_ENTERPRISE
     void QueryParser::findPredictionCalls(const Value* root) {}
+
+    void QueryParser::addVectorSearchCTEs(const Value* root) {}
 #endif
 
 }  // namespace litecore

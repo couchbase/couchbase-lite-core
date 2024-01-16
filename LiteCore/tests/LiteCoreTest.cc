@@ -186,11 +186,12 @@ sequence_t DataFileTestFixture::createDoc(KeyStore& s, slice docID, slice body, 
 }
 
 sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, DocumentFlags flags, ExclusiveTransaction& t,
-                                         const function<void(fleece::impl::Encoder&)>& writeProperties) {
+                                         const function<void(fleece::impl::Encoder&)>& writeProperties,
+                                         bool                                          inOuterDict) {
     fleece::impl::Encoder enc;
-    enc.beginDictionary();
+    if ( inOuterDict ) enc.beginDictionary();
     writeProperties(enc);
-    enc.endDictionary();
+    if ( inOuterDict ) enc.endDictionary();
     alloc_slice body = enc.finish();
 
     if ( toStore.capabilities().sequences ) {

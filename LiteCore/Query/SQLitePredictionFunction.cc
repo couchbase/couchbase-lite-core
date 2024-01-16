@@ -25,6 +25,9 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
+    // Implementation of N1QL function PREDICTION(NAME, INPUT, [PROPERTY]).
+    // Calls the named PredictiveModel, passing it the INPUT dict, returning the output dict.
+    // If PROPERTY is given, only that named property of the output dict is returned.
     static void predictionFunc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         try {
             auto name  = (const char*)sqlite3_value_text(argv[0]);
@@ -89,7 +92,10 @@ namespace litecore {
         return (i1.count() == i2.count());
     }
 
+    // Implementation of N1QL function EUCLIDEAN_DISTANCE(ARRAY1, ARRAY2)
+    // Given two arrays of numbers, returns their Euclidean distance:
     // https://en.wikipedia.org/wiki/Euclidean_distance
+    // Returns NULL if args are not both arrays and of equal length.
     static void euclidean_distance(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
@@ -111,7 +117,10 @@ namespace litecore {
         sqlite3_result_double(ctx, dist);
     }
 
+    // Implementation of N1QL function COSINE_DISTANCE(ARRAY1, ARRAY2)
+    // Given two arrays of numbers, returns their cosine distance:
     // https://en.wikipedia.org/wiki/Cosine_similarity
+    // Returns NULL if args are not both arrays and of equal length.
     static void cosine_distance(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;

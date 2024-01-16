@@ -24,13 +24,32 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
+    void IndexSpec::VectorOptions::validate() {
+        const char* err = nullptr;
+        if ( numCentroids < 1 ) err = "numCentroids is too small";
+        else if ( numCentroids > 65535 )
+            err = "numCentroids is too large";
+        else if ( minTrainingSize < 25 * numCentroids )
+            err = "minTrainingSize is too small";
+        else if ( maxTrainingSize < minTrainingSize )
+            err = "maxTrainingSize is too small";
+        else if ( maxTrainingSize > 256 * numCentroids )
+            err = "maxTrainingSize is too large";
+        if ( err ) error::_throw(error::InvalidParameter, "Invalid VectorOptions: %s", err);
+    }
+
     IndexSpec::IndexSpec(std::string name_, Type type_, alloc_slice expression_, QueryLanguage queryLanguage_,
-                         const Options* opt)
+                         Options opt)
         : name(std::move(name_))
         , type(type_)
         , expression(std::move(expression_))
         , queryLanguage(queryLanguage_)
-        , options(opt ? std::make_optional(*opt) : std::optional<Options>()) {}
+        , options(std::move(opt)) {
+        if ( auto whichOpts = options.index() ) {
+            if ( (type == kFullText && whichOpts != 1) || (type == kVector && whichOpts != 2) )
+                error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
+        }
+    }
 
     IndexSpec::IndexSpec(IndexSpec&&) = default;
     IndexSpec::~IndexSpec()           = default;

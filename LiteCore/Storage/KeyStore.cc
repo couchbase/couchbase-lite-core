@@ -80,7 +80,7 @@ namespace litecore {
     }
 
     bool KeyStore::createIndex(slice name, slice expression, QueryLanguage queryLanguage, IndexSpec::Type type,
-                               const IndexSpec::Options* options) {
+                               IndexSpec::Options options) {
         return createIndex({string(name), type, alloc_slice(expression), queryLanguage, options});
     }
 

@@ -27,10 +27,36 @@ typedef C4_ENUM(uint32_t, C4IndexType){
         kC4FullTextIndex,    ///< Full-text index
         kC4ArrayIndex,       ///< Index of array values, for use with UNNEST
         kC4PredictiveIndex,  ///< Index of prediction() results (Enterprise Edition only)
+        kC4VectorIndex,      ///< Index of ML vector similarity (Enterprise Edition only)
 };
 
+/** Distance metric to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorMetric){
+        kC4VectorMetricDefault,    ///< Use default metric, Euclidean
+        kC4VectorMetricEuclidean,  ///< Euclidean distance (squared)
+        kC4VectorMetricCosine,     ///< Cosine distance (1.0 - cosine similarity)
+};                                 // Values must match IndexSpec::VectorOptions::Metric
+
+/** Types of encoding (compression) to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorEncoding){
+        kC4VectorEncodingDefault,  ///< Use default encoding, which is currently SQ8
+        kC4VectorEncodingNone,     ///< No encoding: 32 bits per dimension, no data loss
+        kC4VectorEncodingSQ8,      ///< Scalar Quantizer: 8 bits per dimension (default)
+        kC4VectorEncodingSQ6,      ///< Scalar Quantizer: 6 bits per dimension
+        kC4VectorEncodingSQ4,      ///< Scalar Quantizer: 4 bits per dimension
+};                                 // Values must match IndexSpec::VectorOptions::Encoding
+
+/** Options for vector indexes. */
+typedef struct C4VectorIndexOptions {
+    unsigned         numCentroids;     ///< Number of buckets to partition the vectors between
+    C4VectorMetric   metric;           ///< Distance metric
+    C4VectorEncoding encoding;         ///< Vector compression type
+    unsigned         minTrainingSize;  ///< Minimum # of vectors to train index (>= 25*numCentroids)
+    unsigned         maxTrainingSize;  ///< Maximum # of vectors to train index on (<= 256*numCentroids)
+} C4VectorIndexOptions;
+
 /** Options for indexes; these each apply to specific types of indexes. */
-typedef struct {
+typedef struct C4IndexOptions {
     /** Dominant language of text to be indexed; setting this enables word stemming, i.e.
         matching different cases of the same word ("big" and "bigger", for instance.)
         Can be an ISO-639 language code or a lowercase (English) language name; supported
@@ -61,6 +87,9 @@ typedef struct {
         To provide a custom list of words, use a string containing the words in lowercase
         separated by spaces. */
     const char* C4NULLABLE stopWords;
+
+    /** Options for vector indexes. */
+    C4VectorIndexOptions vector;
 } C4IndexOptions;
 
 /** @} */

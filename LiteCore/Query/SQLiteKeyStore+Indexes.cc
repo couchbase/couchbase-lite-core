@@ -27,7 +27,7 @@ namespace litecore {
 
     /*
      - A value index is a SQL index named 'NAME'.
-     - A FTS index is a SQL virtual table named 'kv_default::NAME'
+     - A FTS or vector index is a SQL virtual table named 'kv_default::NAME'
      - An array index has two parts:
          * A SQL table named `kv_default:unnest:PATH`, where PATH is the property path
          * An index on that table named `NAME`
@@ -65,6 +65,9 @@ namespace litecore {
             case IndexSpec::kPredictive:
                 created = createPredictiveIndex(spec);
                 break;
+            case IndexSpec::kVector:
+                created = createVectorIndex(spec);
+                break;
 #endif
             default:
                 error::_throw(error::Unimplemented);
@@ -82,7 +85,7 @@ namespace litecore {
     // Actually creates the index (called by the createXXXIndex methods)
     bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
                                      Array::iterator& expressions) {
-        Assert(spec.type != IndexSpec::kFullText);
+        Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
         QueryParser qp(db(), "", sourceTableName);
         qp.writeCreateIndex(spec.name, sourceTableName, expressions, spec.where(), (spec.type != IndexSpec::kValue));
         string sql = qp.SQL();
