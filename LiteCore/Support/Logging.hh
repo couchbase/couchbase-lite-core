@@ -114,6 +114,9 @@ namespace litecore {
 
         static void flushLogFiles();
 
+        static unsigned warningCount();  ///< Number of warnings logged since launch
+        static unsigned errorCount();    ///< Number of errors logged since launch
+
       private:
         friend class Logging;
         static std::string getObject(unsigned);

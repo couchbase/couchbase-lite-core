@@ -30,7 +30,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::Options*);
+    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::FTSOptions*);
 
     // Creates a FTS index.
     bool SQLiteKeyStore::createFTSIndex(const IndexSpec& spec) {
@@ -55,7 +55,7 @@ namespace litecore {
         {
             stringstream sql;
             sql << "CREATE VIRTUAL TABLE " << sqlIdentifier(ftsTableName) << " USING fts4(" << columns << ", ";
-            writeTokenizerOptions(sql, spec.optionsPtr());
+            writeTokenizerOptions(sql, spec.ftsOptions());
             sql << ")";
             if ( !db().createIndex(spec, this, ftsTableName, sql.str()) ) return false;
         }
@@ -85,7 +85,7 @@ namespace litecore {
     }
 
     // subroutine that generates the option string passed to the FTS tokenizer
-    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::Options* options) {
+    static void writeTokenizerOptions(stringstream& sql, const IndexSpec::FTSOptions* options) {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if ( options ) {

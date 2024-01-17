@@ -227,11 +227,15 @@ namespace litecore {
             {"min", 1, 1, nullslice, true},
             {"sum", 1, 1, nullslice, true},
 
-    // Predictive query:
 #ifdef COUCHBASE_ENTERPRISE
+            // Predictive query:
             {"prediction", 2, 3},
             {"euclidean_distance", 2, 3},
             {"cosine_distance", 2, 2},
+
+            // Vector search:
+            {"vector_match", 2, 3},
+            {"vector_distance", 1, 1},
 #endif
 
             {nullslice}  // End of data

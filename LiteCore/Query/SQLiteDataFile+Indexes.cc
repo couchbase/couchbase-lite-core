@@ -84,10 +84,15 @@ namespace litecore {
         if ( auto existingSpec = getIndex(spec.name) ) {
             if ( existingSpec->type == spec.type && existingSpec->keyStoreName == keyStore->name() ) {
                 bool same;
-                if ( spec.type == IndexSpec::kFullText )
-                    same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
-                else
-                    same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                switch ( spec.type ) {
+                    case IndexSpec::kFullText:
+                    case IndexSpec::kVector:
+                        same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
+                        break;
+                    default:
+                        same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                        break;
+                }
                 if ( same ) return false;  // This is a duplicate of an existing index; do nothing
             }
             // Existing index is different, so delete it first:
@@ -105,7 +110,8 @@ namespace litecore {
         ensureIndexTableExists();
         LogTo(QueryLog, "Deleting %s index '%s'", spec.typeName(), spec.name.c_str());
         unregisterIndex(spec.name);
-        if ( spec.type != IndexSpec::kFullText ) exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
+        if ( spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector )
+            exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
         if ( !spec.indexTableName.empty() ) garbageCollectIndexTable(spec.indexTableName);
     }
 

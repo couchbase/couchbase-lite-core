@@ -97,13 +97,18 @@ namespace litecore {
 
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
+        /// Sets the directory where SQLite extensions can be found (i.e. VectorSearch)
+        static void setExtensionPath(string);
+
         // QueryParser::delegate:
         bool        tableExists(const std::string& tableName) const override;
         string      collectionTableName(const string& collection, DeletionStatus) const override;
+        string      auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) const;
         std::string FTSTableName(const string& collection, const std::string& property) const override;
         std::string unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
+        std::string vectorTableName(const string& collection, const std::string& property) const override;
 #endif
 
       protected:

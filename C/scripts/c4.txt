@@ -408,6 +408,8 @@ c4error_return
 c4_dumpInstances
 gC4ExpectExceptions
 
+c4_setExtensionPath
+
 FLDoc_FromJSON
 FLDoc_Retain
 FLDoc_GetAllocedData

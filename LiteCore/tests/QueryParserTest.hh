@@ -63,6 +63,10 @@ class QueryParserTest
     [[nodiscard]] std::string predictiveTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":predict:" + property;
     }
+
+    [[nodiscard]] std::string vectorTableName(const string& onTable, const std::string& property) const override {
+        return onTable + ":vector:" + property;
+    }
 #endif
 
     std::set<string> tableNames{"kv_default", "kv_del_default"};

@@ -73,6 +73,7 @@ namespace litecore {
         // Separator for an FTI keystore (i.e. <scope>.<collection>::<index>
         static constexpr slice kIndexSeparator   = "::";
         static constexpr slice kPredictSeparator = ":predict:";
+        static constexpr slice kVectorSeparator  = ":vector:";
         static constexpr slice kUnnestSeparator  = ":unnest:";
 
         /// Returns true if this is a valid collection name. Does NOT recognize "_default"!
@@ -190,10 +191,10 @@ namespace litecore {
 
         virtual bool createIndex(const IndexSpec&) = 0;
         bool createIndex(slice name, slice expression, QueryLanguage queryLanguage, IndexSpec::Type = IndexSpec::kValue,
-                         const IndexSpec::Options* = nullptr);  // convenience method
+                         IndexSpec::Options = {});  // convenience method
 
         bool createIndex(slice name, slice expression, IndexSpec::Type type = IndexSpec::kValue,
-                         const IndexSpec::Options* options = nullptr)  // convenience method
+                         IndexSpec::Options options = {})  // convenience method
         {
             return createIndex(name, expression, QueryLanguage::kJSON, type, options);
         }

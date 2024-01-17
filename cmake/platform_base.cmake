@@ -47,6 +47,7 @@ function(set_litecore_source_base)
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
         LiteCore/Query/QueryParser+Prediction.cc
+        LiteCore/Query/QueryParser+VectorSearch.cc
         LiteCore/Query/QueryParser.cc
         LiteCore/Query/SQLiteDataFile+Indexes.cc
         LiteCore/Query/SQLiteFleeceEach.cc
@@ -57,6 +58,7 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLiteKeyStore+FTSIndexes.cc
         LiteCore/Query/SQLiteKeyStore+Indexes.cc
         LiteCore/Query/SQLiteKeyStore+PredictiveIndexes.cc
+        LiteCore/Query/SQLiteKeyStore+VectorIndex.cc
         LiteCore/Query/SQLiteN1QLFunctions.cc
         LiteCore/Query/SQLitePredictionFunction.cc
         LiteCore/Query/SQLiteQuery.cc

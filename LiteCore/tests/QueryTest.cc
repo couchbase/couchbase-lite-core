@@ -35,25 +35,25 @@ unsigned QueryTest::alter3 = 0;
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
-    IndexSpec::Options options{"en", true};
+    IndexSpec::FTSOptions options{"en", true};
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
                     [=] { store->createIndex(""_sl, R"([[".num"]])"); });
 
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, &options); });
+                    [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
     store->deleteIndex("num"_sl);
-    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
-    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(extractIndexes(store->getIndexes()) == vector<string>{"num_second"});
 
     CHECK(store->createIndex("num"_sl, "[\".num\"]"_sl));
@@ -62,9 +62,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
-    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
-    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, &options));
+    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
+    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
 
     store->deleteIndex("num_second"_sl);
