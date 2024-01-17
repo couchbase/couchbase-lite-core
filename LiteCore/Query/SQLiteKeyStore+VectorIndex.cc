@@ -32,9 +32,7 @@ namespace litecore {
     // Vector search index for ML / predictive query, using the vectorsearch extension.
     // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
 
-    static constexpr const char* kVectorEncodingNames[] = {nullptr,     "none",      "PQ",
-                                                           "SQ,bits=8", "SQ,bits=6", "SQ,bits=4"};
-    static constexpr const char* kVectorMetricNames[]   = {nullptr, "euclidean2", "cosine"};
+    static constexpr const char* kMetricNames[] = {nullptr, "euclidean2", "cosine"};
 
     // Creates a vector-similarity index.
     bool SQLiteKeyStore::createVectorIndex(const IndexSpec& spec) {
@@ -50,21 +48,43 @@ namespace litecore {
 
         // Create the virtual table:
         {
-            stringstream createStmt;
-            createStmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
-            IndexSpec::VectorOptions options;
-            if ( IndexSpec::VectorOptions const* o = spec.vectorOptions() ) { options = *o; }
-            options.validate();
-            createStmt << "centroids=" << options.numCentroids << ",minToTrain=" << options.minTrainingSize
-                       << ",maxToTrain=" << options.maxTrainingSize;
-            if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
-                createStmt << ",metric=" << kVectorMetricNames[options.metric];
+            stringstream stmt;
+            stmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
+            if ( IndexSpec::VectorOptions const* o = spec.vectorOptions() ) {
+                auto& options = *o;
+                if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
+                    stmt << "metric=" << kMetricNames[options.metric] << ',';
+                }
+                switch ( options.clustering.type ) {
+                    case IndexSpec::VectorOptions::Flat:
+                        stmt << "clustering=flat" << options.clustering.flat_centroids << ',';
+                        break;
+                    case IndexSpec::VectorOptions::Multi:
+                        stmt << "clustering=multi" << options.clustering.multi_subquantizers << 'x'
+                             << options.clustering.multi_bits << ',';
+                        break;
+                }
+                switch ( options.encoding.type ) {
+                    case IndexSpec::VectorOptions::DefaultEncoding:
+                        break;
+                    case IndexSpec::VectorOptions::NoEncoding:
+                        stmt << "encoding=none,";
+                        break;
+                    case IndexSpec::VectorOptions::PQ:
+                        stmt << "encoding=PQ" << options.encoding.pq_subquantizers << 'x' << options.encoding.bits
+                             << ',';
+                        break;
+                    case IndexSpec::VectorOptions::SQ:
+                        stmt << "encoding=SQ" << options.encoding.bits << ',';
+                        break;
+                }
+                if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
+                if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
+                stmt << "minToTrain=" << options.minTrainingSize;
             }
-            if ( options.encoding != IndexSpec::VectorOptions::DefaultEncoding ) {
-                createStmt << ",encoding=" << kVectorEncodingNames[options.encoding];
-            }
-            createStmt << ")";
-            if ( !db().createIndex(spec, this, vectorTableName, createStmt.str()) ) return false;
+            stmt << ")";
+            string stmtStr = stmt.str();
+            if ( !db().createIndex(spec, this, vectorTableName, stmtStr) ) return false;
         }
         auto where = spec.where();
         qp.setBodyColumnName("body");
