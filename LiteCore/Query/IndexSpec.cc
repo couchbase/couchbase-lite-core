@@ -24,20 +24,6 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
-    void IndexSpec::VectorOptions::validate() {
-        const char* err = nullptr;
-        if ( numCentroids < 1 ) err = "numCentroids is too small";
-        else if ( numCentroids > 65535 )
-            err = "numCentroids is too large";
-        else if ( minTrainingSize < 25 * numCentroids )
-            err = "minTrainingSize is too small";
-        else if ( maxTrainingSize < minTrainingSize )
-            err = "maxTrainingSize is too small";
-        else if ( maxTrainingSize > 256 * numCentroids )
-            err = "maxTrainingSize is too large";
-        if ( err ) error::_throw(error::InvalidParameter, "Invalid VectorOptions: %s", err);
-    }
-
     IndexSpec::IndexSpec(std::string name_, Type type_, alloc_slice expression_, QueryLanguage queryLanguage_,
                          Options opt)
         : name(std::move(name_))

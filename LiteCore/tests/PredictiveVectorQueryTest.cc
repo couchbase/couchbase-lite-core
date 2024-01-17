@@ -83,10 +83,13 @@ class PredictiveVectorQueryTest : public QueryTest {
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options(16);
-        IndexSpec                spec("factorsindex", IndexSpec::kVector,
-                                      alloc_slice(json5("[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]")),
-                                      QueryLanguage::kJSON, options);
+        IndexSpec::VectorOptions options;
+        options.clustering.type           = IndexSpec::VectorOptions::Flat;
+        options.clustering.flat_centroids = 16;
+
+        IndexSpec spec("factorsindex", IndexSpec::kVector,
+                       alloc_slice(json5("[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]")),
+                       QueryLanguage::kJSON, options);
         store->createIndex(spec);
         REQUIRE(store->getIndexes().size() == 1);
     }
