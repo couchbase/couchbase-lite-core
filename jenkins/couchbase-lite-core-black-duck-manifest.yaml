@@ -53,8 +53,6 @@ components:
   faiss:
     bd-id: 9c5b89a8-e3a1-4f7a-af8e-ebac244b7791
     versions: [ 1.7.4 ]
-    src-path: vendor/mobile-vector-search/vendor/faiss
-    parent-repo: vendor/mobile-vector-search
 
 # [0]
 # The KB doesn't track the versions of this library well,
