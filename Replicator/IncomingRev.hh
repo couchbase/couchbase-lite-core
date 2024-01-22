@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
         void reset();
 
         // Called by the Inserter:
-        void revisionProvisionallyInserted();
+        void revisionProvisionallyInserted(bool revoked);
         void revisionInserted();
 
         bool passive() const override {

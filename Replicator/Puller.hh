@@ -35,8 +35,16 @@ namespace litecore { namespace repl {
         void start(RemoteSequence sinceSequence)    {enqueue(FUNCTION_TO_QUEUE(Puller::_start), sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
-        void revWasHandled(IncomingRev *inc NONNULL);
+        template <bool revoked>
+        void revWasProvisionallyHandled() {
+            if constexpr ( revoked ) {
+                _provisionallyHandledRevoked.add(1);
+            } else {
+                _provisionallyHandledRevs.add(1);
+            }
+        }
+
+        void revWasHandled(IncomingRev* inc NONNULL);
         void revReRequested(uint64_t missingBodySize);
 
         void insertRevision(RevToInsert *rev NONNULL);
@@ -63,14 +71,15 @@ namespace litecore { namespace repl {
         void _documentsRevoked(std::vector<Retained<RevToInsert>>);
         void handleRev(Retained<blip::MessageIn>);
         void handleNoRev(Retained<blip::MessageIn>);
+        template <bool revoked>
         Retained<IncomingRev> makeIncomingRev();
-        void startIncomingRev(blip::MessageIn* NONNULL);
-        void maybeStartIncomingRevs();
-        void _revsWereProvisionallyHandled();
-        void _revsFinished(int gen);
-        void _revReRequested(uint64_t missingBodySize);
-        void completedSequence(const RemoteSequence&,
-                               bool withTransientError =false, bool updateCheckpoint =true);
+        void                  startIncomingRev(blip::MessageIn* NONNULL);
+        void                  startRevoked(RevToInsert* NONNULL);
+        void                  maybeStartIncomingRevs();
+        void                  _revsWereProvisionallyHandled();
+        void                  _revsFinished(int gen);
+        void                  _revReRequested(uint64_t missingBodySize);
+        void completedSequence(const RemoteSequence&, bool withTransientError = false, bool updateCheckpoint = true);
         void updateLastSequence();
 
         void _setCaughtUp()                     {_caughtUp = true;}
@@ -82,11 +91,13 @@ namespace litecore { namespace repl {
         bool _caughtUp {false};             // Got all historic sequences, now up to date
         bool _fatalError {false};           // Have I gotten a fatal error?
 
-        RemoteSequenceSet _missingSequences; // Known sequences I need to pull
-        std::deque<Retained<blip::MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
+        RemoteSequenceSet                          _missingSequences;    // Known sequences I need to pull
+        std::deque<Retained<blip::MessageIn>>      _waitingRevMessages;  // Queued 'rev' messages
+        std::deque<Retained<RevToInsert>>          _waitingRevoked;      // Queued revoked docs
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
-        actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
-        actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
+        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevs;
+        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevoked;
+        actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
         virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
@@ -96,9 +107,11 @@ namespace litecore { namespace repl {
 #endif
         Retained<Inserter> _inserter;
         mutable Retained<RevFinder> _revFinder;
-        unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
-        unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
-        unsigned _unfinishedIncomingRevs {0};
+        unsigned                    _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
+        unsigned                    _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
+        unsigned                    _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs
+        unsigned                    _unfinishedIncomingRevs{0};
+        unsigned                    _unfinishedIncomingRevoked{0};
     };
 
 

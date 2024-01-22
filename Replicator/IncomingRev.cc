@@ -414,12 +414,12 @@ namespace litecore { namespace repl {
 
 
     // Called by the Inserter after inserting the revision, but before committing the transaction.
-    void IncomingRev::revisionProvisionallyInserted() {
+    void IncomingRev::revisionProvisionallyInserted(const bool revoked) {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the Inserter's thread, NOT the IncomingRev's! Thus, it
         // needs to pay attention to thread-safety.
         _provisionallyInserted = true;
-        _puller->revWasProvisionallyHandled();
+        revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
 

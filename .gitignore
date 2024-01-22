@@ -12,6 +12,13 @@ xcuserdata/
 build/
 DerivedData/
 
+# JetBrains
+.idea/
+
+# Clang
+.cache/
+compile_commands.json
+
 # CMake:
 /build_cmake/*
 !/build_cmake/scripts
