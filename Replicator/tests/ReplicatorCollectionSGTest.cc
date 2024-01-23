@@ -2527,7 +2527,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
         }
         enc.endArray();
         enc.endDict();
-        _sg.sendRemoteRequest("POST", _collectionSpecs[0], "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
+        (void)_sg.sendRemoteRequest("POST", _collectionSpecs[0], "_bulk_docs", enc.finish(), false,
+                                    HTTPStatus::Created);
     }
 
     // -------- Repopulating local db --------

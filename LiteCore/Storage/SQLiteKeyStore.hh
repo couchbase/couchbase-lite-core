@@ -55,7 +55,7 @@ namespace litecore {
 
         /// Modifies a collection name to either add or remove mangling necessary for
         /// case sensitive collection names in a case insensitive environment
-        MUST_USE_RESULT static std::string transformCollectionName(const std::string& name, bool mangle);
+        [[nodiscard]] static std::string transformCollectionName(const std::string& name, bool mangle);
 
         bool read(Record& rec, ReadBy, ContentOption) const override;
 

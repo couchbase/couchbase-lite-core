@@ -72,8 +72,9 @@ C4API_BEGIN_DECLS
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-CBL_CORE_API bool c4db_createIndex(C4Database* database, C4String name, C4String indexSpecJSON, C4IndexType indexType,
-                                   const C4IndexOptions* C4NULLABLE indexOptions, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4db_createIndex(C4Database* database, C4String name, C4String indexSpecJSON,
+                                             C4IndexType indexType, const C4IndexOptions* C4NULLABLE indexOptions,
+                                             C4Error* C4NULLABLE outError) C4API;
 
 /** @param database  The database to index.
         @param name  The name of the index. Any existing index with the same name will be replaced,
@@ -84,9 +85,10 @@ CBL_CORE_API bool c4db_createIndex(C4Database* database, C4String name, C4String
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-CBL_CORE_API bool c4db_createIndex2(C4Database* database, C4String name, C4String indexSpec,
-                                    C4QueryLanguage queryLanguage, C4IndexType indexType,
-                                    const C4IndexOptions* C4NULLABLE indexOptions, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4db_createIndex2(C4Database* database, C4String name, C4String indexSpec,
+                                              C4QueryLanguage queryLanguage, C4IndexType indexType,
+                                              const C4IndexOptions* C4NULLABLE indexOptions,
+                                              C4Error* C4NULLABLE              outError) C4API;
 
 
 /** Deletes an index that was created by `c4db_createIndex`.
@@ -94,7 +96,7 @@ CBL_CORE_API bool c4db_createIndex2(C4Database* database, C4String name, C4Strin
         @param name The name of the index to delete
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name, C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns information about all indexes in the database.

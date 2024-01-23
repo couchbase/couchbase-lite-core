@@ -108,13 +108,13 @@ bool SG::createUser(const std::string& username, const std::string& password) co
     HTTPStatus  status;
     // Delete the user incase they already exist
     deleteUser(username);
-    runRequest("POST", {}, "_user", body, true, nullptr, &status);
+    auto response = runRequest("POST", {}, "_user", body, true, nullptr, &status);
     return status == HTTPStatus::Created;
 }
 
 bool SG::deleteUser(const std::string& username) const {
     HTTPStatus status;
-    runRequest("DELETE", {}, "_user/"s + username, nullslice, true, nullptr, &status);
+    auto       response = runRequest("DELETE", {}, "_user/"s + username, nullslice, true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
@@ -163,7 +163,7 @@ bool SG::assignUserChannel(const std::string& username, const std::vector<C4Coll
     Value v = doc.root();
 
     HTTPStatus status;
-    runRequest("PUT", {}, "_user/"s + username, v.toJSON(), true, nullptr, &status);
+    auto       response = runRequest("PUT", {}, "_user/"s + username, v.toJSON(), true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
@@ -179,7 +179,7 @@ bool SG::assignUserChannelOld(const std::string& username, const std::vector<std
     Value v = doc.root();
 
     HTTPStatus status;
-    runRequest("PUT", {}, "_user/"s + username, v.toJSON(), true, nullptr, &status);
+    auto       response = runRequest("PUT", {}, "_user/"s + username, v.toJSON(), true, nullptr, &status);
     return status == HTTPStatus::OK;
 }
 
@@ -195,7 +195,8 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, sl
     }
 
     HTTPStatus status;
-    runRequest("PUT", collectionSpec, docID, channelIDs.empty() ? body : bodyWithChannel, false, err, &status);
+    auto       response =
+            runRequest("PUT", collectionSpec, docID, channelIDs.empty() ? body : bodyWithChannel, false, err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
@@ -211,7 +212,7 @@ bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::
         return false;
     }
     HTTPStatus status;
-    runRequest("PUT", collectionSpec, docID, bodyWithChannel, false, err, &status);
+    auto       response = runRequest("PUT", collectionSpec, docID, bodyWithChannel, false, err, &status);
     return status == HTTPStatus::OK || status == HTTPStatus::Created;
 }
 
@@ -225,11 +226,11 @@ alloc_slice SG::getServerName() const {
     return nullslice;
 }
 
-void SG::flushDatabase() const { runRequest("POST", {}, "_flush", nullslice, true); }
+void SG::flushDatabase() const { auto response = runRequest("POST", {}, "_flush", nullslice, true); }
 
 bool SG::insertBulkDocs(C4CollectionSpec collectionSpec, const slice docsDict, double timeout) const {
     HTTPStatus status;
-    runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, timeout, false);
+    auto response = runRequest("POST", collectionSpec, "_bulk_docs", docsDict, false, nullptr, &status, timeout, false);
     return status == HTTPStatus::Created;
 }
 

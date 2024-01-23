@@ -102,7 +102,8 @@ CBL_CORE_API void c4socket_received(C4Socket* socket, C4Slice data) C4API;
             such as a file descriptor or a native object pointer.
         @param address  The address of the remote peer making the connection.
         @return  A new C4Socket initialized with the `nativeHandle`. */
-CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle, const C4Address* address) C4API;
+NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle,
+                                                     const C4Address* address) C4API;
 
 
 /** @} */

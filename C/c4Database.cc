@@ -153,9 +153,8 @@ C4Collection* C4Database::getDefaultCollection() const {
 }
 
 C4Collection* C4Database::getDefaultCollectionSafe() const {
-    Retained<C4Collection> dc = getDefaultCollection();
+    C4Collection* dc = getDefaultCollection();
     if ( !dc ) { error::_throw(error::NotOpen); }
-
     return dc;
 }
 

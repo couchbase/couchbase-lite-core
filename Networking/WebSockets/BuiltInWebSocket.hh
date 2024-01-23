@@ -69,19 +69,19 @@ namespace litecore::websocket {
 
       private:
         BuiltInWebSocket(const URL&, Role, const Parameters&);
-        void                               _bgConnect();
-        void                               setThreadName();
-        bool                               configureClientCert(fleece::Dict auth);
-        static bool                        configureAuthHeader(net::HTTPLogic&, fleece::Dict auth);
-        static bool                        configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
-        std::unique_ptr<net::ClientSocket> _connectLoop() MUST_USE_RESULT;
-        void                               ioLoop();
-        void                               awaitReadable();
-        void                               awaitWriteable();
-        void                               readFromSocket();
-        void                               writeToSocket();
-        void                               closeWithException(const std::exception&, const char* where);
-        void                               closeWithError(C4Error);
+        void                                             _bgConnect();
+        void                                             setThreadName();
+        bool                                             configureClientCert(fleece::Dict auth);
+        static bool                                      configureAuthHeader(net::HTTPLogic&, fleece::Dict auth);
+        static bool                                      configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
+        [[nodiscard]] std::unique_ptr<net::ClientSocket> _connectLoop();
+        void                                             ioLoop();
+        void                                             awaitReadable();
+        void                                             awaitWriteable();
+        void                                             readFromSocket();
+        void                                             writeToSocket();
+        void                                             closeWithException(const std::exception&, const char* where);
+        void                                             closeWithError(C4Error);
 
         // Max number of bytes read that haven't been processed by the client yet.
         // Beyond this point, I will stop reading from the socket, sending

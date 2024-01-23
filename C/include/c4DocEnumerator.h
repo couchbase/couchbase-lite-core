@@ -33,9 +33,9 @@ void c4enum_close(C4DocEnumerator* C4NULLABLE e) C4API;
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-CBL_CORE_API C4DocEnumerator* c4db_enumerateChanges(C4Database* database, C4SequenceNumber since,
-                                                    const C4EnumeratorOptions* C4NULLABLE options,
-                                                    C4Error* C4NULLABLE                   outError) C4API;
+NODISCARD CBL_CORE_API C4DocEnumerator* c4db_enumerateChanges(C4Database* database, C4SequenceNumber since,
+                                                              const C4EnumeratorOptions* C4NULLABLE options,
+                                                              C4Error* C4NULLABLE                   outError) C4API;
 
 /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
@@ -45,8 +45,9 @@ CBL_CORE_API C4DocEnumerator* c4db_enumerateChanges(C4Database* database, C4Sequ
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-CBL_CORE_API C4DocEnumerator* c4db_enumerateAllDocs(C4Database* database, const C4EnumeratorOptions* C4NULLABLE options,
-                                                    C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4DocEnumerator* c4db_enumerateAllDocs(C4Database*                           database,
+                                                              const C4EnumeratorOptions* C4NULLABLE options,
+                                                              C4Error* C4NULLABLE                   outError) C4API;
 #endif
 
 /** Creates an enumerator ordered by sequence.
@@ -56,9 +57,9 @@ CBL_CORE_API C4DocEnumerator* c4db_enumerateAllDocs(C4Database* database, const 
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-CBL_CORE_API C4DocEnumerator* c4coll_enumerateChanges(C4Collection* collection, C4SequenceNumber since,
-                                                      const C4EnumeratorOptions* C4NULLABLE options,
-                                                      C4Error* C4NULLABLE                   outError) C4API;
+NODISCARD CBL_CORE_API C4DocEnumerator* c4coll_enumerateChanges(C4Collection* collection, C4SequenceNumber since,
+                                                                const C4EnumeratorOptions* C4NULLABLE options,
+                                                                C4Error* C4NULLABLE                   outError) C4API;
 
 /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
@@ -68,21 +69,21 @@ CBL_CORE_API C4DocEnumerator* c4coll_enumerateChanges(C4Collection* collection, 
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
-CBL_CORE_API C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection*                         collection,
-                                                      const C4EnumeratorOptions* C4NULLABLE options,
-                                                      C4Error* C4NULLABLE                   outError) C4API;
+NODISCARD CBL_CORE_API C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection*                         collection,
+                                                                const C4EnumeratorOptions* C4NULLABLE options,
+                                                                C4Error* C4NULLABLE                   outError) C4API;
 
 /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
         and don't forget to free the enumerator. */
-CBL_CORE_API bool c4enum_next(C4DocEnumerator* e, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4enum_next(C4DocEnumerator* e, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the current document, if any, from an enumerator.
         @param e  The enumerator.
         @param outError  Error will be stored here on failure.
         @return  The document, or NULL if there is none or if an error occurred reading its body.
-                 Caller is responsible for calling c4document_free when done with it. */
-CBL_CORE_API C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* C4NULLABLE outError) C4API;
+                 Caller is responsible for calling c4doc_release() when done with it. */
+NODISCARD CBL_CORE_API C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* C4NULLABLE outError) C4API;
 
 /** Stores the metadata of the enumerator's current document into the supplied
         C4DocumentInfo struct. Unlike c4enum_getDocument(), this allocates no memory.

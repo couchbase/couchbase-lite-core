@@ -135,7 +135,7 @@ namespace litecore {
         alloc_slice escaped(in.size + 1);
         auto        dst = (char*)escaped.buf;
         dst[0]          = '\\';
-        in.readAll(dst + 1, escaped.size - 1);
+        Assert(in.readAll(dst + 1, escaped.size - 1));
         return escaped;
     }
 
