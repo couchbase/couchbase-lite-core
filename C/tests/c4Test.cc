@@ -179,7 +179,7 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 #endif
     });
 
-    c4_shutdown(nullptr);
+    CHECK(c4_shutdown(nullptr));
 
     objectCount = c4_getObjectCount();
 
@@ -597,7 +597,7 @@ unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, doub
     unsigned         numDocs = 0;
     constexpr size_t bufSize = 20;
     for ( FLArrayIterator_Begin(root, &iter); nullptr != (item = FLArrayIterator_GetValue(&iter));
-          FLArrayIterator_Next(&iter) ) {
+          (void)FLArrayIterator_Next(&iter) ) {
         char docID[bufSize];
         snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs + 1);
 

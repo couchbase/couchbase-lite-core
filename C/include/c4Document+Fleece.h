@@ -54,14 +54,14 @@ CBL_CORE_API FLDict c4doc_getProperties(C4Document* C4NONNULL) C4API;
 
 /** Returns a Fleece document reference created from the selected revision.
         Caller must release the reference! */
-CBL_CORE_API FLDoc c4doc_createFleeceDoc(C4Document*);
+NODISCARD CBL_CORE_API FLDoc c4doc_createFleeceDoc(C4Document*);
 
 /** Resolves a conflict between two leaf revisions.
         Identical to `c4doc_resolveConflict` except that it takes the merged body as a Fleece Dict,
         instead of pre-encoded Fleece data. */
-CBL_CORE_API bool c4doc_resolveConflict2(C4Document* doc, C4String winningRevID, C4String losingRevID,
-                                         FLDict C4NULLABLE mergedProperties, C4RevisionFlags mergedFlags,
-                                         C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API bool c4doc_resolveConflict2(C4Document* doc, C4String winningRevID, C4String losingRevID,
+                                                   FLDict C4NULLABLE mergedProperties, C4RevisionFlags mergedFlags,
+                                                   C4Error* C4NULLABLE error) C4API;
 
 /** Returns the C4Document, if any, that contains the given Fleece value. */
 CBL_CORE_API C4Document* c4doc_containingValue(FLValue value);
@@ -81,12 +81,12 @@ CBL_CORE_API C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FL
 
 /** Decodes the dict's "digest" property to a C4BlobKey.
         Returns false if there is no such property or it's not a valid blob key. */
-CBL_CORE_API bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey* outKey);
+NODISCARD CBL_CORE_API bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey* outKey);
 
 /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not
         possible to look at the parent of a Fleece value.) */
-CBL_CORE_API bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey) C4API;
+NODISCARD CBL_CORE_API bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey) C4API;
 
 CBL_CORE_API bool c4doc_dictContainsBlobs(FLDict dict) C4API;
 
@@ -111,7 +111,7 @@ CBL_CORE_API bool c4doc_blobIsCompressible(FLDict blobDict);
 CBL_CORE_API C4StringResult c4doc_bodyAsJSON(C4Document* doc, bool canonical, C4Error* C4NULLABLE outError) C4API;
 
 /** Creates a Fleece encoder for creating documents for a given database. */
-CBL_CORE_API FLEncoder c4db_createFleeceEncoder(C4Database* db) C4API;
+NODISCARD CBL_CORE_API FLEncoder c4db_createFleeceEncoder(C4Database* db) C4API;
 
 /** Returns a shared Fleece encoder for creating documents for a given database.
         DO NOT FREE THIS ENCODER. Instead, call FLEncoder_Reset() when finished. */

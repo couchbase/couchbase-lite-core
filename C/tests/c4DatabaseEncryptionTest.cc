@@ -160,7 +160,7 @@ TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C]") {
 
 TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C]") {
     C4EncryptionKey key;
-    c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256);
+    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
     testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.1_AES128.cblite2", key.bytes);
 }
 

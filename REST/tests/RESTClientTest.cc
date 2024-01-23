@@ -40,7 +40,7 @@ class RESTClientTest : public ReplicatorAPITest {
 };
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
-    c4address_fromURL("https://www.couchbase.com/"_sl, &(_sg.address), nullptr);
+    REQUIRE(c4address_fromURL("https://www.couchbase.com/"_sl, &(_sg.address), nullptr));
     _sg.remoteDBName   = ""_sl;
     alloc_slice result = _sg.sendRemoteRequest("GET", "");
 }
@@ -96,26 +96,26 @@ N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer]
     //ExpectingExceptions x;
     _sg.address.hostname = C4STR("localhost");
     _sg.address.port     = 1;  // wrong port!
-    HTTPStatus status;
-    C4Error    error;
-    _sg.sendRemoteRequest("GET", "", &status, &error);
+    HTTPStatus  status;
+    C4Error     error;
+    alloc_slice result = _sg.sendRemoteRequest("GET", "", &status, &error);
     CHECK(error == (C4Error{POSIXDomain, ECONNREFUSED}));
 }
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer]") {
     ExpectingExceptions x;
     _sg.address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
-    HTTPStatus status;
-    C4Error    error;
-    _sg.sendRemoteRequest("GET", "", &status, &error);
+    HTTPStatus  status;
+    C4Error     error;
+    alloc_slice result = _sg.sendRemoteRequest("GET", "", &status, &error);
     CHECK(error == (C4Error{NetworkDomain, kC4NetErrUnknownHost}));
 }
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Timeout", "[.SyncServer]") {
     ExpectingExceptions x;
     _sg.address.hostname = C4STR("10.1.99.99");
-    HTTPStatus status;
-    C4Error    error;
-    _sg.sendRemoteRequest("GET", "", &status, &error);
+    HTTPStatus  status;
+    C4Error     error;
+    alloc_slice result = _sg.sendRemoteRequest("GET", "", &status, &error);
     CHECK(error == (C4Error{POSIXDomain, ETIMEDOUT}));
 }

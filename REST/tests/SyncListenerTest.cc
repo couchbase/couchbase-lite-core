@@ -76,13 +76,13 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Li
     SECTION("Non-pinned, self-signed mode") {
         _sg.address.scheme = kC4Replicator2TLSScheme;
         _onlySelfSigned    = true;
-        useServerTLSWithTemporaryKey();
+        (void)useServerTLSWithTemporaryKey();
     }
 
     SECTION("Non-pinned, normal mode") {
         _sg.address.scheme = kC4Replicator2TLSScheme;
         expectedError      = kC4NetErrTLSCertUnknownRoot;
-        useServerTLSWithTemporaryKey();
+        (void)useServerTLSWithTemporaryKey();
     }
 
     run((int)expectedError == 0);

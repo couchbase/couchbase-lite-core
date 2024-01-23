@@ -77,9 +77,9 @@ namespace litecore {
         static constexpr slice kUnnestSeparator  = ":unnest:";
 
         /// Returns true if this is a valid collection name. Does NOT recognize "_default"!
-        MUST_USE_RESULT static bool isValidCollectionName(slice name);
+        [[nodiscard]] static bool isValidCollectionName(slice name);
         /// Returns true if this is a valid collection name, or a scope plus a collection name.
-        MUST_USE_RESULT static bool isValidCollectionNameWithScope(slice name);
+        [[nodiscard]] static bool isValidCollectionNameWithScope(slice name);
 
         /// This KeyStore's collection name. Throws an exception if it's not a collection.
         [[nodiscard]] std::string collectionName() const;
@@ -119,8 +119,8 @@ namespace litecore {
                         Otherwise, a new record is inserted only if rec.sequence == 0.
             @param transaction  The active transaction.
             @return  The record's new sequence number, or 0 if there is a conflict. */
-        virtual sequence_t set(const RecordUpdate& rec, SetOptions flags,
-                               ExclusiveTransaction& transaction) MUST_USE_RESULT = 0;
+        [[nodiscard]] virtual sequence_t set(const RecordUpdate& rec, SetOptions flags,
+                                             ExclusiveTransaction& transaction) = 0;
 
         /** Alternative `set` that takes a `Record` directly.
             It updates the `sequence` property, instead of returning the new sequence.
