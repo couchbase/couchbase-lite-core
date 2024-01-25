@@ -1922,10 +1922,11 @@ namespace litecore {
 
     // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
     pair<string, string> QueryParser::FTSTableName(const Value* key, bool vector) const {
-        Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
+        Path keyPath(requiredString(key, vector ? "first arg of VECTOR_MATCH" : "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
-        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        require((0 < compCount && compCount <= 2),
+                "Reference to FTS or vector index may take at most one dotted prefix.");
         Path keyPathBeforeVerifyDbAlias = keyPath;
         auto iAlias                     = _aliases.end();
 
@@ -1959,15 +1960,16 @@ namespace litecore {
 
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
-                "FTS index name may not contain double-quotes nor be empty");
+                "FTS or vector index name may not contain double-quotes nor be empty");
         string tableName;
-#ifdef COUCHBASE_ENTERPRISE
         if ( vector ) {
-            tableName = _delegate.vectorTableName(iAlias->second.tableName, key->toJSONString());
-        } else
+#ifdef COUCHBASE_ENTERPRISE
+            tableName = _delegate.vectorTableName(iAlias->second.tableName, indexName);
+#else
+            // should be unreachable, but just in case:
+            error::_throw(error::AssertionFailed, "CE doesn't support vector indexes");
 #endif
-        {
-            DebugAssert(!vector);
+        } else {
             tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
         }
         return {tableName, string(prefix)};
