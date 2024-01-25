@@ -812,14 +812,8 @@ namespace litecore {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
     }
 
-    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expressionJSON) const {
-        Assert(tableNameIsCollection(onTable));
-        string collName = SQLiteKeyStore::transformCollectionName(onTable.substr(3), false);
-        Assert(keyStoreExists(collName));
-        auto&  ks        = (SQLiteKeyStore&)getKeyStore(collName);
-        string indexName = ks.findVectorIndexNameFor(expressionJSON);
-        if ( indexName.empty() ) return indexName;  // no such index
-        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, indexName);
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& property) const {
+        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, property);
     }
 #endif
 

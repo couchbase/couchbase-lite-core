@@ -116,9 +116,8 @@ N_WAY_TEST_CASE_METHOD(PredictiveVectorQueryTest, "Vector Index Of Prediction", 
     createVectorIndex();
     string          queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'],
-                                         ['$target'], 5],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['PREDICTION()', 'factors', {number: ['.num']}, '.vec']], 'distance'] ],
+            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};

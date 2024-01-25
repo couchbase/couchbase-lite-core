@@ -113,8 +113,8 @@ N_WAY_TEST_CASE_METHOD(VectorQueryTest, "Query Vector Index", "[Query][.VectorSe
 
     string queryStr = R"(
         ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', ['.vector'], ['$target'], 5],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['.vector']], 'distance'] ],
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
 
