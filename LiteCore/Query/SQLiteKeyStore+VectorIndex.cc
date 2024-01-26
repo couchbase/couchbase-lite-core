@@ -21,6 +21,7 @@
 #    include "StringUtil.hh"
 #    include "Array.hh"
 #    include "Error.hh"
+#    include "SQLiteCpp/Exception.h"
 #    include <sstream>
 
 using namespace std;
@@ -33,6 +34,49 @@ namespace litecore {
     // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
 
     static constexpr const char* kMetricNames[] = {nullptr, "euclidean2", "cosine"};
+
+    /// Returns the SQL expression to create a vectorsearch virtual table.
+    static string createVectorSearchTableSQL(string_view vectorTableName, const IndexSpec& spec) {
+        stringstream stmt;
+        stmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
+        Assert(spec.vectorOptions() != nullptr);
+        IndexSpec::VectorOptions const& options = *spec.vectorOptions();
+        stmt << "dimensions=" << options.dimensions << ',';
+        if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
+            stmt << "metric=" << kMetricNames[options.metric] << ',';
+        }
+        switch ( options.clustering.type ) {
+            case IndexSpec::VectorOptions::Flat:
+                stmt << "clustering=flat" << options.clustering.flat_centroids << ',';
+                break;
+            case IndexSpec::VectorOptions::Multi:
+                stmt << "clustering=multi" << options.clustering.multi_subquantizers << 'x'
+                     << options.clustering.multi_bits << ',';
+                break;
+            default:
+                error::_throw(error::InvalidParameter, "invalid vector clustering type");
+        }
+        switch ( options.encoding.type ) {
+            case IndexSpec::VectorOptions::DefaultEncoding:
+                break;
+            case IndexSpec::VectorOptions::NoEncoding:
+                stmt << "encoding=none,";
+                break;
+            case IndexSpec::VectorOptions::PQ:
+                stmt << "encoding=PQ" << options.encoding.pq_subquantizers << 'x' << options.encoding.bits << ',';
+                break;
+            case IndexSpec::VectorOptions::SQ:
+                stmt << "encoding=SQ" << options.encoding.bits << ',';
+                break;
+            default:
+                error::_throw(error::InvalidParameter, "invalid vector encoding type");
+        }
+        if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
+        if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
+        stmt << "minToTrain=" << options.minTrainingSize;
+        stmt << ")";
+        return stmt.str();
+    }
 
     // Creates a vector-similarity index.
     bool SQLiteKeyStore::createVectorIndex(const IndexSpec& spec) {
@@ -47,49 +91,23 @@ namespace litecore {
             error::_throw(error::Unimplemented, "Vector index doesn't support multiple properties");
 
         // Create the virtual table:
-        {
-            stringstream stmt;
-            stmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
-            Assert(spec.vectorOptions() != nullptr);
-            IndexSpec::VectorOptions const& options = *spec.vectorOptions();
-            stmt << "dimensions=" << options.dimensions << ',';
-            if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
-                stmt << "metric=" << kMetricNames[options.metric] << ',';
+        try {
+            if ( !db().createIndex(spec, this, vectorTableName, createVectorSearchTableSQL(vectorTableName, spec)) )
+                return false;
+        } catch ( SQLite::Exception const& x ) {
+            string_view what(x.what());
+            if ( hasPrefix(what, "no such module") ) {
+                error::_throw(error::Unimplemented, "CouchbaseLiteVectorSearch extension is not installed");
+            } else if ( hasPrefix(x.what(), "vectorsearch: ") ) {
+                what = what.substr(14);
+                // SQLiteDataFile.exec appends "--" and the SQL; remove that (kludgily)
+                if ( auto dash = what.find(" -- "); dash != string::npos ) what = what.substr(0, dash);
+                error::_throw(error::InvalidParameter, "%.*s", FMTSLICE(slice(what)));
+            } else {
+                throw;
             }
-            switch ( options.clustering.type ) {
-                case IndexSpec::VectorOptions::Flat:
-                    stmt << "clustering=flat" << options.clustering.flat_centroids << ',';
-                    break;
-                case IndexSpec::VectorOptions::Multi:
-                    stmt << "clustering=multi" << options.clustering.multi_subquantizers << 'x'
-                         << options.clustering.multi_bits << ',';
-                    break;
-                default:
-                    error::_throw(error::InvalidParameter, "invalid vector clustering type");
-            }
-            switch ( options.encoding.type ) {
-                case IndexSpec::VectorOptions::DefaultEncoding:
-                    break;
-                case IndexSpec::VectorOptions::NoEncoding:
-                    stmt << "encoding=none,";
-                    break;
-                case IndexSpec::VectorOptions::PQ:
-                    stmt << "encoding=PQ" << options.encoding.pq_subquantizers << 'x' << options.encoding.bits
-                         << ',';
-                    break;
-                case IndexSpec::VectorOptions::SQ:
-                    stmt << "encoding=SQ" << options.encoding.bits << ',';
-                    break;
-                default:
-                    error::_throw(error::InvalidParameter, "invalid vector encoding type");
-            }
-            if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
-            if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
-            stmt << "minToTrain=" << options.minTrainingSize;
-            stmt << ")";
-            string stmtStr = stmt.str();
-            if ( !db().createIndex(spec, this, vectorTableName, stmtStr) ) return false;
         }
+
         auto where = spec.where();
         qp.setBodyColumnName("body");
         string whereNewSQL = qp.whereClauseSQL(where, "new");

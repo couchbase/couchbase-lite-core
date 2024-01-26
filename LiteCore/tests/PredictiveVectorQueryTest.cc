@@ -16,9 +16,8 @@
 // limitations under the License.
 //
 
-#include "QueryTest.hh"
+#include "VectorQueryTest.hh"
 #include "PredictiveModel.hh"
-#include "SQLiteDataFile.hh"
 #include <cmath>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -65,33 +64,29 @@ class FactorsModel : public PredictiveModel {
     }
 };
 
-class PredictiveVectorQueryTest : public QueryTest {
+class PredictiveVectorQueryTest : public VectorQueryTest {
   public:
-    PredictiveVectorQueryTest(int which) : QueryTest(which) {
+    PredictiveVectorQueryTest(int which) : VectorQueryTest(which) {
         make_retained<FactorsModel>(db.get())->registerAs("factors");
     }
 
     ~PredictiveVectorQueryTest() { PredictiveModel::unregister("factors"); }
 
     void makeDocs() {
-        addNumberedDocs(1, 100);
+        addNumberedDocs(1, 400);
         {
             ExclusiveTransaction t(db);
-            writeArrayDoc(101, t);  // Add a row that has no 'number' property
+            writeArrayDoc(401, t);  // Add a row that has no 'number' property
             t.commit();
         }
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options;
+        IndexSpec::VectorOptions options(5);
         options.clustering.type           = IndexSpec::VectorOptions::Flat;
         options.clustering.flat_centroids = 16;
-
-        IndexSpec spec("factorsindex", IndexSpec::kVector,
-                       alloc_slice(json5("[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]")),
-                       QueryLanguage::kJSON, options);
-        store->createIndex(spec);
-        REQUIRE(store->getIndexes().size() == 1);
+        VectorQueryTest::createVectorIndex("factorsindex",
+                                           "[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]", options);
     }
 
     void testResults(Query* query) {
@@ -103,7 +98,7 @@ class PredictiveVectorQueryTest : public QueryTest {
             slice docID = col[0]->asString();
             Log("%.*s : %s", SPLAT(docID), col[1]->toJSONString().c_str());
         }
-        CHECK(docNo == 101);
+        CHECK(docNo == 401);
     }
 };
 
