@@ -520,3 +520,38 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
     cerr << "\t\tElapsed time/check time = " << elapsed << "/" << checkBound << endl;
     CHECK(elapsed < checkBound);
 }
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
+    tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.scope.coll");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
+                    "WHERE VECTOR_MATCH(vecIndex, $target, 5) ORDER BY distance")
+          == "{'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target'],5]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(coll.vecIndex) AS distance "
+                    "FROM coll "
+                    "WHERE VECTOR_MATCH(coll.vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'COLLECTION':'coll'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','coll.vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','coll.vecIndex',['$target']]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(C.vecIndex) AS distance "
+                    "FROM scope.coll C "
+                    "WHERE VECTOR_MATCH(C.vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','C.vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','C.vecIndex',['$target']]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
+                    "FROM scope.coll C "
+                    "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target']]}");
+}

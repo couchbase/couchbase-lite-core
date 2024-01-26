@@ -348,6 +348,15 @@ function =
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
+  | "vector_match"i _ '(' _            { f = op("VECTOR_MATCH()");}
+    ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
+    t:expression _                     { appendAny(f, t);}
+    ( ',' _ t:expression               { appendAny(f, t);}
+     _ )?
+    ')' _                              { $$ = f;}
+  | "vector_distance"i _ '(' _         { f = op("VECTOR_DISTANCE()");}
+    ind:indexTable _                   { appendAny(f, ind.as<string>());}
+    ')' _                              { $$ = f;}
   | "rank"i _ '(' _                    { f = op("RANK()");}
     ind:indexTable _                   { appendAny(f, ind.as<string>());}
     ')' _                              { $$ = f;}
