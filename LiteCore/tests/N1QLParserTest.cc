@@ -521,6 +521,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
     CHECK(elapsed < checkBound);
 }
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
@@ -555,3 +556,4 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
              "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
              "'WHERE':['VECTOR_MATCH()','vecIndex',['$target']]}");
 }
+#endif
