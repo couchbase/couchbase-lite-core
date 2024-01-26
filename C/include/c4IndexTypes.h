@@ -69,6 +69,7 @@ typedef struct C4VectorEncoding {
 
 /** Top-level options for vector indexes. */
 typedef struct C4VectorIndexOptions {
+    unsigned           dimensions;       ///< Number of dimensions of the vectors
     C4VectorMetricType metric;           ///< Distance metric
     C4VectorClustering clustering;       ///< Clustering type & parameters
     C4VectorEncoding   encoding;         ///< Vector compression type & parameters
