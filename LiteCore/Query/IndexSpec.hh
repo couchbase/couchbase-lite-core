@@ -79,6 +79,7 @@ namespace litecore {
                 unsigned     bits;              ///< Number of bits (for PQ and SQ)
             };
 
+            unsigned   dimensions;                 ///< Number of dimensions
             MetricType metric{DefaultMetric};      ///< Distance metric
             Clustering clustering{Flat};           ///< Clustering type & parameters
             Encoding   encoding{DefaultEncoding};  ///< Vector compression type & parameters

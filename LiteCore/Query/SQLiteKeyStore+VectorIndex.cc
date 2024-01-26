@@ -50,38 +50,42 @@ namespace litecore {
         {
             stringstream stmt;
             stmt << "CREATE VIRTUAL TABLE " << sqlIdentifier(vectorTableName) << " USING vectorsearch(";
-            if ( IndexSpec::VectorOptions const* o = spec.vectorOptions() ) {
-                auto& options = *o;
-                if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
-                    stmt << "metric=" << kMetricNames[options.metric] << ',';
-                }
-                switch ( options.clustering.type ) {
-                    case IndexSpec::VectorOptions::Flat:
-                        stmt << "clustering=flat" << options.clustering.flat_centroids << ',';
-                        break;
-                    case IndexSpec::VectorOptions::Multi:
-                        stmt << "clustering=multi" << options.clustering.multi_subquantizers << 'x'
-                             << options.clustering.multi_bits << ',';
-                        break;
-                }
-                switch ( options.encoding.type ) {
-                    case IndexSpec::VectorOptions::DefaultEncoding:
-                        break;
-                    case IndexSpec::VectorOptions::NoEncoding:
-                        stmt << "encoding=none,";
-                        break;
-                    case IndexSpec::VectorOptions::PQ:
-                        stmt << "encoding=PQ" << options.encoding.pq_subquantizers << 'x' << options.encoding.bits
-                             << ',';
-                        break;
-                    case IndexSpec::VectorOptions::SQ:
-                        stmt << "encoding=SQ" << options.encoding.bits << ',';
-                        break;
-                }
-                if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
-                if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
-                stmt << "minToTrain=" << options.minTrainingSize;
+            Assert(spec.vectorOptions() != nullptr);
+            IndexSpec::VectorOptions const& options = *spec.vectorOptions();
+            stmt << "dimensions=" << options.dimensions << ',';
+            if ( options.metric != IndexSpec::VectorOptions::DefaultMetric ) {
+                stmt << "metric=" << kMetricNames[options.metric] << ',';
             }
+            switch ( options.clustering.type ) {
+                case IndexSpec::VectorOptions::Flat:
+                    stmt << "clustering=flat" << options.clustering.flat_centroids << ',';
+                    break;
+                case IndexSpec::VectorOptions::Multi:
+                    stmt << "clustering=multi" << options.clustering.multi_subquantizers << 'x'
+                         << options.clustering.multi_bits << ',';
+                    break;
+                default:
+                    error::_throw(error::InvalidParameter, "invalid vector clustering type");
+            }
+            switch ( options.encoding.type ) {
+                case IndexSpec::VectorOptions::DefaultEncoding:
+                    break;
+                case IndexSpec::VectorOptions::NoEncoding:
+                    stmt << "encoding=none,";
+                    break;
+                case IndexSpec::VectorOptions::PQ:
+                    stmt << "encoding=PQ" << options.encoding.pq_subquantizers << 'x' << options.encoding.bits
+                         << ',';
+                    break;
+                case IndexSpec::VectorOptions::SQ:
+                    stmt << "encoding=SQ" << options.encoding.bits << ',';
+                    break;
+                default:
+                    error::_throw(error::InvalidParameter, "invalid vector encoding type");
+            }
+            if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
+            if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
+            stmt << "minToTrain=" << options.minTrainingSize;
             stmt << ")";
             string stmtStr = stmt.str();
             if ( !db().createIndex(spec, this, vectorTableName, stmtStr) ) return false;
