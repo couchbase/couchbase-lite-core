@@ -16,43 +16,22 @@
 // limitations under the License.
 //
 
-#include "QueryTest.hh"
-#include "SQLiteDataFile.hh"
+#include "VectorQueryTest.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
-
-using namespace std;
-using namespace fleece;
-using namespace fleece::impl;
-
-class VectorQueryTest : public QueryTest {
+class SIFTVectorQueryTest : public VectorQueryTest {
   public:
-    static int initialize() {
-        // This is where the mobile-vector-search's CMake build puts the extension.
-        // To build it, cd to vendor/mobile-vector-search and run `make`.
-        SQLiteDataFile::setExtensionPath("./vendor/mobile-vector-search/build_cmake/native");
-        return 0;
-    }
-
-    VectorQueryTest(int which) : QueryTest(which + initialize()) {}
-
-    ~VectorQueryTest() {
-        // Assert that the callback did not log a warning:
-        CHECK(warningsLogged() == 0);
-    }
+    SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options;
+        IndexSpec::VectorOptions options(128);
         options.clustering.type           = IndexSpec::VectorOptions::Flat;
         options.clustering.flat_centroids = 256;
-        IndexSpec spec("vecIndex", IndexSpec::kVector, alloc_slice(json5("[ ['.vector'] ]")), QueryLanguage::kJSON,
-                       options);
-        store->createIndex(spec);
-        REQUIRE(store->getIndexes().size() == 1);
+        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", options);
     }
 
-    void readVectorDocs() {
+    void readVectorDocs(size_t maxLines = 1000000) {
         ExclusiveTransaction t(db);
         size_t               docNo = 0;
         ReadFileByLines(
@@ -67,42 +46,24 @@ class VectorQueryTest : public QueryTest {
                             false);
                     return true;
                 },
-                10000);
-        t.commit();
-    }
-
-    void addVectorDoc(int i, ExclusiveTransaction& t, initializer_list<float> vector) {
-        writeDoc(slice(stringWithFormat("rec-%04d", i)), DocumentFlags::kNone, t, [=](Encoder& enc) {
-            enc.writeKey("vector");
-            enc.beginArray();
-            for ( float f : vector ) enc.writeFloat(f);
-            enc.endArray();
-        });
-    }
-
-    void addVectorDocs(int n) {
-        ExclusiveTransaction t(db);
-        for ( int i = 1; i <= n; ++i ) {
-            float d = float(i) / n;
-            addVectorDoc(i, t, {d, d, d, d, d});
-        }
+                maxLines);
         t.commit();
     }
 };
 
-N_WAY_TEST_CASE_METHOD(VectorQueryTest, "Create/Delete Vector Index", "[Query][.VectorSearch]") {
-    addVectorDocs(1);
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Query][.VectorSearch]") {
+    readVectorDocs(1);
     createVectorIndex();
     // Delete a doc too:
     {
         ExclusiveTransaction t(db);
-        store->del("rec-001", t);
+        store->del("rec-0001", t);
         t.commit();
     }
     store->deleteIndex("vecIndex"_sl);
 }
 
-N_WAY_TEST_CASE_METHOD(VectorQueryTest, "Query Vector Index", "[Query][.VectorSearch]") {
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.VectorSearch]") {
     readVectorDocs();
     {
         // Add some docs without vector data, to ensure that doesn't break indexing:

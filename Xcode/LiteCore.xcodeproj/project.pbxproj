@@ -1388,6 +1388,7 @@
 		27CCC7E31E52965200CE1989 /* Pusher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Pusher.hh; sourceTree = "<group>"; };
 		27CE4CEF2077F51000ACA225 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
 		27CE4CF02077F51000ACA225 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
+		27D629CA2B644024004C0787 /* VectorQueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VectorQueryTest.hh; sourceTree = "<group>"; };
 		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
 		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
@@ -1871,6 +1872,7 @@
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
 				27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */,
+				27D629CA2B644024004C0787 /* VectorQueryTest.hh */,
 				27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */,
 				27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */,
 				276CE68D2267A02500B681AC /* N1QLParserTest.cc */,
