@@ -83,6 +83,7 @@ ${CMAKE} \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
     -DANDROID_PLATFORM=21 \
     -DANDROID_ABI=arm64-v8a \
+    -DANDROID_STL=c++_shared \
     -DBUILD_ENTERPRISE=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_MAKE_PROGRAM="$NINJA" \
