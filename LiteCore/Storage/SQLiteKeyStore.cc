@@ -232,8 +232,7 @@ namespace litecore {
 
     bool SQLiteKeyStore::read(Record& rec, ReadBy by, ContentOption content) const {
         //  This statement does nothing if the sequence index has already been created.
-        if (by == ReadBy::Sequence)
-            ((SQLiteKeyStore *)(this))->createSequenceIndex();
+        if ( by == ReadBy::Sequence ) ((SQLiteKeyStore*)(this))->createSequenceIndex();
 
         // Note: In this SELECT statement the result column order must match RecordColumn.
         string sql;
