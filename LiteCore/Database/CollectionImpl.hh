@@ -395,23 +395,33 @@ namespace litecore {
             switch ( indexType ) {
                 case kC4FullTextIndex:
                     if ( indexOptions ) {
-                        IndexSpec::FTSOptions ftsOpt;
+                        auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
                         ftsOpt.language         = indexOptions->language;
                         ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
                         ftsOpt.disableStemming  = indexOptions->disableStemming;
                         ftsOpt.stopWords        = indexOptions->stopWords;
-                        options                 = ftsOpt;
-                        break;
                     }
+                    break;
                 case kC4VectorIndex:
                     if ( indexOptions ) {
-                        IndexSpec::VectorOptions vecOpt;
-                        vecOpt.metric          = IndexSpec::VectorOptions::Metric(indexOptions->vector.metric);
-                        vecOpt.numCentroids    = indexOptions->vector.numCentroids;
-                        vecOpt.encoding        = IndexSpec::VectorOptions::Encoding(indexOptions->vector.encoding);
-                        vecOpt.minTrainingSize = indexOptions->vector.minTrainingSize;
-                        vecOpt.maxTrainingSize = indexOptions->vector.maxTrainingSize;
-                        options                = vecOpt;
+                        auto& c4Opt   = indexOptions->vector;
+                        auto& vecOpt  = options.emplace<IndexSpec::VectorOptions>(c4Opt.dimensions);
+                        vecOpt.metric = IndexSpec::VectorOptions::MetricType(c4Opt.metric);
+
+                        vecOpt.clustering.type = IndexSpec::VectorOptions::ClusteringType(c4Opt.clustering.type);
+                        vecOpt.clustering.flat_centroids      = c4Opt.clustering.flat_centroids;
+                        vecOpt.clustering.multi_subquantizers = c4Opt.clustering.multi_subquantizers;
+                        vecOpt.clustering.multi_bits          = c4Opt.clustering.multi_bits;
+
+                        vecOpt.encoding.type             = IndexSpec::VectorOptions::EncodingType(c4Opt.encoding.type);
+                        vecOpt.encoding.pq_subquantizers = c4Opt.encoding.pq_subquantizers;
+                        vecOpt.encoding.bits             = c4Opt.encoding.bits;
+
+                        vecOpt.minTrainingSize = c4Opt.minTrainingSize;
+                        vecOpt.maxTrainingSize = c4Opt.maxTrainingSize;
+                        vecOpt.numProbes       = c4Opt.numProbes;
+                    } else {
+                        error::_throw(error::InvalidParameter, "Vector index requires options");
                     }
                     break;
                 default:

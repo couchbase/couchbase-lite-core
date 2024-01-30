@@ -92,8 +92,7 @@ namespace litecore {
     // or other expression returning a vector -- returns the name of the sql-vss virtual table
     // indexing that expression, or "" if none.
     string QueryParser::vectorIndexTableName(const Value* match) {
-        const Value* matchLHS = requiredArray(match, "vector match source")->get(0);
-        if ( string ftsTable = FTSTableName(matchLHS, true).first; !ftsTable.empty() ) return ftsTable;
+        if ( string ftsTable = FTSTableName(match, true).first; !ftsTable.empty() ) return ftsTable;
         return _delegate.vectorTableName(_defaultTableName, match->toJSONString());
     }
 

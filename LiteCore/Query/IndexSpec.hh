@@ -48,32 +48,48 @@ namespace litecore {
 
         /// Options for a vector index.
         struct VectorOptions {
-            enum Metric {
+            enum MetricType {
                 DefaultMetric,  ///< Use default metric, Euclidean
                 Euclidean,      ///< Euclidean distance (squared)
                 Cosine,         ///< Cosine distance (1.0 - cosine similarity)
-            };                  // Note: values must match C4VectorMetric in c4IndexTypes.h
+            };                  // Note: values must match C4VectorMetricType in c4IndexTypes.h
 
-            enum Encoding {
+            enum ClusteringType {
+                Flat,
+                Multi,
+            };  // Note: values must match C4VectorClusteringType in c4IndexTypes.h
+
+            enum EncodingType {
                 DefaultEncoding,  ///< Use default encoding, which is currently SQ8Bit
                 NoEncoding,       ///< No encoding; 4 bytes per dimension, no data loss
-                SQ8BitEncoding,   ///< Scalar Quantizer; 8 bits per dimension (recommended)
-                SQ6BitEncoding,   ///< Scalar Quantizer; 6 bits per dimension
-                SQ4BitEncoding,   ///< Scalar Quantizer; 4 bits per dimension
-            };                    // Note: values must match C4VectorEncoding in c4IndexTypes.h
+                PQ,               ///< Product Quantizer
+                SQ,               ///< Scalar Quantizer
+            };                    // Note: values must match C4VectorEncodingType in c4IndexTypes.h
 
-            unsigned numCentroids;               ///< Number of centroids/buckets to divide the index into
-            Metric   metric{DefaultMetric};      ///< Distance metric
-            Encoding encoding{DefaultEncoding};  ///< Vector encoding/compression
-            unsigned minTrainingSize;            ///< Min # of vectors to train index on
-            unsigned maxTrainingSize;            ///< Max # of vectors to train index on
+            struct Clustering {
+                ClusteringType type;
+                unsigned       flat_centroids;
+                unsigned       multi_subquantizers;  ///< Number of pieces to split vectors into (for multi)
+                unsigned       multi_bits;           ///< log2 of # of centroids per subquantizer (for multi)
+            };
 
-            VectorOptions(unsigned numCentroids_ = 2048)
-                : numCentroids(numCentroids_)
-                , minTrainingSize(25 * numCentroids_)
-                , maxTrainingSize(256 * numCentroids_) {}
+            struct Encoding {
+                EncodingType type;              ///< Encoding type: none, PQ, SQ
+                unsigned     pq_subquantizers;  ///< Number of subquantizers (for PQ)
+                unsigned     bits;              ///< Number of bits (for PQ and SQ)
+            };
 
-            void validate();
+            unsigned   dimensions;                 ///< Number of dimensions
+            MetricType metric{DefaultMetric};      ///< Distance metric
+            Clustering clustering{Flat};           ///< Clustering type & parameters
+            Encoding   encoding{DefaultEncoding};  ///< Vector compression type & parameters
+            ///<
+            unsigned minTrainingSize{0};  ///< Minimum # of vectors to train index (>= 25*numCentroids)
+            unsigned maxTrainingSize{0};  ///< Maximum # of vectors to train index on (<= 256*numCentroids)
+            unsigned numProbes{0};        ///< Default # of probes when querying
+
+            /// Constructor. Number of dimensions is a required parameter.
+            explicit VectorOptions(unsigned d) : dimensions(d) {}
         };
 
         /// Index options. If not empty (the first state), must match the index type.
