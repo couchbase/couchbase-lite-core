@@ -241,7 +241,7 @@ namespace litecore {
 
             _exec(format("PRAGMA cache_size=%d; "            // Memory cache
                          "PRAGMA mmap_size=%d; "             // Memory-mapped reads
-                         "PRAGMA synchronous=normal; "       // Speeds up commits
+                         "PRAGMA synchronous=full; "       // Speeds up commits
                          "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
                          "PRAGMA case_sensitive_like=true; "   // Case sensitive LIKE, for N1QL compat
                          "PRAGMA fullfsync=ON",              // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
