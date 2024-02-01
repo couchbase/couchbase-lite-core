@@ -309,7 +309,7 @@ namespace litecore::crypto {
         wchar_t      wtimestr[100];
         const time_t now =
                 chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
-        FormatISO8601Date(timestr + strlen(timestr), now, false);
+        FormatISO8601Date(timestr + strlen(timestr), now, false, nullptr);
         const auto len = MultiByteToWideChar(CP_UTF8, 0, timestr, -1, wtimestr, 100);
         wtimestr[len]  = 0;
 
