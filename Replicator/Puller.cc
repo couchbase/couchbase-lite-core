@@ -53,6 +53,7 @@ namespace litecore { namespace repl {
         _skipDeleted = _options->skipDeleted();
         if (!passive() && _options->noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
+        logInfo("Instantiated -> %s %s", replicator->loggingName().c_str(), _inserter->loggingName().c_str());
     }
 
 

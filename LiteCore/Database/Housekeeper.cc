@@ -41,6 +41,7 @@ namespace litecore {
 
 
     void Housekeeper::stop() {
+        logInfo("Housekeeper: enqueue _stop");
         enqueue(FUNCTION_TO_QUEUE(Housekeeper::_stop));
         waitTillCaughtUp();
     }
@@ -48,7 +49,7 @@ namespace litecore {
 
     void Housekeeper::_stop() {
         _expiryTimer.stop();
-        logVerbose("Housekeeper: stopped.");
+        logInfo("Housekeeper: stopped.");
     }
 
 

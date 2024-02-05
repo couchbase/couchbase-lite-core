@@ -52,6 +52,7 @@ namespace litecore { namespace repl {
                     Retained<C4Database> idb;
                     try {
                         idb = db->openAgain();
+                        logInfo("open insertionDB -> C4Collection*(%p)", idb->getDefaultCollection());
                         _c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);

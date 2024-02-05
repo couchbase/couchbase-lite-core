@@ -52,7 +52,7 @@ namespace litecore {
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(
                                                                     SequenceTracker(store.name()));
 
-            logInfo("Instantiated");
+            logInfo("Instantiated -> C4Collection*(%p)", (C4Collection*)this);
         }
 
 
@@ -62,12 +62,13 @@ namespace litecore {
 
 
         void close() {
-            logInfo("Closed");
+            logInfo("Closing");
             stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore = nullptr;
             _database = nullptr;
+            logInfo("Closed");
         }
 
 
@@ -465,6 +466,7 @@ namespace litecore {
             if (!_housekeeper && isValid()) {
                 if ((getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0) {
                     _housekeeper = new Housekeeper(this);
+                    logInfo("start housekeeper %s", _housekeeper->loggingName().c_str());
                     _housekeeper->start();
                 }
             }

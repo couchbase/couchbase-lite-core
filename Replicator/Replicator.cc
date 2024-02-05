@@ -119,6 +119,8 @@ namespace litecore { namespace repl {
             registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
             registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
             registerHandler("getCollections",   &Replicator::handleGetCollections);
+
+            logInfo("Instantiated -> %s", db->loggingName().c_str());
         } catch (...) {
             // terminate to break the circular references: connection -> BLIPIO -> connection.
             terminate();
@@ -498,7 +500,9 @@ namespace litecore { namespace repl {
                 sub.puller = nullptr;
             });
             _workerHandlers.clear();
+            logInfo("Closing DB as status turns to stopped ...");
             _db->close();
+            logInfo("DB closed");
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
         if (_delegate) {
