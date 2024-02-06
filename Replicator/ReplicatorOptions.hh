@@ -19,6 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include "NumConversion.hh"
+#include "ReplicatorTuning.hh"
 #include <unordered_map>
 
 namespace litecore { namespace repl {
@@ -104,7 +105,10 @@ namespace litecore { namespace repl {
         bool skipDeleted() const  {return boolProperty(kC4ReplicatorOptionSkipDeleted);}
         bool noIncomingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
         bool noOutgoingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
-        int64_t changesBatchSize() const { return properties["changesBatchSize"].asInt(); }
+        int64_t changesBatchSize() const {
+            const auto prop = properties["changesBatchSize"];
+            return prop ? prop.asInt() : tuning::kChangesBatchSize;
+        }
 
         bool disableDeltaSupport() const {return boolProperty(kC4ReplicatorOptionDisableDeltas);}
         bool disablePropertyDecryption() const {return boolProperty(kC4ReplicatorOptionDisablePropertyDecryption);}
