@@ -104,6 +104,7 @@ namespace litecore { namespace repl {
         bool skipDeleted() const  {return boolProperty(kC4ReplicatorOptionSkipDeleted);}
         bool noIncomingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
         bool noOutgoingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
+        int64_t changesBatchSize() const { return properties["changesBatchSize"].asInt(); }
 
         bool disableDeltaSupport() const {return boolProperty(kC4ReplicatorOptionDisableDeltas);}
         bool disablePropertyDecryption() const {return boolProperty(kC4ReplicatorOptionDisablePropertyDecryption);}
