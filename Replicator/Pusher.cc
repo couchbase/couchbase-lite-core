@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
                      && _revQueue.size() < tuning::kMaxRevsQueued
                      && connected()) {
             _continuousCaughtUp = true;
-            gotChanges(_changesFeed.getMoreChanges(_options->changesBatchSize()));
+            gotChanges(_changesFeed.getMoreChanges((unsigned)_options->changesBatchSize()));
         }
     }
 
