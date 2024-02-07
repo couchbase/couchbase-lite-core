@@ -13,6 +13,7 @@
 // https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/functions.html
 
 #include "SQLiteFleeceUtil.hh"
+#include "SQLiteDateTimeHelpers.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
@@ -36,12 +37,6 @@ using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
-
-    // Returns a string argument as a slice, or a null slice if the argument isn't a string.
-    static inline slice stringSliceArgument(sqlite3_value* arg) noexcept {
-        if ( sqlite3_value_type(arg) != SQLITE_TEXT ) return nullslice;
-        return valueAsStringSlice(arg);
-    }
 
     // Sets SQLite return value to a string value from an alloc_slice, without copying.
     static void result_alloc_slice(sqlite3_context* ctx, alloc_slice s) {
@@ -990,29 +985,38 @@ namespace litecore {
 
 #pragma mark - DATES:
 
-    static bool parseDateArg(sqlite3_value* arg, int64_t* outTime) {
-        auto str = stringSliceArgument(arg);
-        return str && kInvalidDate != (*outTime = ParseISO8601Date(str));
-    }
-
-    static void setResultDateString(sqlite3_context* ctx, int64_t millis, bool asUTC) {
-        char buf[kFormattedISO8601DateMaxSize];
-        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC));
-    }
-
     static void millis_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+        DateTime format;
+        bool     valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, true);
+            setResultDateString(ctx, millis, 0, valid ? &format : nullptr);
+        } else {
+            setResultFleeceNull(ctx);
+        }
+    }
+
+    static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        DateTime format;
+        bool     valid = argc > 2 && parseDateArgRaw(argv[2], &format);
+
+        if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
+            int64_t millis   = sqlite3_value_int64(argv[0]);
+            int64_t tzoffset = sqlite3_value_int64(argv[1]);
+            setResultDateString(ctx, millis, (int)tzoffset, valid ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
     }
 
     static void millis_to_str(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+        DateTime format;
+        bool     valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, false);
+            setResultDateString(ctx, millis, valid ? format.tz : 0, valid ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1026,10 +1030,57 @@ namespace litecore {
     }
 
     static void str_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
-        int64_t millis;
-        if ( parseDateArg(argv[0], &millis) ) setResultDateString(ctx, millis, true);
-        else
+        DateTime dt;
+        if ( parseDateArgRaw(argv[0], &dt) ) {
+            DateTime format = dt;
+            setResultDateString(ctx, ToMillis(dt), 0, &format);
+        } else
             setResultFleeceNull(ctx);
+    }
+
+    static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        DateTime dt;
+        if ( argc < 2 || !isNumericNoError(argv[1]) || !parseDateArgRaw(argv[0], &dt) ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
+        int64_t  tzoffset = sqlite3_value_int64(argv[1]);
+        DateTime format   = dt;
+        setResultDateString(ctx, ToMillis(dt), (int)tzoffset, &format);
+    }
+
+    static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        DateTime left, right;
+        if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) { return; }
+
+        doDateDiff(ctx, left, right, stringSliceArgument(argv[2]));
+    }
+
+    static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
+
+        auto left  = FromMillis(sqlite3_value_int64(argv[0]));
+        auto right = FromMillis(sqlite3_value_int64(argv[1]));
+        doDateDiff(ctx, left, right, stringSliceArgument(argv[2]));
+    }
+
+    static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        DateTime start;
+        if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) { return; }
+
+        const auto amount = sqlite3_value_int64(argv[1]);
+        const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
+        DateTime   format = start;
+        setResultDateString(ctx, result, start.tz, &format);
+    }
+
+    static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
+
+        const auto start  = FromMillis(sqlite3_value_int64(argv[0]));
+        const auto amount = sqlite3_value_int64(argv[1]);
+        const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
+        sqlite3_result_int64(ctx, result);
     }
 
 #pragma mark - TYPE TESTS & CONVERSIONS:
@@ -1502,9 +1553,18 @@ namespace litecore {
                                                      {"idiv", 2, fl_idiv},
 
                                                      {"millis_to_str", 1, millis_to_str},
+                                                     {"millis_to_str", 2, millis_to_str},
                                                      {"millis_to_utc", 1, millis_to_utc},
+                                                     {"millis_to_utc", 2, millis_to_utc},
+                                                     {"millis_to_tz", 2, millis_to_tz},
+                                                     {"millis_to_tz", 3, millis_to_tz},
                                                      {"str_to_millis", 1, str_to_millis},
                                                      {"str_to_utc", 1, str_to_utc},
+                                                     {"str_to_tz", 2, str_to_tz},
+                                                     {"date_diff_str", 3, date_diff_str},
+                                                     {"date_diff_millis", 3, date_diff_millis},
+                                                     {"date_add_str", 3, date_add_str},
+                                                     {"date_add_millis", 3, date_add_millis},
 
                                                      {nullptr, 0, unimplemented}};
 
