@@ -19,6 +19,7 @@
 
 #include "DatabaseImpl.hh"
 #include "LiveQuerier.hh"
+#include "LazyIndex.hh"
 
 
 using namespace std;
@@ -253,3 +254,46 @@ void C4Query::notifyObservers(const set<C4QueryObserverImpl*>& observers, QueryE
         obs->notify(c4e, err);
     }
 }
+
+#pragma mark - LAZY INDEX:
+
+#ifdef COUCHBASE_ENTERPRISE
+
+C4LazyIndex::C4LazyIndex(Retained<litecore::LazyIndex> i, C4Collection* c) : _index(std::move(i)), _collection(c) {}
+
+C4LazyIndex::~C4LazyIndex() = default;
+
+Retained<C4LazyIndex> C4LazyIndex::open(C4Collection* collection, slice indexName) {
+    Retained<LazyIndex> i = new LazyIndex(asInternal(collection)->keyStore(), indexName);
+    return new C4LazyIndex(std::move(i), collection);
+}
+
+Retained<C4LazyIndexUpdate> C4LazyIndex::beginUpdate(size_t limit) {
+    Retained<LazyIndexUpdate> update = _index->beginUpdate(limit);
+    if ( update ) return new C4LazyIndexUpdate(std::move(update), _collection);
+    else
+        return nullptr;
+}
+
+C4LazyIndexUpdate::C4LazyIndexUpdate(Retained<litecore::LazyIndexUpdate> u, C4Collection* c)
+    : _update(std::move(u)), _collection(c) {}
+
+C4LazyIndexUpdate::~C4LazyIndexUpdate() = default;
+
+size_t C4LazyIndexUpdate::count() const { return _update->count(); }
+
+FLValue C4LazyIndexUpdate::valueAt(size_t i) const { return _update->valueAt(i); }
+
+void C4LazyIndexUpdate::setVectorAt(size_t i, const float* vector, size_t dimension) {
+    _update->setVectorAt(i, vector, dimension);
+}
+
+bool C4LazyIndexUpdate::finish() {
+    ExclusiveTransaction& txn  = asInternal(_collection->getDatabase())->transaction();
+    bool                  done = _update->finish(txn);
+    _update                    = nullptr;
+    _collection                = nullptr;
+    return done;
+}
+
+#endif

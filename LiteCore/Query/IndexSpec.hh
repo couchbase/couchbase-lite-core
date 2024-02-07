@@ -83,10 +83,12 @@ namespace litecore {
             MetricType metric{DefaultMetric};      ///< Distance metric
             Clustering clustering{Flat};           ///< Clustering type & parameters
             Encoding   encoding{DefaultEncoding};  ///< Vector compression type & parameters
-            ///<
+
             unsigned minTrainingSize{0};  ///< Minimum # of vectors to train index (>= 25*numCentroids)
             unsigned maxTrainingSize{0};  ///< Maximum # of vectors to train index on (<= 256*numCentroids)
             unsigned numProbes{0};        ///< Default # of probes when querying
+
+            bool lazy{false};
 
             /// Constructor. Number of dimensions is a required parameter.
             explicit VectorOptions(unsigned d) : dimensions(d) {}

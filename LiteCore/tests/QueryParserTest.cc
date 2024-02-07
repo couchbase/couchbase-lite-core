@@ -142,6 +142,8 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Deleted And Live Docs", "[Query][
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Meta Without Deletion", "[Query][QueryParser]") {
     CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'sequence']], WHERE: ['_.', ['META()'], 'sequence']}]")
           == "SELECT fl_result(_doc.sequence) FROM kv_default AS _doc WHERE (_doc.sequence) AND (_doc.flags & 1 = 0)");
+    CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'rowid']], WHERE: ['_.', ['META()'], 'rowid']}]")
+          == "SELECT fl_result(_doc.rowid) FROM kv_default AS _doc WHERE (_doc.rowid) AND (_doc.flags & 1 = 0)");
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Expiration", "[Query][QueryParser]") {

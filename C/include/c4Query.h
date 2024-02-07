@@ -122,6 +122,52 @@ NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4Query
         resources if the enumeration has not reached its end, but will not be freed for a while. */
 CBL_CORE_API void c4queryenum_close(C4QueryEnumerator*) C4API;
 
+#ifdef COUCHBASE_ENTERPRISE
+
+/** Represents a lazy index. Acts as a factory for C4LazyIndexUpdate objects.
+    This is a reference-counted type. */
+typedef struct C4LazyIndex C4LazyIndex;
+
+static inline void c4lazyindex_release(C4LazyIndex* C4NULLABLE i) C4API { c4base_release(i); }
+
+/** Describes a set of index values that need to be computed by the application.
+    This is a reference-counted type. */
+typedef struct C4LazyIndexUpdate C4LazyIndexUpdate;
+
+static inline void c4lazyindexupdate_release(C4LazyIndexUpdate* C4NULLABLE u) C4API { c4base_release(u); }
+
+/** Creates a C4LazyIndex object that can be used to update the index. */
+CBL_CORE_API C4LazyIndex* c4lazyindex_open(C4Collection* coll, C4String indexName, C4Error* outError) C4API;
+
+/** Finds new or updated documents for which vectors need to be recomputed by the application.
+    If there are none, returns NULL.
+    If it returns a non-NULL `C4LazyIndexUpdate` object pointer, you should:
+    1. Call `valueAt` for each of the `count` items to get the Fleece value, and:
+      1.1. Compute a vector from this value
+      1.2. Call `setVectorAt` with the resulting vector, or with nullptr if none.
+    2. Call `finish` to apply the updates to the index.
+    3. Release the `C4LazyIndexUpdate`, of course. */
+CBL_CORE_API C4LazyIndexUpdate* C4NULLABLE c4lazyindex_beginUpdate(C4LazyIndex*, size_t limit, C4Error* outError) C4API;
+
+/** The number of vectors to compute. */
+CBL_CORE_API size_t c4lazyindexupdate_count(C4LazyIndexUpdate*) C4API;
+
+/** Returns the i'th value to compute a vector from.
+    This is _not_ the entire document, just the value of the expression in the index spec. */
+CBL_CORE_API FLValue c4lazyindexupdate_valueAt(C4LazyIndexUpdate*, size_t i) C4API;
+
+/** Sets the vector for the i'th value. If you don't call this, it's assumed there is no
+    vector, and any existing vector will be removed upon `finish`. */
+CBL_CORE_API bool c4lazyindexupdate_setVectorAt(C4LazyIndexUpdate*, size_t i, const float vector[_Nonnull],
+                                                size_t dimension, C4Error* outError) C4API;
+
+/** Updates the index with the computed vectors, removes any index rows for which no vector
+    was given, and updates the index's latest sequence.
+    @returns  True if the index is now completely up-to-date; false if there have been
+              changes to the Collection since the LazyIndexUpdate was created. */
+CBL_CORE_API bool c4lazyindexupdate_finish(C4LazyIndexUpdate*, C4Error* outError) C4API;
+
+#endif  // COUCHBASE_ENTERPRISE
 
 /** @} */
 

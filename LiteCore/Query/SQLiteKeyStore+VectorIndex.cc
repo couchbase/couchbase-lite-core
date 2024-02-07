@@ -18,6 +18,7 @@
 #    include "SQLiteDataFile.hh"
 #    include "QueryParser.hh"
 #    include "SQLUtil.hh"
+#    include "SQLite_Internal.hh"
 #    include "StringUtil.hh"
 #    include "Array.hh"
 #    include "Error.hh"
@@ -74,6 +75,8 @@ namespace litecore {
         if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
         if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
         stmt << "minToTrain=" << options.minTrainingSize;
+        if ( QueryLog.willLog(LogLevel::Verbose) )
+            stmt << ",verbose";  // Enable vectorsearch verbose logging (via printf, for now)
         stmt << ")";
         return stmt.str();
     }
@@ -109,38 +112,44 @@ namespace litecore {
             }
         }
 
+        // Create an AFTER DELETE trigger to remove any vector from the index:
         auto where = spec.where();
         qp.setBodyColumnName("body");
-        string whereNewSQL = qp.whereClauseSQL(where, "new");
-        string whereOldSQL = qp.whereClauseSQL(where, "old");
-
-        // Index the existing records:
-        db().exec(CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName) << " (docid, vector)"
-                                        << " SELECT new.rowid, " << vectorExpr << " AS vec FROM " << quotedTableName()
-                                        << " AS new " << whereNewSQL << (whereNewSQL.empty() ? "WHERE" : " AND")
-                                        << " vec NOT NULL"));
-
-        // Update the `where` condition to skip docs that don't have a vector:
-        if ( whereNewSQL.empty() ) whereNewSQL = "WHERE";
-        else
-            whereNewSQL += " AND";
-        whereNewSQL += " (" + vectorExpr + ") NOT NULL";
-
-        // Set up triggers to keep the virtual table up to date
-        // ...on insertion:
-        string insertNewSQL = CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName)
-                                                    << " (docid, vector) "
-                                                       "VALUES (new.rowid, "
-                                                    << vectorExpr << ")");
-        createTrigger(vectorTableName, "ins", "AFTER INSERT", whereNewSQL, insertNewSQL);
-
-        // ...on delete:
+        string whereNewSQL  = qp.whereClauseSQL(where, "new");
+        string whereOldSQL  = qp.whereClauseSQL(where, "old");
         string deleteOldSQL = CONCAT("DELETE FROM " << sqlIdentifier(vectorTableName) << " WHERE docid = old.rowid");
         createTrigger(vectorTableName, "del", "AFTER DELETE", whereOldSQL, deleteOldSQL);
 
-        // ...on update:
-        createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
-        createTrigger(vectorTableName, "postupdate", "AFTER UPDATE OF body", whereNewSQL, insertNewSQL);
+        bool lazy = spec.vectorOptions()->lazy;
+        if ( lazy ) {
+            // Lazy index: Mark as lazy by initializing lastSeq to 0
+            db().setIndexLastSequence(spec.name, 0_seq);
+        } else {
+            // Index the existing records:
+            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName) << " (docid, vector)"
+                                            << " SELECT new.rowid, " << vectorExpr << " AS vec FROM "
+                                            << quotedTableName() << " AS new " << whereNewSQL
+                                            << (whereNewSQL.empty() ? "WHERE" : " AND") << " vec NOT NULL"));
+
+            // Update the `where` condition to skip docs that don't have a vector:
+            if ( whereNewSQL.empty() ) whereNewSQL = "WHERE";
+            else
+                whereNewSQL += " AND";
+            whereNewSQL += " (" + vectorExpr + ") NOT NULL";
+
+            // Set up triggers to keep the virtual table up to date
+            // ...on insertion:
+            string insertNewSQL = CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName)
+                                                        << " (docid, vector) "
+                                                           "VALUES (new.rowid, "
+                                                        << vectorExpr << ")");
+            createTrigger(vectorTableName, "ins", "AFTER INSERT", whereNewSQL, insertNewSQL);
+
+            // ...on update:
+            createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
+            createTrigger(vectorTableName, "postupdate", "AFTER UPDATE OF body", whereNewSQL, insertNewSQL);
+        }
+
         return true;
     }
 

@@ -479,5 +479,12 @@ _c4keypair_privateKeyData
 _c4keypair_publicKeyData
 _c4keypair_publicKeyDigest
 
+_c4lazyindex_open
+_c4lazyindex_beginUpdate
+_c4lazyindexupdate_count
+_c4lazyindexupdate_valueAt
+_c4lazyindexupdate_setVectorAt
+_c4lazyindexupdate_finish
+
 # Apple specific
 _FLEncoder_WriteNSObject

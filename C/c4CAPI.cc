@@ -1027,6 +1027,36 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver* obs, bool forget, C
     return asInternal(obs)->getEnumeratorImpl(forget, outError).detach();
 }
 
+#pragma mark - LAZY INDEX API: (EE)
+
+#ifdef COUCHBASE_ENTERPRISE
+
+C4LazyIndex* c4lazyindex_open(C4Collection* coll, C4String indexName, C4Error* outError) noexcept {
+    return tryCatch<C4LazyIndex*>(outError, [&] { return C4LazyIndex::open(coll, indexName).detach(); });
+}
+
+C4LazyIndexUpdate* C4NULLABLE c4lazyindex_beginUpdate(C4LazyIndex* lazyIndex, size_t limit,
+                                                      C4Error* outError) noexcept {
+    return tryCatch<C4LazyIndexUpdate*>(outError, [&] { return lazyIndex->beginUpdate(limit).detach(); });
+}
+
+size_t c4lazyindexupdate_count(C4LazyIndexUpdate* update) noexcept { return update->count(); }
+
+FLValue c4lazyindexupdate_valueAt(C4LazyIndexUpdate* update, size_t i) noexcept {
+    return tryCatch<FLValue>(nullptr, [&] { return update->valueAt(i); });
+}
+
+bool c4lazyindexupdate_setVectorAt(C4LazyIndexUpdate* update, size_t i, const float vec[], size_t dimension,
+                                   C4Error* outError) noexcept {
+    return tryCatch(outError, [&] { update->setVectorAt(i, vec, dimension); });
+}
+
+bool c4lazyindexupdate_finish(C4LazyIndexUpdate* update, C4Error* outError) noexcept {
+    return tryCatch(outError, [&] { update->finish(); });
+}
+
+#endif
+
 #pragma mark - CERTIFICATE API: (EE)
 
 

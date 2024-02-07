@@ -398,6 +398,9 @@ namespace litecore {
                          const C4IndexOptions* indexOptions = nullptr) override {
             IndexSpec::Options options;
             switch ( indexType ) {
+                case kC4ValueIndex:
+                case kC4ArrayIndex:
+                    break;
                 case kC4FullTextIndex:
                     if ( indexOptions ) {
                         auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
@@ -406,6 +409,9 @@ namespace litecore {
                         ftsOpt.disableStemming  = indexOptions->disableStemming;
                         ftsOpt.stopWords        = indexOptions->stopWords;
                     }
+                    break;
+#ifdef COUCHBASE_ENTERPRISE
+                case kC4PredictiveIndex:
                     break;
                 case kC4VectorIndex:
                     if ( indexOptions ) {
@@ -429,7 +435,9 @@ namespace litecore {
                         error::_throw(error::InvalidParameter, "Vector index requires options");
                     }
                     break;
+#endif
                 default:
+                    error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,

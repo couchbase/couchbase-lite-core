@@ -52,6 +52,8 @@ namespace litecore {
     class ExclusiveTransaction;
     class FilePath;
     class KeyStore;
+    class LazyIndex;
+    class LazyIndexUpdate;
     class LiveQuerier;
     class Query;
     class QueryEnumerator;

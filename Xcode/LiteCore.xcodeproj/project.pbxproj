@@ -345,6 +345,8 @@
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A392B72B448004C0787 /* LazyIndex.cc */; };
+		27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
 		27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
@@ -1390,6 +1392,9 @@
 		27CE4CEF2077F51000ACA225 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
 		27CE4CF02077F51000ACA225 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
 		27D629CA2B644024004C0787 /* VectorQueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VectorQueryTest.hh; sourceTree = "<group>"; };
+		27D62A382B72B448004C0787 /* LazyIndex.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LazyIndex.hh; sourceTree = "<group>"; };
+		27D62A392B72B448004C0787 /* LazyIndex.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LazyIndex.cc; sourceTree = "<group>"; };
+		27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LazyVectorQueryTest.cc; sourceTree = "<group>"; };
 		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
 		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
@@ -1878,6 +1883,7 @@
 				27D629CA2B644024004C0787 /* VectorQueryTest.hh */,
 				27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */,
 				27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */,
+				27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */,
 				276CE68D2267A02500B681AC /* N1QLParserTest.cc */,
 				27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
@@ -2223,6 +2229,8 @@
 				27098AA5216C2108002751DA /* PredictiveModel.hh */,
 				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
 				27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */,
+				27D62A382B72B448004C0787 /* LazyIndex.hh */,
+				27D62A392B72B448004C0787 /* LazyIndex.cc */,
 				27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */,
 			);
 			name = EE;
@@ -4031,6 +4039,7 @@
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
+				27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
@@ -4317,6 +4326,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
+				27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,

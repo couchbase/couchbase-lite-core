@@ -272,12 +272,16 @@ NODISCARD CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection*, C4Error* C
     The name is used to identify the index for later updating or deletion; if an index with the
     same name already exists, it will be replaced unless it has the exact same expressions.
 
+    The `indexSpec` argument is an expression, relative to a document, that describes what to index.
+    It can be in either the JSON query schema, or in N1QL syntax. It usually names a property,
+    but may also be a computed value based on properties.
+
     @param collection  The collection to index.
     @param name  The name of the index. Any existing index with the same name will be replaced,
                  unless it has the identical expressions (in which case this is a no-op.)
     @param indexSpec  The definition of the index in JSON or N1QL form. (See above.)
     @param queryLanguage  The language of `indexSpec`, either JSON or N1QL.
-    @param indexType  The type of index (value or full-text.)
+    @param indexType  The type of index (value full-text, etc.)
     @param indexOptions  Options for the index. If NULL, each option will get a default value.
     @param outError  On failure, will be set to the error status.
     @return  True on success, false on failure. */
