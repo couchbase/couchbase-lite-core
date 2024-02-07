@@ -122,4 +122,80 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     Log("done");
 }
 
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Query][.VectorSearch]") {
+    readVectorDocs();
+    {
+        // Add some docs without vector data, to ensure that doesn't break indexing:
+        ExclusiveTransaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+
+    KeyStore* otherStore  = &db->getKeyStore(".other");
+    {
+        ExclusiveTransaction t(db);
+        writeDoc(*otherStore, "doc01", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0031");
+            enc.writeKey("publisher");
+            enc.writeString("Couchbase");
+        });
+        writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0011"); // this is not fetched by vector_match
+            enc.writeKey("publisher");
+            enc.writeString("Microsoft");
+        });
+        writeDoc(*otherStore, "doc03", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0012");
+            enc.writeKey("publisher");
+            enc.writeString("Apple");
+        });
+        t.commit();
+    }
+
+    createVectorIndex();
+
+    string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
+    queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
+                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) )";
+
+    Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
+    REQUIRE(query != nullptr);
+
+    // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
+    // Same target as used by test "Query Vector Index"
+    float   targetVector[128] = {21, 13,  18,  11,  14, 6,  4,  14,  39, 54,  52,  10, 8,  14, 5,   2,   23, 76,  65,
+                                 10, 11,  23,  3,   0,  6,  10, 17,  5,  7,   21,  20, 13, 63, 7,   25,  13, 4,   12,
+                                 13, 112, 109, 112, 63, 21, 2,  1,   1,  40,  25,  43, 41, 98, 112, 49,  7,  5,   18,
+                                 57, 24,  14,  62,  49, 34, 29, 100, 14, 3,   1,   5,  14, 7,  92,  112, 14, 28,  5,
+                                 9,  34,  79,  112, 18, 15, 20, 29,  75, 112, 112, 50, 6,  61, 45,  13,  33, 112, 77,
+                                 4,  18,  17,  5,   3,  4,  5,  4,   15, 28,  4,   6,  1,  7,  33,  86,  71, 3,   8,
+                                 5,  4,   16,  72,  83, 10, 5,  40,  3,  0,   1,   51, 36, 3};
+    Encoder enc;
+    enc.beginDictionary();
+    enc.writeKey("target");
+    enc.writeData(slice(targetVector, sizeof(targetVector)));
+    enc.endDictionary();
+    Query::Options options(enc.finish());
+
+    // Run the query:
+    Retained<QueryEnumerator> e(query->createEnumerator(&options));
+    REQUIRE(e->getRowCount() == 2);  // the call to VECTOR_MATCH requested 5 results. Two of them passed JOIN clause.
+
+    // c.f. test "Query Vector Index". "rec-0031" and "rec-0012" are fetched by vector_match.
+    static constexpr slice expectedIDs[2]       = {"rec-0031", "rec-0012"};
+    static constexpr slice expectedPubs[2]      = {"Couchbase", "Apple"};
+
+    size_t i = 0;
+    while (e->next()) {
+        slice id        = e->columns()[0]->asString();
+        slice publisher = e->columns()[1]->asString();
+        CHECK(id == expectedIDs[i]);
+        CHECK(publisher == expectedPubs[i++]);
+    }
+    CHECK(i == 2);
+}
+
 #endif
