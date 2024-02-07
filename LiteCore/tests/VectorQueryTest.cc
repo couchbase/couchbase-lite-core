@@ -131,7 +131,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
         t.commit();
     }
 
-    KeyStore* otherStore  = &db->getKeyStore(".other");
+    KeyStore* otherStore = &db->getKeyStore(".other");
     {
         ExclusiveTransaction t(db);
         writeDoc(*otherStore, "doc01", DocumentFlags::kNone, t, [=](Encoder& enc) {
@@ -142,7 +142,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
         });
         writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("refID");
-            enc.writeString("rec-0011"); // this is not fetched by vector_match
+            enc.writeString("rec-0011");  // this is not fetched by vector_match
             enc.writeKey("publisher");
             enc.writeString("Microsoft");
         });
@@ -185,11 +185,11 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
     REQUIRE(e->getRowCount() == 2);  // the call to VECTOR_MATCH requested 5 results. Two of them passed JOIN clause.
 
     // c.f. test "Query Vector Index". "rec-0031" and "rec-0012" are fetched by vector_match.
-    static constexpr slice expectedIDs[2]       = {"rec-0031", "rec-0012"};
-    static constexpr slice expectedPubs[2]      = {"Couchbase", "Apple"};
+    static constexpr slice expectedIDs[2]  = {"rec-0031", "rec-0012"};
+    static constexpr slice expectedPubs[2] = {"Couchbase", "Apple"};
 
     size_t i = 0;
-    while (e->next()) {
+    while ( e->next() ) {
         slice id        = e->columns()[0]->asString();
         slice publisher = e->columns()[1]->asString();
         CHECK(id == expectedIDs[i]);
