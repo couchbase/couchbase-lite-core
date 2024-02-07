@@ -42,6 +42,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
                     [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
 
+    auto allKeyStores = db->allKeyStoreNames();
+
     CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
     CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
@@ -50,6 +52,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 
     store->deleteIndex("num"_sl);
     CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
@@ -66,6 +69,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl);  // Duplicate should be no-op
