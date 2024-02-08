@@ -42,6 +42,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
                     [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
 
+    auto allKeyStores = db->allKeyStoreNames();
+
     CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
     CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, options));
@@ -50,6 +52,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 
     store->deleteIndex("num"_sl);
     CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, options));
@@ -66,6 +69,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl);  // Duplicate should be no-op
@@ -1279,29 +1283,31 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 #endif
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     local_seconds localtime = (local_days)(2018_y / 10 / 23);
     struct tm     tmpTime   = FromTimestamp(localtime.time_since_epoch());
     localtime -= GetLocalTZOffset(&tmpTime, false);
 
-    stringstream s1, s2, s3;
-    s1 << date::format("%FT%TZ", localtime);
+    stringstream s1, s2, s3, s5;
+    s1 << date::format("%F", localtime);
     localtime += 18h + 33min;
-    s2 << date::format("%FT%TZ", localtime);
+    s2 << date::format("%FT%T", localtime);
     localtime += 1s;
-    s3 << date::format("%FT%TZ", localtime);
+    s3 << date::format("%FT%T", localtime);
+    s5 << date::format("%FT%TZ", localtime);
 
     localtime = (local_days)(1944_y / 6 / 6);
     localtime += 6h + 30min;
     tmpTime = FromTimestamp(localtime.time_since_epoch());
     localtime -= GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
-    s4 << date::format("%FT%TZ", localtime);
+    s4 << date::format("%FT%T", localtime);
 
     auto expected1 = s1.str();
     auto expected2 = s2.str();
     auto expected3 = s3.str();
     auto expected4 = s4.str();
+    auto expected5 = s5.str();
 
     testExpressions({
             {"['str_to_utc()', null]", "null"},
@@ -1360,14 +1366,350 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
             {"['millis_to_utc()', 1540319581123]", "2018-10-23T18:33:01.123Z"},
             {"['millis_to_utc()', 1540319581999]", "2018-10-23T18:33:01.999Z"},
             {"['millis_to_utc()', -806956200000]", "1944-06-06T05:30:00Z"},
+            {"['millis_to_utc()', 1540319581999, 'invalid']", "2018-10-23T18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11']", "2018-10-23"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11']", "18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11Z']", "18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11+09:00']", "18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11 11:11:11+09:00']", "2018-10-23 18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11T11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11   T 11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
 
-            // It's hard to test millis_to_str directly, because the result depends on the
-            // local time zone...
-            //{"['millis_to_str()', 1540319581000]", "2018-10-23T11:33:01-0700"},
+            {"['millis_to_str()', 1540319581000]", "2018-10-23T18:33:01Z"},
             {"['str_to_utc()', ['millis_to_str()', 1540319581000]]", "2018-10-23T18:33:01Z"},
             {"['millis_to_str()', 'x']", "null"},
             {"['millis_to_str()', '0']", "null"},
+
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', 0]", "2024-01-10T14:31:14Z"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', -300]", "2024-01-10T09:31:14-05:00"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', +690]", "2024-01-11T02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, 0]", "2024-01-10T14:31:14Z"},
+            {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-05:00"},
+            {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, +690, '1111-11-11']", "2024-01-11"},
+            {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
     });
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query date diff string", "[Query][CBL-59]") {
+    SECTION("Basic") {
+        testExpressions({
+                {"['date_diff_str()', '2018-01-31T00:00:00.001Z', '2018-01-31T00:00:00Z', 'millisecond']",
+                 int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00.010Z', '2018-01-31T00:00:00Z', 'millisecond']",
+                 int64_t(10ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00.100Z', '2018-01-31T00:00:00Z', 'millisecond']",
+                 int64_t(100ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:01.5Z', '2018-01-31T00:00:00Z', 'millisecond']",
+                 int64_t(1500ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:01.5Z', '2018-01-31T00:00:00Z', 'second']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T00:01:01.5Z', '2018-01-31T00:00:00Z', 'second']", int64_t(61ll)},
+                {"['date_diff_str()', '2018-01-31T00:01:01.5Z', '2018-01-31T00:00:00Z', 'minute']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T01:01:00.5Z', '2018-01-31T00:00:00Z', 'minute']", int64_t(61ll)},
+                {"['date_diff_str()', '2018-01-31T01:00:01.5Z', '2018-01-31T00:00:00Z', 'hour']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-02-01T01:00:00.5Z', '2018-01-31T00:00:00Z', 'hour']", int64_t(25ll)},
+                {"['date_diff_str()', '2018-01-02T01:00:01.5Z', '2018-01-01T00:00:00Z', 'day']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-03-01T01:00:01.5Z', '2018-02-01T00:00:00Z', 'day']", int64_t(28ll)},
+                {"['date_diff_str()', '2016-03-01T01:00:01.5Z', '2016-02-01T00:00:00Z', 'day']", int64_t(29ll)},
+                {"['date_diff_str()', '2018-02-01T01:00:00.5Z', '2018-01-01T00:00:00Z', 'day']", int64_t(31ll)},
+                {"['date_diff_str()', '2018-01-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'day']", int64_t(365ll)},
+                {"['date_diff_str()', '2017-01-01T01:00:01.5Z', '2016-01-01T00:00:00Z', 'day']", int64_t(366ll)},
+                {"['date_diff_str()', '2017-01-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'week']", int64_t(1ll)},
+                {"['date_diff_str()', '2017-02-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'week']", int64_t(4ll)},
+                {"['date_diff_str()', '2017-02-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'month']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-02-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'month']", int64_t(13ll)},
+                {"['date_diff_str()', '2017-04-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'quarter']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-04-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'quarter']", int64_t(5ll)},
+                {"['date_diff_str()', '2018-04-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'year']", int64_t(1ll)},
+                {"['date_diff_str()', '2028-04-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'decade']", int64_t(1ll)},
+                {"['date_diff_str()', '2118-04-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'century']", int64_t(1ll)},
+
+                // NOTE: Windows cannot handle higher than year 3000
+                {"['date_diff_str()', '2918-04-01T01:00:01.5Z', '1917-01-01T00:00:00Z', 'millennium']", int64_t(1ll)},
+
+        });
+    }
+
+    SECTION("Negative") {
+        testExpressions({
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:00:00.001Z', 'millisecond']",
+                 int64_t(-1ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:00:00.010Z', 'millisecond']",
+                 int64_t(-10ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:00:00.100Z', 'millisecond']",
+                 int64_t(-100ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:00:01.5Z', 'second']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:01:01.5Z', 'second']", int64_t(-61ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T00:01:01.5Z', 'minute']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T01:01:00.5Z', 'minute']", int64_t(-61ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T01:00:01.5Z', 'hour']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-02-01T01:00:00.5Z', 'hour']", int64_t(-25ll)},
+                {"['date_diff_str()', '2018-01-01T00:00:00Z', '2018-01-02T01:00:01.5Z', 'day']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-02-01T00:00:00Z', '2018-03-01T01:00:01.5Z', 'day']", int64_t(-28ll)},
+                {"['date_diff_str()', '2016-02-01T00:00:00Z', '2016-03-01T01:00:01.5Z', 'day']", int64_t(-29ll)},
+                {"['date_diff_str()', '2018-01-01T00:00:00Z', '2018-02-01T01:00:00.5Z', 'day']", int64_t(-31ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2018-01-01T01:00:01.5Z', 'day']", int64_t(-365ll)},
+                {"['date_diff_str()', '2016-01-01T00:00:00Z', '2017-01-01T01:00:01.5Z', 'day']", int64_t(-366ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2017-01-08T01:00:01.5Z', 'week']", int64_t(-1ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2017-02-01T01:00:01.5Z', 'week']", int64_t(-4ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2017-02-08T01:00:01.5Z', 'month']", int64_t(-1ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2018-02-01T01:00:01.5Z', 'month']", int64_t(-13ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2017-04-08T01:00:01.5Z', 'quarter']", int64_t(-1ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2018-04-01T01:00:01.5Z', 'quarter']", int64_t(-5ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2018-04-08T01:00:01.5Z', 'year']", int64_t(-1ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2028-04-01T01:00:01.5Z', 'decade']", int64_t(-1ll)},
+                {"['date_diff_str()', '2017-01-01T00:00:00Z', '2118-04-08T01:00:01.5Z', 'century']", int64_t(-1ll)},
+
+                // NOTE: Windows cannot handle higher than year 3000
+                {"['date_diff_str()', '1917-01-01T00:00:00Z', '2918-04-01T01:00:01.5Z', 'millennium']", int64_t(-1ll)},
+
+        });
+    }
+
+    SECTION("N1QL consistency") {
+        testExpressions({
+                // https://github.com/couchbase/query/blob/master/test/filestore/test_cases/date_functions/case_func_date.json
+                {"['date_diff_str()', '2006-01-02', '1998-02-02', 'year']", int64_t(8ll)},
+                {"['date_diff_str()', '2014-12-01','2015-01-01', 'quarter']", int64_t(-1ll)},
+                {"['date_diff_str()', '2015-01-01','2014-12-01', 'quarter']", int64_t(1ll)},
+                {"['date_diff_str()', '2013-12-01','2015-01-01', 'quarter']", int64_t(-5ll)},
+                {"['date_diff_str()', '2013-10-01','2015-01-01', 'quarter']", int64_t(-5ll)},
+                {"['date_diff_str()', '2014-12-01','2015-05-30', 'quarter']", int64_t(-2ll)},
+                {"['date_diff_str()', '2014-10-01','2014-12-01', 'quarter']", int64_t(0ll)},
+                {"['date_diff_str()', '2015-11-01','2014-10-01', 'month']", int64_t(13ll)},
+                {"['date_diff_str()', '2015-01-01','2014-12-01', 'month']", int64_t(1ll)},
+                {"['date_diff_str()', '2013-12-01','2015-01-01', 'month']", int64_t(-13ll)},
+                {"['date_diff_str()', '2013-01-01','2015-01-01', 'month']", int64_t(-24ll)},
+                {"['date_diff_str()', '2013-10-01','2015-01-01', 'month']", int64_t(-15ll)},
+                {"['date_diff_str()', '2014-12-01','2015-01-01', 'month']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-09-10 23:59:59','2018-09-11 00:00:01','day']", int64_t(-1ll)},
+                {"['date_diff_str()', '2018-09-11 00:00:01','2018-09-10 23:59:59','day']", int64_t(1ll)},
+
+                // Give unintuitive results on purpose for the sake of consistency
+                {"['date_diff_str()', '2018-01-31T00:01:01.5Z', '2018-01-31T00:01:00.9Z', 'second']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T00:02:01Z', '2018-01-31T00:01:59Z', 'minute']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T01:00:00Z', '2018-01-31T00:59:00Z', 'hour']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-02-01T00:01:59Z', '2018-01-31T23:59:01Z', 'day']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-02-01T00:01:59Z', '2018-01-31T23:59:01Z', 'month']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-01T00:01:59Z', '2017-12-31T23:59:01Z', 'year']", int64_t(1ll)},
+                {"['date_diff_str()', '2018-01-31T02:00:00-07:00', '2018-01-31T00:00:00-08:00', 'hour']", int64_t(2ll)},
+        });
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query date diff millis", "[Query][CBL-59]") {
+    SECTION("Basic") {
+        testExpressions({{"['date_diff_millis()', 1517356800001, 1517356800000, 'millisecond']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1517356800010, 1517356800000, 'millisecond']", int64_t(10ll)},
+                         {"['date_diff_millis()', 1517356800100, 1517356800000, 'millisecond']", int64_t(100ll)},
+                         {"['date_diff_millis()', 1517356801500, 1517356800000, 'millisecond']", int64_t(1500ll)},
+                         {"['date_diff_millis()', 1517356801500, 1517356800000, 'second']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1517356861500, 1517356800000, 'second']", int64_t(61ll)},
+                         {"['date_diff_millis()', 1517356861500, 1517356800000, 'minute']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1517360461500, 1517356800000, 'minute']", int64_t(61ll)},
+                         {"['date_diff_millis()', 1517360401500, 1517356800000, 'hour']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1517446800500, 1517356800000, 'hour']", int64_t(25ll)},
+                         {"['date_diff_millis()', 1514854801000, 1514764800000, 'day']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1519866001500, 1517443200000, 'day']", int64_t(28ll)},
+                         {"['date_diff_millis()', 1456794001500, 1454284800000, 'day']", int64_t(29ll)},
+                         {"['date_diff_millis()', 1517446800500, 1514764800000, 'day']", int64_t(31ll)},
+                         {"['date_diff_millis()', 1514768401500, 1483228800000, 'day']", int64_t(365ll)},
+                         {"['date_diff_millis()', 1483232401500, 1451606400000, 'day']", int64_t(366ll)},
+                         {"['date_diff_millis()', 1483837201000, 1483228800000, 'week']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1485910801500, 1483228800000, 'week']", int64_t(4ll)},
+                         {"['date_diff_millis()', 1486515601500, 1483228800000, 'month']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1517446801500, 1483228800000, 'month']", int64_t(13ll)},
+                         {"['date_diff_millis()', 1491613201500, 1483228800000, 'quarter']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1522544401500, 1483228800000, 'quarter']", int64_t(5ll)},
+                         {"['date_diff_millis()', 1523149201000, 1483228800000, 'year']", int64_t(1ll)},
+                         {"['date_diff_millis()', 1838163601500, 1483228800000, 'decade']", int64_t(1ll)},
+                         {"['date_diff_millis()', 4678822801500, 1483228800000, 'century']", int64_t(1ll)},
+
+                         // NOTE: Windows cannot handle higher than year 3000
+                         {"['date_diff_millis()', 29923779601500, -1672531200000, 'millennium']", int64_t(1ll)}});
+    }
+
+    SECTION("Negative") {
+        testExpressions({{"['date_diff_millis()', 1517356800000, 1517356800001, 'millisecond']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356800010, 'millisecond']", int64_t(-10ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356800100, 'millisecond']", int64_t(-100ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356801500, 'millisecond']", int64_t(-1500ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356801500, 'second']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356861500, 'second']", int64_t(-61ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517356861500, 'minute']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517360461500, 'minute']", int64_t(-61ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517360401500, 'hour']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1517356800000, 1517446800500, 'hour']", int64_t(-25ll)},
+                         {"['date_diff_millis()', 1514764800000, 1514854801000, 'day']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1517443200000, 1519866001500, 'day']", int64_t(-28ll)},
+                         {"['date_diff_millis()', 1454284800000, 1456794001500, 'day']", int64_t(-29ll)},
+                         {"['date_diff_millis()', 1514764800000, 1517446800500, 'day']", int64_t(-31ll)},
+                         {"['date_diff_millis()', 1483228800000, 1514768401500, 'day']", int64_t(-365ll)},
+                         {"['date_diff_millis()', 1451606400000, 1483232401500, 'day']", int64_t(-366ll)},
+                         {"['date_diff_millis()', 1483228800000, 1483837201000, 'week']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1483228800000, 1485910801500, 'week']", int64_t(-4ll)},
+                         {"['date_diff_millis()', 1483228800000, 1486515601500, 'month']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1483228800000, 1517446801500, 'month']", int64_t(-13ll)},
+                         {"['date_diff_millis()', 1483228800000, 1491613201500, 'quarter']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1483228800000, 1522544401500, 'quarter']", int64_t(-5ll)},
+                         {"['date_diff_millis()', 1483228800000, 1523149201000, 'year']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1483228800000, 1838163601500, 'decade']", int64_t(-1ll)},
+                         {"['date_diff_millis()', 1483228800000, 4678822801500, 'century']", int64_t(-1ll)},
+
+                         // NOTE: Windows cannot handle higher than year 3000
+                         {"['date_diff_millis()', -1672531200000, 29923779601500, 'millennium']", int64_t(-1ll)}});
+    }
+
+    SECTION("N1QL consistency") {
+        testExpressions({
+                // https://github.com/couchbase/query/blob/master/test/filestore/test_cases/date_functions/case_func_date.json
+                {"['date_diff_millis()', 1136160000000,886377600000, 'year']", int64_t(8ll)},
+                {"['date_diff_millis()', 1417392000000,1420070400000, 'quarter']", int64_t(-1ll)},
+                {"['date_diff_millis()', 1420070400000,1417392000000, 'quarter']", int64_t(1ll)},
+                {"['date_diff_millis()', 1385856000000,1420070400000, 'quarter']", int64_t(-5ll)},
+                {"['date_diff_millis()', 1380585600000,1420070400000, 'quarter']", int64_t(-5ll)},
+                {"['date_diff_millis()', 1417392000000,1432944000000, 'quarter']", int64_t(-2ll)},
+                {"['date_diff_millis()', 1412121600000,1417392000000, 'quarter']", int64_t(0ll)},
+                {"['date_diff_millis()', 1446336000000,1412121600000, 'month']", int64_t(13ll)},
+                {"['date_diff_millis()', 1420070400000,1417392000000, 'month']", int64_t(1ll)},
+                {"['date_diff_millis()', 1385856000000,1420070400000, 'month']", int64_t(-13ll)},
+                {"['date_diff_millis()', 1356998400000,1420070400000, 'month']", int64_t(-24ll)},
+                {"['date_diff_millis()', 1380585600000,1420070400000, 'month']", int64_t(-15ll)},
+                {"['date_diff_millis()', 1417392000000,1420070400000, 'month']", int64_t(-1ll)},
+                {"['date_diff_millis()', 1536623999000,1536624001000,'day']", int64_t(-1ll)},
+                {"['date_diff_millis()', 1536624001000,1536623999000,'day']", int64_t(1ll)},
+
+                // Give unintuitive results on purpose for the sake of consistency
+                {"['date_diff_millis()', 1517356861500, 1517356860900, 'second']", int64_t(1ll)},
+                {"['date_diff_millis()', 1517356921000, 1517356919000, 'minute']", int64_t(1ll)},
+                {"['date_diff_millis()', 1517360400000, 1517360340000, 'hour']", int64_t(1ll)},
+                {"['date_diff_millis()', 1517443319000, 1517443141000, 'day']", int64_t(1ll)},
+                {"['date_diff_millis()', 1517443319000, 1517443141000, 'month']", int64_t(1ll)},
+                {"['date_diff_millis()', 1514764919000, 1514764741000, 'year']", int64_t(1ll)},
+        });
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
+    SECTION("Basic") {
+        testExpressions({
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'millisecond']", "2018-01-01T00:00:00.001Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 10, 'millisecond']", "2018-01-01T00:00:00.010Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 100, 'millisecond']", "2018-01-01T00:00:00.100Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'second']", "2018-01-01T00:00:01Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'minute']", "2018-01-01T00:01:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'hour']", "2018-01-01T01:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'day']", "2018-01-02T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'week']", "2018-01-08T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'month']", "2018-02-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'quarter']", "2018-04-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'year']", "2019-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'decade']", "2028-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'century']", "2118-01-01T00:00:00Z"},
+
+                // Note: Windows cannot handle times after year 3000
+                {"['date_add_str()', '1918-01-01T00:00:00Z', 1, 'millennium']", "2918-01-01T00:00:00Z"},
+        });
+    }
+
+    SECTION("Negative") {
+        testExpressions({
+                {"['date_add_str()', '2018-01-01T00:00:00.001Z', -1, 'millisecond']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00.010Z', -10, 'millisecond']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00.100Z', -100, 'millisecond']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:00:01Z', -1, 'second']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T00:01:00Z', -1, 'minute']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-01T01:00:00Z', -1, 'hour']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-02T00:00:00Z', -1, 'day']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-01-08T00:00:00Z', -1, 'week']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-02-01T00:00:00Z', -1, 'month']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2018-04-01T00:00:00Z', -1, 'quarter']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2019-01-01T00:00:00Z', -1, 'year']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2028-01-01T00:00:00Z', -1, 'decade']", "2018-01-01T00:00:00Z"},
+                {"['date_add_str()', '2118-01-01T00:00:00Z', -1, 'century']", "2018-01-01T00:00:00Z"},
+
+                // Note: Windows cannot handle times before year 1970
+                {"['date_add_str()', '2970-01-01T00:00:00Z', -1, 'millennium']", "1970-01-01T00:00:00Z"},
+        });
+    }
+
+    SECTION("Overflow") {
+        testExpressions(
+                {{"['date_add_str()', '2018-01-01T00:00:00Z', 1500, 'millisecond']", "2018-01-01T00:00:01.500Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:00Z', 61, 'second']", "2018-01-01T00:01:01Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:00Z', 61, 'minute']", "2018-01-01T01:01:00Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:00Z', 25, 'hour']", "2018-01-02T01:00:00Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:00Z', 31, 'day']", "2018-02-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-02-27T00:00:00Z', 1, 'week']", "2018-03-06T00:00:00Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:00Z', 12, 'month']", "2019-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-01-01T00:00:01.500Z', -1500, 'millisecond']", "2018-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-01-01T00:01:01Z', -61, 'second']", "2018-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-01-01T01:01:00Z', -61, 'minute']", "2018-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-01-02T01:00:00Z', -25, 'hour']", "2018-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2018-02-01T00:00:00Z', -31, 'day']", "2018-01-01T00:00:00Z"},
+                 {"['date_add_str()', '2019-01-01T00:00:00Z', -12, 'month']", "2018-01-01T00:00:00Z"}});
+    }
+
+    SECTION("Special cases") {
+        testExpressions({
+                // Leap year
+                {"['date_add_str()', '2018-02-28T00:00:00Z', 1, 'day']", "2018-03-01T00:00:00Z"},
+                {"['date_add_str()', '2016-02-28T00:00:00Z', 1, 'day']", "2016-02-29T00:00:00Z"},
+
+                // Keep time offset
+                {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-07:00"},
+
+                // Short month
+                {"['date_add_str()', '2018-02-15T00:00:00Z', 1, 'month']", "2018-03-15T00:00:00Z"},
+
+                // Questionable result, but matches N1QL server
+                {"['date_add_str()', '2018-01-31T00:00:00Z', 1, 'month']", "2018-03-03T00:00:00Z"},
+        });
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add millis", "[Query][CBL-59]") {
+    SECTION("Basic") {
+        testExpressions({
+                {"['date_add_millis()', 1514764800000, 1, 'millisecond']", int64_t(1514764800001)},
+                {"['date_add_millis()', 1514764800000, 10, 'millisecond']", int64_t(1514764800010)},
+                {"['date_add_millis()', 1514764800000, 100, 'millisecond']", int64_t(1514764800100)},
+                {"['date_add_millis()', 1514764800000, 1, 'second']", int64_t(1514764801000)},
+                {"['date_add_millis()', 1514764800000, 1, 'minute']", int64_t(1514764860000)},
+                {"['date_add_millis()', 1514764800000, 1, 'hour']", int64_t(1514768400000)},
+                {"['date_add_millis()', 1514764800000, 1, 'day']", int64_t(1514851200000)},
+                {"['date_add_millis()', 1514764800000, 1, 'week']", int64_t(1515369600000)},
+                {"['date_add_millis()', 1514764800000, 1, 'month']", int64_t(1517443200000)},
+                {"['date_add_millis()', 1514764800000, 1, 'quarter']", int64_t(1522540800000)},
+                {"['date_add_millis()', 1514764800000, 1, 'year']", int64_t(1546300800000)},
+                {"['date_add_millis()', 1514764800000, 1, 'decade']", int64_t(1830297600000)},
+                {"['date_add_millis()', 1514764800000, 1, 'century']", int64_t(4670438400000)},
+
+                // Note: Windows cannot handle negative timestamps
+                {"['date_add_millis()', 0, 1, 'millennium']", int64_t(31556995200000)},
+        });
+    }
+
+    SECTION("Negative") {
+        testExpressions({{"['date_add_millis()', 1514764800001, -1, 'millisecond']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514764800010, -10, 'millisecond']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514764800100, -100, 'millisecond']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514764801000, -1, 'second']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514764860000, -1, 'minute']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514768400000, -1, 'hour']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1514851200000, -1, 'day']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1515369600000, -1, 'week']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1517443200000, -1, 'month']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1522540800000, -1, 'quarter']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1546300800000, -1, 'year']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 1830297600000, -1, 'decade']", int64_t(1514764800000)},
+                         {"['date_add_millis()', 4670438400000, -1, 'century']", int64_t(1514764800000)},
+
+                         // Note: Windows cannot handle times before year 1970
+                         {"['date_add_millis()', 31556995200000, -1, 'millennium']", int64_t(0)}});
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {

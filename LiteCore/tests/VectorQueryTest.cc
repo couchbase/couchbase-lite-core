@@ -52,8 +52,10 @@ class SIFTVectorQueryTest : public VectorQueryTest {
 };
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Query][.VectorSearch]") {
+    auto allKeyStores = db->allKeyStoreNames();
     readVectorDocs(1);
     createVectorIndex();
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     // Delete a doc too:
     {
         ExclusiveTransaction t(db);
@@ -61,6 +63,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
         t.commit();
     }
     store->deleteIndex("vecIndex"_sl);
+    CHECK(db->allKeyStoreNames() == allKeyStores);
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.VectorSearch]") {
@@ -120,6 +123,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     }
     CHECK(!e->next());
     Log("done");
+
+    reopenDatabase();
 }
 
 #endif
