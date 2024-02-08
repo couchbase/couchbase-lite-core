@@ -122,6 +122,9 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     Log("done");
 }
 
+// Test joining the result of VECTOR_MATCH with a property of another collection. In particular, it joins
+// the result of the previous test, "Query Vector Index", with "other" collection that refers to the doc IDs
+// from VECTOR_MATCH.
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Query][.VectorSearch]") {
     readVectorDocs();
     {
@@ -130,7 +133,9 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
         writeMultipleTypeDocs(t);
         t.commit();
     }
+    createVectorIndex();
 
+    // Collection "other"
     KeyStore* otherStore = &db->getKeyStore(".other");
     {
         ExclusiveTransaction t(db);
@@ -142,7 +147,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
         });
         writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("refID");
-            enc.writeString("rec-0011");  // this is not fetched by vector_match
+            enc.writeString("rec-0011");  // this is not fetched by vector_match, c.f. "Query Vector Index"
             enc.writeKey("publisher");
             enc.writeString("Microsoft");
         });
@@ -154,8 +159,6 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
         });
         t.commit();
     }
-
-    createVectorIndex();
 
     string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
     queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
