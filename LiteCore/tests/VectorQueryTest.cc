@@ -77,12 +77,13 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
     createVectorIndex();
 
-    string queryStr = R"(
+    string                  queryStr  = R"(
         ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
+    static constexpr size_t kNResults = 10;  // must match last argument to VECTOR_MATCH() above
 
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
     REQUIRE(query != nullptr);
@@ -104,18 +105,21 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 5);  // the call to VECTOR_MATCH requested only 5 results
+    REQUIRE(e->getRowCount() == kNResults);
 
     // The `expectedDistances` array contains the exact distances.
     // Vector encoders are lossy, so using one in the index will result in approximate distances,
     // which is why the distance check below is so loose.
-    static constexpr slice expectedIDs[5]       = {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"};
-    static constexpr float expectedDistances[5] = {0, 4172, 10549, 29275, 32025};
+    static constexpr slice expectedIDs[kNResults]       = {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020",
+                                                           "rec-0076", "rec-0087", "rec-3327", "rec-1915", "rec-8265"};
+    static constexpr float expectedDistances[kNResults] = {0,     4172,  10549, 29275, 32025,
+                                                           65417, 67313, 68009, 70231, 70673};
 
-    for ( size_t i = 0; i < 5; ++i ) {
+    for ( size_t i = 0; i < kNResults; ++i ) {
         REQUIRE(e->next());
         slice id       = e->columns()[0]->asString();
         float distance = e->columns()[1]->asFloat();
+        Log("%2zu: [%f] %.*s", i, distance, FMTSLICE(id));
         INFO("i=" << i);
         CHECK(id == expectedIDs[i]);
         CHECK_THAT(distance, Catch::Matchers::WithinRel(expectedDistances[i], 0.20f)
