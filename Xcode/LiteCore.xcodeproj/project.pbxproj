@@ -516,6 +516,7 @@
 		42030A3F2498443D00283CE8 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		42030A402498444900283CE8 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		42030A412498445600283CE8 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
+		42626ACC2B75B8AE006CF2B4 /* Extension.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42626ACB2B75B8AD006CF2B4 /* Extension.cc */; };
 		42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
@@ -1665,6 +1666,8 @@
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
+		42626AC72B75B8AD006CF2B4 /* Extension.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Extension.hh; sourceTree = "<group>"; };
+		42626ACB2B75B8AD006CF2B4 /* Extension.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Extension.cc; sourceTree = "<group>"; };
 		42B6B0DD25A6A9D9004B20A7 /* URLTransformer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = URLTransformer.hh; sourceTree = "<group>"; };
 		42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = URLTransformer.cc; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2304,6 +2307,8 @@
 				2762A01F22EF641900F9AB18 /* Defer.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
+				42626ACB2B75B8AD006CF2B4 /* Extension.cc */,
+				42626AC72B75B8AD006CF2B4 /* Extension.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				275B2DF22A4A0A1A00B7215E /* HybridClock.hh */,
@@ -4372,6 +4377,7 @@
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
+				42626ACC2B75B8AE006CF2B4 /* Extension.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
 				27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */,

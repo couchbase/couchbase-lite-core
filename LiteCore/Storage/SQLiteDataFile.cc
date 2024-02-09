@@ -29,6 +29,8 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include "Extension.hh"
+#include "Defer.hh"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -77,6 +79,10 @@ namespace litecore {
 
     // Maximum size WAL journal will be left at after a commit
     static const int64_t kJournalSize = 5 * MB;
+
+#ifdef COUCHBASE_ENTERPRISE
+    static constexpr int kVectorSearchCompatibleVersion = 1;
+#endif
 
     // Amount of file to memory-map
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
@@ -189,25 +195,41 @@ namespace litecore {
 
     SQLiteDataFile::~SQLiteDataFile() { close(); }
 
+    // A lot of this logic can be turned into a reusable function later if needed
+    // for more extensions.
     static void LoadVectorSearchExtension(sqlite3* sqlite) {
 #ifdef COUCHBASE_ENTERPRISE
+        static const char* extensionName = "CouchbaseLiteVectorSearch";
         if ( sExtensionPath.empty() ) return;
 
         // First enable extension loading (for security reasons it's off by default):
         int rc = sqlite3_db_config(sqlite, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL);
         if ( rc != SQLITE_OK ) {
-            LogToAt(DBLog, Warning, "Unable to enable SQLite extension loading: err %d", rc);
-            return;
+            LogToAt(DBLog, Error, "Unable to enable SQLite extension loading: err %d", rc);
+            error::_throw(error::UnexpectedError, "Unable to enable SQLite extension loading: err %d", rc);
         }
-        string pluginPath = sExtensionPath + FilePath::kSeparator + "CouchbaseLiteVectorSearch";
-        char*  message    = nullptr;
-        rc                = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
+
+        DEFER {
+            // Disable extension-loading again, for safety's sake.
+            sqlite3_db_config(sqlite, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL);
+        };
+
+        string pluginPath = sExtensionPath + FilePath::kSeparator + extensionName;
+        if ( !litecore::extension::check_extension_version(pluginPath, kVectorSearchCompatibleVersion) ) {
+            // This function logs the reason for the version match failure, no need to log here.
+            error::_throw(error::UnsupportedOperation,
+                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
+                          extensionName);
+        }
+
+        char* message = nullptr;
+        rc            = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
         if ( rc != SQLITE_OK ) {
-            LogToAt(DBLog, Warning, "Unable to load CouchbaseLiteVectorSearch extension: %s (%d)", message, rc);
+            LogToAt(DBLog, Error, "Unable to load '%s' extension: %s (%d)", extensionName, message, rc);
             sqlite3_free(message);
+            error::_throw(error::CantOpenFile, "Unable to load '%s' extension: %s (%d)", extensionName, message, rc);
         }
-        // Disable extension-loading again, for safety's sake.
-        sqlite3_db_config(sqlite, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL);
+
 #endif
     }
 
