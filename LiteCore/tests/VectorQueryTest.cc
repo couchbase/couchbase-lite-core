@@ -206,4 +206,115 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
     CHECK(i == 2);
 }
 
+// Join the result of VECTOR_MATCH and FTS MATCH.
+// VECTOR_MATCH fetches {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, c.f. "Query Vector Index".
+// FTS MATCH fetches {"doc02", "doc03", "doc01", "doc05"}, c.f."Query Full-Text English_US",
+// and only 3 of them refer to doc IDs in the result of VECTOR_MATCH.
+// Hence the joined result includes 3 rows.
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FTS", "[Query][.VectorSearch]") {
+    readVectorDocs();
+    {
+        // Add some docs without vector data, to ensure that doesn't break indexing:
+        ExclusiveTransaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+    createVectorIndex();
+
+    // Collection "other"
+    KeyStore* otherStore = &db->getKeyStore(".other");
+    {
+        // C.f. test "Query Full-Text English_US"
+        ExclusiveTransaction               t(db);
+        static constexpr const char* const kStrings[] = {
+                "FTS5 is an SQLite virtual table module that provides full-text search functionality to database "
+                "applications.",
+                "In their most elementary form, full-text search engines allow the user to efficiently search a large "
+                "collection of documents for the subset that contain one or more instances of a search term.",
+                "The search functionality provided to world wide web users by Google is, among other things, a "
+                "full-text search engine, as it allows users to search for all documents on the web that contain, for "
+                "example, the term \"fts5\".",
+                "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
+                "Looking for things, searching for things, going on adventures..."};
+        static_assert(5 == sizeof(kStrings) / sizeof(kStrings[0]));
+        writeDoc(*otherStore, "doc01", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0031");
+            enc.writeKey("sentence");
+            enc.writeString(kStrings[0]);
+        });
+        writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            // "rec-0011" is not in the result of VECTOR_MATCH
+            enc.writeString("rec-0011");
+            enc.writeKey("sentence");
+            enc.writeString(kStrings[1]);
+        });
+        // "doc03" is not in the result of FTS MATCH
+        writeDoc(*otherStore, "doc03", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0012");
+            enc.writeKey("sentence");
+            enc.writeString(kStrings[2]);
+        });
+        writeDoc(*otherStore, "doc04", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0020");
+            enc.writeKey("sentence");
+            enc.writeString(kStrings[3]);
+        });
+        writeDoc(*otherStore, "doc05", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("refID");
+            enc.writeString("rec-0022");
+            enc.writeKey("sentence");
+            enc.writeString(kStrings[4]);
+        });
+        t.commit();
+    }
+    otherStore->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText,
+                            IndexSpec::FTSOptions{"english", true});
+
+    string queryStr = R"(SELECT META(a).id, META(other).id FROM )"s + collectionName;
+    queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
+                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) AND MATCH(other.sentence, "search") )";
+
+    Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
+    REQUIRE(query != nullptr);
+
+    // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
+    // Same target as used by test "Query Vector Index"
+    float   targetVector[128] = {21, 13,  18,  11,  14, 6,  4,  14,  39, 54,  52,  10, 8,  14, 5,   2,   23, 76,  65,
+                                 10, 11,  23,  3,   0,  6,  10, 17,  5,  7,   21,  20, 13, 63, 7,   25,  13, 4,   12,
+                                 13, 112, 109, 112, 63, 21, 2,  1,   1,  40,  25,  43, 41, 98, 112, 49,  7,  5,   18,
+                                 57, 24,  14,  62,  49, 34, 29, 100, 14, 3,   1,   5,  14, 7,  92,  112, 14, 28,  5,
+                                 9,  34,  79,  112, 18, 15, 20, 29,  75, 112, 112, 50, 6,  61, 45,  13,  33, 112, 77,
+                                 4,  18,  17,  5,   3,  4,  5,  4,   15, 28,  4,   6,  1,  7,  33,  86,  71, 3,   8,
+                                 5,  4,   16,  72,  83, 10, 5,  40,  3,  0,   1,   51, 36, 3};
+    Encoder enc;
+    enc.beginDictionary();
+    enc.writeKey("target");
+    enc.writeData(slice(targetVector, sizeof(targetVector)));
+    enc.endDictionary();
+    Query::Options options(enc.finish());
+
+    // Run the query:
+    Retained<QueryEnumerator> e(query->createEnumerator(&options));
+    REQUIRE(e->getRowCount() == 3);
+
+    // VECTOR_MATCH will fecth these docs: {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}
+    // FTS MATCH will fetch {"doc02", "doc03", "doc01", "doc05"}
+    // "doc03" does not refer to any in result of VECTOR_MATCH.
+    static constexpr slice expectedID1s[] = {"rec-0031", "rec-0022", "rec-0012"};
+    static constexpr slice expectedID2s[] = {"doc01", "doc05", "doc03"};
+
+    size_t i = 0;
+    while ( e->next() ) {
+        slice id1 = e->columns()[0]->asString();
+        slice id2 = e->columns()[1]->asString();
+        CHECK(id1 == expectedID1s[i]);
+        CHECK(id2 == expectedID2s[i++]);
+    }
+    CHECK(i == 3);
+}
+
 #endif
