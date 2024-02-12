@@ -121,6 +121,7 @@ function(set_litecore_source_base)
         LiteCore/Support/StringUtil.cc
         LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc
+        LiteCore/Support/Extension.cc
         PARENT_SCOPE
     )
 endfunction()
