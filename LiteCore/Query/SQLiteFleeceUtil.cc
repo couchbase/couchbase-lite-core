@@ -54,7 +54,7 @@ namespace litecore {
         return fleece;
     }
 
-    SharedKeys* getSharedKeys(sqlite3_context* ctx) {
+    static SharedKeys* getSharedKeys(sqlite3_context* ctx) {
         return static_cast<fleeceFuncContext*>(sqlite3_user_data(ctx))->sharedKeys;
     }
 
