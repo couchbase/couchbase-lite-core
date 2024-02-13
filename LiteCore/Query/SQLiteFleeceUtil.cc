@@ -54,38 +54,35 @@ namespace litecore {
         return fleece;
     }
 
-    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value* arg, bool required) noexcept {
+    SharedKeys* getSharedKeys(sqlite3_context* ctx) {
+        return static_cast<fleeceFuncContext*>(sqlite3_user_data(ctx))->sharedKeys;
+    }
+
+    QueryFleeceParam::QueryFleeceParam(sqlite3_context* ctx, sqlite3_value* arg, const bool required) noexcept {
         switch ( sqlite3_value_type(arg) ) {
             case SQLITE_BLOB:
-                {
-                    switch ( sqlite3_value_subtype(arg) ) {
-                        case 0:
-                            {
-                                const Value* root = Value::fromTrustedData(valueAsSlice(arg));
-                                if ( root ) return root;
-                                break;
-                            }
-                        case kFleeceNullSubtype:
-                            return Value::kNullValue;
-                        default:
+                switch ( sqlite3_value_subtype(arg) ) {
+                    case 0:
+                        {
+                            slice data = valueAsSlice(arg);
+                            _value     = Value::fromTrustedData(data);
+                            if ( _value->type() >= kArray )                // If _value is or may contain a Dict,
+                                _scope.emplace(data, getSharedKeys(ctx));  // register the SharedKeys
                             break;
-                    }
-                    break;
+                        }
+                    case kFleeceNullSubtype:
+                        _value = Value::kNullValue;
+                        break;
                 }
+                break;
             case SQLITE_NULL:
-                {
-                    const Value* value = asFleeceValue(arg);
-                    if ( value ) return value;
-                    break;
-                }
-            default:
+                _value = asFleeceValue(arg);
                 break;
         }
-        if ( required ) {
+        if ( required && !_value ) {
             sqlite3_result_error(ctx, "invalid Fleece data", -1);
             sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
         }
-        return nullptr;
     }
 
     int evaluatePath(slice path, const Value** pValue) noexcept {
@@ -119,7 +116,7 @@ namespace litecore {
     // initialized by passing it to 'valueAsDocBody()'
     // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
     QueryFleeceScope::QueryFleeceScope(sqlite3_context* ctx, sqlite3_value** argv)
-        : Scope(valueAsDocBody(argv[0], _copied), ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys) {
+        : Scope(valueAsDocBody(argv[0], _copied), getSharedKeys(ctx)) {
         if ( _usuallyTrue(data().buf != nullptr) ) {
             root = Value::fromTrustedData(data());
             if ( _usuallyFalse(!root) ) {
@@ -305,8 +302,7 @@ namespace litecore {
                 }
             case SQLITE_BLOB:
                 {
-                    auto fleece = fleeceParam(ctx, arg);
-                    if ( fleece == nullptr ) {
+                    if ( const QueryFleeceParam fleece{ctx, arg}; fleece == nullptr ) {
                         return kFalse;
                     } else
                         switch ( fleece->type() ) {

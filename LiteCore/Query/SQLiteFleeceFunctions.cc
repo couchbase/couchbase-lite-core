@@ -88,13 +88,12 @@ namespace litecore {
     // fl_nested_value(fleeceData, propertyPath) -> propertyValue
     static void fl_nested_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
         try {
-            const Value* val = fleeceParam(ctx, argv[0], false);
+            QueryFleeceParam val{ctx, argv[0], false};
             if ( !val ) {
                 sqlite3_result_null(ctx);
                 return;
             }
-            val = evaluatePathFromArg(ctx, argv, 1, val);
-            setResultFromValue(ctx, val);
+            setResultFromValue(ctx, evaluatePathFromArg(ctx, argv, 1, val));
         } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_nested_value: exception!", -1); }
     }
 
@@ -418,7 +417,7 @@ namespace litecore {
                     switch ( sqlite3_value_subtype(arg) ) {
                         case 0:
                             {
-                                const Value* value = fleeceParam(ctx, arg);
+                                const QueryFleeceParam value{ctx, arg};
                                 if ( !value ) return false;  // error occurred
                                 enc.writeValue(value);
                                 break;
@@ -529,7 +528,7 @@ namespace litecore {
     }
 
     static const char* encodeVector(sqlite3_context* ctx, sqlite3_value* arg) {
-        if ( const Value* flVal = fleeceParam(ctx, arg, false) ) {
+        if ( const QueryFleeceParam flVal{ctx, arg, false}; flVal != nullptr ) {
             return encodeVector(ctx, flVal);
         } else if ( sqlite3_value_type(arg) == SQLITE_BLOB && sqlite3_value_subtype(arg) == kPlainBlobSubtype ) {
             if ( auto len = sqlite3_value_bytes(arg); len > 0 && len % sizeof(float) == 0 ) {

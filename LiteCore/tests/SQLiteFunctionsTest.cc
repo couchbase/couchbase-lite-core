@@ -80,6 +80,19 @@ class SQLiteFunctionsTest
 
     vector<string> query(const string& query) { return this->query(query.c_str()); }
 
+    string querySingleRowJSON(const std::string& sql) {
+        SQLite::Statement st(db, sql);
+        CHECK(st.getColumnCount() == 1);
+        REQUIRE(st.executeStep());
+        auto column = st.getColumn(0);
+        REQUIRE(column.getType() == SQLITE_BLOB);
+        auto resultVal = Value::fromData({column.getBlob(), static_cast<size_t>(column.getBytes())});
+        REQUIRE(resultVal);
+        string result = resultVal->toJSONString();
+        CHECK(!st.executeStep());
+        return result;
+    }
+
   protected:
     SQLite::Database              db;
     unique_ptr<SQLite::Statement> insertStmt;
@@ -180,23 +193,25 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
     insert("d", "{}");
     insert("e", R"({"hey": [99, -5.5, "wow"]})");
     insert("f", "{\"hey\": 8.125}");
+    insert("g", R"({"hey": {"array":false,"dictionary":true}})");
 
     const char* sql          = "SELECT ARRAY_AGG(fl_value(body, 'hey')) FROM kv";
-    slice       expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"],8.125])";
+    std::string expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"],8.125,{"array":false,"dictionary":true}])";
     SECTION("Distinct") {
         sql          = "SELECT ARRAY_AGG(DISTINCT fl_value(body, 'hey')) FROM kv";
-        expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"]])";
+        expectedJSON = R"([17,8.125,"there",null,[99,-5.5,"wow"],{"array":false,"dictionary":true}])";
     }
-    SQLite::Statement st(db, sql);
-    REQUIRE(st.executeStep());
-    auto column = st.getColumn(0);
-    REQUIRE(column.getType() == SQLITE_BLOB);
-    auto array = Value::fromData({column.getBlob(), (size_t)column.getBytes()});
-    REQUIRE(array);
     // Note: Ordering is "arbitrary" according to SQLite docs, so it isn't required to be in the
     // order in this CHECK, though in practice it is.
-    CHECK(array->toJSON() == expectedJSON);
-    CHECK(!st.executeStep());
+    CHECK(querySingleRowJSON(sql) == expectedJSON);
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg on doc body", "[Query]") {
+    // Reduced test case for https://issues.couchbase.com/browse/CBL-5335
+    Log("SharedKeys = %p", sharedKeys.get());
+    insert("A", R"({"test":"test"})");
+    insert("B", R"({"stet":"stet"})");
+    CHECK(querySingleRowJSON("SELECT ARRAY_AGG(fl_root(body)) from kv") == R"([{"test":"test"},{"stet":"stet"}])");
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL missingif/nullif", "[Query]") {
