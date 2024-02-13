@@ -55,6 +55,8 @@ namespace litecore { namespace actor {
 
         void logStats() const;
 
+        const Actor* actor() const { return _actor; }
+
     private:
         friend class Scheduler;
         

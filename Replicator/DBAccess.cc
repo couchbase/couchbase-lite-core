@@ -18,6 +18,7 @@
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
+#include "DatabaseImpl.hh"
 #include "c4DocEnumerator.hh"
 #include "c4Private.h"
 #include <functional>
@@ -42,6 +43,8 @@ namespace litecore { namespace repl {
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
     ,_usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0)
     {
+        DatabaseImpl* impl = asInternal(db);
+        logInfo("dataFile=%s", impl->dataFile()->loggingName().c_str());
     }
 
 
@@ -52,7 +55,8 @@ namespace litecore { namespace repl {
                     Retained<C4Database> idb;
                     try {
                         idb = db->openAgain();
-                        logInfo("open insertionDB -> C4Collection*(%p)", idb->getDefaultCollection());
+                        DatabaseImpl* impl = asInternal(idb);
+                        logInfo("InsertionDB=%s", impl->dataFile()->loggingName().c_str());
                         _c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);

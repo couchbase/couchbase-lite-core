@@ -100,6 +100,7 @@ namespace litecore { namespace repl {
             _loggingID = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
+            logInfo("Instantiated -> DBAccess=%s Conn=%s", db->loggingName().c_str(), connection().loggingName().c_str());
             logInfo("%s", string(*options).c_str());
 
             _remoteURL = webSocket->url();
@@ -119,8 +120,6 @@ namespace litecore { namespace repl {
             registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
             registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
             registerHandler("getCollections",   &Replicator::handleGetCollections);
-
-            logInfo("Instantiated -> %s", db->loggingName().c_str());
         } catch (...) {
             // terminate to break the circular references: connection -> BLIPIO -> connection.
             terminate();
@@ -130,14 +129,23 @@ namespace litecore { namespace repl {
 
 
     void Replicator::start(bool reset, bool synchronous) {
+        int outstandingStarts = ++dbgCount;
+        if (outstandingStarts >= 6) {
+            std::stringstream ss;
+            actor::TaskDbg::dumpTasks(ss);
+            logInfo("Outstanding starts = %d, ***** Task Dump *****\n%s", outstandingStarts, ss.str().c_str());
+        }
         if (synchronous)
             _start(reset);
         else
             enqueue(FUNCTION_TO_QUEUE(Replicator::_start), reset);
     }
 
+    std::atomic_int Replicator::dbgCount{0};
 
     void Replicator::_start(bool reset) {
+        logInfo("_started");
+        --dbgCount;
         try {
             Assert(_connectionState == Connection::kClosed);
             Signpost::begin(Signpost::replication, uintptr_t(this));

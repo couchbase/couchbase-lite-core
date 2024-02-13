@@ -51,8 +51,8 @@ namespace litecore {
             if (!(_database->getConfiguration().flags & kC4DB_NonObservable))
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(
                                                                     SequenceTracker(store.name()));
-
-            logInfo("Instantiated -> C4Collection*(%p)", (C4Collection*)this);
+            DatabaseImpl* impl = asInternal(db);
+            logInfo("Instantiated -> DataFile=%s", impl->dataFile()->loggingName().c_str());
         }
 
 

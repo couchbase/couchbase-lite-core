@@ -661,9 +661,9 @@ namespace litecore { namespace blip {
     ,_weakDelegate(weakDelegate)
     {
         if (_role == Role::Server)
-            logInfo("Accepted connection");
+            logInfo("Name=%s Accepted connection", _name.c_str());
         else
-            logInfo("Opening connection...");
+            logInfo("Name=%s Opening connection...", _name.c_str());
 
         _compressionLevel = kDefaultCompressionLevel;
         auto levelP = options.get(kCompressionLevelOption);

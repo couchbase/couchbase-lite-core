@@ -260,6 +260,8 @@ namespace litecore { namespace repl {
         alloc_slice       _remoteURL;
         bool              _setMsgHandlerFor3_0_ClientDone {false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+
+        static std::atomic_int dbgCount;
     };
 
 } }

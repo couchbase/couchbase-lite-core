@@ -32,6 +32,27 @@
 
 namespace litecore { namespace actor {
 
+#ifdef ACTORS_USE_GCD
+    class GCDMailbox;
+#else
+    class ThreadedMailbox;
+#endif
+    struct TaskDbg {
+        static std::mutex _activeTaskMut;
+#ifdef ACTORS_USE_GCD
+        static std::vector<const GCDMailbox*> _activeTasks;
+        static void activeTask(unsigned tid, const GCDMailbox* mbx) {
+#else
+        static std::vector<const ThreadedMailbox*> _activeTasks;
+        static void activeTask(unsigned tid, const ThreadedMailbox* mbx) {
+#endif
+            std::scoped_lock<std::mutex> lock(_activeTaskMut);
+            _activeTasks[tid] = mbx;
+        }
+        static void dumpTasks( std::stringstream& ss );
+    };
+
+
     /** A simple thread-safe producer/consumer queue. */
     template <class T>
     class Channel {
