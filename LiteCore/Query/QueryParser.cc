@@ -1383,7 +1383,7 @@ namespace litecore {
         string tablePrefix;
         if ( !dbAlias.empty() ) { tablePrefix = quotedIdentifierString(dbAlias) + "."; }
 
-        if (metaKey == "rowid") {
+        if ( metaKey == "rowid" ) {
             // `rowid` is an unlisted meta key, not included in the `meta()` dict but can be
             // accessed explicitly. It's used by LazyIndexUpdate.
             writeMetaProperty(kValueFnName, tablePrefix, "rowid");

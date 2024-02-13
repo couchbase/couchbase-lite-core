@@ -57,9 +57,8 @@ c4keypair_privateKeyData
 c4keypair_publicKeyData
 c4keypair_publicKeyDigest
 
-c4lazyindex_open
-c4lazyindex_beginUpdate
-c4lazyindexupdate_count
-c4lazyindexupdate_valueAt
-c4lazyindexupdate_setVectorAt
-c4lazyindexupdate_finish
+c4index_beginUpdate
+c4indexupdater_count
+c4indexupdater_valueAt
+c4indexupdater_setVectorAt
+c4indexupdater_finish

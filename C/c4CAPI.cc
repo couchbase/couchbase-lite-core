@@ -21,6 +21,7 @@
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "c4Index.h"
+#include "c4Index.hh"
 #include "c4DocEnumerator.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Observer.hh"
@@ -347,6 +348,16 @@ bool c4coll_createIndex(C4Collection* coll, C4String name, C4String indexSpec, C
                         C4Error* C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(coll, outError, false);
     return tryCatch(outError, [&] { coll->createIndex(name, indexSpec, queryLanguage, indexType, indexOptions); });
+}
+
+C4Index* C4NULLABLE c4coll_getIndex(C4Collection* coll, C4String name, C4Error* C4NULLABLE outError) noexcept {
+    returnIfCollectionInvalid(coll, outError, nullptr);
+    return tryCatch<C4Index*>(outError, [&] { 
+        auto index = coll->getIndex(name);
+        if (!index)
+            c4error_return(LiteCoreDomain, kC4ErrorMissingIndex, nullslice, outError);
+        return std::move(index).detach();
+    });
 }
 
 bool c4coll_deleteIndex(C4Collection* coll, C4String name, C4Error* C4NULLABLE outError) noexcept {
@@ -1031,27 +1042,22 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver* obs, bool forget, C
 
 #ifdef COUCHBASE_ENTERPRISE
 
-C4LazyIndex* c4lazyindex_open(C4Collection* coll, C4String indexName, C4Error* outError) noexcept {
-    return tryCatch<C4LazyIndex*>(outError, [&] { return C4LazyIndex::open(coll, indexName).detach(); });
+C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit, C4Error* outError) noexcept {
+    return tryCatch<C4IndexUpdater*>(outError, [&] { return index->beginUpdate(limit).detach(); });
 }
 
-C4LazyIndexUpdate* C4NULLABLE c4lazyindex_beginUpdate(C4LazyIndex* lazyIndex, size_t limit,
-                                                      C4Error* outError) noexcept {
-    return tryCatch<C4LazyIndexUpdate*>(outError, [&] { return lazyIndex->beginUpdate(limit).detach(); });
-}
+size_t c4indexupdater_count(C4IndexUpdater* update) noexcept { return update->count(); }
 
-size_t c4lazyindexupdate_count(C4LazyIndexUpdate* update) noexcept { return update->count(); }
-
-FLValue c4lazyindexupdate_valueAt(C4LazyIndexUpdate* update, size_t i) noexcept {
+FLValue c4indexupdater_valueAt(C4IndexUpdater* update, size_t i) noexcept {
     return tryCatch<FLValue>(nullptr, [&] { return update->valueAt(i); });
 }
 
-bool c4lazyindexupdate_setVectorAt(C4LazyIndexUpdate* update, size_t i, const float vec[], size_t dimension,
-                                   C4Error* outError) noexcept {
+bool c4indexupdater_setVectorAt(C4IndexUpdater* update, size_t i, const float vec[], size_t dimension,
+                                C4Error* outError) noexcept {
     return tryCatch(outError, [&] { update->setVectorAt(i, vec, dimension); });
 }
 
-bool c4lazyindexupdate_finish(C4LazyIndexUpdate* update, C4Error* outError) noexcept {
+bool c4indexupdater_finish(C4IndexUpdater* update, C4Error* outError) noexcept {
     return tryCatch(outError, [&] { update->finish(); });
 }
 

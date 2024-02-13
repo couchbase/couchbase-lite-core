@@ -21,6 +21,7 @@ function(set_litecore_source_base)
         C/c4DocEnumerator.cc
         C/c4Document.cc
         C/c4Error.cc
+        C/c4Index.cc
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc

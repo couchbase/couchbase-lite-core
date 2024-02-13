@@ -15,6 +15,7 @@
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Index.hh"
 #include "c4Internal.hh"
 #include "c4Observer.hh"
 #include "DatabaseImpl.hh"
@@ -443,6 +444,8 @@ namespace litecore {
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
                                    options);
         }
+
+        Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }
 
         void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }
 

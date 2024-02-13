@@ -360,6 +360,7 @@ _c4coll_getDocumentCount
 _c4coll_getLastSequence
 _c4coll_getDoc
 _c4coll_getDocBySequence
+_c4coll_getIndex
 _c4coll_isValid
 _c4coll_putDoc
 _c4coll_createDoc
@@ -479,12 +480,11 @@ _c4keypair_privateKeyData
 _c4keypair_publicKeyData
 _c4keypair_publicKeyDigest
 
-_c4lazyindex_open
-_c4lazyindex_beginUpdate
-_c4lazyindexupdate_count
-_c4lazyindexupdate_valueAt
-_c4lazyindexupdate_setVectorAt
-_c4lazyindexupdate_finish
+_c4index_beginUpdate
+_c4indexupdater_count
+_c4indexupdater_valueAt
+_c4indexupdater_setVectorAt
+_c4indexupdater_finish
 
 # Apple specific
 _FLEncoder_WriteNSObject

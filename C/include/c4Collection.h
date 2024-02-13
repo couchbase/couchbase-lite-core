@@ -290,6 +290,10 @@ NODISCARD CBL_CORE_API bool c4coll_createIndex(C4Collection* collection, C4Strin
                                                const C4IndexOptions* C4NULLABLE indexOptions,
                                                C4Error* C4NULLABLE              outError) C4API;
 
+/** Returns an object representing an existing index. */
+CBL_CORE_API C4Index* C4NULLABLE c4coll_getIndex(C4Collection* collection, C4String name,
+                                                 C4Error* C4NULLABLE outError) C4API;
+
 /** Deletes an index that was created by `c4coll_createIndex`.
     @param collection  The collection to index.
     @param name The name of the index to delete
