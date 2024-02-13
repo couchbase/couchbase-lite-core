@@ -80,6 +80,20 @@ function(setup_litecore_build)
         PUBLIC
         LiteCore/Android
     )
+
+    if(ANDROID_ABI STREQUAL "arm64-v8a")
+        foreach(target LiteCoreObjects BLIPObjects LiteCoreWebSocket LiteCoreREST_Objects)
+            target_compile_options(
+                ${target} PUBLIC
+                $<$<CONFIG:Debug>:-fsanitize=hwaddress;-fno-omit-frame-pointer>
+            )
+
+            target_link_options(
+                ${target} PUBLIC
+                $<$<CONFIG:Debug>:-fsanitize=hwaddress>
+            )
+        endforeach()
+    endif()
 endfunction()
 
 function(setup_support_build)
