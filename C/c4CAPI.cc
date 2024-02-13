@@ -352,10 +352,9 @@ bool c4coll_createIndex(C4Collection* coll, C4String name, C4String indexSpec, C
 
 C4Index* C4NULLABLE c4coll_getIndex(C4Collection* coll, C4String name, C4Error* C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(coll, outError, nullptr);
-    return tryCatch<C4Index*>(outError, [&] { 
+    return tryCatch<C4Index*>(outError, [&] {
         auto index = coll->getIndex(name);
-        if (!index)
-            c4error_return(LiteCoreDomain, kC4ErrorMissingIndex, nullslice, outError);
+        if ( !index ) c4error_return(LiteCoreDomain, kC4ErrorMissingIndex, nullslice, outError);
         return std::move(index).detach();
     });
 }

@@ -219,7 +219,7 @@ namespace litecore {
 
     void SQLiteDataFile::setIndexLastSequence(slice name, sequence_t seq) {
         SQLite::Statement stmt(*this, "UPDATE indexes SET lastSeq=?1 WHERE name=?2");
-        stmt.bind(1, int64_t(seq));
+        stmt.bind(1, (long long)seq);
         stmt.bindNoCopy(2, (char*)name.buf, (int)name.size);
         stmt.exec();
     }
