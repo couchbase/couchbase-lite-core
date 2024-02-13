@@ -54,9 +54,9 @@ namespace litecore {
                 st.start();
             }
 
-            C4Error     error  = {};
-            const auto inputDict = reinterpret_cast<const Dict*>(static_cast<const Value*>(input));
-            alloc_slice result = model->prediction(inputDict, getDBDelegate(ctx), &error);
+            C4Error     error     = {};
+            const auto  inputDict = reinterpret_cast<const Dict*>(static_cast<const Value*>(input));
+            alloc_slice result    = model->prediction(inputDict, getDBDelegate(ctx), &error);
             if ( !result ) {
                 if ( error.code == 0 ) {
                     LogVerbose(QueryLog, "    ...prediction returned no result");
@@ -84,8 +84,8 @@ namespace litecore {
 
     // Creates Fleece array iterators on the 1st two parameters of the function.
     static bool getArrays(sqlite3_context* ctx, sqlite3_value** argv, Array::iterator& i1, Array::iterator& i2) {
-        const QueryFleeceParam p1 { ctx, argv[0], false };
-        const QueryFleeceParam p2 { ctx, argv[1], false };
+        const QueryFleeceParam p1{ctx, argv[0], false};
+        const QueryFleeceParam p2{ctx, argv[1], false};
         if ( !p1 || !p2 ) return false;
         auto a1 = p1->asArray(), a2 = p2->asArray();
         if ( !a1 || !a2 ) return false;
