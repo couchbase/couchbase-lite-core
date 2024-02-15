@@ -1285,15 +1285,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     constexpr local_seconds localtime      = local_days{2018_y / 10 / 23};
-    tm                  tmpTime        = FromTimestamp(localtime.time_since_epoch());
-    const seconds       offset_seconds = GetLocalTZOffset(&tmpTime, false);
-    local_seconds       utc_time       = localtime - offset_seconds;
+    tm                      tmpTime        = FromTimestamp(localtime.time_since_epoch());
+    const seconds           offset_seconds = GetLocalTZOffset(&tmpTime, false);
+    local_seconds           utc_time       = localtime - offset_seconds;
 
     // MILLIS_TO_STR() result should be in localtime.
-    stringstream mil_to_str;
+    stringstream            mil_to_str;
     constexpr local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
     mil_to_str << date::format("%FT%T", mil_to_str_time + offset_seconds);
-    to_stream(mil_to_str, "%Ez", mil_to_str_time, nullptr, &offset_seconds);
+    if ( offset_seconds.count() == 0 ) {
+        mil_to_str << "Z";
+    } else {
+        to_stream(mil_to_str, "%Ez", mil_to_str_time, nullptr, &offset_seconds);
+    }
     const auto mil_to_str_expected = mil_to_str.str();
 
     // These are all for STR_TO_UTC
@@ -1307,7 +1311,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
 
     constexpr local_seconds localtime2 = local_days{1944_y / 6 / 6} + 6h + 30min;
     tmpTime                            = FromTimestamp(localtime2.time_since_epoch());
-    utc_time = localtime2 - GetLocalTZOffset(&tmpTime, false);
+    utc_time                           = localtime2 - GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
     s4 << date::format("%FT%T", utc_time);
 
