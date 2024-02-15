@@ -1089,11 +1089,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Large 64-bit values in max retry should not
 TEST_CASE("Sequence set merging", "[SequenceSet]") {
     litecore::SequenceSet    s1, s2;
     std::function<bool(int)> expectation;
-    int                      max;
     SECTION("Equal sets") {
         s1.add(1, 12);
         s2.add(1, 12);
-        max         = 12;
         expectation = ([](int i) { return true; });
     }
 
@@ -1104,7 +1102,6 @@ TEST_CASE("Sequence set merging", "[SequenceSet]") {
         s1.add(11);
 
         s2.add(1, 11);
-        max         = 12;
         expectation = ([](int i) { return !(i == 6 || i == 8 || i == 10 || i == 11); });
     }
 
@@ -1115,7 +1112,6 @@ TEST_CASE("Sequence set merging", "[SequenceSet]") {
         s2.add(11);
 
         s1.add(1, 11);
-        max         = 12;
         expectation = ([](int i) { return !(i == 6 || i == 8 || i == 10 || i == 11); });
     }
 
@@ -1127,7 +1123,6 @@ TEST_CASE("Sequence set merging", "[SequenceSet]") {
         s2.add(2);
         s2.add(4);
         s2.add(6);
-        max         = 7;
         expectation = ([](int i) { return false; });
     }
 

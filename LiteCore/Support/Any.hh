@@ -145,20 +145,12 @@ namespace litecore {
 
             T value;
 
-            [[nodiscard]] Base* clone() const override { return clone<>(); }
-
-          private:
             //jpa: Changed `is_nothrow_copy_constructible` to `is_copy_constructible` since otherwise
             // the Any class doesn't work with common types like std::string.
-            template <int N = 0, typename std::enable_if<N == N && std::is_copy_constructible<T>::value, int>::type = 0>
             [[nodiscard]] Base* clone() const {
-                return new Derived<T>(value);
-            }
-
-            template <int N                                                                               = 0,
-                      typename std::enable_if<N == N && !std::is_copy_constructible<T>::value, int>::type = 0>
-            [[nodiscard]] Base* clone() const {
-                return nullptr;
+                if constexpr ( std::is_copy_constructible_v<T> ) return new Derived<T>(value);
+                else
+                    return nullptr;
             }
         };
 
