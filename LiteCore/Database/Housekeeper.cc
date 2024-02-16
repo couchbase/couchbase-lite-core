@@ -28,7 +28,7 @@ namespace litecore {
     Housekeeper::Housekeeper(C4Collection* coll)
         :Actor(DBLog, format("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
         , _keyStoreName(asInternal(coll)->keyStore().name())
-        , _expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
+        , _expiryTimer(std::bind(&Housekeeper::doExpirationAsync, this))
         , _collection(coll)
     {
     }
@@ -101,6 +101,12 @@ namespace litecore {
         else {
             _doExpiration();
         }
+    }
+
+
+    void Housekeeper::doExpirationAsync() {
+        logInfo("Housekeeper: enqueue _doExpiration");
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doExpiration));
     }
 
 
