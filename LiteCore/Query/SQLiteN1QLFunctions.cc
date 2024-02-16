@@ -57,7 +57,7 @@ namespace litecore {
             switch ( sqlite3_value_type(arg) ) {
                 case SQLITE_BLOB:
                     {
-                        const Value* root = fleeceParam(ctx, arg);
+                        const QueryFleeceParam root{ctx, arg};
                         if ( !root ) return;
                         for ( Array::iterator item(root->asArray()); item; ++item ) {
                             op(item->asDouble(), stop);
@@ -86,7 +86,7 @@ namespace litecore {
             switch ( sqlite3_value_type(arg) ) {
                 case SQLITE_BLOB:
                     {
-                        const Value* root = fleeceParam(ctx, arg);
+                        const QueryFleeceParam root{ctx, arg};
                         if ( !root ) return;
 
                         if ( root->type() != valueType::kArray ) {
@@ -144,8 +144,7 @@ namespace litecore {
         else if ( type != SQLITE_BLOB )
             sqlite3_result_zeroblob(ctx, 0);  // return JSON 'null' when collection isn't a collection
         else {
-            const Value* collection = fleeceParam(ctx, argv[0]);
-            if ( !collection || collection->type() != kArray )
+            if ( const QueryFleeceParam collection{ctx, argv[0]}; !collection || collection->type() != kArray )
                 sqlite3_result_zeroblob(ctx, 0);  // return JSON 'null' when collection isn't a collection
             else
                 collectionContainsImpl(ctx, collection, argv[1]);
@@ -236,7 +235,7 @@ namespace litecore {
                 break;
             case SQLITE_BLOB:
                 {
-                    const Value* value = fleeceParam(ctx, arg);
+                    const QueryFleeceParam value{ctx, arg};
                     if ( !value ) return;  // error
                     enc.writeValue(value);
                     break;
@@ -579,7 +578,7 @@ namespace litecore {
                     break;
                 case SQLITE_BLOB:
                     // A blob is a Fleece array, dict, or null
-                    result << fleeceParam(ctx, arg)->toJSONString();
+                    result << QueryFleeceParam { ctx, arg } -> toJSONString();
                     break;
             }
         }
@@ -1097,7 +1096,7 @@ namespace litecore {
                 return "missing";
             case SQLITE_BLOB:
                 {
-                    auto fleece = fleeceParam(ctx, arg);
+                    const QueryFleeceParam fleece{ctx, arg};
                     if ( fleece == nullptr ) { return "null"; }
 
                     switch ( fleece->type() ) {
@@ -1226,7 +1225,7 @@ namespace litecore {
             sqlite3_result_value(ctx, arg);
             return;
         }
-        auto fleece = fleeceParam(ctx, arg);
+        const QueryFleeceParam fleece{ctx, arg};
         if ( !fleece ) {
             setResultFleeceNull(ctx);
             return;
