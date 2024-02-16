@@ -30,7 +30,7 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 3;
+    static const int numberOfOptions = 6;
 
     string collectionName;
     int    option{0};
@@ -38,28 +38,27 @@ class QueryTest : public DataFileTestFixture {
   protected:
     QueryTest() : QueryTest(0) {}
 
-    static unsigned alter2;
-    static unsigned alter3;
+    static constexpr slice kCollectionNameOptions[numberOfOptions] = {
+        KeyStore::kDefaultCollectionName,
+        "_",
+        "cbl_core_temp",
+        "Secondary",
+        "_default.Secondary",
+        "scopey.subsidiary"
+    };
+
 
     explicit QueryTest(int option) : option(option) {
-        static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
-        logSection(kSectionNames[option]);
-        unsigned jump;
-        switch ( option ) {
-            case 0:
-                jump           = alter3++ % 3;
-                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName : (jump == 1) ? "_" : "cbl_core_temp";
-                break;
-            case 1:
-                collectionName = (alter2++ % 2 == 0) ? "Secondary" : "_default.Secondary";
+        Assert(option < numberOfOptions, "Test option out of valid range");
+        collectionName = kCollectionNameOptions[option];
+        logSection(format("Collection `%s`", collectionName.c_str()));
+        switch (option) {
+            case 3: case 4:
                 store          = &db->getKeyStore(".Secondary");
                 break;
-            case 2:
-                collectionName = "scopey.subsidiary";
+            case 5:
                 store          = &db->getKeyStore(".scopey.subsidiary");
                 break;
-            default:
-                Assert(false, "Test option out of valid range");
         }
     }
 

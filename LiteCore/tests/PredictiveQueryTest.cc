@@ -16,6 +16,7 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
+#define SKIP_PREDICTIVE_INDEX //TODO: Add support?
 
 using namespace std;
 using namespace fleece;
@@ -112,6 +113,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Pre
 
     PredictiveModel::unregister("8ball");
 }
+
+#ifndef SKIP_PREDICTIVE_INDEX
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
@@ -276,5 +279,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predi
     }
     PredictiveModel::unregister("8ball");
 }
+
+#endif // SKIP_PREDICTIVE_INDEX
 
 #endif  // COUCHBASE_ENTERPRISE

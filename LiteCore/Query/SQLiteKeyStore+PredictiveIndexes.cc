@@ -14,7 +14,7 @@
 
 #    include "SQLiteKeyStore.hh"
 #    include "SQLiteDataFile.hh"
-#    include "QueryParser.hh"
+#    include "QueryTranslator.hh"
 #    include "SQLUtil.hh"
 #    include "Error.hh"
 #    include "StringUtil.hh"
@@ -29,7 +29,7 @@ namespace litecore {
     // Creates a predictive index, implemented as a SQLite table that caches the value of a PREDICT()
     // call for each document, plus SQLite indexes on properties of the predicted dicts.
     bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec& spec) {
-        auto expressions = spec.what();
+        auto expressions = (const Array*)spec.what();
         if ( expressions->count() != 1 )
             error::_throw(error::InvalidQuery, "Predictive index requires exactly one expression");
         const Array* expression = expressions->get(0)->asArray();
@@ -61,8 +61,8 @@ namespace litecore {
         // Derive the table name from the expression (path) it unnests:
         auto        kvTableName   = tableName();
         auto        q_kvTableName = quotedTableName();
-        QueryParser qp(db(), "", kvTableName);
-        auto        predTableName = qp.predictiveTableName(expression);
+        QueryTranslator qp(db(), "", kvTableName);
+        auto        predTableName = qp.predictiveTableName((FLValue)expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(predTableName)
@@ -78,7 +78,7 @@ namespace litecore {
             db().exec(sql);
 
             // Populate the index-table with data from existing documents:
-            string predictExpr = qp.expressionSQL(expression);
+            string predictExpr = qp.expressionSQL((FLValue)expression);
             db().exec(CONCAT("INSERT INTO " << sqlIdentifier(predTableName)
                                             << " (docid, body) "
                                                "SELECT rowid, "
@@ -87,7 +87,7 @@ namespace litecore {
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
             qp.setBodyColumnName("new.body");
-            predictExpr              = qp.expressionSQL(expression);
+            predictExpr              = qp.expressionSQL((FLValue)expression);
             string insertTriggerExpr = CONCAT("INSERT INTO " << sqlIdentifier(predTableName)
                                                              << " (docid, body) "
                                                                 "VALUES (new.rowid, "

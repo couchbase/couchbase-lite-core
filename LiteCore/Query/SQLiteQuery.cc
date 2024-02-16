@@ -16,7 +16,7 @@
 #include "Defer.hh"
 #include "Logging.hh"
 #include "Query.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "n1ql_parser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -33,6 +33,7 @@
 #include <numeric>  // std::accumulate
 #include <sstream>
 #include <iostream>
+
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"  // for unicodesn_tokenizerRunningQuery()
@@ -86,7 +87,7 @@ namespace litecore {
                     }
             }
 
-            QueryParser qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
+            QueryTranslator qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
             qp.parseJSON(_json);
             string sql = qp.SQL();
             logInfo("Compiled as %s", sql.c_str());
@@ -448,22 +449,24 @@ namespace litecore {
                     enc.writeDouble(col.getDouble());
                     break;
                 case SQLITE_BLOB:
-                    {
-                        if ( i >= _query->_1stCustomResultColumn ) {
-                            slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                    if ( i >= _query->_1stCustomResultColumn ) {
+                        slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                        if (fleeceData.empty()) {
+                            enc.writeNull();
+                        } else {
                             Scope        fleeceScope(fleeceData, _sk);
                             const Value* value = Value::fromTrustedData(fleeceData);
                             if ( !value )
                                 error::_throw(error::CorruptRevisionData,
                                               "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
                             enc.writeValue(value);
-                            break;
                         }
-                            // else fall through:
-                        case SQLITE_TEXT:
-                            enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
-                            break;
+                        break;
                     }
+                    // else fall through:
+                case SQLITE_TEXT:
+                    enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                    break;
             }
             return true;
         }

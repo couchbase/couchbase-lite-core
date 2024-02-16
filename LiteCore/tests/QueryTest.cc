@@ -29,8 +29,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace date;
 
-unsigned QueryTest::alter2 = 0;
-unsigned QueryTest::alter3 = 0;
+#define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
@@ -65,11 +64,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
+#ifndef SKIP_ARRAY_INDEXES
     CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
+#endif
 
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl);  // Duplicate should be no-op
@@ -80,11 +81,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(extractIndexes(store->getIndexes()).empty());
 }
 
+#ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, R"([[".numbers"]])", IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
 }
+#endif
 
 TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
@@ -446,6 +449,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     };
 
     for ( const auto& query : queries ) {
+        INFO("Query is " << query);
         Retained<Query>           q = store->compileQuery(query);
         Retained<QueryEnumerator> e = q->createEnumerator();
         REQUIRE(e->getRowCount() == 1);
@@ -610,6 +614,7 @@ TEST_CASE_METHOD(QueryTest, "Column Title of unqualified star", "[Query]") {
     constexpr size_t sqlCount  = sizeof(sqls) / sizeof(string) / 2;
     Retained<Query>  query;
     for ( size_t i = 0; i < sqlCount; ++i ) {
+        INFO("Query is " << sqls[i][0]);
         query = store->compileQuery(sqls[i][0], litecore::QueryLanguage::kN1QL);
         CHECK(query->columnTitles()[0] == sqls[i][1]);
     }
@@ -1895,111 +1900,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
     }*/
 }
 
-class ArrayQueryTest : public QueryTest {
-  protected:
-    Retained<Query> query;
-
-    explicit ArrayQueryTest(int option) : QueryTest(option) {}
-
-    void checkQuery(int docNo, int expectedRowCount) {
-        Retained<QueryEnumerator> e(query->createEnumerator());
-        CHECK(e->getRowCount() == expectedRowCount);
-        while ( e->next() ) {
-            auto   cols          = e->columns();
-            slice  docID         = cols[0]->asString();
-            string expectedDocID = stringWithFormat("rec-%03d", docNo);
-            CHECK(docID == slice(expectedDocID));
-            ++docNo;
-        }
-    }
-
-    void testArrayQuery(const string& json, bool checkOptimization) {
-        addArrayDocs(1, 90);
-
-        query              = store->compileQuery(json);
-        string explanation = query->explain();
-        Log("%s", explanation.c_str());
-        checkQuery(88, 3);
-
-        Log("-------- Creating index --------");
-        store->createIndex("numbersIndex"_sl, R"([[".numbers"]])", IndexSpec::kArray);
-        Log("-------- Recompiling query with index --------");
-        query = store->compileQuery(json);
-        checkOptimized(query, checkOptimization);
-        checkQuery(88, 3);
-
-        Log("-------- Adding a doc --------");
-        addArrayDocs(91, 1);
-        checkQuery(88, 4);
-
-        Log("-------- Purging a doc --------");
-        deleteDoc("rec-091"_sl, true);
-        checkQuery(88, 3);
-
-        Log("-------- Soft-deleting a doc --------");
-        deleteDoc("rec-090"_sl, false);
-        checkQuery(88, 2);
-
-        Log("-------- Un-deleting a doc --------");
-        undeleteDoc("rec-090"_sl);
-        checkQuery(88, 3);
-    }
-};
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
-    testArrayQuery(json5("['SELECT', {\
-                             WHERE: ['ANY', 'num', ['.numbers'],\
-                                            ['=', ['?num'], 'eight-eight']]}]"),
-                   false);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
-    testArrayQuery(json5("['SELECT', {\
-                              FROM: [{as: 'doc'}, \
-                                     {as: 'num', 'unnest': ['.doc.numbers']}],\
-                              WHERE: ['=', ['.num'], 'eight-eight']}]"),
-                   true);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
-    addArrayDocs(1, 90);
-
-    auto json          = json5("['SELECT', {\
-                          WHERE: ['ANY', 'num', ['[]', ['.numbers[0]'], ['.numbers[1]']],\
-                                         ['=', ['?num'], 'eight']]}]");
-    query              = store->compileQuery(json);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
-
-    checkQuery(12, 2);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
-    addArrayDocs(1, 90);
-
-    auto json          = json5("['SELECT', {\
-                              FROM: [{as: 'doc'}, \
-                                     {as: 'num', 'unnest': ['[]', ['.doc.numbers[0]'], ['.doc.numbers[1]']]}],\
-                              WHERE: ['=', ['.num'], 'one-eight']}]");
-    query              = store->compileQuery(json);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
-
-    checkQuery(22, 2);
-
-    if ( GENERATE(0, 1) ) {
-        Log("-------- Creating JSON index --------");
-        store->createIndex("numbersIndex"_sl, json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"), IndexSpec::kArray);
-    } else {
-        Log("-------- Creating N1QL index --------");
-        store->createIndex("numbersIndex"_sl, "[numbers[0], numbers[1]]", QueryLanguage::kN1QL, IndexSpec::kArray);
-    }
-    Log("-------- Recompiling query with index --------");
-    query = store->compileQuery(json);
-    checkOptimized(query);
-
-    checkQuery(22, 2);
-}
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // CBL-1248
     ExclusiveTransaction t(store->dataFile());

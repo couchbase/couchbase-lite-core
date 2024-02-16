@@ -12,7 +12,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
@@ -24,7 +24,7 @@ using namespace fleece::impl;
 namespace litecore {
 
     bool SQLiteKeyStore::createArrayIndex(const IndexSpec& spec) {
-        Array::iterator iExprs(spec.what());
+        Array::iterator iExprs((const Array*)spec.what());
         string          arrayTableName = createUnnestedTable(iExprs.value());
         return createIndex(spec, arrayTableName, ++iExprs);
     }
@@ -32,8 +32,8 @@ namespace litecore {
     string SQLiteKeyStore::createUnnestedTable(const Value* expression) {
         // Derive the table name from the expression it unnests:
         string      kvTableName = tableName();
-        QueryParser qp(db(), "", kvTableName);
-        string      unnestTableName = qp.unnestedTableName(expression);
+        QueryTranslator qp(db(), "", kvTableName);
+        string      unnestTableName = qp.unnestedTableName(FLValue(expression));
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName)
@@ -51,7 +51,7 @@ namespace litecore {
             db().exec(sql);
 
             qp.setBodyColumnName("new.body");
-            string eachExpr = qp.eachExpressionSQL(expression);
+            string eachExpr = qp.eachExpressionSQL(FLValue(expression));
 
             // Populate the index-table with data from existing documents:
             db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName)

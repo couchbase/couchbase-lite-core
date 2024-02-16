@@ -46,9 +46,12 @@ function(set_litecore_source_base)
         LiteCore/Query/IndexSpec.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
-        LiteCore/Query/QueryParser+Prediction.cc
-        LiteCore/Query/QueryParser+VectorSearch.cc
-        LiteCore/Query/QueryParser.cc
+        LiteCore/Query/Translator/QueryTranslator.cc
+        LiteCore/Query/Translator/ExprNodes.cc
+        LiteCore/Query/Translator/IndexedNodes.cc
+        LiteCore/Query/Translator/SelectNodes.cc
+        LiteCore/Query/Translator/NodesToSQL.cc
+        LiteCore/Query/Translator/TranslatorUtils.cc
         LiteCore/Query/SQLiteDataFile+Indexes.cc
         LiteCore/Query/SQLiteFleeceEach.cc
         LiteCore/Query/SQLiteFleeceFunctions.cc

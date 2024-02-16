@@ -20,6 +20,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace fleece {
@@ -34,6 +35,7 @@ namespace litecore {
     using std::pair;
     using std::shared_ptr;
     using std::string;
+    using std::string_view;
     using std::unique_ptr;
 
     using fleece::alloc_slice;

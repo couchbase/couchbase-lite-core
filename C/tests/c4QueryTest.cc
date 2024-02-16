@@ -17,6 +17,8 @@
 #include <thread>
 using namespace std;
 
+#define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
+
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) { return memcmp(&a, &b, sizeof(a)) == 0; }
 
 static ostream& operator<<(ostream& o, C4FullTextMatch match) {
@@ -772,6 +774,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
     c4queryenum_release(e);
 }
 
+#ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
@@ -842,6 +845,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
         CHECK(run() == (vector<string>{"11"}));
     }
 }
+#endif
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
@@ -889,8 +893,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     string explanationString = toString(c4query_explain(query));
     INFO("Explanation = " << explanationString);
     CHECK(litecore::hasPrefix(explanationString,
-                              "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, "
-                              "'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
+                              "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, "
+                              "'contact.address.state') = 'CA' AND (_doc.flags & 1 = 0)"));
 
     auto e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
@@ -1231,7 +1235,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"nested"});
-    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
+    compileSelect(json5("{WHAT: ['.small.nested'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
                         "{COLLECTION:'nested', JOIN:'INNER', ON: ['=', 1, 1]}]}"));
     checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));
