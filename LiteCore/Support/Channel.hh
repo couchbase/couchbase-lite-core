@@ -113,8 +113,7 @@ namespace litecore { namespace actor {
         }
         lock.unlock();
 
-        if (wasEmpty)
-            _cond.notify_one();
+        _cond.notify_one();
         return wasEmpty;
     }
 
