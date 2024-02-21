@@ -70,7 +70,7 @@ namespace litecore { namespace repl {
             msg["since"_sl] = sinceStr;
         if (_options->pull(collectionIndex()) == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl] = tuning::kChangesBatchSize;
+        msg["batch"_sl] = _options->changesBatchSize();
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
