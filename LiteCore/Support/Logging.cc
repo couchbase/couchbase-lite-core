@@ -71,7 +71,7 @@ namespace litecore {
     static bool                  sCallbackPreformatted        = false;
     LogLevel                     LogDomain::sFileMinLevel     = LogLevel::None;
     unsigned                     LogDomain::slastObjRef{0};
-    map<unsigned, string>        LogDomain::sObjNames;
+    LogDomain::ObjectMap         LogDomain::sObjectMap;
     static ofstream*             sFileOut[5]        = {};  // File per log level
     static LogEncoder*           sLogEncoder[5]     = {};
     static unsigned              sRotateSerialNo[5] = {};
@@ -397,14 +397,14 @@ namespace litecore {
 
         // Invoke the client callback:
         if ( doCallback && sCallback && level >= _callbackLogLevel() ) {
-            auto obj = getObject(objRef);
+            auto objPath = getObjectPath(objRef);
 
             va_list args2;
             va_copy(args2, args);
             if ( sCallbackPreformatted ) {
                 // Preformatted: Do the formatting myself and pass the resulting string:
                 size_t n = 0;
-                if ( objRef ) n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} ", obj.c_str(), objRef);
+                if ( objRef ) n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s ", objPath.c_str());
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
                 va_list noArgs{};
                 sCallback(*this, level, sFormatBuffer, noArgs);
@@ -412,7 +412,7 @@ namespace litecore {
                 // Not preformatted: pass the format string and va_list to the callback
                 // (prefixing the object ref # if any):
                 if ( objRef ) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} %s", obj.c_str(), objRef, fmt);
+                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s %s", objPath.c_str(), fmt);
                     sCallback(*this, level, sFormatBuffer, args2);
                 } else {
                     sCallback(*this, level, fmt, args2);
@@ -459,7 +459,7 @@ namespace litecore {
         const auto encoder = sLogEncoder[(int)level];
         const auto file    = sFileOut[(int)level];
         if ( encoder ) {
-            encoder->vlog(domain, sObjNames, (LogEncoder::ObjectRef)objRef, fmt, args);
+            encoder->vlog(domain, sObjectMap, (LogEncoder::ObjectRef)objRef, fmt, args);
             pos = encoder->tellp();
         } else if ( file ) {
             static char formatBuffer[2048];
@@ -517,10 +517,29 @@ namespace litecore {
 
     // Must be called from a method holding sLogMutex
     string LogDomain::getObject(unsigned ref) {
-        const auto found = sObjNames.find(ref);
-        if ( found != sObjNames.end() ) { return found->second; }
+        const auto found = sObjectMap.find(ref);
+        if ( found != sObjectMap.end() ) { return found->second.first; }
 
         return "?";
+    }
+
+    static void getObjectPathRecur(const LogDomain::ObjectMap& objMap, LogDomain::ObjectMap::const_iterator iter,
+                                   std::stringstream& ss) {
+        // pre-conditions: iter != objMap.end()
+        if ( iter->second.second != 0 ) {
+            auto parentIter = objMap.find(iter->second.second);
+            Assert(parentIter != objMap.end());
+            getObjectPathRecur(objMap, parentIter, ss);
+        }
+        ss << "/" << iter->second.first << "#" << iter->first;
+    }
+
+    std::string LogDomain::getObjectPath(unsigned obj) {
+        auto iter = sObjectMap.find(obj);
+        if ( iter == sObjectMap.end() ) { return ""; }
+        std::stringstream ss;
+        getObjectPathRecur(sObjectMap, iter, ss);
+        return ss.str() + "/";
     }
 
     unsigned LogDomain::registerObject(const void* object, const unsigned* val, const string& description,
@@ -529,7 +548,7 @@ namespace litecore {
         if ( *val != 0 ) { return *val; }
 
         unsigned objRef = ++slastObjRef;
-        sObjNames.insert({objRef, nickname});
+        sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef), std::forward_as_tuple(nickname, 0));
         if ( sCallback && level >= _callbackLogLevel() )
             invokeCallback(*this, level, "{%s#%u}==> %s @%p", nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
@@ -537,7 +556,27 @@ namespace litecore {
 
     void LogDomain::unregisterObject(unsigned objectRef) {
         unique_lock<mutex> lock(sLogMutex);
-        sObjNames.erase(objectRef);
+        sObjectMap.erase(objectRef);
+    }
+
+    bool LogDomain::registerParentObject(unsigned object, unsigned parentObject) {
+        unique_lock<mutex> lock(sLogMutex);
+        auto               iter = sObjectMap.find(object);
+        if ( iter == sObjectMap.end() ) {
+            WarnError("LogDomain::registerParentObject, object is not registered");
+            return false;
+        }
+        if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
+            WarnError("LogDomain::registerParentObject, parentObject is not registered");
+            return false;
+        }
+        if ( iter->second.second != 0 ) {
+            // Already has assigned parent
+            WarnError("LogDomain::registerParentObject, object is already assigned parent");
+            return false;
+        }
+        iter->second.second = parentObject;
+        return true;
     }
 
 #pragma mark - LOGGING CLASS:
@@ -580,6 +619,10 @@ namespace litecore {
             _objectRef        = _domain.registerObject(this, &_objectRef, identifier, nickname, level);
         }
         return _objectRef;
+    }
+
+    void Logging::setParentObjectRef(unsigned parentObjRef) {
+        Assert(_domain.registerParentObject(getObjectRef(), parentObjRef));
     }
 
     void Logging::_log(LogLevel level, const char* format, ...) const {

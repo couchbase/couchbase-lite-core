@@ -28,7 +28,7 @@ namespace litecore::blip {
         The methods are thread-safe. */
     class Connection final
         : public RefCounted
-        , Logging {
+        , public Logging {
       public:
         enum State {
             kDisconnected = -1,

@@ -36,10 +36,10 @@ namespace litecore {
 
         enum ObjectRef : unsigned { None = 0 };
 
-        void vlog(const char* domain, const std::map<unsigned, std::string>&, ObjectRef, const char* format,
-                  va_list args) __printflike(5, 0);
+        void vlog(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const char* format, va_list args)
+                __printflike(5, 0);
 
-        void log(const char* domain, const std::map<unsigned, std::string>&, ObjectRef, const char* format, ...)
+        void log(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const char* format, ...)
                 __printflike(5, 6);
 
         void flush();

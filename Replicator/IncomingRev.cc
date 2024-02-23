@@ -34,6 +34,7 @@ namespace litecore::repl {
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
 
     IncomingRev::IncomingRev(Puller* puller) : Worker(puller, "inc", puller->collectionIndex()), _puller(puller) {
+        setParentObjectRef(puller->getObjectRef());
         _importance = false;
         static atomic<uint32_t> sRevSignpostCount{0};
         _serialNumber = ++sRevSignpostCount;

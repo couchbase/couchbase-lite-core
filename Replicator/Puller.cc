@@ -45,6 +45,7 @@ namespace litecore::repl {
         , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
         , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
         , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        setParentObjectRef(replicator->getObjectRef());
         replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
         replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
