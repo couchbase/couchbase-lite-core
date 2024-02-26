@@ -1070,7 +1070,7 @@ namespace litecore {
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
         DateTime   format = start;
-        setResultDateString(ctx, result, minutes { start.tz }, &format);
+        setResultDateString(ctx, result, minutes{start.tz}, &format);
     }
 
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
