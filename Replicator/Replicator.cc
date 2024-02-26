@@ -71,6 +71,7 @@ namespace litecore::repl {
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
+            connection().setParentObjectRef(getObjectRef());
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
