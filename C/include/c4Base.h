@@ -295,7 +295,7 @@ CBL_CORE_API C4Timestamp c4_now(void) C4API;
                 records it.
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
-CBL_CORE_API bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
+NODISCARD CBL_CORE_API bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
 
 
 /** Schedules a function to be called asynchronously on a background thread.

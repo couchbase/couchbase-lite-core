@@ -285,7 +285,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle Multi-DB", "[Data
     CHECK(c4coll_getLastSequence(guitars) == 200_seq);
     CHECK(c4coll_getLastSequence(guitars2) == 200_seq);
 
-    c4db_close(db2, nullptr);
+    REQUIRE(c4db_close(db2, nullptr));
     c4db_release(db2);
 }
 
@@ -377,7 +377,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Scopes", "[Database][Collection][C]") 
     C4Database* db2 = c4db_openAgain(db, ERROR_INFO());
     REQUIRE(db2);
     CHECK(c4db_hasScope(db2, SupaDopeScope));
-    c4db_close(db2, nullptr);
+    REQUIRE(c4db_close(db2, nullptr));
     c4db_release(db2);
 
     // Verify "fresh" is empty:

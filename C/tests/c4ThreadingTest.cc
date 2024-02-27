@@ -61,7 +61,7 @@ class C4ThreadingTest : public C4Test {
     }
 
     static void closeDB(C4Database* database) {
-        c4db_close(database, nullptr);
+        CHECK(c4db_close(database, nullptr));
         c4db_release(database);
     }
 

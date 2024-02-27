@@ -904,11 +904,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
             CHECK(revHistory == "4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev3ConflictID);
             CHECK((int)doc->selectedRev.flags == 0);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev2ID);
             CHECK((int)doc->selectedRev.flags == 0);
         } else {
@@ -964,15 +964,15 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
             CHECK(revHistory == "5-40c76a18ad61e00aa6372396a8d03a023c401fe3,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev4ConflictID);
             CHECK((int)doc->selectedRev.flags == kRevKeepBody);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev3ConflictID);
             CHECK((int)doc->selectedRev.flags == 0);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev2ID);
             CHECK((int)doc->selectedRev.flags == 0);
         } else {
@@ -997,7 +997,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
             CHECK(doc->selectedRev.revID == kRev3ID);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev2ID);
             CHECK((int)doc->selectedRev.flags == kRevKeepBody);
 
@@ -1023,11 +1023,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
             CHECK(doc->selectedRev.revID == "4-41cdb6e71647962c281333ceac7b36c46b65b41f"_sl);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev3ID);
             CHECK((int)doc->selectedRev.flags == 0);
 
-            c4doc_selectParentRevision(doc);
+            CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev2ID);
             CHECK((int)doc->selectedRev.flags == kRevKeepBody);
 

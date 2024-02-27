@@ -570,7 +570,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
             TransactionHelper t(db);
             createRev(_collDB1, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             createRev(_collDB1, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
-            c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
+            bool ok = c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
+            REQUIRE(ok);
         }
         sleepFor(1s);  // give replicator a moment to detect the latest revs
         stopWhenIdle();
