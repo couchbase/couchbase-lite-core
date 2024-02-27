@@ -2615,7 +2615,7 @@ PeerReplicators(C4Database* db1, C4Database* db2, Replicator::Delegate& delegate
 // 8. Clear device 1 database
 // 9. Pull from SG to Device 1 <<< Here pull fails because the document contains blobs which SG does not know about
 
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "CBSE-16338", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "CBL-5448", "[.SyncServer]") {
     const string idPrefix  = timePrefix();
     const string docID     = idPrefix + "att1";
     const string channelID = idPrefix + "ch";
