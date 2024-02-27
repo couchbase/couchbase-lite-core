@@ -181,6 +181,9 @@ namespace litecore { namespace repl {
         _mayContainEncryptedProperties = !_options->disablePropertyDecryption()
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
+        logVerbose("_mayContainBlobChanges=%d", _mayContainBlobChanges);
+        logVerbose("_mayContainEncryptedProperties=%d", _mayContainEncryptedProperties);
+
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if (_options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize
                                   || _mayContainBlobChanges || _mayContainEncryptedProperties)
@@ -218,6 +221,7 @@ namespace litecore { namespace repl {
         // First create a Fleece document:
         Doc fleeceDoc;
         C4Error err = {};
+        bool didApplyDelta;
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError encodeErr;
@@ -242,7 +246,9 @@ namespace litecore { namespace repl {
                                               SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
                 }
             } catch ( ... ) { err = C4Error::fromCurrentException(); }
+
             _rev->deltaSrcRevID = nullslice;
+            didApplyDelta = true;
 
         } else {
             // It's a delta, but it can be applied later while inserting.
@@ -327,18 +333,20 @@ namespace litecore { namespace repl {
         _rev->doc = fleeceDoc;
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        if (_mayContainBlobChanges) {
+        if (_mayContainBlobChanges || didApplyDelta) {
             _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
                 // Note: this flag is set here after we applied the delta above in this method.
                 // If _mayContainBlobs is false, we will apply the delta in deltaCB. The flag will
                 // updated inside the callback after the delta is applied.
                 _rev->flags |= kRevHasAttachments;
-                _pendingBlobs.push_back({_rev->docID,
-                                         alloc_slice(FLDeepIterator_GetPathString(i)),
-                                         key,
-                                         blob["length"_sl].asUnsigned(),
-                                         C4Blob::isLikelyCompressible(blob)});
-                _blob = _pendingBlobs.begin();
+                if (_mayContainBlobChanges) {
+                    _pendingBlobs.push_back(
+                        {_rev->docID,
+                        alloc_slice(FLDeepIterator_GetPathString(i)), key,
+                        blob["length"_sl].asUnsigned(),
+                        C4Blob::isLikelyCompressible(blob)});
+                  _blob = _pendingBlobs.begin();
+                }
             });
         }
 
@@ -357,10 +365,6 @@ namespace litecore { namespace repl {
                     danglingBlobs.push_back(blob);
                 }
             }
-        }
-
-        if (!(_rev->flags & kRevHasAttachments) && _db->hasBlobReferences(root)) {
-            _rev->flags |= kRevHasAttachments;
         }
 
         if (! danglingBlobs.empty()) {
