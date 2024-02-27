@@ -23,8 +23,10 @@ namespace litecore {
     class C4IncomingReplicator final : public C4ReplicatorImpl {
       public:
         C4IncomingReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params,
-                             WebSocket* openSocket NONNULL)
-            : C4ReplicatorImpl(db, params), _openSocket(openSocket) {}
+                             WebSocket* openSocket NONNULL, slice logPrefix)
+            : C4ReplicatorImpl(db, params), _openSocket(openSocket) {
+            if ( !logPrefix.empty() ) { _logPrefix = logPrefix; }
+        }
 
         alloc_slice URL() const noexcept override { return _openSocket->url(); }
 

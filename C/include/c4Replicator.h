@@ -48,20 +48,24 @@ CBL_CORE_API C4StringResult c4address_toURL(C4Address address) C4API;
         @param remoteAddress  The address of the remote server.
         @param remoteDatabaseName  The name of the database at the remote address.
         @param params Replication parameters (see above.)
+        @param logPrefix prefix to the loggingClassName of returned C4Replicator.
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
 NODISCARD CBL_CORE_API C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4String remoteDatabaseName,
-                                                C4ReplicatorParameters params, C4Error* C4NULLABLE outError) C4API;
+                                                C4ReplicatorParameters params, C4String logPrefix,
+                                                C4Error* C4NULLABLE outError) C4API;
 
 #ifdef COUCHBASE_ENTERPRISE
 /** Creates a new replicator to another local database.
         @param db  The local database.
         @param otherLocalDB  The other local database.
         @param params Replication parameters (see above.)
+        @param logPrefix prefix to the loggingClassName of returned C4Replicator.
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
 NODISCARD CBL_CORE_API C4Replicator* c4repl_newLocal(C4Database* db, C4Database* otherLocalDB,
-                                                     C4ReplicatorParameters params, C4Error* C4NULLABLE outError) C4API;
+                                                     C4ReplicatorParameters params, C4String logPrefix,
+                                                     C4Error* C4NULLABLE outError) C4API;
 #endif
 
 /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
@@ -70,11 +74,12 @@ NODISCARD CBL_CORE_API C4Replicator* c4repl_newLocal(C4Database* db, C4Database*
         @param db  The local database.
         @param openSocket  An already-created C4Socket.
         @param params  Replication parameters. Will usually use kC4Passive modes.
+        @param logPrefix prefix to the loggingClassName of returned C4Replicator.
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
 NODISCARD CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSocket,
-                                                          C4ReplicatorParameters params,
-                                                          C4Error* C4NULLABLE    outError) C4API;
+                                                          C4ReplicatorParameters params, C4String logPrefix,
+                                                          C4Error* C4NULLABLE outError) C4API;
 
 /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
