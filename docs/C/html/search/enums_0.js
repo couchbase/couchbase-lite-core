@@ -22,5 +22,8 @@ var searchData=
   ['c4replicatorstatusflags_19',['C4ReplicatorStatusFlags',['../group___replicator.html#ga1fbd60bfab5a12304512fe8464a2ad05',1,'c4ReplicatorTypes.h']]],
   ['c4revisionflags_20',['C4RevisionFlags',['../group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0',1,'c4DocumentTypes.h']]],
   ['c4socketframing_21',['C4SocketFraming',['../group___socket.html#ga4fd4a7216b3eec47914dc868c81dea01',1,'c4SocketTypes.h']]],
-  ['c4websocketclosecode_22',['C4WebSocketCloseCode',['../group___socket.html#gae841435a1dff329c3851655a240fdadb',1,'c4SocketTypes.h']]]
+  ['c4vectorclusteringtype_22',['C4VectorClusteringType',['../group___indexing.html#gab660d7bd0a4f3d9e3ea0e7c25837ce3b',1,'c4IndexTypes.h']]],
+  ['c4vectorencodingtype_23',['C4VectorEncodingType',['../group___indexing.html#ga9aa3c78733fd004fd7a1f5b4ad71a85c',1,'c4IndexTypes.h']]],
+  ['c4vectormetrictype_24',['C4VectorMetricType',['../group___indexing.html#ga7271b3b3c4d2f7e2309e62d9f6b61159',1,'c4IndexTypes.h']]],
+  ['c4websocketclosecode_25',['C4WebSocketCloseCode',['../group___socket.html#gae841435a1dff329c3851655a240fdadb',1,'c4SocketTypes.h']]]
 ];
