@@ -2544,9 +2544,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
     _repl = nullptr;
 }
 
-C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
+static C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
     const auto   dbPath  = db->getPath();
-    const auto   dbName  = db->getName();
     const string db2Name = idPrefix + "db2";
     REQUIRE(c4db_copyNamed(dbPath, slice(db2Name), &db->getConfiguration(), ERROR_INFO()));
     return c4db_openNamed(slice(db2Name), &db->getConfiguration(), ERROR_INFO());
@@ -2567,7 +2566,7 @@ struct ReplicatorTestDelegate : Replicator::Delegate {
 };
 
 // Wait for a replication to go busy then idle.
-void WaitForRepl(Replicator* repl) {
+static void WaitForRepl(Replicator* repl) {
     int attempts = 5;
     // Wait for busy
     while ( repl->status().level != kC4Busy && attempts-- > 0 ) { std::this_thread::sleep_for(200ms); }
@@ -2577,7 +2576,7 @@ void WaitForRepl(Replicator* repl) {
 }
 
 // This sets up two P2P replicators for the below test.
-std::pair<Retained<Replicator>, Retained<Replicator>>
+static std::pair<Retained<Replicator>, Retained<Replicator>>
 PeerReplicators(C4Database* db1, C4Database* db2, Replicator::Delegate& delegate) {
     static atomic<int> validationCount {0};
 
