@@ -221,7 +221,7 @@ namespace litecore { namespace repl {
         // First create a Fleece document:
         Doc fleeceDoc;
         C4Error err = {};
-        bool didApplyDelta;
+        bool didApplyDelta = false;
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError encodeErr;
