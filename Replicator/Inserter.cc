@@ -209,18 +209,15 @@ namespace litecore { namespace repl {
             }
         }
         if ( body && revFlags != nullptr ) {
-            bool hasAttachments = false;
             if ( bodyChanged ) {
                 doc = Doc(body, kFLTrusted, sk);
                 root = doc.asDict();
             }
-            // This is not optimal. Consider to add a method to DBAccess, hasBlobReferences
-            _db->findBlobReferences(root, true, [&](FLDeepIterator, Dict, const C4BlobKey&) {
-                hasAttachments = true;
-            });
-            if ( hasAttachments && !(*revFlags & kRevHasAttachments) ) {
-                *revFlags |= kRevHasAttachments;
-            } else if ( !hasAttachments && (*revFlags & kRevHasAttachments) ) {
+            if (_db->hasBlobReferences(root)) {
+                if (!(*revFlags & kRevHasAttachments)) {
+                    *revFlags |= kRevHasAttachments;
+                }
+            } else if (*revFlags & kRevHasAttachments) {
                 // This shouldn't happen
                 DebugAssert(false);
                 *revFlags &= ~kRevHasAttachments;

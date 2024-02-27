@@ -359,6 +359,10 @@ namespace litecore { namespace repl {
             }
         }
 
+        if (!(_rev->flags & kRevHasAttachments) && _db->hasBlobReferences(root)) {
+            _rev->flags |= kRevHasAttachments;
+        }
+
         if (! danglingBlobs.empty()) {
             bool plural = danglingBlobs.size() > 1;
             string errmsg = "There ";

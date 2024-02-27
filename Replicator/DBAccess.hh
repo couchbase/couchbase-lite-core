@@ -127,6 +127,8 @@ namespace litecore { namespace repl {
                                 bool unique,
                                 const FindBlobCallback &callback);
 
+        bool hasBlobReferences(Dict root) const;
+
         /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
         void encodeRevWithLegacyAttachments(fleece::Encoder& enc,
                                            Dict root,

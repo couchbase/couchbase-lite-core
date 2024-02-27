@@ -225,6 +225,21 @@ namespace litecore { namespace repl {
         FLDeepIterator_Free(i);
     }
 
+    bool DBAccess::hasBlobReferences(Dict root) const {
+        // This method is non-static because it references _disableBlobSupport, but it's
+        // thread-safe.
+        bool           found = false;
+        FLDeepIterator i     = FLDeepIterator_New(root);
+        for ( ; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i) ) {
+            C4BlobKey blobKey;
+            if ( isBlobOrAttachment(i, &blobKey, _disableBlobSupport) ) {
+                found = true;
+                break;
+            }
+        }
+        FLDeepIterator_Free(i);
+        return found;
+    }
 
     void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
                                                  unsigned revpos)
