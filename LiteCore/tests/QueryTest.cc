@@ -1319,11 +1319,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     stringstream s4;
     s4 << date::format("%FT%TZ", utc_time);
 
-    auto expected1 = s1.str();
-    auto expected2 = s2.str();
-    auto expected3 = s3.str();
-    auto expected4 = s4.str();
-    auto expected5 = s5.str();
+    auto expected1    = s1.str();
+    auto expected2    = s2.str();
+    auto expected3    = s3.str();
+    auto expected4    = s4.str();
+    auto expected5    = s5.str();
     auto expected1iso = s1iso.str();
     auto expected2iso = s2iso.str();
     auto expected3iso = s3iso.str();
