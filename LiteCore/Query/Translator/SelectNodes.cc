@@ -106,16 +106,6 @@ namespace litecore::qt {
     }
 
 
-#if DEBUG
-    string WhatNode::description() const {
-        if (_hasExplicitAlias)
-            return "WHAT (AS " + string(_alias) + ")";
-        else
-            return "WHAT";
-    }
-#endif
-
-
     void WhatNode::visit(Visitor const& visitor, unsigned depth) {
         visitor(*this, depth);
         _expr->visit(visitor, depth + 1);
@@ -250,22 +240,6 @@ namespace litecore::qt {
     string_view SourceNode::indexedProperty() const {
         return isIndex() ? _indexedNodes[0]->property() : "";
     }
-
-
-#if DEBUG
-    string SourceNode::description() const {
-        string str = "FROM ";
-        if (!_scope.empty())
-            str += _scope + ".";
-        if (_collection.empty())
-            str += "_";
-        else
-            str += _collection;
-        if (_hasExplicitAlias)
-            str += " AS " + _alias;
-        return str;
-    }
-#endif
 
 
     void SourceNode::visit(Visitor const& visitor, unsigned depth) {

@@ -124,13 +124,6 @@ namespace litecore::qt {
 
         virtual void writeSQL(SQLWriter&) const = 0;
 
-#if DEBUG
-        /// Writes a crude representation of the tree, for debugging purposes.
-        void dump(std::ostream&);
-        /// Returns a crude representation of this Node, for debugging purposes.
-        virtual string description() const = 0;
-#endif
-
     protected:
         /// Overrides of `rewriteChildren` should call this on each child Node.
         /// It calls the Rewriter; if the child is not replaced it then calls rewriteChildren on it.
@@ -182,9 +175,6 @@ namespace litecore::qt {
         explicit LiteralNode(string_view);
         Value literal() const                       {return _literal;}
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override         {return "Literal " + _literal.toJSONString();}
-#endif
 
     private:
         Value           _literal;
@@ -203,9 +193,6 @@ namespace litecore::qt {
 
         void writeSQL(SQLWriter&) const override;
         static void writeMetaSQL(string_view aliasDot, MetaProperty, SQLWriter&);
-#if DEBUG
-        string description() const override                     {return "Meta ";}
-#endif
 
     private:
         MetaProperty _property = MetaProperty::none;
@@ -221,9 +208,6 @@ namespace litecore::qt {
         string_view name() const                                {return _name;}
 
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override                     {return string("Param $") + _name;}
-#endif
 
     private:
         string _name;       // Parameter name (without the '$')
@@ -241,9 +225,6 @@ namespace litecore::qt {
 
         void writeSQL(SQLWriter& ctx) const override            {writeSQL(ctx, nullslice, nullptr);}
         void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* param) const;
-#if DEBUG
-        string description() const override                     {return "Property " + string(_path);}
-#endif
 
     private:
         PropertyNode(SourceNode* src, WhatNode* result, KeyPath path, string fn)
@@ -262,9 +243,6 @@ namespace litecore::qt {
         explicit VariableNode(slice name);
 
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override                     {return string("Var ?") + _name;}
-#endif
 
     private:
         string  _name;                      // Variable name (without the '?')
@@ -285,9 +263,6 @@ namespace litecore::qt {
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override                     {return "Collate";}
-#endif
 
     private:
         unique_ptr<ExprNode>    _child;         // The expression COLLATE is applied to
@@ -300,9 +275,7 @@ namespace litecore::qt {
         explicit RawSQLNode(string sql) :_sql(std::move(sql)) { }
 
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override     {return "SQL: " + _sql;}
-#endif
+
     private:
         string _sql;
     };
@@ -328,9 +301,6 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
 
         Node* postprocess(ParseContext&) override;
-#if DEBUG
-        string description() const override;
-#endif
 
     protected:
         Operation const&                    _op;
@@ -354,9 +324,6 @@ namespace litecore::qt {
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override;
-#endif
 
     private:
         struct FunctionSpec const&          _fn;

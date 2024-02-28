@@ -53,9 +53,7 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
-#if DEBUG
-        string description() const override         {return "match()";}
-#endif
+
     private:
         unique_ptr<ExprNode> _searchString;
     };
@@ -67,9 +65,6 @@ namespace litecore::qt {
         RankNode(Array::iterator &args, ParseContext& ctx);
         void writeSQL(SQLWriter&) const override;
         OpFlags opFlags() const override;
-#if DEBUG
-        string description() const override         {return "rank()";}
-#endif
     };
 
 
@@ -85,9 +80,7 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
-#if DEBUG
-        string description() const override         {return "vector_match()";}
-#endif
+
     private:
         unique_ptr<ExprNode> _vector, _maxResults;
     };
@@ -100,9 +93,6 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
         OpFlags opFlags() const override;
         void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
-#if DEBUG
-        string description() const override         {return "vector_distance()";}
-#endif
     };
 
 #endif

@@ -48,9 +48,6 @@ namespace litecore::qt {
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
         bool matchPath(KeyPath& path) const override;
-#if DEBUG
-        string description() const override;
-#endif
 
     private:
         friend class SelectNode;
@@ -96,9 +93,6 @@ namespace litecore::qt {
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override;
-#endif
 
     private:
         friend class SelectNode;
@@ -133,9 +127,6 @@ namespace litecore::qt {
         void rewriteChildren(const Rewriter&) override;
         Node* postprocess(ParseContext&) override;
         void writeSQL(SQLWriter&) const override;
-#if DEBUG
-        string description() const override                            {return "SELECT";}
-#endif
 
     protected:
         SelectNode() = default;

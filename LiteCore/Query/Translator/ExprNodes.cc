@@ -25,15 +25,6 @@ namespace litecore::qt {
     using namespace std;
 
 
-#if DEBUG
-    void Node::dump(ostream& out) {
-        visit([&](const Node& node, unsigned depth) {
-            out << string(4 * depth, ' ') << node.description() << endl;
-        });
-    }
-#endif
-
-
 #pragma mark - EXPRESSION PARSING METHODS:
 
 
@@ -414,11 +405,6 @@ namespace litecore::qt {
     }
 
 
-#if DEBUG
-    string OpNode::description() const {return "Op " + string(_op.name);}
-#endif
-
-
     void OpNode::visit(Visitor const& visitor, unsigned depth) {
         visitor(*this, depth);
         for (auto& operand : _operands)
@@ -502,11 +488,6 @@ namespace litecore::qt {
     OpFlags FunctionNode::opFlags() const {
         return _fn.flags;
     }
-
-
-#if DEBUG
-    string FunctionNode::description() const               {return "Fn " + string(_fn.name);}
-#endif
 
 
     void FunctionNode::visit(Visitor const& visitor, unsigned depth) {
