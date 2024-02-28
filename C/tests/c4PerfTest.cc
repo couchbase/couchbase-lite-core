@@ -266,7 +266,7 @@ class PerfTest : public C4Test {
     C4Replicator* createTimeableReplication(C4ReplicatorParameters& parameters) {
         parameters.callbackContext = this;
         parameters.onStatusChanged = onTimedReplicatorStatusChanged;
-        auto repl                  = c4repl_new(db, _sg.address, _sg.remoteDBName, parameters, ERROR_INFO());
+        auto repl = c4repl_new(db, _sg.address, _sg.remoteDBName, parameters, "c4Test"_sl, ERROR_INFO());
         REQUIRE(repl);
         return repl;
     }

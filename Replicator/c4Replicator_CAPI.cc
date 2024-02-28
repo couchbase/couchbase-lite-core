@@ -44,9 +44,9 @@ C4StringResult c4address_toURL(C4Address address) noexcept {
 }
 
 C4Replicator* c4repl_new(C4Database* db, C4Address serverAddress, C4String remoteDatabaseName,
-                         C4ReplicatorParameters params, C4Error* outError) noexcept {
+                         C4ReplicatorParameters params, C4String logPrefix, C4Error* outError) noexcept {
     try {
-        return db->newReplicator(serverAddress, remoteDatabaseName, params).detach();
+        return db->newReplicator(serverAddress, remoteDatabaseName, params, logPrefix).detach();
     }
     catchError(outError);
     return nullptr;
@@ -55,9 +55,9 @@ C4Replicator* c4repl_new(C4Database* db, C4Address serverAddress, C4String remot
 
 #ifdef COUCHBASE_ENTERPRISE
 C4Replicator* c4repl_newLocal(C4Database* db, C4Database* otherLocalDB, C4ReplicatorParameters params,
-                              C4Error* outError) noexcept {
+                              C4String logPrefix, C4Error* outError) noexcept {
     try {
-        return db->newLocalReplicator(otherLocalDB, params).detach();
+        return db->newLocalReplicator(otherLocalDB, params, logPrefix).detach();
     }
     catchError(outError);
     return nullptr;
@@ -66,9 +66,9 @@ C4Replicator* c4repl_newLocal(C4Database* db, C4Database* otherLocalDB, C4Replic
 
 
 C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSocket, C4ReplicatorParameters params,
-                                   C4Error* outError) noexcept {
+                                   C4String logPrefix, C4Error* outError) noexcept {
     try {
-        return db->newIncomingReplicator(openSocket, params).detach();
+        return db->newIncomingReplicator(openSocket, params, logPrefix).detach();
     }
     catchError(outError);
     return nullptr;
