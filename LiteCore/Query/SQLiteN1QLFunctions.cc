@@ -990,7 +990,7 @@ namespace litecore {
 
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, 0, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, true, valid ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1003,7 +1003,7 @@ namespace litecore {
         if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
             int64_t millis   = sqlite3_value_int64(argv[0]);
             int64_t tzoffset = sqlite3_value_int64(argv[1]);
-            setResultDateString(ctx, millis, (int)tzoffset, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, minutes{tzoffset}, valid ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1015,7 +1015,7 @@ namespace litecore {
 
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, valid ? format.tz : 0, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, false, valid ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1032,7 +1032,7 @@ namespace litecore {
         DateTime dt;
         if ( parseDateArgRaw(argv[0], &dt) ) {
             DateTime format = dt;
-            setResultDateString(ctx, ToMillis(dt), 0, &format);
+            setResultDateString(ctx, ToMillis(dt), true, &format);
         } else
             setResultFleeceNull(ctx);
     }
@@ -1045,7 +1045,7 @@ namespace litecore {
         }
         int64_t  tzoffset = sqlite3_value_int64(argv[1]);
         DateTime format   = dt;
-        setResultDateString(ctx, ToMillis(dt), (int)tzoffset, &format);
+        setResultDateString(ctx, ToMillis(dt), minutes{tzoffset}, &format);
     }
 
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
@@ -1070,7 +1070,7 @@ namespace litecore {
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
         DateTime   format = start;
-        setResultDateString(ctx, result, start.tz, &format);
+        setResultDateString(ctx, result, minutes{start.tz}, &format);
     }
 
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
