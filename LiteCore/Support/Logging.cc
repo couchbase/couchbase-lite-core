@@ -528,8 +528,12 @@ namespace litecore {
         // pre-conditions: iter != objMap.end()
         if ( iter->second.second != 0 ) {
             auto parentIter = objMap.find(iter->second.second);
-            Assert(parentIter != objMap.end());
-            getObjectPathRecur(objMap, parentIter, ss);
+            if ( parentIter == objMap.end() ) {
+                // the parent object is deleted. We omit the loggingClassName
+                ss << "/#" << iter->second.second;
+            } else {
+                getObjectPathRecur(objMap, parentIter, ss);
+            }
         }
         ss << "/" << iter->second.first << "#" << iter->first;
     }
@@ -601,7 +605,7 @@ namespace litecore {
 #endif
     }
 
-    std::string Logging::loggingName() const { return format("{%s#%u}", loggingClassName().c_str(), getObjectRef()); }
+    std::string Logging::loggingName() const { return format("%s#%u", loggingClassName().c_str(), getObjectRef()); }
 
     std::string Logging::loggingClassName() const {
         string name  = classNameOf(this);

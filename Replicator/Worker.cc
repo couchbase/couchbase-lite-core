@@ -74,7 +74,10 @@ namespace litecore::repl {
             s << format(string(kCollectionLogFormat), i++) << " "
               << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
               << "\"Push\": " << kModeNames[c.push] << ", "
-              << "\"Pull\": " << kModeNames[c.pull] << "}";
+              << "\"Pull\": " << kModeNames[c.pull] << ", "
+              << "Options=";
+            writeRedacted(c.properties, s);
+            s << "}";
         }
         s << "}\n";
 

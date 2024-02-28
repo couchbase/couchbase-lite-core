@@ -47,18 +47,20 @@ namespace litecore {
             if ( !(_database->getConfiguration().flags & kC4DB_NonObservable) )
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(SequenceTracker(store.name()));
 
-            logInfo("Instantiated");
+            DatabaseImpl* dbImpl = asInternal(db);
+            logInfo("DB=%s Instantiated", dbImpl->dataFile()->loggingName().c_str());
         }
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
         void close() {
-            logInfo("Closed");
+            logInfo("Closing");
             stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore        = nullptr;
             _database        = nullptr;
+            logInfo("Closed");
         }
 
         std::string fullName() const {
@@ -68,6 +70,8 @@ namespace litecore {
             name += std::string_view(slice(spec.name));
             return name;
         }
+
+        std::string loggingClassName() const override { return "Collection"; }
 
         std::string loggingIdentifier() const override {  // Logging API
             if ( _usuallyFalse(!isValid()) ) { return format("Closed collection %.*s", SPLAT(_name)); }
@@ -375,6 +379,7 @@ namespace litecore {
             if ( !_housekeeper && isValid() ) {
                 if ( (getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0 ) {
                     _housekeeper = new Housekeeper(this);
+                    _housekeeper->setParentObjectRef(getObjectRef());
                     _housekeeper->start();
                 }
             }

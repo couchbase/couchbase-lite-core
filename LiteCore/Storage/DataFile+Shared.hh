@@ -31,7 +31,7 @@ namespace litecore {
     class DataFile::Shared
         : public RefCounted
         , public fleece::InstanceCountedIn<DataFile::Shared>
-        , Logging {
+        , public Logging {
       public:
         static Retained<Shared> forPath(const FilePath& path, DataFile* dataFile) {
             string             pathStr = path.canonicalPath();
@@ -57,6 +57,8 @@ namespace litecore {
             Shared*            file = sFileMap[pathStr];
             return file ? file->openCount() : 0;
         }
+
+        std::string loggingClassName() const override { return "Shared"; }
 
         const string path;  // The filesystem path
 
@@ -130,7 +132,7 @@ namespace litecore {
 
 
       protected:
-        Shared(const string& p) : Logging(DBLog), path(p) { logDebug("instantiated on %s", p.c_str()); }
+        Shared(const string& p) : Logging(DBLog), path(p) { logInfo("Path=%s Instantiated", p.c_str()); }
 
         ~Shared() {
             logDebug("destructing");
