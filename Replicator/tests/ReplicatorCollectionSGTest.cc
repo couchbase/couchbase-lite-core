@@ -2784,23 +2784,22 @@ static void WaitForRepl(Replicator* repl) {
 }
 
 // This sets up two P2P replicators for the below test.
-static std::pair<Retained<Replicator>, Retained<Replicator>>
-PeerReplicators(C4Database* db1, C4Database* db2, Replicator::Delegate& delegate) {
-    static atomic<int> validationCount {0};
+static std::pair<Retained<Replicator>, Retained<Replicator>> PeerReplicators(C4Database* db1, C4Database* db2,
+                                                                             Replicator::Delegate& delegate) {
+    static atomic<int> validationCount{0};
 
     auto serverOpts = Replicator::Options::passive(Tulips);
     auto clientOpts = Replicator::Options::pushpull(kC4Continuous, Tulips);
 
     // Pull filter required to trigger CBL-5448 (delta applied immediately)
-    auto pullFilter = [](C4CollectionSpec collectionSpec, FLString docID,
-                         FLString revID, C4RevisionFlags flags, FLDict body,
-                         void *context) -> bool {
-        ++(*(atomic<int> *)context);
+    auto pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
+                         FLDict body, void* context) -> bool {
+        ++(*(atomic<int>*)context);
         return true;
     };
 
     serverOpts.collectionOpts[0].callbackContext = &validationCount;
-    serverOpts.collectionOpts[0].pullFilter = pullFilter;
+    serverOpts.collectionOpts[0].pullFilter      = pullFilter;
 
     auto     serverOptsRef = make_retained<Replicator::Options>(serverOpts);
     auto     clientOptsRef = make_retained<Replicator::Options>(clientOpts);
