@@ -220,7 +220,7 @@ namespace litecore { namespace repl {
             });
             if ( hasAttachments && !(*revFlags & kRevHasAttachments) ) {
                 *revFlags |= kRevHasAttachments;
-            } else if ( !hasAttachments && (*revFlags & kRevHasAttachments) ) {
+            } else if ( !hasAttachments && (*revFlags & kRevHasAttachments)) {
                 // This shouldn't happen
                 DebugAssert(false);
                 *revFlags &= ~kRevHasAttachments;

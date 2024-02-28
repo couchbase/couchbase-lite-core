@@ -225,7 +225,6 @@ namespace litecore { namespace repl {
         FLDeepIterator_Free(i);
     }
 
-
     void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
                                                  unsigned revpos)
     {
