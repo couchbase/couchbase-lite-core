@@ -77,9 +77,9 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader">FLDoc</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p>An FLDoc points to (and often owns) Fleece-encoded data and provides access to its Fleece values. </p>
 </td></tr>
-<tr class="memitem:gad10fc44cbabd14bd4eea34e480c7712b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#gad10fc44cbabd14bd4eea34e480c7712b">FLDoc_FromResultData</a> (<a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> data, <a class="el" href="group__types.html#gaa17999d04c6b0a89a07c5db13d154673">FLTrust</a>, <a class="el" href="group__types.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a> externData)</td></tr>
-<tr class="memdesc:gad10fc44cbabd14bd4eea34e480c7712b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an FLDoc from Fleece-encoded data that's been returned as a result from FLSlice_Copy or other API.  <br /></td></tr>
-<tr class="separator:gad10fc44cbabd14bd4eea34e480c7712b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1c469e34e469c7dffe932a37ce4294e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#ga1c469e34e469c7dffe932a37ce4294e1">FLDoc_FromResultData</a> (<a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> data, <a class="el" href="group__types.html#gaa17999d04c6b0a89a07c5db13d154673">FLTrust</a>, <a class="el" href="group__types.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a> externData)</td></tr>
+<tr class="memdesc:ga1c469e34e469c7dffe932a37ce4294e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an FLDoc from Fleece-encoded data that's been returned as a result from FLSlice_Copy or other API.  <br /></td></tr>
+<tr class="separator:ga1c469e34e469c7dffe932a37ce4294e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad31a225f37ee30c51e178554492b93d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#gad31a225f37ee30c51e178554492b93d6">FLDoc_Release</a> (<a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
 <tr class="memdesc:gad31a225f37ee30c51e178554492b93d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Releases a reference to an FLDoc.  <br /></td></tr>
 <tr class="separator:gad31a225f37ee30c51e178554492b93d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -98,9 +98,9 @@ $(function() {
 <tr class="memitem:ga29ca18c38b1e4181227b8ff4b568bcc8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#ga29ca18c38b1e4181227b8ff4b568bcc8">FLDoc_GetSharedKeys</a> (<a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
 <tr class="memdesc:ga29ca18c38b1e4181227b8ff4b568bcc8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the FLSharedKeys used by this FLDoc, as specified when it was created.  <br /></td></tr>
 <tr class="separator:ga29ca18c38b1e4181227b8ff4b568bcc8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac1019aad5c8466d3807f7bb3d1bdc1c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#gaac1019aad5c8466d3807f7bb3d1bdc1c">FLValue_FindDoc</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
-<tr class="memdesc:gaac1019aad5c8466d3807f7bb3d1bdc1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up the Doc containing the Value, or NULL if there is none.  <br /></td></tr>
-<tr class="separator:gaac1019aad5c8466d3807f7bb3d1bdc1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8766296c578ae5ee4f63d2903aebff0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#gad8766296c578ae5ee4f63d2903aebff0">FLValue_FindDoc</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>) <a class="el" href="_compiler_support_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gad8766296c578ae5ee4f63d2903aebff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up the Doc containing the Value, or NULL if there is none.  <br /></td></tr>
+<tr class="separator:gad8766296c578ae5ee4f63d2903aebff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga70de4e199545b7625d153de78db3e0fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reading.html#ga70de4e199545b7625d153de78db3e0fa">FLDoc_SetAssociated</a> (<a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> doc, void *<a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> pointer, const char *type)</td></tr>
 <tr class="memdesc:ga70de4e199545b7625d153de78db3e0fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Associates an arbitrary pointer value with a document, and thus its contained values.  <br /></td></tr>
 <tr class="separator:ga70de4e199545b7625d153de78db3e0fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,14 +110,14 @@ $(function() {
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gad10fc44cbabd14bd4eea34e480c7712b" name="gad10fc44cbabd14bd4eea34e480c7712b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad10fc44cbabd14bd4eea34e480c7712b">&#9670;&#160;</a></span>FLDoc_FromResultData()</h2>
+<a id="ga1c469e34e469c7dffe932a37ce4294e1" name="ga1c469e34e469c7dffe932a37ce4294e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1c469e34e469c7dffe932a37ce4294e1">&#9670;&#160;</a></span>FLDoc_FromResultData()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> FLDoc_FromResultData </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> FLDoc_FromResultData </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td>
           <td class="paramname"><em>data</em>, </td>
@@ -200,7 +200,7 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Returns the pointer associated with the document. </p>
-<p>You can use this together with <a class="el" href="group__reading.html#gaac1019aad5c8466d3807f7bb3d1bdc1c">FLValue_FindDoc</a> to associate your own object with Fleece values, for instance to find your object that "owns" a value: <code>myDoc = (app::Document*)FLDoc_GetAssociated(FLValue_FindDoc(val), "app::Document");</code>. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>You can use this together with <a class="el" href="group__reading.html#gad8766296c578ae5ee4f63d2903aebff0">FLValue_FindDoc</a> to associate your own object with Fleece values, for instance to find your object that "owns" a value: <code>myDoc = (app::Document*)FLDoc_GetAssociated(FLValue_FindDoc(val), "app::Document");</code>. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">doc</td><td>The FLDoc to get a pointer from. </td></tr>
     <tr><td class="paramname">type</td><td>The type of object expected, i.e. the same string literal passed to <a class="el" href="group__reading.html#ga70de4e199545b7625d153de78db3e0fa">FLDoc_SetAssociated</a>. </td></tr>
@@ -361,14 +361,14 @@ This function is not thread-safe. Do not concurrently get &amp; set objects. </d
 
 </div>
 </div>
-<a id="gaac1019aad5c8466d3807f7bb3d1bdc1c" name="gaac1019aad5c8466d3807f7bb3d1bdc1c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaac1019aad5c8466d3807f7bb3d1bdc1c">&#9670;&#160;</a></span>FLValue_FindDoc()</h2>
+<a id="gad8766296c578ae5ee4f63d2903aebff0" name="gad8766296c578ae5ee4f63d2903aebff0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad8766296c578ae5ee4f63d2903aebff0">&#9670;&#160;</a></span>FLValue_FindDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLValue_FindDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a> FLValue_FindDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
           <td class="paramname"><em>FL_NULLABLE</em></td><td>)</td>

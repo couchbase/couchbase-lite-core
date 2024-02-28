@@ -95,6 +95,9 @@ Data Fields</h2></td></tr>
 <tr class="memitem:abebf72c4814f14eba754882429d2d661"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_index_options.html#abebf72c4814f14eba754882429d2d661">stopWords</a></td></tr>
 <tr class="memdesc:abebf72c4814f14eba754882429d2d661"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of words to ignore ("stop words") for full-text search.  <br /></td></tr>
 <tr class="separator:abebf72c4814f14eba754882429d2d661"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a742016d32420c00b9b241e079d8721fc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_vector_index_options.html">C4VectorIndexOptions</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_index_options.html#a742016d32420c00b9b241e079d8721fc">vector</a></td></tr>
+<tr class="memdesc:a742016d32420c00b9b241e079d8721fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Options for vector indexes.  <br /></td></tr>
+<tr class="separator:a742016d32420c00b9b241e079d8721fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Options for indexes; these each apply to specific types of indexes. </p>
@@ -164,6 +167,22 @@ Data Fields</h2></td></tr>
 
 <p>List of words to ignore ("stop words") for full-text search. </p>
 <p>Ignoring common words like "the" and "a" helps keep down the size of the index. If NULL, a default word list will be used based on the <code>language</code> option, if there is one for that language. To suppress stop-words, use an empty string. To provide a custom list of words, use a string containing the words in lowercase separated by spaces. </p>
+
+</div>
+</div>
+<a id="a742016d32420c00b9b241e079d8721fc" name="a742016d32420c00b9b241e079d8721fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a742016d32420c00b9b241e079d8721fc">&#9670;&#160;</a></span>vector</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_c4_vector_index_options.html">C4VectorIndexOptions</a> C4IndexOptions::vector</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Options for vector indexes. </p>
 
 </div>
 </div>
