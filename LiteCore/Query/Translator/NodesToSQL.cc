@@ -342,7 +342,7 @@ namespace litecore::qt {
                 ctx << kEachFnName << '(' << _unnest << ')';
             }
         } else {
-            if (_joinOn) {
+            if (_join > JoinType::none) {
                 ctx << kJoinTypeNames[int(_join)] << " JOIN ";
             } else {
                 ctx << "FROM ";

@@ -64,7 +64,7 @@ namespace litecore::qt {
 
 
     const Operation* lookupOp(slice opName, unsigned nArgs) {
-        bool             nameMatched = false;
+        bool nameMatched = false;
         for ( auto& def : kOperationList ) {
             if ( opName.caseEquivalent(def.name) ) {
                 nameMatched = true;
@@ -119,9 +119,9 @@ namespace litecore::qt {
     }
 
 
-    // Common path parsing shared by PropertyNode and VariableNode.
-    // `pathStr` may be empty or contain dot-delimited path components;
-    // `pComponents` if given is an array of path components (strings or ints).
+#pragma mark - PATHS:
+
+
     KeyPath parsePath(slice pathStr, fleece::Array::iterator* pComponents) {
         KeyPath path;
         if (!pathStr.empty()) {
@@ -174,10 +174,7 @@ namespace litecore::qt {
     }
 
 
-    /// Matches a path's first component(s) against an alias; if so, drops those component(s) and
-    /// returns the source. If it doesn't match, leaves the path alone and returns `ctx.from`,
-    /// which may be nullptr if only an expression is being parsed.
-    AliasedNode* resolvePropertyPath(KeyPath& path, ParseContext ctx, bool ignoreJoins) {
+    AliasedNode* resolvePropertyPath(KeyPath& path, ParseContext& ctx, bool ignoreJoins) {
         // First check whether the path starts with an alias; if so use it as the source:
         for (auto &a : ctx.aliases) {
             if (a.second->matchPath(path))
@@ -204,11 +201,11 @@ namespace litecore::qt {
     }
 
 
-    void writeFnGetter(slice sqliteFnName, ExprNode& collection, ExprNode* param, SQLWriter& ctx) {
-        if (auto collectionProp = dynamic_cast<PropertyNode*>(&collection)) {
-            collectionProp->writeSQL(ctx, sqliteFnName, param);
+    void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter& ctx) {
+        if (auto prop = dynamic_cast<PropertyNode*>(&expr)) {
+            prop->writeSQL(ctx, sqliteFnName, param);
         } else {
-            ctx << sqliteFnName << '(' << collection;
+            ctx << sqliteFnName << '(' << expr;
             if (param)
                 ctx << ", NULL, " << *param;
             ctx << ')';

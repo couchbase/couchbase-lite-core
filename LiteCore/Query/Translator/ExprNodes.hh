@@ -74,6 +74,7 @@ namespace litecore::qt {
     /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece. */
     class Node {
     public:
+        Node() = default;
         virtual ~Node() = default;
 
         /// Writes SQLite-flavor SQL representation to a stream.
@@ -149,6 +150,9 @@ namespace litecore::qt {
             }
             return false;
         }
+
+        Node(Node const&) = delete;
+        Node& operator=(Node const&) = delete;
     };
 
 
@@ -291,7 +295,7 @@ namespace litecore::qt {
     };
 
     /** A Node that just writes arbitrary SQL. Use sparingly and with caution. */
-    class RawSQLNode : public ExprNode {
+    class RawSQLNode final : public ExprNode {
     public:
         explicit RawSQLNode(string sql) :_sql(std::move(sql)) { }
 

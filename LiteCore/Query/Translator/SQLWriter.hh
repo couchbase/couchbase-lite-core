@@ -41,12 +41,14 @@ namespace litecore::qt {
             _out << std::forward<T>(t); return *this;
         }
 
+        /// The name of a table's `body` column. This is altered by some callers of QueryTranslator,
+        /// usually when generating SQL for triggers.
         string bodyColumnName = "body";
 
     private:
         friend class WithPrecedence;
-        std::ostream&   _out;
-        int             _precedence = 0;
+        std::ostream&   _out;               // Output stream
+        int             _precedence = 0;    // Precedence of current operator
     };
 
 

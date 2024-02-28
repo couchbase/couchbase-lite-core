@@ -30,8 +30,8 @@ namespace litecore::qt {
         virtual bool matchPath(KeyPath& path) const;
         
     protected:
-        string                  _alias;                     // Name I'm referred to by
-        bool                    _hasExplicitAlias = false;  // _alias was given by an AS property
+        string  _alias;                     // Name I'm referred to by
+        bool    _hasExplicitAlias = false;  // _alias was given by an AS property
     };
 
 

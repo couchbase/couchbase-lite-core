@@ -1310,6 +1310,7 @@
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4CppUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4CppUtils.hh; sourceTree = "<group>"; };
+		27B895752B8FDF99001C448B /* QueryTranslator.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QueryTranslator.md; sourceTree = "<group>"; };
 		27BB9DFB236D05650039C896 /* aes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aes.c; sourceTree = "<group>"; };
 		27BB9DFC236D05650039C896 /* psa_crypto_slot_management.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = psa_crypto_slot_management.c; sourceTree = "<group>"; };
 		27BB9DFD236D05650039C896 /* md4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = md4.c; sourceTree = "<group>"; };
@@ -2185,6 +2186,7 @@
 			children = (
 				2745B7D226825F970012A17A /* index.md */,
 				2745B7CE26825F970012A17A /* Classes.md */,
+				27B895752B8FDF99001C448B /* QueryTranslator.md */,
 				2745B7D426825F970012A17A /* Replicator.md */,
 				2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */,
 				27DF3BBC268672F700A57A1E /* Schema.md */,

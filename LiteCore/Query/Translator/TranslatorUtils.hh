@@ -19,39 +19,60 @@ namespace litecore::qt {
 
     class AliasedNode;
 
+    /// Throws an InvalidQuery exception with a formatted message.
     [[noreturn]] __printflike(1, 2) void fail(const char* format, ...);
 
+    /// Throws an InvalidQuery exception if `TEST` is not "truthy".
 #define require(TEST, FORMAT, ...)                                                                                     \
     if ( TEST )                                                                                                        \
         ;                                                                                                              \
     else                                                                                                               \
         fail(FORMAT, ##__VA_ARGS__)
 
+    /// Returns the input `val`, but throws an exception if it's not "truthy".
     template <class T>
     static T required(T val, const char* name, const char* message = "is missing") {
         require(val, "%s %s", name, message);
         return val;
     }
 
-    Value getCaseInsensitive(Dict dict, slice key);
-    bool  isImplicitBool(Value op);
-
+    /// Returns `v` as an Array, throwing an exception if it's the wrong type or nullptr.
     Array requiredArray(Value v, const char* what);
+
+    /// Returns `v` as a Dict, throwing an exception if it's the wrong type or nullptr.
     Dict  requiredDict(Value v, const char* what);
+
+    /// Returns `v` as a string (slice), throwing an exception if it's the wrong type or nullptr,
+    /// or empty.
     slice requiredString(Value v, const char* what);
+
+    /// Same as `requiredString` but allows `v` to be `nullptr`.
     slice optionalString(Value v, const char* what);
 
-    alloc_slice escapedPath(slice inputPath);
+    /// Case insensitive Dict lookup.
+    Value getCaseInsensitive(Dict dict, slice key);
+
+    // These functions look up items in tables or convert strings to enums:
     const Operation* lookupOp(slice opName, unsigned nArgs);
     const Operation& lookupOp(OpType type);
     FunctionSpec const& lookupFn(slice fnName, int nArgs);
     MetaProperty lookupMeta(slice key, slice const keyList[kNumMetaProperties]);
     JoinType lookupJoin(slice name);
 
+    /// Common path parsing shared by multiple node types.
+    /// `pathStr` may be empty or contain dot-delimited path components;
+    /// `pComponents` if given is an array of path components (strings or ints).
     KeyPath parsePath(slice pathStr, fleece::Array::iterator* pComponents = nullptr);
 
-    AliasedNode* resolvePropertyPath(KeyPath& path, ParseContext ctx,
-                                     bool ignoreJoins = false);
+    /// Matches a path's initial component(s) against an alias; if so, drops those component(s) and
+    /// returns the source.
+    /// If it doesn't match, leaves the path alone and returns `ctx.from`,
+    /// which may be nullptr if only an expression is being parsed.
+    AliasedNode* resolvePropertyPath(KeyPath&, ParseContext&, bool ignoreJoins = false);
 
-    void writeFnGetter(slice sqliteFnName, ExprNode& collection, ExprNode* param, SQLWriter&);
+    /// Writes a SQLite function call, passing the given expression.
+    /// - If `expr` is a PropertyNode, it writes the node but substitutes the given function name
+    ///   for the default `fl_value`.
+    /// - Otherwise it writes the function call, passing the value of `expr` as the first arg.
+    void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter&);
 }

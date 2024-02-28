@@ -83,12 +83,12 @@ namespace litecore::qt {
     constexpr int kMatchPrecedence = 3;
     constexpr int kCollatePrecedence = 10;
 
-    struct Operation {  // NOLINT(cppcoreguidelines-pro-type-member-init)
-        slice  name;                // Name, as found in 1st item of array
-        int    minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
-        int    precedence;        // Precedence in SQLite syntax; used to minimize generated parens
-        OpType type;           // Type of operator
-        OpFlags flags;
+    struct Operation {              // NOLINT(cppcoreguidelines-pro-type-member-init)
+        slice   name;               // Name, as found in 1st item of array
+        int     minArgs, maxArgs;   // Min/max number of args; max 9 means "unlimited"
+        int     precedence;         // Precedence in SQLite syntax; used to minimize generated parens
+        OpType  type;               // Type of operator
+        OpFlags flags;              // Flags, mostly about the result type
     };
 
     constexpr Operation kOperationList[] = {
@@ -194,11 +194,11 @@ namespace litecore::qt {
     // http://www.sqlite.org/lang_corefunc.html
     // http://www.sqlite.org/lang_aggfunc.html
 
-    struct FunctionSpec {        // NOLINT(cppcoreguidelines-pro-type-member-init)
-        slice name;              // Name (without the parens)
-        int   minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
-        slice sqlite_name;       // Name to use in SQL; defaults to `name`
-        OpFlags flags;
+    struct FunctionSpec {           // NOLINT(cppcoreguidelines-pro-type-member-init)
+        slice   name;               // Name (without the parens)
+        int     minArgs, maxArgs;   // Min/max number of args; max 9 means "unlimited"
+        slice   sqlite_name;        // Name to use in SQL; defaults to `name`
+        OpFlags flags;              // Flags, mostly about the result type
     };
 
     constexpr FunctionSpec kFunctionList[] = {
@@ -294,20 +294,20 @@ namespace litecore::qt {
         {"is_object",           1, 1, "isobject",   kOpBoolResult},
         {"isstring",            1, 1, {},           kOpBoolResult},
         {"is_string",           1, 1, "isstring",   kOpBoolResult},
-        {"type",                1, 1},
-        {"typename",            1, 1, "type"},
+        {"type",                1, 1, {},           kOpStringResult},
+        {"typename",            1, 1, "type",       kOpStringResult},
         {"toarray",             1, 1},
         {"to_array",            1, 1, "toarray"},
         {"toatom",              1, 1},
         {"to_atom",             1, 1, "toatom"},
-        {"toboolean",           1, 1},
-        {"to_boolean",          1, 1, "toboolean"},
-        {"tonumber",            1, 1},
-        {"to_number",           1, 1, "tonumber"},
+        {"toboolean",           1, 1, {},           kOpBoolResult},
+        {"to_boolean",          1, 1, "toboolean",  kOpBoolResult},
+        {"tonumber",            1, 1, {},           kOpNumberResult},
+        {"to_number",           1, 1, "tonumber",   kOpNumberResult},
         {"toobject",            1, 1},
         {"to_object",           1, 1, "toobject"},
-        {"tostring",            1, 1},
-        {"to_string",           1, 1, "tostring"},
+        {"tostring",            1, 1, {},           kOpStringResult},
+        {"to_string",           1, 1, "tostring",   kOpStringResult},
         {"is valued",           1, 1, "isvalued",   kOpBoolResult},
 
         // Aggregate functions:
@@ -320,8 +320,8 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
         // Predictive query:
         {"prediction",          2, 3},
-        {"euclidean_distance",  2, 3},
-        {"cosine_distance",     2, 2},
+        {"euclidean_distance",  2, 3, {},           kOpNumberResult},
+        {"cosine_distance",     2, 2, {},           kOpNumberResult},
 #endif
     };
 
@@ -333,7 +333,7 @@ namespace litecore::qt {
 #pragma mark - JOINS:
 
 
-    // matches JoinType enum (except for .none)
+    // indexed by JoinType enum, SKIPPING .none
     static constexpr const char* kJoinTypeNames[] = {
         "INNER", "LEFT", "LEFT OUTER", "CROSS",
     };
