@@ -169,6 +169,7 @@ namespace litecore::qt {
         static unique_ptr<ExprNode> parseInNotIn(Operation const&, Array::iterator&, ParseContext&);
         static unique_ptr<ExprNode> parseExists(Operation const&, Array::iterator&, ParseContext&);
         static unique_ptr<ExprNode> parseBlob(Operation const&, Array::iterator&, ParseContext&);
+        static unique_ptr<ExprNode> parseObjectProperty(Operation const&, Array::iterator&, ParseContext&);
     };
 
     /** A literal value. */
@@ -302,8 +303,9 @@ namespace litecore::qt {
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
-
+#if DEBUG
         Node* postprocess(ParseContext&) override;
+#endif
 
     protected:
         Operation const&                    _op;
@@ -327,6 +329,9 @@ namespace litecore::qt {
         void visit(Visitor const& visitor, unsigned depth = 0) override;
         void rewriteChildren(const Rewriter&) override;
         void writeSQL(SQLWriter&) const override;
+#if DEBUG
+        Node* postprocess(ParseContext&) override;
+#endif
 
     private:
         struct FunctionSpec const&          _fn;

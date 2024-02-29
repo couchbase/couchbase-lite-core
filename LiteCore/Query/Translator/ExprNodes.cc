@@ -118,6 +118,8 @@ namespace litecore::qt {
                 return make_unique<MatchNode>(operands, ctx);
             case OpType::meta:
                 return make_unique<MetaNode>(operands, ctx);
+            case OpType::objectProperty:
+                return parseObjectProperty(op, operands, ctx);
             case OpType::property:
                 return PropertyNode::parse(nullslice, &operands, ctx);
             case OpType::parameter:
@@ -194,6 +196,27 @@ namespace litecore::qt {
         auto blob = make_unique<OpNode>(op);
         blob->addArg(std::move(arg));
         return blob;
+    }
+
+
+    unique_ptr<ExprNode> ExprNode::parseObjectProperty(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        auto node = make_unique<OpNode>(op, operands, ctx);
+        // Convert ['_.', ['META()'], 'x']  ->  ['._x'] :
+        auto meta = dynamic_cast<MetaNode*>(node->operand(0));
+        if (meta && meta->property() == MetaProperty::none) {
+            if (auto key = dynamic_cast<LiteralNode*>(node->operand(1))) {
+                if (slice keyStr = key->literal().asString()) {
+                    // OK, matched the pattern. Now identify the key:
+                    if (keyStr.hasPrefix('.'))
+                        keyStr.moveStart(1);
+                    MetaProperty prop = lookupMeta(keyStr, kMetaPropertyNames);
+                    require(prop != MetaProperty::none, "'%.*s' is not a valid Meta key",
+                            FMTSLICE(keyStr));
+                    return make_unique<MetaNode>(prop, meta->source());
+                }
+            }
+        }
+        return node;
     }
 
 
@@ -420,32 +443,16 @@ namespace litecore::qt {
     }
 
 
+#if DEBUG
     Node* OpNode::postprocess(ParseContext& ctx) {
         if (auto newThis = Node::postprocess(ctx); newThis != this)
             return newThis;
-        // ['_.', ['META()'], 'x'] -> ['._x']
-        if (_op.type == OpType::objectProperty) {
-            if (auto meta = dynamic_cast<MetaNode*>(_operands[0].get())) {
-                if (auto key = dynamic_cast<LiteralNode*>(_operands[1].get())) {
-                    if (slice keyStr = key->literal().asString()) {
-                        // OK, matched the pattern. Now identify the key:
-                        if (keyStr.hasPrefix('.'))
-                            keyStr.moveStart(1);
-                        MetaProperty prop = lookupMeta(keyStr, kMetaPropertyNames);
-                        require(prop != MetaProperty::none, "'%.*s' is not a valid Meta key",
-                                FMTSLICE(keyStr));
-                        keyStr = kMetaShortcutNames[int(prop) - 1];
-                        return new MetaNode(prop, meta->source());
-                    }
-                }
-            }
-        }
-        
         // Verify that manual use of addArg() didn't produce the wrong number of args:
         size_t nArgs = std::min(_operands.size(), size_t(9));
         Assert(nArgs >= _op.minArgs && nArgs <= _op.maxArgs);
         return this;
     }
+#endif
 
 
     AnyEveryNode::AnyEveryNode(Operation const& op, Array::iterator& operands, ParseContext& ctx)
@@ -503,5 +510,19 @@ namespace litecore::qt {
         for (auto& arg : _args)
             rewriteChild(arg, r);
     }
+
+
+#if DEBUG
+    Node* FunctionNode::postprocess(ParseContext& ctx) {
+        if (auto newThis = Node::postprocess(ctx); newThis != this)
+            return newThis;
+        // Verify that manual use of addArg() didn't produce the wrong number of args.
+        // (The kOpWantsCollation flag indicates that an extra collation arg can be added.)
+        size_t nArgs = std::min(_args.size(), size_t(9));
+        Assert(nArgs >= _fn.minArgs && nArgs <= _fn.maxArgs + ((_fn.flags & kOpWantsCollation) != 0),
+               "wrong number of args (%zu) for %.*s", nArgs, FMTSLICE(_fn.name));
+        return this;
+    }
+#endif
 
 }
