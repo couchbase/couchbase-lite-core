@@ -51,8 +51,7 @@ namespace litecore::qt {
         MatchNode(Array::iterator &args, ParseContext&);
 
         void writeSQL(SQLWriter&) const override;
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const&) override;
 
     private:
         unique_ptr<ExprNode> _searchString;
@@ -78,8 +77,7 @@ namespace litecore::qt {
 
         void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
         void writeSQL(SQLWriter&) const override;
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const&) override;
 
     private:
         unique_ptr<ExprNode> _vector, _maxResults;

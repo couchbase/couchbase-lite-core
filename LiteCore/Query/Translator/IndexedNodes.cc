@@ -73,14 +73,8 @@ namespace litecore::qt {
     { }
 
 
-    void MatchNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
-        _searchString->visit(visitor, depth + 1);
-    }
-
-
-    void MatchNode::rewriteChildren(const Rewriter& r) {
-        rewriteChild(_searchString, r);
+    void MatchNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_searchString);
     }
 
 
@@ -120,17 +114,10 @@ namespace litecore::qt {
     }
 
 
-    void VectorMatchNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
-        _vector->visit(visitor, depth + 1);
+    void VectorMatchNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_vector);
         if (_maxResults)
-            _maxResults->visit(visitor, depth + 1);
-    }
-
-
-    void VectorMatchNode::rewriteChildren(const Rewriter& r) {
-        rewriteChild(_vector, r);
-        rewriteChild(_maxResults, r);
+            visitor(*_maxResults);
     }
 
 

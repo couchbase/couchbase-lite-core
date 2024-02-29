@@ -77,72 +77,33 @@ namespace litecore::qt {
         Node() = default;
         virtual ~Node() = default;
 
-        /// Writes SQLite-flavor SQL representation to a stream.
-        void writeSQL(std::ostream& out) const;
+        using Visitor = function_ref<void(Node&, unsigned depth)>;
+
+        /// The Visitor callback will be called with this Node and each of its descendents.
+        /// @param visitor  The callback
+        /// @param preorder  If true, a Node is visited before its children; else after
+        /// @param depth  The initial depth corresponding to this Node.
+        void visit(Visitor const& visitor, bool preorder = true, unsigned depth = 0);
+
+        /// Called after the Node tree is generated; allows each node to make changes.
+        /// Overrides must call the inherited method, probably first.
+        virtual void postprocess(ParseContext& ctx) {
+            visitChildren([&](Node& child) { child.postprocess(ctx); });
+        }
 
         /// Returns SQLite-flavor SQL representation.
         string SQLString() const;
 
-        using Visitor = function_ref<void(Node&, unsigned depth)>;
+        /// Writes SQLite-flavor SQL representation to a stream.
+        void writeSQL(std::ostream& out) const;
 
-        /// The Visitor callback will be called with this Node and each of its descendents,
-        /// in depth-first order.
-        virtual void visit(Visitor const& visitor, unsigned depth = 0) {
-            visitor(*this, depth + 1);
-        }
-
-        using Rewriter = function_ref<Node*(Node*)>;
-        /// The Rewriter callback will be called with each of this Node's descendents,
-        /// in depth-first order. If it returns a different Node (or nullptr), that value will
-        /// replace the child in-place.
-        virtual void rewriteChildren(const Rewriter&) { }
-
-        template <class N, class FN>
-        void visitType(FN const& callback) {
-            visit([&](Node& node, unsigned) {
-                if (auto n = dynamic_cast<N*>(&node))
-                    callback(*n);
-            });
-        }
-
-        template <class N>
-        void rewriteType(function_ref<Node*(N*)> const& callback) {
-            rewriteChildren([&](Node* node) {
-                if (auto n = dynamic_cast<N*>(&node))
-                    return callback(n);
-                else
-                    return node;
-            });
-        }
-
-        /// Called after the Node tree is generated; allows each node to make changes,
-        /// including replacing its children or even itself.
-        virtual Node* postprocess(ParseContext& ctx) {
-            rewriteChildren([&](Node* child) { return child->postprocess(ctx); });
-            return this;
-        }
-
+        /// Writes SQL to the writer's output stream.
         virtual void writeSQL(SQLWriter&) const = 0;
 
     protected:
-        /// Overrides of `rewriteChildren` should call this on each child Node.
-        /// It calls the Rewriter; if the child is not replaced it then calls rewriteChildren on it.
-        /// @returns  true if the child was replaced.
-        template <class N>
-        bool rewriteChild(unique_ptr<N>& child, const Rewriter& r) {
-            if (child) {
-                Node* replacement = r(child.get());
-                if (replacement != child.get()) {
-                    auto typeSafeReplacement = dynamic_cast<N*>(replacement);
-                    if (!typeSafeReplacement && replacement) throw std::bad_cast();
-                    child = unique_ptr<N>(typeSafeReplacement);
-                    return true;
-                } else {
-//                    child->rewriteChildren(r);
-                }
-            }
-            return false;
-        }
+        using ChildVisitor = function_ref<void(Node&)>;
+        /// Calls a lambda with each direct child. Subclasses that add children must override.
+        virtual void visitChildren(ChildVisitor const&) { }
 
         Node(Node const&) = delete;
         Node& operator=(Node const&) = delete;
@@ -264,8 +225,7 @@ namespace litecore::qt {
         bool isBinary() const;
 
         OpFlags opFlags() const override                        {return _child->opFlags();}
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const& visitor) override;
         void writeSQL(SQLWriter&) const override;
 
     private:
@@ -300,11 +260,10 @@ namespace litecore::qt {
         void addArg(unique_ptr<ExprNode> node)      {_operands.emplace_back(std::move(node));}
 
         OpFlags opFlags() const override;
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const& visitor) override;
         void writeSQL(SQLWriter&) const override;
 #if DEBUG
-        Node* postprocess(ParseContext&) override;
+        void postprocess(ParseContext&) override;
 #endif
 
     protected:
@@ -326,11 +285,10 @@ namespace litecore::qt {
         struct FunctionSpec const& spec()                       {return _fn;}
 
         OpFlags opFlags() const override;
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const& visitor) override;
         void writeSQL(SQLWriter&) const override;
 #if DEBUG
-        Node* postprocess(ParseContext&) override;
+        void postprocess(ParseContext&) override;
 #endif
 
     private:

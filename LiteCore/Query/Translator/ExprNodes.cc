@@ -25,6 +25,16 @@ namespace litecore::qt {
     using namespace std;
 
 
+    void Node::visit(Visitor const& visitor, bool preorder, unsigned depth) {
+        if (preorder)
+            visitor(*this, depth);
+        visitChildren([&](Node& child) { child.visit(visitor, preorder, depth + 1); });
+        if (!preorder)
+            visitor(*this, depth);
+    }
+
+
+
 #pragma mark - EXPRESSION PARSING:
 
 
@@ -402,13 +412,8 @@ namespace litecore::qt {
     }
 
 
-    void CollateNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
-        _child->visit(visitor, depth + 1);
-    }
-
-    void CollateNode::rewriteChildren(const Rewriter& r) {
-        rewriteChild(_child, r);
+    void CollateNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_child);
     }
 
     
@@ -431,26 +436,17 @@ namespace litecore::qt {
     }
 
 
-    void OpNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
+    void OpNode::visitChildren(ChildVisitor const& visitor) {
         for (auto& operand : _operands)
-            operand->visit(visitor, depth + 1);
+            visitor(*operand);
     }
-
-    void OpNode::rewriteChildren(const Rewriter& r) {
-        for (auto& operand : _operands)
-            rewriteChild(operand, r);
-    }
-
 
 #if DEBUG
-    Node* OpNode::postprocess(ParseContext& ctx) {
-        if (auto newThis = Node::postprocess(ctx); newThis != this)
-            return newThis;
+    void OpNode::postprocess(ParseContext& ctx) {
+        ExprNode::postprocess(ctx);
         // Verify that manual use of addArg() didn't produce the wrong number of args:
         size_t nArgs = std::min(_operands.size(), size_t(9));
         Assert(nArgs >= _op.minArgs && nArgs <= _op.maxArgs);
-        return this;
     }
 #endif
 
@@ -499,29 +495,20 @@ namespace litecore::qt {
     }
 
 
-    void FunctionNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
+    void FunctionNode::visitChildren(ChildVisitor const& visitor) {
         for (auto& arg : _args)
-            arg->visit(visitor, depth + 1);
-    }
-
-
-    void FunctionNode::rewriteChildren(const Rewriter& r) {
-        for (auto& arg : _args)
-            rewriteChild(arg, r);
+            visitor(*arg);
     }
 
 
 #if DEBUG
-    Node* FunctionNode::postprocess(ParseContext& ctx) {
-        if (auto newThis = Node::postprocess(ctx); newThis != this)
-            return newThis;
+    void FunctionNode::postprocess(ParseContext& ctx) {
+        ExprNode::postprocess(ctx);
         // Verify that manual use of addArg() didn't produce the wrong number of args.
         // (The kOpWantsCollation flag indicates that an extra collation arg can be added.)
         size_t nArgs = std::min(_args.size(), size_t(9));
         Assert(nArgs >= _fn.minArgs && nArgs <= _fn.maxArgs + ((_fn.flags & kOpWantsCollation) != 0),
                "wrong number of args (%zu) for %.*s", nArgs, FMTSLICE(_fn.name));
-        return this;
     }
 #endif
 

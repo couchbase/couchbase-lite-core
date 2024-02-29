@@ -106,14 +106,8 @@ namespace litecore::qt {
     }
 
 
-    void WhatNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
-        _expr->visit(visitor, depth + 1);
-    }
-
-
-    void WhatNode::rewriteChildren(const Rewriter& r) {
-        rewriteChild(_expr, r);
+    void WhatNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_expr);
     }
 
 
@@ -242,18 +236,11 @@ namespace litecore::qt {
     }
 
 
-    void SourceNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
+    void SourceNode::visitChildren(ChildVisitor const& visitor) {
         if (_joinOn)
-            _joinOn->visit(visitor, depth + 1);
+            visitor(*_joinOn);
         if (_unnest)
-            _unnest->visit(visitor, depth + 1);
-    }
-
-
-    void SourceNode::rewriteChildren(const Rewriter& r) {
-        rewriteChild(_joinOn, r);
-        rewriteChild(_unnest, r);
+            visitor(*_unnest);
     }
 
 
@@ -394,41 +381,24 @@ namespace litecore::qt {
     }
 
 
-    void SelectNode::visit(Visitor const& visitor, unsigned depth) {
-        visitor(*this, depth);
+    void SelectNode::visitChildren(ChildVisitor const& visitor) {
         for (auto& child : _what)
-            child->visit(visitor, depth + 1);
+            visitor(*child);
         for (auto& child : _sources)
-            child->visit(visitor, depth + 1);
+            visitor(*child);
         if (_where)
-            _where->visit(visitor, depth + 1);
+            visitor(*_where);
         for (auto& child : _orderBy)
-            child.first->visit(visitor, depth + 1);
+            visitor(*child.first);
         for (auto& child : _groupBy)
-            child->visit(visitor, depth + 1);
+            visitor(*child);
         if (_having)
-            _having->visit(visitor, depth + 1);
+            visitor(*_having);
     }
 
 
-    void SelectNode::rewriteChildren(const Rewriter& r) {
-        for (auto& child : _what)
-            rewriteChild(child, r);
-        for (auto& child : _sources)
-            rewriteChild(child, r);
-        //TODO: if _from was replaced while rewriting _sources, it needs to be updated
-        rewriteChild(_where, r);
-        for (auto& child : _orderBy)
-            rewriteChild(child.first, r);
-        for (auto& child : _groupBy)
-            rewriteChild(child, r);
-        rewriteChild(_having, r);
-    }
-
-
-    Node* SelectNode::postprocess(ParseContext& ctx) {
-        if (auto newThis = Node::postprocess(ctx); newThis != this)
-            return newThis;
+    void SelectNode::postprocess(ParseContext& ctx) {
+        Node::postprocess(ctx);
 
         _isAggregate = _distinct || !_groupBy.empty();
 
@@ -481,8 +451,6 @@ namespace litecore::qt {
                 }
             }
         }
-
-        return this;
     }
 
 

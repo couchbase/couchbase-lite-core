@@ -44,8 +44,7 @@ namespace litecore::qt {
         string columnName() const;
         void setColumnName(string s)                    {_columnName = std::move(s);}
 
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const&) override;
         void writeSQL(SQLWriter&) const override;
         bool matchPath(KeyPath& path) const override;
 
@@ -90,8 +89,7 @@ namespace litecore::qt {
 
         bool matchPath(KeyPath& path) const override;
 
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
+        void visitChildren(ChildVisitor const&) override;
         void writeSQL(SQLWriter&) const override;
 
     private:
@@ -123,9 +121,8 @@ namespace litecore::qt {
         bool isAggregate() const                                    {return _isAggregate;}
         unsigned numPrependedColumns() const                        {return _numPrependedColumns;}
 
-        void visit(Visitor const& visitor, unsigned depth = 0) override;
-        void rewriteChildren(const Rewriter&) override;
-        Node* postprocess(ParseContext&) override;
+        void visitChildren(ChildVisitor const&) override;
+        void postprocess(ParseContext&) override;
         void writeSQL(SQLWriter&) const override;
 
     protected:
