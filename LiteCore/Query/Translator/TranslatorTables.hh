@@ -32,6 +32,18 @@ namespace litecore::qt {
     constexpr slice kMetaSQLiteNames[kNumMetaProperties] = {
         "key", "sequence", nullslice, "expiration", nullslice, "rowid"};
 
+    // indexed by MetaProperty+1 since it covers _notDeleted
+    constexpr OpFlags kMetaFlags[kNumMetaProperties + 2] = {
+        kOpBoolResult,      // _notDeleted (-1)
+        kOpNoFlags,         // none (0)
+        kOpStringResult,    // id
+        kOpNumberResult,    // sequence
+        kOpBoolResult,      // deleted
+        kOpNumberResult,    // expiration
+        kOpStringResult,    // revisionID
+        kOpNumberResult,    // rowid
+    };
+
 
 #pragma mark - OPERATIONS:
 

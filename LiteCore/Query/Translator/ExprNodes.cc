@@ -25,7 +25,7 @@ namespace litecore::qt {
     using namespace std;
 
 
-#pragma mark - EXPRESSION PARSING METHODS:
+#pragma mark - EXPRESSION PARSING:
 
 
     // Top-level method to parse an expression.
@@ -56,6 +56,7 @@ namespace litecore::qt {
 
 
     unique_ptr<ExprNode> ExprNode::parseArray(Array array, ParseContext& ctx) {
+        // The first item of an array is a string, the operation; the rest are operands:
         Array::iterator operands(array);
         slice opName = requiredString(operands[0], "operation");
         ++operands;
@@ -90,98 +91,109 @@ namespace litecore::qt {
                                            ParseContext& ctx)
     {
         switch (op.type) {
-            case OpType::property:
-                return PropertyNode::parse(nullslice, &operands, ctx);
-            case OpType::parameter:
-                return make_unique<ParameterNode>(operands[0]);
+            case OpType::any:
+            case OpType::every:
+            case OpType::anyAndEvery:
+                return make_unique<AnyEveryNode>(op, operands, ctx);
             case OpType::arrayLiteral: {
                 auto fn = make_unique<FunctionNode>(lookupFn(kArrayOfFnName, operands.count()));
                 fn->addArgs(operands, ctx);
                 return fn;
             }
-            case OpType::meta:
-                return make_unique<MetaNode>(operands, ctx);
-            case OpType::variable:
-                return VariableNode::parse(nullslice, operands, ctx);
-            case OpType::in:
-            case OpType::not_in: {
-                auto lhs = parse(operands[0], ctx);
-                auto arrayOperand = operands[1].asArray();
-                if ( arrayOperand && arrayOperand[0].asString() == "[]"_sl ) {
-                    // RHS is a literal array, so use SQL "IN" syntax:
-                    auto result = make_unique<OpNode>(op);
-                    result->addArg(std::move(lhs));
-                    for (unsigned i = 1; i < arrayOperand.count(); ++i)
-                        result->addArg(parse(arrayOperand[i], ctx));
-                    return result;
-                } else {
-                    // Otherwise generate a call to array_contains():
-                    // [yes, operands are in reverse order]
-                    auto contains = make_unique<FunctionNode>(lookupFn("array_contains", 2));
-                    contains->addArg(parse(operands[1], ctx));
-                    contains->addArg(std::move(lhs));
-                    if (op.type == OpType::not_in) {
-                        auto n = make_unique<OpNode>(*lookupOp("NOT", 1));
-                        n->addArg(std::move(contains));
-                        return n;
-                    } else {
-                        return contains;
-                    }
-                }
-            }
-            case OpType::exists: {
-                auto arg = parse(operands[0], ctx);
-                if (auto prop = dynamic_cast<PropertyNode*>(arg.get())) {
-                    // "EXISTS propertyname" turns into a call to fl_exists()
-                    prop->setSQLiteFn(kExistsFnName);
-                    return arg;
-                } else {
-                    auto exists = make_unique<OpNode>(op);
-                    exists->addArg(std::move(arg));
-                    return exists;
-                }
-            }
-            case OpType::any:
-            case OpType::every:
-            case OpType::anyAndEvery:
-                return make_unique<AnyEveryNode>(op, operands, ctx);
-            case OpType::select:
-                return make_unique<SelectNode>(operands[0], ctx);
+            case OpType::blob:
+                return parseBlob(op, operands, ctx);
             case OpType::collate:
                 return CollateNode::parse(requiredDict(operands[0], "COLLATE dict"),
                                           operands[1], ctx);
             case OpType::concat:
                 return FunctionNode::parse(kConcatFnName, operands, ctx);
+            case OpType::exists:
+                return parseExists(op, operands, ctx);
+            case OpType::in:
+            case OpType::not_in:
+                return parseInNotIn(op, operands, ctx);
             case OpType::isValued:
                 return FunctionNode::parse(kIsValuedFnName, operands, ctx);
             case OpType::match:
                 return make_unique<MatchNode>(operands, ctx);
+            case OpType::meta:
+                return make_unique<MetaNode>(operands, ctx);
+            case OpType::property:
+                return PropertyNode::parse(nullslice, &operands, ctx);
+            case OpType::parameter:
+                return make_unique<ParameterNode>(operands[0]);
             case OpType::rank:
                 return make_unique<RankNode>(operands, ctx);
-            case OpType::blob: {
-                unique_ptr<ExprNode> arg;
-                if (slice propStr = operands[0].asString()) {
-                    arg = PropertyNode::parse(propStr, nullptr, ctx);
-                } else {
-                    arg = parse(operands[0], ctx);
-                    require(dynamic_cast<PropertyNode*>(arg.get()),
-                                                        "argument of BLOB() must be a document property");
-                }
-                auto blob = make_unique<OpNode>(op);
-                blob->addArg(std::move(arg));
-                return blob;
-            }
-
+            case OpType::select:
+                return make_unique<SelectNode>(operands[0], ctx);
+            case OpType::variable:
+                return VariableNode::parse(nullslice, operands, ctx);
 #ifdef COUCHBASE_ENTERPRISE
-            case OpType::vectorMatch:
-                return make_unique<VectorMatchNode>(operands, ctx);
             case OpType::vectorDistance:
                 return make_unique<VectorDistanceNode>(operands, ctx);
+            case OpType::vectorMatch:
+                return make_unique<VectorMatchNode>(operands, ctx);
 #endif
             default:
                 // A normal OpNode
                 return make_unique<OpNode>(op, operands, ctx);
         }
+    }
+
+
+    unique_ptr<ExprNode> ExprNode::parseInNotIn(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        auto lhs = parse(operands[0], ctx);
+        auto arrayOperand = operands[1].asArray();
+        if ( arrayOperand && arrayOperand[0].asString() == "[]"_sl ) {
+            // RHS is a literal array, so use SQL "IN" syntax:
+            auto result = make_unique<OpNode>(op);
+            result->addArg(std::move(lhs));
+            for (unsigned i = 1; i < arrayOperand.count(); ++i)
+                result->addArg(parse(arrayOperand[i], ctx));
+            return result;
+        } else {
+            // Otherwise generate a call to array_contains():
+            // [yes, operands are in reverse order]
+            auto contains = make_unique<FunctionNode>(lookupFn("array_contains", 2));
+            contains->addArg(parse(operands[1], ctx));
+            contains->addArg(std::move(lhs));
+            if (op.type == OpType::not_in) {
+                auto n = make_unique<OpNode>(*lookupOp("NOT", 1));
+                n->addArg(std::move(contains));
+                return n;
+            } else {
+                return contains;
+            }
+        }
+    }
+
+
+    unique_ptr<ExprNode> ExprNode::parseExists(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        auto arg = parse(operands[0], ctx);
+        if (auto prop = dynamic_cast<PropertyNode*>(arg.get())) {
+            // "EXISTS propertyname" turns into a call to fl_exists()
+            prop->setSQLiteFn(kExistsFnName);
+            return arg;
+        } else {
+            auto exists = make_unique<OpNode>(op);
+            exists->addArg(std::move(arg));
+            return exists;
+        }
+    }
+
+
+    unique_ptr<ExprNode> ExprNode::parseBlob(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        unique_ptr<ExprNode> arg;
+        if (slice propStr = operands[0].asString()) {
+            arg = PropertyNode::parse(propStr, nullptr, ctx);
+        } else {
+            arg = parse(operands[0], ctx);
+            require(dynamic_cast<PropertyNode*>(arg.get()),
+                    "argument of BLOB() must be a document property");
+        }
+        auto blob = make_unique<OpNode>(op);
+        blob->addArg(std::move(arg));
+        return blob;
     }
 
 
@@ -224,16 +236,7 @@ namespace litecore::qt {
 
 
     OpFlags MetaNode::opFlags() const {
-        switch (_property) {
-            case MetaProperty::none:        return kOpNoFlags;
-            case MetaProperty::id:
-            case MetaProperty::revisionID:  return kOpStringResult;
-            case MetaProperty::deleted:
-            case MetaProperty::_notDeleted: return kOpBoolResult;
-            case MetaProperty::sequence:
-            case MetaProperty::expiration: 
-            case MetaProperty::rowid:       return kOpNumberResult;
-        }
+        return kMetaFlags[int(_property) + 1];
     }
 
 
@@ -432,7 +435,6 @@ namespace litecore::qt {
                         require(prop != MetaProperty::none, "'%.*s' is not a valid Meta key",
                                 FMTSLICE(keyStr));
                         keyStr = kMetaShortcutNames[int(prop) - 1];
-                        //return new PropertyNode(keyStr, nullptr, ctx);
                         return new MetaNode(prop, meta->source());
                     }
                 }

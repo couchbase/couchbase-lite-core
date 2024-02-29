@@ -166,6 +166,9 @@ namespace litecore::qt {
     private:
         static unique_ptr<ExprNode> parseArray(Array, ParseContext&);
         static unique_ptr<ExprNode> parseOp(Operation const&, Array::iterator, ParseContext&);
+        static unique_ptr<ExprNode> parseInNotIn(Operation const&, Array::iterator&, ParseContext&);
+        static unique_ptr<ExprNode> parseExists(Operation const&, Array::iterator&, ParseContext&);
+        static unique_ptr<ExprNode> parseBlob(Operation const&, Array::iterator&, ParseContext&);
     };
 
     /** A literal value. */
