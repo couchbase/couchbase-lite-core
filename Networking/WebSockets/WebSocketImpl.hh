@@ -38,7 +38,7 @@ namespace litecore::websocket {
         messages. */
     class WebSocketImpl
         : public WebSocket
-        , protected Logging {
+        , public Logging {
       public:
         struct Parameters {
             fleece::alloc_slice webSocketProtocols;  ///< Sec-WebSocket-Protocol value
