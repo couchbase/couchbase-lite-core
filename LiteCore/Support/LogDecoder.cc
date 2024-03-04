@@ -83,12 +83,7 @@ namespace litecore {
     }
 
     /*static*/ void LogIterator::writeHeader(const string& levelName, const string& domainName, ostream& out) {
-        if ( !levelName.empty() ) {
-            if ( !domainName.empty() ) out << domainName << " ";
-            out << levelName << ": ";
-        } else {
-            if ( !domainName.empty() ) out << domainName << " ";
-        }
+        out << domainName << " " << levelName << " ";
     }
 
     void LogIterator::decodeTo(ostream& out, const std::vector<std::string>& levelNames, optional<Timestamp> start) {
