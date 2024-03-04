@@ -122,7 +122,7 @@ namespace litecore {
 
         /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
         string vectorToIndexExpressionSQL(const Value*, unsigned dimensions);
-        string vectorIndexTableName(const Value* matchExpr);
+        string vectorIndexTableName(const Value* matchExpr, const char* forFn);
 
       private:
         template <class T, class U>
