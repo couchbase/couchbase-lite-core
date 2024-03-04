@@ -31,9 +31,9 @@ namespace litecore {
 
     string SQLiteKeyStore::createUnnestedTable(const Value* expression) {
         // Derive the table name from the expression it unnests:
-        string      kvTableName = tableName();
+        string          kvTableName = tableName();
         QueryTranslator qp(db(), "", kvTableName);
-        string      unnestTableName = qp.unnestedTableName(FLValue(expression));
+        string          unnestTableName = qp.unnestedTableName(FLValue(expression));
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName)

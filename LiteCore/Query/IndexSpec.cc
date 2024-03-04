@@ -38,9 +38,7 @@ namespace litecore {
 
     IndexSpec::IndexSpec(IndexSpec&&) = default;
 
-    IndexSpec::~IndexSpec() {
-        FLDoc_Release(_doc);
-    }
+    IndexSpec::~IndexSpec() { FLDoc_Release(_doc); }
 
     void IndexSpec::validateName() const {
         if ( name.empty() ) { error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty"); }
@@ -53,12 +51,12 @@ namespace litecore {
     FLDoc IndexSpec::doc() const {
         if ( !_doc ) {
             switch ( queryLanguage ) {
-                case QueryLanguage::kJSON: {
-                    _doc = Doc::fromJSON(expression).detach();
-                    if (!_doc)
-                        error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
-                    break;
-                }
+                case QueryLanguage::kJSON:
+                    {
+                        _doc = Doc::fromJSON(expression).detach();
+                        if ( !_doc ) error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
+                        break;
+                    }
                 case QueryLanguage::kN1QL:
                     try {
                         int           errPos;
@@ -77,7 +75,7 @@ namespace litecore {
     }
 
     FLArray IndexSpec::what() const {
-        Doc doc(this->doc());
+        Doc   doc(this->doc());
         Array what;
         if ( auto dict = doc.asDict() ) {
             what = qt::requiredArray(qt::getCaseInsensitive(dict, "WHAT"), "Index WHAT term");
@@ -92,7 +90,7 @@ namespace litecore {
 
     FLArray IndexSpec::where() const {
         Doc doc(this->doc());
-        if (auto dict = doc.asDict()) {
+        if ( auto dict = doc.asDict() ) {
             if ( auto whereVal = qt::getCaseInsensitive(dict, "WHERE"); whereVal )
                 return qt::requiredArray(whereVal, "Index WHERE term");
         }

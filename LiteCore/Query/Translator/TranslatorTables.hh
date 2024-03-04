@@ -18,30 +18,30 @@ namespace litecore::qt {
 
 
     constexpr slice kDefaultCollectionName = "_default";
-    constexpr slice kDefaultScopeName = "_default";
+    constexpr slice kDefaultScopeName      = "_default";
 
 
 #pragma mark - META:
 
 
     // indexes correspond to MetaProperty, skipping .none
-    constexpr slice kMetaPropertyNames[kNumMetaProperties] = {
-        "id",  "sequence",  "deleted", "expiration", "revisionID", "rowid"};
-    constexpr slice kMetaShortcutNames[kNumMetaProperties] = {
-        "_id", "_sequence", "_deleted", "_expiration", "_revisionID", "_rowid"};
-    constexpr slice kMetaSQLiteNames[kNumMetaProperties] = {
-        "key", "sequence", nullslice, "expiration", nullslice, "rowid"};
+    constexpr slice kMetaPropertyNames[kNumMetaProperties] = {"id",         "sequence",   "deleted",
+                                                              "expiration", "revisionID", "rowid"};
+    constexpr slice kMetaShortcutNames[kNumMetaProperties] = {"_id",         "_sequence",   "_deleted",
+                                                              "_expiration", "_revisionID", "_rowid"};
+    constexpr slice kMetaSQLiteNames[kNumMetaProperties]   = {"key",        "sequence", nullslice,
+                                                              "expiration", nullslice,  "rowid"};
 
     // indexed by MetaProperty+1 since it covers _notDeleted
     constexpr OpFlags kMetaFlags[kNumMetaProperties + 2] = {
-        kOpBoolResult,      // _notDeleted (-1)
-        kOpNoFlags,         // none (0)
-        kOpStringResult,    // id
-        kOpNumberResult,    // sequence
-        kOpBoolResult,      // deleted
-        kOpNumberResult,    // expiration
-        kOpStringResult,    // revisionID
-        kOpNumberResult,    // rowid
+            kOpBoolResult,    // _notDeleted (-1)
+            kOpNoFlags,       // none (0)
+            kOpStringResult,  // id
+            kOpNumberResult,  // sequence
+            kOpBoolResult,    // deleted
+            kOpNumberResult,  // expiration
+            kOpStringResult,  // revisionID
+            kOpNumberResult,  // rowid
     };
 
 
@@ -54,9 +54,9 @@ namespace litecore::qt {
     // http://www.sqlite.org/lang_expr.html
 
     enum class OpType {
-        prefix,             // Prefix operators not specifically named below
-        infix,              // Infix operators not specifically named below
-        postfix,            // Postfix operators not specifically named below
+        prefix,   // Prefix operators not specifically named below
+        infix,    // Infix operators not specifically named below
+        postfix,  // Postfix operators not specifically named below
 
         property,
         parameter,
@@ -90,18 +90,20 @@ namespace litecore::qt {
     };
 
     constexpr int kArgListPrecedence = -2;  // Prededence inside of `(...., ....)`
-    constexpr int kSelectPrecedence = 1;
-    constexpr int kAndPrecedence = 2;
-    constexpr int kMatchPrecedence = 3;
+    constexpr int kSelectPrecedence  = 1;
+    constexpr int kAndPrecedence     = 2;
+    constexpr int kMatchPrecedence   = 3;
     constexpr int kCollatePrecedence = 10;
 
-    struct Operation {              // NOLINT(cppcoreguidelines-pro-type-member-init)
-        slice   name;               // Name, as found in 1st item of array
-        int     minArgs, maxArgs;   // Min/max number of args; max 9 means "unlimited"
-        int     precedence;         // Precedence in SQLite syntax; used to minimize generated parens
-        OpType  type;               // Type of operator
-        OpFlags flags;              // Flags, mostly about the result type
+    struct Operation {             // NOLINT(cppcoreguidelines-pro-type-member-init)
+        slice   name;              // Name, as found in 1st item of array
+        int     minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
+        int     precedence;        // Precedence in SQLite syntax; used to minimize generated parens
+        OpType  type;              // Type of operator
+        OpFlags flags;             // Flags, mostly about the result type
     };
+
+    // clang-format off
 
     constexpr Operation kOperationList[] = {
         {".",               0, 9,  99, OpType::property},
@@ -162,43 +164,43 @@ namespace litecore::qt {
 #endif
     };
 
+    // clang-format on
 
 #pragma mark - FUNCTION NAMES:
 
     // Names of the SQLite functions we register for working with Fleece data,
     // in SQLiteFleeceFunctions.cc:
-    constexpr slice kValueFnName           = "fl_value";
-    constexpr slice kNestedValueFnName     = "fl_nested_value";
-    constexpr slice kUnnestedValueFnName   = "fl_unnested_value";
-    constexpr slice kFTSValueFnName        = "fl_fts_value";
-    constexpr slice kVectorValueFnName     = "fl_vector_value";
-    constexpr slice kEncodeVectorFnName    = "encode_vector";
-    constexpr slice kBlobFnName            = "fl_blob";
-    constexpr slice kRootFnName            = "fl_root";
-    constexpr slice kEachFnName            = "fl_each";
-    constexpr slice kCountFnName           = "fl_count";
-    constexpr slice kExistsFnName          = "fl_exists";
-    constexpr slice kResultFnName          = "fl_result";
-    constexpr slice kBoolResultFnName      = "fl_boolean_result";
-    constexpr slice kContainsFnName        = "fl_contains";
-    constexpr slice kNullFnName            = "fl_null";
-    constexpr slice kBoolFnName            = "fl_bool";
-    constexpr slice kVersionFnName         = "fl_version";
-    constexpr slice kLikeFnName            = "fl_like";
+    constexpr slice kValueFnName         = "fl_value";
+    constexpr slice kNestedValueFnName   = "fl_nested_value";
+    constexpr slice kUnnestedValueFnName = "fl_unnested_value";
+    constexpr slice kFTSValueFnName      = "fl_fts_value";
+    constexpr slice kVectorValueFnName   = "fl_vector_value";
+    constexpr slice kEncodeVectorFnName  = "encode_vector";
+    constexpr slice kBlobFnName          = "fl_blob";
+    constexpr slice kRootFnName          = "fl_root";
+    constexpr slice kEachFnName          = "fl_each";
+    constexpr slice kCountFnName         = "fl_count";
+    constexpr slice kExistsFnName        = "fl_exists";
+    constexpr slice kResultFnName        = "fl_result";
+    constexpr slice kBoolResultFnName    = "fl_boolean_result";
+    constexpr slice kContainsFnName      = "fl_contains";
+    constexpr slice kNullFnName          = "fl_null";
+    constexpr slice kBoolFnName          = "fl_bool";
+    constexpr slice kVersionFnName       = "fl_version";
+    constexpr slice kLikeFnName          = "fl_like";
 
 
 #pragma mark - N1QL FUNCTIONS:
 
 
     // Functions that are emitted by the translator itself:
-    constexpr slice kArrayCountFnName           = "array_count";
-    constexpr slice kArrayOfFnName              = "array_of";
-    constexpr slice kConcatFnName               = "concat";
-    constexpr slice kIsValuedFnName             = "is valued";
-    constexpr slice kPredictionFnName           = "prediction";
-    constexpr slice kVectorMatchFnName          = "vector_match";
-    constexpr slice kVectorDistanceFnName       = "vector_distance";
-
+    constexpr slice kArrayCountFnName     = "array_count";
+    constexpr slice kArrayOfFnName        = "array_of";
+    constexpr slice kConcatFnName         = "concat";
+    constexpr slice kIsValuedFnName       = "is valued";
+    constexpr slice kPredictionFnName     = "prediction";
+    constexpr slice kVectorMatchFnName    = "vector_match";
+    constexpr slice kVectorDistanceFnName = "vector_distance";
 
     // Table of functions. Used when the 1st item of the array ends with "()",
     // except for a few special functions declared above in kOperationList.
@@ -206,12 +208,14 @@ namespace litecore::qt {
     // http://www.sqlite.org/lang_corefunc.html
     // http://www.sqlite.org/lang_aggfunc.html
 
-    struct FunctionSpec {           // NOLINT(cppcoreguidelines-pro-type-member-init)
-        slice   name;               // Name (without the parens)
-        int     minArgs, maxArgs;   // Min/max number of args; max 9 means "unlimited"
-        slice   sqlite_name;        // Name to use in SQL; defaults to `name`
-        OpFlags flags;              // Flags, mostly about the result type
+    struct FunctionSpec {          // NOLINT(cppcoreguidelines-pro-type-member-init)
+        slice   name;              // Name (without the parens)
+        int     minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
+        slice   sqlite_name;       // Name to use in SQL; defaults to `name`
+        OpFlags flags;             // Flags, mostly about the result type
     };
+
+    // clang-format off
 
     constexpr FunctionSpec kFunctionList[] = {
         // Array:
@@ -341,13 +345,17 @@ namespace litecore::qt {
     constexpr FunctionSpec kDictOfFunctionSpec      {"dict_of",         0, 9, "dict_of"};
     constexpr FunctionSpec kNestedValueFunctionSpec {"fl_nested_value", 2, 2, "fl_nested_value"};
 
+    // clang-format on
 
 #pragma mark - JOINS:
 
 
     // indexed by JoinType enum, SKIPPING .none
     static constexpr const char* kJoinTypeNames[] = {
-        "INNER", "LEFT", "LEFT OUTER", "CROSS",
+            "INNER",
+            "LEFT",
+            "LEFT OUTER",
+            "CROSS",
     };
 
-}
+}  // namespace litecore::qt

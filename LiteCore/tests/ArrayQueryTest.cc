@@ -73,7 +73,6 @@ class ArrayQueryTest : public QueryTest {
     }
 };
 
-
 N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                              WHERE: ['ANY', 'num', ['.numbers'],\

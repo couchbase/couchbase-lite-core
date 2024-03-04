@@ -21,61 +21,70 @@ namespace litecore::qt {
     using namespace fleece;
     using namespace std;
 
-
     /** Specialized output stream for Nodes writing SQL. */
     class SQLWriter {
-    public:
-        explicit SQLWriter(std::ostream& out)           :_out(out) { }
+      public:
+        explicit SQLWriter(std::ostream& out) : _out(out) {}
 
-        SQLWriter& operator<< (Node const* n)           {n->writeSQL(*this); return *this;}
+        SQLWriter& operator<<(Node const* n) {
+            n->writeSQL(*this);
+            return *this;
+        }
 
-        SQLWriter& operator<< (Node const& n)           {n.writeSQL(*this); return *this;}
+        SQLWriter& operator<<(Node const& n) {
+            n.writeSQL(*this);
+            return *this;
+        }
 
         template <typename T>
-        SQLWriter& operator<< (unique_ptr<T> const& n)  {n->writeSQL(*this); return *this;}
+        SQLWriter& operator<<(unique_ptr<T> const& n) {
+            n->writeSQL(*this);
+            return *this;
+        }
 
         /// Any other types are written directly to the ostream:
-        template <typename T, typename std::enable_if<!std::is_base_of_v<Node,
-                                        std::decay_t<std::remove_pointer_t<T>>>>::type* = nullptr>
-        SQLWriter& operator<< (T&& t) {
-            _out << std::forward<T>(t); return *this;
+        template <typename T,
+                  typename std::enable_if<!std::is_base_of_v<Node, std::decay_t<std::remove_pointer_t<T>>>>::type* =
+                          nullptr>
+        SQLWriter& operator<<(T&& t) {
+            _out << std::forward<T>(t);
+            return *this;
         }
 
         /// The name of a table's `body` column. This is altered by some callers of QueryTranslator,
         /// usually when generating SQL for triggers.
         string bodyColumnName = "body";
 
-    private:
+      private:
         friend class WithPrecedence;
-        std::ostream&   _out;               // Output stream
-        int             _precedence = 0;    // Precedence of current operator
+        std::ostream& _out;             // Output stream
+        int           _precedence = 0;  // Precedence of current operator
     };
-
 
     /** RAII helper class used with SQLWriter to temporarily change the current precedence. */
     class WithPrecedence {
-    public:
-        WithPrecedence(SQLWriter& ctx, int prec)
-            :_ctx(ctx),_prev(_ctx._precedence) {_ctx._precedence = prec;}
-        ~WithPrecedence() {_ctx._precedence = _prev;}
-    protected:
-        SQLWriter& _ctx;
-        int _prev;
-    };
+      public:
+        WithPrecedence(SQLWriter& ctx, int prec) : _ctx(ctx), _prev(_ctx._precedence) { _ctx._precedence = prec; }
 
+        ~WithPrecedence() { _ctx._precedence = _prev; }
+
+      protected:
+        SQLWriter& _ctx;
+        int        _prev;
+    };
 
     /** RAII helper class used with SQLWriter for adding parentheses around an expression. */
     class Parenthesize : public WithPrecedence {
-    public:
-        Parenthesize(SQLWriter& ctx, int prec)
-        :WithPrecedence(ctx, prec)
-        ,_parens(prec <= _prev)
-        {
-            if (_parens)
-                ctx << '(';
+      public:
+        Parenthesize(SQLWriter& ctx, int prec) : WithPrecedence(ctx, prec), _parens(prec <= _prev) {
+            if ( _parens ) ctx << '(';
         }
-        ~Parenthesize() { if (_parens) _ctx << ')'; }
-    private:
+
+        ~Parenthesize() {
+            if ( _parens ) _ctx << ')';
+        }
+
+      private:
         bool _parens;
     };
-}
+}  // namespace litecore::qt

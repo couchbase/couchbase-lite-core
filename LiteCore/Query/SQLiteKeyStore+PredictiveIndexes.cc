@@ -59,10 +59,10 @@ namespace litecore {
     // Creates the SQLite table for a predictive index, and the triggers that keep it up to date.
     string SQLiteKeyStore::createPredictionTable(const Value* expression) {
         // Derive the table name from the expression (path) it unnests:
-        auto        kvTableName   = tableName();
-        auto        q_kvTableName = quotedTableName();
+        auto            kvTableName   = tableName();
+        auto            q_kvTableName = quotedTableName();
         QueryTranslator qp(db(), "", kvTableName);
-        auto        predTableName = qp.predictiveTableName((FLValue)expression);
+        auto            predTableName = qp.predictiveTableName((FLValue)expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(predTableName)

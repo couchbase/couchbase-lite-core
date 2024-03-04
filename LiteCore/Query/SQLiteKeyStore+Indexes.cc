@@ -87,7 +87,8 @@ namespace litecore {
                                      Array::iterator& expressions) {
         Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
         QueryTranslator qp(db(), "", sourceTableName);
-        qp.writeCreateIndex(spec.name, sourceTableName, (FLArrayIterator&)expressions, spec.where(), (spec.type != IndexSpec::kValue));
+        qp.writeCreateIndex(spec.name, sourceTableName, (FLArrayIterator&)expressions, spec.where(),
+                            (spec.type != IndexSpec::kValue));
         string sql = qp.SQL();
         return db().createIndex(spec, this, sourceTableName, sql);
     }

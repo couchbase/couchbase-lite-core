@@ -450,8 +450,8 @@ namespace litecore {
                     break;
                 case SQLITE_BLOB:
                     if ( i >= _query->_1stCustomResultColumn ) {
-                        slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
-                        if (fleeceData.empty()) {
+                        slice fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                        if ( fleeceData.empty() ) {
                             enc.writeNull();
                         } else {
                             Scope        fleeceScope(fleeceData, _sk);

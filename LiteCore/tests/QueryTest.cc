@@ -1900,7 +1900,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
     }*/
 }
 
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // CBL-1248
     ExclusiveTransaction t(store->dataFile());
 

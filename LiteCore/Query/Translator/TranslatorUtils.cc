@@ -59,17 +59,14 @@ namespace litecore::qt {
         return nullptr;
     }
 
-    
 #pragma mark - TABLE LOOKUP:
-
 
     const Operation* lookupOp(slice opName, unsigned nArgs) {
         bool nameMatched = false;
         for ( auto& def : kOperationList ) {
             if ( opName.caseEquivalent(def.name) ) {
                 nameMatched = true;
-                if ( nArgs >= def.minArgs && nArgs <= def.maxArgs )
-                    return &def;
+                if ( nArgs >= def.minArgs && nArgs <= def.maxArgs ) return &def;
             }
         }
         if ( nameMatched ) fail("Wrong number of arguments to %.*s", FMTSLICE(opName));
@@ -78,55 +75,47 @@ namespace litecore::qt {
 
     const Operation& lookupOp(OpType type) {
         for ( auto& def : kOperationList ) {
-            if ( def.type == type )
-                return def;
+            if ( def.type == type ) return def;
         }
         fail("Internal error: No Operation with type %d", int(type));
     }
 
-
     FunctionSpec const& lookupFn(slice fnName, int nArgs) {
-        bool             nameMatched = false;
+        bool nameMatched = false;
         for ( auto& def : kFunctionList ) {
             if ( fnName.caseEquivalent(def.name) ) {
                 nameMatched = true;
-                if ( nArgs >= def.minArgs && nArgs <= def.maxArgs )
-                    return def;
+                if ( nArgs >= def.minArgs && nArgs <= def.maxArgs ) return def;
             }
         }
         if ( nameMatched ) fail("Wrong number of arguments to %.*s()", FMTSLICE(fnName));
-        else fail("Unknown function '%.*s'", FMTSLICE(fnName));
+        else
+            fail("Unknown function '%.*s'", FMTSLICE(fnName));
     }
 
-
     MetaProperty lookupMeta(slice key, slice const keyList[kNumMetaProperties]) {
-        for (int i = 0; i < kNumMetaProperties; ++i) {
-            if (0 == key.caseEquivalentCompare(keyList[i]))
-                return MetaProperty{i + 1};
+        for ( int i = 0; i < kNumMetaProperties; ++i ) {
+            if ( 0 == key.caseEquivalentCompare(keyList[i]) ) return MetaProperty{i + 1};
         }
         return MetaProperty::none;
     }
 
-
     JoinType lookupJoin(slice name) {
         int i = 0;
-        for (auto j : kJoinTypeNames) {
-            if (name.caseEquivalent(j))
-                return JoinType{i};
+        for ( auto j : kJoinTypeNames ) {
+            if ( name.caseEquivalent(j) ) return JoinType{i};
             ++i;
         }
         return JoinType::none;
     }
 
-
 #pragma mark - PATHS:
-
 
     KeyPath parsePath(slice pathStr, fleece::Array::iterator* pComponents) {
         KeyPath path;
-        if (!pathStr.empty()) {
+        if ( !pathStr.empty() ) {
             FLError error;
-            if (pathStr.hasPrefix("$")) {
+            if ( pathStr.hasPrefix("$") ) {
                 // JSONPath prefix ignores a leading '$', but in query syntax it's treated literally;
                 // so escape it before passing it to the parser:
                 string quoted(pathStr);
@@ -137,9 +126,9 @@ namespace litecore::qt {
             }
             require(path, "invalid property path '%.*s'", FMTSLICE(pathStr));
         }
-        if (pComponents) {
-            for (Array::iterator& i = *pComponents; i; ++i) {
-                if (slice key = i->asString()) {
+        if ( pComponents ) {
+            for ( Array::iterator& i = *pComponents; i; ++i ) {
+                if ( slice key = i->asString() ) {
                     path.addProperty(key);
                 } else {
                     auto arr = i->asArray();
@@ -156,15 +145,13 @@ namespace litecore::qt {
         return path;
     }
 
-
     static bool hasMultipleCollections(ParseContext& ctx, bool ignoreJoins) {
-        if (ctx.sources.size() >= 2) {
-            if (ignoreJoins) {
+        if ( ctx.sources.size() >= 2 ) {
+            if ( ignoreJoins ) {
                 string const& collection = ctx.from->collection();
-                string const& scope = ctx.from->scope();
-                for (auto source : ctx.sources) {
-                    if (source->collection() != collection || source->scope() != scope)
-                        return true;
+                string const& scope      = ctx.from->scope();
+                for ( auto source : ctx.sources ) {
+                    if ( source->collection() != collection || source->scope() != scope ) return true;
                 }
             } else {
                 return true;
@@ -173,43 +160,39 @@ namespace litecore::qt {
         return false;
     }
 
-
     AliasedNode* resolvePropertyPath(KeyPath& path, ParseContext& ctx, bool ignoreJoins) {
         // First check whether the path starts with an alias; if so use it as the source:
-        for (auto &a : ctx.aliases) {
-            if (a.second->matchPath(path))
-                return a.second;
+        for ( auto& a : ctx.aliases ) {
+            if ( a.second->matchPath(path) ) return a.second;
         }
 
-        if (path.count() >= 1 && ctx.from && !ctx.from->hasExplicitAlias()) {
+        if ( path.count() >= 1 && ctx.from && !ctx.from->hasExplicitAlias() ) {
             // As a special case, we'll match on just the collection name of the main source,
             // even if it has a scope name:
             slice first = path.get(0).first;
             DebugAssert(!first.empty());
-            if (first.caseEquivalent(ctx.from->collection())) {
+            if ( first.caseEquivalent(ctx.from->collection()) ) {
                 path.dropComponents(1);
                 return ctx.from;
             }
         }
 
         // If there are no JOINs, the property is implicitily on the main (FROM) source.
-        if (hasMultipleCollections(ctx, ignoreJoins)) {
+        if ( hasMultipleCollections(ctx, ignoreJoins) ) {
             alloc_slice pathStr = path.toString();
             fail("property '%.*s' does not begin with a declared 'AS' alias", FMTSLICE(pathStr));
         }
-        return ctx.from;     // note: may be nullptr if parsing just an expression
+        return ctx.from;  // note: may be nullptr if parsing just an expression
     }
 
-
     void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter& ctx) {
-        if (auto prop = dynamic_cast<PropertyNode*>(&expr)) {
+        if ( auto prop = dynamic_cast<PropertyNode*>(&expr) ) {
             prop->writeSQL(ctx, sqliteFnName, param);
         } else {
             ctx << sqliteFnName << '(' << expr;
-            if (param)
-                ctx << ", NULL, " << *param;
+            if ( param ) ctx << ", NULL, " << *param;
             ctx << ')';
         }
     }
 
-}
+}  // namespace litecore::qt

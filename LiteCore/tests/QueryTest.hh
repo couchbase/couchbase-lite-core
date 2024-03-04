@@ -38,26 +38,24 @@ class QueryTest : public DataFileTestFixture {
   protected:
     QueryTest() : QueryTest(0) {}
 
-    static constexpr slice kCollectionNameOptions[numberOfOptions] = {
-        KeyStore::kDefaultCollectionName,
-        "_",
-        "cbl_core_temp",
-        "Secondary",
-        "_default.Secondary",
-        "scopey.subsidiary"
-    };
-
+    static constexpr slice kCollectionNameOptions[numberOfOptions] = {KeyStore::kDefaultCollectionName,
+                                                                      "_",
+                                                                      "cbl_core_temp",
+                                                                      "Secondary",
+                                                                      "_default.Secondary",
+                                                                      "scopey.subsidiary"};
 
     explicit QueryTest(int option) : option(option) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
         logSection(format("Collection `%s`", collectionName.c_str()));
-        switch (option) {
-            case 3: case 4:
-                store          = &db->getKeyStore(".Secondary");
+        switch ( option ) {
+            case 3:
+            case 4:
+                store = &db->getKeyStore(".Secondary");
                 break;
             case 5:
-                store          = &db->getKeyStore(".scopey.subsidiary");
+                store = &db->getKeyStore(".scopey.subsidiary");
                 break;
         }
     }

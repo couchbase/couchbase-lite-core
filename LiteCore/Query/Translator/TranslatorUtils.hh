@@ -40,7 +40,7 @@ namespace litecore::qt {
     Array requiredArray(Value v, const char* what);
 
     /// Returns `v` as a Dict, throwing an exception if it's the wrong type or nullptr.
-    Dict  requiredDict(Value v, const char* what);
+    Dict requiredDict(Value v, const char* what);
 
     /// Returns `v` as a string (slice), throwing an exception if it's the wrong type or nullptr,
     /// or empty.
@@ -53,11 +53,11 @@ namespace litecore::qt {
     Value getCaseInsensitive(Dict dict, slice key);
 
     // These functions look up items in tables or convert strings to enums:
-    const Operation* lookupOp(slice opName, unsigned nArgs);
-    const Operation& lookupOp(OpType type);
+    const Operation*    lookupOp(slice opName, unsigned nArgs);
+    const Operation&    lookupOp(OpType type);
     FunctionSpec const& lookupFn(slice fnName, int nArgs);
-    MetaProperty lookupMeta(slice key, slice const keyList[kNumMetaProperties]);
-    JoinType lookupJoin(slice name);
+    MetaProperty        lookupMeta(slice key, slice const keyList[kNumMetaProperties]);
+    JoinType            lookupJoin(slice name);
 
     /// Common path parsing shared by multiple node types.
     /// `pathStr` may be empty or contain dot-delimited path components;
@@ -75,4 +75,4 @@ namespace litecore::qt {
     ///   for the default `fl_value`.
     /// - Otherwise it writes the function call, passing the value of `expr` as the first arg.
     void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter&);
-}
+}  // namespace litecore::qt

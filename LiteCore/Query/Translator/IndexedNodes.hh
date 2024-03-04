@@ -22,76 +22,77 @@ namespace litecore::qt {
     /** Abstract base class of Nodes using a table-based (FTS, vector) index.
         Each instance is associated with a SourceNode added to the query, representing the index. */
     class IndexedNode : public ExprNode {
-    public:
-        IndexType indexType() const                 {return _type;}
-        string_view property() const                {return _property;}
-        bool isIndexOwner() const                   {return _isIndexOwner;}
-        SourceNode* sourceCollection() const        {return _sourceCollection;}
+      public:
+        IndexType indexType() const { return _type; }
 
-        void setIndexSource(SourceNode* s)          {_indexSource = s;}
-        SourceNode* indexSource() const             {return _indexSource;}
+        string_view property() const { return _property; }
+
+        bool isIndexOwner() const { return _isIndexOwner; }
+
+        SourceNode* sourceCollection() const { return _sourceCollection; }
+
+        void setIndexSource(SourceNode* s) { _indexSource = s; }
+
+        SourceNode* indexSource() const { return _indexSource; }
 
         virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const;
 
-    protected:
-        IndexedNode(Array::iterator &args, ParseContext&, IndexType, const char* name, bool isOwner);
+      protected:
+        IndexedNode(Array::iterator& args, ParseContext&, IndexType, const char* name, bool isOwner);
         void writeIndex(SQLWriter&) const;
 
-        IndexType   _type;                          // Index type
-        string      _property;                      // Collection property that's indexed
-        SourceNode* _sourceCollection = nullptr;    // The collection containing the index
-        SourceNode* _indexSource = nullptr;         // Source representing the index
+        IndexType   _type;                        // Index type
+        string      _property;                    // Collection property that's indexed
+        SourceNode* _sourceCollection = nullptr;  // The collection containing the index
+        SourceNode* _indexSource      = nullptr;  // Source representing the index
         bool        _isIndexOwner;
     };
 
-
     /** An FTS `match()` function call. */
     class MatchNode final : public IndexedNode {
-    public:
-        MatchNode(Array::iterator &args, ParseContext&);
+      public:
+        MatchNode(Array::iterator& args, ParseContext&);
 
         void writeSQL(SQLWriter&) const override;
         void visitChildren(ChildVisitor const&) override;
 
-    private:
+      private:
         unique_ptr<ExprNode> _searchString;
     };
 
-
     /** An FTS `rank()` function call. */
     class RankNode final : public IndexedNode {
-    public:
-        RankNode(Array::iterator &args, ParseContext& ctx);
-        void writeSQL(SQLWriter&) const override;
+      public:
+        RankNode(Array::iterator& args, ParseContext& ctx);
+        void    writeSQL(SQLWriter&) const override;
         OpFlags opFlags() const override;
     };
 
 
 #ifdef COUCHBASE_ENTERPRISE
-    
+
 
     /** A `vector_match()` function call. */
     class VectorMatchNode final : public IndexedNode {
-    public:
-        VectorMatchNode(Array::iterator &args, ParseContext&);
+      public:
+        VectorMatchNode(Array::iterator& args, ParseContext&);
 
         void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
         void writeSQL(SQLWriter&) const override;
         void visitChildren(ChildVisitor const&) override;
 
-    private:
+      private:
         unique_ptr<ExprNode> _vector, _maxResults;
     };
 
-
     /** A `vector_distance()` function call. */
     class VectorDistanceNode final : public IndexedNode {
-    public:
-        VectorDistanceNode(Array::iterator &args, ParseContext& ctx);
-        void writeSQL(SQLWriter&) const override;
+      public:
+        VectorDistanceNode(Array::iterator& args, ParseContext& ctx);
+        void    writeSQL(SQLWriter&) const override;
         OpFlags opFlags() const override;
-        void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
+        void    writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
     };
 
 #endif
-}
+}  // namespace litecore::qt
