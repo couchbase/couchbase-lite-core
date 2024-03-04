@@ -15,6 +15,7 @@
 #include "fleece/function_ref.hh"
 #include "fleece/Fleece.h"
 #include <set>
+#include <vector>
 
 namespace litecore {
     namespace qt {
