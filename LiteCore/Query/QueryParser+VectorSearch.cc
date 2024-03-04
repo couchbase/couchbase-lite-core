@@ -16,6 +16,7 @@
 #include "StringUtil.hh"
 #include "Dict.hh"
 #include "Logging.hh"
+#include "MutableArray.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -99,8 +100,11 @@ namespace litecore {
     // Given a property path in a vector index expression,
     // returns the SQL of the value to be indexed in a document: the property value encoded as
     // a binary vector.
-    std::string QueryParser::vectorExpressionSQL(const fleece::impl::Value* exprToIndex) {
-        return functionCallSQL(kVectorValueFnName, exprToIndex);
+    std::string QueryParser::vectorToIndexExpressionSQL(const fleece::impl::Value* exprToIndex, unsigned dimensions) {
+        auto a = MutableArray::newArray();
+        a->append(dimensions);
+        const Value* dimAsFleece = a->get(0);
+        return functionCallSQL(kVectorToIndexFnName, exprToIndex, dimAsFleece);
     }
 
 }  // namespace litecore
