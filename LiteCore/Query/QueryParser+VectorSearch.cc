@@ -27,7 +27,8 @@ using namespace litecore::qp;
 
 namespace litecore {
 
-    static constexpr unsigned kDefaultMaxResults = 10;
+    static constexpr unsigned kDefaultMaxResults = 3;
+    static constexpr unsigned kMaxMaxResults     = 10000;
 
     // Scans the entire query for vector_match() calls, and adds CTE tables for ones that are
     // indexed. These CTE tables will be JOINed, and accessed by writeVectorDistanceFn.
@@ -48,6 +49,8 @@ namespace litecore {
                 require(m->isInteger(), "max_results parameter to vector_match must be an integer");
                 maxResults = m->asInt();
                 require(maxResults > 0, "max_results parameter to vector_match must be positive");
+                require(maxResults <= kMaxMaxResults, "max_results parameter to vector_match exceeds %u",
+                        kMaxMaxResults);
             }
 
             const string& alias = indexJoinTableAlias(tableName, "vector");
