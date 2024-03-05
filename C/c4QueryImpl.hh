@@ -89,8 +89,12 @@ namespace litecore {
 
         C4QueryEnumeratorImpl* C4NULLABLE refresh() {
             QueryEnumerator* newEnum = enumerator()->refresh(_query);
-            if (newEnum)
-                return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
+            if (newEnum) {
+                slice scope = newEnum->getScope();
+                C4QueryEnumeratorImpl* ret = new C4QueryEnumeratorImpl(_database, _query, newEnum);
+                FleeceLogCB::log2("QueryEnumerator refreshed", fleece::eQueryEnumNew, (C4QueryEnumerator*)ret, scope);
+                return retain(ret);
+            }
             else
                 return nullptr;
         }

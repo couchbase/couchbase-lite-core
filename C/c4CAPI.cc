@@ -1413,6 +1413,7 @@ C4QueryEnumerator* c4query_run(C4Query *query,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
+        C4Log("c4query_run, query=%p", query);
         return query->createEnumerator(c4options, encodedParameters);
     });
 }
@@ -1494,6 +1495,7 @@ void c4queryenum_close(C4QueryEnumerator *e) noexcept {
 }
 
 void c4queryenum_release(C4QueryEnumerator *e) noexcept {
+    FleeceLogCB::log2("QueryEnumerator released", fleece::eQueryEnumRel, e, nullslice);
     release(asInternal(e));
 }
 

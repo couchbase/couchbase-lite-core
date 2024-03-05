@@ -134,7 +134,10 @@ C4QueryEnumerator* C4Query::createEnumerator(const C4QueryOptions *c4options,
                                              slice encodedParameters)
 {
     auto e = _createEnumerator(c4options, encodedParameters);
-    return wrapEnumerator(e).detach();
+    slice scope = e->getScope();
+    C4QueryEnumerator* ret = wrapEnumerator(e).detach();
+    FleeceLogCB::log2("QueryEnumerator created", fleece::eQueryEnumNew, ret, scope);
+    return ret;
 }
 
 

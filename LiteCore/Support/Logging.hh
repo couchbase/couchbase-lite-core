@@ -14,8 +14,11 @@
 #include "fleece/slice.hh"
 #include "fleece/PlatformCompat.hh"
 #include "c4Compat.h"
+#include "Backtrace.hh"
 #include <atomic>
 #include <map>
+#include <mutex>
+#include <unordered_set>
 #include <string>
 #include <stdarg.h>
 #include <stdint.h>
@@ -45,6 +48,20 @@
  
     Note: Logging is still present in release/nondebug builds. I've found this to be very useful in tracking down problems in the field, since I can tell a user how to turn on logging, and then get detailed logs back. To disable logging code from being compiled at all, define the preprocessor symbol _DISABLE_LOGGING (in your prefix header or target build settings.)
 */ 
+
+namespace litecore {
+class LogDomain;
+}
+struct FleeceLogCB {
+    static litecore::LogDomain FLC;
+    static std::unordered_map<const void*, fleece::slice> sQueryEnumNew;
+    static std::unordered_set<const void*> sColumns;
+    static std::mutex mutex;
+
+    static void log(const char* msg, int type, const void* pointer);
+    static void log2(const char* msg, int type, const void* pointer, fleece::slice scope);
+    FleeceLogCB();
+};
 
 namespace litecore {
 

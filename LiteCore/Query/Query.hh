@@ -131,6 +131,7 @@ namespace litecore {
 
         virtual bool obsoletedBy(const QueryEnumerator*) =0;
 
+        virtual slice getScope() const { return nullslice; }
     protected:
         QueryEnumerator(const Query::Options *options, sequence_t lastSeq, uint64_t purgeCount)
         :_options(options ? *options : Query::Options{})
