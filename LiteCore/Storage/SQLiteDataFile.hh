@@ -13,7 +13,7 @@
 #pragma once
 
 #include "DataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
 #include <memory>
@@ -36,7 +36,7 @@ namespace litecore {
     /** SQLite implementation of DataFile. */
     class SQLiteDataFile final
         : public DataFile
-        , public QueryParser::Delegate {
+        , public QueryTranslator::Delegate {
       public:
         SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options*);
         ~SQLiteDataFile() override;
@@ -100,7 +100,7 @@ namespace litecore {
         /// Sets the directory where SQLite extensions can be found (i.e. VectorSearch)
         static void setExtensionPath(string);
 
-        // QueryParser::delegate:
+        // QueryTranslator::Delegate:
         bool        tableExists(const std::string& tableName) const override;
         string      collectionTableName(const string& collection, DeletionStatus) const override;
         string      auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) const;

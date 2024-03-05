@@ -22,6 +22,7 @@
 #include <dirent.h>
 #include <algorithm>
 #include <iomanip>
+#include <sstream>
 #include <thread>
 
 #include "SQLiteDataFile.hh"

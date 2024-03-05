@@ -228,7 +228,7 @@ namespace litecore {
         // Construct a list of column names:
         stringstream columns;
         int          n = 1;
-        for ( Array::iterator i(spec->what()); i; ++i, ++n ) {
+        for ( Array::iterator i((const Array*)spec->what()); i; ++i, ++n ) {
             auto col = i.value();
             if ( auto array = col->asArray(); array ) col = array->get(0);
             slice colStr = col->asString();

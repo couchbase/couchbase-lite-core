@@ -779,11 +779,11 @@ namespace litecore {
         DebugAssert(!hasPrefix(collection, "kv_"));
 
         string name;
-        if ( type == QueryParser::kLiveAndDeletedDocs ) {
+        if ( type == QueryTranslator::kLiveAndDeletedDocs ) {
             name = "all_";
         } else {
             name = "kv_";
-            if ( type == QueryParser::kDeletedDocs ) name += kDeletedKeyStorePrefix;
+            if ( type == QueryTranslator::kDeletedDocs ) name += kDeletedKeyStorePrefix;
         }
 
         auto [scope, coll] = splitCollectionPath(collection);
