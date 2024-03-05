@@ -28,8 +28,8 @@ class VectorQueryTest : public QueryTest {
     VectorQueryTest(int which) : QueryTest(which + initialize()) {}
 
     ~VectorQueryTest() {
-        // Assert that the callback did not log a warning:
-        CHECK(warningsLogged() == 0);
+        // Assert that the callback did not log unexpected warnings:
+        CHECK(warningsLogged() == expectedWarningsLogged);
     }
 
     void requireExtensionAvailable() {
@@ -44,6 +44,27 @@ class VectorQueryTest : public QueryTest {
         store->createIndex(spec);
         REQUIRE(store->getIndexes().size() == 1);
     }
+
+    void checkExpectedResults(Retained<QueryEnumerator> e, std::initializer_list<slice> expectedIDs,
+                              std::initializer_list<float> expectedDistances) {
+        auto expectedID   = expectedIDs.begin();
+        auto expectedDist = expectedDistances.begin();
+        for ( size_t i = 0; i < expectedIDs.size(); ++i, expectedID++, expectedDist++ ) {
+            REQUIRE(e->next());
+            slice id       = e->columns()[0]->asString();
+            float distance = e->columns()[1]->asFloat();
+            INFO("i=" << i);
+            CHECK(id == *expectedID);
+            // Vector encoders are lossy, so using one in the index will result in approximate distances,
+            // which is why the distance check below is so loose.
+            CHECK_THAT(distance, Catch::Matchers::WithinRel(*expectedDist, 0.20f)
+                                         || Catch::Matchers::WithinAbs(*expectedDist, 400.0f));
+        }
+        CHECK(!e->next());
+    }
+
+    /// Increment this if the test is expected to generate a warning.
+    unsigned expectedWarningsLogged = 0;
 
     static inline string sExtensionPath;
 };

@@ -116,26 +116,23 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     Query::Options options(enc.finish());
 
     // Run the query:
-    Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 5);  // the call to VECTOR_MATCH requested only 5 results
+    checkExpectedResults(query->createEnumerator(&options),
+                         {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
 
-    // The `expectedDistances` array contains the exact distances.
-    // Vector encoders are lossy, so using one in the index will result in approximate distances,
-    // which is why the distance check below is so loose.
-    static constexpr slice expectedIDs[5]       = {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"};
-    static constexpr float expectedDistances[5] = {0, 4172, 10549, 29275, 32025};
-
-    for ( size_t i = 0; i < 5; ++i ) {
-        REQUIRE(e->next());
-        slice id       = e->columns()[0]->asString();
-        float distance = e->columns()[1]->asFloat();
-        INFO("i=" << i);
-        CHECK(id == expectedIDs[i]);
-        CHECK_THAT(distance, Catch::Matchers::WithinRel(expectedDistances[i], 0.20f)
-                                     || Catch::Matchers::WithinAbs(expectedDistances[i], 400.0f));
+    // Update a document with an invalid vector property:
+    {
+        Log("---- Updating rec-0031 to remove its vector");
+        ExclusiveTransaction t(db);
+        writeDoc("rec-0031", DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("vector");
+            enc.writeString("nope");
+        });
+        t.commit();
+        ++expectedWarningsLogged;
     }
-    CHECK(!e->next());
-    Log("done");
+    // Verify the updated document is missing from the results:
+    checkExpectedResults(query->createEnumerator(&options),
+                         {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"}, {0, 10549, 29275, 32025, 65417});
 
     reopenDatabase();
 }

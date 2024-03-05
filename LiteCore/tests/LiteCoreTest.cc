@@ -195,7 +195,10 @@ sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, Documen
     alloc_slice body = enc.finish();
 
     if ( toStore.capabilities().sequences ) {
-        RecordUpdate rec(docID, body, flags);
+        Record       existing = toStore.get(docID);
+        RecordUpdate rec(existing);
+        rec.body  = body;
+        rec.flags = flags;
         return toStore.set(rec, KeyStore::kUpdateSequence, t);
     } else {
         toStore.setKV(docID, body, t);
