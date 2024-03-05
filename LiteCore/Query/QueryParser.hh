@@ -233,6 +233,7 @@ namespace litecore {
 
         void parseJoin(const Dict*);
 
+        void                 requireTopLevelConjunction(const char* fnName);
         unsigned             findFTSProperties(const Value* root);
         void                 findPredictionCalls(const Value* root);
         void                 addVectorSearchCTEs(const Value* root);
