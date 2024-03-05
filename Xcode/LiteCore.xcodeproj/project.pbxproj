@@ -247,6 +247,8 @@
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
+		278CE55C2B98E78D00245552 /* carray_bind.c in Sources */ = {isa = PBXBuildFile; fileRef = 278CE5592B98E78D00245552 /* carray_bind.c */; };
+		278CE55D2B98E78D00245552 /* carray.c in Sources */ = {isa = PBXBuildFile; fileRef = 278CE55A2B98E78D00245552 /* carray.c */; };
 		278F475924C9131000E1CA7A /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
 		278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		278F475B24C9131000E1CA7A /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.mm */; };
@@ -1244,6 +1246,10 @@
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
+		278CE5582B98E78D00245552 /* carray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = carray.h; sourceTree = "<group>"; };
+		278CE5592B98E78D00245552 /* carray_bind.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = carray_bind.c; sourceTree = "<group>"; };
+		278CE55A2B98E78D00245552 /* carray.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = carray.c; sourceTree = "<group>"; };
+		278CE55B2B98E78D00245552 /* carray_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = carray_internal.h; sourceTree = "<group>"; };
 		278F476724C9131000E1CA7A /* iOS Perf Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS Perf Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		278F478524C914BF00E1CA7A /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		278F478724C914C600E1CA7A /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
@@ -2185,6 +2191,7 @@
 				2747664520190841007B39D1 /* CMakeLists.txt */,
 				2747664720190841007B39D1 /* sqlite3.c */,
 				2747664820190841007B39D1 /* sqlite3.h */,
+				27B516E72B97BAA80049DD1D /* ext */,
 			);
 			path = sqlite3;
 			sourceTree = "<group>";
@@ -2770,6 +2777,17 @@
 				27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */,
 			);
 			path = src;
+			sourceTree = "<group>";
+		};
+		27B516E72B97BAA80049DD1D /* ext */ = {
+			isa = PBXGroup;
+			children = (
+				278CE5582B98E78D00245552 /* carray.h */,
+				278CE55B2B98E78D00245552 /* carray_internal.h */,
+				278CE55A2B98E78D00245552 /* carray.c */,
+				278CE5592B98E78D00245552 /* carray_bind.c */,
+			);
+			path = ext;
 			sourceTree = "<group>";
 		};
 		27BB9DFA236D05650039C896 /* library */ = {
@@ -4331,6 +4349,7 @@
 				2744B358241854F2005A194D /* Channel.cc in Sources */,
 				2744B35D241854F2005A194D /* Message.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
+				278CE55D2B98E78D00245552 /* carray.c in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
 				27469D07233D719800A1EE1A /* PublicKey.cc in Sources */,
@@ -4400,6 +4419,7 @@
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
+				278CE55C2B98E78D00245552 /* carray_bind.c in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
