@@ -58,7 +58,6 @@ struct ScopedSetter {
 };
 
 
-litecore::LogDomain FleeceLogCB::FLC("Fleece");
 std::unordered_map<const void*, fleece::slice> FleeceLogCB::sQueryEnumNew;
 std::unordered_set<const void*> FleeceLogCB::sColumns;
 std::mutex FleeceLogCB::mutex;
@@ -79,13 +78,13 @@ void FleeceLogCB::log(const char* msg, int type, const void* pointer) {
                     }
                 }
             }
-            LogTo(FLC, "%s, %p, %s column", msg, pointer, inValue?"is":"is not");
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p, %s column", msg, pointer, inValue?"is":"is not");
             if (inValue && !inNew) {
-                LogError(FLC, "JSONEncoder::writeValue, value not in New, %p", pointer);
+                LogError(litecore::QueryLog, "[Fleece] JSONEncoder::writeValue, value not in New, %p", pointer);
             }
         } break;
         case fleece::eColumnValue: {
-            LogTo(FLC, "%s %p", msg, pointer);
+            LogTo(litecore::QueryLog, "[Fleece] %s %p", msg, pointer);
             {
                 std::scoped_lock<std::mutex> lock(mutex);
                 sColumns.insert(pointer);
@@ -99,29 +98,29 @@ void FleeceLogCB::log2(const char* msg, int type, const void* pointer, fleece::s
     switch (type) {
         // c4query_run
         case fleece::eQueryEnumNew: {
-            LogTo(FLC, "%s, %p, scope.end=%p", msg, pointer, scope.end());
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p, scope.end=%p", msg, pointer, scope.end());
             bool r;
             {
                 std::scoped_lock<std::mutex> lock(mutex);
                 r = sQueryEnumNew.emplace(pointer, scope).second;
             }
             if (!r) {
-                LogWarn(FLC, "insert new pointer fail %p", pointer);
+                LogWarn(litecore::QueryLog, "[Fleece] insert new pointer fail %p", pointer);
             }
         } break;
 
         // c4queryenum_release
         case fleece::eQueryEnumRel: {
             bool found = false;
-            LogTo(FLC, "%s, %p", msg, pointer);
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p", msg, pointer);
             {
                 std::scoped_lock<std::mutex> lock(mutex);
                 found = (sQueryEnumNew.erase(pointer) > 0);
             }
             if (found) {
-                LogTo(FLC, "removed  %p from New", pointer);
+                LogTo(litecore::QueryLog, "[Fleece] removed  %p from New", pointer);
             } else {
-                LogWarn(FLC, "removed  %p from New but fail to find it", pointer);
+                LogWarn(litecore::QueryLog, "[Fleece] removed  %p from New but fail to find it", pointer);
             }
         } break;
         default:

@@ -268,7 +268,7 @@ namespace litecore {
                 Array::iterator iter = columns();
                 for (; iter; ++iter) {
                     if (iter.value()) {
-                        FleeceLogCB::log("column %p", fleece::eColumnValue, iter.value());
+                        FleeceLogCB::log("column value ", fleece::eColumnValue, iter.value());
                     }
                 }
             }
