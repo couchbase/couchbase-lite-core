@@ -57,6 +57,82 @@ struct ScopedSetter {
     }
 };
 
+
+std::unordered_map<const void*, fleece::slice> FleeceLogCB::sQueryEnumNew;
+std::unordered_set<const void*> FleeceLogCB::sColumns;
+std::mutex FleeceLogCB::mutex;
+
+void FleeceLogCB::log(const char* msg, int type, const void* pointer) {
+    switch (type) {
+        case fleece::eEncodeValue: {
+            bool inNew{false}, inValue{false};
+            {
+                std::scoped_lock<std::mutex> lock(mutex);
+                inValue = sColumns.find(pointer) != sColumns.end();
+                if (inValue) {
+                    for (auto& it : sQueryEnumNew) {
+                        if (pointer < it.second.end()) {
+                            inNew = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p, %s column", msg, pointer, inValue?"is":"is not");
+            if (inValue && !inNew) {
+                LogError(litecore::QueryLog, "[Fleece] JSONEncoder::writeValue, value not in New, %p", pointer);
+            }
+        } break;
+        case fleece::eColumnValue: {
+            LogTo(litecore::QueryLog, "[Fleece] %s %p", msg, pointer);
+            {
+                std::scoped_lock<std::mutex> lock(mutex);
+                sColumns.insert(pointer);
+            }
+        } break;
+        default:
+            break;
+    }
+}
+void FleeceLogCB::log2(const char* msg, int type, const void* pointer, fleece::slice scope) {
+    switch (type) {
+        // c4query_run
+        case fleece::eQueryEnumNew: {
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p, scope.end=%p", msg, pointer, scope.end());
+            bool r;
+            {
+                std::scoped_lock<std::mutex> lock(mutex);
+                r = sQueryEnumNew.emplace(pointer, scope).second;
+            }
+            if (!r) {
+                LogWarn(litecore::QueryLog, "[Fleece] insert new pointer fail %p", pointer);
+            }
+        } break;
+
+        // c4queryenum_release
+        case fleece::eQueryEnumRel: {
+            bool found = false;
+            LogTo(litecore::QueryLog, "[Fleece] %s, %p", msg, pointer);
+            {
+                std::scoped_lock<std::mutex> lock(mutex);
+                found = (sQueryEnumNew.erase(pointer) > 0);
+            }
+            if (found) {
+                LogTo(litecore::QueryLog, "[Fleece] removed  %p from New", pointer);
+            } else {
+                LogWarn(litecore::QueryLog, "[Fleece] removed  %p from New but fail to find it", pointer);
+            }
+        } break;
+        default:
+            break;
+    }
+}
+
+FleeceLogCB::FleeceLogCB() {
+    fleece::registerFleeceLogCallback(log);
+}
+static FleeceLogCB sFleeceLogCB;
+
 // Please don't use error::_throw. It may cause deadlock. Use this one.
 #define ERROR_THROW(ERROR_CODE, FMT, ...)                      \
     do {ScopedSetter setter(error::sWarnOnError, false);       \

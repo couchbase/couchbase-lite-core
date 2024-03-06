@@ -263,6 +263,15 @@ namespace litecore {
         {
             logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
                 query->objectRef(), rowCount, recording->data().size, elapsedTime*1000);
+
+            if (_iter[0u]) {
+                Array::iterator iter = columns();
+                for (; iter; ++iter) {
+                    if (iter.value()) {
+                        FleeceLogCB::log("column value ", fleece::eColumnValue, iter.value());
+                    }
+                }
+            }
         }
 
         ~SQLiteQueryEnumerator() {
@@ -271,6 +280,10 @@ namespace litecore {
 
         virtual int64_t getRowCount() const override {
             return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)
+        }
+
+        virtual slice getScope() const override {
+            return _recording->data();
         }
 
         virtual void seek(int64_t rowIndex) override {
@@ -437,13 +450,19 @@ namespace litecore {
 
         void bindParameters(slice json) {
             alloc_slice fleeceData;
-            if (json[0] == '{' && json[json.size-1] == '}')
+            std::string msg;
+            if (json[0] == '{' && json[json.size-1] == '}') {
+                msg = "bindParameters, from JSON";
+                LogTo(SQL, "bindParameters, from JSON");
                 fleeceData = JSONConverter::convertJSON(json);
-            else
+            }
+            else {
+                msg = "bindParameters, from data";
                 fleeceData = json;
+            }
             const Dict *root = Value::fromData(fleeceData)->asDict();
             if (!root)
-                error::_throw(error::InvalidParameter);
+                error::_throw(error::InvalidParameter, "bindParameters, %s", msg.c_str());
             for (Dict::iterator it(root); it; ++it) {
                 auto key = (string)it.keyString();
                 _unboundParameters.erase(key);
@@ -480,10 +499,12 @@ namespace litecore {
                         throw;
                 }
             }
+            LogTo(SQL, "bindParameters ends");
         }
 
         bool encodeColumn(Encoder &enc, int i) {
             SQLite::Column col = _statement->getColumn(i);
+            LogTo(SQL, "encodeColumn i=%d, col.type=%d", i, col.getType());
             switch (col.getType()) {
                 case SQLITE_NULL:
                     enc.writeNull();
@@ -516,6 +537,9 @@ namespace litecore {
         // Collects all the (remaining) rows into a Fleece array of arrays,
         // and returns an enumerator impl that will replay them.
         SQLiteQueryEnumerator* fastForward() {
+            if (!_statement) {
+                LogError(SQL, "fastForward, null _statement");
+            }
             fleece::Stopwatch st;
             int nCols = _statement->getColumnCount();
             uint64_t rowCount = 0;
@@ -526,7 +550,7 @@ namespace litecore {
             auto sk = retained(new SharedKeys);
             enc.setSharedKeys(sk);
             enc.beginArray();
-
+            LogTo(SQL, "forward to encode the query result");
             unicodesn_tokenizerRunningQuery(true);
             try {
                  auto firstCustomCol = _query->_1stCustomResultColumn;
@@ -551,6 +575,7 @@ namespace litecore {
             unicodesn_tokenizerRunningQuery(false);
 
             enc.endArray();
+            LogTo(SQL, "forward ends");
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
                                              enc.finishDoc().get(), rowCount, st.elapsed());
         }
