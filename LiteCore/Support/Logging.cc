@@ -84,7 +84,7 @@ namespace litecore {
     static mutex                 sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
-    static const char*       kLevels[]     = {"***", "", "", "WARNING", "ERROR"};
+    static const char*       kLevels[]     = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
 
     static string createLogPath(LogLevel level) {
         int64_t millisSinceEpoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -389,6 +389,11 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
+    /*static*/ inline size_t LogDomain::addObjectPath(char* destBuf, size_t bufSize, unsigned obj) {
+        auto objPath = getObjectPath(obj);
+        return snprintf(destBuf, bufSize, "Obj=%s ", objPath.c_str());
+    }
+
     void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char* fmt, va_list args) {
         if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
         if ( !willLog(level) ) return;
@@ -397,27 +402,22 @@ namespace litecore {
 
         // Invoke the client callback:
         if ( doCallback && sCallback && level >= _callbackLogLevel() ) {
-            auto objPath = getObjectPath(objRef);
-
             va_list args2;
             va_copy(args2, args);
+            va_list noArgs{};
+
+            size_t      n      = 0;
+            const char* useFmt = fmt;
+            if ( objRef ) n = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), objRef);
             if ( sCallbackPreformatted ) {
-                // Preformatted: Do the formatting myself and pass the resulting string:
-                size_t n = 0;
-                if ( objRef ) n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s ", objPath.c_str());
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
-                va_list noArgs{};
-                sCallback(*this, level, sFormatBuffer, noArgs);
-            } else {
-                // Not preformatted: pass the format string and va_list to the callback
-                // (prefixing the object ref # if any):
-                if ( objRef ) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s %s", objPath.c_str(), fmt);
-                    sCallback(*this, level, sFormatBuffer, args2);
-                } else {
-                    sCallback(*this, level, fmt, args2);
-                }
+                useFmt = sFormatBuffer;
+            } else if ( n > 0 ) {
+                snprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, "%s ", fmt);
+                useFmt = sFormatBuffer;
             }
+            sCallback(*this, level, useFmt, sCallbackPreformatted ? noArgs : args2);
+
             va_end(args2);
         }
 
@@ -466,7 +466,7 @@ namespace litecore {
             size_t      n = 0;
             LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
             LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
-            if ( objRef ) n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
+            if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *file << formatBuffer << endl;
             pos = file->tellp();
