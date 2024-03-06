@@ -52,7 +52,7 @@ string stringWithFormat(const char* format, ...) {
     return str;
 }
 
-void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+void ExpectException(litecore::error::Domain domain, int code, const char* what, const std::function<void()>& lambda) {
     try {
         ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
@@ -62,9 +62,14 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
         error err = error::convertRuntimeError(x).standardized();
         CHECK(err.domain == domain);
         CHECK(err.code == code);
+        if ( what ) CHECK(string_view(err.what()) == string_view(what));
         return;
     }
     FAIL("Should have thrown an exception");
+}
+
+void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+    ExpectException(domain, code, nullptr, lambda);
 }
 
 #pragma mark - TESTFIXTURE:

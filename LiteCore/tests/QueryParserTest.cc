@@ -658,3 +658,26 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM scope", "[Query][QueryParser
              R"(= fl_value("store2.customers".body, 'name')))");
     CHECK(usedTableNames == set<string>{"kv_.store.customers", "kv_.store2.customers"});
 }
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried FTS", "[Query][QueryParser][FTS]") {
+    parse("['SELECT', {WHERE: ['AND', ['MATCH()', 'byStreet', 'Hwy'],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+    ExpectException(error::LiteCore, error::InvalidQuery, "MATCH can only appear at top-level, or in a top-level AND",
+                    [this] {
+                        parse("['SELECT', {WHERE: ['OR', ['MATCH()', 'byStreet', 'Hwy'],\
+                                         ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+                    });
+}
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried VS", "[Query][QueryParser][VectorSearch]") {
+    tableNames.insert("kv_default:vector:vecIndex");
+    parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+    ExpectException(error::LiteCore, error::InvalidQuery,
+                    "VECTOR_MATCH can only appear at top-level, or in a top-level AND", [this] {
+                        parse("['SELECT', {WHERE: ['OR', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],\
+                                         ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+                    });
+}
+#endif

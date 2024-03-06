@@ -59,6 +59,7 @@ namespace litecore {
     }
 
     void QueryParser::writeVectorMatchFn(ArrayIterator& params) {
+        requireTopLevelConjunction("VECTOR_MATCH");
         // The work of `vector_match` is done by the JOIN, which limits the results to the
         // rowids produced by the `vss_search` CTE. So replace the call with a `true`.
         _sql << "true";
