@@ -575,8 +575,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL DateTime", "[Query][N1QL]") {
 
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
+    tableNames.emplace("kv_default:vector:vecIndex");
     tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.coll:vector:vecIndex");
     tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.scope.coll:vector:vecIndex");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
                     "WHERE VECTOR_MATCH(vecIndex, $target, 5) ORDER BY distance")

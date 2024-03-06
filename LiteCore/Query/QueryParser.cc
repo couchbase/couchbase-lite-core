@@ -1877,10 +1877,10 @@ namespace litecore {
         return SQL();
     }
 
-    std::string QueryParser::functionCallSQL(slice fnName, const fleece::impl::Value* args) {
+    std::string QueryParser::functionCallSQL(slice fnName, const Value* args, const Value* param) {
         reset();
         addDefaultAlias();
-        writeFunctionGetter(fnName, args);
+        writeFunctionGetter(fnName, args, param);
         return SQL();
     }
 
