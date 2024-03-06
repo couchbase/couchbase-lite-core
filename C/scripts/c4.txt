@@ -411,6 +411,12 @@ gC4ExpectExceptions
 
 c4_setExtensionPath
 
+c4client_new
+c4client_getDoc
+c4client_start
+c4client_stop
+c4client_putDoc
+
 FLDoc_FromJSON
 FLDoc_Retain
 FLDoc_GetAllocedData

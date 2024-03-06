@@ -317,6 +317,8 @@
 		27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27B517082B97E7890049DD1D /* ResultTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B517072B97E7880049DD1D /* ResultTest.cc */; };
+		27B517092B97EEFF0049DD1D /* c4ConnectedClient_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B517012B97E3D20049DD1D /* c4ConnectedClient_CAPI.cc */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		27B6494A2069723900FC12F7 /* c4.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9F7D1C518793003115A6 /* c4.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1309,6 +1311,22 @@
 		27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = datagram_socket.cpp; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
+		27B516F02B97E2D90049DD1D /* c4ConnectedClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClient.hh; sourceTree = "<group>"; };
+		27B516F42B97E2F50049DD1D /* c4ConnectedClientTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ConnectedClientTypes.h; sourceTree = "<group>"; };
+		27B516F52B97E2F50049DD1D /* c4ConnectedClient.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ConnectedClient.h; sourceTree = "<group>"; };
+		27B516F62B97E3380049DD1D /* ConnectedClient.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConnectedClient.cc; sourceTree = "<group>"; };
+		27B516F72B97E3380049DD1D /* ConnectedClient.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClient.hh; sourceTree = "<group>"; };
+		27B516F82B97E3380049DD1D /* QueryServer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryServer.cc; sourceTree = "<group>"; };
+		27B516F92B97E3380049DD1D /* QueryServer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = QueryServer.hh; sourceTree = "<group>"; };
+		27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConnectedClientTest.cc; sourceTree = "<group>"; };
+		27B516FE2B97E38A0049DD1D /* ConnectedClientTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClientTest.hh; sourceTree = "<group>"; };
+		27B517002B97E3D20049DD1D /* c4ConnectedClientImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClientImpl.hh; sourceTree = "<group>"; };
+		27B517012B97E3D20049DD1D /* c4ConnectedClient_CAPI.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient_CAPI.cc; sourceTree = "<group>"; };
+		27B517022B97E3D20049DD1D /* c4ConnectedClient.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient.cc; sourceTree = "<group>"; };
+		27B517052B97E40C0049DD1D /* ConnectedClientProtocol.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ConnectedClientProtocol.md; sourceTree = "<group>"; };
+		27B517062B97E74E0049DD1D /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
+		27B517072B97E7880049DD1D /* ResultTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ResultTest.cc; sourceTree = "<group>"; };
+		27B5170A2B97F1AC0049DD1D /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
 		27B64934206971FB00FC12F7 /* LiteCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiteCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27B64936206971FC00FC12F7 /* LiteCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LiteCore.h; path = ../../Xcode/LiteCore/LiteCore.h; sourceTree = "<group>"; };
@@ -1907,6 +1925,7 @@
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				2723410F211B5FC400DA9437 /* QueryTest.hh */,
 				278CE6F12BAA116300245552 /* SequenceSetTest.cc */,
+				27B517072B97E7880049DD1D /* ResultTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
@@ -2083,6 +2102,7 @@
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
 				27229268260D171D00A3A41F /* c4Collection.hh */,
+				27B516F02B97E2D90049DD1D /* c4ConnectedClient.hh */,
 				2764ED3623870F15007F020F /* c4Database.hh */,
 				2758DFE425F197B9007C7487 /* c4Document.hh */,
 				2758E09825F3026F007C7487 /* c4DocEnumerator.hh */,
@@ -2188,8 +2208,10 @@
 			children = (
 				2745B7D226825F970012A17A /* index.md */,
 				2745B7CE26825F970012A17A /* Classes.md */,
+				27B517052B97E40C0049DD1D /* ConnectedClientProtocol.md */,
 				2745B7D426825F970012A17A /* Replicator.md */,
 				2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */,
+				27B5170A2B97F1AC0049DD1D /* Result.md */,
 				27DF3BBC268672F700A57A1E /* Schema.md */,
 				2745B7D526825F970012A17A /* Block Diagram.pdf */,
 				2745B7D326825F970012A17A /* Block Diagram.png */,
@@ -2346,6 +2368,7 @@
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
+				27B517062B97E74E0049DD1D /* Result.hh */,
 				278CE6E92BA4C2C200245552 /* SequenceSet.cc */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
@@ -2530,6 +2553,8 @@
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 				27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */,
+				27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */,
+				27B516FE2B97E38A0049DD1D /* ConnectedClientTest.hh */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -2715,6 +2740,9 @@
 				27D965252330394C00F4A51C /* c4RemoteReplicator.hh */,
 				27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */,
 				27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */,
+				27B517012B97E3D20049DD1D /* c4ConnectedClient_CAPI.cc */,
+				27B517022B97E3D20049DD1D /* c4ConnectedClient.cc */,
+				27B517002B97E3D20049DD1D /* c4ConnectedClientImpl.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 			);
@@ -2812,6 +2840,17 @@
 				278CE5592B98E78D00245552 /* carray_bind.cc */,
 			);
 			path = ext;
+			sourceTree = "<group>";
+		};
+		27B516FA2B97E3380049DD1D /* ConnectedClient */ = {
+			isa = PBXGroup;
+			children = (
+				27B516F62B97E3380049DD1D /* ConnectedClient.cc */,
+				27B516F72B97E3380049DD1D /* ConnectedClient.hh */,
+				27B516F82B97E3380049DD1D /* QueryServer.cc */,
+				27B516F92B97E3380049DD1D /* QueryServer.hh */,
+			);
+			path = ConnectedClient;
 			sourceTree = "<group>";
 		};
 		27BB9DFA236D05650039C896 /* library */ = {
@@ -2922,6 +2961,7 @@
 				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
+				27B516FA2B97E3380049DD1D /* ConnectedClient */,
 				277B9567224597E1005B7E79 /* Support */,
 				277B956122459796005B7E79 /* API implementation */,
 				275CE0FC1E5B78570084E014 /* tests */,
@@ -3195,6 +3235,7 @@
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
 				274D166C2612906B0018D39C /* c4Collection.h */,
+				27B516F52B97E2F50049DD1D /* c4ConnectedClient.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
@@ -3210,6 +3251,7 @@
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
 				27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */,
 				274D181C26165BDA0018D39C /* c4CertificateTypes.h */,
+				27B516F42B97E2F50049DD1D /* c4ConnectedClientTypes.h */,
 				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
 				274D17A22614E7220018D39C /* c4DocumentStruct.h */,
@@ -4105,6 +4147,7 @@
 				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
 				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
 				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
+				27B517082B97E7890049DD1D /* ResultTest.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 			);
@@ -4363,6 +4406,7 @@
 				EA2527C12BAC5B60004BE393 /* DateFormat.cc in Sources */,
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */,
+				27B517092B97EEFF0049DD1D /* c4ConnectedClient_CAPI.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,

@@ -24,15 +24,16 @@
 
 // These headers are marked as keep so Clangd knows they aren't intended to be used directly in this file
 
-#include "c4BlobStore.hh"      // IWYU pragma: keep
-#include "c4Certificate.hh"    // IWYU pragma: keep
-#include "c4Collection.hh"     // IWYU pragma: keep
-#include "c4Database.hh"       // IWYU pragma: keep
-#include "c4Document.hh"       // IWYU pragma: keep
-#include "c4DocEnumerator.hh"  // IWYU pragma: keep
-#include "c4Index.hh"          // IWYU pragma: keep
-#include "c4Listener.hh"       // IWYU pragma: keep
-#include "c4Observer.hh"       // IWYU pragma: keep
-#include "c4Query.hh"          // IWYU pragma: keep
-#include "c4Replicator.hh"     // IWYU pragma: keep
-#include "c4Socket.hh"         // IWYU pragma: keep
+#include "c4BlobStore.hh"        // IWYU pragma: keep
+#include "c4Certificate.hh"      // IWYU pragma: keep
+#include "c4Collection.hh"       // IWYU pragma: keep
+#include "c4ConnectedClient.hh"  // IWYU pragma: keep
+#include "c4Database.hh"         // IWYU pragma: keep
+#include "c4Document.hh"         // IWYU pragma: keep
+#include "c4DocEnumerator.hh"    // IWYU pragma: keep
+#include "c4Index.hh"            // IWYU pragma: keep
+#include "c4Listener.hh"         // IWYU pragma: keep
+#include "c4Observer.hh"         // IWYU pragma: keep
+#include "c4Query.hh"            // IWYU pragma: keep
+#include "c4Replicator.hh"       // IWYU pragma: keep
+#include "c4Socket.hh"           // IWYU pragma: keep

@@ -403,6 +403,12 @@ _gC4ExpectExceptions
 
 _c4_setExtensionPath
 
+_c4client_new
+_c4client_getDoc
+_c4client_start
+_c4client_stop
+_c4client_putDoc
+
 _FLDoc_FromJSON
 _FLDoc_Retain
 _FLDoc_GetAllocedData

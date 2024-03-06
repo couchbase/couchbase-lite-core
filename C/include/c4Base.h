@@ -132,6 +132,9 @@ typedef struct C4CollectionObserver C4CollectionObserver;
 typedef C4CollectionObserver C4DatabaseObserver;
 #endif
 
+/** Opaque reference to a Connected Client. */
+typedef struct C4ConnectedClient C4ConnectedClient;
+
 /** Opaque handle to an opened database. */
 typedef struct C4Database C4Database;
 
@@ -198,6 +201,10 @@ static inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r)
     return (C4Collection*)c4base_retain(r);
 }
 
+static inline C4ConnectedClient* C4NULLABLE c4client_retain(C4ConnectedClient* C4NULLABLE r) C4API {
+    return (C4ConnectedClient*)c4base_retain(r);
+}
+
 static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {
     return (C4Database*)c4base_retain(r);
 }
@@ -219,6 +226,8 @@ CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_retain(C4QueryEnumerator*
 CBL_CORE_API C4Socket* C4NULLABLE          c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
 static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4client_release(C4ConnectedClient* C4NULLABLE r) C4API { c4base_release(r); }
 
 static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
 

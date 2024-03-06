@@ -245,6 +245,7 @@ set(
     Networking/HTTP
     Networking/WebSockets
     Replicator
+    Replicator/ConnectedClient
     REST
     vendor/SQLiteCpp/include
     vendor/SQLiteCpp/sqlite3/ext

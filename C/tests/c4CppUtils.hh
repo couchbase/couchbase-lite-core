@@ -35,6 +35,8 @@ namespace c4 {
 
     static inline void releaseRef(C4CollectionObserver* c) noexcept { c4dbobs_free(c); }
 
+    static inline void releaseRef(C4ConnectedClient* c) noexcept { c4client_release(c); }
+
     static inline void releaseRef(C4DocEnumerator* c) noexcept { c4enum_free(c); }
 
     static inline void releaseRef(C4Document* c) noexcept { c4doc_release(c); }
@@ -63,6 +65,8 @@ namespace c4 {
     static inline C4Cert* retainRef(C4Cert* c) noexcept { return c4cert_retain(c); }
 
     static inline C4Collection* retainRef(C4Collection* c) noexcept { return c4coll_retain(c); }
+
+    static inline C4ConnectedClient* retainRef(C4ConnectedClient* c) noexcept { return c4client_retain(c); }
 
     static inline C4Database* retainRef(C4Database* c) noexcept { return c4db_retain(c); }
 

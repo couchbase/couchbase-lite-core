@@ -23,7 +23,7 @@ using namespace std;
 using namespace litecore;
 
 static Result<string> rfunc(int x) {
-    if ( x > 0 ) return Result{to_string(x)};
+    if ( x > 0 ) return to_string(x);
     else if ( x < 0 )
         return C4Error{LiteCoreDomain, kC4ErrorInvalidParameter};
     else
