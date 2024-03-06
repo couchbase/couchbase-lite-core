@@ -21,6 +21,7 @@
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "DatabaseImpl.hh"
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
@@ -71,6 +72,9 @@ namespace litecore::repl {
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
+            connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
+
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
@@ -82,7 +86,11 @@ namespace litecore::repl {
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            logInfo("%s", string(*options).c_str());
+            string logName = db->useLocked<std::string>([](const C4Database* db) {
+                DatabaseImpl* impl = asInternal(db);
+                return impl->dataFile()->loggingName();
+            });
+            logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
 
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }

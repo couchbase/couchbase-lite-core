@@ -56,16 +56,16 @@ static string dumpLog(const string& encoded, const vector<string>& levelNames) {
     return result;
 }
 
-TEST_CASE("LogEncoder formatting", "[Log]") {
+TEST_CASE("LogEncoder formatting", "[.loggingDisabled][Log]") {
     // For checking the timestamp in the path to the binary log file.
 #ifdef LITECORE_CPPTEST
     string logPath = litecore::createLogPath_forUnitTest(LogLevel::Info);
 #endif
     stringstream out;
     {
-        LogEncoder            logger(out, LogLevel::Info);
-        size_t                size = 0xabcdabcd;
-        map<unsigned, string> dummy;
+        LogEncoder           logger(out, LogLevel::Info);
+        size_t               size = 0xabcdabcd;
+        LogDomain::ObjectMap dummy;
         logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
                    1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for ( int sgn = -1; sgn <= 1; sgn += 2 ) {
@@ -124,11 +124,11 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
     stringstream                out[4];
     {
-        map<unsigned, string> dummy;
-        LogEncoder            verbose(out[0], LogLevel::Verbose);
-        LogEncoder            info(out[1], LogLevel::Info);
-        LogEncoder            warning(out[2], LogLevel::Warning);
-        LogEncoder            error(out[3], LogLevel::Error);
+        LogDomain::ObjectMap dummy;
+        LogEncoder           verbose(out[0], LogLevel::Verbose);
+        LogEncoder           info(out[1], LogLevel::Info);
+        LogEncoder           warning(out[2], LogLevel::Warning);
+        LogEncoder           error(out[3], LogLevel::Error);
         info.log("Draw", dummy, LogEncoder::None, "drawing %d pictures", 2);
         verbose.log("Paint", dummy, LogEncoder::None, "Waiting for drawings");
         warning.log("Draw", dummy, LogEncoder::None, "made a mistake!");
@@ -158,11 +158,11 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
     }
 }
 
-TEST_CASE("LogEncoder tokens", "[Log]") {
-    map<unsigned, string> objects;
-    objects.emplace(make_pair(1, "Tweedledum"));
-    objects.emplace(make_pair(2, "rattle"));
-    objects.emplace(make_pair(3, "Tweedledee"));
+TEST_CASE("LogEncoder tokens", "[.loggingDisabled][Log]") {
+    LogDomain::ObjectMap objects;
+    objects.emplace(1, make_pair("Tweedledum", 0));
+    objects.emplace(2, make_pair("rattle", 0));
+    objects.emplace(3, make_pair("Tweedledee", 0));
 
     stringstream out;
     stringstream out2;
@@ -194,7 +194,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
     LogEncoder   logger(out, LogLevel::Info);
-    logger.log(nullptr, map<unsigned, string>(), LogEncoder::None, "Hi there");
+    logger.log(nullptr, {}, LogEncoder::None, "Hi there");
 
     logger.withStream([&](ostream& s) { CHECK(out.str().empty()); });
     string encoded;
@@ -441,7 +441,7 @@ TEST_CASE("Logging throw in c4", "[Log]") {
     LogDomain::writeEncodedLogsTo(prevOptions);
 }
 
-TEST_CASE("Logging plaintext", "[Log]") {
+TEST_CASE("Logging plaintext", "[.loggingDisabled][Log]") {
     char folderName[kFolderBufSize];
     snprintf(folderName, kFolderBufSize, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];

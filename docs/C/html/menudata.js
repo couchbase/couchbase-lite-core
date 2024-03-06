@@ -97,7 +97,9 @@ var menudata={children:[
 {text:"Typedefs",url:"globals_type.html",children:[
 {text:"c",url:"globals_type.html#index_c"},
 {text:"f",url:"globals_type.html#index_f"}]},
-{text:"Enumerations",url:"globals_enum.html"},
+{text:"Enumerations",url:"globals_enum.html",children:[
+{text:"c",url:"globals_enum.html#index_c"},
+{text:"f",url:"globals_enum.html#index_f"}]},
 {text:"Enumerator",url:"globals_eval.html",children:[
 {text:"f",url:"globals_eval.html#index_f"},
 {text:"k",url:"globals_eval.html#index_k"},

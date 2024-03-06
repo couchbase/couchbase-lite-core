@@ -2751,3 +2751,199 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
 
     _repl = nullptr;
 }
+
+static C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
+    const auto   dbPath  = db->getPath();
+    const string db2Name = idPrefix + "db2";
+    REQUIRE(c4db_copyNamed(dbPath, slice(db2Name), &db->getConfiguration(), ERROR_INFO()));
+    return c4db_openNamed(slice(db2Name), &db->getConfiguration(), ERROR_INFO());
+}
+
+struct ReplicatorTestDelegate : Replicator::Delegate {
+    ~ReplicatorTestDelegate() override = default;
+
+    void replicatorGotHTTPResponse(Replicator* NONNULL, int status, const websocket::Headers& headers) override {}
+
+    void replicatorGotTLSCertificate(slice certData) override{};
+    void replicatorStatusChanged(Replicator* NONNULL, const Replicator::Status&) override{};
+
+    void replicatorConnectionClosed(Replicator* NONNULL, const CloseStatus&) override {}
+
+    void replicatorDocumentsEnded(Replicator* NONNULL, const Replicator::DocumentsEnded&) override{};
+    void replicatorBlobProgress(Replicator* NONNULL, const Replicator::BlobProgress&) override{};
+};
+
+// Wait for a replication to go busy then idle.
+static void WaitForRepl(Replicator* repl) {
+    int attempts = 5;
+    // Wait for busy
+    while ( repl->status().level != kC4Busy && attempts-- > 0 ) { std::this_thread::sleep_for(200ms); }
+    attempts = 5;
+    // Wait for idle
+    while ( repl->status().level != kC4Idle && attempts-- > 0 ) { std::this_thread::sleep_for(200ms); }
+}
+
+// This sets up two P2P replicators for the below test.
+static std::pair<Retained<Replicator>, Retained<Replicator>> PeerReplicators(C4Database* db1, C4Database* db2,
+                                                                             Replicator::Delegate& delegate) {
+    static atomic<int> validationCount{0};
+
+    auto serverOpts = Replicator::Options::passive(Tulips);
+    auto clientOpts = Replicator::Options::pushpull(kC4Continuous, Tulips);
+
+    // Pull filter required to trigger CBL-5448 (delta applied immediately)
+    auto pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
+                         FLDict body, void* context) -> bool {
+        ++(*(atomic<int>*)context);
+        return true;
+    };
+
+    serverOpts.collectionOpts[0].callbackContext = &validationCount;
+    serverOpts.collectionOpts[0].pullFilter      = pullFilter;
+
+    auto     serverOptsRef = make_retained<Replicator::Options>(serverOpts);
+    auto     clientOptsRef = make_retained<Replicator::Options>(clientOpts);
+    Retained replServer    = new Replicator(db1, new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Server, 50ms),
+                                            delegate, serverOptsRef);
+    Retained replClient    = new Replicator(db2, new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Client, 50ms),
+                                            delegate, clientOptsRef);
+    return std::make_pair(replServer, replClient);
+}
+
+/// The below test covers the case of CBL-5448. Here is a rough description of the steps involved:
+// 1. Device 2 (passive) creates a doc
+// 2. Synced to Device 1 (active)
+// 3. Device 1 updates the doc
+// 4. Synced back to device 2.
+// 5. The incoming rev to device 2 is a delta, and because of pull filter must be applied immediately.
+// 6. The peer to peer replication is stopped.
+// 7. Device 2 syncs to Sync Gateway <<< At this point, CBL does not send _attachments to SG
+// 8. Clear device 1 database
+// 9. Pull from SG to Device 1 <<< Here pull fails because the document contains blobs which SG does not know about
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "CBL-5448", "[.SyncServer]") {
+    const string idPrefix  = timePrefix();
+    const string docID     = idPrefix + "att1";
+    const string channelID = idPrefix + "ch";
+    initTest({Tulips}, {channelID}, "test_user");
+
+    C4Database* db2 = copy_and_open(db, idPrefix);
+
+    ReplicatorTestDelegate delegate;
+
+    /// SERVER = DB = DEVICE 2
+    /// CLIENT = DB2 = DEVICE 1
+
+    auto [replServer, replClient] = PeerReplicators(db, db2, delegate);
+    Headers headers;
+    headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
+    LoopbackWebSocket::bind(replServer->webSocket(), replClient->webSocket(), headers);
+
+    // Create doc with blob on Device 2
+    // Which is synced by continuous P2P to Device 1
+    C4BlobKey blobKey{};
+    {
+        const std::vector<std::string> attachments = {"Hey, this is an attachment!"};
+        TransactionHelper              t(db);
+        const auto blobKeys = addDocWithAttachments(db, Tulips, slice(docID), attachments, "text/plain");
+        blobKey             = blobKeys[0];
+    }
+    c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+
+    // Add channels to the doc so we can sync
+    {
+        TransactionHelper t(db);
+        auto              props = c4doc_getProperties(doc);
+        auto              sk    = db->getFleeceSharedKeys();
+        Encoder           enc{};
+        enc.setSharedKeys(sk);
+        enc.beginDict();
+        for ( Dict::iterator j(props); j; ++j ) {
+            enc.writeKey(j.keyString());
+            enc.writeValue(j.value());
+        }
+        enc.writeKey("channels");
+        enc.beginArray();
+        enc.writeString(channelID);
+        enc.endArray();
+        enc.endDict();
+        doc = c4doc_update(doc, enc.finish(), 0, ERROR_INFO());
+        REQUIRE(doc);
+    }
+
+    replServer->start();
+    replClient->start();
+    // Wait for sync to complete
+    WaitForRepl(replServer);
+    replServer->stop();
+    replClient->stop();
+
+    // Update doc on Device 1
+    {
+        TransactionHelper t(db2);
+        auto              coll = c4db_getCollection(db2, Tulips, ERROR_INFO());
+        REQUIRE(coll);
+        doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO());
+        REQUIRE(doc);
+        auto    sk = db2->getFleeceSharedKeys();
+        Encoder encUpdate{};
+        encUpdate.setSharedKeys(sk);
+        encUpdate.beginDict();
+        auto props = c4doc_getProperties(doc);
+        for ( Dict::iterator j(props); j; ++j ) {
+            encUpdate.writeKey(j.keyString());
+            encUpdate.writeValue(j.value());
+        }
+        encUpdate.writeKey("Lorem ipsum");
+        encUpdate.beginArray();
+        encUpdate.writeString(
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt");
+        encUpdate.writeString("Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque "
+                              "laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi "
+                              "architecto beatae vitae dicta sunt explicabo.");
+        encUpdate.writeString("At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium "
+                              "voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint "
+                              "occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt "
+                              "mollitia animi, id est laborum et dolorum fuga.");
+        encUpdate.endArray();
+        encUpdate.endDict();
+        doc = c4doc_update(doc, encUpdate.finish(), 0, ERROR_INFO());
+    }
+    REQUIRE(doc);
+
+    // Create another pair of replicators because re-using the existing ones causes SEGFAULT :(
+    auto [replServer2, replClient2] = PeerReplicators(db, db2, delegate);
+    LoopbackWebSocket::bind(replServer2->webSocket(), replClient2->webSocket(), headers);
+    // During this replication, Server (device 2) pulls the doc from Client (device 1).
+    // It is here that CBL-5448 is triggered, as Server does not apply `kRevHasAttachments` to the incoming rev.
+    replServer2->start();
+    replClient2->start();
+    // Wait for sync to complete
+    WaitForRepl(replServer2);
+    replServer2->stop();
+    replClient2->stop();
+
+    const alloc_slice updatedRevID = doc->revID;
+
+    // Push doc to sync gateway from Device 2
+    ReplParams repl_params{_collectionSpecs, kC4OneShot, kC4Disabled};
+    replicate(repl_params);
+
+    // Device 1 purges it's data
+    std::swap(db, db2);
+    deleteAndRecreateDBAndCollections();
+
+    // Device 1 pulls the doc from Sync Gateway
+    repl_params.setPushPull(kC4Disabled, kC4OneShot);
+    replicate(repl_params);
+
+    Retained coll = c4db_getCollection(db, Tulips, ERROR_INFO());
+    REQUIRE(coll);
+    doc = c4coll_getDoc(coll, slice(docID), true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    REQUIRE(doc->revID == updatedRevID);
+
+    std::swap(db, db2);
+    c4db_release(db2);
+}

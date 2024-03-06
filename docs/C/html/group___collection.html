@@ -90,18 +90,18 @@ $(function() {
 <tr class="memitem:gad7131cbd8d585aff702e999663ccf460"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gad7131cbd8d585aff702e999663ccf460">c4db_getCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gad7131cbd8d585aff702e999663ccf460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the existing collection with the given name &amp; scope, or NULL if it doesn't exist.  <br /></td></tr>
 <tr class="separator:gad7131cbd8d585aff702e999663ccf460"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab2585c8e74ae26c3a407be9df28b9557"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gab2585c8e74ae26c3a407be9df28b9557">c4db_createCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gab2585c8e74ae26c3a407be9df28b9557"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates and returns an empty collection with the given name &amp; scope.  <br /></td></tr>
-<tr class="separator:gab2585c8e74ae26c3a407be9df28b9557"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3422804f809fe0b03259f5020d9fe4b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga3422804f809fe0b03259f5020d9fe4b8">c4db_deleteCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga3422804f809fe0b03259f5020d9fe4b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the collection with the given name &amp; scope.  <br /></td></tr>
-<tr class="separator:ga3422804f809fe0b03259f5020d9fe4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga395e95750bcdd33e2445fd93caf5f1df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga395e95750bcdd33e2445fd93caf5f1df">c4db_collectionNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inScope, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga395e95750bcdd33e2445fd93caf5f1df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing collections in the given scope, in the order in which they were created.  <br /></td></tr>
-<tr class="separator:ga395e95750bcdd33e2445fd93caf5f1df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9a289802fa51a89f7ad637d4bd9211b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga9a289802fa51a89f7ad637d4bd9211b0">c4db_scopeNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga9a289802fa51a89f7ad637d4bd9211b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing scopes, in the order in which they were created.  <br /></td></tr>
-<tr class="separator:ga9a289802fa51a89f7ad637d4bd9211b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1312f2efbae92939f3b2be4a7dd6d3df"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga1312f2efbae92939f3b2be4a7dd6d3df">c4db_createCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga1312f2efbae92939f3b2be4a7dd6d3df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates and returns an empty collection with the given name &amp; scope.  <br /></td></tr>
+<tr class="separator:ga1312f2efbae92939f3b2be4a7dd6d3df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac33bd525657791a91ac91ac664754bef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gac33bd525657791a91ac91ac664754bef">c4db_deleteCollection</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> spec, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gac33bd525657791a91ac91ac664754bef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the collection with the given name &amp; scope.  <br /></td></tr>
+<tr class="separator:gac33bd525657791a91ac91ac664754bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga94001e9bc1a796c3cb5e6dc92e83b775"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga94001e9bc1a796c3cb5e6dc92e83b775">c4db_collectionNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inScope, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga94001e9bc1a796c3cb5e6dc92e83b775"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing collections in the given scope, in the order in which they were created.  <br /></td></tr>
+<tr class="separator:ga94001e9bc1a796c3cb5e6dc92e83b775"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabb387fb1dc8940baaa98362b9e7b6c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gabb387fb1dc8940baaa98362b9e7b6c56">c4db_scopeNames</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gabb387fb1dc8940baaa98362b9e7b6c56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the names of all existing scopes, in the order in which they were created.  <br /></td></tr>
+<tr class="separator:gabb387fb1dc8940baaa98362b9e7b6c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Accessors</h2></td></tr>
 <tr class="memitem:ga6510c6be2ab73ca5b9b17f5dfb1a1af9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga6510c6be2ab73ca5b9b17f5dfb1a1af9">c4coll_isValid</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
@@ -121,46 +121,46 @@ $(function() {
 <tr class="separator:gaf025f7375353b5c1fa41b151445d85b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Documents</h2></td></tr>
-<tr class="memitem:ga8118724f764ff76bc8a836c0bd3bb36f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga8118724f764ff76bc8a836c0bd3bb36f">c4coll_getDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, bool mustExist, <a class="el" href="group___documents.html#gadb2bbf97a307f0e83b226949404ad268">C4DocContentLevel</a> content, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga8118724f764ff76bc8a836c0bd3bb36f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the collection given its ID.  <br /></td></tr>
-<tr class="separator:ga8118724f764ff76bc8a836c0bd3bb36f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac52e204e735e00e9c7dcc0727cc4865"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaac52e204e735e00e9c7dcc0727cc4865">c4coll_getDocBySequence</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gaac52e204e735e00e9c7dcc0727cc4865"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the collection given its sequence number.  <br /></td></tr>
-<tr class="separator:gaac52e204e735e00e9c7dcc0727cc4865"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga15b8948437788cb680296e8d8a25d2d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga15b8948437788cb680296e8d8a25d2d8">c4coll_putDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *request, size_t *outCommonAncestorIndex, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga15b8948437788cb680296e8d8a25d2d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level Put operation, to insert a new or downloaded revision.  <br /></td></tr>
-<tr class="separator:ga15b8948437788cb680296e8d8a25d2d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6227e5b47d86f1aeda18900211b0335a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga6227e5b47d86f1aeda18900211b0335a">c4coll_createDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> body, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> revisionFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:ga6227e5b47d86f1aeda18900211b0335a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function to create a new document.  <br /></td></tr>
-<tr class="separator:ga6227e5b47d86f1aeda18900211b0335a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga312930b944549a3470c62b48a88d5bba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga312930b944549a3470c62b48a88d5bba">c4coll_moveDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *toCollection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> newDocID, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:ga312930b944549a3470c62b48a88d5bba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves a document to another collection, possibly with a different docID.  <br /></td></tr>
-<tr class="separator:ga312930b944549a3470c62b48a88d5bba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8e97e4b44231cd491a68160516a195b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga8e97e4b44231cd491a68160516a195b4">c4coll_getDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, bool mustExist, <a class="el" href="group___documents.html#gadb2bbf97a307f0e83b226949404ad268">C4DocContentLevel</a> content, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga8e97e4b44231cd491a68160516a195b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the collection given its ID.  <br /></td></tr>
+<tr class="separator:ga8e97e4b44231cd491a68160516a195b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac343fe06d73ad2ab9e2dee351c6b4425"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gac343fe06d73ad2ab9e2dee351c6b4425">c4coll_getDocBySequence</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gac343fe06d73ad2ab9e2dee351c6b4425"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the collection given its sequence number.  <br /></td></tr>
+<tr class="separator:gac343fe06d73ad2ab9e2dee351c6b4425"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68d544be3cc8969718fe71b453b869bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga68d544be3cc8969718fe71b453b869bc">c4coll_putDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *request, size_t *outCommonAncestorIndex, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga68d544be3cc8969718fe71b453b869bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level Put operation, to insert a new or downloaded revision.  <br /></td></tr>
+<tr class="separator:ga68d544be3cc8969718fe71b453b869bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga59376bff7c5391486b80e675486472e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga59376bff7c5391486b80e675486472e3">c4coll_createDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> body, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> revisionFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:ga59376bff7c5391486b80e675486472e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function to create a new document.  <br /></td></tr>
+<tr class="separator:ga59376bff7c5391486b80e675486472e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa5e33f9335c58b629ddd51d0f8941d6d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaa5e33f9335c58b629ddd51d0f8941d6d">c4coll_moveDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *toCollection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> newDocID, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:gaa5e33f9335c58b629ddd51d0f8941d6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves a document to another collection, possibly with a different docID.  <br /></td></tr>
+<tr class="separator:gaa5e33f9335c58b629ddd51d0f8941d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Purging and Expiration</h2></td></tr>
-<tr class="memitem:ga68f294d24a605d31ab631def47018b96"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga68f294d24a605d31ab631def47018b96">c4coll_purgeDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga68f294d24a605d31ab631def47018b96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all trace of a document and its revisions from the collection.  <br /></td></tr>
-<tr class="separator:ga68f294d24a605d31ab631def47018b96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9d2e72e40613b754f23c10e785f8b85f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga9d2e72e40613b754f23c10e785f8b85f">c4coll_setDocExpiration</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a> timestamp, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga9d2e72e40613b754f23c10e785f8b85f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets an expiration date on a document.  <br /></td></tr>
-<tr class="separator:ga9d2e72e40613b754f23c10e785f8b85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab95204b77adc8499c3a40403c8ac0343"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gab95204b77adc8499c3a40403c8ac0343">c4coll_purgeDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gab95204b77adc8499c3a40403c8ac0343"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all trace of a document and its revisions from the collection.  <br /></td></tr>
+<tr class="separator:gab95204b77adc8499c3a40403c8ac0343"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa644a91130945a5ebb7bbd70a30a305c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaa644a91130945a5ebb7bbd70a30a305c">c4coll_setDocExpiration</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a> timestamp, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaa644a91130945a5ebb7bbd70a30a305c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets an expiration date on a document.  <br /></td></tr>
+<tr class="separator:gaa644a91130945a5ebb7bbd70a30a305c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabdfd46f8258d30a67dbd96974c6bd3a2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gabdfd46f8258d30a67dbd96974c6bd3a2">c4coll_getDocExpiration</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gabdfd46f8258d30a67dbd96974c6bd3a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the expiration time of a document, if one has been set, else 0.  <br /></td></tr>
 <tr class="separator:gabdfd46f8258d30a67dbd96974c6bd3a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1040719a13aee5e3eff7a7c328e8aa6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga1040719a13aee5e3eff7a7c328e8aa6a">c4coll_nextDocExpiration</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *)</td></tr>
 <tr class="memdesc:ga1040719a13aee5e3eff7a7c328e8aa6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the time at which the next document expiration in this collection should take place, or 0 if there are no documents with expiration times.  <br /></td></tr>
 <tr class="separator:ga1040719a13aee5e3eff7a7c328e8aa6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac81d9ed357fe5c8c9eda19ef4ed277d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gac81d9ed357fe5c8c9eda19ef4ed277d7">c4coll_purgeExpiredDocs</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
-<tr class="memdesc:gac81d9ed357fe5c8c9eda19ef4ed277d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purges all documents that have expired.  <br /></td></tr>
-<tr class="separator:gac81d9ed357fe5c8c9eda19ef4ed277d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae1ab203a01999be148c3a71500b4dccd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gae1ab203a01999be148c3a71500b4dccd">c4coll_purgeExpiredDocs</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
+<tr class="memdesc:gae1ab203a01999be148c3a71500b4dccd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purges all documents that have expired.  <br /></td></tr>
+<tr class="separator:gae1ab203a01999be148c3a71500b4dccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Indexes</h2></td></tr>
-<tr class="memitem:ga59042dd8acaf67141aba6ae7b1733115"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga59042dd8acaf67141aba6ae7b1733115">c4coll_createIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpec, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> queryLanguage, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga59042dd8acaf67141aba6ae7b1733115"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a collection index, of the values of specific expressions across all documents.  <br /></td></tr>
-<tr class="separator:ga59042dd8acaf67141aba6ae7b1733115"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga86f8eae089985259a1e7b895045e1ab2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga86f8eae089985259a1e7b895045e1ab2">c4coll_deleteIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga86f8eae089985259a1e7b895045e1ab2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes an index that was created by <code>c4coll_createIndex</code>.  <br /></td></tr>
-<tr class="separator:ga86f8eae089985259a1e7b895045e1ab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f7140a51b2af1d0151c047096daed1d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga4f7140a51b2af1d0151c047096daed1d">c4coll_createIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpec, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> queryLanguage, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga4f7140a51b2af1d0151c047096daed1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a collection index, of the values of specific expressions across all documents.  <br /></td></tr>
+<tr class="separator:ga4f7140a51b2af1d0151c047096daed1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9e7900ad681f118931245f5d14c6d037"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga9e7900ad681f118931245f5d14c6d037">c4coll_deleteIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga9e7900ad681f118931245f5d14c6d037"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes an index that was created by <code>c4coll_createIndex</code>.  <br /></td></tr>
+<tr class="separator:ga9e7900ad681f118931245f5d14c6d037"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1cf934f4c7c596377797a8a32d69cbb1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga1cf934f4c7c596377797a8a32d69cbb1">c4coll_getIndexesInfo</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga1cf934f4c7c596377797a8a32d69cbb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns information about all indexes in the collection.  <br /></td></tr>
 <tr class="separator:ga1cf934f4c7c596377797a8a32d69cbb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -181,7 +181,7 @@ $(function() {
 <p>In this API, collections are named by a <a class="el" href="struct_c4_collection_spec.html">C4CollectionSpec</a> struct, which simply contains two <code>FLString</code>s, first a collection name and second a scope name. Note that the collection name comes first (unlike in a N1QL query), so that the scope name can be left out if you're referring to the default scope. You can give a collection spec literally as e.g. <code>{C4STR("mycoll")}</code>, or with a scope, <code>{C4STR("mycoll"), C4STR("myscope")}</code>.</p>
 <p>There are no API calls to create or delete Scopes. A Scope is created implicitly when you create the first Collection inside it, and deleted implicitly when you delete its last Collection.</p>
 <h2>Legacy <code>C4Database</code> Functions</h2>
-<p>Pre-existing functions that refer to documents / sequences / indexes without referring to Collections &ndash; such as <a class="el" href="group___documents.html#ga6ad1f1f307671001c3b4df9f7a708bab">c4doc_get</a> and <a class="el" href="group___database.html#gaedbb9a32f5e748a6ddf9d2b49c1f5743">c4db_getLastSequence</a> &ndash; still exist, but implicitly operate on the default Collection. In other words, they behave exactly the way they used to, but Collection-aware code should avoid them and use the new Collection API instead.</p>
+<p>Pre-existing functions that refer to documents / sequences / indexes without referring to Collections &ndash; such as <a class="el" href="group___documents.html#ga893f810f7fc9fba293bdeb2e9e034de5">c4doc_get</a> and <a class="el" href="group___database.html#gaedbb9a32f5e748a6ddf9d2b49c1f5743">c4db_getLastSequence</a> &ndash; still exist, but implicitly operate on the default Collection. In other words, they behave exactly the way they used to, but Collection-aware code should avoid them and use the new Collection API instead.</p>
 <p>These functions will eventually be deprecated, then removed. As an aid in updating your code, you can define the C preprocessor symbol <code>C4_STRICT_COLLECTION_API</code> to suppress the definitions of those functions, which will turn all calls to them into errors.</p>
 <h2><code>C4Collection</code> Lifespan</h2>
 <p><code>C4Collection</code> is ref-counted, but most of the time you don't need to retain or release it. The <code>C4Database</code> owns its collections, so a <code>C4Collection</code> reference remains valid until either the database is closed, or that collection is deleted. At that point it becomes a dangling pointer :( If you keep a collection reference long-term, you should retain it so that the reference remains valid until you release it.</p>
@@ -190,25 +190,25 @@ $(function() {
 <p>A few Collection functions are documented in other sections of the API docs:</p>
 <ul>
 <li>Enumeration-related functions (in <code><a class="el" href="c4_doc_enumerator_8h.html">c4DocEnumerator.h</a></code>):<ul>
-<li><a class="el" href="group___doc_enumerator.html#gab3e5786bd19133da7024a85263c68e59">c4coll_enumerateChanges</a></li>
-<li><a class="el" href="group___doc_enumerator.html#ga070227f8fac9ffb3187aef1b72ee0b8d">c4coll_enumerateAllDocs</a></li>
+<li><a class="el" href="group___doc_enumerator.html#ga6c733c7b1eaa179bcccb60d62a049c81">c4coll_enumerateChanges</a></li>
+<li><a class="el" href="group___doc_enumerator.html#ga4d397529609ba484752e88c6329c54ab">c4coll_enumerateAllDocs</a></li>
 </ul>
 </li>
 <li>Observer-related functions (in <code><a class="el" href="c4_observer_8h.html">c4Observer.h</a></code>):<ul>
-<li><a class="el" href="group___observer.html#gab8e7cdcb727099df8ca243176f2caf82">c4dbobs_createOnCollection</a></li>
-<li><a class="el" href="group___observer.html#ga36cdc6bc54392d47a3853359df999bf0">c4docobs_createWithCollection</a> </li>
+<li><a class="el" href="group___observer.html#ga1097eaeb2a5f2fc0a4aff6945e00d22d">c4dbobs_createOnCollection</a></li>
+<li><a class="el" href="group___observer.html#ga2f77ec9652580e262b94bf6765d582a1">c4docobs_createWithCollection</a> </li>
 </ul>
 </li>
 </ul>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga6227e5b47d86f1aeda18900211b0335a" name="ga6227e5b47d86f1aeda18900211b0335a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6227e5b47d86f1aeda18900211b0335a">&#9670;&#160;</a></span>c4coll_createDoc()</h2>
+<a id="ga59376bff7c5391486b80e675486472e3" name="ga59376bff7c5391486b80e675486472e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga59376bff7c5391486b80e675486472e3">&#9670;&#160;</a></span>c4coll_createDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_createDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_createDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -246,7 +246,7 @@ $(function() {
 </div><div class="memdoc">
 
 <p>Convenience function to create a new document. </p>
-<p>This just a wrapper around <a class="el" href="group___collection.html#ga15b8948437788cb680296e8d8a25d2d8">c4coll_putDoc</a>. If the document already exists, it will fail with the error <code>kC4ErrorConflict</code>. </p><dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___base.html#gab3de915958be3928c3a856ba4694a290">c4doc_release</a> when finished with the document. </dd></dl>
+<p>This just a wrapper around <a class="el" href="group___collection.html#ga68d544be3cc8969718fe71b453b869bc">c4coll_putDoc</a>. If the document already exists, it will fail with the error <code>kC4ErrorConflict</code>. </p><dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___base.html#gab3de915958be3928c3a856ba4694a290">c4doc_release</a> when finished with the document. </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">collection</td><td>The collection to create the document in </td></tr>
@@ -261,14 +261,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga59042dd8acaf67141aba6ae7b1733115" name="ga59042dd8acaf67141aba6ae7b1733115"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga59042dd8acaf67141aba6ae7b1733115">&#9670;&#160;</a></span>c4coll_createIndex()</h2>
+<a id="ga4f7140a51b2af1d0151c047096daed1d" name="ga4f7140a51b2af1d0151c047096daed1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4f7140a51b2af1d0151c047096daed1d">&#9670;&#160;</a></span>c4coll_createIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_createIndex </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_createIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -335,14 +335,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga86f8eae089985259a1e7b895045e1ab2" name="ga86f8eae089985259a1e7b895045e1ab2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga86f8eae089985259a1e7b895045e1ab2">&#9670;&#160;</a></span>c4coll_deleteIndex()</h2>
+<a id="ga9e7900ad681f118931245f5d14c6d037" name="ga9e7900ad681f118931245f5d14c6d037"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9e7900ad681f118931245f5d14c6d037">&#9670;&#160;</a></span>c4coll_deleteIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_deleteIndex </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_deleteIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -400,14 +400,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga8118724f764ff76bc8a836c0bd3bb36f" name="ga8118724f764ff76bc8a836c0bd3bb36f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8118724f764ff76bc8a836c0bd3bb36f">&#9670;&#160;</a></span>c4coll_getDoc()</h2>
+<a id="ga8e97e4b44231cd491a68160516a195b4" name="ga8e97e4b44231cd491a68160516a195b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8e97e4b44231cd491a68160516a195b4">&#9670;&#160;</a></span>c4coll_getDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_getDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_getDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -460,14 +460,14 @@ $(function() {
 
 </div>
 </div>
-<a id="gaac52e204e735e00e9c7dcc0727cc4865" name="gaac52e204e735e00e9c7dcc0727cc4865"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaac52e204e735e00e9c7dcc0727cc4865">&#9670;&#160;</a></span>c4coll_getDocBySequence()</h2>
+<a id="gac343fe06d73ad2ab9e2dee351c6b4425" name="gac343fe06d73ad2ab9e2dee351c6b4425"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac343fe06d73ad2ab9e2dee351c6b4425">&#9670;&#160;</a></span>c4coll_getDocBySequence()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_getDocBySequence </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_getDocBySequence </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -661,14 +661,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga312930b944549a3470c62b48a88d5bba" name="ga312930b944549a3470c62b48a88d5bba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga312930b944549a3470c62b48a88d5bba">&#9670;&#160;</a></span>c4coll_moveDoc()</h2>
+<a id="gaa5e33f9335c58b629ddd51d0f8941d6d" name="gaa5e33f9335c58b629ddd51d0f8941d6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa5e33f9335c58b629ddd51d0f8941d6d">&#9670;&#160;</a></span>c4coll_moveDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_moveDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_moveDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -740,14 +740,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga68f294d24a605d31ab631def47018b96" name="ga68f294d24a605d31ab631def47018b96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga68f294d24a605d31ab631def47018b96">&#9670;&#160;</a></span>c4coll_purgeDoc()</h2>
+<a id="gab95204b77adc8499c3a40403c8ac0343" name="gab95204b77adc8499c3a40403c8ac0343"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab95204b77adc8499c3a40403c8ac0343">&#9670;&#160;</a></span>c4coll_purgeDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_purgeDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_purgeDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -776,14 +776,14 @@ $(function() {
 
 </div>
 </div>
-<a id="gac81d9ed357fe5c8c9eda19ef4ed277d7" name="gac81d9ed357fe5c8c9eda19ef4ed277d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac81d9ed357fe5c8c9eda19ef4ed277d7">&#9670;&#160;</a></span>c4coll_purgeExpiredDocs()</h2>
+<a id="gae1ab203a01999be148c3a71500b4dccd" name="gae1ab203a01999be148c3a71500b4dccd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae1ab203a01999be148c3a71500b4dccd">&#9670;&#160;</a></span>c4coll_purgeExpiredDocs()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> int64_t c4coll_purgeExpiredDocs </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> int64_t c4coll_purgeExpiredDocs </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname">, </td>
@@ -807,14 +807,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga15b8948437788cb680296e8d8a25d2d8" name="ga15b8948437788cb680296e8d8a25d2d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga15b8948437788cb680296e8d8a25d2d8">&#9670;&#160;</a></span>c4coll_putDoc()</h2>
+<a id="ga68d544be3cc8969718fe71b453b869bc" name="ga68d544be3cc8969718fe71b453b869bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga68d544be3cc8969718fe71b453b869bc">&#9670;&#160;</a></span>c4coll_putDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_putDoc </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="struct_c4_document.html">C4Document</a> * c4coll_putDoc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -854,14 +854,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga9d2e72e40613b754f23c10e785f8b85f" name="ga9d2e72e40613b754f23c10e785f8b85f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9d2e72e40613b754f23c10e785f8b85f">&#9670;&#160;</a></span>c4coll_setDocExpiration()</h2>
+<a id="gaa644a91130945a5ebb7bbd70a30a305c" name="gaa644a91130945a5ebb7bbd70a30a305c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa644a91130945a5ebb7bbd70a30a305c">&#9670;&#160;</a></span>c4coll_setDocExpiration()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_setDocExpiration </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4coll_setDocExpiration </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
           <td class="paramname"><em>collection</em>, </td>
@@ -906,14 +906,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga395e95750bcdd33e2445fd93caf5f1df" name="ga395e95750bcdd33e2445fd93caf5f1df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga395e95750bcdd33e2445fd93caf5f1df">&#9670;&#160;</a></span>c4db_collectionNames()</h2>
+<a id="ga94001e9bc1a796c3cb5e6dc92e83b775" name="ga94001e9bc1a796c3cb5e6dc92e83b775"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga94001e9bc1a796c3cb5e6dc92e83b775">&#9670;&#160;</a></span>c4db_collectionNames()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_collectionNames </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_collectionNames </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -943,14 +943,14 @@ $(function() {
 
 </div>
 </div>
-<a id="gab2585c8e74ae26c3a407be9df28b9557" name="gab2585c8e74ae26c3a407be9df28b9557"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab2585c8e74ae26c3a407be9df28b9557">&#9670;&#160;</a></span>c4db_createCollection()</h2>
+<a id="ga1312f2efbae92939f3b2be4a7dd6d3df" name="ga1312f2efbae92939f3b2be4a7dd6d3df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1312f2efbae92939f3b2be4a7dd6d3df">&#9670;&#160;</a></span>c4db_createCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> * c4db_createCollection </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> * c4db_createCollection </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -980,14 +980,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga3422804f809fe0b03259f5020d9fe4b8" name="ga3422804f809fe0b03259f5020d9fe4b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3422804f809fe0b03259f5020d9fe4b8">&#9670;&#160;</a></span>c4db_deleteCollection()</h2>
+<a id="gac33bd525657791a91ac91ac664754bef" name="gac33bd525657791a91ac91ac664754bef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac33bd525657791a91ac91ac664754bef">&#9670;&#160;</a></span>c4db_deleteCollection()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_deleteCollection </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_deleteCollection </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
@@ -1146,14 +1146,14 @@ $(function() {
 
 </div>
 </div>
-<a id="ga9a289802fa51a89f7ad637d4bd9211b0" name="ga9a289802fa51a89f7ad637d4bd9211b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9a289802fa51a89f7ad637d4bd9211b0">&#9670;&#160;</a></span>c4db_scopeNames()</h2>
+<a id="gabb387fb1dc8940baaa98362b9e7b6c56" name="gabb387fb1dc8940baaa98362b9e7b6c56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabb387fb1dc8940baaa98362b9e7b6c56">&#9670;&#160;</a></span>c4db_scopeNames()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_scopeNames </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a> c4db_scopeNames </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>

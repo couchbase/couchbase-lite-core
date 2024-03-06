@@ -85,10 +85,16 @@ namespace litecore {
         return outTime->validYMD || outTime->validHMS;
     }
 
-    inline void setResultDateString(sqlite3_context* ctx, const int64_t millis, const int tz_offset,
+    inline void setResultDateString(sqlite3_context* ctx, const int64_t millis, const minutes tz_offset,
                                     const DateTime* format) {
         char buf[kFormattedISO8601DateMaxSize];
-        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, minutes{tz_offset}, format));
+        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, tz_offset, format));
+    }
+
+    inline void setResultDateString(sqlite3_context* ctx, const int64_t millis, const bool asUTC,
+                                    const DateTime* format) {
+        char buf[kFormattedISO8601DateMaxSize];
+        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC, format));
     }
 
     inline int64_t diffPart(const DateTime& t1, const DateTime& t2, const DateDiff& diff, const DateComponent part) {
