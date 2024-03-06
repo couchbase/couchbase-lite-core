@@ -17,6 +17,7 @@
 #include "c4BlobStore.h"
 #include "c4Certificate.h"
 #include "c4Collection.h"
+#include "c4ConnectedClient.h"
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"

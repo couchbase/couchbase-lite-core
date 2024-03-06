@@ -189,6 +189,13 @@ typedef struct C4Error {
 // C4Error C API:
 
 
+#ifdef _MSC_VER
+static const C4Error kC4NoError = {};
+#else
+#    define kC4NoError ((C4Error){})
+#endif
+
+
 /** Returns an error message describing a C4Error. Remember to free the result. */
 CBL_CORE_API FLStringResult c4error_getMessage(C4Error error) C4API;
 

@@ -14,9 +14,21 @@
 #include "NumConversion.hh"
 #include <sstream>
 #include <cstdlib>
+
 #ifdef _MSC_VER
 // For vasprintf and strcasecmp
 #    include "PlatformIO.hh"
+#endif
+
+// For matchGlobPattern:
+#ifdef _MSC_VER
+#include <atlbase.h>
+#include <Shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+#undef min
+#undef max
+#else
+#include <fnmatch.h>        // POSIX (?)
 #endif
 
 namespace litecore {
@@ -136,6 +148,16 @@ namespace litecore {
     void toLowercase(std::string& str) {
         for ( char& c : str ) c = (char)tolower(c);
     }
+
+    bool matchGlobPattern(const string &str, const string &pattern) {
+#ifdef _MSC_VER
+        return PathMatchSpecA(name, pattern);
+#else
+        return fnmatch(pattern.c_str(), str.c_str(), 0) == 0;
+#endif
+    }
+
+#pragma mark - UNICODE / UTF-8 FUNCTIONS
 
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c

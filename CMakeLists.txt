@@ -244,6 +244,7 @@ set(
     Networking/HTTP
     Networking/WebSockets
     Replicator
+    Replicator/ConnectedClient
     REST
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn

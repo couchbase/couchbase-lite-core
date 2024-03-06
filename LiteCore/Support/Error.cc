@@ -427,6 +427,7 @@ namespace litecore {
 
     __cold error::error(error::Domain d, int c, const std::string& what)
         : runtime_error(what), domain(d), code(getPrimaryCode(d, c)) {
+        DebugAssert(code != 0);
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
 
@@ -532,6 +533,22 @@ namespace litecore {
         }
 
         return unexpectedException(x);
+    }
+
+    __cold error error::convertCurrentException() {
+        // This rigamarole recovers the current exception being thrown...
+        auto xp = std::current_exception();
+        if ( xp ) {
+            try {
+                std::rethrow_exception(xp);
+            } catch ( const std::exception& x ) {
+                // Now we have the exception, so we can record it in outError:
+                return convertException(x);
+            } catch ( ... ) {}
+        }
+        auto e = error(error::LiteCore, error::UnexpectedError, "Unknown C++ exception");
+        e.captureBacktrace(1);
+        return e;
     }
 
     __cold bool error::isUnremarkable() const {
