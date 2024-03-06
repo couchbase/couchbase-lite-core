@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['collections_20and_20scopes_0',['Collections and Scopes',['../group___collection.html',1,'']]],
-  ['connected_20client_20_28remote_20database_29_1',['Connected Client (Remote Database)',['../group___connected_client.html',1,'']]]
+  ['certificates_0',['Certificates',['../group__certificates.html',1,'']]],
+  ['collections_20and_20scopes_1',['Collections and Scopes',['../group___collection.html',1,'']]]
 ];

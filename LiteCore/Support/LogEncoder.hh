@@ -14,9 +14,8 @@
 #include "Writer.hh"
 #include "Stopwatch.hh"
 #include "Timer.hh"
-#include "fleece/PlatformCompat.hh"
 #include "Logging.hh"
-#include <stdarg.h>
+#include <cstdarg>
 #include <iosfwd>
 #include <map>
 #include <memory>
@@ -31,25 +30,25 @@ namespace litecore {
         everything to ASCII. It can be decoded by the LogDecoder class.
         The API is thread-safe. */
     class LogEncoder {
-    public:
-        LogEncoder(std::ostream &out, LogLevel level);
+      public:
+        LogEncoder(std::ostream& out, LogLevel level);
         ~LogEncoder();
 
-        enum ObjectRef : unsigned {
-            None = 0
-        };
-        
-        void vlog(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, va_list args) __printflike(5, 0);
+        enum ObjectRef : unsigned { None = 0 };
 
-        void log(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, ...) __printflike(5, 6);
+        void vlog(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const char* format, va_list args)
+                __printflike(5, 0);
+
+        void log(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const char* format, ...)
+                __printflike(5, 6);
 
         void flush();
-        
+
         uint64_t tellp();
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
         struct Timestamp {
-            time_t secs;
+            time_t   secs;
             unsigned microsecs;
         };
 
@@ -61,24 +60,24 @@ namespace litecore {
             with(_out);
         }
 
-    private:
-        int64_t _timeElapsed() const;
-        void _writeUVarInt(uint64_t);
-        void _writeStringToken(const char *token);
-        void _flush();
-        void _scheduleFlush();
-        void performScheduledFlush();
+      private:
+        [[nodiscard]] int64_t _timeElapsed() const;
+        void                  _writeUVarInt(uint64_t);
+        void                  _writeStringToken(const char* token);
+        void                  _flush();
+        void                  _scheduleFlush();
+        void                  performScheduledFlush();
 
-        std::mutex _mutex;
-        fleece::Writer _writer;
-        std::ostream &_out;
-        std::unique_ptr<actor::Timer> _flushTimer;
-        fleece::Stopwatch _st;
-        int64_t _lastElapsed {0};
-        int64_t _lastSaved {0};
-        LogLevel _level;
+        std::mutex                           _mutex;
+        fleece::Writer                       _writer;
+        std::ostream&                        _out;
+        std::unique_ptr<actor::Timer>        _flushTimer;
+        fleece::Stopwatch                    _st;
+        int64_t                              _lastElapsed{0};
+        int64_t                              _lastSaved{0};
+        LogLevel                             _level;
         std::unordered_map<size_t, unsigned> _formats;
-        std::unordered_set<unsigned> _seenObjects;
+        std::unordered_set<unsigned>         _seenObjects;
     };
 
-}
+}  // namespace litecore

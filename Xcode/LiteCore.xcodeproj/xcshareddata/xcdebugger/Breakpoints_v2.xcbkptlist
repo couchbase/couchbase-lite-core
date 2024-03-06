@@ -18,7 +18,7 @@
                <BreakpointActionProxy
                   ActionExtensionID = "Xcode.BreakpointAction.Sound">
                   <ActionContent
-                     soundName = "Sosumi">
+                     soundName = "Sonumi">
                   </ActionContent>
                </BreakpointActionProxy>
             </Actions>

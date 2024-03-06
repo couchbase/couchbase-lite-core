@@ -13,7 +13,7 @@
 #pragma once
 
 #ifndef __cplusplus
-#error "This is C++ only"
+#    error "This is C++ only"
 #endif
 
 // ************************************************************************
@@ -22,15 +22,17 @@
 // the dynamic library only exports the C API.
 // ************************************************************************
 
-#include "c4BlobStore.hh"
-#include "c4Certificate.hh"
-#include "c4Collection.hh"
-#include "c4Database.hh"
-#include "c4Document.hh"
-#include "c4DocEnumerator.hh"
-#include "c4Listener.hh"
-#include "c4Observer.hh"
-#include "c4Query.hh"
-#include "c4Replicator.hh"
-#include "c4Socket.hh"
-#include "c4ConnectedClient.hh"
+// These headers are marked as keep so Clangd knows they aren't intended to be used directly in this file
+
+#include "c4BlobStore.hh"      // IWYU pragma: keep
+#include "c4Certificate.hh"    // IWYU pragma: keep
+#include "c4Collection.hh"     // IWYU pragma: keep
+#include "c4Database.hh"       // IWYU pragma: keep
+#include "c4Document.hh"       // IWYU pragma: keep
+#include "c4DocEnumerator.hh"  // IWYU pragma: keep
+#include "c4Listener.hh"       // IWYU pragma: keep
+#include "c4Observer.hh"       // IWYU pragma: keep
+#include "c4Query.hh"          // IWYU pragma: keep
+#include "c4Replicator.hh"     // IWYU pragma: keep
+#include "c4Socket.hh"         // IWYU pragma: keep
+#include "c4ConnectedClient.hh" // IWYU pragma: keep

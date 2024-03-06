@@ -54,6 +54,7 @@ c4doc_release
 c4doc_get
 c4doc_getBySequence
 c4db_purgeDoc
+c4doc_isRevRejected
 c4doc_selectRevision
 c4doc_selectCurrentRevision
 c4doc_loadRevisionBody
@@ -127,11 +128,9 @@ c4stream_computeBlobKey
 c4stream_install
 c4stream_closeWriter
 
-c4dbobs_create
 c4dbobs_getChanges
 c4dbobs_releaseChanges
 c4dbobs_free
-c4docobs_create
 c4docobs_free
 
 c4repl_new
@@ -320,6 +319,8 @@ c4db_collectionNames
 c4db_scopeNames
 c4dbobs_createOnCollection
 c4docobs_createWithCollection
+c4coll_enumerateAllDocs
+c4coll_enumerateChanges
 c4coll_getSpec
 c4coll_getDatabase
 c4coll_getDocumentCount
@@ -368,6 +369,8 @@ c4doc_getSelectedRevIDGlobalForm
 
 c4db_getIndexesInfo
 
+c4cert_getValidTimespan
+
 c4error_getBacktrace
 c4error_getCaptureBacktraces
 c4error_setCaptureBacktraces
@@ -394,6 +397,8 @@ c4repl_isValidRemote
 c4repl_getResponseHeaders
 c4repl_setSuspended
 
+c4rev_getTimestamp
+
 kC4ReplicatorActivityLevelNames
 
 c4address_fromURL
@@ -402,6 +407,8 @@ c4address_toURL
 c4error_return
 c4_dumpInstances
 gC4ExpectExceptions
+
+c4_setExtensionPath
 
 FLDoc_FromJSON
 FLDoc_Retain

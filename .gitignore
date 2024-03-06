@@ -12,11 +12,20 @@ xcuserdata/
 build/
 DerivedData/
 
+# CLion:
+.idea/
+build-ee/
+
 # CMake:
 /build_cmake/*
 !/build_cmake/scripts
 stripopts
 empty.cpp
+
+# clangd:
+.clangd
+.cache
+compile_commands.json
 
 # Huge performance-test files that have to be manually installed:
 C/tests/data/en-wikipedia-*.json

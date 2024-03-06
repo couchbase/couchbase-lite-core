@@ -11,19 +11,22 @@
 //
 
 #include "Logging.hh"
-#include "c4Base.h"
+#include "c4Log.h"
 
 /** This source file should be used instead of Logging.cc in libraries that link with the LiteCore
     dynamic library. It simply sends log messages to c4log. Using Logging.cc would create a second
     copy of the logging system with different state, which would cause confusion. */
 
 namespace litecore {
-
-    void LogDomain::log(LogLevel level, const char *fmt, ...) {
+    // Same as dylog, making this static breaks __printflike
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    void LogDomain::log(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         c4vlog(kC4DefaultLog, (C4LogLevel)level, fmt, args);
         va_end(args);
     }
 
-}
+    // NOLINTEND(readability-convert-member-functions-to-static)
+
+}  // namespace litecore

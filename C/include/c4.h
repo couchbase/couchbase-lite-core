@@ -12,6 +12,8 @@
 
 #pragma once
 
+// Mark these includes as 'keep' so Clangd doesn't warn about them not being used in this file
+
 #include "c4BlobStore.h"
 #include "c4Certificate.h"
 #include "c4Collection.h"

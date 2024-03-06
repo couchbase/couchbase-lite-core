@@ -17,19 +17,19 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 #ifdef COUCHBASE_ENTERPRISE
-    // These source files are NOT in this repository, rather in a Couchbase-private
-    // repository that needs to be checked out next to this one.
-    #ifndef SQLITE_HAS_CODEC
-        #error SQLITE_HAS_CODEC was not defined in EE build
-    #endif
-    #if __APPLE__
-        #define CCCRYPT256
-        #include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-cccrypt.c"
-    #else
-        #include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-aes256-ofb.c"
-    #endif
+// These source files are NOT in this repository, rather in a Couchbase-private
+// repository that needs to be checked out next to this one.
+#    ifndef SQLITE_HAS_CODEC
+#        error SQLITE_HAS_CODEC was not defined in EE build
+#    endif
+#    if __APPLE__
+#        define CCCRYPT256
+#        include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-cccrypt.c"  // NOLINT(bugprone-suspicious-include)
+#    else
+#        include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-aes256-ofb.c"
+#    endif
 #else
-    #include "../../vendor/SQLiteCpp/sqlite3/sqlite3.c"
+#    include "../../vendor/SQLiteCpp/sqlite3/sqlite3.c"
 #endif
 
 #pragma GCC diagnostic pop

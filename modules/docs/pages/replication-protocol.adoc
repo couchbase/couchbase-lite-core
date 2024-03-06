@@ -6,13 +6,12 @@
 Couchbase Mobile 2.0 Replication Protocol
 -----------------------------------------
 
-Jens Alfke — June 2017
+Contributors: Jens Alfke, Traun Leyden, Ben Brooks, Jim Borden
 
-Protocol version 1.2
+Protocol version 3
 
-This document specifies the new replication protocol in development for
-Couchbase Mobile 2.0. It supersedes the REST-based protocol inherited
-from CouchDB.
+This document specifies the replication protocol in use by Couchbase Mobile
+2.0 and later. It supersedes the REST-based protocol inherited from CouchDB.
 
 Benefits of the new protocol are:
 
@@ -81,9 +80,9 @@ The client opens a WebSocket connection to the server at path
 This begins as an HTTP GET request, and goes through authentication as
 usual, then upgrades to WebSocket protocol.
 
-The WebSocket sub-protocol name "BLIP" (as sent in the
-`Sec-WebSocket-Protocol` header) is used to ensure that both client and
-server understand BLIP.
+The WebSocket sub-protocol name `BLIP_3+CBMobile_3`, sent in the
+`Sec-WebSocket-Protocol` header, is used to ensure that both client and
+server understand BLIP and the replicator protocol.
 
 [[message-types]]
 3. Message Types
@@ -105,22 +104,36 @@ below.
 [[getcheckpoint]]
 getCheckpoint
 ^^^^^^^^^^^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `client`: Unique ID of client checkpoint to retrieve
 
 Retrieves a checkpoint stored on the receiver. The checkpoint is a JSON
 object that's stored as the value of the key given by the `client`
-property.
+property.  This property should be derived in a way that is collection
+aware (i.e. each collection can have its own checkpoint).  If this message is sent before `getCollections` then the replication will operate in legacy mode and only the default collection can be replicated. 
 
 Response:
 
-`rev`: The MVCC revision ID of the checkpoint +
+`rev`: The MVCC revision ID of the checkpoint (_not_ the same as a document revID!) +
 Body: JSON data of the checkpoint
+
+[[getCollections]]
+getCollections [3.1+]
+^^^^^^^^^^^^^^^^^^^^^
+
+Body: JSON dictionary
+
+A collection aware parallelized version of `getCheckpoint`.  If this message is sent before any `getCheckpoint` calls then replication will operate in 3.1+ mode, which can fully handle collections.  The body of this message will contain two arrays (`collections` and `checkpoint_ids`) each of the same length.  The combination of the two at a given index provide information about a checkpoint to retrieve (i.e. request checkpoint X for collection Y).  The format of each entry in the `collections` array will be of the format `[scope.]collection` where if scope is omitted the collection will be considered to be from the default scope.
+
+Response:
+
+An array of items each identical in structure to the result of `getCheckpoint`.  The entries will be ordered according to the order in the request message.  There are two special entries in this case, however.  An entry which is an empty dictionary (`{}`) means that there is no existing checkpoint for the given checkpoint ID.  An entry which is `null` means that the collection does not exist in the remote, and the replication should not proceed.
 
 [[setcheckpoint]]
 setCheckpoint
 ^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `client`: Unique ID of client checkpoint to store +
 `rev`: Last known MVCC revision ID of the checkpoint _(omitted if this
 is a new checkpoint)_ +
@@ -140,6 +153,7 @@ Response:
 subChanges
 ^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `since`: Latest sequence ID already known to the requestor, JSON-encoded
 _(optional)_ +
 `continuous`: Set to `true` if the requestor wants change notifications
@@ -150,13 +164,18 @@ _(optional)_ +
 _(optional)_ +
 `activeOnly`: Set to `true` if the requestor doesn't want to be sent tombstones.
 _(optional)_ +
+`versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
 Body: JSON dictionary _(optional)_
 
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
-beginning if no `since` is given.
+beginning if no `since` is given.  If a collection index is provided, that collections changes are used.  Otherwise, the default collection will be used if possible.
+
+The recipient MUST agree to the requested versioning type and use the corresponding syntax
+for revIDs and revision histories in its messages. (See <<revIDs,section 4>>.)
+If it cannot, it MUST respond with an error and close the connection.
 
 Note: A sequence ID can be any type of JSON value, so the `since`
 property MUST be JSON-encoded. In particular, if the sequence ID is a
@@ -189,10 +208,11 @@ the dictionary MUST be ignored.
 changes
 ^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted
+
 Body: JSON array
 
-Notifies the recipient of a series of changes made to the sender's
-database. A passive replicator (like Sync Gateway) is triggered to send
+Notifies the recipient of a series of changes made to either the sender's default collection, or the collection specified by the provided index.  A passive replicator (like Sync Gateway) is triggered to send
 these by a prior `subChanges` request sent by the client. An active
 replicator (Couchbase Lite) will send them spontaneously as part of a
 push replication.
@@ -205,7 +225,7 @@ occur, if the replication is continuous.
 
 Each change in the array is encoded as a nested array of the form
 `[sequence, docID, revID, deleted]`, i.e. sequence ID followed by
-document ID followed by revision ID followed by the deletion state
+document ID followed by <<revIDs,revision ID>> followed by the deletion state
 (which can be omitted if it's `false`.)
 
 The sequence IDs MUST be in forward chronological order but are
@@ -233,7 +253,7 @@ would resolve it and push the merge.
 
 Response:
 
-`maxHistory`: Max length of revision history to send _(optional)_ +
+`maxHistory`: Max length of revision history to send _(optional; not used with version vectors)_ +
 Body: JSON array (see below)
 
 The response message indicates which revisions the recipient wants to
@@ -261,6 +281,8 @@ it's missing, the history length is unlimited.
 proposeChanges
 ^^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted
+
 Body: JSON array
 
 Sends proposed changes to a server that’s in conflict-free mode. This is
@@ -273,7 +295,7 @@ server revision (if any). If there is no known server revision, the
 (As with `changes`, the estimated body size MAY be appended, if the
 `serverRevID` is present.)
 
-The recipient SHOULD then look through each document in its database. If
+The recipient SHOULD then look through each document in its relevant collection. If
 the document exists, but the given serverRevID is not known or not
 current, the proposed document SHOULD be rejected with a 409 status (see
 below.) Or if the document exists and the revID is current, the server
@@ -303,17 +325,17 @@ all of the proposed revisions.
 [[rev]]
 rev
 ^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
-`rev`: Revision ID _(optional)_ +
+`rev`: Revision ID _(optional)_ -- see the <<revIDs>> section. +
 `deleted`: true if the revision is a tombstone _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
 q.v.)_ +
-`history`: Revision history (comma-delimited list of revision IDs) +
+`history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
 Body: Document JSON
 `noconflicts`: true if the revision may not create a conflict _(optional; default is false)_  
 
-Sends one document revision. The `id`, `rev`, `deleted` properties are
+Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
 the JSON body (and vice versa.) The `sequence` property is optional
 unless this message was unsolicited.
@@ -353,7 +375,7 @@ to its database.
 [[norev]]
 norev
 ^^^^^
-
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
 `rev`: Revision ID _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional)_ +
@@ -373,6 +395,7 @@ the replication to get stuck.
 getAttachment
 ^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.)
 
@@ -404,6 +427,7 @@ Body: raw contents of attachment
 proveAttachment
 ^^^^^^^^^^^^^^^
 
+`collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.) +
 Body: A _nonce_: 16 to 255 bytes of random binary data
@@ -440,13 +464,49 @@ from the client matches the digest it computed. If it doesn't match, the
 server can assume the client doesn't really have the attachment, and can
 reject the `rev` message with the revision containing it.)
 
+[[revIDs]]
+4. Revision IDs and Histories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Several of the messages contain document revision IDs, and the `rev` message includes a document's revision history. This section defines their syntax.
+
+A database uses one of two types of versioning: revision trees (older) or version vectors (new). They have different forms of revision IDs and histories. The active peer communicates which type is in use via the `versioning` property (or lack thereof) in its `subChanges` request.
+
+Revision Trees
+^^^^^^^^^^^^^^
+
+A revision ID consists of a positive decimal integer, followed by a hyphen (`-`), followed by 16-20 hexadecimal-encoded bytes (32-40 digits.) The first component is the generation count, the second the encoded digest.
+
+* The generation count is expected to be fairly small. It starts at 1 and might go into the millions.
+* The digest is generated by MD5 or SHA-1. It SHOULD not be larger than 20 bytes (40 digits.)
+
+A revision history consists of a series of one or more revision IDs delimited by commas, with optional whitespace after the comma. The generation number MUST decrease by one in successive revIDs.
+
+In the `rev` message the current revision is given its own property (`rev`), so to avoid redundancy the `history` property contains a history that omits the current revision.
+
+Version Vectors
+^^^^^^^^^^^^^^^
+
+A revision ID, also called a **version**, consists of a hexadecimal number of up to 16 digits, followed by an `@` sign, followed by 22 characters in the base64 alphabet (upper and lower case, digits, `+` and `/`.) The first component is the timestamp, the second the (base64-encoded) source ID.
+
+* The timestamp is usually a count of nanoseconds since the Unix epoch, currently around 2^60. It fits in a 64-bit integer. It SHOULD be interpreted as unsigned (although it won't overflow a signed integer for a century or more.) It MUST NOT be stored in an IEEE double or it will lose precision; for the same reason it SHOULD NOT be encoded in JSON as a number.
+* The source ID is a 128-bit (16-byte) number, most likely a UUID.
+
+A revision history is a **version vector**. It's a series of one or more versions delimited by either a comma or semicolon, with optional whitespace after. Most versions are separated by commas, but a semicolon is used to separate the _current_ and _merge_ version(s) from the _historical_ ones.
+
+The current version must come first, then zero or two merge versions, then zero or more historical versions. The current version is causally later than the rest, and the merge versions are causally later than the historical versions.
+
+In the `rev` message the current version is given its own property (`rev`), so to avoid redundancy the `history` property contains a version vector that omits the current version.
+
 [[algorithm]]
-4. Algorithm
+5. Algorithm
 ~~~~~~~~~~~~
 
 Here are informal descriptions of the flow of control of both push and
 pull replication. Note the symmetry: a lot of the steps are the same in
 both lists but with "client" and "server" swapped.
+
+[3.1+] With the introduction of collections, and in order to maintain maximum compatibility, the algorithm now has an overall choice of two flavors: legacy and collection-aware.  The mode that is entered into depends on the presence or lack of the newly introduced `getCollections` message.  If this message is sent as the first message, the connection is thereafter a collection-aware connection and every message that is capable of including a `collection` property *must* do so, or the server side should return a 400 error.  Conversely, if any other message is received (often `getCheckpoint`) then the connection is thereafter a legacy connection and the inverse is true: Any message that contains a `collection` property is incorrect and the server side should return a 400 error.  
 
 [[push]]
 Push
@@ -646,3 +706,16 @@ Pull interaction digram
       │                                                                                        │        
       ▼                                                                                        ▼            
 ```
+
+[[extensions]]
+6. Extensions
+~~~~~~~~~~~~~
+
+The replication protocol can be extended with additional message types and properties.
+
+[[connected-client]]
+Connected Client
+^^^^^^^^^^^^^^^^
+The Connected Client protocol extension allows mobile clients to access a server-side database (bucket) directly, without needing a local database replica.
+
+https://github.com/couchbase/couchbase-lite-core/blob/feature/connected-client/docs/overview/ConnectedClientProtocol.md 

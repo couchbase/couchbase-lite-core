@@ -11,8 +11,7 @@
 //
 
 #pragma once
-#include "c4BlobStore.h"
-#include "c4DatabaseTypes.h"
+#include "c4BlobStoreTypes.h"
 #include "FilePath.hh"
 #include "SecureDigest.hh"
 #include "Stream.hh"
@@ -23,25 +22,20 @@
 namespace litecore {
 
     /** Returns a stream for reading a blob from the given file in the BlobStore. */
-    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile,
-                                                      EncryptionAlgorithm,
-                                                      slice encryptionKey);
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath& blobFile, EncryptionAlgorithm,
+                                                      slice           encryptionKey);
 
     /** A stream for writing a new blob. */
     class BlobWriteStream final : public WriteStream {
-    public:
-        BlobWriteStream(const std::string &blobStoreDirectory,
-                        EncryptionAlgorithm,
-                        slice encryptionKey);
+      public:
+        BlobWriteStream(const std::string& blobStoreDirectory, EncryptionAlgorithm, slice encryptionKey);
 
-        ~BlobWriteStream();
+        ~BlobWriteStream() override;
 
         void write(slice) override;
         void close() override;
 
-        uint64_t bytesWritten() const {
-            return _bytesWritten;
-        }
+        [[nodiscard]] uint64_t bytesWritten() const { return _bytesWritten; }
 
         /** Derives the blobKey from the digest of the file data.
             No more data can be written after this is called. */
@@ -50,17 +44,17 @@ namespace litecore {
         /** Moves the temporary file to the given path,
             or if a file already exists there, just deletes the temporary (since the existing
             file must have the same contents.) */
-        void install(const FilePath &dstPath);
+        void install(const FilePath& dstPath);
 
-    private:
+      private:
         bool deleteTempFile();
-        
-        FilePath _tmpPath;
-        shared_ptr<WriteStream> _writer;
-        uint64_t _bytesWritten {0};
-        SHA1Builder _sha1ctx;
+
+        FilePath                 _tmpPath;
+        shared_ptr<WriteStream>  _writer;
+        uint64_t                 _bytesWritten{0};
+        SHA1Builder              _sha1ctx;
         std::optional<C4BlobKey> _blobKey;
-        bool _installed {false};
+        bool                     _installed{false};
     };
 
-}
+}  // namespace litecore

@@ -13,46 +13,55 @@
 #pragma once
 #include "Worker.hh"
 #include "ChangesFeed.hh"
-#include "Replicator.hh" // for BlobProgress
+#include "Replicator.hh"  // for BlobProgress
 #include "ReplicatorTypes.hh"
 #include "fleece/slice.hh"
 #include <deque>
 #include <unordered_map>
+#include <utility>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     /** Top-level object managing the push side of replication (sending revisions.) */
-    class Pusher final : public Worker, public ChangesFeed::Delegate {
-    public:
+    class Pusher final
+        : public Worker
+        , public ChangesFeed::Delegate {
+      public:
         static constexpr const char* kConflictIncludesRevProperty = "conflictIncludesRev";
 
-        Pusher(Replicator *replicator NONNULL, Checkpointer&);
+        Pusher(Replicator* replicator NONNULL, Checkpointer&, CollectionIndex);
 
         // Starts an active push
-        void start()  {enqueue(FUNCTION_TO_QUEUE(Pusher::_start));}
+        void start() { enqueue(FUNCTION_TO_QUEUE(Pusher::_start)); }
 
         // Called by Replicator when remote checkpoint doesn't match
-        void checkpointIsInvalid()              {_changesFeed.setCheckpointValid(false);}
+        void checkpointIsInvalid() { _changesFeed.setCheckpointValid(false); }
 
         // Called by the puller's RevFinder, via the Replicator
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID) {
-            enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), docID, remoteAncestorRevID);
+            enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), std::move(docID),
+                    std::move(remoteAncestorRevID));
         }
 
         void onError(C4Error err) override;
 
-    protected:
+        // Passive replicator always sends "changes"
+        bool passive() const override { return _options->push(collectionIndex()) <= kC4Passive; }
+
+      protected:
         friend class BlobDataSource;
-        
-        virtual void dbHasNewChanges() override {enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges));}
-        virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {
+
+        void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
+
+        void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {
             finishedDocumentWithError(rev, error, transient);
         }
-        virtual void afterEvent() override;
-        virtual void _connectionClosed() override;
-        virtual ActivityLevel computeActivityLevel() const override;
 
-    private:
+        void          afterEvent() override;
+        void          _connectionClosed() override;
+        ActivityLevel computeActivityLevel() const override;
+
+      private:
         void _start();
         bool isBusy() const;
         void startSending(C4SequenceNumber sinceSequence);
@@ -75,18 +84,17 @@ namespace litecore { namespace repl {
         void handleAllDocs(Retained<blip::MessageIn>);
 
         // Pusher+Attachments.cc:
-        void handleGetAttachment(Retained<blip::MessageIn>);
-        void handleProveAttachment(Retained<blip::MessageIn>);
-        void _attachmentSent();
-        unique_ptr<C4ReadStream> readBlobFromRequest(blip::MessageIn *req NONNULL,
-                                                     slice &outDigest,
-                                                     Replicator::BlobProgress &outProgress);
+        void                     handleGetAttachment(Retained<blip::MessageIn>);
+        void                     handleProveAttachment(Retained<blip::MessageIn>);
+        void                     _attachmentSent();
+        unique_ptr<C4ReadStream> readBlobFromRequest(blip::MessageIn* req NONNULL, slice& outDigest,
+                                                     Replicator::BlobProgress& outProgress);
         // Pusher+Revs.cc:
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList, bool immediate);
         bool buildRevisionMessage(RevToSend*, C4Document*, blip::MessageBuilder&, C4Error*);
         void sendRevision(Retained<RevToSend>);
-        void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
+        void onRevProgress(const Retained<RevToSend>& rev, const blip::MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
@@ -97,27 +105,26 @@ namespace litecore { namespace repl {
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 
-        bool _continuous;
-        bool _proposeChanges;
-        bool _proposeChangesKnown;
+        bool                  _continuous;
+        bool                  _proposeChanges;
+        bool                  _proposeChangesKnown;
         ReplicatorChangesFeed _changesFeed;
-        DocIDToRevMap _pushingDocs;               // Revs being processed by push
-        DocIDToRevMap _conflictsIMightRetry;
-        C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
-        C4SequenceNumber _lastSequenceLogged {0}; // Checkpointed last-sequence
-        Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
-        bool _started {false};
-        bool _caughtUp {false};                   // Received backlog of pre-existing changes?
-        bool _continuousCaughtUp {true};          // Caught up with change notifications?
-        bool _deltasOK {false};                   // OK to send revs in delta form?
-        unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
-        unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
-        blip::MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
-        unsigned _blobsInFlight {0};              // # of blobs being sent
-        std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
-        RevToSendList _revsToRetry;               // Revs that failed with a transient error
-        string _myPeerID;
+        DocIDToRevMap         _pushingDocs;  // Revs being processed by push
+        DocIDToRevMap         _conflictsIMightRetry;
+        C4SequenceNumber      _lastSequenceRead{0};    // Last sequence read from db
+        C4SequenceNumber      _lastSequenceLogged{0};  // Checkpointed last-sequence
+        Checkpointer&         _checkpointer;           // Tracks checkpoints & pending sequences
+        bool                  _started{false};
+        bool                  _caughtUp{false};                // Received backlog of pre-existing changes?
+        bool                  _continuousCaughtUp{true};       // Caught up with change notifications?
+        bool                  _deltasOK{false};                // OK to send revs in delta form?
+        unsigned              _changeListsInFlight{0};         // # change lists being requested from db or sent to peer
+        unsigned              _revisionsInFlight{0};           // # 'rev' messages being sent
+        blip::MessageSize     _revisionBytesAwaitingReply{0};  // # 'rev' message bytes sent but not replied
+        unsigned              _blobsInFlight{0};               // # of blobs being sent
+        std::deque<Retained<RevToSend>> _revQueue;             // Revs to send to peer but not sent yet
+        RevToSendList                   _revsToRetry;          // Revs that failed with a transient error
     };
-    
-    
-} }
+
+
+}  // namespace litecore::repl

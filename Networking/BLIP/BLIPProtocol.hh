@@ -12,9 +12,9 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include <stdint.h>
+#include <cstdint>
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
     // See "docs/BLIP Protocol.md"
 
@@ -68,4 +68,4 @@ namespace litecore { namespace blip {
     /// By convention its error codes are based on HTTP's, i.e. 404 for "not found".
     static constexpr fleece::slice kBLIPErrorDomain = "BLIP";
 
-} }
+}  // namespace litecore::blip

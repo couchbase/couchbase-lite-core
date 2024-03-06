@@ -16,14 +16,17 @@
 #include "ReplicatorOptions.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "MessageBuilder.hh"
+#include "NumConversion.hh"
 #include "Error.hh"
-#include "fleece/Fleece.hh"
+#include "ReplicatorTypes.hh"
+#include "StringUtil.hh"
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <shared_mutex>
 
-
-namespace litecore { namespace repl {
+namespace litecore::repl {
     using fleece::RetainedConst;
 
     class DBAccess;
@@ -32,6 +35,9 @@ namespace litecore { namespace repl {
 
     extern LogDomain SyncBusyLog;
 
+    // The log format string for logging a collection index
+    constexpr const char* kCollectionLogFormat = "{Coll#%i}";
+
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
         - Access to the replicator options, the database, and the BLIP connection.
@@ -39,19 +45,24 @@ namespace litecore { namespace repl {
         - Progress, status, and error tracking. Changes are detected at the end of every Actor
           event and propagated to the parent, which aggregates them together with its own.
         - Some BLIP convenience methods for registering handlers and sending messages. */
-    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
-    public:
-        
-        using slice = fleece::slice;
-        using alloc_slice = fleece::alloc_slice;
+    class Worker
+        : public actor::Actor
+        , public fleece::InstanceCountedIn<Worker> {
+      public:
+        using slice         = fleece::slice;
+        using alloc_slice   = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
 
+        /** A key to set the collection that a worker is sending BLIP messages for
+                    Omitted if the default collection is being used, otherwise an index into
+                    the original list of collections received via getCollections.
+        */
+        static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
-            Status(ActivityLevel lvl =kC4Stopped) {
-                level = lvl; error = {}; progress = progressDelta = {};
-            }
-            C4Progress progressDelta;
+            explicit Status(ActivityLevel lvl = kC4Stopped) : C4ReplicatorStatus({lvl, {}, {}, 0}) {}
+
+            C4Progress progressDelta{};
         };
 
         /// The Replicator at the top of the tree.
@@ -65,72 +76,131 @@ namespace litecore { namespace repl {
         Retained<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
-        bool passive() const                                {return _passive;}
+        virtual bool passive() const { return false; }
 
         /// Called by the Replicator on its direct children when the BLIP connection closes.
-        void connectionClosed() {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed));
-        }
+        void connectionClosed() { enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed)); }
 
         /// Child workers call this on their parent when their status changes.
-        void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
+        void childChangedStatus(Worker* task, const Status& status) {
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
         }
 
-        C4ReplicatorProgressLevel progressNotificationLevel() const {
-            return _options->progressLevel;
-        }
+        C4ReplicatorProgressLevel progressNotificationLevel() const { return _options->progressLevel; }
+
+        CollectionIndex collectionIndex() const { return _collectionIndex; }
+
+        /// My current status.
+        const Status& status() const { return _status; }
 
 #if !DEBUG
-    protected:
+      protected:
 #endif
         /// True if there is a BLIP connection.
-        bool connected() const                          {return _connection != nullptr;}
+        bool connected() const { return _connection != nullptr; }
 
         /// The BLIP connection. Throws if there isn't one.
-        blip::Connection& connection() const            {Assert(_connection); return *_connection;}
+        blip::Connection& connection() const {
+            Assert(_connection);
+            return *_connection;
+        }
 
-    protected:
+      protected:
         /// Designated constructor.
         /// @param connection  The BLIP connection.
         /// @param parent  The Worker that owns this one.
         /// @param options  The replicator options.
         /// @param db  Shared object providing thread-safe access to the C4Database.
         /// @param namePrefix  Prepended to the Actor name.
-        Worker(blip::Connection *connection NONNULL,
-               Worker *parent,
-               const Options* options,
-               std::shared_ptr<DBAccess> db,
-               const char *namePrefix NONNULL);
+        Worker(blip::Connection* connection NONNULL, Worker* parent, const Options* options,
+               std::shared_ptr<DBAccess> db, const char* namePrefix NONNULL, CollectionIndex);
 
         /// Simplified constructor. Gets the other parameters from the parent object.
-        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
+        Worker(Worker* parent NONNULL, const char* namePrefix NONNULL, CollectionIndex);
 
-        virtual ~Worker();
+        ~Worker() override;
 
         /// Override to specify an Actor mailbox that all children of this Worker should use.
         /// On Apple platforms, a mailbox is a GCD queue, so this reduces the number of queues.
-        virtual actor::Mailbox* mailboxForChildren() {
-            return _parent ? _parent->mailboxForChildren() : nullptr;
-        }
+        virtual actor::Mailbox* mailboxForChildren() { return _parent ? _parent->mailboxForChildren() : nullptr; }
 
         // overrides:
-        virtual std::string loggingClassName() const override;
-        virtual std::string loggingIdentifier() const override {return _loggingID;}
-        virtual void afterEvent() override;
-        virtual void caughtException(const std::exception &x) override;
+        std::string loggingClassName() const override;
+
+        std::string loggingIdentifier() const override { return _loggingID; }
+
+        void afterEvent() override;
+        void caughtException(const std::exception& x) override;
+
+        // Add the token for collection info to the format string (and cache the string, returning the pointer)
+        // Concurrent read-write of cache is technically safe, but if a rehash occurs (capacity of _formatCache is
+        // exceeded), all iterators are invalidated. So we use a shared_mutex, with a shared_lock on reads and a
+        // unique_lock on writes - this allows multiple concurrent reads, but blocks reads when a write needs to occur
+        static inline const char* formatWithCollection(const char* fmt) {
+            const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
+            {
+                std::shared_lock sharedLock(_formatMutex);  // Multiple threads can read concurrently
+                const auto       found = _formatCache.find(fmtStr);
+                if ( found != _formatCache.end() ) { return found->data(); }
+            }
+            std::unique_lock lock(_formatMutex);  // Block all other threads if we need to perform an insert
+            return _formatCache.insert(fmtStr).first->data();
+        }
+
+        // overrides for Logging functions which insert collection index to the format string
+        template <class... Args>
+        inline void logInfo(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logInfo(fmt_, collectionID(), args...);
+        }
+
+        template <class... Args>
+        inline void logVerbose(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logVerbose(fmt_, collectionID(), args...);
+        }
+
+#if DEBUG
+        template <class... Args>
+        inline void logDebug(const char* fmt, Args... args) const {
+            const char* fmt_ = formatWithCollection(fmt);
+            Logging::logDebug(fmt_, collectionID(), args...);
+        }
+#else
+        template <class... Args>
+        inline void logDebug(const char* fmt, Args... args) const {}
+#endif
+
+        // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
+        int32_t collectionID() const {
+            // DebugAssert that collection index is within range of int32, so we can ignore narrowing conversion warning
+            DebugAssert(_collectionIndex == kNotCollectionIndex
+                        || _collectionIndex <= std::numeric_limits<int32_t>::max());
+            return _collectionIndex != kNotCollectionIndex ? _collectionIndex : -1;
+        }
+
+        // NOLINTEND(cppcoreguidelines-narrowing-conversions)
 
 #pragma mark - BLIP:
 
         /// True if the WebSocket connection is open and acting as a client (active).
-        bool isOpenClient() const               {return _connection &&
-                                                 _connection->role() == websocket::Role::Client;}
+        bool isOpenClient() const { return _connection && _connection->role() == websocket::Role::Client; }
+
         /// True if the WebSocket connection is open and acting as a server (passive).
-        bool isOpenServer() const               {return _connection &&
-                                                 _connection->role() == websocket::Role::Server;}
+        bool isOpenServer() const { return _connection && _connection->role() == websocket::Role::Server; }
+
         /// True if the replicator is continuous.
-        bool isContinuous() const               {return _options->push == kC4Continuous
-                                                     || _options->pull == kC4Continuous;}
+        bool isContinuous() const {
+            auto collIndex = collectionIndex();
+            if ( collIndex == kNotCollectionIndex ) {
+                for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
+                    if ( _options->push(i) == kC4Continuous || _options->pull(i) == kC4Continuous ) { return true; }
+                }
+                return false;
+            } else {
+                return _options->push(collIndex) == kC4Continuous || _options->pull(collIndex) == kC4Continuous;
+            }
+        }
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
         virtual void _connectionClosed() {
@@ -140,17 +210,14 @@ namespace litecore { namespace repl {
 
         /// Registers a method to run when a BLIP request with the given profile arrives.
         template <class ACTOR>
-        void registerHandler(const char *profile NONNULL,
-                             void (ACTOR::*method)(Retained<blip::MessageIn>)) {
-            std::function<void(Retained<blip::MessageIn>)> fn(
-                                        std::bind(method, (ACTOR*)this, std::placeholders::_1) );
+        void registerHandler(const char* profile NONNULL, void (ACTOR::*method)(Retained<blip::MessageIn>)) {
+            std::function<void(Retained<blip::MessageIn>)> fn(std::bind(method, (ACTOR*)this, std::placeholders::_1));
             _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
         /// Sends a BLIP request. Increments `_pendingResponseCount` until the response is
         /// complete, keeping this Worker in the busy state.
-        void sendRequest(blip::MessageBuilder& builder,
-                         blip::MessageProgressCallback onProgress = nullptr);
+        void sendRequest(blip::MessageBuilder& builder, const blip::MessageProgressCallback& onProgress = nullptr);
 
         using AsyncResponse = actor::Async<Retained<blip::MessageIn>>;
 
@@ -160,7 +227,7 @@ namespace litecore { namespace repl {
         AsyncResponse sendAsyncRequest(blip::BuiltMessage&&);
 
         /// The number of BLIP responses I'm waiting for.
-        int pendingResponseCount() const        {return _pendingResponseCount;}
+        int pendingResponseCount() const { return _pendingResponseCount; }
 
 #pragma mark - ERRORS:
 
@@ -185,9 +252,6 @@ namespace litecore { namespace repl {
 
 #pragma mark - STATUS & PROGRESS:
 
-        /// My current status.
-        const Status& status() const            {return _status;}
-
         /// Called by `afterEvent` if my status has changed.
         /// Default implementation calls the parent's `childChangedStatus`,
         /// then if status is `kC4Stopped`, clears the parent pointer.
@@ -195,7 +259,7 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Worker *task, Status) { }
+        virtual void _childChangedStatus(Retained<Worker> task, Status) {}
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);
@@ -211,18 +275,41 @@ namespace litecore { namespace repl {
         void _endAsyncRequest();
 
 #pragma mark - INSTANCE DATA:
-    protected:
-        RetainedConst<Options>      _options;                   // The replicator options
-        Retained<Worker>            _parent;                    // Worker that owns me
-        std::shared_ptr<DBAccess>   _db;                        // Database
-        std::string                 _loggingID;                 // My name in the log
-        uint8_t                     _importance {1};            // Higher values log more
-        bool                        _passive {false};           // Part of a server-side replicator?
-    private:
-        Retained<blip::Connection>  _connection;                // BLIP connection
-        int                         _pendingResponseCount {0};  // # of responses I'm awaiting
-        Status                      _status {kC4Idle};          // My status
-        bool                        _statusChanged {false};     // Status changed during this event
-    };
+      protected:
+        // Basic type checking: CollectionIndex (alias of unsigned) vs. long.
+        // We store an unsigned in intProperty and this method is to enure the integrity.
+        static CollectionIndex getCollectionIndex(const blip::MessageIn& msgIn) {
+            return fleece::narrow_cast<CollectionIndex>(msgIn.intProperty(kCollectionProperty, kNotCollectionIndex));
+        }
 
-} }
+        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
+            if ( _options->collectionAware() ) { msg[kCollectionProperty] = i; }
+        }
+
+        // This method does two things. First it fetches the collectino index from 'msg';
+        // then, it returns a pair of {collectionIndex, errorSlice} with the post-conditions:
+        //   errorSlice != nullslice || (0 <= collectionIndex < _options->workingCollectionCount()
+        // 'errorSlice' describes the nature of the violation.
+        std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
+
+        C4Collection* getCollection() { return const_cast<C4Collection*>(((const Worker*)this)->getCollection()); }
+
+        const C4Collection* getCollection() const;
+
+        RetainedConst<Options>    _options;        // The replicator options
+        Retained<Worker>          _parent;         // Worker that owns me
+        std::shared_ptr<DBAccess> _db;             // Database
+        std::string               _loggingID;      // My name in the log
+        uint8_t                   _importance{1};  // Higher values log more
+      protected:
+        const CollectionIndex _collectionIndex;
+
+      private:
+        Retained<blip::Connection>             _connection;               // BLIP connection
+        int                                    _pendingResponseCount{0};  // # of responses I'm awaiting
+        Status                                 _status{kC4Idle};          // My status
+        bool                                   _statusChanged{false};     // Status changed during this event
+        static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
+        static std::shared_mutex               _formatMutex;  // Ensure thread-safety for cache insert
+    };
+}  // namespace litecore::repl

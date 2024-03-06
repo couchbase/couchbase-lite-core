@@ -12,60 +12,75 @@
 
 #include "Housekeeper.hh"
 #include "CollectionImpl.hh"
-#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include <inttypes.h>
 
 namespace litecore {
     using namespace actor;
     using namespace std;
 
-    Housekeeper::Housekeeper(C4Collection *coll)
-    :Actor(DBLog, format("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
-    ,_keyStoreName(asInternal(coll)->keyStore().name())
-    ,_bgdb(asInternal(coll->getDatabase())->backgroundDatabase())
-    ,_expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
-    { }
-
+    Housekeeper::Housekeeper(C4Collection* coll)
+        : Actor(DBLog, format("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
+        , _keyStoreName(asInternal(coll)->keyStore().name())
+        , _expiryTimer([this] { _doExpiration(); })
+        , _collection(coll) {}
 
     void Housekeeper::start() {
         logInfo("Housekeeper: started.");
         enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
     }
 
-
     void Housekeeper::stop() {
         enqueue(FUNCTION_TO_QUEUE(Housekeeper::_stop));
         waitTillCaughtUp();
     }
-
 
     void Housekeeper::_stop() {
         _expiryTimer.stop();
         logVerbose("Housekeeper: stopped.");
     }
 
-
     void Housekeeper::_scheduleExpiration(bool onlyIfEarlier) {
-        expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile *df) {
-            return df ? df->defaultKeyStore().nextExpiration() : expiration_t::None;
+        // CBL-3626: Opening the background database synchronously will
+        // cause a deadlock when setting document expiration inside of
+        // a transaction (inBatch) if it is the first time that document
+        // expiration is set.  Opening the background database requires
+        // an exclusive transaction.  I wanted to do this in the constructor
+        // but calling enqueue there appears to corrupt the whole object, giving
+        // it a garbage ref count
+        if ( !_bgdb && _collection && _collection->isValid() ) {
+            _bgdb       = asInternal(_collection->getDatabase())->backgroundDatabase();
+            _collection = nullptr;  // No longer needed, release the retain
+            logInfo("Housekeeper: opening background database to monitor expiration...");
+        }
+
+        if ( !_bgdb ) {
+            logError("Housekeeping unable to start, collection is closed and/or deleted!");
+            return;
+        }
+
+        auto nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile* df) {
+            if ( !df ) { return expiration_t::None; }
+
+            auto& store = df->getKeyStore(_keyStoreName);
+            return store.nextExpiration();
         });
-        if (nextExp == expiration_t::None) {
+
+        if ( nextExp == expiration_t::None ) {
             logVerbose("Housekeeper: no scheduled document expiration");
             return;
-        } else if (auto delay = nextExp - KeyStore::now(); delay > 0) {
+        } else if ( auto delay = nextExp - KeyStore::now(); delay > 0 ) {
             logVerbose("Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
-            
+
             // CBL-2392: Since start enqueues an async call to these method, and
             // documentExpirationChanged calls it synchronously there is a race.
             // The race is solved by using fireEarlierAfter, but any further calls
             // should continue to use fireAfter or the timer will never be rescheduled.
-            if(onlyIfEarlier) {
+            if ( onlyIfEarlier ) {
                 _expiryTimer.fireEarlierAfter(chrono::milliseconds(delay));
             } else {
                 _expiryTimer.fireAfter(chrono::milliseconds(delay));
@@ -75,15 +90,11 @@ namespace litecore {
         }
     }
 
-
     void Housekeeper::_doExpiration() {
-        logVerbose("Housekeeper: expiring documents...");
-        _bgdb->useInTransaction(DataFile::kDefaultKeyStoreName,
-                                [&](KeyStore &keyStore, SequenceTracker *sequenceTracker) -> bool {
-            if (sequenceTracker) {
-                keyStore.expireRecords([&](slice docID) {
-                    sequenceTracker->documentPurged(docID);
-                });
+        logInfo("Housekeeper: expiring documents...");
+        _bgdb->useInTransaction(_keyStoreName, [&](KeyStore& keyStore, SequenceTracker* sequenceTracker) -> bool {
+            if ( sequenceTracker ) {
+                keyStore.expireRecords([&](slice docID) { sequenceTracker->documentPurged(docID); });
             } else {
                 keyStore.expireRecords();
             }
@@ -93,14 +104,12 @@ namespace litecore {
         _scheduleExpiration(false);
     }
 
-
     void Housekeeper::documentExpirationChanged(expiration_t exp) {
         // This doesn't have to be enqueued, since Timer is thread-safe.
-        if (exp == expiration_t::None)
-            return;
+        if ( exp == expiration_t::None ) return;
         auto delay = exp - KeyStore::now();
-        if (_expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)))
+        if ( _expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)) )
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
 
-}
+}  // namespace litecore

@@ -12,110 +12,123 @@
 
 #pragma once
 
-#include "Base.hh"
+#include "HybridClock.hh"
+#include "SourceID.hh"
 #include <optional>
 
-namespace fleece {
-    class Value;
-    class Encoder;
-    struct slice_istream;
-}
-
-
 namespace litecore {
-
+    class HybridClock;
     class VersionVector;
 
-    /** A version's generation number: the number of times its author has changed the document. */
-    typedef uint64_t generation;
-
-    /** Identifier of a peer or server that created a version. A simple opaque 64-bit value. */
-    struct peerID {
-        uint64_t id = 0;
-        bool operator==(peerID p) const noexcept FLPURE   {return id == p.id;}
-        bool operator!=(peerID p) const noexcept FLPURE   {return id != p.id;}
-    };
-
-    /** A placeholder `peerID` representing the local peer, i.e. this instance of Couchbase Lite.
-        This is needed since I won't have a real assigned peer ID until I talk to a server. */
-    constexpr peerID kMePeerID  {0};
-
-    /** The possible orderings of two Versions or VersionVectors. (Can be interpreted as two 1-bit flags.) */
-    enum versionOrder {
-        kSame        = 0,                   // Equal
-        kOlder       = 1,                   // This one is older
-        kNewer       = 2,                   // This one is newer
-        kConflicting = kOlder | kNewer      // The vectors conflict
-    };
-
-
     /** A single version identifier in a VersionVector.
-        Consists of a peerID (author) and generation count.
-        The local peer's ID is represented as 0 (`kMePeerID`) for simplicity and compactness.
+        Consists of a SourceID (author) and logicalTime.
+        The local peer's ID is represented as 0 (`kMeSourceID`) for simplicity and compactness.
 
-        The absolute ASCII form of a Version is: <hex generation> '@' <hex peerID> .
-        The relative form uses a "*" character for the peerID when it's equal to the local peer's ID.
+        The absolute ASCII form of a Version is: <hex logicalTime> '@' <base64 SourceID> .
+        The relative form uses a "*" character for the SourceID when it's equal to the local peer's ID.
 
-        The binary form is the generation as a varint followed by the peerID as a varint. */
+        The binary form is the concatenation of time's and author's binary forms (see Version.cc) */
     class Version {
-    public:
-        Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
+      public:
+        /** Constructs a Version from a timestamp and peer ID. */
+        Version(logicalTime t, SourceID p) : _author(p), _time(t) { validate(); }
 
-        /** Initializes from ASCII. Throws BadRevisionID if the string's not valid.
-            If `myPeerID` is given, then the string is expected to be in absolute
-            form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
-        explicit Version(slice ascii, peerID myPeerID =kMePeerID);
+        /** Converts a legacy rev-tree revID (in binary form) to a Version. */
+        static Version legacyVersion(slice binaryRevID, SourceID source);
 
-        /** Initializes from binary. On return, `binary.buf` will point just past the last byte read. */
-        explicit Version(fleece::slice_istream &binary);
+#pragma mark - Accessors:
 
         /** The peer that created this version. */
-        const peerID author() const             {return _author;}
+        [[nodiscard]] SourceID author() const noexcept FLPURE { return _author; }
 
-        /** The generation count: the number of versions this peer has created. */
-        generation gen() const                  {return _gen;}
+        /** The logical time at which this peer last updated the doc. */
+        [[nodiscard]] logicalTime time() const noexcept FLPURE { return _time; }
+
+#pragma mark - I/O:
+
+        /** Initializes from ASCII. Throws BadRevisionID if the string's not valid.
+            If `mySourceID` is given, the peer ID "*" will be converted to this ID instead of
+            kMeSourceID. */
+        explicit Version(slice ascii, SourceID mySourceID = kMeSourceID);
+
+        /** Initializes from binary. On return, `binary.buf` will point just past the last byte read. */
+        explicit Version(fleece::slice_istream& binary);
 
         /** Max length of a Version in ASCII form. */
-        static constexpr size_t kMaxASCIILength = 2 * 16 + 1;
+        static constexpr size_t kMaxASCIILength = 16 + 1 + SourceID::kASCIILength;
 
-        static std::optional<Version> readASCII(slice ascii, peerID myPeerID =kMePeerID);
+        /** Parses an ASCII version string.
+            @param ascii  The string to be parsed.
+            @param mySourceID  If given, the peer ID "*" will be converted to this ID instead of
+                            kMeSourceID.
+            @returns  The parsed Version, or `nullopt` on failure. */
+        [[nodiscard]] static std::optional<Version> readASCII(slice ascii, SourceID mySourceID = kMeSourceID);
 
         /** Converts the version to a human-readable string.
             When sharing a version with another peer, pass your actual peer ID in `myID`;
-            then if `author` is kMePeerID it will be written as that ID.
+            then if `author` is kMeSourceID it will be written as that ID.
             Otherwise it's written as '*'. */
-        alloc_slice asASCII(peerID myID =kMePeerID) const;
+        [[nodiscard]] alloc_slice asASCII(SourceID myID = kMeSourceID) const;
 
-        bool writeASCII(slice_ostream&, peerID myID =kMePeerID) const;
-        bool writeBinary(slice_ostream&, peerID myID =kMePeerID) const;
+        /** Writes the Version in ASCII form to a slice-stream.
+            If `myID` is given, it will be written instead of a "*" for `kMeSourceID`. */
+        [[nodiscard]] bool writeASCII(slice_ostream&, SourceID myID = kMeSourceID) const;
 
-        /** Convenience to compare two generations and return a versionOrder. */
-        static versionOrder compareGen(generation a, generation b);
+        /** Writes the Version in binary form to a slice-stream.
+            If `myID` is given, it will be substituted for `kMeSourceID`. */
+        [[nodiscard]] bool writeBinary(slice_ostream&, SourceID myID = kMeSourceID) const;
+
+#pragma mark - Comparison:
+
+        /** Convenience to compare two logicalTimes and return a versionOrder. */
+        static versionOrder compare(logicalTime a, logicalTime b);
 
         /** Compares with a version vector, i.e. whether a vector with this as its current version
             is newer/older/same as the target vector. (Will never return kConflicting.) */
-        versionOrder compareTo(const VersionVector&) const;
+        [[nodiscard]] versionOrder compareTo(const VersionVector&) const;
 
-        bool operator== (const Version& v) const {
-            return _gen == v._gen && _author == v._author;
+        bool operator==(const Version& v) const { return _time == v._time && _author == v._author; }
+
+        bool operator!=(const Version& v) const { return !(*this == v); }
+
+        /// Version comparator function that sorts them by ascending author.
+        static bool byAuthor(Version const& a, Version const& b) { return a.author() < b.author(); }
+
+        /// Version comparator function that sorts them by ascending timestamp.
+        /// If two timestamps are equal (very unlikely!) `byAuthor` is the tiebreaker.
+        static bool byAscendingTimes(Version const& a, Version const& b) {
+            return a.time() < b.time() || (a.time() == b.time() && !byAuthor(a, b));
         }
 
-        bool operator < (const Version& v) const {
-            return _gen < v._gen && _author == v._author;
+        /// Version comparator function that sorts them by descending timestamp
+        /// (as in a VersionVector.)
+        /// If two timestamps are equal (very unlikely!) `byAuthor` is the tiebreaker.
+        static bool byDescendingTimes(Version const& a, Version const& b) {
+            return a.time() > b.time() || (a.time() == b.time() && byAuthor(a, b));
         }
 
+#pragma mark - Clock:
 
-        // Only used by Version and VersionVector
-        static void throwBadBinary();
-        static void throwBadASCII(fleece::slice string = fleece::nullslice);
+        /// Updates the clock, if necessary, so its `now` will be greater than this Version's time.
+        /// (Equivalent to `clock.see(this.time())`.)
+        /// @param  clock  The clock to update.
+        /// @param anyone  If false (default), the clock is only updated if my author is kMeSourceID.
+        /// @return  True on success, false if my timestamp is invalid.
+        [[nodiscard]] bool updateClock(HybridClock& clock, bool anyone = false) const;
 
-    private:
-        Version() =default;
+      private:
+        friend class VersionVector;
+
+        Version() = default;
         bool _readASCII(slice ascii) noexcept;
         void validate() const;
 
-        peerID      _author;                // The ID of the peer who created this revision
-        generation  _gen;                   // The number of times this peer edited this revision
+        // Only used by Version and VersionVector
+        [[noreturn]] static void throwBadBinary();
+        [[noreturn]] static void throwBadASCII(fleece::slice string = fleece::nullslice);
+
+        SourceID    _author;  // The ID of the peer who created this revision
+        logicalTime _time{};  // The logical timestamp of the revision
     };
 
-}
+}  // namespace litecore

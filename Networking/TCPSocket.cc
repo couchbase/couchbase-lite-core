@@ -14,21 +14,19 @@
 #include "TLSContext.hh"
 #include "Poller.hh"
 #include "Headers.hh"
-#include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "NetworkInterfaces.hh"
 #include "WebSocketInterface.hh"
-#include "SecureRandomize.hh"
 #include "Error.hh"
-#include "StringUtil.hh"
 #include "sockpp/exception.h"
+#include "sockpp/inet_address.h"
 #include "sockpp/inet6_address.h"
-#include "sockpp/tcp_acceptor.h"
 #include "sockpp/connector.h"
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
-#include "PlatformIO.hh"
-#include "c4ExceptionUtils.hh"   // for ExpectingExceptions
+#include "sockpp/tcp_socket.h"
+#include "NumConversion.hh"
+#include "c4ExceptionUtils.hh"  // for ExpectingExceptions
 #include "slice_stream.hh"
 #include <chrono>
 #include <regex>
@@ -40,7 +38,7 @@
 #include "mbedtls/ssl.h"
 #pragma clang diagnostic pop
 
-namespace litecore { namespace net {
+namespace litecore::net {
     using namespace std;
     using namespace fleece;
     using namespace sockpp;
@@ -49,179 +47,141 @@ namespace litecore { namespace net {
 
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
-
-    static chrono::microseconds secsToMicrosecs(double secs) {
-        return chrono::microseconds(long(secs * 1e6));
-    }
-
+    static chrono::microseconds secsToMicrosecs(double secs) { return chrono::microseconds(long(secs * 1e6)); }
 
     void TCPSocket::initialize() {
         static once_flag f;
-        call_once(f, [=] {
-            socket::initialize();
-        });
+        call_once(f, [=] { socket::initialize(); });
     }
 
+#define WSLog (*(LogDomain*)kC4WebSocketLog)
 
-    #define WSLog (*(LogDomain*)kC4WebSocketLog)
-
-
-    TCPSocket::TCPSocket(bool isClient, TLSContext *tls)
-    :_tlsContext(tls)
-    ,_isClient(isClient) {
-        initialize();
-    }
-
+    TCPSocket::TCPSocket(bool isClient, TLSContext* tls) : _tlsContext(tls), _isClient(isClient) { initialize(); }
 
     TCPSocket::~TCPSocket() {
-        _socket.reset(); // Make sure socket closes before _tlsContext does
-        if (_onClose)
-            _onClose();
+        _socket.reset();  // Make sure socket closes before _tlsContext does
+        if ( _onClose ) _onClose();
     }
-
 
     bool TCPSocket::setSocket(unique_ptr<stream_socket> socket) {
         Assert(!_socket);
-        _socket = move(socket);
-        if (!checkSocketFailure())
-            return false;
+        _socket = std::move(socket);
+        if ( !checkSocketFailure() ) return false;
         _setTimeout(_timeout);
         return true;
     }
 
-    TLSContext* TCPSocket::tlsContext() {
-        return _tlsContext;
-    }
-
+    TLSContext* TCPSocket::tlsContext() { return _tlsContext; }
 
     bool TCPSocket::wrapTLS(slice hostname) {
-        if (!_tlsContext)
-            _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
+        if ( !_tlsContext ) _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
-        auto oldSocket = move(_socket);
-        return setSocket(_tlsContext->_context->wrap_socket(move(oldSocket),
-                                            (_isClient ? tls_context::CLIENT : tls_context::SERVER),
-                                            hostnameStr.c_str()));
+        auto   oldSocket = std::move(_socket);
+        return setSocket(_tlsContext->_context->wrap_socket(
+                std::move(oldSocket), (_isClient ? tls_context::CLIENT : tls_context::SERVER), hostnameStr));
     }
 
-
-    bool TCPSocket::connected() const {
-        return _socket && !_socket->is_shutdown();
-    }
-
+    bool TCPSocket::connected() const { return _socket && !_socket->is_shutdown(); }
 
     void TCPSocket::close() {
-        if (connected()) {
+        if ( connected() ) {
             int fd = fileDescriptor();
             _socket->shutdown();
             // The shutdown() system call should cause poll() to notify the Poller that the fd is
             // closed, but sometimes it does not, so send it an interrupt too:
-            if (_nonBlocking)
-                Poller::instance().interrupt(fd);
+            if ( _nonBlocking ) Poller::instance().interrupt(fd);
         }
     }
 
-
     sockpp::stream_socket* TCPSocket::actualSocket() const {
-        if (auto socket = _socket.get(); !socket || !socket->is_open())
-            return nullptr;
-        else if (auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock)
+        if ( auto socket = _socket.get(); !socket || !socket->is_open() ) return nullptr;
+        else if ( auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock )
             return &tlsSock->stream();
         else
             return socket;
     }
 
-
     string TCPSocket::peerAddress() {
-        if (auto socket = actualSocket(); socket) {
-            switch (auto addr = socket->peer_address(); addr.family()) {
-                case AF_INET:   return inet_address(addr).to_string();
-                case AF_INET6:  return inet6_address(addr).to_string();
+        if ( auto socket = actualSocket(); socket ) {
+            switch ( auto addr = socket->peer_address(); addr.family() ) {
+                case AF_INET:
+                    return inet_address(addr).to_string();
+                case AF_INET6:
+                    return inet6_address(addr).to_string();
             }
         }
         return "";
     }
-
 
     string TCPSocket::peerTLSCertificateData() {
         auto tlsSock = dynamic_cast<tls_socket*>(_socket.get());
         return tlsSock ? tlsSock->peer_certificate() : "";
     }
 
-
     Retained<crypto::Cert> TCPSocket::peerTLSCertificate() {
         string certData = peerTLSCertificateData();
         return certData.empty() ? nullptr : new crypto::Cert(slice(certData));
     }
 
-
 #pragma mark - CLIENT SOCKET:
 
+    ClientSocket::ClientSocket(TLSContext* tls) : TCPSocket(true, tls) {}
 
-    ClientSocket::ClientSocket(TLSContext *tls)
-    :TCPSocket(true, tls)
-    { }
-
-
-    bool ClientSocket::connect(const Address &addr) {
-        string hostname(slice(addr.hostname));
+    bool ClientSocket::connect(const Address& addr) {
+        string hostname(slice(addr.hostname()));
 
         optional<IPAddress> ipAddr = IPAddress::parse(hostname);
 
         unique_ptr<connector> socket;
         try {
             // sockpp constructors can throw exceptions.
-            ExpectingExceptions x;
+            ExpectingExceptions      x;
             unique_ptr<sock_address> sockAddr;
-            if (ipAddr) {
+            if ( ipAddr ) {
                 // hostname is numeric, either IPv4 or IPv6:
-                sockAddr = ipAddr->sockppAddress(addr.port);
+                sockAddr = ipAddr->sockppAddress(addr.port());
             } else {
                 // Otherwise it's a DNS name; let sockpp resolve it:
-                sockAddr = make_unique<inet_address>(hostname, addr.port);
+                sockAddr = make_unique<inet_address>(hostname, addr.port());
             }
 
             socket = make_unique<connector>();
-            
+
             auto interface = networkInterface(sockAddr->family());
             socket->connect(*sockAddr, secsToMicrosecs(timeout()), interface);
-        } catch (const sockpp::sys_error &sx) {
+        } catch ( const sockpp::sys_error& sx ) {
             auto e = error::convertException(sx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
-        } catch (const sockpp::getaddrinfo_error &gx) {
+        } catch ( const sockpp::getaddrinfo_error& gx ) {
             auto e = error::convertException(gx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
         }
 
-        return setSocket(move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
+        return setSocket(std::move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname()));
     }
 
     optional<sockpp::Interface> ClientSocket::networkInterface(uint8_t family) const {
-        if (!_interface) {
-            return std::nullopt;
-        }
-        
+        if ( !_interface ) { return std::nullopt; }
+
         // For non-ip address, assume IPv4:
-        if (family == AF_UNSPEC) {
-            family = AF_INET;
-        }
-        
+        if ( family == AF_UNSPEC ) { family = AF_INET; }
+
         optional<IPAddress> inAddr = IPAddress::parse(string(_interface));
-        if (inAddr && inAddr->family() != family) {
+        if ( inAddr && inAddr->family() != family ) {
             throw litecore::error(error::POSIX, EINVAL,
                                   "The specified network interface's address family does not match "
                                   "with the server's address family");
         }
-        
-        for (auto &intf : Interface::all()) {
-            if (inAddr) {
+
+        for ( auto& intf : Interface::all() ) {
+            if ( inAddr ) {
                 // The given _interface is an IP Address. Find the interface that has the
                 // same IP Address:
-                for (auto &address : intf.addresses) {
-                    if (address == *inAddr) {
-                        if (family == AF_INET) {
+                for ( auto& address : intf.addresses ) {
+                    if ( address == *inAddr ) {
+                        if ( family == AF_INET ) {
                             return sockpp::Interface(intf.name, address.addr4());
                         } else {
                             return sockpp::Interface(intf.name, address.addr6());
@@ -231,10 +191,10 @@ namespace litecore { namespace net {
             } else {
                 // The given _interface is an interface name. Find the interface that has
                 // the same name with matched IP address's family:
-                if (slice(intf.name) == _interface) {
-                    for (auto &address : intf.addresses) {
-                        if (address.family() == family) {
-                            if (family == AF_INET) {
+                if ( slice(intf.name) == _interface ) {
+                    for ( auto& address : intf.addresses ) {
+                        if ( address.family() == family ) {
+                            if ( family == AF_INET ) {
                                 return sockpp::Interface(intf.name, address.addr4());
                             } else {
                                 return sockpp::Interface(intf.name, address.addr6());
@@ -245,80 +205,61 @@ namespace litecore { namespace net {
                 }
             }
         }
-        
+
         throw litecore::error(error::POSIX, ENXIO, "The specified network interface is not valid.");
     }
 
-
 #pragma mark - RESPONDER SOCKET:
 
+    ResponderSocket::ResponderSocket(TLSContext* tls) : TCPSocket(false, tls) {}
 
-    ResponderSocket::ResponderSocket(TLSContext *tls)
-    :TCPSocket(false, tls)
-    { }
+    bool ResponderSocket::acceptSocket(stream_socket&& s) { return setSocket(make_unique<tcp_socket>(std::move(s))); }
 
-
-    bool ResponderSocket::acceptSocket(stream_socket &&s) {
-        return setSocket( make_unique<tcp_socket>(move(s)));
-    }
-
-
-    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) {
-        return setSocket(move(socket));
-    }
-
+    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) { return setSocket(std::move(socket)); }
 
 #pragma mark - READ/WRITE:
 
     static int socketToPosixErrCode(int err);
 
     ssize_t TCPSocket::write(slice data) {
-        if (data.size == 0)
-            return 0;
+        if ( data.size == 0 ) return 0;
         ssize_t written = _socket->write(data.buf, data.size);
-        if (written < 0) {
-            if (!checkReadWriteStreamError())
-                return 0;
-        } else if (written == 0) {
+        if ( written < 0 ) {
+            if ( !checkReadWriteStreamError() ) return 0;
+        } else if ( written == 0 ) {
             _eofOnWrite = true;
         }
         return written;
     }
 
-
     ssize_t TCPSocket::write_n(slice data) {
-        if (data.size == 0)
-            return 0;
+        if ( data.size == 0 ) return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
-        if (written < 0) {
-            if (!checkReadWriteStreamError())
-                return 0;
+        if ( written < 0 ) {
+            if ( !checkReadWriteStreamError() ) return 0;
         }
         return written;
     }
 
-
-    ssize_t TCPSocket::write(vector<slice> &ioByteRanges) {
+    ssize_t TCPSocket::write(vector<slice>& ioByteRanges) {
         // We are going to cast slice[] to iovec[] since they are identical structs,
         // but make sure they are actualy identical:
-        static_assert(sizeof(iovec) == sizeof(slice)
-                      && sizeof(iovec::iov_base) == sizeof(slice::buf)
-                      && sizeof(iovec::iov_len) == sizeof(slice::size),
+        static_assert(sizeof(iovec) == sizeof(slice) && sizeof(iovec::iov_base) == sizeof(slice::buf)
+                              && sizeof(iovec::iov_len) == sizeof(slice::size),
                       "iovec and slice are incompatible");
         ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
-        if (written < 0) {
-            if (!checkReadWriteStreamError())
-                written = 0;
+        if ( written < 0 ) {
+            if ( !checkReadWriteStreamError() ) written = 0;
             else
                 return written;
         }
 
         ssize_t remaining = written;
-        for (auto i = ioByteRanges.begin(); i != ioByteRanges.end(); ++i) {
-            remaining -= i->size;
-            if (remaining < 0) {
+        for ( auto i = ioByteRanges.begin(); i != ioByteRanges.end(); ++i ) {
+            remaining -= narrow_cast<ssize_t>(i->size);
+            if ( remaining < 0 ) {
                 // This slice was only partly written (or unwritten). Adjust its start:
-                i->moveStart(i->size + remaining);
+                i->moveStart(narrow_cast<ptrdiff_t>(i->size) + remaining);
                 // Remove all prior slices:
                 ioByteRanges.erase(ioByteRanges.begin(), i);
                 return written;
@@ -329,80 +270,69 @@ namespace litecore { namespace net {
         return written;
     }
 
-
     // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
     // Assumes EWOULDBLOCK is not an error, since it happens normally in non-blocking reads.
-    ssize_t TCPSocket::_read(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::_read(void* dst, size_t byteCount) {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
-        if (n < 0) {
-            if (!checkReadWriteStreamError())
-                return 0;
-        } else if (n == 0) {
+        if ( n < 0 ) {
+            if ( !checkReadWriteStreamError() ) return 0;
+        } else if ( n == 0 ) {
             _eofOnRead = true;
         }
         return n;
     }
 
-
     // "Un-read" data by prepending it to the _unread buffer
     void TCPSocket::pushUnread(slice data) {
-        if (_usuallyFalse(data.size == 0))
-            return;
-        if (_usuallyTrue(_unreadLen + data.size > _unread.size))
-            _unread.resize(_unreadLen + data.size);
+        if ( _usuallyFalse(data.size == 0) ) return;
+        if ( _usuallyTrue(_unreadLen + data.size > _unread.size) ) _unread.resize(_unreadLen + data.size);
         memmove((void*)_unread.offset(data.size), _unread.offset(0), _unreadLen);
         memcpy((void*)_unread.offset(0), data.buf, data.size);
         _unreadLen += data.size;
     }
 
-
     // Read from the socket, or from the unread buffer if it exists
-    ssize_t TCPSocket::read(void *dst, size_t byteCount) {
-        if (_usuallyFalse(_unreadLen > 0)) {
+    ssize_t TCPSocket::read(void* dst, size_t byteCount) {
+        if ( _usuallyFalse(_unreadLen > 0) ) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
             memcpy(dst, _unread.offset(0), n);
             memmove((void*)_unread.offset(0), _unread.offset(n), _unreadLen - n);
             _unreadLen -= n;
-            if (_unreadLen == 0)
-                _unread = nullslice;
-            return n;
+            if ( _unreadLen == 0 ) _unread = nullslice;
+            return narrow_cast<ssize_t>(n);
         } else {
             return _read(dst, byteCount);
         }
     }
 
-
     // Read exactly `byteCount` bytes from the socket (or the unread buffer)
-    ssize_t TCPSocket::readExactly(void *dst, size_t byteCount) {
-        ssize_t remaining = byteCount;
-        while (remaining > 0) {
+    ssize_t TCPSocket::readExactly(void* dst, size_t byteCount) {
+        auto remaining = narrow_cast<ssize_t>(byteCount);
+        while ( remaining > 0 ) {
             auto n = read(dst, remaining);
-            if (n < 0)
-                return n;
-            if (n == 0) {
+            if ( n < 0 ) return n;
+            if ( n == 0 ) {
                 setError(WebSocketDomain, 400, "Premature end of HTTP body"_sl);
                 return n;
             }
             remaining -= n;
             dst = offsetby(dst, n);
         }
-        return byteCount;
+        return narrow_cast<ssize_t>(byteCount);
     }
-
 
     // Read up to the given delimiter.
     alloc_slice TCPSocket::readToDelimiter(slice delim, bool includeDelim, size_t maxSize) {
         alloc_slice alloced(kInitialDelimitedReadBufferSize);
-        slice result(alloced.buf, size_t(0));
+        slice       result(alloced.buf, size_t(0));
 
-        while (true) {
+        while ( true ) {
             // Read more bytes:
             ssize_t n = read((void*)result.end(), alloced.size - result.size);
-            if (n < 0)
-                return nullslice;
-            if (n == 0) {
+            if ( n < 0 ) return nullslice;
+            if ( n == 0 ) {
                 setError(WebSocketDomain, 400, "Unexpected EOF"_sl);
                 return nullslice;
             }
@@ -410,7 +340,7 @@ namespace litecore { namespace net {
 
             // Look for delimiter:
             slice found = result.find(delim);
-            if (found) {
+            if ( found ) {
                 pushUnread(slice(found.end(), result.end()));
                 result.setEnd(found.end());
                 alloced.resize(result.size - (includeDelim ? 0 : delim.size));
@@ -418,9 +348,9 @@ namespace litecore { namespace net {
             }
 
             // If allocated buffer is full, grow it:
-            if (result.size == alloced.size) {
+            if ( result.size == alloced.size ) {
                 size_t newSize = min(alloced.size * 2, maxSize);
-                if (newSize == alloced.size) {
+                if ( newSize == alloced.size ) {
                     setError(WebSocketDomain, 431, "Headers too large"_sl);
                     return nullslice;
                 }
@@ -430,210 +360,175 @@ namespace litecore { namespace net {
         }
     }
 
-
     alloc_slice TCPSocket::readToEOF() {
         alloc_slice body;
         body.resize(1024);
         size_t length = 0;
-        while (true) {
+        while ( true ) {
             ssize_t n = read((void*)&body[length], body.size - length);
-            if (n < 0) {
+            if ( n < 0 ) {
                 body.reset();
                 return nullslice;
-            } else if (n == 0)
+            } else if ( n == 0 )
                 break;
             length += n;
-            if (length == body.size)
-                body.resize(2 * body.size);
+            if ( length == body.size ) body.resize(2 * body.size);
         }
         body.resize(length);
         return body;
     }
 
-
     alloc_slice TCPSocket::readChunkedHTTPBody() {
         // <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding#directives>
         alloc_slice body;
-        size_t chunkLength;
+        size_t      chunkLength;
         do {
-            alloc_slice line = readToDelimiter("\r\n", false);
+            alloc_slice   line = readToDelimiter("\r\n", false);
             slice_istream reader(line);
             chunkLength = (size_t)reader.readHex();
-            if (!reader.eof()) {
+            if ( !reader.eof() ) {
                 setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
                 return nullslice;
             }
 
-            if (chunkLength > 0) {
+            if ( chunkLength > 0 ) {
                 auto start = body.size;
                 body.resize(start + chunkLength);
-                if (readExactly((void*)&body[start], chunkLength) < chunkLength)
-                    return nullslice;
+                if ( readExactly((void*)&body[start], chunkLength) < chunkLength ) return nullslice;
             }
             char crlf[2];
-            if (readExactly(crlf, 2) < 2)
-                return nullslice;
-            if (crlf[0] != '\r' || crlf[1] != '\n') {
+            if ( readExactly(crlf, 2) < 2 ) return nullslice;
+            if ( crlf[0] != '\r' || crlf[1] != '\n' ) {
                 setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
                 return nullslice;
             }
-        } while (chunkLength > 0);
+        } while ( chunkLength > 0 );
         return body;
     }
 
-
-    bool TCPSocket::readHTTPBody(const Headers &headers, alloc_slice &body) {
+    bool TCPSocket::readHTTPBody(const Headers& headers, alloc_slice& body) {
         int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
-        if (contentLength >= 0) {
+        if ( contentLength >= 0 ) {
             // Read exactly Content-Length bytes:
             body.resize(size_t(contentLength));
-            if (contentLength > 0) {
-                if (readExactly((void*)body.buf, (size_t)contentLength) < contentLength)
-                    body.reset();
+            if ( contentLength > 0 ) {
+                if ( readExactly((void*)body.buf, (size_t)contentLength) < contentLength ) body.reset();
             }
 
-        } else if (slice xfer = headers["Transfer-Encoding"]; xfer) {
-            if (xfer.caseEquivalent("chunked")) {
+        } else if ( slice xfer = headers["Transfer-Encoding"]; xfer ) {
+            if ( xfer.caseEquivalent("chunked") ) {
                 // Chunked transfer encoding:
                 body = readChunkedHTTPBody();
                 //TODO: There may be more response headers after the chunks
             } else {
                 body.reset();
-                setError(NetworkDomain, kNetErrUnknown,
-                         "Unsupported HTTP Transfer-Encoding");
+                setError(NetworkDomain, kNetErrUnknown, "Unsupported HTTP Transfer-Encoding");
                 // Other transfer encodings are "gzip", "deflate"
             }
 
-        } else if (auto conn = headers["Connection"]; conn.caseEquivalent("close")) {
+        } else if ( auto conn = headers["Connection"]; conn.caseEquivalent("close") ) {
             // Connection:Close mode -- read till EOF:
             body = readToEOF();
 
         } else {
             body.reset();
-            setError(WebSocketDomain, kCodeProtocolError,
-                     "Unsupported 'Connection' response header");
+            setError(WebSocketDomain, kCodeProtocolError, "Unsupported 'Connection' response header");
         }
 
         return !!body;
     }
 
-
 #pragma mark - NONBLOCKING / SELECT:
 
-
     bool TCPSocket::setTimeout(double secs) {
-        if (secs == _timeout)
-            return true;
-        if (_socket && !_setTimeout(secs))
-            return false;
+        if ( secs == _timeout ) return true;
+        if ( _socket && !_setTimeout(secs) ) return false;
         _timeout = secs;
         return true;
     }
-
 
     bool TCPSocket::_setTimeout(double secs) {
         std::chrono::microseconds us = secsToMicrosecs(secs);
         return _socket->read_timeout(us) && _socket->write_timeout(us);
     }
 
-
     bool TCPSocket::setNonBlocking(bool nb) {
         bool ok = _socket->set_non_blocking(nb);
-        if (ok)
-            _nonBlocking = nb;
+        if ( ok ) _nonBlocking = nb;
         else
             checkStreamError();
         return ok;
     }
 
-
     int TCPSocket::fileDescriptor() {
-        if (auto socket = actualSocket(); socket)
-            return socket->handle();
+        if ( auto socket = actualSocket(); socket ) return socket->handle();
         else
             return -1;
     }
 
+    void TCPSocket::onReadable(function<void()> listener) { addListener(Poller::kReadable, std::move(listener)); }
 
-    void TCPSocket::onReadable(function<void()> listener) {
-        addListener(Poller::kReadable, move(listener));
+    void TCPSocket::onWriteable(function<void()> listener) { addListener(Poller::kWriteable, std::move(listener)); }
+
+    void TCPSocket::onDisconnect(function<void()> listener) { addListener(Poller::kDisconnected, std::move(listener)); }
+
+    void TCPSocket::addListener(int event, function<void()>&& listener) {
+        if ( int fd = fileDescriptor(); fd >= 0 )
+            Poller::instance().addListener(fd, Poller::Event(event), std::move(listener));
     }
-
-
-    void TCPSocket::onWriteable(function<void()> listener) {
-        addListener(Poller::kWriteable, move(listener));
-    }
-
-
-    void TCPSocket::onDisconnect(function<void()> listener) {
-        addListener(Poller::kDisconnected, move(listener));
-    }
-
-
-    void TCPSocket::addListener(int event, function<void()> &&listener) {
-        if (int fd = fileDescriptor(); fd >= 0)
-            Poller::instance().addListener(fd, Poller::Event(event), move(listener));
-    }
-
 
     void TCPSocket::cancelCallbacks() {
-        if (int fd = fileDescriptor(); fd >= 0)
-            Poller::instance().removeListeners(fd);
+        if ( int fd = fileDescriptor(); fd >= 0 ) Poller::instance().removeListeners(fd);
     }
 
-
 #pragma mark - ERRORS:
-
 
     void TCPSocket::setError(C4ErrorDomain domain, int code, slice message) {
         Assert(code != 0);
         _error = c4error_make(domain, code, message);
     }
 
-
     bool TCPSocket::checkSocketFailure() {
-        if (*_socket)
-            return true;
+        if ( *_socket ) return true;
 
         // TLS handshake failed:
         int err = _socket->last_error();
-        if (err == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+        if ( err == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED ) {
             // Some more specific errors for certificate validation failures, based on flags:
-            auto tlsSocket = (tls_socket*)_socket.get();
-            uint32_t flags = tlsSocket->peer_certificate_status();
+            auto     tlsSocket = (tls_socket*)_socket.get();
+            uint32_t flags     = tlsSocket->peer_certificate_status();
             LogError(WSLog, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
-            if (flags != 0 && flags != UINT32_MAX) {
+            if ( flags != 0 && flags != UINT32_MAX ) {
                 string message = tlsSocket->peer_certificate_status_message();
-                int code;
-                if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
-                    if(_tlsContext && _tlsContext->onlySelfSignedAllowed()) {
-                        code = kNetErrTLSCertUntrusted;
+                int    code;
+                if ( flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED ) {
+                    if ( _tlsContext && _tlsContext->onlySelfSignedAllowed() ) {
+                        code    = kNetErrTLSCertUntrusted;
                         message = "Self-signed only mode is active, and a non self-signed certificate was received";
                     } else {
                         code = kNetErrTLSCertUnknownRoot;
                     }
-                } else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
+                } else if ( flags & MBEDTLS_X509_BADCERT_REVOKED )
                     code = kNetErrTLSCertRevoked;
-                else if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
+                else if ( flags & MBEDTLS_X509_BADCERT_EXPIRED )
                     code = kNetErrTLSCertExpired;
-                else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
+                else if ( flags & MBEDTLS_X509_BADCERT_CN_MISMATCH )
                     code = kNetErrTLSCertNameMismatch;
-                else if (flags & MBEDTLS_X509_BADCERT_OTHER)
+                else if ( flags & MBEDTLS_X509_BADCERT_OTHER )
                     code = kNetErrTLSCertUntrusted;
                 else
                     code = kNetErrTLSHandshakeFailed;
                 setError(NetworkDomain, code, slice(message));
             }
-        } else if (err <= mbedtls_context::FATAL_ERROR_ALERT_BASE
-                                && err >= mbedtls_context::FATAL_ERROR_ALERT_BASE - 0xFF) {
+        } else if ( err <= mbedtls_context::FATAL_ERROR_ALERT_BASE
+                    && err >= mbedtls_context::FATAL_ERROR_ALERT_BASE - 0xFF ) {
             // Handle TLS 'fatal alert' when peer rejects our cert:
             auto alert = mbedtls_context::FATAL_ERROR_ALERT_BASE - err;
             LogError(WSLog, "TCPSocket TLS handshake failed with fatal alert %d", alert);
             int code;
-            if (alert == MBEDTLS_SSL_ALERT_MSG_NO_CERT) {
+            if ( alert == MBEDTLS_SSL_ALERT_MSG_NO_CERT ) {
                 code = kNetErrTLSCertRequiredByPeer;
-            } else if (alert >= MBEDTLS_SSL_ALERT_MSG_BAD_CERT
-                            && alert <= MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED) {
+            } else if ( alert >= MBEDTLS_SSL_ALERT_MSG_BAD_CERT && alert <= MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED ) {
                 code = kNetErrTLSCertRejectedByPeer;
             } else {
                 code = kNetErrTLSHandshakeFailed;
@@ -645,43 +540,43 @@ namespace litecore { namespace net {
         return false;
     }
 
-
     static int socketToPosixErrCode(int err) {
 #ifdef WIN32
-        static constexpr struct {long fromErr; int toErr;} kWSAToPosixErr[] = {
-            {WSA_INVALID_HANDLE, EBADF},
-            {WSA_NOT_ENOUGH_MEMORY, ENOMEM},
-            {WSA_INVALID_PARAMETER, EINVAL},
-            {WSAECONNREFUSED, ECONNREFUSED},
-            {WSAEADDRINUSE, EADDRINUSE},
-            {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
-            {WSAEAFNOSUPPORT, EAFNOSUPPORT},
-            {WSAECONNABORTED, ECONNABORTED},
-            {WSAECONNRESET, ECONNRESET},
-            {WSAEHOSTUNREACH, EHOSTUNREACH},
-            {WSAENETDOWN, ENETDOWN},
-            {WSAENETRESET, ENETRESET},
-            {WSAENETUNREACH, ENETUNREACH},
-            {WSAENOBUFS, ENOBUFS},
-            {WSAEISCONN, EISCONN},
-            {WSAENOTCONN, ENOTCONN},
-            {WSAETIMEDOUT, ETIMEDOUT},
-            {WSAELOOP, ELOOP},
-            {WSAENAMETOOLONG, ENAMETOOLONG},
-            {WSAEACCES, EACCES},
-            {WSAEMFILE, EMFILE},
-            {WSAEWOULDBLOCK, EWOULDBLOCK},
-            {WSAEALREADY, EALREADY},
-            {WSAENOTSOCK, ENOTSOCK},
-            {WSAEDESTADDRREQ, EDESTADDRREQ},
-            {WSAEPROTOTYPE, EPROTOTYPE},
-            {WSAENOPROTOOPT, ENOPROTOOPT},
-            {WSAEPROTONOSUPPORT, EPROTONOSUPPORT},
-            {0, 0}
-        };
+        static constexpr struct {
+            long fromErr;
+            int  toErr;
+        } kWSAToPosixErr[] = {{WSA_INVALID_HANDLE, EBADF},
+                              {WSA_NOT_ENOUGH_MEMORY, ENOMEM},
+                              {WSA_INVALID_PARAMETER, EINVAL},
+                              {WSAECONNREFUSED, ECONNREFUSED},
+                              {WSAEADDRINUSE, EADDRINUSE},
+                              {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
+                              {WSAEAFNOSUPPORT, EAFNOSUPPORT},
+                              {WSAECONNABORTED, ECONNABORTED},
+                              {WSAECONNRESET, ECONNRESET},
+                              {WSAEHOSTUNREACH, EHOSTUNREACH},
+                              {WSAENETDOWN, ENETDOWN},
+                              {WSAENETRESET, ENETRESET},
+                              {WSAENETUNREACH, ENETUNREACH},
+                              {WSAENOBUFS, ENOBUFS},
+                              {WSAEISCONN, EISCONN},
+                              {WSAENOTCONN, ENOTCONN},
+                              {WSAETIMEDOUT, ETIMEDOUT},
+                              {WSAELOOP, ELOOP},
+                              {WSAENAMETOOLONG, ENAMETOOLONG},
+                              {WSAEACCES, EACCES},
+                              {WSAEMFILE, EMFILE},
+                              {WSAEWOULDBLOCK, EWOULDBLOCK},
+                              {WSAEALREADY, EALREADY},
+                              {WSAENOTSOCK, ENOTSOCK},
+                              {WSAEDESTADDRREQ, EDESTADDRREQ},
+                              {WSAEPROTOTYPE, EPROTOTYPE},
+                              {WSAENOPROTOOPT, ENOPROTOOPT},
+                              {WSAEPROTONOSUPPORT, EPROTONOSUPPORT},
+                              {0, 0}};
 
-        for(int i = 0; kWSAToPosixErr[i].fromErr != 0; ++i) {
-            if(kWSAToPosixErr[i].fromErr == err) {
+        for ( int i = 0; kWSAToPosixErr[i].fromErr != 0; ++i ) {
+            if ( kWSAToPosixErr[i].fromErr == err ) {
                 //Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
                 return kWSAToPosixErr[i].toErr;
             }
@@ -690,33 +585,33 @@ namespace litecore { namespace net {
         return err;
     }
 
-
     static int mbedToNetworkErrCode(int err) {
-        static constexpr struct {int mbed0; int mbed1; int net;} kMbedToNetErr[] = {
-            {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
-            {-0x3000,                             -0x2000,                             kNetErrTLSCertUntrusted},
-            {-0x7FFF,                             -0x6000,                             kNetErrTLSHandshakeFailed},
-            {0, 0, 0}
-        };
-        for (int i = 0; kMbedToNetErr[i].mbed0 != 0; ++i) {
-            if (kMbedToNetErr[i].mbed0 <= err && err <= kMbedToNetErr[i].mbed1)
-                return kMbedToNetErr[i].net;
+        static constexpr struct {
+            int mbed0;
+            int mbed1;
+            int net;
+        } kMbedToNetErr[] = {
+                {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
+                {-0x3000, -0x2000, kNetErrTLSCertUntrusted},
+                {-0x7FFF, -0x6000, kNetErrTLSHandshakeFailed},
+                {0, 0, 0}};
+
+        for ( int i = 0; kMbedToNetErr[i].mbed0 != 0; ++i ) {
+            if ( kMbedToNetErr[i].mbed0 <= err && err <= kMbedToNetErr[i].mbed1 ) return kMbedToNetErr[i].net;
         }
         Warn("No mapping for mbedTLS error -0x%04X", -err);
         return kNetErrUnknown;
     }
 
-
     void TCPSocket::checkStreamError() {
         int err = _socket->last_error();
         Assert(err != 0);
-        if (err > 0) {
-            err = socketToPosixErrCode(err);
+        if ( err > 0 ) {
+            err           = socketToPosixErrCode(err);
             string errStr = error::_what(error::POSIX, err);
-            LogWarn(WSLog, "%s got POSIX error %d \"%s\"",
-                (_isClient ? "ClientSocket" : "ResponderSocket"),
-                err, errStr.c_str());
-            if (err == EWOULDBLOCK)     // Occurs in blocking mode when I/O times out
+            LogWarn(WSLog, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
+                    errStr.c_str());
+            if ( err == EWOULDBLOCK )  // Occurs in blocking mode when I/O times out
                 setError(NetworkDomain, kC4NetErrTimeout);
             else
                 setError(POSIXDomain, err);
@@ -724,21 +619,19 @@ namespace litecore { namespace net {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            LogWarn(WSLog, "%s got mbedTLS error -0x%04X \"%s\"",
-                (_isClient ? "ClientSocket" : "ResponderSocket"),
-                -err, msgbuf);
+            LogWarn(WSLog, "%s got mbedTLS error -0x%04X \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"),
+                    -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }
 
     bool TCPSocket::checkReadWriteStreamError() {
-        if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK) {
-            LogVerbose(WSLog,
-                "%s got EWOULDBLOCK error in non-blocking mode (ignored as not an error).",
-                (_isClient ? "ClientSocket" : "ResponderSocket"));
+        if ( _nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK ) {
+            LogVerbose(WSLog, "%s got EWOULDBLOCK error in non-blocking mode (ignored as not an error).",
+                       (_isClient ? "ClientSocket" : "ResponderSocket"));
             return false;
         }
         checkStreamError();
         return true;
     }
-} }
+}  // namespace litecore::net

@@ -15,56 +15,43 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include <algorithm>
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
 using namespace std;
-
 
 namespace litecore {
 
 
     // By-key constructor
-    RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                       Options options)
-    :_store(&store)
-    {
-        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)",
-                this, store.name().c_str(),
-                options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
-                options.sortOption);
+    RecordEnumerator::RecordEnumerator(KeyStore& store, Options options) : _store(&store) {
+        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", this, store.name().c_str(), options.includeDeleted,
+                   options.onlyConflicts, options.onlyBlobs, options.sortOption);
         _impl.reset(_store->newEnumeratorImpl(false, 0_seq, options));
     }
 
     // By-sequence constructor
-    RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                       sequence_t since,
-                                       Options options)
-    :_store(&store)
-    {
-        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)",
-                this, store.name().c_str(), (unsigned long long)since,
-                options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
-                options.sortOption);
+    RecordEnumerator::RecordEnumerator(KeyStore& store, sequence_t since, Options options) : _store(&store) {
+        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", this, store.name().c_str(),
+                   (unsigned long long)since, options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
+                   options.sortOption);
         _impl.reset(_store->newEnumeratorImpl(true, since, options));
     }
-
 
     void RecordEnumerator::close() noexcept {
         _record.clear();
         _impl.reset();
     }
 
-
     bool RecordEnumerator::next() {
-        if (!_impl) {
+        if ( !_impl ) {
             return false;
-        } else if (!_impl->next()) {
+        } else if ( !_impl->next() ) {
             close();
             return false;
         } else {
             _record.clear();
-            if (!_impl->read(_record)) {
+            if ( !_impl->read(_record) ) {
                 close();
                 return false;
             }
@@ -73,4 +60,4 @@ namespace litecore {
         }
     }
 
-}
+}  // namespace litecore

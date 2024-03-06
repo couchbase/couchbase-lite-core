@@ -92,9 +92,7 @@ namespace litecore { namespace crypto {
 
     __unused static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
         CFTypeRef result = NULL;
-        ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
-        --gC4ExpectExceptions;
         if (err == errSecItemNotFound)
             return nullptr;
         else
@@ -167,22 +165,15 @@ namespace litecore { namespace crypto {
 
 
         virtual alloc_slice publicKeyRawData() override {
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                CFErrorRef error;
-                ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
-                CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
-                --gC4ExpectExceptions;
-                if (!data) {
-                    warnCFError(error, "SecKeyCopyExternalRepresentation");
-                    error::_throw(error::CryptoError, "Couldn't get the data of a public key");
-                }
-                alloc_slice result(data);
-                CFRelease(data);
-                return result;
-            } else {
-               LogError(TLSLogDomain, "Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
-                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.12 and iOS < 10.0");
+            CFErrorRef error;
+            CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
+            if (!data) {
+                warnCFError(error, "SecKeyCopyExternalRepresentation");
+                error::_throw(error::CryptoError, "Couldn't get the data of a public key");
             }
+            alloc_slice result(data);
+            CFRelease(data);
+            return result;
         }
 
 
@@ -194,45 +185,34 @@ namespace litecore { namespace crypto {
 
 
         virtual void remove() override {
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                @autoreleasepool {
-                    // Get public key hash from kSecAttrApplicationLabel attribute:
-                    // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
-                    ++gC4ExpectExceptions;
-                    NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(_privateKeyRef));
-                    --gC4ExpectExceptions;
-                    NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
-                    if (!publicKeyHash) {
-                        throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
-                    }
-                    
-                    // Delete Public Key:
-                    NSDictionary* params = @ {
-                        (id)kSecClass:                  (id)kSecClassKey,
-                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
-                        (id)kSecAttrApplicationLabel:   publicKeyHash
-                    };
-                    ++gC4ExpectExceptions;
-                    OSStatus status = SecItemDelete((CFDictionaryRef)params);
-                    --gC4ExpectExceptions;
-                    if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
-                        checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
-                    
-                    // Delete Private Key:
-                    params = @ {
-                        (id)kSecClass:                  (id)kSecClassKey,
-                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
-                        (id)kSecAttrApplicationLabel:   publicKeyHash
-                    };
-                    ++gC4ExpectExceptions;
-                    status = SecItemDelete((CFDictionaryRef)params);
-                    --gC4ExpectExceptions;
-                    if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
-                        checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
+            @autoreleasepool {
+                // Get public key hash from kSecAttrApplicationLabel attribute:
+                // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
+                NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(_privateKeyRef));
+                NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+                if (!publicKeyHash) {
+                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
                 }
-            } else {
-                LogError(TLSLogDomain, "Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
-                throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
+                
+                // Delete Public Key:
+                NSDictionary* params = @ {
+                    (id)kSecClass:                  (id)kSecClassKey,
+                    (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
+                    (id)kSecAttrApplicationLabel:   publicKeyHash
+                };
+                OSStatus status = SecItemDelete((CFDictionaryRef)params);
+                if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
+                    checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
+                
+                // Delete Private Key:
+                params = @ {
+                    (id)kSecClass:                  (id)kSecClassKey,
+                    (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                    (id)kSecAttrApplicationLabel:   publicKeyHash
+                };
+                status = SecItemDelete((CFDictionaryRef)params);
+                if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
+                    checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
             }
         }
 
@@ -245,27 +225,22 @@ namespace litecore { namespace crypto {
                              size_t *output_len) noexcept override
         {
             // No exceptions may be thrown from this function!
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                @autoreleasepool {
-                    LogTo(TLSLogDomain, "Decrypting using Keychain private key");
-                    NSData* data = slice(input, _keyLength).uncopiedNSData();
-                    CFErrorRef error;
-                    NSData* cleartext = CFBridgingRelease( SecKeyCreateDecryptedData(_privateKeyRef,
-                                                                 kSecKeyAlgorithmRSAEncryptionPKCS1,
-                                                                 (CFDataRef)data, &error) );
-                    if (!cleartext) {
-                        warnCFError(error, "SecKeyCreateDecryptedData");
-                        return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
-                    }
-                    *output_len = cleartext.length;
-                    if (*output_len > output_max_len)  // should never happen
-                        return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE;
-                    memcpy(output, cleartext.bytes, *output_len);
-                    return 0;
+            @autoreleasepool {
+                LogTo(TLSLogDomain, "Decrypting using Keychain private key");
+                NSData* data = slice(input, _keyLength).uncopiedNSData();
+                CFErrorRef error;
+                NSData* cleartext = CFBridgingRelease( SecKeyCreateDecryptedData(_privateKeyRef,
+                                                             kSecKeyAlgorithmRSAEncryptionPKCS1,
+                                                             (CFDataRef)data, &error) );
+                if (!cleartext) {
+                    warnCFError(error, "SecKeyCreateDecryptedData");
+                    return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
                 }
-            } else {
-                LogError(TLSLogDomain, "Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
-                return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
+                *output_len = cleartext.length;
+                if (*output_len > output_max_len)  // should never happen
+                    return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE;
+                memcpy(output, cleartext.bytes, *output_len);
+                return 0;
             }
         }
 
@@ -275,47 +250,42 @@ namespace litecore { namespace crypto {
                           void *outSignature) noexcept override
         {
             // No exceptions may be thrown from this function!
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                LogTo(TLSLogDomain, "Signing using Keychain private key");
-                @autoreleasepool {
-                    // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
-                    static const SecKeyAlgorithm kDigestAlgorithmMap[9] = {
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw,
-                        NULL,
-                        NULL,
-                        NULL,
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224,
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
-                        kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
-                    };
-                    SecKeyAlgorithm digestAlgorithm = nullptr;
-                    if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
-                        digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
-                    if (!digestAlgorithm) {
-                        LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
-                             mbedDigestAlgorithm);
-                        return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
-                    }
-
-                    // Create the signature:
-                    NSData* data = inputData.uncopiedNSData();
-                    CFErrorRef error;
-                    NSData* sigData = CFBridgingRelease( SecKeyCreateSignature(_privateKeyRef,
-                                                                     digestAlgorithm,
-                                                                     (CFDataRef)data, &error) );
-                    if (!sigData) {
-                        warnCFError(error, "SecKeyCreateSignature");
-                        return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
-                    }
-                    Assert(sigData.length == _keyLength);
-                    memcpy(outSignature, sigData.bytes, _keyLength);
-                    return 0;
+            LogTo(TLSLogDomain, "Signing using Keychain private key");
+            @autoreleasepool {
+                // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
+                static const SecKeyAlgorithm kDigestAlgorithmMap[9] = {
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw,
+                    NULL,
+                    NULL,
+                    NULL,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
+                };
+                SecKeyAlgorithm digestAlgorithm = nullptr;
+                if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
+                    digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
+                if (!digestAlgorithm) {
+                    LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
+                         mbedDigestAlgorithm);
+                    return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
                 }
-            } else {
-                LogError(TLSLogDomain, "Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
-                return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
+
+                // Create the signature:
+                NSData* data = inputData.uncopiedNSData();
+                CFErrorRef error;
+                NSData* sigData = CFBridgingRelease( SecKeyCreateSignature(_privateKeyRef,
+                                                                 digestAlgorithm,
+                                                                 (CFDataRef)data, &error) );
+                if (!sigData) {
+                    warnCFError(error, "SecKeyCreateSignature");
+                    return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
+                }
+                Assert(sigData.length == _keyLength);
+                memcpy(outSignature, sigData.bytes, _keyLength);
+                return 0;
             }
         }
 
@@ -333,129 +303,107 @@ namespace litecore { namespace crypto {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
-            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false);
+            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
                 (id)kSecAttrIsPermanent:    @YES,
                 (id)kSecAttrLabel:          @(timestr),
             };
-            
+
             SecKeyRef publicKey = NULL, privateKey = NULL;
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                CFErrorRef error;
-                ++gC4ExpectExceptions;
-                privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
-                --gC4ExpectExceptions;
-                if (!privateKey) {
-                    warnCFError(error, "SecKeyCreateRandomKey");
-                    return nullptr;
-                }
-                publicKey = SecKeyCopyPublicKey(privateKey);
-                
-            } else {
-                ++gC4ExpectExceptions;
-                OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
-                --gC4ExpectExceptions;
-                checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
+            CFErrorRef error;
+            privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+            if (!privateKey) {
+                warnCFError(error, "SecKeyCreateRandomKey");
+                return nullptr;
             }
-            
+            publicKey = SecKeyCopyPublicKey(privateKey);
+
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
-        if (@available(macOS 10.12, iOS 10, *)) {
-            @autoreleasepool {
-                SecCertificateRef certRef = toSecCert(cert);
-                // Get public key from the certificate using trust:
-                SecTrustRef trustRef;
-                SecPolicyRef policyRef = SecPolicyCreateBasicX509();
-                checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
-                              "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
-                SecKeyRef publicKeyRef = NULL;
-                if (@available(macOS 11.0, iOS 14.0, *)) {
-                    publicKeyRef = SecTrustCopyKey(trustRef);
-                } else {
-                    publicKeyRef = SecTrustCopyPublicKey(trustRef);
-                }
-                CFRelease(policyRef);
-                CFRelease(trustRef);
-                
-                if (!publicKeyRef)
-                    return nullptr;
-                
-                // Get public key hash from kSecAttrApplicationLabel attribute:
-                // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
-                NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
-                NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
-                if (!publicKeyHash) {
-                    CFRelease(publicKeyRef);
-                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
-                }
-                
-                // Lookup private key by using the public key hash:
-                auto privateKeyRef = (SecKeyRef)findInKeychain(@{
-                    (id)kSecClass:                  (id)kSecClassKey,
-                    (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
-                    (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
-                    (id)kSecAttrApplicationLabel:   publicKeyHash,
-                    (id)kSecReturnRef:              @YES
-                });
-                if (!privateKeyRef) {
-                    CFRelease(publicKeyRef);
-                    return nullptr;
-                }
-                
-                auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
-                return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
+        @autoreleasepool {
+            SecCertificateRef certRef = toSecCert(cert);
+            // Get public key from the certificate using trust:
+            SecTrustRef trustRef;
+            SecPolicyRef policyRef = SecPolicyCreateBasicX509();
+            checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
+                          "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
+            SecKeyRef publicKeyRef = NULL;
+            if (@available(macOS 11.0, iOS 14.0, *)) {
+                publicKeyRef = SecTrustCopyKey(trustRef);
+            } else {
+                publicKeyRef = SecTrustCopyPublicKey(trustRef);
             }
-        } else {
-            LogError(TLSLogDomain, "Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
-            throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
+            CFRelease(policyRef);
+            CFRelease(trustRef);
+            
+            if (!publicKeyRef)
+                return nullptr;
+            
+            // Get public key hash from kSecAttrApplicationLabel attribute:
+            // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
+            NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
+            NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+            if (!publicKeyHash) {
+                CFRelease(publicKeyRef);
+                throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
+            }
+            
+            // Lookup private key by using the public key hash:
+            auto privateKeyRef = (SecKeyRef)findInKeychain(@{
+                (id)kSecClass:                  (id)kSecClassKey,
+                (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
+                (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                (id)kSecAttrApplicationLabel:   publicKeyHash,
+                (id)kSecReturnRef:              @YES
+            });
+            if (!privateKeyRef) {
+                CFRelease(publicKeyRef);
+                return nullptr;
+            }
+            
+            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
         }
     }
 
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
         @autoreleasepool {
-            if (@available(macOS 10.12, iOS 10.0, *)) {
-                // Lookup private key by using the public key hash:
-                auto privateKeyRef = (SecKeyRef)findInKeychain(@{
-                    (id)kSecClass:                  (id)kSecClassKey,
+            // Lookup private key by using the public key hash:
+            auto privateKeyRef = (SecKeyRef)findInKeychain(@{
+                (id)kSecClass:                  (id)kSecClassKey,
+                (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
+                (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                (id)kSecAttrApplicationLabel:   publicKeyHash(publicKey),
+                (id)kSecReturnRef:              @YES
+            });
+            if (!privateKeyRef)
+                return nullptr;
+            
+            auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+            if (!publicKeyRef) {
+                // If the public key is not in the KeyChain, SecKeyCopyPublicKey() will return null.
+                // Create a SecKeyRef directly from the publicKey data instead:
+                NSDictionary* attrs = @{
                     (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
-                    (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
-                    (id)kSecAttrApplicationLabel:   publicKeyHash(publicKey),
-                    (id)kSecReturnRef:              @YES
-                });
-                if (!privateKeyRef)
-                    return nullptr;
-                
-                ++gC4ExpectExceptions;
-                auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
-                --gC4ExpectExceptions;
+                    (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic
+                };
+                CFErrorRef error;
+                publicKeyRef = SecKeyCreateWithData((CFDataRef)publicKey->data().copiedNSData(),
+                                                    (CFDictionaryRef)attrs, &error);
                 if (!publicKeyRef) {
-                    // If the public key is not in the KeyChain, SecKeyCopyPublicKey() will return null.
-                    // Create a SecKeyRef directly from the publicKey data instead:
-                    NSDictionary* attrs = @{
-                        (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
-                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic
-                    };
-                    CFErrorRef error;
-                    publicKeyRef = SecKeyCreateWithData((CFDataRef)publicKey->data().copiedNSData(),
-                                                        (CFDictionaryRef)attrs, &error);
-                    if (!publicKeyRef) {
-                        CFRelease(privateKeyRef);
-                        warnCFError(error, "SecKeyCreateWithData");
-                        throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
-                    }
+                    CFRelease(privateKeyRef);
+                    warnCFError(error, "SecKeyCreateWithData");
+                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
                 }
-                auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
-                return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
-            } else {
-                LogError(TLSLogDomain, "Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
-                throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
+            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
         }
     }
 
@@ -503,9 +451,7 @@ namespace litecore { namespace crypto {
                 }
                 
                 CFTypeRef result;
-                ++gC4ExpectExceptions;
                 OSStatus status = SecItemAdd((CFDictionaryRef)params, &result);
-                --gC4ExpectExceptions;
                 
                 if (status == errSecDuplicateItem && cert != this) {
                     // Ignore duplicates as it might be referenced by the other certificates
@@ -534,14 +480,10 @@ namespace litecore { namespace crypto {
                         (id)kSecAttrLabel:          label
                     };
                     
-                    ++gC4ExpectExceptions;
                     status = SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs);
-                    --gC4ExpectExceptions;
                     if (status != errSecSuccess) {
                         // Rollback by deleteing the added certificate:
-                        ++gC4ExpectExceptions;
                         OSStatus deleteStatus = SecItemDelete((CFDictionaryRef)certQuery);
-                        --gC4ExpectExceptions;
                         if (deleteStatus != errSecSuccess) {
                             warnOSStatusError(deleteStatus, "SecItemDelete",
                                               "Couldn't delete certificate that was failed to update the label.");
@@ -593,7 +535,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-            if (@available(iOS 12.0, macos 10.14, *)) {
+            if (@available(iOS 12.0, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
                     auto error = (__bridge NSError*)cferr;
@@ -610,7 +552,7 @@ namespace litecore { namespace crypto {
             }
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
-            
+
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
@@ -635,6 +577,26 @@ namespace litecore { namespace crypto {
             return cert;
         }
     }
+
+    bool Cert::exists(const std::string &persistentID) {
+        @autoreleasepool {
+            LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
+                  persistentID.c_str());
+
+            NSString* label = [NSString stringWithCString: persistentID.c_str()
+                                                 encoding: NSUTF8StringEncoding];
+
+            NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+                       (id)kSecClass:              (id)kSecClassCertificate,
+                       (id)kSecAttrLabel:          label,
+                       (id)kSecReturnRef:          @NO,
+                       (id)kSecReturnData:         @NO
+               }));
+
+            return !attrs ? false : true;
+        }
+    }
+
 
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {
@@ -664,7 +626,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-            if (@available(iOS 12.0, macos 10.14, *)) {
+            if (@available(iOS 12.0, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
                     auto error = (__bridge NSError*)cferr;
@@ -714,7 +676,7 @@ namespace litecore { namespace crypto {
                         Assert(serialNum);
                         NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
                         Assert(certType != nil);
-                        
+
                         NSDictionary* params = @{
                             (id)kSecClass:                  (__bridge id)kSecClassCertificate,
                             (id)kSecAttrCertificateType:    certType,
@@ -773,18 +735,26 @@ namespace litecore { namespace crypto {
     fleece::Retained<Cert> Cert::findSigningRootCert() {
         @autoreleasepool {
             auto policy = SecPolicyCreateBasicX509();
-            SecCertificateRef thisCert = toSecCert(this);
-            LogTo(TLSLogDomain, "findSigningRootCert: Evaluating %s ...", describe(thisCert).c_str());
-            CFAutorelease(policy);
+            
+            // Create trust with a cert chain including all intermediates:
+            NSMutableArray* certChain = [NSMutableArray array];
+            for (Retained<Cert> crt = this; crt; crt = crt->next()) {
+                [certChain addObject: (__bridge id)(toSecCert(crt))];
+            }
+            
+            LogTo(TLSLogDomain, "findSigningRootCert: Evaluating %s ...",
+                  describe((__bridge SecCertificateRef)certChain.firstObject).c_str());
+            
             SecTrustRef trust;
-            checkOSStatus(SecTrustCreateWithCertificates(thisCert, policy, &trust),
+            checkOSStatus(SecTrustCreateWithCertificates((__bridge CFArrayRef)certChain, policy, &trust),
                           "SecTrustCreateWithCertificates", "Couldn't validate certificate");
+            CFAutorelease(policy);
             CFAutorelease(trust);
             
             SecTrustResultType result;
             OSStatus err;
 
-            if (@available(iOS 12.0, macos 10.14, *)) {
+            if (@available(iOS 12.0, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trust, &cferr)) {
                     auto error = (__bridge NSError*)cferr;

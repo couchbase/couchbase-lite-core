@@ -39,16 +39,16 @@ then
     # CMake options for iOS device -- use ios.toolchain.cmake
     CMAKE_OPTS="$CMAKE_OPTS \
                 -DCMAKE_TOOLCHAIN_FILE=$SRCROOT/../vendor/ios-cmake/ios.toolchain.cmake \
-                -DPLATFORM=OS \
-                -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET"
+                -DPLATFORM=OS64 \
+                -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET \
+                -DENABLE_BITCODE=0"
 elif [[ "$PLATFORM_NAME" == "iphonesimulator" ]]
 then
     # CMake options for iOS Simulator -- use ios.toolchain.cmake
     CMAKE_OPTS="$CMAKE_OPTS \
                 -DCMAKE_TOOLCHAIN_FILE=$SRCROOT/../vendor/ios-cmake/ios.toolchain.cmake \
-                -DPLATFORM=SIMULATOR -DARCHS=$MAC_ARCHS;i386\
+                -DPLATFORM=SIMULATOR64 -DARCHS=$MAC_ARCHS \
                 -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET"
-    # TODO: Delete ';i386' above when we drop 32-bit iOS support
 elif [[ "$PLATFORM_NAME" == "macosx" ]]
 then
     # CMake options for macOS

@@ -17,8 +17,9 @@
 
 %{
 #include "n1ql_parser_internal.hh"
+#include "n1ql_parser.hh"
 
-namespace litecore { namespace n1ql {
+namespace litecore::n1ql {
 %}
 
 
@@ -78,13 +79,13 @@ from =
          )*                             { $$ = d;}
 
 dataSource =
-    n:collectionName   					{ n = dictWith("COLLECTION"_sl, n); }
-		(AS? a:collectionAlias			{ setAny(n, "AS"_sl, a); }
-		)?								{ $$ = n; }
+    n:collectionName                    { n = dictWithCollectionArray(n); }
+		(AS? a:collectionAlias          { setAny(n, "AS"_sl, quoteIdentity(a)); }
+		)?                              { $$ = n; }
 
 collectionName  =
-    c:IDENTIFIER
-        ('.' c2:IDENTIFIER              { c = c.as<string>() + "." +c2.as<string>(); }
+    c:IDENTIFIER                        { c = arrayWith(c); }
+        ('.' c2:IDENTIFIER              { appendAny(c, c2); }
         )?                              { $$ = c; }
 
 join =
@@ -127,7 +128,7 @@ indexName       = IDENTIFIER
 
 
 expression =
-    expr8
+    expr9
 
 
 caseExpression =
@@ -167,6 +168,30 @@ variableName    = IDENTIFIER
 # are grouped correctly. The precedence levels here are taken from the SQLite documentation.
 # Level 8 is the lowest, level 0 the highest.
 
+POST_OP_PREC_6 =
+    NOT NULL            { $$ = string("NOT NULL");}
+  | IS NULL             { $$ = string("IS NULL");}
+  | IS MISSING          { $$ = string("IS MISSING");}
+  | IS VALUED           { $$ = string("IS VALUED");}
+  | IS NOT NULL         { $$ = string("IS NOT NULL");}
+  | IS NOT MISSING      { $$ = string("IS NOT MISSING");}
+  | IS NOT VALUED       { $$ = string("IS NOT VALUED");}
+
+expr9 =
+    x:expr8 (
+       _ co:collateSuffix       { MutableArray coArray = co;
+                                          bool did_collateOp = false;
+                                          for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
+                                            if (did_collateOp) {
+                                               extendCollate(x, iter->asstring());
+                                            } else {
+                                               x = collateOp(x, iter->asstring());
+                                               did_collateOp = true;
+                                            }
+                                          }
+                                }
+       )?                       { $$ = x; }
+
 expr8 =
     x:expr7 (_ op:OP_PREC_8 _ r:expr7   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
@@ -174,17 +199,7 @@ expr7 =
     x:expr6 (_ op:OP_PREC_7 _ r:expr6   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 expr6 =
-    x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
-  | x:expr5 IS (
-        NULL                            { $$ = binaryOp(x, "IS", nullValue); }
-      | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
-      | VALUED                          { $$ = op("IS VALUED", x); }
-    )
-  | x:expr5 IS NOT (
-        NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
-      | MISSING                         { $$ = binaryOp(x, "IS NOT", op("MISSING")); }
-      | VALUED                          { $$ = op("NOT", op("IS VALUED", x)); }
-    )
+    x:expr5 o:POST_OP_PREC_6            { $$ = op(o, x); }
   | inExpression
   | likeExpression
   | betweenExpression
@@ -237,6 +252,7 @@ inExpression =
     x:expr5 i:IN_OR_NOT
         (s:selectExpr                  &{false} # TODO: Support in LiteCore   { $$ = op(i, x, s); }
         | p:parenExprs                  { $$ = op(i, x, insertAny(p, 0, string("[]"))); }
+        | a:arrayLiteral                { $$ = op(i, x, a); }
         )
 
 IN_OR_NOT =
@@ -252,17 +268,6 @@ selectExpr =
 
 expr0 =
     x:baseExpr '.' p:propertyPath       { $$ = op("_.", x, p);}
-  | x:baseExpr _ co:collateSuffix       { MutableArray coArray = co;
-                                          bool did_collateOp = false;
-                                          for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
-                                            if (did_collateOp) {
-                                               extendCollate(x, iter->asstring());
-                                            } else {
-                                               x = collateOp(x, iter->asstring());
-                                               did_collateOp = true;
-                                            }
-                                          }
-                                          $$ = x; }
   | x:baseExpr                          { $$ = x; }
 
 collateSuffix =
@@ -278,10 +283,18 @@ collateSuffix =
         )+ ')' _
     )                                   { $$ = co; }
 
-collation =
-    <("NO"i? ("UNICODE"i | "CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
+collationLang =
+    <"NOUNICODE"i>                      { $$ = string(yytext); }
+  | (
+        "UNICODE"i                      { $$ = string("UNICODE"); }
+        <(':' [a-zA-Z] [a-zA-Z0-9_]*)?> { $$ = $$.as<string>() + string(yytext); }
+    )
 
-_baseExpr =
+collation =
+  l:collationLang _                    { $$ = l; }
+  | <("NO"i? ("CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
+
+baseExpr_ =
     literal
   | arrayLiteral
   | dictLiteral
@@ -293,7 +306,7 @@ _baseExpr =
   | function
   | property
   | '(' _ expression _ ')'
-baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
+baseExpr = baseExpr_ _                  # baseExpr to absorb all trailing white space
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
@@ -304,7 +317,7 @@ OP_PREFIX =
 
 property =
     '*'                                 { $$ = op(".");}
-  | a:collectionAlias '.' _ '*'         { $$ = op("." + a.as<string>() + ".");}
+  | a:collectionAlias '.' _ '*'         { $$ = op("." + quoteIdentity(a.as<string>()) + ".");}
   | p:propertyPath                      { $$ = op(p);}
 
 propertyPath =
@@ -318,20 +331,34 @@ propertyPath =
 propertyName
     = IDENTIFIER
 
+indexTable =                            { a = string(""); }
+    (a:collectionAlias _ '.' _ )?
+    i:indexName                         { string c = quoteIdentity(a.as<string>());
+                                          $$ = c.empty() ? i.as<string>() : c + "." + i.as<string>();
+                                        }
 
 ######## FUNCTIONS:
 
 
 function =
     "meta"i _ '(' _                    { f = op("meta()");}
-    (c:collectionName _                { appendAny(f, c.as<string>());}
+    (c:IDENTIFIER _                    { appendAny(f, c.as<string>());}
     )? ')' _                           { $$ = f;}
   | "match"i _ '(' _                   { f = op("MATCH()");}
-    ind:indexName _ ',' _              { appendAny(f, ind.as<string>());}
+    ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
+  | "vector_match"i _ '(' _            { f = op("VECTOR_MATCH()");}
+    ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
+    t:expression _                     { appendAny(f, t);}
+    ( ',' _ t:expression               { appendAny(f, t);}
+     _ )?
+    ')' _                              { $$ = f;}
+  | "vector_distance"i _ '(' _         { f = op("VECTOR_DISTANCE()");}
+    ind:indexTable _                   { appendAny(f, ind.as<string>());}
+    ')' _                              { $$ = f;}
   | "rank"i _ '(' _                    { f = op("RANK()");}
-    ind:indexName _                    { appendAny(f, ind.as<string>());}
+    ind:indexTable _                   { appendAny(f, ind.as<string>());}
     ')' _                              { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
@@ -472,7 +499,7 @@ static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
 }
 
 
-FLMutableDict parse(const string &input, unsigned *errPos) {
+FLMutableDict parse(const string &input, int *errPos) {
     MutableDict result;
     std::stringstream stream(input, std::ios_base::in);
     yycontext ctx = { };
@@ -480,12 +507,12 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
 
     bool ok = parse(&ctx) != 0;
     if (ok) {
-        result = ctx.__;
+        result = ctx._;
     } else {
-        *errPos = (unsigned) ctx.__maxpos;
+        *errPos = ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
 }
 
-} }
+}

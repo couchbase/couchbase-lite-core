@@ -44,7 +44,7 @@ endif()
 
 # Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
-file(COPY ../../Replicator/tests/data/cert.pem DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
+file(COPY ../../Replicator/tests/data/cert DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/Tests/*.json5" "../../vendor/fleece/Tests/*.fleece" "../../vendor/fleece/Tests/*.txt")
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
@@ -61,11 +61,13 @@ add_executable(
     LiteCoreTest.cc
     N1QLParserTest.cc
     PredictiveQueryTest.cc
+    PredictiveVectorQueryTest.cc
     QueryParserTest.cc
     QueryTest.cc
     SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
+    VectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
     ${TOP}REST/tests/RESTClientTest.cc
@@ -88,8 +90,14 @@ add_executable(
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
+    ${TOP}Replicator/tests/ReplicatorCollectionTest.cc
+    ${TOP}Replicator/tests/ReplicatorCollectionSGTest.cc
+    ${TOP}Replicator/tests/ReplicatorSG30Test.cc
+    ${TOP}Replicator/tests/ReplicatorVVUpgradeTest.cc
+    ${TOP}Replicator/tests/SG.cc
+    ${TOP}Replicator/tests/SGTestUser.cc
+    ${TOP}Replicator/tests/ReplParams.cc
     ${TOP}C/tests/c4Test.cc
-    ${TOP}C/tests/c4CollectionTest.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
@@ -147,7 +155,7 @@ target_include_directories(
 
 target_link_libraries(
     CppTests PRIVATE 
-    LiteCoreObjects
+    LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
     LiteCoreREST_Static

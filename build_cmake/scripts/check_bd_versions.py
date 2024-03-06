@@ -30,6 +30,10 @@ def get_submodule_base(git: str):
 
 
 def check_component(branch: str, title: str, component, expectChange: bool) -> bool:
+    if "src-path" not in component:
+        print(f"No src-path listed for {title}, skipping check...")
+        return True
+    
     print(f"Checking for changes in {title}...")
     cwd = os.getcwd()
     srcPath = str(component["src-path"])
@@ -56,18 +60,44 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
         return False
 
     if not expectChange and is_changed(git):
-        print("! No manifest change to accompany change in source")
-        print(git)
-        return False
+        if "sub-comps" not in component:
+            print("! No manifest change to accompany change in source")
+            print(git)
+            return False
+        else:
+            submoduleBase = get_submodule_base(git)
+            if not submoduleBase:
+                # the parent compoent should be submodule. We should not hit here.
+                print("! No manifest change to accompany change in source beside submodule change")
+                print(git)
+                return False
+
+            cwd = os.getcwd()
+            os.chdir(srcPath)
+            git = subprocess.check_output(["git", "diff", submoduleBase]).decode("ascii")
+            os.chdir(cwd)
+
+            # collect the headers of every different files.
+            # ex: diff --git a/sqlite3/sqlite3.h b/sqlite3/sqlite3.h
+            diffs = [l for l in git.splitlines() if l.startswith("diff --git")]
+            for s in component["sub-comps"]:
+                subSrcPath = s["src-path"].replace(component["src-path"], "a")
+                # filter out changes in the sub-component
+                diffs = [l for l in diffs if not l.startswith("diff --git "+subSrcPath)]
+
+            if len(diffs) > 0:
+                print("! No manifest change to accompany change in source beside changes in the sub-components")
+                print(diffs)
+                return False
 
     return True
 
 def main(manifest_path: Path, branch: str) -> int:
-    # git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"{branch}..HEAD"]).decode("ascii")
-    # for line in git.splitlines():
-    #     if line.lstrip().startswith("!NO_BD_GITHUB"):
-    #         print("Scan disabled by commit message, skipping...")
-    #         return 0
+    git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"origin/{branch}..HEAD"]).decode("ascii")
+    for line in git.splitlines():
+        if line.lstrip().startswith("!NO_BD_GITHUB"):
+            print("Scan disabled by commit message, skipping...")
+            return 0
     
     if not manifest_path.exists() or not manifest_path.is_file():
         print("!!! Blackduck manifest not found, aborting...")
@@ -79,8 +109,23 @@ def main(manifest_path: Path, branch: str) -> int:
     manifest_old = yaml.load(manifest_path.read_bytes(), Loader=yaml.CLoader)
     subprocess.check_call(["git", "restore", manifest_path.relative_to(os.getcwd())])
 
+    components = manifest["components"]
+    for _, component in components.items():
+        parentRepo = component.get("parent-repo", None)
+        if parentRepo:
+            parentCompKey = parentRepo.split("/")[-1].lower()
+            parentComp = components.get(parentCompKey, None)
+            if parentComp:
+                if "sub-comps" not in parentComp:
+                    parentComp["sub-comps"] = []
+                parentComp["sub-comps"].append(component)
+
     failCount = 0
-    for component in manifest["components"]:
+    for component in components:
+        if component not in manifest_old["components"]:
+            print(f"{component} is newly added, skipping check...")
+            continue
+
         versionBefore = manifest_old["components"][component]["versions"][0]
         versionAfter = manifest["components"][component]["versions"][0]
         if versionBefore == versionAfter:

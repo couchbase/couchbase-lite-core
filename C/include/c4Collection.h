@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 
@@ -96,44 +97,43 @@ C4API_BEGIN_DECLS
 /** Returns the default collection, whose name is "`_default`" (`kC4DefaultCollectionName`).
     This is the one collection that exists in every newly created database.
     When a pre-existing database is upgraded to support collections, all its documents are put
-    in the default collection.
-    @note  This function never returns NULL, unless the default collection has been deleted. */
-CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
+    in the default collection. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h.*/
+CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database* db, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if the collection exists. */
-CBL_CORE_API bool c4db_hasCollection(C4Database *db,
-                        C4CollectionSpec spec) C4API;
+CBL_CORE_API bool c4db_hasCollection(C4Database* db, C4CollectionSpec spec) C4API;
 
 /** Returns true if the named scope exists.  Note that _default will always return true. */
-CBL_CORE_API bool c4db_hasScope(C4Database *db, C4String name) C4API;
+CBL_CORE_API bool c4db_hasScope(C4Database* db, C4String name) C4API;
 
-/** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. */
-CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
-                                            C4CollectionSpec spec) C4API;
+/** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
+CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database* db, C4CollectionSpec spec,
+                                                         C4Error* C4NULLABLE outError) C4API;
 
 /** Creates and returns an empty collection with the given name & scope.
     If the collection already exists, it just returns it.
-    If the scope doesn't exist, it is implicitly created. */
-CBL_CORE_API C4Collection* C4NULLABLE c4db_createCollection(C4Database *db,
-                                               C4CollectionSpec spec,
-                                               C4Error* C4NULLABLE outError) C4API;
+    If the scope doesn't exist, it is implicitly created. 
+    @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
+NODISCARD CBL_CORE_API C4Collection* C4NULLABLE c4db_createCollection(C4Database* db, C4CollectionSpec spec,
+                                                                      C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes the collection with the given name & scope.
     Deleting the last collection from a scope implicitly deletes the scope.
     @note  It is legal to delete the default collection, but it cannot be re-created. */
-CBL_CORE_API bool c4db_deleteCollection(C4Database *db,
-                           C4CollectionSpec spec,
-                           C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4db_deleteCollection(C4Database* db, C4CollectionSpec spec,
+                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing collections in the given scope,
     in the order in which they were created.
     @note  You are responsible for releasing the returned Fleece array. */
-CBL_CORE_API FLMutableArray c4db_collectionNames(C4Database *db,
-                                    C4String inScope) C4API;
+NODISCARD CBL_CORE_API FLMutableArray c4db_collectionNames(C4Database* db, C4String inScope,
+                                                           C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing scopes, in the order in which they were created.
     @note  You are responsible for releasing the returned Fleece array. */
-CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database *db) C4API;
+NODISCARD CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database* db, C4Error* C4NULLABLE outError) C4API;
 
 
 /** @} */
@@ -172,17 +172,14 @@ CBL_CORE_API C4SequenceNumber c4coll_getLastSequence(C4Collection*) C4API;
     @param content  How much content to retrieve: metadata only, current revision, or all revisions.
     @param outError  On failure, error information is stored here.
     @return  A new C4Document instance (which must be released), or NULL. */
-CBL_CORE_API C4Document* C4NULLABLE c4coll_getDoc(C4Collection *collection,
-                                     C4String docID,
-                                     bool mustExist,
-                                     C4DocContentLevel content,
-                                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_getDoc(C4Collection* collection, C4String docID, bool mustExist,
+                                                            C4DocContentLevel   content,
+                                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Gets a document from the collection given its sequence number.
     @note  You must call `c4doc_release()` when finished with the document.  */
-C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection *collection,
-                                               C4SequenceNumber,
-                                               C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection*       collection, C4SequenceNumber,
+                                                                      C4Error* C4NULLABLE outError) C4API;
 
 /** A high-level Put operation, to insert a new or downloaded revision.
     - If `request->existingRevision` is true, then request->history must contain the revision's
@@ -195,10 +192,9 @@ C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection *collection,
     if request->save is true. You can set this to false if you want to review the changes
     before saving, e.g. to run them through a validation function.
     @note  You must call \ref c4doc_release when finished with the returned document. */
-CBL_CORE_API C4Document* C4NULLABLE c4coll_putDoc(C4Collection *collection,
-                                     const C4DocPutRequest *request,
-                                     size_t * C4NULLABLE outCommonAncestorIndex,
-                                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_putDoc(C4Collection* collection, const C4DocPutRequest* request,
+                                                            size_t* C4NULLABLE  outCommonAncestorIndex,
+                                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Convenience function to create a new document. This just a wrapper around \ref c4coll_putDoc.
     If the document already exists, it will fail with the error `kC4ErrorConflict`.
@@ -209,11 +205,9 @@ CBL_CORE_API C4Document* C4NULLABLE c4coll_putDoc(C4Collection *collection,
     @param revisionFlags  The flags of the new revision
     @param error Information about any error that occurred
     @return  On success, a new C4Document with the new revision selected; else NULL. */
-CBL_CORE_API C4Document* C4NULLABLE c4coll_createDoc(C4Collection *collection,
-                                        C4String docID,
-                                        C4Slice body,
-                                        C4RevisionFlags revisionFlags,
-                                        C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_createDoc(C4Collection* collection, C4String docID, C4Slice body,
+                                                               C4RevisionFlags     revisionFlags,
+                                                               C4Error* C4NULLABLE error) C4API;
 
 /** Moves a document to another collection, possibly with a different docID.
     @param collection  The document's original collection.
@@ -222,11 +216,8 @@ CBL_CORE_API C4Document* C4NULLABLE c4coll_createDoc(C4Collection *collection,
     @param newDocID  The docID in the new collection, or a NULL slice to keep the original ID.
     @param error Information about any error that occurred
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4coll_moveDoc(C4Collection *collection,
-                    C4String docID,
-                    C4Collection *toCollection,
-                    C4String newDocID,
-                    C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API bool c4coll_moveDoc(C4Collection* collection, C4String docID, C4Collection* toCollection,
+                                           C4String newDocID, C4Error* C4NULLABLE error) C4API;
 
 
 //////// PURGING & EXPIRATION:
@@ -238,9 +229,8 @@ CBL_CORE_API bool c4coll_moveDoc(C4Collection *collection,
 
 
 /** Removes all trace of a document and its revisions from the collection. */
-CBL_CORE_API bool c4coll_purgeDoc(C4Collection *collection,
-                     C4String docID,
-                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4coll_purgeDoc(C4Collection* collection, C4String docID,
+                                            C4Error* C4NULLABLE outError) C4API;
 
 
 /** Sets an expiration date on a document.  After this time the
@@ -251,10 +241,8 @@ CBL_CORE_API bool c4coll_purgeDoc(C4Collection *collection,
                 A value of 0 indicates that the expiration should be cancelled.
     @param outError Information about any error that occurred
     @return true on sucess, false on failure */
-CBL_CORE_API bool c4coll_setDocExpiration(C4Collection *collection,
-                             C4String docID,
-                             C4Timestamp timestamp,
-                             C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4coll_setDocExpiration(C4Collection* collection, C4String docID, C4Timestamp timestamp,
+                                                    C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the expiration time of a document, if one has been set, else 0.
     @param collection  The collection to set the expiration date in
@@ -263,18 +251,16 @@ CBL_CORE_API bool c4coll_setDocExpiration(C4Collection *collection,
     @return The timestamp of the expiration date, in milliseconds since 1/1/1970,
                 or 0 if the document does not expire,
                 or -1 if an error occurred. */
-CBL_CORE_API C4Timestamp c4coll_getDocExpiration(C4Collection *collection,
-                                    C4String docID,
-                                    C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4Timestamp c4coll_getDocExpiration(C4Collection* collection, C4String docID,
+                                                 C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the time at which the next document expiration in this collection should take place,
     or 0 if there are no documents with expiration times. */
-CBL_CORE_API C4Timestamp c4coll_nextDocExpiration(C4Collection *) C4API;
+CBL_CORE_API C4Timestamp c4coll_nextDocExpiration(C4Collection*) C4API;
 
 /** Purges all documents that have expired.
     @return  The number of documents purged, or -1 on error. */
-CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection *,
-                                C4Error* C4NULLABLE) C4API;
+NODISCARD CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection*, C4Error* C4NULLABLE) C4API;
 
 
 /** @} */
@@ -295,22 +281,18 @@ CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection *,
     @param indexOptions  Options for the index. If NULL, each option will get a default value.
     @param outError  On failure, will be set to the error status.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4coll_createIndex(C4Collection *collection,
-                        C4String name,
-                        C4String indexSpec,
-                        C4QueryLanguage queryLanguage,
-                        C4IndexType indexType,
-                        const C4IndexOptions* C4NULLABLE indexOptions,
-                        C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4coll_createIndex(C4Collection* collection, C4String name, C4String indexSpec,
+                                               C4QueryLanguage queryLanguage, C4IndexType indexType,
+                                               const C4IndexOptions* C4NULLABLE indexOptions,
+                                               C4Error* C4NULLABLE              outError) C4API;
 
 /** Deletes an index that was created by `c4coll_createIndex`.
     @param collection  The collection to index.
     @param name The name of the index to delete
     @param outError  On failure, will be set to the error status.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4coll_deleteIndex(C4Collection *collection,
-                        C4String name,
-                        C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4coll_deleteIndex(C4Collection* collection, C4String name,
+                                               C4Error* C4NULLABLE outError) C4API;
 
 /** Returns information about all indexes in the collection.
     The result is a Fleece-encoded array of dictionaries, one per index.
@@ -318,11 +300,10 @@ CBL_CORE_API bool c4coll_deleteIndex(C4Collection *collection,
     @param collection  The collection to check
     @param outError  On failure, will be set to the error status.
     @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
-CBL_CORE_API C4SliceResult c4coll_getIndexesInfo(C4Collection* collection,
-                                    C4Error* C4NULLABLE outError) C4API;
+CBL_CORE_API C4SliceResult c4coll_getIndexesInfo(C4Collection* collection, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
-/** @} */   // end Collections group
+/** @} */  // end Collections group
 
 
 C4API_END_DECLS

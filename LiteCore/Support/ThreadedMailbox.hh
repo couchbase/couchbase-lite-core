@@ -12,9 +12,7 @@
 
 #pragma once
 #include "Channel.hh"
-#include "ChannelManifest.hh"
 #include "fleece/RefCounted.hh"
-#include "Stopwatch.hh"
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -23,7 +21,7 @@
 #include <functional>
 #include <vector>
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
     using fleece::RefCounted;
     using fleece::Retained;
 
@@ -36,64 +34,62 @@ namespace litecore { namespace actor {
     using delay_t = std::chrono::duration<double>;
 
 
-    #ifndef ACTORS_USE_GCD
+#ifndef ACTORS_USE_GCD
     /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
     class ThreadedMailbox : Channel<std::function<void()>> {
-    public:
-        ThreadedMailbox(Actor*, const std::string &name ="", ThreadedMailbox *parentMailbox =nullptr);
+      public:
+        ThreadedMailbox(Actor*, const std::string& name = "", ThreadedMailbox* parentMailbox = nullptr);
 
-        const std::string& name() const                     {return _name;}
+        const std::string& name() const { return _name; }
 
-        unsigned eventCount() const                         {return (unsigned)size() + (unsigned)_delayedEventCount;}
+        unsigned eventCount() const { return (unsigned)size() + (unsigned)_delayedEventCount; }
 
         void enqueue(const char* name, const std::function<void()>&);
         void enqueueAfter(delay_t delay, const char* name, const std::function<void()>&);
 
-        static Actor* currentActor()                        {return sCurrentActor;}
+        static Actor* currentActor() { return sCurrentActor; }
 
-        static void runAsyncTask(void (*task)(void*), void *context);
+        static void runAsyncTask(void (*task)(void*), void* context);
 
         void logStats() const;
 
-    private:
+      private:
         friend class Scheduler;
-        
+
         void reschedule();
         void performNextMessage();
         void afterEvent();
-        void safelyCall(const std::function<void()> &f) const;
+        void safelyCall(const std::function<void()>& f) const;
 
-        Actor* const _actor;
+        Actor* const      _actor;
         std::string const _name;
 
-        int _delayedEventCount {0};
-#if DEBUG
-        std::atomic_int _active {0};
-#endif
+        int _delayedEventCount{0};
+#    if DEBUG
+        std::atomic_int _active{0};
+#    endif
 
-#if ACTORS_TRACK_STATS
-        int32_t _callCount {0};
-        int32_t _maxEventCount {0};
-        double _maxLatency {0};
-        fleece::Stopwatch _createdAt {true};
-        fleece::Stopwatch _busy {false};
-#endif
-        
+#    if ACTORS_TRACK_STATS
+        int32_t           _callCount{0};
+        int32_t           _maxEventCount{0};
+        double            _maxLatency{0};
+        fleece::Stopwatch _createdAt{true};
+        fleece::Stopwatch _busy{false};
+#    endif
+
         static thread_local Actor* sCurrentActor;
 
-#if ACTORS_USE_MANIFESTS
-        mutable ChannelManifest _localManifest;
+#    if ACTORS_USE_MANIFESTS
+        mutable ChannelManifest                              _localManifest;
         static thread_local std::shared_ptr<ChannelManifest> sThreadManifest;
-#endif
+#    endif
     };
 
     /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.
         It managers a thread pool on which Mailboxes and Actors will run. */
     class Scheduler {
-    public:
-        Scheduler(unsigned numThreads =0)
-        :_numThreads(numThreads)
-        { }
+      public:
+        Scheduler(unsigned numThreads = 0) : _numThreads(numThreads) {}
 
         /** Returns a per-process shared instance. */
         static Scheduler* sharedScheduler();
@@ -106,23 +102,21 @@ namespace litecore { namespace actor {
 
         /** Runs the scheduler on the current thread; doesn't return until all pending
             messages are handled. */
-        void runSynchronous()                               {task(0);}
+        void runSynchronous() { task(0); }
 
-    protected:
+      protected:
         friend class ThreadedMailbox;
 
         /** A request for an Actor's performNextMessage method to be called. */
         static void schedule(ThreadedMailbox* mbox);
 
-    private:
+      private:
         void task(unsigned taskID);
 
-        unsigned _numThreads;
+        unsigned                  _numThreads;
         Channel<ThreadedMailbox*> _queue;
-        std::vector<std::thread> _threadPool;
-        std::atomic_flag _started = ATOMIC_FLAG_INIT;
-
-
+        std::vector<std::thread>  _threadPool;
+        std::atomic_flag          _started = ATOMIC_FLAG_INIT;
     };
 
     // This prevents the compiler from specializing Channel in every compilation unit:
@@ -130,4 +124,4 @@ namespace litecore { namespace actor {
     extern template class Channel<std::function<void()>>;
 #endif
 
-} }
+}  // namespace litecore::actor

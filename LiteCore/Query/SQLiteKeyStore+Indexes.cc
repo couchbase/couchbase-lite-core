@@ -13,12 +13,9 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "SQLite_Internal.hh"
-#include "Query.hh"
 #include "QueryParser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "SQLiteCpp/SQLiteCpp.h"
 #include "Stopwatch.hh"
 #include "Array.hh"
 
@@ -30,7 +27,7 @@ namespace litecore {
 
     /*
      - A value index is a SQL index named 'NAME'.
-     - A FTS index is a SQL virtual table named 'kv_default::NAME'
+     - A FTS or vector index is a SQL virtual table named 'kv_default::NAME'
      - An array index has two parts:
          * A SQL table named `kv_default:unnest:PATH`, where PATH is the property path
          * An index on that table named `NAME`
@@ -48,53 +45,57 @@ namespace litecore {
      */
 
 
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createIndex(const IndexSpec& spec) {
         spec.validateName();
 
-        Stopwatch st;
+        Stopwatch            st;
         ExclusiveTransaction t(db());
-        bool created;
-        switch (spec.type) {
-            case IndexSpec::kValue:      created = createValueIndex(spec); break;
-            case IndexSpec::kFullText:   created = createFTSIndex(spec); break;
-            case IndexSpec::kArray:      created = createArrayIndex(spec); break;
+        bool                 created;
+        switch ( spec.type ) {
+            case IndexSpec::kValue:
+                created = createValueIndex(spec);
+                break;
+            case IndexSpec::kFullText:
+                created = createFTSIndex(spec);
+                break;
+            case IndexSpec::kArray:
+                created = createArrayIndex(spec);
+                break;
 #ifdef COUCHBASE_ENTERPRISE
-            case IndexSpec::kPredictive: created = createPredictiveIndex(spec); break;
+            case IndexSpec::kPredictive:
+                created = createPredictiveIndex(spec);
+                break;
+            case IndexSpec::kVector:
+                created = createVectorIndex(spec);
+                break;
 #endif
-            default:                     error::_throw(error::Unimplemented);
+            default:
+                error::_throw(error::Unimplemented);
         }
 
-        if (created) {
+        if ( created ) {
             t.commit();
             double time = st.elapsed();
-            QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
-                         "Created index '%s' in %.3f sec", spec.name.c_str(), time);
+            QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning), "Created index '%s' in %.3f sec",
+                         spec.name.c_str(), time);
         }
         return created;
     }
 
-
     // Actually creates the index (called by the createXXXIndex methods)
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
-                                     const string &sourceTableName,
-                                     Array::iterator &expressions)
-    {
-        Assert(spec.type != IndexSpec::kFullText);
+    bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
+                                     Array::iterator& expressions) {
+        Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
         QueryParser qp(db(), "", sourceTableName);
-        qp.writeCreateIndex(spec.name,
-                            sourceTableName,
-                            expressions,
-                            spec.where(),
-                            (spec.type != IndexSpec::kValue));
+        qp.writeCreateIndex(spec.name, sourceTableName, expressions, spec.where(), (spec.type != IndexSpec::kValue));
         string sql = qp.SQL();
         return db().createIndex(spec, this, sourceTableName, sql);
     }
 
-
-    void SQLiteKeyStore::deleteIndex(slice name)  {
+    void SQLiteKeyStore::deleteIndex(slice name) {
         ExclusiveTransaction t(db());
-        auto spec = db().getIndex(name);
-        if (spec) {
+        auto                 spec = db().getIndex(name);
+        if ( spec ) {
             db().deleteIndex(*spec);
             t.commit();
         } else {
@@ -102,24 +103,23 @@ namespace litecore {
         }
     }
 
-
     // Creates the special by-sequence index
     void SQLiteKeyStore::createSequenceIndex() {
-        if (!_createdSeqIndex) {
+        if ( !_createdSeqIndex ) {
             Assert(_capabilities.sequences);
-            db().execWithLock(subst(
-                            "CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
+            db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
             _createdSeqIndex = true;
         }
     }
 
-
     // Creates indexes on flags
-    void SQLiteKeyStore::_createFlagsIndex(const char *indexName, DocumentFlags flag, bool &created) {
-        if (!created) {
-            db().execWithLock(CONCAT("CREATE INDEX IF NOT EXISTS \"" << tableName() << "_" << indexName <<
-                                 "\" ON " << quotedTableName() << " (flags)"
-                                 " WHERE (flags & " << int(flag) << ") != 0"));
+    void SQLiteKeyStore::_createFlagsIndex(const char* indexName, DocumentFlags flag, bool& created) {
+        if ( !created ) {
+            db().execWithLock(CONCAT("CREATE INDEX IF NOT EXISTS \"" << tableName() << "_" << indexName << "\" ON "
+                                                                     << quotedTableName()
+                                                                     << " (flags)"
+                                                                        " WHERE (flags & "
+                                                                     << int(flag) << ") != 0"));
             created = true;
         }
     }
@@ -132,21 +132,17 @@ namespace litecore {
         _createFlagsIndex("blobs", DocumentFlags::kHasAttachments, _createdBlobsIndex);
     }
 
-
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
-        for (auto &spec : db().getIndexes(this))
-            result.push_back(move(spec));
+        for ( auto& spec : db().getIndexes(this) ) result.push_back(std::move(spec));
         return result;
     }
 
-
 #pragma mark - VALUE INDEX:
 
-
-    bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec) {
+    bool SQLiteKeyStore::createValueIndex(const IndexSpec& spec) {
         Array::iterator expressions(spec.what());
         return createIndex(spec, tableName(), expressions);
     }
 
-}
+}  // namespace litecore

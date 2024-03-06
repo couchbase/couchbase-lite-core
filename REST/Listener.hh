@@ -13,27 +13,29 @@
 #pragma once
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
-#include "c4Listener.hh"
 #include "c4Database.hh"
+#include "c4ListenerTypes.h"
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
 #include <optional>
 #include <vector>
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
 
     /** Abstract superclass of network listeners that can serve access to databases.
         Subclassed by RESTListener. */
-    class Listener : public fleece::RefCounted, public fleece::InstanceCountedIn<Listener> {
-    public:
-        using Config = C4ListenerConfig;
+    class Listener
+        : public fleece::RefCounted
+        , public fleece::InstanceCountedIn<Listener> {
+      public:
+        using Config         = C4ListenerConfig;
         using CollectionSpec = C4Database::CollectionSpec;
 
         static constexpr uint16_t kDefaultPort = 4984;
 
-        Listener(const Config &config);
-        virtual ~Listener() =default;
+        explicit Listener(const Config& config);
+        ~Listener() override = default;
 
         /** Determines whether a database name is valid for use as a URI path component.
             It must be nonempty, no more than 240 bytes long, not start with an underscore,
@@ -48,15 +50,15 @@ namespace litecore { namespace REST {
 
         /** Makes a database visible via the REST API.
             Retains the C4Database; the caller does not need to keep a reference to it. */
-        bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name =std::nullopt);
+        bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name = std::nullopt);
 
         /** Unregisters a database by name.
             The C4Database will be closed if there are no other references to it. */
-        bool unregisterDatabase(std::string name);
+        bool unregisterDatabase(const std::string& name);
 
-        bool unregisterDatabase(C4Database *db);
+        bool unregisterDatabase(C4Database* db);
 
-         /** Adds a collection to be used by Sync Listener on a given database shared via name.  
+        /** Adds a collection to be used by Sync Listener on a given database shared via name.  
              Only collections that are registered will be replicated.  
              If none are registered, the default collection will be replicated */
         bool registerCollection(const std::string& name, CollectionSpec collection);
@@ -64,7 +66,7 @@ namespace litecore { namespace REST {
         bool unregisterCollection(const std::string& name, CollectionSpec collection);
 
         /** Returns the database registered under the given name. */
-        fleece::Retained<C4Database> databaseNamed(const std::string &name) const;
+        fleece::Retained<C4Database> databaseNamed(const std::string& name) const;
 
         /** Returns the name a database is registered under. */
         std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
@@ -73,16 +75,16 @@ namespace litecore { namespace REST {
         std::vector<std::string> databaseNames() const;
 
         /** Returns the number of client connections. */
-        virtual int connectionCount() =0;
+        virtual int connectionCount() = 0;
 
         /** Returns the number of active client connections (for some definition of "active"). */
-        virtual int activeConnectionCount() =0;
+        virtual int activeConnectionCount() = 0;
 
-    protected:
-        mutable std::mutex _mutex;
-        Config _config;
+      protected:
+        mutable std::mutex                                  _mutex;
+        Config                                              _config;
         std::map<std::string, fleece::Retained<C4Database>> _databases;
-        std::map<std::string, std::vector<CollectionSpec>> _allowedCollections;
+        std::map<std::string, std::vector<CollectionSpec>>  _allowedCollections;
     };
 
-} }
+}  // namespace litecore::REST

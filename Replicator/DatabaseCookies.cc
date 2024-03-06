@@ -11,7 +11,6 @@
 //
 
 #include "c4Database.hh"
-#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
 #include "Error.hh"
@@ -20,36 +19,31 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
-    static const char *kInfoKeyStore = "info";
+    static const char*     kInfoKeyStore     = "info";
     static constexpr slice kCookieStoreDocID = "org.couchbase.cookies"_sl;
 
-
-    DatabaseCookies::DatabaseCookies(C4Database *db)
-    :_db(db)
-    {
+    DatabaseCookies::DatabaseCookies(C4Database* db) : _db(db) {
         auto dataFile = asInternal(db)->dataFile();
-        auto object = dataFile->sharedObject("CookieStore");
-        if (!object) {
+        auto object   = dataFile->sharedObject("CookieStore");
+        if ( !object ) {
             alloc_slice data;
-            _db->getRawDocument(kInfoKeyStore, kCookieStoreDocID, [&](C4RawDocument *doc) {
+            _db->getRawDocument(kInfoKeyStore, kCookieStoreDocID, [&](C4RawDocument* doc) {
                 slice cookies = doc ? doc->body : nullslice;
-                object = dataFile->addSharedObject("CookieStore", new net::CookieStore(cookies));
+                object        = dataFile->addSharedObject("CookieStore", new net::CookieStore(cookies));
             });
             DebugAssert(object);
         }
         _store = dynamic_cast<net::CookieStore*>(object.get());
     }
 
-
     void DatabaseCookies::saveChanges() {
-        if (!_store->changed())
-            return;
+        if ( !_store->changed() ) return;
         C4Database::Transaction t(_db);
         _db->putRawDocument(kInfoKeyStore, {kCookieStoreDocID, nullslice, _store->encode()});
         t.commit();
         _store->clearChanged();
     }
 
-} }
+}  // namespace litecore::repl

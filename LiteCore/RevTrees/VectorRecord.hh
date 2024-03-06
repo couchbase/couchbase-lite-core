@@ -21,15 +21,15 @@
 namespace litecore {
     class KeyStore;
     class ExclusiveTransaction;
+    class HybridClock;
     class Version;
     class VersionVector;
-
 
     /// Metadata and properties of a document revision.
     struct Revision {
         /// The root of the document's properties.
         /// \warning  Mutating the owning \ref VectorRecord will invalidate this pointer!
-        fleece::Dict  properties;
+        fleece::Dict properties;
 
         /// The encoded version/revision ID. Typically this stores a VersionVector.
         revid revID;
@@ -38,25 +38,24 @@ namespace litecore {
         /// - kDeleted: This is a tombstone
         /// - kConflicted: This is a conflict with the current local revision
         /// - kHasAttachments: Properties include references to blobs.
-        DocumentFlags flags {};
+        DocumentFlags flags{};
 
         /// Returns the current (first) version of the version vector encoded in the `revID`.
-        Version version() const;
+        [[nodiscard]] Version version() const;
 
         /// Decodes the entire version vector encoded in the `revID`. (This allocates heap space.)
-        VersionVector versionVector() const;
+        [[nodiscard]] VersionVector versionVector() const;
 
-        bool isDeleted() const FLPURE      {return flags & DocumentFlags::kDeleted;}
-        bool isConflicted() const FLPURE   {return flags & DocumentFlags::kConflicted;}
-        bool hasAttachments() const FLPURE {return flags & DocumentFlags::kHasAttachments;}
+        [[nodiscard]] bool isDeleted() const FLPURE { return flags & DocumentFlags::kDeleted; }
+
+        [[nodiscard]] bool isConflicted() const FLPURE { return flags & DocumentFlags::kConflicted; }
+
+        [[nodiscard]] bool hasAttachments() const FLPURE { return flags & DocumentFlags::kHasAttachments; }
     };
 
 
     /// Type of revision versioning to use: rev-trees or version vectors.
-    enum class Versioning : uint8_t {
-        RevTrees,
-        Vectors
-    };
+    enum class Versioning : uint8_t { RevTrees, Vectors };
 
 
     /// Persistent local identifier of a remote database that replicates with this one.
@@ -69,10 +68,9 @@ namespace litecore {
     /// database URLs.
     /// \note VectorRecord's current implementation assumes that RemoteIDs are small consecutive numbers
     ///      starting at 0, and so uses them as array indexes.
-    enum class RemoteID: int {
-        Local = 0       /// Refers to the local revision, not a remote.
+    enum class RemoteID : int {
+        Local = 0  /// Refers to the local revision, not a remote.
     };
-
 
     /// Rewritten document class for 3.0.
     /// Instead of a revision tree, it stores the _current_ local revision, and may store the current
@@ -81,16 +79,16 @@ namespace litecore {
     /// It attempts to optimize storage when these revisions are either identical or share common property
     /// values.
     class VectorRecord {
-    public:
-        using Dict = fleece::Dict;
+      public:
+        using Dict        = fleece::Dict;
         using MutableDict = fleece::MutableDict;
 
         /// Reads a document given a Record. If the document doesn't exist, the resulting VectorRecord will be
         /// empty, with an empty `properties` Dict and a null revision ID.
-        VectorRecord(KeyStore&, Versioning, const Record&);
+        VectorRecord(KeyStore&, const Record&);
 
         /// Reads a document given the docID.
-        VectorRecord(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
+        VectorRecord(KeyStore& store, slice docID, ContentOption = kEntireBody);
 
         VectorRecord(const VectorRecord&);
 
@@ -103,42 +101,55 @@ namespace litecore {
         static VectorRecord* containing(fleece::Value);
 
         /// Sets a custom Fleece Encoder to use when saving.
-        void setEncoder(FLEncoder enc)                      {_encoder = enc;}
+        void setEncoder(FLEncoder enc) { _encoder = enc; }
 
         /// Returns true if the document exists in the database.
-        bool exists() const noexcept FLPURE                 {return _sequence > sequence_t(0);}
+        bool exists() const noexcept FLPURE { return _sequence > sequence_t(0); }
 
         /// Returns what content has been loaded: metadata, current revision, or all revisions.
-        ContentOption contentAvailable() const noexcept FLPURE {return _whichContent;}
+        ContentOption contentAvailable() const noexcept FLPURE { return _whichContent; }
 
         /// If the requested content isn't in memory, loads it.
         /// Returns true if the content is now available, false if it couldn't be loaded.
-        bool loadData(ContentOption which =kEntireBody);
-        
+        bool loadData(ContentOption which = kEntireBody);
+
         //---- Metadata:
 
         /// The document's sequence number, or 0 if it doesn't exist in the database yet.
-        sequence_t sequence() const noexcept FLPURE         {return _sequence;}
+        sequence_t sequence() const noexcept FLPURE { return _sequence; }
 
         /// The document ID.
-        const alloc_slice& docID() const noexcept FLPURE    {return _docID;}
+        const alloc_slice& docID() const noexcept FLPURE { return _docID; }
 
         /// The current revision's properties. Never null, but is empty if this is a new document.
-        Dict properties() const noexcept FLPURE             {return _current.properties;}
+        Dict properties() const noexcept FLPURE { return _current.properties; }
 
         /// The current revision ID, initially a null slice in a new document.
-        revid revID() const FLPURE                          {return _current.revID;}
+        revid revID() const FLPURE { return _current.revID; }
 
         /// The current document flags (kDeleted, kHasAttachments, kConflicted.)
-        DocumentFlags flags() const FLPURE                  {return _docFlags;}
+        DocumentFlags flags() const FLPURE { return _docFlags; }
 
         /// Returns the current properties, revID and flags in a single struct.
         /// \warning  The `properties` and `revID` fields point to the _current_ values. Calling
         ///          \ref setProperties. \ref setRevID or \ref save will invalidate those pointers.
-        Revision currentRevision() const FLPURE             {return _current;}
+        Revision currentRevision() const FLPURE { return _current; }
 
         /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
+
+        //---- Versioning:
+
+        /// The versioning system used by the document. Will be Vector unless the Record read
+        /// from the db was still in rev-tree format.
+        Versioning versioning() const FLPURE { return _versioning; }
+
+        /// Upgrades versioning from RevTrees to Vectors, in memory (doesn't save)
+        void upgradeVersioning();
+
+        /// If this doc uses RevTree versioning, this is the RemoteID that is the current
+        /// revision's closest ancestor. (If none is, returns Local.)
+        RemoteID legacyTreeParent() const { return RemoteID(_parentOfLocal); }
 
         //---- Modifying the document:
 
@@ -165,7 +176,7 @@ namespace litecore {
         void setFlags(DocumentFlags);
 
         /// Sets the properties, revID and flags at once.
-        void setCurrentRevision(const Revision &rev);
+        void setCurrentRevision(const Revision& rev);
 
         /// Returns true if in-memory state of this object has changed since it was created or last saved.
         bool changed() const FLPURE;
@@ -174,19 +185,19 @@ namespace litecore {
 
         /// Possible results of the \ref save method.
         enum SaveResult {
-            kConflict,      ///< The document was **not saved** because a newer revision already exists.
-            kNoSave,        ///< There were no changes to save.
-            kNoNewSequence, ///< Saved, but the local rev was unchanged so no new sequence was assigned.
-            kNewSequence    ///< The document was saved and a new sequence number assigned.
+            kConflict,       ///< The document was **not saved** because a newer revision already exists.
+            kNoSave,         ///< There were no changes to save.
+            kNoNewSequence,  ///< Saved, but the local rev was unchanged so no new sequence was assigned.
+            kNewSequence     ///< The document was saved and a new sequence number assigned.
         };
 
         /// Saves changes, if any, back to the KeyStore.
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
-        SaveResult save(ExclusiveTransaction &t);
+        SaveResult save(ExclusiveTransaction& t, HybridClock& versionClock);
 
         /// Returns the `body` and `extra` Record values representing the current in-memory state.
         /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.
-        pair<alloc_slice,alloc_slice> encodeBodyAndExtra();
+        pair<alloc_slice, alloc_slice> encodeBodyAndExtra();
 
         //---- Revisions of different remotes:
 
@@ -207,45 +218,50 @@ namespace litecore {
         /// Same as \ref nextRemoteID, but loads the document's remote revisions if not in memory yet.
         RemoteID loadNextRemoteID(RemoteID);
 
-        using ForAllRevIDsCallback = function_ref<void(RemoteID,revid,bool hasBody)>;
+        using ForAllRevIDsCallback = function_ref<void(RemoteID, revid, bool hasBody)>;
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
+
+        static VersionVector createLegacyVersionVector(const RecordUpdate&);
 
         //---- For testing:
 
         /// Generates a rev-tree revision ID given document properties, parent revision ID, and flags.
         static alloc_slice generateRevID(Dict, revid parentRevID, DocumentFlags);
         /// Generates a version-vector revision ID given parent vector.
-        static alloc_slice generateVersionVector(revid parentVersionVector);
+        static alloc_slice generateVersionVector(revid parentVersionVector, HybridClock&);
 
-        std::string dump() const;           ///< Returns an ASCII dump of the object's state.
-        void dump(std::ostream&) const;     ///< Writes an ASCII dump of the object's state.
-        std::string dumpStorage() const;    ///< Returns the JSON form of the internal storage.
-        fleece::Array revisionStorage() const   {return _revisions;} ///< The internal storage
+        std::string dump() const;               ///< Returns an ASCII dump of the object's state.
+        void        dump(std::ostream&) const;  ///< Writes an ASCII dump of the object's state.
+        std::string dumpStorage() const;        ///< Returns the JSON form of the internal storage.
 
-    private:
+        fleece::Array revisionStorage() const { return _revisions; }  ///< The internal storage
+
+      private:
         class LinkedFleeceDoc;
 
-        FLSharedKeys sharedKeys() const;
-        fleece::Doc newLinkedFleeceDoc(const alloc_slice &body);
-        void readRecordBody(const alloc_slice &body);
-        void readRecordExtra(const alloc_slice &extra);
-        Record originalRecord() const;
-        void requireBody() const;
-        void requireRemotes() const;
-        void mustLoadRemotes();
-        void mutateRevisions();
-        MutableDict mutableRevisionDict(RemoteID remoteID);
-        Dict originalProperties() const;
-        pair<alloc_slice,alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
-        alloc_slice encodeExtra(FLEncoder NONNULL);
-        bool propertiesChanged() const;
-        void clearPropertiesChanged();
-        void updateDocFlags();
+        FLSharedKeys                   sharedKeys() const;
+        fleece::Doc                    newLinkedFleeceDoc(const alloc_slice&, FLTrust);
+        void                           readRecordBody(const alloc_slice& body);
+        void                           readRecordExtra(const alloc_slice& extra);
+        void                           importRevTree(alloc_slice body, alloc_slice extra);
+        Record                         originalRecord() const;
+        void                           requireBody() const;
+        void                           requireRemotes() const;
+        void                           mustLoadRemotes();
+        void                           mutateRevisions();
+        MutableDict                    mutableRevisionDict(RemoteID remoteID);
+        Dict                           originalProperties() const;
+        pair<alloc_slice, alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
+        alloc_slice                    encodeExtra(FLEncoder NONNULL);
+        bool                           propertiesChanged() const;
+        void                           clearPropertiesChanged() const;
+        void                           updateDocFlags();
+        static void                    forAllLegacyRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
         KeyStore&                    _store;                // The database KeyStore
-        FLEncoder                    _encoder {nullptr};    // Database shared Fleece Encoder
+        FLEncoder                    _encoder{nullptr};     // Database shared Fleece Encoder
         alloc_slice                  _docID;                // The docID
         sequence_t                   _sequence;             // The Record's sequence
         uint64_t                     _subsequence;          // The Record's subsequence
@@ -258,9 +274,10 @@ namespace litecore {
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
         Versioning                   _versioning;           // RevIDs or VersionVectors?
-        bool                         _changed {false};      // Set to true on explicit change
-        bool                         _revIDChanged {false}; // Has setRevID() been called?
+        int                          _parentOfLocal{};      // (only used in imported revtree)
+        bool                         _changed{false};       // Set to true on explicit change
+        bool                         _revIDChanged{false};  // Has setRevID() been called?
         ContentOption                _whichContent;         // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };
-}
+}  // namespace litecore

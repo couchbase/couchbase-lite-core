@@ -7,15 +7,12 @@ macro(check_threading_unix)
 endmacro()
 
 function(setup_globals_unix)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
         set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
         set(CMAKE_CXX_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
     else()
-        set(CMAKE_C_FLAGS_MINSIZEREL "-O3 -DNDEBUG -g" CACHE INTERNAL "")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "-O3 -DNDEBUG -g" CACHE INTERNAL "")
+        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
     endif()
 endfunction()
 
@@ -38,7 +35,7 @@ function(setup_litecore_build_unix)
         if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             # GNU and Linux clang LTO can't seem to handle any of this...at least not with the versions I tried.  
             # Unexplained linker errors occur.
-            set_property(TARGET LiteCoreObjects PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+            set_property(TARGET LiteCoreObjects LiteCoreUnitTesting PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
@@ -78,20 +75,26 @@ function(setup_litecore_build_unix)
         -Werror=strict-prototypes
     )
 
-    target_compile_options(LiteCoreObjects PRIVATE 
-    ${LITECORE_WARNINGS} 
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+        target_compile_options(${liteCoreVariant} PRIVATE 
+            ${LITECORE_WARNINGS} 
+            -Wformat=2
+            -fstack-protector
+            -D_FORTIFY_SOURCE=2
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
+            $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+            $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+        )
+    endforeach()
+
     target_compile_options(BLIPObjects PRIVATE 
-	${LITECORE_WARNINGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
-    target_compile_options(FleeceStatic PRIVATE 
-	${LITECORE_WARNINGS}
-    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+        ${LITECORE_WARNINGS} 
+        -Wformat=2
+        -fstack-protector
+        -D_FORTIFY_SOURCE=2
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
+        $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+        $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")

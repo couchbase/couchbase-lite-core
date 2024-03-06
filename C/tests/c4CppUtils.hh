@@ -13,7 +13,7 @@
 #pragma once
 
 #ifndef __cplusplus
-#error "This is C++ only"
+#    error "This is C++ only"
 #endif
 
 #include "fleece/slice.hh"
@@ -29,6 +29,7 @@ namespace c4 {
     // The functions the ref<> template calls to free a reference.
     static inline void releaseRef(C4Cert* c)              noexcept {c4cert_release(c);}
     static inline void releaseRef(C4Database* c)          noexcept {c4db_release(c);}
+    static inline void releaseRef(C4Collection* c) noexcept { c4coll_release(c); }
     static inline void releaseRef(C4CollectionObserver* c)noexcept {c4dbobs_free(c);}
     static inline void releaseRef(C4ConnectedClient* c)   noexcept {c4client_release(c);}
     static inline void releaseRef(C4DocEnumerator* c)     noexcept {c4enum_free(c);}
@@ -46,6 +47,7 @@ namespace c4 {
 
     // The functions the ref<> template calls to retain a reference. (Not all types can be retained)
     static inline C4Cert*       retainRef(C4Cert* c)       noexcept {return c4cert_retain(c);}
+    static inline C4Collection* retainRef(C4Collection* c) noexcept { return c4coll_retain(c); }
     static inline C4ConnectedClient* retainRef(C4ConnectedClient* c) noexcept {return c4client_retain(c);}
     static inline C4Database*   retainRef(C4Database* c)   noexcept {return c4db_retain(c);}
     static inline C4Document*   retainRef(C4Document* c)   noexcept {return c4doc_retain(c);}
@@ -63,69 +65,88 @@ namespace c4 {
         and releases balance! */
     template <class T>
     class ref {
-    public:
-        constexpr ref() noexcept                :_obj(nullptr) { }
-        constexpr ref(T *t) noexcept            :_obj(t) { }
-        constexpr ref(ref &&r) noexcept         :_obj(r._obj) {r._obj = nullptr;}
-        ref(const ref &r) noexcept              :_obj(retainRef(r._obj)) { }
-        ~ref() noexcept                         {releaseRef(_obj);}
+      public:
+        constexpr ref() noexcept : _obj(nullptr) {}
 
-        static ref retaining(T *t)              {return ref(retainRef(t));}
+        // Ignore warning because making this explicit would break a bunch of code
+        constexpr ref(T* t) noexcept : _obj(t) {}  // NOLINT(google-explicit-constructor)
 
-        operator T* () const & noexcept FLPURE  {return _obj;}
-        T* operator -> () const noexcept FLPURE {return _obj;}
-        T* get() const noexcept FLPURE          {return _obj;}
+        constexpr ref(ref&& r) noexcept : _obj(r._obj) { r._obj = nullptr; }
 
-        ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
-        ref& operator=(ref &&r) noexcept        { std::swap(_obj, r._obj); return *this;}
-        ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
+        ref(const ref& r) noexcept : _obj(retainRef(r._obj)) {}
 
-        T* detach() && noexcept                 {auto o = _obj; _obj = nullptr; return o;}
+        ~ref() noexcept { releaseRef(_obj); }
+
+        static ref retaining(T* t) { return ref(retainRef(t)); }
+
+        // Ignore warning because making this explicit would break a bunch of code
+        operator T*() const& noexcept FLPURE { return _obj; }  // NOLINT(google-explicit-constructor)
+
+        T* operator->() const noexcept FLPURE { return _obj; }
+
+        T* get() const noexcept FLPURE { return _obj; }
+
+        ref& operator=(std::nullptr_t) noexcept {
+            replaceRef(nullptr);
+            return *this;
+        }
+
+        ref& operator=(ref&& r) noexcept {
+            std::swap(_obj, r._obj);
+            return *this;
+        }
+
+        // Ignore warning because replaceRef does handle self-assignment properly
+        ref& operator=(const ref& r) noexcept {  // NOLINT(bugprone-unhandled-self-assignment)
+            replaceRef(retainRef(r._obj));
+            return *this;
+        }
+
+        T* detach() && noexcept {
+            auto o = _obj;
+            _obj   = nullptr;
+            return o;
+        }
 
         // This operator is dangerous enough that it's prohibited.
         // For details, see the lengthy comment in RefCounted.hh, around line 153.
-        operator T* () const && =delete;
+        operator T*() const&& = delete;
 
-    private:
+      private:
         inline void replaceRef(T* newRef) {
-            if (_obj) releaseRef(_obj);
+            if ( _obj ) releaseRef(_obj);
             _obj = newRef;
         }
-        
+
         T* _obj;
     };
 
-
     /// Convenience function for wrapping a new C4 object in a ref:
     template <class T>
-    ref<T> make_ref(T *t) { return ref<T>(t); }
-
+    ref<T> make_ref(T* t) {
+        return ref<T>(t);
+    }
 
     /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
 #ifndef c4error_descriptionStr
-    #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+#    define c4error_descriptionStr(ERR) fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
 #endif
-
 
 
     /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()
         or abort() end it. If the Transaction object exits scope when it's been begun but not yet
         ended, it aborts the transaction. */
     class Transaction {
-    public:
-        Transaction(C4Database *db)
-        :_db(db)
-        { }
+      public:
+        explicit Transaction(C4Database* db) : _db(db) {}
 
         ~Transaction() {
-            if (_active)
-                abort(nullptr);
+            if ( _active ) abort(nullptr);
         }
 
         bool begin(C4Error* error) {
             assert(!_active);
-            if (!c4db_beginTransaction(_db, error))
-                return false;
+            if ( !c4db_beginTransaction(_db, error) ) return false;
             _active = true;
             return true;
         }
@@ -136,14 +157,15 @@ namespace c4 {
             return c4db_endTransaction(_db, commit, error);
         }
 
-        bool commit(C4Error* error)     {return end(true, error);}
-        bool abort(C4Error* error)      {return end(false, error);}
+        bool commit(C4Error* error) { return end(true, error); }
 
-        bool active() const             {return _active;}
+        bool abort(C4Error* error) { return end(false, error); }
 
-    private:
-        C4Database *_db;
-        bool _active {false};
+        [[nodiscard]] bool active() const { return _active; }
+
+      private:
+        C4Database* _db;
+        bool        _active{false};
     };
 
-}
+}  // namespace c4

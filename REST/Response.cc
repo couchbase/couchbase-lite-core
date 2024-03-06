@@ -17,80 +17,56 @@
 #include "Address.hh"
 #include "c4Certificate.hh"
 #include "c4ExceptionUtils.hh"
-#include "Writer.hh"
 #include "Error.hh"
-#include "Logging.hh"
-#include "StringUtil.hh"
-#include "netUtils.hh"
 #include "Certificate.hh"
 #include <string>
 
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace REST {
+namespace litecore::REST {
     using namespace litecore::net;
     using namespace litecore::crypto;
 
-
     bool Body::hasContentType(slice contentType) const {
         slice actualType = header("Content-Type");
-        return actualType.size >= contentType.size
-            && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-            && (actualType.size == contentType.size || actualType[contentType.size] == ';');
+        return actualType.size >= contentType.size && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
+               && (actualType.size == contentType.size || actualType[contentType.size] == ';');
     }
 
-
-    alloc_slice Body::body() const {
-        return _body;
-    }
-
+    alloc_slice Body::body() const { return _body; }
 
     Value Body::bodyAsJSON() const {
-        if (!_gotBodyFleece) {
-            if (hasContentType("application/json"_sl)) {
+        if ( !_gotBodyFleece ) {
+            if ( hasContentType("application/json"_sl) ) {
                 alloc_slice b = body();
-                if (b)
-                    _bodyFleece = Doc::fromJSON(b, nullptr);
+                if ( b ) _bodyFleece = Doc::fromJSON(b, nullptr);
             }
             _gotBodyFleece = true;
         }
         return _bodyFleece.root();
     }
 
-
 #pragma mark - RESPONSE:
 
-
-    Response::Response(const net::Address &address, Method method)
-    :_logic(new HTTPLogic(address))
-    {
+    Response::Response(const net::Address& address, Method method) : _logic(new HTTPLogic(address)) {
         _logic->setMethod(method);
     }
 
+    Response::Response(const string& scheme, const std::string& method, const string& hostname, uint16_t port,
+                       const string& uri)
+        : Response(Address(slice(scheme), slice(hostname), port, slice(uri)), MethodNamed(method)) {}
 
-    Response::Response(const string &scheme,
-                       const std::string &method,
-                       const string &hostname,
-                       uint16_t port,
-                       const string &uri)
-    :Response(Address(slice(scheme), slice(hostname), port, slice(uri)),
-              MethodNamed(method))
-    { }
+    Response::~Response() = default;
 
-
-    Response::~Response() =default;
-
-
-    Response& Response::setHeaders(const websocket::Headers &headers) {
+    Response& Response::setHeaders(const websocket::Headers& headers) {
         _logic->setHeaders(headers);
         return *this;
     }
 
-    Response& Response::setHeaders(Doc headersDict) {
-        return setHeaders( websocket::Headers(headersDict.root().asDict()) );
+    Response& Response::setHeaders(const Doc& headersDict) {
+        return setHeaders(websocket::Headers(headersDict.root().asDict()));
     }
-
 
     Response& Response::setBody(slice body) {
         _requestBody = body;
@@ -104,17 +80,16 @@ namespace litecore { namespace REST {
     }
 
     TLSContext* Response::tlsContext() {
-        if (!_tlsContext)
-            _tlsContext = new TLSContext(TLSContext::Client);
+        if ( !_tlsContext ) _tlsContext = new TLSContext(TLSContext::Client);
         return _tlsContext;
     }
 
-    Response& Response::setTLSContext(net::TLSContext *ctx) {
+    Response& Response::setTLSContext(net::TLSContext* ctx) {
         _tlsContext = ctx;
         return *this;
     }
 
-    Response& Response::setProxy(const ProxySpec &proxy) {
+    Response& Response::setProxy(const ProxySpec& proxy) {
         _logic->setProxy(proxy);
         return *this;
     }
@@ -130,17 +105,17 @@ namespace litecore { namespace REST {
     }
 
 #ifdef COUCHBASE_ENTERPRISE
-    Response& Response::allowOnlyCert(C4Cert *cert) {
+    Response& Response::allowOnlyCert(C4Cert* cert) {
         tlsContext()->allowOnlyCert(cert->assertSignedCert());
         return *this;
     }
-    
-    Response& Response::setRootCerts(C4Cert *cert) {
+
+    Response& Response::setRootCerts(C4Cert* cert) {
         tlsContext()->setRootCerts(cert->assertSignedCert());
         return *this;
     }
 
-    Response& Response::setIdentity(C4Cert *cert, C4KeyPair *key) {
+    Response& Response::setIdentity(C4Cert* cert, C4KeyPair* key) {
         Assert(key->hasPrivateKey());
         Retained<Identity> id = new Identity(cert->assertSignedCert(), key->getPrivateKey());
         tlsContext()->setIdentity(id);
@@ -150,48 +125,46 @@ namespace litecore { namespace REST {
 
 
     bool Response::run() {
-        if (hasRun())
-            return (_error.code == 0);
+        if ( hasRun() ) return (_error.code == 0);
 
         try {
             unique_ptr<ClientSocket> socket;
-            HTTPLogic::Disposition disposition = HTTPLogic::kFailure;
+            HTTPLogic::Disposition   disposition = HTTPLogic::kFailure;
             do {
-                if (disposition != HTTPLogic::kContinue) {
+                if ( disposition != HTTPLogic::kContinue ) {
                     socket = make_unique<ClientSocket>(_tlsContext.get());
                     socket->setTimeout(_timeout);
                 }
                 disposition = _logic->sendNextRequest(*socket, _requestBody);
-                switch (disposition) {
+                switch ( disposition ) {
                     case HTTPLogic::kSuccess:
                         // On success, read the response body:
-                        if (!socket->readHTTPBody(_logic->responseHeaders(), _body)) {
-                            _error = socket->error();
+                        if ( !socket->readHTTPBody(_logic->responseHeaders(), _body) ) {
+                            _error      = socket->error();
                             disposition = HTTPLogic::kFailure;
                         }
                         break;
                     case HTTPLogic::kRetry:
-                        break;
                     case HTTPLogic::kContinue:
                         break;
                     case HTTPLogic::kAuthenticate:
-                        if (!_logic->authHeader())
-                            disposition = HTTPLogic::kFailure;
+                        if ( !_logic->authHeader() ) disposition = HTTPLogic::kFailure;
                         break;
                     case HTTPLogic::kFailure:
                         _error = _logic->error();
                         break;
                 }
-            } while (disposition != HTTPLogic::kSuccess && disposition != HTTPLogic::kFailure);
+            } while ( disposition != HTTPLogic::kSuccess && disposition != HTTPLogic::kFailure );
 
             // set up the rest of my properties:
-            _status = _logic->status();
+            _status        = _logic->status();
             _statusMessage = string(_logic->statusMessage());
-            _headers = _logic->responseHeaders();
-        } catchError(&_error);
+            _headers       = _logic->responseHeaders();
+        }
+        catchError(&_error);
         _logic.reset();
         _tlsContext = nullptr;
         return (_error.code == 0);
     }
 
-} }
+}  // namespace litecore::REST

@@ -18,9 +18,8 @@
 #    define LITECORE_CPP_API 1
 #endif
 
-#include "c4Base.h"
+#include "c4Compat.h"
 #include "fleece/RefCounted.hh"
-#include "fleece/InstanceCounted.hh"
 #include "fleece/slice.hh"
 
 C4_ASSUME_NONNULL_BEGIN
@@ -34,11 +33,11 @@ C4_ASSUME_NONNULL_BEGIN
 
 // Just a mix-in that allows API class declarations to use common Fleece types un-namespaced:
 struct C4Base {
-    using slice = fleece::slice;
+    using slice       = fleece::slice;
     using alloc_slice = fleece::alloc_slice;
-    template <class T> using Retained = fleece::Retained<T>;
+    template <class T>
+    using Retained = fleece::Retained<T>;
 };
-
 
 // Forward references to internal LiteCore classes named in the public headers
 namespace litecore {
@@ -70,17 +69,16 @@ namespace litecore {
         class PersistentPrivateKey;
         class PrivateKey;
         class PublicKey;
-    }
+    }  // namespace crypto
 
     namespace REST {
         class Listener;
         class RESTListener;
-    }
+    }  // namespace REST
 
     namespace websocket {
         class WebSocket;
     }
-}
-
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

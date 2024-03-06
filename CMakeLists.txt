@@ -11,6 +11,7 @@ CppTests - A test runner that runs test based on the static library
 FleeceObjects - The Fleece serialization library for saving data to a binary format
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
+LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
 LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
@@ -39,19 +40,36 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 
 cmake_minimum_required (VERSION 3.9)
 cmake_policy(VERSION 3.9)
+cmake_policy(SET CMP0057 NEW)
 
 # Mac/apple setup -- must appear before the first "project()" line"
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
 set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 
-project (LiteCore)
+if(DEFINED ENV{VERSION})
+    message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
+    set(CBL_VERSION_STRING $ENV{VERSION})
+else()
+    message(WARNING "No VERSION set, defaulting to 0.0.0")
+    set(CBL_VERSION_STRING "0.0.0")
+endif()
+
+project (
+    LiteCore
+    VERSION ${CBL_VERSION_STRING}
+)
 include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
+
+set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
+file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+include(cmake/generate_edition.cmake)
+generate_edition()
 
 set(LITECORE_TARGETS "")
 
@@ -67,6 +85,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 )
 
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(LITECORE_PERF_TESTING_MODE "Build LiteCore with more things public than in production to facilitate perf testing" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
@@ -87,8 +106,8 @@ cmake_dependent_option(
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")
    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-instr-generate -fcoverage-mapping")
    elseif(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
      message(WARN " Code coverage not supported for non-debug builds")
    else()
@@ -136,21 +155,10 @@ add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 
 set(ENABLE_PROGRAMS OFF CACHE INTERNAL "Build mbed TLS programs.")
 set(ENABLE_TESTING OFF CACHE INTERNAL "Build mbed TLS tests.")
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE INTERNAL "") # Work around doc-comment syntax warnings
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
-# Generate file repo_version.h containing Git repo information, and add it to #include path:
-set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
-file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
 configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
-if (UNIX)
-    execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-else()
-    execute_process(COMMAND powershell "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.ps1"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
-                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
@@ -177,7 +185,6 @@ target_compile_definitions(
     -DHAVE_LOCALTIME_R                  # Use localtime_r instead of localtime
     -DHAVE_USLEEP                       # Allow millisecond precision sleep
     -DHAVE_UTIME                        # Use utime() instead of utimes()
-    -DSQLITE_OMIT_LOAD_EXTENSION        # Disable extensions (not needed for LiteCore)
     -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
     -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
     -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
@@ -190,12 +197,22 @@ target_compile_definitions(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
-target_compile_definitions(
-    LiteCoreObjects PRIVATE
+add_library(LiteCoreUnitTesting OBJECT ${ALL_SRC_FILES})
+set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
+target_compile_definitions(
+    LiteCoreObjects PRIVATE
+    ${LiteCoreObjectsDefines}
+)
+target_compile_definitions(
+    LiteCoreUnitTesting PRIVATE
+    ${LiteCoreObjectsDefines}
+    PUBLIC LITECORE_CPPTEST
+)
+
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
@@ -204,8 +221,8 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-target_include_directories(
-    LiteCoreObjects PRIVATE
+set(
+    LiteCoreObjectsIncludes
     vendor/fleece/API
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
@@ -234,6 +251,15 @@ target_include_directories(
     vendor/mbedtls/include
     vendor/mbedtls/crypto/include
     vendor/sockpp/include
+)
+
+target_include_directories(
+    LiteCoreObjects PRIVATE
+    ${LiteCoreObjectsIncludes}
+)
+target_include_directories(
+    LiteCoreUnitTesting PRIVATE
+    ${LiteCoreObjectsIncludes}
 )
 
 if(WIN32)
@@ -279,10 +305,21 @@ target_link_libraries(
     mbedtls
     mbedx509
 )
+target_link_libraries(
+    LiteCoreUnitTesting INTERFACE
+    SQLite3_UnicodeSN
+    mbedcrypto
+    mbedtls
+    mbedx509
+)
 
 if(USE_COUCHBASE_SQLITE)
     target_link_libraries(
         LiteCoreObjects PUBLIC
+        CouchbaseSqlite3
+    )
+    target_link_libraries(
+        LiteCoreUnitTesting PUBLIC
         CouchbaseSqlite3
     )
 endif()
@@ -350,6 +387,13 @@ target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
 )
+
+if(LITECORE_PERF_TESTING_MODE)
+    target_compile_definitions(
+        LiteCoreWebSocket PUBLIC
+        LITECORE_PERF_TESTING_MODE
+    )
+endif()
 
 ### TESTS:
 

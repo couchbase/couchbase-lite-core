@@ -24,10 +24,8 @@
 #include "IncomingRev.hh"
 #include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
-#include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "BLIP.hh"
 #include "Instrumentation.hh"
 #include <algorithm>
 
@@ -35,30 +33,29 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
-    Puller::Puller(Replicator *replicator)
-    :Delegate(replicator, "Pull")
+    Puller::Puller(Replicator* replicator, CollectionIndex coll)
+        : Delegate(replicator, "Pull", coll)
 #if __APPLE__
-    ,_revMailbox(nullptr, "Puller revisions")
+        , _revMailbox(nullptr, "Puller revisions")
 #endif
-    ,_inserter(new Inserter(replicator))
-    ,_revFinder(new RevFinder(replicator, this))
-    ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-    ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
-    {
-        _passive = _options->pull <= kC4Passive;
-        registerHandler("rev",              &Puller::handleRev);
-        registerHandler("norev",            &Puller::handleNoRev);
+        , _inserter(new Inserter(replicator, coll))
+        , _revFinder(new RevFinder(replicator, this, coll))
+        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
+        , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        setParentObjectRef(replicator->getObjectRef());
+        replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
+        replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
-        if (!passive() && _options->noIncomingConflicts())
+        if ( !passive() && _options->noIncomingConflicts() )
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
 
         if (_options->properties[kC4ReplicatorOptionAllowConnectedClient])
             registerHandler("putRev",       &Puller::handlePutRev);
     }
-
 
     // Starting an active pull.
     void Puller::start(RemoteSequence sinceSequence) {
@@ -68,47 +65,42 @@ namespace litecore { namespace repl {
             alloc_slice sinceStr = _lastSequence.toJSON();
             logInfo("Starting pull from remote seq '%.*s'", SPLAT(sinceStr));
 
-            Signpost::begin(Signpost::blipSent);
-            MessageBuilder msg("subChanges"_sl);
-            if (sinceStr)
-                msg["since"_sl] = sinceStr;
-            if (_options->pull == kC4Continuous)
-                msg["continuous"_sl] = "true"_sl;
-            msg["batch"_sl] = tuning::kChangesBatchSize;
-            msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
-            if (_skipDeleted)
-                msg["activeOnly"_sl] = "true"_sl;
-            if (_options->enableAutoPurge() || progressNotificationLevel() > 0) {
-                msg["revocations"] = "true";    // Enable revocation notification in "changes" (SG 3.0)
-                logInfo("msg[\"revocations\"]=\"true\" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0",
-                        _options->enableAutoPurge(), progressNotificationLevel());
-            }
+        Signpost::begin(Signpost::blipSent);
+        MessageBuilder msg("subChanges"_sl);
+        assignCollectionToMsg(msg, collectionIndex());
+        if ( sinceStr ) msg["since"_sl] = sinceStr;
+        if ( _options->pull(collectionIndex()) == kC4Continuous ) msg["continuous"_sl] = "true"_sl;
+        msg["batch"_sl]   = tuning::kChangesBatchSize;
+        msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
+        if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
+        if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
+            msg["revocations"] = "true";  // Enable revocation notification in "changes" (SG 3.0)
+            logInfo(R"(msg["revocations"]="true" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0)",
+                    _options->enableAutoPurge(), progressNotificationLevel());
+        }
 
-            auto channels = _options->channels();
-            if (channels) {
-                stringstream value;
-                unsigned n = 0;
-                for (Array::iterator i(channels); i; ++i) {
-                    slice name = i.value().asString();
-                    if (name) {
-                        if (n++)
-                             value << ",";
-                        value << name.asString();
-                    }
-                }
-                msg["filter"_sl] = "sync_gateway/bychannel"_sl;
-                msg["channels"_sl] = value.str();
-            } else {
-                slice filter = _options->filter();
-                if (filter) {
-                    msg["filter"_sl] = filter;
-                    for (Dict::iterator i(_options->filterParams()); i; ++i)
-                        msg[i.keyString()] = i.value().asString();
+        auto channels = _options->channels(collectionIndex());
+        if ( channels ) {
+            stringstream value;
+            unsigned     n = 0;
+            for ( Array::iterator i(channels); i; ++i ) {
+                slice name = i.value().asString();
+                if ( name ) {
+                    if ( n++ ) value << ",";
+                    value << name.asString();
                 }
             }
+            msg["filter"_sl]   = "sync_gateway/bychannel"_sl;
+            msg["channels"_sl] = value.str();
+        } else {
+            slice filter = _options->filter();
+            if ( filter ) {
+                msg["filter"_sl] = filter;
+                for ( Dict::iterator i(_options->filterParams()); i; ++i ) msg[i.keyString()] = i.value().asString();
+            }
+        }
 
-            auto docIDs = _options->docIDs();
-            if (docIDs) {
+        if ( auto docIDs = _options->docIDs(collectionIndex()) ) {
                 auto &enc = msg.jsonBody();
                 enc.beginDict();
                 enc.writeKey("docIDs"_sl);
@@ -126,68 +118,67 @@ namespace litecore { namespace repl {
         });
     }
 
-
 #pragma mark - INCOMING REVS:
-
 
     // Called by the RevFinder to tell the Puller what revs it's requested from the peer.
     void Puller::_expectSequences(vector<RevFinder::ChangeSequence> sequences) {
-        for (auto &change : sequences) {
-            if (!passive()) {
+        for ( auto& change : sequences ) {
+            if ( !passive() ) {
                 // Add sequence to _missingSequences:
                 _missingSequences.add(change.sequence, change.bodySize);
-                if (change.requested())
-                    addProgress({0, change.bodySize});
+                if ( change.requested() ) addProgress({0, change.bodySize});
                 else
-                    completedSequence(change.sequence); // Not requesting, just update checkpoint
+                    completedSequence(change.sequence);  // Not requesting, just update checkpoint
             }
-            if (change.requested()) {
+            if ( change.requested() ) {
                 increment(_pendingRevMessages);
                 // now awaiting a handleRev call...
             }
         }
-        if (!passive()) {
-            logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
-                       _pendingRevMessages, _missingSequences.size());
+        if ( !passive() ) {
+            logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending", _pendingRevMessages,
+                       _missingSequences.size());
         }
     }
-
 
     // We lost access to some documents; they need to be purged locally.
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
-        for (auto &rev : revs) {
-            Retained<IncomingRev> inc = makeIncomingRev();
-            if (inc)
-                inc->handleRevokedDoc(rev);
+        for ( auto& rev : revs ) {
+            if ( _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
+                 && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+                startRevoked(rev);
+            } else {
+                logDebug("Delaying handling revocation for '%.*s' [%zu waiting]", SPLAT(rev->docID),
+                         _waitingRevoked.size() + 1);
+                if ( _waitingRevoked.empty() ) { logVerbose("Back pressure started for revocations"); }
+                _waitingRevoked.push_back(std::move(rev));
+            }
         }
     }
-
 
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
-        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs) {
+        if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+             && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) {
             startIncomingRev(msg);
         } else {
-            logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
-                     SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
-            if (_waitingRevMessages.empty()) {
+            logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]", SPLAT(msg->property("id"_sl)),
+                     _waitingRevMessages.size() + 1);
+            if ( _waitingRevMessages.empty() ) {
                 Signpost::begin(Signpost::revsBackPressure);
                 logVerbose("Back pressure started for changes messages");
             }
-            _waitingRevMessages.push_back(move(msg));
+            _waitingRevMessages.push_back(std::move(msg));
         }
     }
-
 
     // Received an incoming "norev" message, which means the peer was unable to send a revision
     void Puller::handleNoRev(Retained<MessageIn> msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
-        if (sequence)
-            completedSequence(RemoteSequence(sequence));
-        if (!msg->noReply()) {
+        if ( sequence ) completedSequence(RemoteSequence(sequence));
+        if ( !msg->noReply() ) {
             MessageBuilder response(msg);
             msg->respond(response);
         }
@@ -203,29 +194,41 @@ namespace litecore { namespace repl {
 
 
     // Actually process an incoming "rev" now:
-    void Puller::startIncomingRev(MessageIn *msg) {
+    void Puller::startIncomingRev(MessageIn* msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
-        Retained<IncomingRev> inc = makeIncomingRev();
-        if (inc) {
+        Retained<IncomingRev> inc = makeIncomingRev<false>();
+        if ( inc ) {
             slice sequenceStr = msg->property(slice("sequence"));
-            inc->handleRev(msg, _missingSequences.bodySizeOfSequence(RemoteSequence(sequenceStr)));  // ... will call _revWasHandled when it's finished
+            inc->handleRev(msg, _missingSequences.bodySizeOfSequence(RemoteSequence(
+                                        sequenceStr)));  // ... will call _revWasHandled when it's finished
         }
     }
 
+    // Actually process a revocation now
+    void Puller::startRevoked(RevToInsert* rev) {
+        Retained<IncomingRev> inc = makeIncomingRev<true>();
+        if ( inc ) inc->handleRevokedDoc(rev);
+    }
 
     // Sets up an IncomingRev object to handle a revision.
+    template <bool revoked>
     Retained<IncomingRev> Puller::makeIncomingRev() {
-        if(!connected()) {
+        if ( !connected() ) {
             // Connection already closed, continuing would cause a crash
             logVerbose("makeIncomingRev called after connection close, ignoring...");
             return nullptr;
         }
-        increment(_activeIncomingRevs);
-        increment(_unfinishedIncomingRevs);
+        if constexpr ( revoked ) {
+            increment(_activeIncomingRevoked);
+            increment(_unfinishedIncomingRevoked);
+        } else {
+            increment(_activeIncomingRevs);
+            increment(_unfinishedIncomingRevs);
+        }
 
         Retained<IncomingRev> inc;
-        if (_spareIncomingRevs.empty()) {
+        if ( _spareIncomingRevs.empty() ) {
             inc = new IncomingRev(this);
         } else {
             inc = _spareIncomingRevs.back();
@@ -235,74 +238,87 @@ namespace litecore { namespace repl {
     }
 
     void Puller::maybeStartIncomingRevs() {
-        while (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-               && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
-               && !_waitingRevMessages.empty()) {
+        while ( connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs && !_waitingRevMessages.empty() ) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
-            if (_waitingRevMessages.empty()) {
+            if ( _waitingRevMessages.empty() ) {
                 Signpost::end(Signpost::revsBackPressure);
                 logVerbose("Back pressure ended for changes messages");
             }
             startIncomingRev(msg);
         }
+        while ( !_waitingRevoked.empty() && _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
+                && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+            auto rev = _waitingRevoked.front();
+            _waitingRevoked.pop_front();
+            if ( _waitingRevMessages.empty() ) { logVerbose("Back pressure ended for revocations"); }
+            startRevoked(rev);
+        }
     }
-
 
     // Callback from an IncomingRev when it's been written to the db, but before the commit
     void Puller::_revsWereProvisionallyHandled() {
         auto count = _provisionallyHandledRevs.take();
-        decrement(_activeIncomingRevs, count);
-        _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
+        if ( count > 0 ) {
+            decrement(_activeIncomingRevs, count);
+            _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
+        }
+        count = _provisionallyHandledRevoked.take();
+        if ( count > 0 ) {
+            decrement(_activeIncomingRevoked, count);
+            _logVerbose("%u revocations were provisionally handled; down to %u active", count, _activeIncomingRevoked);
+        }
         maybeStartIncomingRevs();
     }
-
 
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
-    void Puller::revWasHandled(IncomingRev *inc) {
+    void Puller::revWasHandled(IncomingRev* inc) {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the IncomingRev's thread, NOT the Puller's! Thus, it needs
         // to pay attention to thread-safety.
-        _returningRevs.push(inc);                       // this is thread-safe
+        _returningRevs.push(inc);  // this is thread-safe
     }
-
 
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
-        if (!revs) {
-            return;
-        }
-        for (IncomingRev *inc : *revs) {
+        if ( !revs ) { return; }
+        unsigned numRevoked = 0;
+        for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
-            if (!inc->wasProvisionallyInserted())
-                decrement(_activeIncomingRevs);
             auto rev = inc->rev();
-            if (!passive())
-                completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
+            if ( rev->revocationMode == RevocationMode::kNone ) {
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
+                decrement(_unfinishedIncomingRevs);
+            } else {
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevoked);
+                numRevoked++;
+            }
+            if ( !passive() ) completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
             inc->reset();
         }
-        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
-        ssize_t capacity = tuning::kMaxIncomingRevs - _spareIncomingRevs.size();
-        if (capacity > 0)
-            _spareIncomingRevs.insert(_spareIncomingRevs.end(),
-                                      revs->begin(),
-                                      revs->begin() + min(size_t(capacity), revs->size()));
+        if ( numRevoked > 0 ) {
+            decrement(_unfinishedIncomingRevoked, numRevoked);
+            _revFinder->revokedHandled(numRevoked);
+        }
 
-        if (!passive())
-            updateLastSequence();
+        ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
+        if ( capacity > 0 )
+            _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(),
+                                      revs->begin() + min(capacity, narrow_cast<ssize_t>(revs->size())));
+
+        if ( !passive() ) updateLastSequence();
 
         maybeStartIncomingRevs();
     }
-
 
     void Puller::revReRequested(uint64_t missingBodySize) {
         enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), missingBodySize);
     }
-
 
     void Puller::_revReRequested(uint64_t missingBodySize) {
         // Regression from CBL-936 / CBG-881:  Because after a delta failure the full revision is
@@ -313,84 +329,73 @@ namespace litecore { namespace repl {
         addProgress({0, missingBodySize});
     }
 
-
     // Records that a sequence has been successfully pulled.
-    void Puller::completedSequence(const RemoteSequence &sequence,
-                                   bool withTransientError, bool shouldUpdateLastSequence)
-    {
+    void Puller::completedSequence(const RemoteSequence& sequence, bool withTransientError,
+                                   bool shouldUpdateLastSequence) {
         uint64_t bodySize;
-        if (withTransientError) {
+        if ( withTransientError ) {
             // If there's a transient error, don't mark this sequence as completed,
             // but add the body size to the completed so the progress will reach 1.0
             bodySize = _missingSequences.bodySizeOfSequence(sequence);
         } else {
             bool wasEarliest;
             _missingSequences.remove(sequence, wasEarliest, bodySize);
-            if (wasEarliest && shouldUpdateLastSequence)
-                updateLastSequence();
+            if ( wasEarliest && shouldUpdateLastSequence ) updateLastSequence();
         }
         addProgress({bodySize, 0});
     }
 
-
     void Puller::updateLastSequence() {
         auto since = _missingSequences.since();
-        if (since != _lastSequence) {
+        if ( since != _lastSequence ) {
             _lastSequence = since;
-            logVerbose("Checkpoint now at '%s'", _lastSequence.toJSONString().c_str());
-            if (auto replicator = replicatorIfAny(); replicator)
-                replicator->checkpointer().setRemoteMinSequence(_lastSequence);
+            logVerbose("Checkpoint now at '%s' (collection: %u", _lastSequence.toJSONString().c_str(),
+                       collectionIndex());
+            if ( auto replicator = replicatorIfAny(); replicator )
+                replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }
     }
 
-
-    void Puller::insertRevision(RevToInsert *rev) {
-        _inserter->insertRevision(rev);
-    }
-
+    void Puller::insertRevision(RevToInsert* rev) { _inserter->insertRevision(rev); }
 
 #pragma mark - STATUS / PROGRESS:
 
-
-    void Puller::_childChangedStatus(Worker *task, Status status) {
+    void Puller::_childChangedStatus(Retained<Worker> task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
+        if ( status.error.domain == WebSocketDomain && status.error.code == 503 ) {
+            if ( _parent ) _parent->childChangedStatus(this, status);
+        }
     }
 
-    
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
-        if (_unfinishedIncomingRevs > 0) {
+        if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
             // CBL-221: Crash when scheduling document ended events
             level = kC4Busy;
-        } else if (_fatalError || !connected()) {
+        } else if ( _fatalError || !connected() ) {
             level = kC4Stopped;
-        } else if (Worker::computeActivityLevel() == kC4Busy
-                || (!_caughtUp && !passive())
-                || _pendingRevMessages > 0) {
+        } else if ( Worker::computeActivityLevel() == kC4Busy || (!_caughtUp && !passive())
+                    || _pendingRevMessages > 0 ) {
             level = kC4Busy;
-        } else if (_options->pull == kC4Continuous || isOpenServer()) {
+        } else if ( _options->pull(collectionIndex()) == kC4Continuous || isOpenServer() ) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {
             level = kC4Stopped;
         }
-        if (SyncBusyLog.willLog(LogLevel::Info)) {
+        if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d,"
                     " _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingRevMessages=%zu,"
                     " _unfinishedIncomingRevs=%u",
-                    kC4ReplicatorActivityLevelNames[level],
-                    pendingResponseCount(), _caughtUp,
-                    _pendingRevMessages, _activeIncomingRevs,
-                    _waitingRevMessages.size(),
-                    _unfinishedIncomingRevs);
+                    kC4ReplicatorActivityLevelNames[level], pendingResponseCount(), _caughtUp, _pendingRevMessages,
+                    _activeIncomingRevs, _waitingRevMessages.size(), _unfinishedIncomingRevs);
         }
 
-        if (level == kC4Stopped)
-            _revFinder = nullptr;       // break cycle
-        
+        if ( level == kC4Stopped ) _revFinder = nullptr;  // break cycle
+
         return level;
     }
 
 
-} }
+}  // namespace litecore::repl

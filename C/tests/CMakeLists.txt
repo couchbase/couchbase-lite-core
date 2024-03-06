@@ -44,6 +44,7 @@ add_executable(
     C4Tests
     c4AllDocsPerformanceTest.cc
     c4BlobStoreTest.cc
+    c4CollectionTest.cc
     c4DatabaseInternalTest.cc
     c4DatabaseTest.cc
     c4DocumentTest.cc
@@ -76,6 +77,13 @@ target_compile_definitions(
     -DC4_TESTS
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
+
+if(LITECORE_PERF_TESTING_MODE)
+    target_compile_definitions(
+        C4Tests PRIVATE
+        LITECORE_PERF_TESTING_MODE
+    )
+endif()
 
 if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
     message(STATUS "Skipping LiteCore build, using ${LITECORE_PREBUILT_LIB}")
@@ -111,6 +119,7 @@ target_include_directories(
     ${TOP}REST/tests
     ${TOP}Networking
     ${TOP}Networking/WebSockets
+    ${TOP}Networking/HTTP
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include

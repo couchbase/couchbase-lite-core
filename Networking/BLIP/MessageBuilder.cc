@@ -11,10 +11,7 @@
 //
 
 #include "MessageBuilder.hh"
-#include "BLIPInternal.hh"
-#include "Codec.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
 #include "fleece/Expert.hh"
@@ -23,7 +20,7 @@
 using namespace std;
 using namespace fleece;
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
 
 #pragma mark - MESSAGE BUILDER:
 
@@ -34,19 +31,13 @@ namespace litecore { namespace blip {
             setProfile(profile);
     }
 
-
-    MessageBuilder::MessageBuilder(MessageIn *inReplyTo)
-    :MessageBuilder()
-    {
+    MessageBuilder::MessageBuilder(MessageIn* inReplyTo) : MessageBuilder() {
         DebugAssert(!inReplyTo->isResponse());
-        type = kResponseType;
+        type   = kResponseType;
         urgent = inReplyTo->urgent();
     }
 
-
-    MessageBuilder::MessageBuilder(initializer_list<property> properties)
-    :MessageBuilder()
-    {
+    MessageBuilder::MessageBuilder(initializer_list<property> properties) : MessageBuilder() {
         addProperties(properties);
     }
 
@@ -58,11 +49,9 @@ namespace litecore { namespace blip {
 
 
     MessageBuilder& MessageBuilder::addProperties(initializer_list<property> properties) {
-        for (const property &p : properties)
-            addProperty(p.first, p.second);
+        for ( const property& p : properties ) addProperty(p.first, p.second);
         return *this;
     }
-
 
     void MessageBuilder::makeError(Error err) {
         DebugAssert(err.domain && err.code);
@@ -72,22 +61,19 @@ namespace litecore { namespace blip {
         write(err.message);
     }
 
-
     FrameFlags MessageBuilder::flags() const {
         int flags = type & kTypeMask;
-        if (urgent)     flags |= kUrgent;
-        if (compressed) flags |= kCompressed;
-        if (noreply)    flags |= kNoReply;
+        if ( urgent ) flags |= kUrgent;
+        if ( compressed ) flags |= kCompressed;
+        if ( noreply ) flags |= kNoReply;
         return (FrameFlags)flags;
     }
 
-
     // Abbreviates certain special strings as a single byte
-    void MessageBuilder::writeTokenizedString(ostream &out, slice str) {
+    void MessageBuilder::writeTokenizedString(ostream& out, slice str) {
         Assert(str.findByte('\0') == nullptr);
         out << str << '\0';
     }
-
 
     MessageBuilder& MessageBuilder::addProperty(slice name, slice value) {
         DebugAssert(!_wroteProperties);
@@ -96,21 +82,19 @@ namespace litecore { namespace blip {
         return *this;
     }
 
-
     MessageBuilder& MessageBuilder::addProperty(slice name, int64_t value) {
-        char valueStr[30];
-        return addProperty(name, slice(valueStr, sprintf(valueStr, "%lld", (long long)value)));
+        constexpr size_t bufSize = 30;
+        char             valueStr[bufSize];
+        return addProperty(name, slice(valueStr, snprintf(valueStr, bufSize, "%lld", (long long)value)));
     }
 
-
     void MessageBuilder::finishProperties() {
-        if (!_wroteProperties) {
+        if ( !_wroteProperties ) {
             string properties = _properties.str();
             _properties.clear();
             size_t propertiesSize = properties.size();
-            if (propertiesSize > kMaxPropertiesSize)
-                throw std::runtime_error("properties excessively large");
-            char buf[kMaxVarintLen64];
+            if ( propertiesSize > kMaxPropertiesSize ) throw std::runtime_error("properties excessively large");
+            char  buf[kMaxVarintLen64];
             slice encodedSize(buf, PutUVarInt(buf, propertiesSize));
             expert(_out).writeRaw(encodedSize);
             expert(_out).writeRaw(slice(properties));
@@ -118,20 +102,16 @@ namespace litecore { namespace blip {
         }
     }
 
-
     MessageBuilder& MessageBuilder::write(slice data) {
-        if(!_wroteProperties)
-            finishProperties();
+        if ( !_wroteProperties ) finishProperties();
         expert(_out).writeRaw(data);
         return *this;
     }
-
 
     alloc_slice MessageBuilder::finish() {
         finishProperties();
         return _out.finish();
     }
-
 
     void MessageBuilder::reset() {
         onProgress = nullptr;
@@ -149,4 +129,4 @@ namespace litecore { namespace blip {
     ,_payload(builder.finish())
     { }
 
-} }
+}  // namespace litecore::blip

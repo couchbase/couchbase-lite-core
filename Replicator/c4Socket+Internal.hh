@@ -13,42 +13,37 @@
 #pragma once
 #include "c4Socket.hh"
 #include "WebSocketImpl.hh"
+#include "DBAccess.hh"
 
 struct c4Database;
 
-
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     // Main factory function to create a WebSocket.
-    fleece::Retained<websocket::WebSocket> CreateWebSocket(websocket::URL,
-                                                           fleece::alloc_slice options,
-                                                           C4Database*,
-                                                           const C4SocketFactory*,
-                                                           void *nativeHandle =nullptr);
+    fleece::Retained<websocket::WebSocket> CreateWebSocket(const websocket::URL&, const fleece::alloc_slice& options,
+                                                           std::shared_ptr<DBAccess>, const C4SocketFactory*,
+                                                           void* nativeHandle = nullptr);
 
     // Returns the WebSocket object associated with a C4Socket
-    websocket::WebSocket* WebSocketFrom(C4Socket *c4sock);
-
+    websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
 
     /** Implementation of C4Socket */
-    class C4SocketImpl final : public websocket::WebSocketImpl, public C4Socket {
-    public:
+    class C4SocketImpl final
+        : public websocket::WebSocketImpl
+        , public C4Socket {
+      public:
         static const C4SocketFactory& registeredFactory();
 
-        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL,
-                                                              fleece::alloc_slice options,
-                                                              C4Database* NONNULL);
+        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice options,
+                                                              std::shared_ptr<DBAccess>);
         static void registerInternalFactory(InternalFactory);
 
         static Parameters convertParams(fleece::slice c4SocketOptions);
 
-        C4SocketImpl(websocket::URL,
-                     websocket::Role,
-                     fleece::alloc_slice options,
-                     const C4SocketFactory*,
-                     void *nativeHandle =nullptr);
+        C4SocketImpl(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
+                     void* nativeHandle = nullptr);
 
-        ~C4SocketImpl();
+        ~C4SocketImpl() override;
 
         void closeWithException();
 
@@ -63,47 +58,49 @@ namespace litecore { namespace repl {
         void completedWrite(size_t byteCount) override;
         void received(slice data) override;
 
-    protected:
+      protected:
         // WebSocket protected API:
-        virtual void requestClose(int status, fleece::slice message) override;
-        virtual void closeSocket() override;
-        virtual void sendBytes(fleece::alloc_slice bytes) override;
-        virtual void receiveComplete(size_t byteCount) override;
+        void requestClose(int status, fleece::slice message) override;
+        void closeSocket() override;
+        void sendBytes(fleece::alloc_slice bytes) override;
+        void receiveComplete(size_t byteCount) override;
 
-    private:
+      private:
         C4SocketFactory const _factory;
     };
 
-} }
+}  // namespace litecore::repl
 
 // c4SocketTrace: temporary instrumentation to catch a bug found in CBL/Java test case
 
 #include <thread>
 #include <vector>
 struct C4Socket;
+
 namespace c4SocketTrace {
     using namespace std;
     using namespace std::chrono;
 
     struct Event {
-        const C4Socket*   socket;
-        int64_t     timestamp;
-        thread::id  tid;
-        string      func;
-        string      remark;
+        const C4Socket* socket;
+        int64_t         timestamp;
+        thread::id      tid;
+        string          func;
+        string          remark;
 
-        Event(const C4Socket* sock, const string& f);
+        Event(const C4Socket* sock, string f);
         Event(const C4Socket* sock, const string& f, const string& rem);
-        operator string();
+        explicit operator string() const;
     };
 
     class EventQueue : public vector<Event> {
-    public:
+      public:
         void addEvent(const C4Socket* sock, const string& f);
         void addEvent(const C4Socket* sock, const string& f, const string& rem);
-    private:
+
+      private:
         mutex mut;
     };
 
     EventQueue& traces();
-}
+}  // namespace c4SocketTrace

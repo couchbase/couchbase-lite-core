@@ -12,8 +12,7 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include <stdint.h>
-
+#include <cstdint>
 
 namespace litecore {
 
@@ -34,4 +33,4 @@ namespace litecore {
     /** Returns a random integer in the range [0 .. upperBound-1].
         @warn  On some platforms this RNG is cryptographically secure, on others less so. */
     uint32_t RandomNumber(uint32_t upperBound);
-}
+}  // namespace litecore

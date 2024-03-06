@@ -13,56 +13,63 @@
 #pragma once
 #include "QueryParser.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLValue.h"
+#include "fleece/FLJSON.h"
 #include <string>
 #include <set>
 #include "LiteCoreTest.hh"
 
-
-class QueryParserTest : public TestFixture, protected QueryParser::Delegate {
-public:
-    QueryParserTest() =default;
+class QueryParserTest
+    : public TestFixture
+    , protected QueryParser::Delegate {
+  public:
+    QueryParserTest() = default;
 
     string parse(FLValue val);
-    string parse(string json);
-    string parseWhere(string json);
-    void mustFail(string json);
+    string parse(const string& json);
+    string parseWhere(const string& json);
+    void   mustFail(const string& json);
 
-protected:
-    virtual string collectionTableName(const string &collection, DeletionStatus type) const override {
+  protected:
+    [[nodiscard]] string collectionTableName(const string& collection, DeletionStatus type) const override {
         // This is a simplified version of SQLiteDataFile::collectionTableName()
-        CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
+        CHECK(!hasPrefix(collection, "kv_"));  // make sure I didn't get passed a table name
         string table;
-        if (type == litecore::QueryParser::kLiveAndDeletedDocs) {
+        if ( type == litecore::QueryParser::kLiveAndDeletedDocs ) {
             table = "all_";
         } else {
             table = "kv_";
-            if (type == litecore::QueryParser::kDeletedDocs)
-                table += "del_";
+            if ( type == litecore::QueryParser::kDeletedDocs ) table += "del_";
         }
-        if (slice(collection) == KeyStore::kDefaultCollectionName || collection == "_")
+        if ( slice(collection) == KeyStore::kDefaultCollectionName || collection == "_" )
             table += DataFile::kDefaultKeyStoreName;
         else
             (table += KeyStore::kCollectionPrefix) += collection;
         return table;
     }
-    virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {
+
+    [[nodiscard]] std::string FTSTableName(const string& onTable, const std::string& property) const override {
         return onTable + "::" + property;
     }
-    virtual std::string unnestedTableName(const string &onTable, const std::string &property) const override {
+
+    [[nodiscard]] std::string unnestedTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":unnest:" + property;
     }
-    virtual bool tableExists(const string &tableName) const override {
-        return ((string_view)tableName).substr(0,4) == "all_" ||
-            tableNames.count(tableName) > 0;
+
+    [[nodiscard]] bool tableExists(const string& tableName) const override {
+        return ((string_view)tableName).substr(0, 4) == "all_" || tableNames.count(tableName) > 0;
     }
 #ifdef COUCHBASE_ENTERPRISE
-    virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
+    [[nodiscard]] std::string predictiveTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":predict:" + property;
+    }
+
+    [[nodiscard]] std::string vectorTableName(const string& onTable, const std::string& property) const override {
+        return onTable + ":vector:" + property;
     }
 #endif
 
-    std::set<string> tableNames {"kv_default", "kv_del_default"};
+    std::set<string> tableNames{"kv_default", "kv_del_default"};
 
     std::set<string> usedTableNames;
 };

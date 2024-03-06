@@ -17,41 +17,55 @@
 #include "RemoteSequenceSet.hh"
 #include "Batcher.hh"
 #include <deque>
+#include <utility>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
     class IncomingRev;
     class RevToInsert;
     class Inserter;
 
     /** Top-level object managing the pull side of replication (receiving revisions.) */
     class Puller final : public RevFinder::Delegate {
-    public:
-        Puller(Replicator* NONNULL);
+      public:
+        Puller(Replicator* NONNULL, CollectionIndex);
 
-        void setSkipDeleted()                       {_skipDeleted = true;}
+        void setSkipDeleted() { _skipDeleted = true; }
 
         // Starts an active pull
         void start(RemoteSequence sinceSequence);
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
-        void revWasHandled(IncomingRev *inc NONNULL);
+        template <bool revoked>
+        void revWasProvisionallyHandled() {
+            if constexpr ( revoked ) {
+                _provisionallyHandledRevoked.add(1);
+            } else {
+                _provisionallyHandledRevs.add(1);
+            }
+        }
+
+        void revWasHandled(IncomingRev* inc NONNULL);
         void revReRequested(uint64_t missingBodySize);
 
-        void insertRevision(RevToInsert *rev NONNULL);
+        void insertRevision(RevToInsert* rev NONNULL);
 
-    protected:
-        virtual void caughtUp() override        {enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp));}
-        virtual void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), move(changes));
+        bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
+
+      protected:
+        void caughtUp() override { enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp)); }
+
+        void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), std::move(changes));
         }
-        virtual void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
-            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), move(revs));
+
+        void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), std::move(revs));
         }
-        virtual void _childChangedStatus(Worker *task NONNULL, Status) override;
-        virtual ActivityLevel computeActivityLevel() const override;
-        void activityLevelChanged(ActivityLevel level);
+
+        void          _childChangedStatus(Retained<Worker>, Status) override;
+        ActivityLevel computeActivityLevel() const override;
+        void          activityLevelChanged(ActivityLevel level);
 
     private:
         void _expectSequences(std::vector<RevFinder::ChangeSequence>);
@@ -59,44 +73,49 @@ namespace litecore { namespace repl {
         void handleRev(Retained<blip::MessageIn>);
         void handleNoRev(Retained<blip::MessageIn>);
         void handlePutRev(Retained<blip::MessageIn>);
+        template <bool revoked>
         Retained<IncomingRev> makeIncomingRev();
-        void startIncomingRev(blip::MessageIn* NONNULL);
-        void maybeStartIncomingRevs();
-        void _revsWereProvisionallyHandled();
-        void _revsFinished(int gen);
-        void _revReRequested(uint64_t missingBodySize);
-        void completedSequence(const RemoteSequence&,
-                               bool withTransientError =false, bool updateCheckpoint =true);
+        void                  startIncomingRev(blip::MessageIn* NONNULL);
+        void                  startRevoked(RevToInsert* NONNULL);
+        void                  maybeStartIncomingRevs();
+        void                  _revsWereProvisionallyHandled();
+        void                  _revsFinished(int gen);
+        void                  _revReRequested(uint64_t missingBodySize);
+        void completedSequence(const RemoteSequence&, bool withTransientError = false, bool updateCheckpoint = true);
         void updateLastSequence();
 
-        void _setCaughtUp()                     {_caughtUp = true;}
+        void _setCaughtUp() { _caughtUp = true; }
 
         void updateRemoteRev(C4Document* NONNULL);
 
-        RemoteSequence _lastSequence;       // Checkpointed sequence
-        bool _skipDeleted {false};          // Don't pull deleted docs (on 1st pull)
-        bool _caughtUp {false};             // Got all historic sequences, now up to date
-        bool _fatalError {false};           // Have I gotten a fatal error?
+        RemoteSequence _lastSequence;        // Checkpointed sequence
+        bool           _skipDeleted{false};  // Don't pull deleted docs (on 1st pull)
+        bool           _caughtUp{false};     // Got all historic sequences, now up to date
+        bool           _fatalError{false};   // Have I gotten a fatal error?
 
-        RemoteSequenceSet _missingSequences; // Known sequences I need to pull
-        std::deque<Retained<blip::MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
+        RemoteSequenceSet                          _missingSequences;    // Known sequences I need to pull
+        std::deque<Retained<blip::MessageIn>>      _waitingRevMessages;  // Queued 'rev' messages
+        std::deque<Retained<RevToInsert>>          _waitingRevoked;      // Queued revoked docs
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
-        actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
-        actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
+        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevs;
+        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevoked;
+        actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
-        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
+        actor::Mailbox* mailboxForChildren() override { return &_revMailbox; }
+
         // This field must go before _revFinder because "this" is passed in "new RevFinder(replicator, this)," which will
         // call this->mailboxForChildren() which depends on it.
         actor::Mailbox _revMailbox;
 #endif
-        Retained<Inserter> _inserter;
+        Retained<Inserter>          _inserter;
         mutable Retained<RevFinder> _revFinder;
-        unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
-        unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
-        unsigned _unfinishedIncomingRevs {0};
-
+        unsigned                    _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
+        unsigned                    _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
+        unsigned                    _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs
+        unsigned                    _unfinishedIncomingRevs{0};
+        unsigned                    _unfinishedIncomingRevoked{0};
     };
 
 
-} }
+}  // namespace litecore::repl

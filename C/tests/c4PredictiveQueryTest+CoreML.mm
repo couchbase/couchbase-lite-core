@@ -18,6 +18,7 @@
 #include "c4QueryTest.hh"
 #include "c4CppUtils.hh"
 #include "fleece/Fleece.hh"
+#include "c4Collection.h"
 #include <CoreML/CoreML.h>
 #include <array>
 
@@ -44,7 +45,7 @@ public:
                bool required =true)
     :C4QueryTest(0, jsonFilename)
     {
-        if (@available(macOS 10.13, iOS 11.0, *)) {
+        if (@available(iOS 11.0, *)) {
             NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
             NSError *error;
             if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
@@ -72,10 +73,9 @@ public:
 
     void checkQueryError(const char *queryStr, const char *expectedErrorMessage) {
         compileSelect(json5(queryStr));
-        C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error = {};
         ExpectingExceptions x;
-        auto e = c4query_run(query, &options, nullslice, &error);
+        auto e = c4query_run(query, nullslice, &error);
         CHECK(!e);
         char errbuf[256];
         C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
@@ -176,8 +176,9 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
         if (pass == 1) {
             // Create an index:
             C4Log("-------- Creating index");
-            REQUIRE(c4db_createIndex(db, C4STR("mobilenet"),
-                                     slice("[" + json5(prediction) + "]"), kC4PredictiveIndex, nullptr, nullptr));
+            auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("mobilenet"),
+                                     slice("[" + json5(prediction) + "]"), kC4JSONQuery, kC4PredictiveIndex, nullptr, nullptr));
         }
         compileSelect(json5("{WHAT: [['._id']," + prediction + "], ORDER_BY: [['._id']]}"));
 
@@ -244,9 +245,10 @@ public:
 
     void createIndex() {
         C4Log("-------- Creating index");
-        REQUIRE(c4db_createIndex(db, C4STR("faces"),
+        auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("faces"),
                                  slice("[" + json5(kPrediction) + "]"),
-                                 kC4PredictiveIndex, nullptr, nullptr));
+                                   kC4JSONQuery, kC4PredictiveIndex, nullptr, nullptr));
     }
 
     using face = array<double,128>;
@@ -305,7 +307,7 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predic
     // Get the vector of one document:
     compileSelect(json5("{WHAT: [" + string(kPrediction) + "], WHERE: ['=', ['._id'], 'lennon-2']}"));
     C4Error error;
-    c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, nullslice, ERROR_INFO(error));
+    c4::ref<C4QueryEnumerator> e = c4query_run(query, nullslice, ERROR_INFO(error));
     REQUIRE(e);
     REQUIRE(c4queryenum_next(e, ERROR_INFO(error)));
     Value targetVector = Array::iterator(e->columns)[0];

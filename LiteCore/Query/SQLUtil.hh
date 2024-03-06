@@ -8,6 +8,7 @@
 #include "Base.hh"
 #include <iomanip>
 #include <string_view>
+#include <utility>
 
 namespace litecore {
 
@@ -19,7 +20,6 @@ namespace litecore {
     /// i.e. it isAlphanumericOrUnderscore and does not begin with a digit.
     bool isValidIdentifier(slice str);
 
-
     /// Wrapper object for a slice/string, which when written to an `ostream` puts the `QUOTE`
     /// character before & after the string, and prefixes any occurrences of `QUOTE` with `ESC`.
     ///
@@ -29,18 +29,18 @@ namespace litecore {
     /// You should use the `sqlString()` and `sqlIdentifier()` functions instead of this directly.
     template <char QUOTE, char ESC>
     struct quotedSlice {
-        explicit quotedSlice(slice s) :_raw(s) { }
+        explicit quotedSlice(slice s) : _raw(std::move(s)) {}
+
         quotedSlice(const quotedSlice&) = delete;
-        quotedSlice(quotedSlice&&) = delete;
+        quotedSlice(quotedSlice&&)      = delete;
 
         slice const _raw;
     };
 
-
     template <char QUOTE, char ESC>
-    std::ostream& operator<< (std::ostream &out, const quotedSlice<QUOTE,ESC> &str)  {
+    std::ostream& operator<<(std::ostream& out, const quotedSlice<QUOTE, ESC>& str) {
         // SQL strings ('') are always quoted; identifiers ("") only when necessary.
-        if (QUOTE == '"' && ESC == '"' && isValidIdentifier(str._raw)) {
+        if ( QUOTE == '"' && ESC == '"' && isValidIdentifier(str._raw) ) {
             out.write((const char*)str._raw.buf, str._raw.size);
         } else {
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
@@ -53,20 +53,14 @@ namespace litecore {
         return out;
     }
 
-
     /// Wrap around a string when writing to a stream, to single-quote it as a SQL string literal
     /// and escape any single-quotes it contains:
     /// `out << sqlString("I'm a string");` --> `'I''m a string'`
-    static inline auto sqlString(slice str) {
-        return quotedSlice<'\'','\''>(str);
-    }
-
+    static inline auto sqlString(slice str) { return quotedSlice<'\'', '\''>(str); }
 
     /// Wrap around a SQL identifier when writing to a stream, to double-quote it if necessary:
     /// `out << sqlIdentifier("normal_identifier") --> `normal_identifier`
     /// `out << sqlIdentifier("weird/\"identifier\"");` --> `"weird/""identifier"""`
-    static inline auto sqlIdentifier(slice name) {
-        return quotedSlice<'"','"'>(name);
-    }
+    static inline auto sqlIdentifier(slice name) { return quotedSlice<'"', '"'>(name); }
 
-}
+}  // namespace litecore

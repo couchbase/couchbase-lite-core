@@ -12,12 +12,12 @@
 
 #pragma once
 #include "c4Base.h"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
-    /** \defgroup PredictiveQuery  Predictive (Machine-Learning) Query
+/** \defgroup PredictiveQuery  Predictive (Machine-Learning) Query
         @{
         This API allows you to register a machine-learning model with LiteCore. It can then be
         invoked from a query by the PREDICTION() function. The model results can be indexed, to
@@ -52,13 +52,13 @@ C4API_BEGIN_DECLS
         cause this document to fail the query condition. */
 
 
-    /** Configuration struct for registering a predictive model. */
-    typedef struct {
-        /** A pointer to any external data needed by the `prediction` callback, which will receive
+/** Configuration struct for registering a predictive model. */
+typedef struct {
+    /** A pointer to any external data needed by the `prediction` callback, which will receive
             this as its first parameter. */
-        void* C4NULLABLE context;
+    void* C4NULLABLE context;
 
-        /** Called from within a query (or document indexing) to run the prediction.
+    /** Called from within a query (or document indexing) to run the prediction.
             @warning This function must be "pure": given the same input parameters it must always
                      produce the same output (otherwise indexes or queries may be messed up).
                      It MUST NOT alter the database or any documents, nor run a query: either of
@@ -75,26 +75,23 @@ C4API_BEGIN_DECLS
                     return a null slice.
             @return  The output of the prediction function, encoded as a Fleece dictionary,
                     or as {NULL, 0} if there is no output. */
-        C4SliceResult (*prediction)(void* C4NULLABLE context,
-                                    FLDict input,
-                                    C4Database* database,
-                                    C4Error* C4NULLABLE error);
+    C4SliceResult (*prediction)(void* C4NULLABLE context, FLDict input, C4Database* database,
+                                C4Error* C4NULLABLE error);
 
-        /** Called if the model is unregistered, so it can release resources. */
-        void (* C4NULLABLE unregistered)(void* context);
-    } C4PredictiveModel;
+    /** Called if the model is unregistered, so it can release resources. */
+    void (*C4NULLABLE unregistered)(void* context);
+} C4PredictiveModel;
 
-
-    /** Registers a predictive model, under a name. The model can now be invoked within a query
+/** Registers a predictive model, under a name. The model can now be invoked within a query
         by calling `prediction(_name_, _input_)`. The model remains registered until it's explicitly
         unregistered, or another model is registered with the same name. */
-    CBL_CORE_API void c4pred_registerModel(const char* name, C4PredictiveModel) C4API;
+CBL_CORE_API void c4pred_registerModel(const char* name, C4PredictiveModel) C4API;
 
-    /** Unregisters whatever model was last registered with this name. */
-    CBL_CORE_API bool c4pred_unregisterModel(const char* name) C4API;
+/** Unregisters whatever model was last registered with this name. */
+CBL_CORE_API bool c4pred_unregisterModel(const char* name) C4API;
 
 
-    /** @} */
+/** @} */
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END

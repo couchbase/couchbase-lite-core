@@ -10,9 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Test.hh"
+#include "c4Test.hh"  // IWYU pragma: keep
 #include "c4Observer.h"
-#include "c4DocEnumerator.h"
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -30,27 +29,22 @@ using namespace std;
 #undef INFO
 #define INFO(X)
 
-
 class C4ThreadingTest : public C4Test {
-public:
+  public:
+    static const bool kLog     = false;
+    static const int  kNumDocs = 10000;
 
-    static const bool kLog = false;
-    static const int kNumDocs = 10000;
+    static const bool kSharedHandle = false;  // Use same C4Database on all threads?
 
-    static const bool kSharedHandle = false; // Use same C4Database on all threads?
-    
 
-    mutex _observerMutex;
+    mutex              _observerMutex;
     condition_variable _observerCond;
-    bool _changesToObserve {false};
-    C4LogLevel _oldDbLogLevel;
+    bool               _changesToObserve{false};
+    C4LogLevel         _oldDbLogLevel;
 
-
-    C4ThreadingTest(int testOption)
-    :C4Test(testOption)
-    {
-        // Suppress the zillions of "begin transaction", "commit transaction" logs from this test: 
-        auto dbDomain = c4log_getDomain("DB", false);
+    explicit C4ThreadingTest(int testOption) : C4Test(testOption) {
+        // Suppress the zillions of "begin transaction", "commit transaction" logs from this test:
+        auto dbDomain  = c4log_getDomain("DB", false);
         _oldDbLogLevel = c4log_getLevel(dbDomain);
         c4log_setLevel(dbDomain, kC4LogWarning);
     }
@@ -60,36 +54,36 @@ public:
         c4log_setLevel(dbDomain, _oldDbLogLevel);
     }
 
-
     C4Database* openDB() {
         C4Database* database = c4db_openNamed(kDatabaseName, &dbConfig(), nullptr);
         REQUIRE(database);
         return database;
     }
 
-    void closeDB(C4Database* database) {
-        c4db_close(database, nullptr);
+    static void closeDB(C4Database* database) {
+        CHECK(c4db_close(database, nullptr));
         c4db_release(database);
     }
 
-
 #pragma mark - TASKS:
-
 
     void addDocsTask() {
         // This implicitly uses the 'db' connection created (but not used) by the main thread
-        if (kLog) fprintf(stderr, "Adding documents...\n");
-        for (int i = 1; i <= kNumDocs; i++) {
-            if (kLog) fprintf(stderr, "(%d) ", i); else if (i%10 == 0) fprintf(stderr, ":");
-            char docID[20];
-            sprintf(docID, "doc-%05d", i);
+        if ( kLog ) fprintf(stderr, "Adding documents...\n");
+        constexpr size_t bufSize = 20;
+        for ( int i = 1; i <= kNumDocs; i++ ) {
+            if ( kLog ) fprintf(stderr, "(%d) ", i);
+            else if ( i % 10 == 0 )
+                fprintf(stderr, ":");
+            char docID[bufSize];
+            snprintf(docID, bufSize, "doc-%05d", i);
             createRev(c4str(docID), kRevID, kFleeceBody);
             //std::this_thread::sleep_for(100us);
         }
     }
 
 
-#if 0 // unused
+#if 0  // unused
     void enumDocsTask() {
         C4Database* database = db;// openDB();
 
@@ -122,11 +116,11 @@ public:
 #endif
 
 
-    static void obsCallback(C4DatabaseObserver* observer, void *context) {
+    static void obsCallback(C4DatabaseObserver* observer, void* context) {
         ((C4ThreadingTest*)context)->observe(observer);
     }
 
-    void observe(C4DatabaseObserver* observer) {
+    void observe(C4UNUSED C4DatabaseObserver* observer) {
         fprintf(stderr, "!");
         {
             std::lock_guard<std::mutex> lock(_observerMutex);
@@ -135,45 +129,43 @@ public:
         _observerCond.notify_one();
     }
 
-
     void observerTask() {
-        C4Database* database = openDB();
-        auto observer = c4dbobs_create(database, obsCallback, this);
+        C4Database*   database    = openDB();
+        C4Collection* defaultColl = requireCollection(database);
+        auto          observer    = c4dbobs_createOnCollection(defaultColl, obsCallback, this, ERROR_INFO());
+        REQUIRE(observer);
         C4SequenceNumber lastSequence = 0;
         do {
             {
                 unique_lock<mutex> lock(_observerMutex);
-                _observerCond.wait(lock, [&]{return _changesToObserve;});
+                _observerCond.wait(lock, [&] { return _changesToObserve; });
                 fprintf(stderr, "8");
                 _changesToObserve = false;
             }
 
-            C4DatabaseChange changes[10];
-            uint32_t nDocs;
-            bool external;
-            while (0 < (nDocs = c4dbobs_getChanges(observer, changes, 10, &external))) {
-                REQUIRE(external);
-                for (auto i = 0; i < nDocs; ++i) {
+            C4DatabaseChange        changes[10];
+            C4CollectionObservation observation;
+            while ( 0 < (observation = c4dbobs_getChanges(observer, changes, 10)).numChanges ) {
+                REQUIRE(observation.external);
+                for ( auto i = 0; i < observation.numChanges; ++i ) {
                     REQUIRE(memcmp(changes[i].docID.buf, "doc-", 4) == 0);
                     lastSequence = changes[i].sequence;
                 }
-                c4dbobs_releaseChanges(changes, nDocs);
+                c4dbobs_releaseChanges(changes, observation.numChanges);
             }
 
             std::this_thread::sleep_for(100ms);
-        } while (lastSequence < kNumDocs);
+        } while ( lastSequence < kNumDocs );
         c4dbobs_free(observer);
         closeDB(database);
     }
-    
 };
-
 
 N_WAY_TEST_CASE_METHOD(C4ThreadingTest, "Threading CreateVsEnumerate", "[Threading][noisy][C]") {
     std::cerr << "\nThreading test ";
 
-    std::thread thread1([this]{addDocsTask();});
-    std::thread thread4([this]{observerTask();});
+    std::thread thread1([this] { addDocsTask(); });
+    std::thread thread4([this] { observerTask(); });
 
     thread1.join();
     thread4.join();

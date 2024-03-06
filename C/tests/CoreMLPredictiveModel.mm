@@ -380,7 +380,7 @@ namespace cbl {
     }
 
 
-    API_AVAILABLE(macos(10.13), ios(11))
+    API_AVAILABLE(ios(11))
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array,
                                  NSUInteger dimension, const uint8_t *data)
     {
@@ -420,7 +420,7 @@ namespace cbl {
     }
 
     // Encodes a multi-array feature as nested Fleece arrays of numbers.
-    API_AVAILABLE(macos(10.13), ios(11))
+    API_AVAILABLE(ios(11))
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array) {
         encodeMultiArray(enc, array, 0, (const uint8_t*)array.dataPointer);
     }
@@ -428,7 +428,7 @@ namespace cbl {
 
 #ifdef SDK_HAS_SEQUENCES
     // Encodes a sequence feature as a Fleece array of strings or numbers.
-    API_AVAILABLE(macos(10.14), ios(12.0))
+    API_AVAILABLE(ios(12.0))
     static void encodeSequence(Encoder &enc, MLSequence *sequence) {
         switch (sequence.type) {
             case MLFeatureTypeString:
@@ -443,7 +443,7 @@ namespace cbl {
 
 
     // Encodes an ML feature to Fleece.
-    API_AVAILABLE(macos(10.13), ios(11))
+    API_AVAILABLE(ios(11))
     void PredictiveModel::encodeMLFeature(Encoder &enc, MLFeatureValue *feature) {
         switch (feature.type) {
             case MLFeatureTypeInt64:
@@ -463,7 +463,7 @@ namespace cbl {
                 break;
 #ifdef SDK_HAS_SEQUENCES
             case MLFeatureTypeSequence:
-                if (@available(macOS 10.14, ios 12.0, *))
+                if (@available(ios 12.0, *))
                     encodeSequence(enc, feature.sequenceValue);
                 else
                     enc.writeNull();

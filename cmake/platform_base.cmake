@@ -35,7 +35,6 @@ function(set_litecore_source_base)
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/DatabaseImpl.cc
-        LiteCore/Database/DatabaseImpl+Upgrade.cc
         LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LegacyAttachments2.cc
@@ -49,6 +48,7 @@ function(set_litecore_source_base)
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
         LiteCore/Query/QueryParser+Prediction.cc
+        LiteCore/Query/QueryParser+VectorSearch.cc
         LiteCore/Query/QueryParser.cc
         LiteCore/Query/SQLiteDataFile+Indexes.cc
         LiteCore/Query/SQLiteFleeceEach.cc
@@ -59,16 +59,17 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLiteKeyStore+FTSIndexes.cc
         LiteCore/Query/SQLiteKeyStore+Indexes.cc
         LiteCore/Query/SQLiteKeyStore+PredictiveIndexes.cc
+        LiteCore/Query/SQLiteKeyStore+VectorIndex.cc
         LiteCore/Query/SQLiteN1QLFunctions.cc
         LiteCore/Query/SQLitePredictionFunction.cc
         LiteCore/Query/SQLiteQuery.cc
         LiteCore/Query/SQLUtil.cc
         LiteCore/Query/N1QL_Parser/n1ql.cc
-        LiteCore/RevTrees/VectorRecord.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc
         LiteCore/RevTrees/RevTreeRecord.cc
+        LiteCore/RevTrees/VectorRecord.cc
         LiteCore/RevTrees/Version.cc
         LiteCore/RevTrees/VersionVector.cc
         LiteCore/Storage/BothKeyStore.cc
@@ -118,24 +119,18 @@ function(set_litecore_source_base)
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc
         LiteCore/Support/FilePath.cc
+        LiteCore/Support/HybridClock.cc
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
         LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc
+        LiteCore/Support/Extension.cc
         PARENT_SCOPE
     )
 endfunction()
 
 function(setup_litecore_build_base)
-    if(CMAKE_COMPILER_IS_GNUCC)
-        # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
-        foreach(target ${LITECORE_TARGETS})
-            target_compile_options(
-                ${target} PRIVATE
-                "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
-            )
-        endforeach()
-     endif()
+    # No-op
 endfunction()

@@ -21,35 +21,36 @@ C4API_BEGIN_DECLS
 
 /** Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.
     These are defined at <http://tools.ietf.org/html/rfc6455#section-7.4.1> */
-typedef C4_ENUM(int32_t, C4WebSocketCloseCode) {
-    kWebSocketCloseNormal           = 1000,
-    kWebSocketCloseGoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
-    kWebSocketCloseProtocolError    = 1002, // Protocol violation: invalid framing data
-    kWebSocketCloseDataError        = 1003, // Message payload cannot be handled
-    kWebSocketCloseNoCode           = 1005, // No status code in close frame
-    kWebSocketCloseAbnormal         = 1006, // Peer closed socket unexpectedly w/o a close frame
-    kWebSocketCloseBadMessageFormat = 1007, // Unparseable message
-    kWebSocketClosePolicyError      = 1008,
-    kWebSocketCloseMessageTooBig    = 1009,
-    kWebSocketCloseMissingExtension = 1010, // Peer doesn't provide a necessary extension
-    kWebSocketCloseCantFulfill      = 1011, // Can't fulfill request due to "unexpected condition"
-    kWebSocketCloseTLSFailure       = 1015, // Never sent, only received
+// clang-format off
+typedef C4_ENUM(int32_t, C4WebSocketCloseCode){
+        kWebSocketCloseNormal           = 1000,
+        kWebSocketCloseGoingAway        = 1001,  // Peer has to close, e.g. because host app is quitting
+        kWebSocketCloseProtocolError    = 1002,  // Protocol violation: invalid framing data
+        kWebSocketCloseDataError        = 1003,  // Message payload cannot be handled
+        kWebSocketCloseNoCode           = 1005,  // No status code in close frame
+        kWebSocketCloseAbnormal         = 1006,  // Peer closed socket unexpectedly w/o a close frame
+        kWebSocketCloseBadMessageFormat = 1007,  // Unparseable message
+        kWebSocketClosePolicyError      = 1008,      
+        kWebSocketCloseMessageTooBig    = 1009,
+        kWebSocketCloseMissingExtension = 1010,  // Peer doesn't provide a necessary extension
+        kWebSocketCloseCantFulfill      = 1011,  // Can't fulfill request due to "unexpected condition"
+        kWebSocketCloseTLSFailure       = 1015,  // Never sent, only received
 
-    kWebSocketCloseAppTransient     = 4001, // App-defined transient error
-    kWebSocketCloseAppPermanent     = 4002, // App-defined permanent error
+        kWebSocketCloseAppTransient = 4001,  // App-defined transient error
+        kWebSocketCloseAppPermanent = 4002,  // App-defined permanent error
 
-    kWebSocketCloseFirstAvailable   = 5000, // First unregistered code for freeform use
+        kWebSocketCloseFirstAvailable = 5000,  // First unregistered code for freeform use
 };
+// clang-format on
 
 
 /** The type of message framing that should be applied to the socket's data (added to outgoing,
     parsed out of incoming.) */
-typedef C4_ENUM(uint8_t, C4SocketFraming) {
-    kC4WebSocketClientFraming,  ///< Frame as WebSocket client messages (masked)
-    kC4NoFraming,               ///< No framing; use messages as-is
-    kC4WebSocketServerFraming,  ///< Frame as WebSocket server messages (not masked)
+typedef C4_ENUM(uint8_t, C4SocketFraming){
+        kC4WebSocketClientFraming,  ///< Frame as WebSocket client messages (masked)
+        kC4NoFraming,               ///< No framing; use messages as-is
+        kC4WebSocketServerFraming,  ///< Frame as WebSocket server messages (not masked)
 };
-
 
 /** A group of callbacks that define the implementation of sockets; the client must fill this
     out and pass it to c4socket_registerFactory() before using any socket-based API.
@@ -76,10 +77,7 @@ struct C4SocketFactory {
                         `kC4SocketOptionWSProtocols`, which provides the WebSocket protocol names
                         to include in the HTTP request header.
         @param context  The value of the `C4SocketFactory`'s `context` field. */
-    void (*open)(C4Socket* socket,
-                 const C4Address* addr,
-                 C4Slice options,
-                 void* C4NULLABLE context);
+    void (*open)(C4Socket* socket, const C4Address* addr, C4Slice options, void* C4NULLABLE context);
 
     /** Called to write to the socket. If `framing` equals `kC4NoFraming`, the data is a complete
         message, and your socket implementation is responsible for framing it;
@@ -117,7 +115,7 @@ struct C4SocketFactory {
         \warning You MUST call \ref c4socket_closed, or the replicator will wait forever!
 
         @param socket  The socket to close. */
-    void (* C4NULLABLE close)(C4Socket* socket);
+    void (*C4NULLABLE close)(C4Socket* socket);
 
     /** Called to close the socket.  This is only called if `framing` equals to `kC4NoFraming`, i.e.
         the socket operates at the message level.  Otherwise it may be left NULL.
@@ -138,7 +136,7 @@ struct C4SocketFactory {
         @param socket  The `C4Socket` to close.
         @param status  The WebSocket status code to send in the CLOSE message.
         @param message  The text to send in the CLOSE message. */
-    void (* C4NULLABLE requestClose)(C4Socket* socket, int status, C4String message);
+    void (*C4NULLABLE requestClose)(C4Socket* socket, int status, C4String message);
 
     /** Called to tell the client that a `C4Socket` object is being disposed/freed after it's
         closed. The implementation of this function can then dispose any state associated with
@@ -147,9 +145,8 @@ struct C4SocketFactory {
         Set this to NULL if you don't need the call.
 
         @param socket  The socket being disposed.  */
-    void (* C4NULLABLE dispose)(C4Socket* socket);
+    void (*C4NULLABLE dispose)(C4Socket* socket);
 };
-
 
 /** @} */
 

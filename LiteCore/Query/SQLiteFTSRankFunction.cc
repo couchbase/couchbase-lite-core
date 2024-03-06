@@ -11,11 +11,9 @@
 //
 //  Adapted from public domain source code at https://www.sqlite.org/fts3.html#appendix_a
 
-#include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
 #include <sqlite3.h>
-#include <stdint.h>
-
+#include <cstdint>
 
 namespace litecore {
 
@@ -53,12 +51,12 @@ namespace litecore {
      **     WHERE documents MATCH <query>
      **     ORDER BY rank(matchinfo(documents), 1.0, 0.5) DESC
      */
-    static void rankfunc(sqlite3_context *pCtx, int nVal, sqlite3_value **apVal){
-        int32_t *aMatchinfo;            /* Return value of matchinfo() */
-        int32_t nCol;                   /* Number of columns in the table */
-        int32_t nPhrase;                /* Number of phrases in the query */
-        int32_t iPhrase;                /* Current phrase */
-        double score = 0.0;             /* Value to return */
+    static void rankfunc(sqlite3_context* pCtx, int nVal, sqlite3_value** apVal) {
+        int32_t* aMatchinfo;  /* Return value of matchinfo() */
+        int32_t  nCol;        /* Number of columns in the table */
+        int32_t  nPhrase;     /* Number of phrases in the query */
+        int32_t  iPhrase;     /* Current phrase */
+        double   score = 0.0; /* Value to return */
 
         /* Check that the number of arguments passed to this function is correct.
          ** If not, jump to wrong_number_args. Set aMatchinfo to point to the array
@@ -66,19 +64,19 @@ namespace litecore {
          ** nPhrase to contain the number of reportable phrases in the users full-text
          ** query, and nCol to the number of columns in the table.
          */
-        if( nVal!=1 ) goto wrong_number_args;
-        aMatchinfo = (int32_t *)sqlite3_value_blob(apVal[0]);
-        if(!aMatchinfo) {
+        if ( nVal != 1 ) goto wrong_number_args;
+        aMatchinfo = (int32_t*)sqlite3_value_blob(apVal[0]);
+        if ( !aMatchinfo ) {
             sqlite3_result_error(pCtx, "nothing for rank() to match", -1);
             return;
         }
         nPhrase = aMatchinfo[0];
-        nCol = aMatchinfo[1];
-//        if( nVal!=(1+nCol) ) goto wrong_number_args;
+        nCol    = aMatchinfo[1];
+        //        if( nVal!=(1+nCol) ) goto wrong_number_args;
 
         /* Iterate through each phrase in the users query. */
-        for(iPhrase=0; iPhrase<nPhrase; iPhrase++){
-            int iCol;                     /* Current column */
+        for ( iPhrase = 0; iPhrase < nPhrase; iPhrase++ ) {
+            int iCol; /* Current column */
 
             /* Now iterate through each column in the users query. For each column,
              ** increment the relevancy score by:
@@ -89,29 +87,23 @@ namespace litecore {
              ** the hit count and global hit counts for each column are found in
              ** aPhraseinfo[iCol*3] and aPhraseinfo[iCol*3+1], respectively.
              */
-            int *aPhraseinfo = &aMatchinfo[2 + iPhrase*nCol*3];
-            for(iCol=0; iCol<nCol; iCol++){
-                int nHitCount = aPhraseinfo[3*iCol];
-                int nGlobalHitCount = aPhraseinfo[3*iCol+1];
-                double weight = 1.0; // sqlite3_value_double(apVal[iCol+1]);
-                if( nHitCount>0 ){
-                    score += ((double)nHitCount / (double)nGlobalHitCount) * weight;
-                }
+            int* aPhraseinfo = &aMatchinfo[2 + iPhrase * nCol * 3];
+            for ( iCol = 0; iCol < nCol; iCol++ ) {
+                int    nHitCount       = aPhraseinfo[3 * iCol];
+                int    nGlobalHitCount = aPhraseinfo[3 * iCol + 1];
+                double weight          = 1.0;  // sqlite3_value_double(apVal[iCol+1]);
+                if ( nHitCount > 0 ) { score += ((double)nHitCount / (double)nGlobalHitCount) * weight; }
             }
         }
 
         sqlite3_result_double(pCtx, score);
         return;
-        
+
         /* Jump here if the wrong number of arguments are passed to this function */
     wrong_number_args:
         sqlite3_result_error(pCtx, "wrong number of arguments to function rank()", -1);
     }
 
+    const SQLiteFunctionSpec kRankFunctionsSpec[] = {{"rank", 1, rankfunc}, {}};
 
-    const SQLiteFunctionSpec kRankFunctionsSpec[] = {
-        { "rank",          1, rankfunc  },
-        { }
-    };
-
-}
+}  // namespace litecore

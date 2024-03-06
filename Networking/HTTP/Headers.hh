@@ -20,30 +20,32 @@ namespace fleece {
     class Dict;
 }
 
-namespace litecore { namespace websocket {
+namespace litecore::websocket {
 
 
     /** HTTP headers. A specialized map that has case-insensitive keys and allows multiple
         occurrences of a key. */
     class Headers {
-    public:
-        using slice = fleece::slice;
+      public:
+        using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
-        Headers() =default;
+        Headers() = default;
 
         /** Reconstitute from Fleece data. */
-        explicit Headers(alloc_slice encoded);
-        explicit Headers(slice encoded)                 :Headers(alloc_slice(encoded)) { }
+        explicit Headers(const alloc_slice& encoded);
+
+        explicit Headers(slice encoded) : Headers(alloc_slice(encoded)) {}
+
         explicit Headers(fleece::Dict);
 
         Headers(const Headers&);
-        Headers(Headers&&);
-        Headers& operator= (const Headers&);
+        Headers(Headers&&) noexcept;
+        Headers& operator=(const Headers&);
 
         void clear();
 
-        bool empty() const                              {return _map.empty();}
+        [[nodiscard]] bool empty() const { return _map.empty(); }
 
         /** Keep a reference to this alloc_slice; any keys/values that are added that point
             within the backing store won't cause any allocation. */
@@ -53,12 +55,12 @@ namespace litecore { namespace websocket {
         void add(slice name, slice value);
 
         /** Returns the value of a header with that name.*/
-        slice get(slice name) const;
+        [[nodiscard]] slice get(slice name) const;
 
-        int64_t getInt(slice name, int64_t defaultValue =0) const;
+        [[nodiscard]] int64_t getInt(slice name, int64_t defaultValue = 0) const;
 
         /** Returns the value of a header with that name.*/
-        slice operator[] (slice name) const             {return get(name);}
+        slice operator[](slice name) const { return get(name); }
 
         /** Calls the function once for each header, in ASCII order.*/
         void forEach(fleece::function_ref<void(slice, slice)> callback) const;
@@ -68,23 +70,21 @@ namespace litecore { namespace websocket {
 
         /** Encodes the headers as a Fleece dictionary. Each key is a header name, and its
             value is a string if it's unique, or an array of strings if multiple. */
-        alloc_slice encode() const;
+        [[nodiscard]] alloc_slice encode() const;
 
-    private:
-        void readFrom(fleece::Dict);
+      private:
+        void  readFrom(fleece::Dict);
         slice store(slice s);
 
         class HeaderCmp {
-        public:
-            bool operator() (fleece::slice a, fleece::slice b) const noexcept{
-                return a.caseEquivalentCompare(b) < 0;
-            }
+          public:
+            bool operator()(fleece::slice a, fleece::slice b) const noexcept { return a.caseEquivalentCompare(b) < 0; }
         };
 
         std::multimap<slice, slice, HeaderCmp> _map;
-        alloc_slice _backingStore;
-        fleece::Writer _writer;
+        alloc_slice                            _backingStore;
+        fleece::Writer                         _writer;
     };
 
 
-} }
+}  // namespace litecore::websocket

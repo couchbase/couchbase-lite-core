@@ -67,7 +67,7 @@ bool c4client_putDoc(C4ConnectedClient* client,
                         C4Error* C4NULLABLE outError) noexcept {
     try {
         auto res = client->putDoc(docID, collectionID, revID, revisionFlags, fleeceData);
-        res.then([=](string result) {
+        res.then([=](std::string result) {
             callback(client, alloc_slice(result), nullptr, context);
         }).onError([=](C4Error err) {
             callback(client, FLHeapSlice(), &err, context);

@@ -11,7 +11,8 @@
 //
 
 #pragma once
-#include "SQLiteDataFile.hh"
+#include "DataFile.hh"
+#include "fleece/slice.hh"
 #include "Logging.hh"
 #include <memory>
 
@@ -21,52 +22,43 @@ namespace SQLite {
     class Database;
     class Statement;
     class Transaction;
-}
-namespace fleece { namespace impl {
-    class SharedKeys;
-} }
+}  // namespace SQLite
 
+namespace fleece::impl {
+    class SharedKeys;
+}  // namespace fleece::impl
 
 namespace litecore {
 
     extern LogDomain SQL;
 
-    void LogStatement(const SQLite::Statement &st);
+    void LogStatement(const SQLite::Statement& st);
 
 
     constexpr const char* kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
 
-
     // Little helper class that makes sure Statement objects get reset on exit
     class UsingStatement {
-    public:
-        UsingStatement(SQLite::Statement &stmt) noexcept;
+      public:
+        explicit UsingStatement(SQLite::Statement& stmt) noexcept;
 
-        UsingStatement(const std::unique_ptr<SQLite::Statement> &stmt) noexcept
-        :UsingStatement(*stmt.get())
-        { }
+        explicit UsingStatement(const std::unique_ptr<SQLite::Statement>& stmt) noexcept : UsingStatement(*stmt) {}
 
         ~UsingStatement();
 
-    private:
-        SQLite::Statement &_stmt;
+      private:
+        SQLite::Statement& _stmt;
     };
-
 
     slice getColumnAsSlice(SQLite::Statement&, int col);
 
-
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
-        fleeceFuncContext(DataFile::Delegate *d,
-                          fleece::impl::SharedKeys *sk)
-        :delegate(d), sharedKeys(sk)
-        { }
+        fleeceFuncContext(DataFile::Delegate* d, fleece::impl::SharedKeys* sk) : delegate(d), sharedKeys(sk) {}
 
-        DataFile::Delegate* delegate;
+        DataFile::Delegate*             delegate;
         fleece::impl::SharedKeys* const sharedKeys;
     };
 
-
-    void RegisterSQLiteFunctions(sqlite3 *db, fleeceFuncContext);
-}
+    void RegisterSQLiteFunctions(sqlite3* db, fleeceFuncContext);
+}  // namespace litecore

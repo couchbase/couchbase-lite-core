@@ -13,7 +13,6 @@
 #pragma once
 #include "DataFile.hh"
 #include "fleece/RefCounted.hh"
-#include "c4Base.h"
 #include "fleece/slice.hh"
 #include <string>
 
@@ -25,18 +24,27 @@ namespace fleece::impl {
 
 namespace litecore {
 
+    /** Abstract superclass of predictive models. A model consists of a `prediction` function.
+        Implemented by C4PredictiveModelInternal, which bridges to the public C4PredictiveModel. */
     class PredictiveModel : public fleece::RefCounted {
-    public:
-        virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL,
-                                               DataFile::Delegate* NONNULL,
-                                               C4Error* NONNULL) noexcept =0;
+      public:
+        /// Given a document body, matches it against the model and returns an (encoded) Dict
+        /// containing predictive info like ratings, rankings, etc.
+        /// This must be a pure function that, given the same input, always produces the
+        /// same output; otherwise predictive indexes wouldn't work.
+        virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL, DataFile::Delegate* NONNULL,
+                                               C4Error* NONNULL) noexcept = 0;
 
-        void registerAs(const std::string &name);
-        static bool unregister(const std::string &name);
+        /// Registers a model instance globally, with a unique name.
+        void registerAs(const std::string& name);
 
+        /// Unregisters the model instance with the given name.
+        static bool unregister(const std::string& name);
+
+        /// Returns the instance registered under the given name.
         static fleece::Retained<PredictiveModel> named(const std::string&);
     };
 
-}
+}  // namespace litecore
 
 #endif

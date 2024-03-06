@@ -14,7 +14,7 @@ function(setup_globals)
         set (_icu_libs)
         foreach (_lib icuuc icui18n icudata)
             unset (_iculib CACHE)
-            find_library(_iculib ${_lib})
+            find_library(_iculib ${_lib} HINTS "${CBDEP_icu4c_DIR}/lib")
             if (NOT _iculib)
                 message(FATAL_ERROR "${_lib} not found")
             endif()
@@ -24,7 +24,7 @@ function(setup_globals)
         message("Found ICU libs at ${ICU_LIBS}")
 
         find_path(LIBICU_INCLUDE unicode/ucol.h
-            HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+            HINTS "${CBDEP_icu4c_DIR}"
             PATH_SUFFIXES include)
         if (NOT LIBICU_INCLUDE)
             message(FATAL_ERROR "libicu header files not found")
@@ -39,9 +39,7 @@ function(setup_globals)
         message(FATAL_ERROR "libz not found")
     endif()
     message("Found libz at ${ZLIB_LIB}")
-    find_path(ZLIB_INCLUDE NAMES zlib.h
-        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/zlib.exploded"
-        PATH_SUFFIXES include)
+    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
     if (NOT ZLIB_INCLUDE)
         message(FATAL_ERROR "libz header files not found")
     endif()
@@ -49,7 +47,7 @@ function(setup_globals)
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
-	    ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
+           ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
     )
 endfunction()
 
@@ -72,10 +70,20 @@ function(set_litecore_source)
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    target_link_libraries(
-        LiteCoreObjects INTERFACE
-        Threads::Threads
-    )
+    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+    foreach(target ${LITECORE_TARGETS})
+        target_compile_options(
+            ${target} PRIVATE
+            "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
+        )
+    endforeach()
+
+    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+        target_link_libraries(
+           ${liteCoreVariant} INTERFACE
+           Threads::Threads
+        )
+    endforeach()
 endfunction()
 
 function(setup_rest_build)

@@ -11,16 +11,15 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4Compat.h"
 #ifdef __cplusplus
-    #include "fleece/slice.hh"
-    #include <optional>
-    #include <string>
+#    include "fleece/slice.hh"
+#    include <optional>
+#    include <string>
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
-
 
 /** \defgroup Blobs Blobs
     @{ */
@@ -45,21 +44,16 @@ struct C4BlobKey {
     static std::optional<C4BlobKey> withDigestString(slice base64);
 
     /** Returns the ASCII form, as used in a blob's "digest" property. */
-    std::string digestString() const;
+    [[nodiscard]] std::string digestString() const;
 
     /** Returns a slice pointing to the digest bytes. */
-    explicit operator slice() const     {return slice(bytes, sizeof(bytes));}
+    explicit operator slice() const { return {bytes, sizeof(bytes)}; }
 
-    bool operator== (const C4BlobKey &k) const {
-        return memcmp(bytes, k.bytes, sizeof(bytes)) == 0;
-    }
+    bool operator==(const C4BlobKey& k) const { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
 
-    bool operator!= (const C4BlobKey &k) const {
-        return !(*this == k);
-    }
+    bool operator!=(const C4BlobKey& k) const { return !(*this == k); }
 #endif
 };
-
 
 /** @} */
 /** @} */

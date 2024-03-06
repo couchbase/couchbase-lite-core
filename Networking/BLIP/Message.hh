@@ -19,12 +19,13 @@
 #include <ostream>
 #include <memory>
 #include <mutex>
+#include <utility>
 
 namespace fleece {
     class Value;
 }
 
-namespace litecore { namespace blip {
+namespace litecore::blip {
     using fleece::RefCounted;
     using fleece::Retained;
 
@@ -34,108 +35,105 @@ namespace litecore { namespace blip {
     class InflaterWriter;
     class Codec;
 
-
     /** Progress notification for an outgoing request. */
     struct MessageProgress {
         enum State {
-            kQueued,                // Outgoing request has been queued for delivery
-            kSending,               // First bytes of message have been sent
-            kAwaitingReply,         // Message sent; waiting for a reply (unless noreply)
-            kReceivingReply,        // Reply is being received
-            kComplete,              // Delivery (and receipt, if not noreply) complete.
-            kDisconnected           // Socket disconnected before delivery or receipt completed
+            kQueued,          // Outgoing request has been queued for delivery
+            kSending,         // First bytes of message have been sent
+            kAwaitingReply,   // Message sent; waiting for a reply (unless noreply)
+            kReceivingReply,  // Reply is being received
+            kComplete,        // Delivery (and receipt, if not noreply) complete.
+            kDisconnected     // Socket disconnected before delivery or receipt completed
         } state;
-        MessageSize bytesSent;
-        MessageSize bytesReceived;
+
+        MessageSize         bytesSent;
+        MessageSize         bytesReceived;
         Retained<MessageIn> reply;
     };
 
     using MessageProgressCallback = std::function<void(const MessageProgress&)>;
 
-
     struct Error {
         const fleece::slice domain;
-        const int code {0};
+        const int           code{0};
         const fleece::slice message;
 
-        Error()  =default;
-        Error(fleece::slice domain_, int code_, fleece::slice msg =fleece::nullslice)
-        :domain(domain_), code(code_), message(msg)
-        { }
+        Error() = default;
+
+        Error(fleece::slice domain_, int code_, fleece::slice msg = fleece::nullslice)
+            : domain(std::move(domain_)), code(code_), message(std::move(msg)) {}
     };
 
     // Like Error but with an allocated message string
     struct ErrorBuf : public Error {
-        ErrorBuf()  =default;
+        ErrorBuf() = default;
 
-        ErrorBuf(fleece::slice domain, int code, fleece::alloc_slice msg)
-        :Error(domain, code, msg)
-        ,_messageBuf(msg)
-        { }
+        ErrorBuf(fleece::slice domain, int code, const fleece::alloc_slice& msg)
+            : Error(domain, code, msg), _messageBuf(msg) {}
 
-    private:
+      private:
         const fleece::alloc_slice _messageBuf;
     };
 
-
     /** Abstract base class of messages */
     class Message : public RefCounted {
-    public:
-        using slice = fleece::slice;
+      public:
+        using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
-        
-        bool isResponse() const             {return type() >= kResponseType;}
-        bool isError() const                {return type() == kErrorType;}
-        bool urgent() const                 {return hasFlag(kUrgent);}
-        bool noReply() const                {return hasFlag(kNoReply);}
 
-        MessageNo number() const            {return _number;}
+        bool isResponse() const { return type() >= kResponseType; }
 
-    protected:
+        bool isError() const { return type() == kErrorType; }
+
+        bool urgent() const { return hasFlag(kUrgent); }
+
+        bool noReply() const { return hasFlag(kNoReply); }
+
+        MessageNo number() const { return _number; }
+
+      protected:
         friend class BLIPIO;
-        
-        Message(FrameFlags f, MessageNo n)
-        :_flags(f), _number(n)
-        {
+
+        Message(FrameFlags f, MessageNo n) : _flags(f), _number(n) {
             /*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/
         }
 
-        virtual ~Message() {
-            //Log("DELETE Message<%p, %s #%llu>", this, typeName(), _number);
-        }
+        ~Message() override = default;
 
-        FrameFlags flags() const            {return _flags;}
-        bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
-        bool isAck() const                  {return type() == kAckRequestType ||
-                                                    type() == kAckResponseType;}
-        virtual bool isIncoming() const     {return false;}
-        MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
-        const char* typeName() const        {return kMessageTypeNames[type()];}
+        FrameFlags flags() const { return _flags; }
 
-        void sendProgress(MessageProgress::State state,
-                          MessageSize bytesSent, MessageSize bytesReceived,
-                          MessageIn *reply);
-        void disconnected();
+        bool hasFlag(FrameFlags f) const { return (_flags & f) != 0; }
+
+        bool isAck() const { return type() == kAckRequestType || type() == kAckResponseType; }
+
+        virtual bool isIncoming() const { return false; }
+
+        MessageType type() const { return (MessageType)(_flags & kTypeMask); }
+
+        const char* typeName() const { return kMessageTypeNames[type()]; }
+
+        void         sendProgress(MessageProgress::State state, MessageSize bytesSent, MessageSize bytesReceived,
+                                  MessageIn* reply);
+        virtual void disconnected();
 
         void dump(slice payload, slice body, std::ostream&);
         void dumpHeader(std::ostream&);
         void writeDescription(slice payload, std::ostream&);
 
-        static const char* findProperty(slice payload, const char *propertyName);
+        static const char* findProperty(slice payload, const char* propertyName);
 
-        FrameFlags _flags;
-        MessageNo _number;
+        FrameFlags              _flags;
+        MessageNo               _number;
         MessageProgressCallback _onProgress;
     };
 
-
     /** An incoming message. */
     class MessageIn : public Message {
-    public:
+      public:
         /** Gets a property value */
         slice property(slice property) const;
-        long intProperty(slice property, long defaultValue =0) const;
-        bool boolProperty(slice property, bool defaultValue =false) const;
+        long  intProperty(slice property, long defaultValue = 0) const;
+        bool  boolProperty(slice property, bool defaultValue = false) const;
 
         /** The "Profile" property gives the message's application-level type name. */
         slice profile() const               {return property(kProfileProperty);}
@@ -182,27 +180,23 @@ namespace litecore { namespace blip {
             Message::dump(_properties, (withBody ? _body : fleece::alloc_slice()), out);
         }
 
-    protected:
+      protected:
         friend class MessageOut;
         friend class BLIPIO;
 
-        enum ReceiveState {
-            kOther,
-            kBeginning,
-            kEnd
-        };
+        enum ReceiveState { kOther, kBeginning, kEnd };
 
-        MessageIn(Connection*, FrameFlags, MessageNo,
-                  MessageProgressCallback =nullptr,
-                  MessageSize outgoingSize =0);
-        virtual ~MessageIn();
-        virtual bool isIncoming() const     {return true;}
+        MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback = nullptr, MessageSize outgoingSize = 0);
+        ~MessageIn() override;
+
+        bool isIncoming() const override { return true; }
+
         ReceiveState receivedFrame(Codec&, slice frame, FrameFlags);
 
         std::string description();
 
-    private:
-        void readFrame(Codec&, int mode, fleece::slice_istream &frame, bool finalFrame);
+      private:
+        void readFrame(Codec&, int mode, fleece::slice_istream& frame, bool finalFrame);
         void acknowledge(uint32_t frameSize);
 
         Retained<Connection> _connection;       // The owning BLIP connection     
@@ -220,4 +214,4 @@ namespace litecore { namespace blip {
         bool _responded {false};
     };
 
-} }
+}  // namespace litecore::blip

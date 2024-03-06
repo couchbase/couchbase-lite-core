@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 51;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -22,6 +22,17 @@
 			);
 			name = All;
 			productName = All;
+		};
+		EAE4736829BA112E00C28D49 /* Run Clang-Format */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = EAE4736929BA113000C28D49 /* Build configuration list for PBXAggregateTarget "Run Clang-Format" */;
+			buildPhases = (
+				EAE4736E29BA113A00C28D49 /* Run Formatting Script */,
+			);
+			dependencies = (
+			);
+			name = "Run Clang-Format";
+			productName = "Run Clang-Format";
 		};
 /* End PBXAggregateTarget section */
 
@@ -120,7 +131,6 @@
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
-		273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273D25F62564666A008643D2 /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273D25F52564666A008643D2 /* VectorDocument.cc */; };
 		273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
@@ -132,11 +142,15 @@
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
 		273F481725A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
+		2740A74E2B321073003387E9 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
+		2740A74F2B3210AB003387E9 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
+		2740A7502B3210C8003387E9 /* DBAccessTestWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */; };
+		2740A7512B3210E4003387E9 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
+		2740A7522B321120003387E9 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
 		27431BC8258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
-		27431BC9258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
 		27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2743E2BE25F80102006F696D /* c4CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2743E2BD25F80102006F696D /* c4CAPI.cc */; };
 		2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2743E35525F85F26006F696D /* c4Replicator_CAPI.cc */; };
@@ -195,6 +209,7 @@
 		275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
 		275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
 		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
+		275B2DF42A4A0A1A00B7215E /* HybridClock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B2DF32A4A0A1A00B7215E /* HybridClock.cc */; };
 		275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B35A4234E753800FE9CF0 /* Housekeeper.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
@@ -202,6 +217,7 @@
 		275E9905238360B200EA516B /* Checkpointer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E98FF238360B200EA516B /* Checkpointer.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
+		27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */; };
 		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
@@ -228,6 +244,8 @@
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
 		277C5C4627AB1EB4001BE212 /* AsyncTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C5C4527AB1EB4001BE212 /* AsyncTest.cc */; };
 		277C5C4727AB1F02001BE212 /* Async.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B336241854F2005A194D /* Async.cc */; };
+		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
+		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -327,14 +345,15 @@
 		27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
 		27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
-		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
+		27BEEE712A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */; };
+		27BEEE752A7834B8005AD4BF /* QueryParser+VectorSearch.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */; };
+		27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
 		27CA3D6D27FE510C006918A7 /* LegacyAttachments2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CA3D6C27FE510C006918A7 /* LegacyAttachments2.cc */; };
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
-		27D3886D250AA4330000249E /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
 		27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
@@ -384,6 +403,11 @@
 		27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E6DFEF1DA5AFF3008EB681 /* Query.hh */; };
 		27E89BA61D679542002C32B3 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		27E89BA81D679542002C32B3 /* FilePath.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E89BA51D679542002C32B3 /* FilePath.hh */; };
+		27EED1462B335576009AD1AA /* c4DocumentTest_Internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */; };
+		27EED14A2B335595009AD1AA /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
+		27EED14B2B3355A6009AD1AA /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27505DDC256335B000123115 /* VersionVectorTest.cc */; };
+		27EED14E2B3355D4009AD1AA /* ReplicatorVVUpgradeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */; };
+		27EED1522B33560A009AD1AA /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
 		27EF807819142C4F00A327B9 /* fts3_unicode2.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA61914296D00A327B9 /* fts3_unicode2.c */; };
 		27EF807919142C5600A327B9 /* fts3_unicodesn.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */; };
 		27EF807A19142C6B00A327B9 /* libstemmer_utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FAD1914296D00A327B9 /* libstemmer_utf8.c */; };
@@ -453,6 +477,7 @@
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
 		27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */; };
 		27F2BEA0221DF1A0006C13EE /* DBAccess.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F2BE9F221DF1A0006C13EE /* DBAccess.cc */; };
+		27F602FE2A968503006FA1D0 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F7177A2808E20E000CEA5B /* QueryServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F717792808E20E000CEA5B /* QueryServer.cc */; };
 		27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
@@ -480,12 +505,9 @@
 		27FE0CEB24BE6E7900A36EC2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
 		27FE0CEC24BE6E9A00A36EC2 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27FE0CED24BE6E9A00A36EC2 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		27FE0CEE24BE7C2A00A36EC2 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
-		27FE0CF124BE7C2A00A36EC2 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
-		27FE0CF324BE7C2A00A36EC2 /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
 		27FE0CF424BE7C2A00A36EC2 /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		27FE0CF524BE7C2A00A36EC2 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27FE0CF624BE7C2A00A36EC2 /* QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6737C1EC78144008F50C4 /* QueryTest.cc */; };
@@ -504,7 +526,7 @@
 		42030A3F2498443D00283CE8 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		42030A402498444900283CE8 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		42030A412498445600283CE8 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
-		42030A422498446000283CE8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
+		42626ACC2B75B8AE006CF2B4 /* Extension.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42626ACB2B75B8AD006CF2B4 /* Extension.cc */; };
 		42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
@@ -518,6 +540,14 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
+		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
+		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
+		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
+		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -942,7 +972,6 @@
 		2734F619206ABEB000C982FF /* ReplicatorTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTypes.cc; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
 		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
-		273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "DatabaseImpl+Upgrade.cc"; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		273B541823037A8400E4FC19 /* unix_acceptor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = unix_acceptor.h; sourceTree = "<group>"; };
@@ -1135,6 +1164,9 @@
 		275A74D01ED3A4E1008CB57B /* Listener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Listener.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		275AA5D72A5F603800ABC172 /* SourceID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SourceID.hh; sourceTree = "<group>"; };
+		275B2DF22A4A0A1A00B7215E /* HybridClock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HybridClock.hh; sourceTree = "<group>"; };
+		275B2DF32A4A0A1A00B7215E /* HybridClock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HybridClock.cc; sourceTree = "<group>"; };
 		275B35A3234E753800FE9CF0 /* Housekeeper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Housekeeper.hh; sourceTree = "<group>"; };
 		275B35A4234E753800FE9CF0 /* Housekeeper.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Housekeeper.cc; sourceTree = "<group>"; };
 		275BF36B1F5F671C0051374A /* get_repo_version.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = get_repo_version.sh; sourceTree = "<group>"; };
@@ -1160,6 +1192,7 @@
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
 		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
+		27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorVVUpgradeTest.cc; sourceTree = "<group>"; };
 		2762A00C22EA65E200F9AB18 /* Certificate.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Certificate.hh; sourceTree = "<group>"; };
 		2762A00D22EA65E200F9AB18 /* Certificate.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Certificate.cc; sourceTree = "<group>"; };
 		2762A01422EB7CC800F9AB18 /* CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertificateTest.cc; sourceTree = "<group>"; };
@@ -1226,6 +1259,8 @@
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
+		278054D72B321BDB009630D8 /* LiteCore-iOS shell.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-iOS shell.xcconfig"; sourceTree = "<group>"; };
+		278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-IOS Tests.xcconfig"; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
@@ -1364,7 +1399,9 @@
 		27BB9E43236D05650039C896 /* cipher.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cipher.c; sourceTree = "<group>"; };
 		27BB9E44236D05650039C896 /* ecdsa.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ecdsa.c; sourceTree = "<group>"; };
 		27BB9E45236D05650039C896 /* nist_kw.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nist_kw.c; sourceTree = "<group>"; };
-		27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "LibC++Debug.cc"; sourceTree = "<group>"; };
+		27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+VectorIndex.cc"; sourceTree = "<group>"; };
+		27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+VectorSearch.cc"; sourceTree = "<group>"; };
+		27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorQueryTest.cc; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
@@ -1378,6 +1415,7 @@
 		27CCC7E31E52965200CE1989 /* Pusher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Pusher.hh; sourceTree = "<group>"; };
 		27CE4CEF2077F51000ACA225 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
 		27CE4CF02077F51000ACA225 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
+		27D629CA2B644024004C0787 /* VectorQueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VectorQueryTest.hh; sourceTree = "<group>"; };
 		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
 		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
@@ -1549,6 +1587,7 @@
 		27F370821DC02C3D0096F717 /* c4Document+Fleece.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "c4Document+Fleece.h"; sourceTree = "<group>"; };
 		27F41D6C23297E9700EF27BB /* MultiLogDecoder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiLogDecoder.hh; sourceTree = "<group>"; };
 		27F4F48323070C7F0075D7CB /* tls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_context.h; sourceTree = "<group>"; };
+		27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveVectorQueryTest.cc; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F717782808E20E000CEA5B /* QueryServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryServer.hh; sourceTree = "<group>"; };
@@ -1657,6 +1696,8 @@
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		27FF5CAF27C83A8F00CFFA43 /* AsyncActorCommon.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AsyncActorCommon.hh; sourceTree = "<group>"; };
 		27FF5CB027C96EC500CFFA43 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
+		42626AC72B75B8AD006CF2B4 /* Extension.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Extension.hh; sourceTree = "<group>"; };
+		42626ACB2B75B8AD006CF2B4 /* Extension.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Extension.cc; sourceTree = "<group>"; };
 		42B6B0DD25A6A9D9004B20A7 /* URLTransformer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = URLTransformer.hh; sourceTree = "<group>"; };
 		42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = URLTransformer.cc; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1667,6 +1708,19 @@
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
+		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
+		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSG30Test.cc; sourceTree = "<group>"; };
+		EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorSG30Test.hh; sourceTree = "<group>"; };
+		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
+		EA8E8AE0291D597C002106A3 /* SGTestUser.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SGTestUser.cc; sourceTree = "<group>"; };
+		EA8E8AE1291D597C002106A3 /* SG.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SG.cc; sourceTree = "<group>"; };
+		EAA0126E29687CBD001B04E0 /* ReplParams.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplParams.hh; sourceTree = "<group>"; };
+		EAA0126F29687CBD001B04E0 /* SG.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SG.hh; sourceTree = "<group>"; };
+		EAA0127029687CBD001B04E0 /* SGTestUser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SGTestUser.hh; sourceTree = "<group>"; };
+		EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorCollectionSGTest.hh; sourceTree = "<group>"; };
+		EAE4736729BA0AC500C28D49 /* run-clang-format.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "run-clang-format.sh"; sourceTree = "<group>"; };
+		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1852,6 +1906,9 @@
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
 				27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */,
+				27D629CA2B644024004C0787 /* VectorQueryTest.hh */,
+				27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */,
+				27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */,
 				276CE68D2267A02500B681AC /* N1QLParserTest.cc */,
 				27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
@@ -2002,6 +2059,8 @@
 				27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */,
 				2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */,
 				273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */,
+				278054D72B321BDB009630D8 /* LiteCore-iOS shell.xcconfig */,
+				278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */,
 				2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */,
 				27FC81F41EAAB4D30028E38E /* REST.xcconfig */,
 				279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */,
@@ -2199,6 +2258,8 @@
 				27098AA4216C2108002751DA /* PredictiveModel.cc */,
 				27098AA5216C2108002751DA /* PredictiveModel.hh */,
 				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
+				27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */,
+				27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */,
 			);
 			name = EE;
 			sourceTree = "<group>";
@@ -2283,12 +2344,15 @@
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27FF5CB027C96EC500CFFA43 /* Result.hh */,
+				42626ACB2B75B8AD006CF2B4 /* Extension.cc */,
+				42626AC72B75B8AD006CF2B4 /* Extension.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
+				275B2DF22A4A0A1A00B7215E /* HybridClock.hh */,
+				275B2DF32A4A0A1A00B7215E /* HybridClock.cc */,
 				27700DFD1FB642B80005D48E /* Increment.hh */,
 				27FB0C37205B177100987D9C /* Instrumentation.hh */,
 				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
-				27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */,
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
@@ -2409,6 +2473,7 @@
 		2758D73F25C3638A000316A0 /* Version Vectors */ = {
 			isa = PBXGroup;
 			children = (
+				275AA5D72A5F603800ABC172 /* SourceID.hh */,
 				274B36D125B271F7001FC28D /* Version.cc */,
 				274B36D025B271F7001FC28D /* Version.hh */,
 				27027CD1255F4A9B00A96D7D /* VersionVector.cc */,
@@ -2454,6 +2519,7 @@
 		275BF36A1F5F671C0051374A /* Scripts */ = {
 			isa = PBXGroup;
 			children = (
+				EAE4736729BA0AC500C28D49 /* run-clang-format.sh */,
 				275BF36B1F5F671C0051374A /* get_repo_version.sh */,
 			);
 			name = Scripts;
@@ -2463,10 +2529,22 @@
 		275CE0FC1E5B78570084E014 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */,
+				EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */,
+				EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */,
+				EAA0126E29687CBD001B04E0 /* ReplParams.hh */,
+				EAA0126F29687CBD001B04E0 /* SG.hh */,
+				EAA0127029687CBD001B04E0 /* SGTestUser.hh */,
+				EA8E8AE1291D597C002106A3 /* SG.cc */,
+				EA8E8AE0291D597C002106A3 /* SGTestUser.cc */,
+				EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */,
+				D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */,
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
+				FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */,
+				27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
@@ -2522,7 +2600,6 @@
 			children = (
 				27E3DD571DB8524300F2872D /* DatabaseImpl.cc */,
 				27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */,
-				273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */,
 				2760FBC826210AA0000F34C5 /* CollectionImpl.hh */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
@@ -2854,6 +2931,7 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				275E98FF238360B200EA516B /* Checkpointer.cc */,
 				275E9904238360B200EA516B /* Checkpointer.hh */,
+				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				2752C6B127BC417E001C1B76 /* ConnectedClient */,
@@ -3723,6 +3801,9 @@
 					720EA3DB1BA7EAD9002B8416 = {
 						DevelopmentTeam = N2Q372V7W2;
 					};
+					EAE4736829BA112E00C28D49 = {
+						CreatedOnToolsVersion = 14.1;
+					};
 				};
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
@@ -3759,6 +3840,7 @@
 				27A924931D9B316D00086206 /* LiteCore-iOS shell */,
 				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
 				27B7E0F118F8FB4700044EBA /* All */,
+				EAE4736829BA112E00C28D49 /* Run Clang-Format */,
 			);
 		};
 /* End PBXProject section */
@@ -3891,7 +3973,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
 			showEnvVarsInLog = 0;
 		};
 		275BF3731F5F6CA20051374A /* Generate repo_version.h */ = {
@@ -3972,6 +4054,26 @@
 			shellPath = "/bin/sh -e";
 			shellScript = "DST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/C/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../C/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/LiteCore/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../LiteCore/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/Replicator/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../Replicator/tests/data\" \"$DST\"\n";
 		};
+		EAE4736E29BA113A00C28D49 /* Run Formatting Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../build_cmake/scripts/run-clang-format.sh",
+			);
+			name = "Run Formatting Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\"\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -3980,40 +4082,49 @@
 			buildActionMask = 2147483647;
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
+				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				2752C7A727BF18F2001C1B76 /* ConnectedClientTest.cc in Sources */,
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
-				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
+				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27697DDC27D2B32D006F5BB5 /* ResultTest.cc in Sources */,
+				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				277C5C4627AB1EB4001BE212 /* AsyncTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
+				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
-				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
-				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
-				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
+				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
-				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
-				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
+				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
+				27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */,
+				27F602FE2A968503006FA1D0 /* PredictiveVectorQueryTest.cc in Sources */,
+				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
-				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
+				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
+				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
+				27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
+				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
+				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
+				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
+				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
-				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
-				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4081,7 +4192,6 @@
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */,
-				42030A422498446000283CE8 /* LibC++Debug.cc in Sources */,
 				27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */,
 				42030A402498444900283CE8 /* Error.cc in Sources */,
 				42030A3F2498443D00283CE8 /* StringUtil.cc in Sources */,
@@ -4128,6 +4238,7 @@
 				278F477724C9138300E1CA7A /* ReplicatorLoopbackTest.cc in Sources */,
 				278F477824C9138300E1CA7A /* ReplicatorAPITest.cc in Sources */,
 				278F477924C9138300E1CA7A /* ReplicatorSGTest.cc in Sources */,
+				D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				278F475B24C9131000E1CA7A /* main.mm in Sources */,
 				278F475924C9131000E1CA7A /* ViewController.m in Sources */,
 				278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */,
@@ -4139,7 +4250,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				27A9249E1D9B316D00086206 /* ViewController.m in Sources */,
-				27D3886D250AA4330000249E /* LibC++Debug.cc in Sources */,
 				27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */,
 				27A924981D9B316D00086206 /* main.mm in Sources */,
 			);
@@ -4149,38 +4259,56 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2740A74E2B321073003387E9 /* TestsCommon.cc in Sources */,
 				27FE0CFB24BE7C2A00A36EC2 /* LiteCoreTest.cc in Sources */,
-				27FE0CEE24BE7C2A00A36EC2 /* c4BaseTest.cc in Sources */,
+				27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */,
 				27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */,
 				27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */,
-				27FE0CF124BE7C2A00A36EC2 /* FTSTest.cc in Sources */,
-				27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */,
-				27431BC9258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
-				27FE0CF324BE7C2A00A36EC2 /* PredictiveQueryTest.cc in Sources */,
+				27FE0CF824BE7C2A00A36EC2 /* SequenceTrackerTest.cc in Sources */,
+				2740A7502B3210C8003387E9 /* DBAccessTestWrapper.cc in Sources */,
+				27FE0CFA24BE7C2A00A36EC2 /* UpgraderTest.cc in Sources */,
+				27EED14A2B335595009AD1AA /* VectorRecordTest.cc in Sources */,
+				27EED14B2B3355A6009AD1AA /* VersionVectorTest.cc in Sources */,
+				27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */,
+				27FE0D0224BE817B00A36EC2 /* CertificateTest.cc in Sources */,
 				27FE0CF424BE7C2A00A36EC2 /* N1QLParserTest.cc in Sources */,
 				27FE0CF524BE7C2A00A36EC2 /* QueryParserTest.cc in Sources */,
 				27FE0CF624BE7C2A00A36EC2 /* QueryTest.cc in Sources */,
-				27FE0CF824BE7C2A00A36EC2 /* SequenceTrackerTest.cc in Sources */,
 				27FE0CF924BE7C2A00A36EC2 /* SQLiteFunctionsTest.cc in Sources */,
+				2740A7502B3210C8003387E9 /* DBAccessTestWrapper.cc in Sources */,
 				27FE0CFA24BE7C2A00A36EC2 /* UpgraderTest.cc in Sources */,
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
 				27A924BF1D9B371700086206 /* c4DatabaseTest.cc in Sources */,
 				273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */,
+				D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
+				278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */,
+				2740A74E2B321073003387E9 /* TestsCommon.cc in Sources */,
 				276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */,
+				2740A7512B3210E4003387E9 /* SG.cc in Sources */,
 				27A924C11D9B371700086206 /* c4BlobStoreTest.cc in Sources */,
 				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
+				2740A74F2B3210AB003387E9 /* ReplParams.cc in Sources */,
 				27E6739F1EC8DC97008F50C4 /* c4QueryTest.cc in Sources */,
 				27A924C61D9B371700086206 /* c4ThreadingTest.cc in Sources */,
-				272850F11E9D4F94009CA22F /* ReplicatorAPITest.cc in Sources */,
 				27A924C41D9B371700086206 /* c4AllDocsPerformanceTest.cc in Sources */,
 				27A924C51D9B371700086206 /* c4PerfTest.cc in Sources */,
+				27EED1462B335576009AD1AA /* c4DocumentTest_Internal.cc in Sources */,
+				276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */,
+				27E6739F1EC8DC97008F50C4 /* c4QueryTest.cc in Sources */,
+				27EED1522B33560A009AD1AA /* c4CertificateTest.cc in Sources */,
+				27EED14E2B3355D4009AD1AA /* ReplicatorVVUpgradeTest.cc in Sources */,
+				D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
+				2740A74F2B3210AB003387E9 /* ReplParams.cc in Sources */,
+				272850F11E9D4F94009CA22F /* ReplicatorAPITest.cc in Sources */,
 				27FE0CFC24BE817A00A36EC2 /* ReplicatorLoopbackTest.cc in Sources */,
+				2740A7512B3210E4003387E9 /* SG.cc in Sources */,
 				27FE0CFD24BE817A00A36EC2 /* ReplicatorSGTest.cc in Sources */,
 				27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */,
+				2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */,
 				27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */,
+				2740A7522B321120003387E9 /* SGTestUser.cc in Sources */,
 				27FE0D0024BE817B00A36EC2 /* RESTListenerTest.cc in Sources */,
 				27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */,
-				27FE0D0224BE817B00A36EC2 /* CertificateTest.cc in Sources */,
 				273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */,
 				27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */,
 			);
@@ -4257,6 +4385,7 @@
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				2744B352241854F2005A194D /* Codec.cc in Sources */,
+				27BEEE752A7834B8005AD4BF /* QueryParser+VectorSearch.cc in Sources */,
 				271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */,
@@ -4312,6 +4441,7 @@
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
+				42626ACC2B75B8AE006CF2B4 /* Extension.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
 				27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */,
@@ -4336,7 +4466,6 @@
 				1A5726B227D74A8900A9B412 /* c4ConnectedClient.cc in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
-				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,
 				27CA3D6D27FE510C006918A7 /* LegacyAttachments2.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
@@ -4345,6 +4474,7 @@
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
 				27E3DD581DB8524300F2872D /* DatabaseImpl.cc in Sources */,
 				2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */,
+				27BEEE712A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc in Sources */,
 				27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
@@ -4353,7 +4483,6 @@
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
-				27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */,
 				27F7177A2808E20E000CEA5B /* QueryServer.cc in Sources */,
 				2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
@@ -4377,6 +4506,7 @@
 				277C5C4727AB1F02001BE212 /* Async.cc in Sources */,
 				27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
+				275B2DF42A4A0A1A00B7215E /* HybridClock.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
@@ -4656,6 +4786,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug;
 		};
@@ -4670,6 +4801,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release;
 		};
@@ -5041,6 +5173,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Debug_EE;
 		};
@@ -5102,10 +5235,10 @@
 		};
 		2791EA2B2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 278054D72B321BDB009630D8 /* LiteCore-iOS shell.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -5135,7 +5268,7 @@
 		};
 		2791EA2D2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			baseConfigurationReference = 278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -5207,6 +5340,7 @@
 					"$(MBEDCRYPTO)/include",
 					"$(inherited)",
 				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
 			};
 			name = Release_EE;
 		};
@@ -5270,8 +5404,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -5360,8 +5493,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -5393,8 +5525,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -5652,6 +5783,594 @@
 			};
 			name = Release;
 		};
+		D6200BF62A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
+			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
+			};
+			name = Test_CE;
+		};
+		D6200BF72A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BF82A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BF92A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Test_CE;
+		};
+		D6200BFA2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BFB2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BFC2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BFD2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BFE2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200BFF2A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200C002A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200C012A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_CE;
+		};
+		D6200C022A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_CE;
+		};
+		D6200C032A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
+				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
+				PRODUCT_NAME = "LiteCore-iOS";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_CE;
+		};
+		D6200C042A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiteCore-iOS.app/LiteCore-iOS";
+			};
+			name = Test_CE;
+		};
+		D6200C052A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		D6200C062A57441D00790C0F /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_CE;
+		};
+		D6D93DE42A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */;
+			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
+				PATH = "${PATH}:/opt/homebrew/bin:/opt/homebrew/sbin";
+			};
+			name = Test_EE;
+		};
+		D6D93DE52A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE62A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE72A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Test_EE;
+		};
+		D6D93DE82A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DE92A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEA2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEB2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEC2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DED2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEE2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DEF2A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
+		D6D93DF02A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_EE;
+		};
+		D6D93DF12A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 278054D72B321BDB009630D8 /* LiteCore-iOS shell.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
+				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
+				PRODUCT_NAME = "LiteCore-iOS";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Test_EE;
+		};
+		D6D93DF22A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiteCore-iOS.app/LiteCore-iOS";
+			};
+			name = Test_EE;
+		};
+		D6D93DF32A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		D6D93DF42A2ACD9D00E30981 /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
+		EAE4736A29BA113000C28D49 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		EAE4736B29BA113000C28D49 /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_EE;
+		};
+		EAE4736C29BA113000C28D49 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		EAE4736D29BA113000C28D49 /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release_EE;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -5659,7 +6378,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2708FE501CF4CC880022F721 /* Debug */,
+				D6200BFC2A57441D00790C0F /* Test_CE */,
 				2791EA212032745700BD813C /* Debug_EE */,
+				D6D93DEA2A2ACD9D00E30981 /* Test_EE */,
 				2708FE511CF4CC880022F721 /* Release */,
 				2791EA352032746700BD813C /* Release_EE */,
 			);
@@ -5670,7 +6391,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27139B4218F8E9750021A9A3 /* Debug */,
+				D6200BFE2A57441D00790C0F /* Test_CE */,
 				2791EA2A2032745700BD813C /* Debug_EE */,
+				D6D93DEC2A2ACD9D00E30981 /* Test_EE */,
 				27139B4318F8E9750021A9A3 /* Release */,
 				2791EA3E2032746700BD813C /* Release_EE */,
 			);
@@ -5681,7 +6404,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				274D040D1BA75E1C00FF7C35 /* Debug */,
+				D6200BFD2A57441D00790C0F /* Test_CE */,
 				2791EA222032745700BD813C /* Debug_EE */,
+				D6D93DEB2A2ACD9D00E30981 /* Test_EE */,
 				274D040E1BA75E1C00FF7C35 /* Release */,
 				2791EA362032746700BD813C /* Release_EE */,
 			);
@@ -5692,7 +6417,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2750724718E3E52800A80C5A /* Debug */,
+				D6200BF62A57441D00790C0F /* Test_CE */,
 				2791EA1B2032745700BD813C /* Debug_EE */,
+				D6D93DE42A2ACD9D00E30981 /* Test_EE */,
 				2750724818E3E52800A80C5A /* Release */,
 				2791EA2F2032746700BD813C /* Release_EE */,
 			);
@@ -5703,7 +6430,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2752B26B233D76010014AD9D /* Debug */,
+				D6200C012A57441D00790C0F /* Test_CE */,
 				2752B26C233D76010014AD9D /* Debug_EE */,
+				D6D93DEF2A2ACD9D00E30981 /* Test_EE */,
 				2752B26D233D76010014AD9D /* Release */,
 				2752B26E233D76010014AD9D /* Release_EE */,
 			);
@@ -5714,7 +6443,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2771A0A1228624C100B18E0A /* Debug */,
+				D6200BFB2A57441D00790C0F /* Test_CE */,
 				2771A0A2228624C100B18E0A /* Debug_EE */,
+				D6D93DE92A2ACD9D00E30981 /* Test_EE */,
 				2771A0A3228624C100B18E0A /* Release */,
 				2771A0A4228624C100B18E0A /* Release_EE */,
 			);
@@ -5725,7 +6456,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				278F476324C9131000E1CA7A /* Debug */,
+				D6200C022A57441D00790C0F /* Test_CE */,
 				278F476424C9131000E1CA7A /* Debug_EE */,
+				D6D93DF02A2ACD9D00E30981 /* Test_EE */,
 				278F476524C9131000E1CA7A /* Release */,
 				278F476624C9131000E1CA7A /* Release_EE */,
 			);
@@ -5736,7 +6469,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27A924B41D9B316D00086206 /* Debug */,
+				D6200C032A57441D00790C0F /* Test_CE */,
 				2791EA2B2032745700BD813C /* Debug_EE */,
+				D6D93DF12A2ACD9D00E30981 /* Test_EE */,
 				27A924B51D9B316D00086206 /* Release */,
 				2791EA3F2032746700BD813C /* Release_EE */,
 			);
@@ -5747,7 +6482,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27A924B71D9B316D00086206 /* Debug */,
+				D6200C042A57441D00790C0F /* Test_CE */,
 				2791EA2D2032745700BD813C /* Debug_EE */,
+				D6D93DF22A2ACD9D00E30981 /* Test_EE */,
 				27A924B81D9B316D00086206 /* Release */,
 				2791EA412032746700BD813C /* Release_EE */,
 			);
@@ -5758,7 +6495,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27B6493D206971FC00FC12F7 /* Debug */,
+				D6200BF92A57441D00790C0F /* Test_CE */,
 				27B6493E206971FC00FC12F7 /* Debug_EE */,
+				D6D93DE72A2ACD9D00E30981 /* Test_EE */,
 				27B6493F206971FC00FC12F7 /* Release */,
 				27B64940206971FC00FC12F7 /* Release_EE */,
 			);
@@ -5769,7 +6508,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27B7E0F318F8FB4800044EBA /* Debug */,
+				D6200C052A57441D00790C0F /* Test_CE */,
 				2791EA2E2032745700BD813C /* Debug_EE */,
+				D6D93DF32A2ACD9D00E30981 /* Test_EE */,
 				27B7E0F418F8FB4800044EBA /* Release */,
 				2791EA422032746700BD813C /* Release_EE */,
 			);
@@ -5780,7 +6521,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27DF7D651F4236500022F3DF /* Debug */,
+				D6200BFF2A57441D00790C0F /* Test_CE */,
 				2791EA272032745700BD813C /* Debug_EE */,
+				D6D93DED2A2ACD9D00E30981 /* Test_EE */,
 				27DF7D661F4236500022F3DF /* Release */,
 				2791EA3B2032746700BD813C /* Release_EE */,
 			);
@@ -5791,7 +6534,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF807619142C2500A327B9 /* Debug */,
+				D6200C002A57441D00790C0F /* Test_CE */,
 				2791EA282032745700BD813C /* Debug_EE */,
+				D6D93DEE2A2ACD9D00E30981 /* Test_EE */,
 				27EF807719142C2500A327B9 /* Release */,
 				2791EA3C2032746700BD813C /* Release_EE */,
 			);
@@ -5802,7 +6547,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,
+				D6200BF72A57441D00790C0F /* Test_CE */,
 				2791EA1C2032745700BD813C /* Debug_EE */,
+				D6D93DE52A2ACD9D00E30981 /* Test_EE */,
 				27EF81111917EEC600A327B9 /* Release */,
 				2791EA302032746700BD813C /* Release_EE */,
 			);
@@ -5813,7 +6560,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27FC81F11EAAB0D90028E38E /* Debug */,
+				D6200BFA2A57441D00790C0F /* Test_CE */,
 				2791EA1E2032745700BD813C /* Debug_EE */,
+				D6D93DE82A2ACD9D00E30981 /* Test_EE */,
 				27FC81F21EAAB0D90028E38E /* Release */,
 				2791EA322032746700BD813C /* Release_EE */,
 			);
@@ -5824,9 +6573,24 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,
+				D6200BF82A57441D00790C0F /* Test_CE */,
 				2791EA1D2032745700BD813C /* Debug_EE */,
+				D6D93DE62A2ACD9D00E30981 /* Test_EE */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
 				2791EA312032746700BD813C /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EAE4736929BA113000C28D49 /* Build configuration list for PBXAggregateTarget "Run Clang-Format" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAE4736A29BA113000C28D49 /* Debug */,
+				D6200C062A57441D00790C0F /* Test_CE */,
+				EAE4736B29BA113000C28D49 /* Debug_EE */,
+				D6D93DF42A2ACD9D00E30981 /* Test_EE */,
+				EAE4736C29BA113000C28D49 /* Release */,
+				EAE4736D29BA113000C28D49 /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

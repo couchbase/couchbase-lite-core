@@ -19,15 +19,17 @@
 namespace sockpp {
     class mbedtls_context;
 }
+
 namespace litecore {
     class LogDomain;
 }
+
 namespace litecore::crypto {
     class Cert;
     struct Identity;
-}
+}  // namespace litecore::crypto
 
-namespace litecore { namespace net {
+namespace litecore::net {
 
     /** TLS configuration for sockets and listeners.
         A thin veneer around sockpp::tls_context.
@@ -42,11 +44,8 @@ namespace litecore { namespace net {
         These modes cannot be combined.
      */
     class TLSContext : public fleece::RefCounted {
-    public:
-        enum role_t {
-            Client,
-            Server
-        };
+      public:
+        enum role_t { Client, Server };
 
         explicit TLSContext(role_t);
 
@@ -54,7 +53,7 @@ namespace litecore { namespace net {
         // provided one.  This will override any previous calls to allowOnlySelfSigned
         // or setCertAuthCallback.
         void setRootCerts(crypto::Cert* NONNULL);
-        
+
         // Passing nullslice here resets the behavior to using the system trust store
         void setRootCerts(fleece::slice);
 
@@ -64,38 +63,39 @@ namespace litecore { namespace net {
         // override the other three trust modes (allowOnlySelfSigned, setRootCerts,
         // and setCertAuthCallback)
         void allowOnlyCert(crypto::Cert* NONNULL);
-        
+
         // Passing nullslice here resets the behavior to using the system trust store
         void allowOnlyCert(fleece::slice certData);
-        
+
         // Used for P2P where remote certs are often dynamically generated
         // This will override any previous calls to setCertAuthCallback
         // or setRootCerts.  Passing false will reset the behavior to using
         // the system trust store.
         void allowOnlySelfSigned(bool);
+
         bool onlySelfSignedAllowed() const { return _onlySelfSigned; }
 
         // Use a callback to evaluate a TLS certificate that was otherwise deemed
         // unusable.  As a side effect, this function restores the system trust
         // store.
-        void setCertAuthCallback(std::function<bool(fleece::slice)>);
+        void setCertAuthCallback(const std::function<bool(fleece::slice)>&);
 
         void setIdentity(crypto::Identity* NONNULL);
         void setIdentity(fleece::slice certData, fleece::slice privateKeyData);
 
-    protected:
-        ~TLSContext();
-        bool findSigningRootCert(const std::string &certStr, std::string &rootStr);
+      protected:
+        ~TLSContext() override;
+        static bool findSigningRootCert(const std::string& certStr, std::string& rootStr);
 
-    private:
+      private:
         void resetRootCertFinder();
-        
+
         std::unique_ptr<sockpp::mbedtls_context> _context;
-        fleece::Retained<crypto::Identity> _identity;
-        role_t _role;
-        bool _onlySelfSigned {false};
+        fleece::Retained<crypto::Identity>       _identity;
+        role_t                                   _role;
+        bool                                     _onlySelfSigned{false};
 
         friend class TCPSocket;
     };
 
-} }
+}  // namespace litecore::net

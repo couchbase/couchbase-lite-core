@@ -11,21 +11,16 @@
 //
 
 #include "BackgroundDB.hh"
-#include "c4ExceptionUtils.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DataFile.hh"
 #include "SequenceTracker.hh"
 
 namespace litecore {
-    using namespace actor;
     using namespace std::placeholders;
     using namespace std;
 
-
-    BackgroundDB::BackgroundDB(DatabaseImpl *db)
-    :_database(db)
-    {
+    BackgroundDB::BackgroundDB(DatabaseImpl* db) : _database(db) {
         _dataFile.useLocked([db, this](DataFile*& df) {
             // CBL-2543: Don't actually call openAnother until inside the constructor
             // otherwise, openAnother could quickly call back into externalTransactionCommitted
@@ -36,51 +31,42 @@ namespace litecore {
     }
 
     void BackgroundDB::close() {
-        _dataFile.useLocked([this](DataFile* &df) {
+        _dataFile.useLocked([this](DataFile*& df) {
             delete df;
             df = nullptr;
         });
     }
 
-    BackgroundDB::~BackgroundDB() {
-        close();
-    }
+    BackgroundDB::~BackgroundDB() { close(); }
 
+    string BackgroundDB::databaseName() const { return _database->databaseName(); }
 
-    string BackgroundDB::databaseName() const {
-        return _database->databaseName();
-    }
-
-
-    alloc_slice BackgroundDB::blobAccessor(const fleece::impl::Dict *dict) const {
+    alloc_slice BackgroundDB::blobAccessor(const fleece::impl::Dict* dict) const {
         return _database->blobAccessor(dict);
     }
 
-
-    void BackgroundDB::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
+    void BackgroundDB::externalTransactionCommitted(const SequenceTracker& sourceTracker) {
         notifyTransactionObservers();
     }
 
-
     void BackgroundDB::useInTransaction(slice keyStoreName, TransactionTask task) {
         _dataFile.useLocked([=](DataFile* dataFile) {
-            if (!dataFile)
-                return;
+            if ( !dataFile ) return;
             ExclusiveTransaction t(dataFile);
-            KeyStore &keyStore = dataFile->getKeyStore(keyStoreName);
-            SequenceTracker sequenceTracker(keyStoreName);
+            KeyStore&            keyStore = dataFile->getKeyStore(keyStoreName);
+            SequenceTracker      sequenceTracker(keyStoreName);
             sequenceTracker.beginTransaction();
 
             bool commit;
             try {
                 commit = task(keyStore, &sequenceTracker);
-            } catch (const exception &) {
+            } catch ( const exception& ) {
                 t.abort();
                 sequenceTracker.endTransaction(false);
                 throw;
             }
 
-            if (!commit) {
+            if ( !commit ) {
                 t.abort();
                 sequenceTracker.endTransaction(false);
                 return;
@@ -95,25 +81,20 @@ namespace litecore {
         });
     }
 
-
-    void BackgroundDB::addTransactionObserver(TransactionObserver *obs) {
+    void BackgroundDB::addTransactionObserver(TransactionObserver* obs) {
         LOCK(_transactionObserversMutex);
         _transactionObservers.push_back(obs);
     }
 
-
     void BackgroundDB::removeTransactionObserver(TransactionObserver* obs) {
         LOCK(_transactionObserversMutex);
         auto i = std::find(_transactionObservers.begin(), _transactionObservers.end(), obs);
-        if (i != _transactionObservers.end())
-            _transactionObservers.erase(i);
+        if ( i != _transactionObservers.end() ) _transactionObservers.erase(i);
     }
-
 
     void BackgroundDB::notifyTransactionObservers() {
         LOCK(_transactionObserversMutex);
-        for (auto obs : _transactionObservers)
-            obs->transactionCommitted();
+        for ( auto obs : _transactionObservers ) obs->transactionCommitted();
     }
 
-}
+}  // namespace litecore

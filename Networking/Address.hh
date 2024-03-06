@@ -12,44 +12,56 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
-#include "fleece/PlatformCompat.hh"
 #include <fleece/slice.hh>
 
 struct C4Database;
 
-namespace litecore { namespace net {
+namespace litecore::net {
 
     /** Enhanced C4Address subclass that allocates storage for the fields. */
-    struct Address : public C4Address {
-        using slice = fleece::slice;
+    struct Address {
+        using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
-        explicit Address(const alloc_slice &url);
-        explicit Address(slice url)                         :Address(alloc_slice(url)) { }
+        explicit Address(alloc_slice url);
+
+        explicit Address(slice url) : Address(alloc_slice(url)) {}
+
         explicit Address(const C4Address&);
         explicit Address(C4Database* NONNULL);
 
-        Address(slice scheme,
-                slice hostname,
-                uint16_t port,
-                slice uri);
+        Address(slice scheme, slice hostname, uint16_t port, slice uri);
 
-        Address& operator= (const Address &addr);
+        Address& operator=(const Address& addr);
 
-        alloc_slice url() const                             {return _url;}
-        operator alloc_slice () const                       {return _url;}
+        [[nodiscard]] alloc_slice url() const { return _url; }
 
-        bool isSecure() const noexcept                      {return isSecure(*(C4Address*)this);}
+        explicit operator alloc_slice() const { return _url; }
+
+        operator C4Address() const { return _c4address; }  // NOLINT(google-explicit-constructor)
+
+        explicit operator C4Address*() { return &_c4address; }
+
+        [[nodiscard]] C4String scheme() const { return _c4address.scheme; }
+
+        [[nodiscard]] C4String hostname() const { return _c4address.hostname; }
+
+        [[nodiscard]] uint16_t port() const { return _c4address.port; }
+
+        [[nodiscard]] C4String path() const { return _c4address.path; }
+
+        [[nodiscard]] bool isSecure() const noexcept { return isSecure(_c4address); }
 
         // Static utility functions:
         static alloc_slice toURL(const C4Address&) noexcept;
-        static bool isSecure(const C4Address&) noexcept;
-        static bool domainEquals(slice d1, slice d2) noexcept;
-        static bool domainContains(slice baseDomain, slice hostname) noexcept;
-        static bool pathContains(slice basePath, slice path) noexcept;
+        static bool        isSecure(const C4Address&) noexcept;
+        static bool        domainEquals(slice d1, slice d2) noexcept;
+        static bool        domainContains(slice baseDomain, slice hostname) noexcept;
+        static bool        pathContains(slice basePath, slice path) noexcept;
 
-    private:
-        alloc_slice _url;         // inherited slice fields point inside this
+      private:
+        alloc_slice _url;  // inherited slice fields point inside this
+        C4Address   _c4address;
     };
 
-} }
+}  // namespace litecore::net

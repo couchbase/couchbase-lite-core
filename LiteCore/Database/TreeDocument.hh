@@ -12,7 +12,7 @@
 
 #pragma once
 #include "DocumentFactory.hh"
-#include "fleece/Fleece.h"
+#include "fleece/FLBase.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -20,21 +20,22 @@ namespace litecore {
 
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
-    public:
-        TreeDocumentFactory(C4Collection *coll)   :DocumentFactory(coll) { }
+      public:
+        explicit TreeDocumentFactory(C4Collection* coll) : DocumentFactory(coll) {}
+
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
-        bool isFirstGenRevID(slice revID) const override;
+        [[nodiscard]] bool   isFirstGenRevID(slice revID) const override;
 
-        std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
+        std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static C4Document* documentContaining(FLValue value);
-        
-        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted);
+        static C4Document* C4NULLABLE documentContaining(FLValue value);
+
+        static revidBuffer generateDocRevID(CollectionImpl* coll, slice body, slice parentRevID, bool deleted);
     };
 
-}
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

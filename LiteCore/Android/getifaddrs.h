@@ -52,7 +52,7 @@ __BEGIN_DECLS
 #define ifa_dstaddr ifa_ifu.ifu_dstaddr*/
 
 void freeifaddrs(struct ifaddrs* __ptr);
-int getifaddrs(struct ifaddrs** __list_ptr);
+int  getifaddrs(struct ifaddrs** __list_ptr);
 
 __END_DECLS
 
