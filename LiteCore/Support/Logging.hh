@@ -18,6 +18,7 @@
 #include <atomic>
 #include <map>
 #include <mutex>
+#include <unordered_map>
 #include <unordered_set>
 #include <string>
 #include <stdarg.h>
