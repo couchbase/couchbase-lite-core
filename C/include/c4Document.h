@@ -52,25 +52,25 @@ CBL_CORE_API char* c4doc_generateID(char* buffer, size_t bufferSize) C4API;
         @param content  How much content to retrieve: metadata only, current revision, or all revisions.
         @param outError  On failure, error information is stored here.
         @return  A new C4Document instance (which must be released), or NULL. */
-CBL_CORE_API C4Document* c4db_getDoc(C4Database* database, C4String docID, bool mustExist, C4DocContentLevel content,
-                                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* c4db_getDoc(C4Database* database, C4String docID, bool mustExist,
+                                               C4DocContentLevel content, C4Error* C4NULLABLE outError) C4API;
 
 /** Gets a document from the database given its ID (semi-deprecated).
         This is the same as \ref c4db_getDoc with `content` equal to `kDocGetCurrentRev`. */
-CBL_CORE_API C4Document* c4doc_get(C4Database* database, C4String docID, bool mustExist,
-                                   C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* c4doc_get(C4Database* database, C4String docID, bool mustExist,
+                                             C4Error* C4NULLABLE outError) C4API;
 
 /** Gets a document from the database given its sequence number.
         You must call `c4doc_release()` when finished with the document.  */
-CBL_CORE_API C4Document* c4doc_getBySequence(C4Database*         database, C4SequenceNumber,
-                                             C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Document* c4doc_getBySequence(C4Database*         database, C4SequenceNumber,
+                                                       C4Error* C4NULLABLE outError) C4API;
 
 #endif
 
 /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given. */
-CBL_CORE_API bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
 
@@ -85,8 +85,8 @@ CBL_CORE_API bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth, C4Error*
 CBL_CORE_API bool c4doc_isRevRejected(C4Document* doc) C4API;
 
 /** Selects a specific revision of a document (or no revision, if revID is NULL.) */
-CBL_CORE_API bool c4doc_selectRevision(C4Document* doc, C4String revID, bool withBody,
-                                       C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4doc_selectRevision(C4Document* doc, C4String revID, bool withBody,
+                                                 C4Error* C4NULLABLE outError) C4API;
 
 /** Selects the current revision of a document.
         (This is the first revision, in the order they appear in the document.) */
@@ -94,7 +94,7 @@ CBL_CORE_API bool c4doc_selectCurrentRevision(C4Document* doc) C4API;
 
 /** Populates the body field of a doc's selected revision,
         if it was initially loaded without its body. */
-CBL_CORE_API bool c4doc_loadRevisionBody(C4Document* doc, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4doc_loadRevisionBody(C4Document* doc, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
@@ -125,21 +125,21 @@ CBL_CORE_API C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned ma
         peer ID instead of the shorthand "*" character.) */
 CBL_CORE_API C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
-/** Selects the parent of the selected revision, if it's known, else returns NULL. */
-CBL_CORE_API bool c4doc_selectParentRevision(C4Document* doc) C4API;
+/** Selects the parent of the selected revision, if it's known, else returns false. */
+NODISCARD CBL_CORE_API bool c4doc_selectParentRevision(C4Document* doc) C4API;
 
 /** Selects the next revision in priority order.
         This can be used to iterate over all revisions, starting from the current revision. */
-CBL_CORE_API bool c4doc_selectNextRevision(C4Document* doc) C4API;
+NODISCARD CBL_CORE_API bool c4doc_selectNextRevision(C4Document* doc) C4API;
 
 /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
         To distinguish between the end of the iteration and a failure, check the value of
         *outError after the function returns false: if there's no error (code==0) it's normal. */
-CBL_CORE_API bool c4doc_selectNextLeafRevision(C4Document* doc, bool includeDeleted, bool withBody,
-                                               C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4doc_selectNextLeafRevision(C4Document* doc, bool includeDeleted, bool withBody,
+                                                         C4Error* C4NULLABLE outError) C4API;
 
 /** Selects the common ancestor of two revisions. Returns false if none is found. */
-CBL_CORE_API bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1ID, C4String rev2ID) C4API;
+NODISCARD CBL_CORE_API bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1ID, C4String rev2ID) C4API;
 
 /** Looks up or creates a numeric ID identifying a remote database, for use with
         c4doc_getRemoteAncestor() and c4doc_setRemoteAncestor().
@@ -161,8 +161,8 @@ CBL_CORE_API C4SliceResult c4db_getRemoteDBAddress(C4Database* db, C4RemoteID re
 CBL_CORE_API C4SliceResult c4doc_getRemoteAncestor(C4Document* doc, C4RemoteID remoteDatabase) C4API;
 
 /** Marks a revision as current for the given remote database. */
-CBL_CORE_API bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID remoteDatabase, C4String revID,
-                                          C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID remoteDatabase, C4String revID,
+                                                    C4Error* C4NULLABLE error) C4API;
 
 /** Given a tree-based revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable.
@@ -198,7 +198,7 @@ CBL_CORE_API bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
         @param revID  The ID of the revision to purge. If null, all revisions are purged.
         @param outError  Error information is stored here.
         @return  The total number of revisions purged (including ancestors), or -1 on error. */
-CBL_CORE_API int32_t c4doc_purgeRevision(C4Document* doc, C4String revID, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API int32_t c4doc_purgeRevision(C4Document* doc, C4String revID, C4Error* C4NULLABLE outError) C4API;
 
 /** Resolves a conflict between two leaf revisions, by deleting one of them and optionally
         adding a new merged revision as a child of the other.
@@ -210,9 +210,9 @@ CBL_CORE_API int32_t c4doc_purgeRevision(C4Document* doc, C4String revID, C4Erro
         @param mergedFlags  Flags for the merged revision.
         @param error  Error information is stored here.
         @return  True on success, false on failure. */
-CBL_CORE_API bool c4doc_resolveConflict(C4Document* doc, C4String winningRevID, C4String losingRevID,
-                                        C4Slice mergedBody, C4RevisionFlags mergedFlags,
-                                        C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API bool c4doc_resolveConflict(C4Document* doc, C4String winningRevID, C4String losingRevID,
+                                                  C4Slice mergedBody, C4RevisionFlags mergedFlags,
+                                                  C4Error* C4NULLABLE error) C4API;
 
 /** @} */
 

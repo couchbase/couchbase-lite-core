@@ -345,10 +345,10 @@ class ReplicatorAPITest : public C4Test {
         }
 
         if ( _sg.remoteDBName.buf ) {
-            _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, err);
+            _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, C4STR("apiTest"), err);
         } else {
 #ifdef COUCHBASE_ENTERPRISE
-            _repl = c4repl_newLocal(db, db2, params, err);
+            _repl = c4repl_newLocal(db, db2, params, C4STR("apiTest"), err);
 #else
             FAIL("Local replication not supported in CE");
 #endif

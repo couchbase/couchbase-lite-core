@@ -111,8 +111,7 @@ struct ExpectingExceptions {
 // (You can express the timeout as a decimal literal followed by `ms`, e.g. `500ms`.)
 // The predicate is guaranteed to be checked at least once, immediately when WaitUntil is called.
 // Returns true if the predicate became true; or false if the timeout expired.
-MUST_USE_RESULT
-bool WaitUntil(std::chrono::milliseconds, fleece::function_ref<bool()> predicate);
+[[nodiscard]] bool WaitUntil(std::chrono::milliseconds, fleece::function_ref<bool()> predicate);
 
 
 // CHECK that CONDITION will become true before TIMEOUT expires.

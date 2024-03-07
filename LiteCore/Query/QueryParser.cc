@@ -135,7 +135,7 @@ namespace litecore {
         alloc_slice escaped(in.size + 1);
         auto        dst = (char*)escaped.buf;
         dst[0]          = '\\';
-        in.readAll(dst + 1, escaped.size - 1);
+        Assert(in.readAll(dst + 1, escaped.size - 1));
         return escaped;
     }
 
@@ -1144,14 +1144,7 @@ namespace litecore {
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
     void QueryParser::matchOp(C4UNUSED slice op, Array::iterator& operands) {
-        // Is a MATCH legal here? Look at the parent operation(s):
-        auto parentCtx = _context.rbegin() + 1;
-        auto parentOp  = (*parentCtx)->op;
-        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
-        require(parentOp == "SELECT"_sl || parentOp == nullslice,
-                "MATCH can only appear at top-level, or in a top-level AND");
-
-        // Write the expression:
+        requireTopLevelConjunction("MATCH");
         auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
         Assert(!ftsTableAlias.empty());
         _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0]).first) << " MATCH ";
@@ -1884,10 +1877,10 @@ namespace litecore {
         return SQL();
     }
 
-    std::string QueryParser::functionCallSQL(slice fnName, const fleece::impl::Value* args) {
+    std::string QueryParser::functionCallSQL(slice fnName, const Value* args, const Value* param) {
         reset();
         addDefaultAlias();
-        writeFunctionGetter(fnName, args);
+        writeFunctionGetter(fnName, args, param);
         return SQL();
     }
 
@@ -1911,6 +1904,15 @@ namespace litecore {
     }
 
 #pragma mark - FULL-TEXT-SEARCH:
+
+    // Fail if the current op is not at the top level of a SELECT nor within AND expressions.
+    void QueryParser::requireTopLevelConjunction(const char* fnName) {
+        auto parentCtx = _context.rbegin() + 1;
+        auto parentOp  = (*parentCtx)->op;
+        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
+        require(parentOp == "SELECT"_sl || parentOp == nullslice,
+                "%s can only appear at top-level, or in a top-level AND", fnName);
+    }
 
     // Recursively looks for MATCH expressions and adds the properties being matched to
     // _indexJoinTables. Returns the number of expressions found.

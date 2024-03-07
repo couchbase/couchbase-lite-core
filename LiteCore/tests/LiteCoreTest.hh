@@ -79,7 +79,8 @@ static std::array<std::string, count> randomDigitStrings() {
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.
 void ExpectException(litecore::error::Domain, int code, const std::function<void()>& lambda);
-
+// In this variant the exception message must match too, unless `what` is nullptr.
+void ExpectException(litecore::error::Domain domain, int code, const char* what, const std::function<void()>& lambda);
 
 #include "CatchHelper.hh"
 

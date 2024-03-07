@@ -29,7 +29,9 @@ namespace litecore::repl {
     Inserter::Inserter(Replicator* repl, CollectionIndex coll)
         : Worker(repl, "Insert", coll)
         , _revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow, tuning::kInsertionDelay,
-                        tuning::kInsertionBatchSize) {}
+                        tuning::kInsertionBatchSize) {
+        setParentObjectRef(repl->getObjectRef());
+    }
 
     void Inserter::insertRevision(RevToInsert* rev) { _revsToInsert.push(rev); }
 

@@ -189,9 +189,9 @@ namespace litecore {
     };
 
     struct SQLiteIndexSpec : public IndexSpec {
-        SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON, std::string ksName,
-                        std::string itName)
-            : IndexSpec(name, type, std::move(expressionJSON))
+        SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON,
+                        QueryLanguage language, std::string ksName, std::string itName)
+            : IndexSpec(name, type, std::move(expressionJSON), language)
             , keyStoreName(std::move(ksName))
             , indexTableName(std::move(itName)) {}
 

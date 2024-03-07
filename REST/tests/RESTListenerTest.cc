@@ -622,7 +622,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP auth correct", "[REST][Listener][C]") {
 #    ifdef COUCHBASE_ENTERPRISE
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
-    useServerTLSWithTemporaryKey();
+    (void)useServerTLSWithTemporaryKey();
     share(db, "db"_sl);
     auto   configPortStr  = to_string(c4listener_getPort(listener()));
     string expectedSuffix = string(":") + configPortStr + "/";
@@ -648,7 +648,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
 }
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
-    useServerTLSWithTemporaryKey();
+    (void)useServerTLSWithTemporaryKey();
 
     gC4ExpectExceptions = true;
     auto r              = request("GET", "/", HTTPStatus::undefined);
@@ -720,7 +720,7 @@ TEST_CASE_METHOD(C4RESTTest, "Sync Listener URLs", "[REST][Listener][TLS][C]") {
     }
 
     SECTION("TLS") {
-        useServerTLSWithTemporaryKey();
+        (void)useServerTLSWithTemporaryKey();
         syncScheme = "wss";
         SECTION("With REST") {
             restScheme  = "https";

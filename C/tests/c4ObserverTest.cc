@@ -234,7 +234,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     createRev("A"_sl, kDocARev2, kFleeceBody);
     CHECK(dbCallbackCalls == 2);
 
-    c4db_close(otherdb, nullptr);
+    CHECK(c4db_close(otherdb, nullptr));
     c4db_release(otherdb);
 }
 

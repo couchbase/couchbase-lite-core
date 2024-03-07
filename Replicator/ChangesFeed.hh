@@ -76,7 +76,7 @@ namespace litecore::repl {
 
         /** Returns up to `limit` more changes.
             If exactly `limit` are returned, there may be more, so the client should call again. */
-        virtual Changes getMoreChanges(unsigned limit) MUST_USE_RESULT;
+        [[nodiscard]] virtual Changes getMoreChanges(unsigned limit);
 
         C4SequenceNumber lastSequence() const { return _maxSequence; }
 
@@ -84,7 +84,7 @@ namespace litecore::repl {
         bool caughtUp() const { return _caughtUp; }
 
         /** Returns true if the given rev matches the push filters. */
-        virtual bool shouldPushRev(RevToSend* NONNULL) const MUST_USE_RESULT;
+        [[nodiscard]] virtual bool shouldPushRev(RevToSend* NONNULL) const;
 
       protected:
         std::string  loggingClassName() const override;
@@ -123,7 +123,7 @@ namespace litecore::repl {
 
         void setFindForeignAncestors(bool use) { _getForeignAncestors = use; }
 
-        Changes getMoreChanges(unsigned limit) override MUST_USE_RESULT;
+        [[nodiscard]] Changes getMoreChanges(unsigned limit) override;
 
       protected:
         bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const override;

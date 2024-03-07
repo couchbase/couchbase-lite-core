@@ -17,6 +17,7 @@
 #include "c4Certificate.hh"
 #include "c4CppUtils.hh"
 #include "c4Replicator.h"
+#include "Error.hh"
 #include "Response.hh"
 #include <fleece/Fleece.hh>
 #include <fleece/Expert.hh>
@@ -34,7 +35,9 @@ class SG {
   public:
     class TestUser;
 
-    SG() : address(), remoteDBName() { c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName); }
+    SG() : address(), remoteDBName() {
+        Assert(c4address_fromURL("ws://localhost:4984/db"_sl, &address, &remoteDBName));
+    }
 
     SG(C4Address address_, C4String remoteDBName_) : address(address_), remoteDBName(remoteDBName_) {}
 

@@ -232,14 +232,16 @@ struct C4Database
     // Replicator:
 
     Retained<C4Replicator> newReplicator(C4Address serverAddress, slice remoteDatabaseName,
-                                         const C4ReplicatorParameters& params);
+                                         const C4ReplicatorParameters& params, slice logPrefix = {});
 
-    Retained<C4Replicator> newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params);
+    Retained<C4Replicator> newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params,
+                                                 slice logPrefix = {});
     Retained<C4Replicator> newIncomingReplicator(litecore::websocket::WebSocket* openSocket,
-                                                 const C4ReplicatorParameters&   params);
+                                                 const C4ReplicatorParameters& params, slice logPrefix = {});
 
 #ifdef COUCHBASE_ENTERPRISE
-    Retained<C4Replicator> newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params);
+    Retained<C4Replicator> newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
+                                              slice logPrefix = {});
 #endif
 
     alloc_slice getCookies(const C4Address&);

@@ -228,7 +228,11 @@ namespace litecore {
             if ( _replicator ) _replicator->terminate();
         }
 
-        std::string loggingClassName() const override { return "C4Replicator"; }
+        std::string loggingClassName() const override {
+            std::string repl{"C4Repl"};
+            if ( !_logPrefix.empty() ) { repl = _logPrefix.asString() + "/" + repl; }
+            return repl;
+        }
 
         bool continuous(unsigned collectionIndex = 0) const noexcept {
             return _options->push(collectionIndex) == kC4Continuous || _options->pull(collectionIndex) == kC4Continuous;
@@ -281,6 +285,7 @@ namespace litecore {
             if ( !_replicator ) {
                 try {
                     createReplicator();
+                    if ( _replicator ) _replicator->setParentObjectRef(getObjectRef());
                 } catch ( exception& x ) {
                     _status.error = C4Error::fromException(x);
                     _replicator   = nullptr;
@@ -505,6 +510,8 @@ namespace litecore {
         bool                 _activeWhenSuspended{false};
         bool                 _cancelStop{false};
 
+      protected:
+        alloc_slice _logPrefix;
 
       private:
         alloc_slice _responseHeaders;
