@@ -12,6 +12,7 @@
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
+#include "Base64.hh"
 #include "Error.hh"
 #include "Encoder.hh"
 #include "Logging.hh"
@@ -499,33 +500,44 @@ namespace litecore {
 
 #pragma mark - VECTOR (ML) SEARCH:
 
+    static const char* encodeVectorFromBytes(sqlite3_context* ctx, slice data, int dim = 0) {
+        if ( data.size < 2 * sizeof(float) || data.size % sizeof(float) != 0 ) {
+            return "data is wrong length to be a vector";
+        } else if ( dim > 0 && data.size / sizeof(float) != dim ) {
+            return "vector has wrong number of dimensions";
+        } else {
+            setResultBlobFromData(ctx, data, kPlainBlobSubtype);
+            return nullptr;
+        }
+    }
+
     // Subroutine that converts a Fleece Value to a raw vector and puts it in the SQLite result.
     // On error it returns the message as a string; on success, nullptr.
     static const char* encodeVector(sqlite3_context* ctx, const fleece::impl::Value* value, int dim = 0) {
-        if ( auto array = value->asArray() ) {
-            size_t n = array->count();
-            if ( dim > 0 && n != dim ) return "vector has wrong number of dimensions";
-            vector<float> vec(n);
-            size_t        i = 0;
-            for ( ArrayIterator iter(array); iter; ++iter ) {
-                if ( auto item = iter.value(); item->type() == kNumber ) {
-                    vec[i++] = item->asFloat();
-                } else {
-                    return "array contains a non-numeric value";
+        switch ( value->type() ) {
+            case kArray:
+                {
+                    auto   array = value->asArray();
+                    size_t n     = array->count();
+                    if ( n < 2 || (dim > 0 && n != dim) ) return "vector has wrong number of dimensions";
+                    vector<float> vec(n);
+                    size_t        i = 0;
+                    for ( ArrayIterator iter(array); iter; ++iter ) {
+                        if ( auto item = iter.value(); item->type() == kNumber ) {
+                            vec[i++] = item->asFloat();
+                        } else {
+                            return "array contains a non-numeric value";
+                        }
+                    }
+                    setResultBlobFromData(ctx, slice{vec.data(), vec.size() * sizeof(float)}, kPlainBlobSubtype);
+                    return nullptr;
                 }
-            }
-            setResultBlobFromData(ctx, slice{vec.data(), vec.size() * sizeof(float)}, kPlainBlobSubtype);
-            return nullptr;
-        } else if ( auto data = value->asData() ) {
-            if ( data.size > 0 && data.size % sizeof(float) == 0 ) {
-                if ( dim > 0 && data.size / sizeof(float) != dim ) return "vector has wrong number of dimensions";
-                setResultBlobFromData(ctx, data, kPlainBlobSubtype);
-                return nullptr;
-            } else {
-                return "data is wrong length to be a raw vector";
-            }
-        } else {
-            return "value cannot be encoded as a vector";
+            case kData:
+                return encodeVectorFromBytes(ctx, value->asData(), dim);
+            case kString:
+                return encodeVectorFromBytes(ctx, base64::decode(value->asString()), dim);
+            default:
+                return "value is wrong type to be a vector";
         }
     }
 
@@ -542,8 +554,10 @@ namespace litecore {
             } else {
                 return "raw vector data length not multiple of 4";
             }
+        } else if ( sqlite3_value_type(arg) == SQLITE_TEXT ) {
+            return encodeVectorFromBytes(ctx, base64::decode(valueAsStringSlice(arg)), dim);
         } else {
-            return "value cannot be encoded as a vector";
+            return "value is wrong type to be a vector";
         }
     }
 
