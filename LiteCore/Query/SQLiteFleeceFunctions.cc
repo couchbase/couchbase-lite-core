@@ -500,7 +500,6 @@ namespace litecore {
 
 #pragma mark - VECTOR (ML) SEARCH:
 
-
     static const char* encodeVectorFromBytes(sqlite3_context* ctx, slice data, int dim = 0) {
         if ( data.size < 2 * sizeof(float) || data.size % sizeof(float) != 0 ) {
             return "data is wrong length to be a vector";
@@ -515,23 +514,24 @@ namespace litecore {
     // Subroutine that converts a Fleece Value to a raw vector and puts it in the SQLite result.
     // On error it returns the message as a string; on success, nullptr.
     static const char* encodeVector(sqlite3_context* ctx, const fleece::impl::Value* value, int dim = 0) {
-        switch (value->type()) {
-            case kArray: {
-                auto array = value->asArray();
-                size_t        n = array->count();
-                if ( n < 2 || (dim > 0 && n != dim) ) return "vector has wrong number of dimensions";
-                vector<float> vec(n);
-                size_t        i = 0;
-                for ( ArrayIterator iter(array); iter; ++iter ) {
-                    if ( auto item = iter.value(); item->type() == kNumber ) {
-                        vec[i++] = item->asFloat();
-                    } else {
-                        return "array contains a non-numeric value";
+        switch ( value->type() ) {
+            case kArray:
+                {
+                    auto   array = value->asArray();
+                    size_t n     = array->count();
+                    if ( n < 2 || (dim > 0 && n != dim) ) return "vector has wrong number of dimensions";
+                    vector<float> vec(n);
+                    size_t        i = 0;
+                    for ( ArrayIterator iter(array); iter; ++iter ) {
+                        if ( auto item = iter.value(); item->type() == kNumber ) {
+                            vec[i++] = item->asFloat();
+                        } else {
+                            return "array contains a non-numeric value";
+                        }
                     }
+                    setResultBlobFromData(ctx, slice{vec.data(), vec.size() * sizeof(float)}, kPlainBlobSubtype);
+                    return nullptr;
                 }
-                setResultBlobFromData(ctx, slice{vec.data(), vec.size() * sizeof(float)}, kPlainBlobSubtype);
-                return nullptr;
-            }
             case kData:
                 return encodeVectorFromBytes(ctx, value->asData(), dim);
             case kString:

@@ -120,7 +120,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
         // Run the query:
         checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
     }
 
     // Query, using a vector parameter provided as a Base64-encoded string:
@@ -135,7 +136,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
         // Run the query:
         checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
     }
 
     // Query, using a vector parameter provided as an array of floats:
@@ -145,15 +147,15 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         enc.beginDictionary();
         enc.writeKey("target");
         enc.beginArray();
-        for (float n : kTargetVector)
-            enc.writeFloat(n);
+        for ( float n : kTargetVector ) enc.writeFloat(n);
         enc.endArray();
         enc.endDictionary();
         Query::Options options(enc.finish());
 
         // Run the query:
         checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
 
         // Update a document with an invalid vector property:
         {
@@ -168,7 +170,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         }
         // Verify the updated document is missing from the results:
         checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"}, {0, 10549, 29275, 32025, 65417});
+                             {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"},
+                             {0, 10549, 29275, 32025, 65417});
     }
     reopenDatabase();
 }
