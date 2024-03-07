@@ -17,6 +17,7 @@
 //
 
 #include "VectorQueryTest.hh"
+#include "Base64.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -107,33 +108,68 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
     REQUIRE(query != nullptr);
 
-    // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
-
-    // Run the query:
-    checkExpectedResults(query->createEnumerator(&options),
-                         {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
-
-    // Update a document with an invalid vector property:
+    // Query, using a vector parameter provided as raw data:
     {
-        Log("---- Updating rec-0031 to remove its vector");
-        ExclusiveTransaction t(db);
-        writeDoc("rec-0031", DocumentFlags::kNone, t, [=](Encoder& enc) {
-            enc.writeKey("vector");
-            enc.writeString("nope");
-        });
-        t.commit();
-        ++expectedWarningsLogged;
-    }
-    // Verify the updated document is missing from the results:
-    checkExpectedResults(query->createEnumerator(&options),
-                         {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"}, {0, 10549, 29275, 32025, 65417});
+        Log("---- Querying with $target = data");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
 
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+    }
+
+    // Query, using a vector parameter provided as a Base64-encoded string:
+    {
+        Log("---- Querying with $target = base64 string");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeString(base64::encode(slice(kTargetVector, sizeof(kTargetVector))));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+    }
+
+    // Query, using a vector parameter provided as an array of floats:
+    {
+        Log("---- Querying with $target = array");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.beginArray();
+        for (float n : kTargetVector)
+            enc.writeFloat(n);
+        enc.endArray();
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}, {0, 4172, 10549, 29275, 32025});
+
+        // Update a document with an invalid vector property:
+        {
+            Log("---- Updating rec-0031 to remove its vector");
+            ExclusiveTransaction t(db);
+            writeDoc("rec-0031", DocumentFlags::kNone, t, [=](Encoder& enc) {
+                enc.writeKey("vector");
+                enc.writeString("nope");
+            });
+            t.commit();
+            ++expectedWarningsLogged;
+        }
+        // Verify the updated document is missing from the results:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"}, {0, 10549, 29275, 32025, 65417});
+    }
     reopenDatabase();
 }
 
