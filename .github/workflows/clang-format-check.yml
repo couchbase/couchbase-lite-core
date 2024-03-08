@@ -40,4 +40,4 @@ jobs:
         with:
           clang-format-version: '17'
           check-path: '.'
-          exclude-regex: '(cmake|docs|jenkins|licenses|modules|tools|vendor|wiki|Xcode|n1ql.cc)'
+          exclude-regex: '(cmake|docs|jenkins|licenses|modules|tools|vendor|wiki|Xcode|n1ql.cc|MSVC)'
