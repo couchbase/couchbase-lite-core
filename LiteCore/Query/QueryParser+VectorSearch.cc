@@ -12,6 +12,7 @@
 
 #include "QueryParser.hh"
 #include "QueryParser+Private.hh"
+#include "Error.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Dict.hh"
@@ -79,7 +80,8 @@ namespace litecore {
     // indexing that expression, or "" if none.
     string QueryParser::vectorIndexTableName(const Value* match, const char* forFn) {
         string table = FTSTableName(match, true).first;
-        require(_delegate.tableExists(table), "'%s' test requires a vector index", forFn);
+        if (!_delegate.tableExists(table))
+            error::_throw(error::NoSuchIndex, "'%s' test requires a vector index", forFn);
         return table;
     }
 
