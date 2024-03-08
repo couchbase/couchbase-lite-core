@@ -1004,12 +1004,11 @@ namespace litecore {
      * Where `fmt` is an optional format string.
      */
     static void millis_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
-        DateTime format;
-        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
+        const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
-            int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, true, validFormat ? &format : nullptr);
+            const int64_t millis = sqlite3_value_int64(argv[0]);
+            setResultDateString(ctx, millis, true, format);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1026,13 +1025,12 @@ namespace litecore {
      * Where `tz` is the offset in minutes from UTC, and `fmt` is an optional format string.
      */
     static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        DateTime format;
-        bool     validFormat = argc > 2 && parseDateArgRaw(argv[2], &format);
+        const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
             int64_t millis   = sqlite3_value_int64(argv[0]);
             int64_t tzoffset = sqlite3_value_int64(argv[1]);
-            setResultDateString(ctx, millis, minutes{tzoffset}, validFormat ? &format : nullptr);
+            setResultDateString(ctx, millis, minutes{tzoffset}, format);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1049,12 +1047,11 @@ namespace litecore {
      * The local time of the current device will be assumed.
      */
     static void millis_to_str(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
-        DateTime format;
-        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
+        const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, false, validFormat ? &format : nullptr);
+            setResultDateString(ctx, millis, false, format);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1087,11 +1084,10 @@ namespace litecore {
      */
     static void str_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         DateTime dt;
-        DateTime format;
-        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
+        const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( parseDateArgRaw(argv[0], &dt) ) {
-            setResultDateString(ctx, ToMillis(dt), true, validFormat ? &format : nullptr);
+            setResultDateString(ctx, ToMillis(dt), true, format);
         } else
             setResultFleeceNull(ctx);
     }
@@ -1109,15 +1105,14 @@ namespace litecore {
      */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime dt;
-        DateTime format;
-        bool     validFormat = argc > 2 && parseDateArgRaw(argv[2], &format);
+        const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
         if ( argc < 2 || !isNumericNoError(argv[1]) || !parseDateArgRaw(argv[0], &dt) ) {
             setResultFleeceNull(ctx);
             return;
         }
         int64_t tzoffset = sqlite3_value_int64(argv[1]);
-        setResultDateString(ctx, ToMillis(dt), minutes{tzoffset}, validFormat ? &format : nullptr);
+        setResultDateString(ctx, ToMillis(dt), minutes{tzoffset}, format);
     }
 
     /**
@@ -1176,12 +1171,11 @@ namespace litecore {
         DateTime start;
         if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) { return; }
 
-        DateTime format;
-        bool     validFormat = argc > 3 && parseDateArgRaw(argv[3], &format);
+        const auto format = argc > 3 ? parseDateFormat(argv[3]) : std::optional<DateFormat>();
 
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
-        setResultDateString(ctx, result, minutes{start.tz}, validFormat ? &format : nullptr);
+        setResultDateString(ctx, result, minutes{start.tz}, format);
     }
 
     /**

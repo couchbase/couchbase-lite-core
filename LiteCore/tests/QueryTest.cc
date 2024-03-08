@@ -1306,7 +1306,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     s1 << date::format("%F", utc_time);
     s1iso << date::format("%FT%TZ", utc_time);
     utc_time += 18h + 33min;
-    s2 << date::format("%FT%T", utc_time);
+    s2 << date::format("%FT%TZ", utc_time);
     s2iso << date::format("%FT%TZ", utc_time);
     utc_time += 1s;
     s3 << date::format("%FT%T", utc_time);
@@ -1333,10 +1333,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['str_to_utc()', 99]", "null"},
             {"['str_to_utc()', '']", "null"},
             {"['str_to_utc()', 'x']", "null"},
+            // Valid format
             {"['str_to_utc()', '2018-10-23', '1111-11-11']", expected1},
             {"['str_to_utc()', '2018-10-23']", expected1iso},
+            // Invalid format
             {"['str_to_utc()', '2018-10-23T18:33', '1111-11-11T11:11']", expected2},
             {"['str_to_utc()', '2018-10-23T18:33']", expected2iso},
+            // Valid format
             {"['str_to_utc()', '2018-10-23T18:33:01', '1111-11-11T11:11:11']", expected3},
             {"['str_to_utc()', '2018-10-23T18:33:01']", expected3iso},
             {"['str_to_utc()', '1944-06-06T06:30:00']", expected4},
