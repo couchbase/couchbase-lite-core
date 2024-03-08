@@ -80,7 +80,7 @@ namespace litecore {
     // indexing that expression, or "" if none.
     string QueryParser::vectorIndexTableName(const Value* match, const char* forFn) {
         string table = FTSTableName(match, true).first;
-        if (!_delegate.tableExists(table))
+        if ( !_delegate.tableExists(table) )
             error::_throw(error::NoSuchIndex, "'%s' test requires a vector index", forFn);
         return table;
     }
