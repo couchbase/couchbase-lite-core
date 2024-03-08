@@ -98,15 +98,39 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
     createVectorIndex();
 
-    string queryStr = R"(
-        ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+    {
+        // Number of results = 10
+        string          queryStr = R"(
+         ['SELECT', {
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
+        Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
+        Log("---- Querying with $target = data");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020", "rec-0076", "rec-0087",
+                              "rec-3327", "rec-1915", "rec-8265"},
+                             {0, 4172, 10549, 29275, 32025, 65417, 67313, 68009, 70231, 70673});
+    }
+
+    // Number of Results = 5
+    string          queryStr = R"(
+     ['SELECT', {
+       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+       ORDER_BY: [ ['.distance'] ],
+     }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
-    REQUIRE(query != nullptr);
 
     // Query, using a vector parameter provided as raw data:
     {
