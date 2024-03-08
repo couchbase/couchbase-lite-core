@@ -38,10 +38,16 @@ class VectorQueryTest : public QueryTest {
                  "CouchbaseLiteVectorSearch extension");
     }
 
-    void createVectorIndex(string const& name, string const& expressionJSON, IndexSpec::VectorOptions const& options) {
+    void createVectorIndex(string const& name, string const& expression, IndexSpec::VectorOptions const& options,
+                           QueryLanguage lang = QueryLanguage::kJSON) {
         requireExtensionAvailable();
-        IndexSpec spec(name, IndexSpec::kVector, alloc_slice(json5(expressionJSON)), QueryLanguage::kJSON, options);
-        store->createIndex(spec);
+        if ( lang == QueryLanguage::kJSON ) {
+            IndexSpec spec(name, IndexSpec::kVector, alloc_slice(json5(expression)), QueryLanguage::kJSON, options);
+            store->createIndex(spec);
+        } else {
+            IndexSpec spec(name, IndexSpec::kVector, alloc_slice(expression), QueryLanguage::kN1QL, options);
+            store->createIndex(spec);
+        }
         REQUIRE(store->getIndexes().size() == 1);
     }
 
