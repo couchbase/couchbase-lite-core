@@ -38,6 +38,6 @@ jobs:
       - name: Lint Code Base
         uses: jidicula/clang-format-action@v4.11.0
         with:
-          clang-format-version: '16'
+          clang-format-version: '17'
           check-path: '.'
           exclude-regex: '(cmake|docs|jenkins|licenses|modules|tools|vendor|wiki|Xcode|n1ql.cc)'
