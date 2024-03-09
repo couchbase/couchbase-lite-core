@@ -272,6 +272,12 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT concat(a, b)") == "{'WHAT':[['concat()',['.a'],['.b']]]}");
     CHECK(translate("SELECT concat('hello', \"world\", ' ', concat(true, 123.45 , sin(1)))")
           == "{'WHAT':[['concat()','hello','world',' ',['concat()',true,123.45,['sin()',1]]]]}");
+#ifdef COUCHBASE_ENTERPRISE
+    CHECK(translate("SELECT PREDICTION(factors, {\"numbers\" : num}, vec)")
+          == "{'WHAT':[['PREDICTION()','factors',{'numbers':['.num']},['.vec']]]}");
+    CHECK(translate("SELECT PREDICTION(factors, {\"numbers\" : num})")
+          == "{'WHAT':[['PREDICTION()','factors',{'numbers':['.num']}]]}");
+#endif
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
@@ -575,8 +581,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL DateTime", "[Query][N1QL]") {
 
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
+    tableNames.emplace("kv_default:vector:vecIndex");
     tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.coll:vector:vecIndex");
     tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.scope.coll:vector:vecIndex");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
                     "WHERE VECTOR_MATCH(vecIndex, $target, 5) ORDER BY distance")

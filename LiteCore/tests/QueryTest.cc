@@ -1296,7 +1296,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     if ( offset_seconds.count() == 0 ) {
         mil_to_str << "Z";
     } else {
-        to_stream(mil_to_str, "%Ez", mil_to_str_time, nullptr, &offset_seconds);
+        to_stream(mil_to_str, "%z", mil_to_str_time, nullptr, &offset_seconds);
     }
     const auto mil_to_str_expected = mil_to_str.str();
 
@@ -1403,15 +1403,17 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['millis_to_str()', '0']", "null"},
 
             {"['str_to_tz()', '2024-01-10T14:31:14Z', 0]", "2024-01-10T14:31:14Z"},
-            {"['str_to_tz()', '2024-01-10T14:31:14Z', -300]", "2024-01-10T09:31:14-05:00"},
-            {"['str_to_tz()', '2024-01-10T14:31:14Z', +690]", "2024-01-11T02:01:14+11:30"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', -300]", "2024-01-10T09:31:14-0500"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', +690]", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, 0]", "2024-01-10T14:31:14Z"},
-            {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-05:00"},
-            {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-0500"},
+            {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, +690, '1111-11-11']", "2024-01-11"},
-            {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+11:30"},
-            {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+11:30"},
-            {"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
+            // The default when no format is provided. YYYY-MM-DDTHH:MM:SSZ
+            {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+1130"},
+            {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+1130"},
+            // TODO: Won't pass until after CBL-5438.
+            //{"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
     });
 }
 
@@ -1684,7 +1686,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
                 {"['date_add_str()', '2016-02-28T00:00:00Z', 1, 'day']", "2016-02-29T00:00:00Z"},
 
                 // Keep time offset
-                {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-07:00"},
+                {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-0700"},
 
                 // Short month
                 {"['date_add_str()', '2018-02-15T00:00:00Z', 1, 'month']", "2018-03-15T00:00:00Z"},

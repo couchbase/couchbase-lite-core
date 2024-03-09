@@ -17,6 +17,7 @@
 //
 
 #include "VectorQueryTest.hh"
+#include "Base64.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -97,46 +98,105 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
     createVectorIndex();
 
-    string queryStr = R"(
-        ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+    {
+        // Number of results = 10
+        string          queryStr = R"(
+         ['SELECT', {
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
+        Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
-    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
-    REQUIRE(query != nullptr);
+        Log("---- Querying with $target = data");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
 
-    // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
-
-    // Run the query:
-    Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 5);  // the call to VECTOR_MATCH requested only 5 results
-
-    // The `expectedDistances` array contains the exact distances.
-    // Vector encoders are lossy, so using one in the index will result in approximate distances,
-    // which is why the distance check below is so loose.
-    static constexpr slice expectedIDs[5]       = {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"};
-    static constexpr float expectedDistances[5] = {0, 4172, 10549, 29275, 32025};
-
-    for ( size_t i = 0; i < 5; ++i ) {
-        REQUIRE(e->next());
-        slice id       = e->columns()[0]->asString();
-        float distance = e->columns()[1]->asFloat();
-        INFO("i=" << i);
-        CHECK(id == expectedIDs[i]);
-        CHECK_THAT(distance, Catch::Matchers::WithinRel(expectedDistances[i], 0.20f)
-                                     || Catch::Matchers::WithinAbs(expectedDistances[i], 400.0f));
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020", "rec-0076", "rec-0087",
+                              "rec-3327", "rec-1915", "rec-8265"},
+                             {0, 4172, 10549, 29275, 32025, 65417, 67313, 68009, 70231, 70673});
     }
-    CHECK(!e->next());
-    Log("done");
 
+    // Number of Results = 5
+    string          queryStr = R"(
+     ['SELECT', {
+       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+       ORDER_BY: [ ['.distance'] ],
+     }] )";
+    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+
+    // Query, using a vector parameter provided as raw data:
+    {
+        Log("---- Querying with $target = data");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
+    }
+
+    // Query, using a vector parameter provided as a Base64-encoded string:
+    {
+        Log("---- Querying with $target = base64 string");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.writeString(base64::encode(slice(kTargetVector, sizeof(kTargetVector))));
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
+    }
+
+    // Query, using a vector parameter provided as an array of floats:
+    {
+        Log("---- Querying with $target = array");
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        enc.beginArray();
+        for ( float n : kTargetVector ) enc.writeFloat(n);
+        enc.endArray();
+        enc.endDictionary();
+        Query::Options options(enc.finish());
+
+        // Run the query:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
+
+        // Update a document with an invalid vector property:
+        {
+            Log("---- Updating rec-0031 to remove its vector");
+            ExclusiveTransaction t(db);
+            writeDoc("rec-0031", DocumentFlags::kNone, t, [=](Encoder& enc) {
+                enc.writeKey("vector");
+                enc.writeString("nope");
+            });
+            t.commit();
+            ++expectedWarningsLogged;
+        }
+        // Verify the updated document is missing from the results:
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"},
+                             {0, 10549, 29275, 32025, 65417});
+    }
     reopenDatabase();
 }
 

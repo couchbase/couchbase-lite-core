@@ -86,7 +86,8 @@ namespace litecore {
         QueryParser qp(db(), collectionName(), tableName());
         qp.setBodyColumnName("new.body");
         string vectorExpr;
-        if ( auto what = spec.what(); what && what->count() == 1 ) vectorExpr = qp.vectorExpressionSQL(what->get(0));
+        if ( auto what = spec.what(); what && what->count() == 1 )
+            vectorExpr = qp.vectorToIndexExpressionSQL(what->get(0), spec.vectorOptions()->dimensions);
         else
             error::_throw(error::Unimplemented, "Vector index doesn't support multiple properties");
 
