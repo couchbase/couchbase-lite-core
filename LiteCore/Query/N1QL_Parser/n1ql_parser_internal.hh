@@ -323,7 +323,7 @@ namespace litecore::n1ql {
             // Aggregate functions:
             "avg", "count", "max", "min", "sum",
             // Predictive query:
-            "prediction", "euclidean_distance", "cosine_distance", nullptr};
+            "euclidean_distance", "cosine_distance", nullptr};
 
     static bool findIdentifier(const char* ident, const char* list[]) {
         for ( int i = 0; list[i]; ++i )
