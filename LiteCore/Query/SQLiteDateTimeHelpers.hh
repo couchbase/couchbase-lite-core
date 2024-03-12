@@ -81,7 +81,7 @@ namespace litecore {
     inline std::optional<DateFormat> parseDateFormat(sqlite3_value* arg) {
         if ( sqlite3_value_type(arg) != SQLITE_TEXT ) return {};
         const auto str = valueAsStringSlice(arg);
-        if (!str) return {};
+        if ( !str ) return {};
 
         return DateFormat::parse(str);
     }

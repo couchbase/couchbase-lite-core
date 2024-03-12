@@ -2320,7 +2320,8 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     Retained<Query> q;
     vector<slice>   expectedResults;
     vector<string>  expectedAliases;
-                    SECTION("WHERE alias numeric literal") {
+
+    SECTION("WHERE alias numeric literal") {
         q = store->compileQuery(json5("{WHAT: ['._id', \
             ['AS', 1.375, 'answer']], \
             WHERE: ['=', ['.dict.key1'], 1]}"));
