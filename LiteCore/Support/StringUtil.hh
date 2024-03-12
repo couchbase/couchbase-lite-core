@@ -102,7 +102,7 @@ namespace litecore {
     wildcard syntax: `?` matches a single character, `*` matches any number of characters,
     `[...]` matches a specific character `\\` escapes the next character.
     See <https://man7.org/linux/man-pages/man7/glob.7.html> for details.*/
-    bool matchGlobPattern(const std::string &str, const std::string &pattern);
+    bool matchGlobPattern(const std::string& str, const std::string& pattern);
 
     //////// UNICODE_AWARE FUNCTIONS:
 

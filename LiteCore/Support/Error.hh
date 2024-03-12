@@ -99,7 +99,8 @@ namespace litecore {
         error(Domain, int code, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace);
 
         explicit error(LiteCoreError e) : error(LiteCore, e) {}
-        explicit error(const C4Error&); // This is implemented in c4Error.cc
+
+        explicit error(const C4Error&);  // This is implemented in c4Error.cc
 
         error& operator=(const error& e);
 

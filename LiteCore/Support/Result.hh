@@ -89,7 +89,7 @@ namespace litecore {
         /// @return  The result of `fn`, or else my current error, as a `Result<U>`.
         template <typename LAMBDA, typename RV = std::invoke_result_t<LAMBDA, T&&>, typename U = unwrap_Result<RV>>
         [[nodiscard]] Result<U> then(LAMBDA fn) && noexcept {
-            return _then<U>(fleece::function_ref<RV(T &&)>(std::forward<LAMBDA>(fn)));
+            return _then<U>(fleece::function_ref<RV(T&&)>(std::forward<LAMBDA>(fn)));
         }
 
         /// Calls `fn` with the error, if there is one, else does nothing.
