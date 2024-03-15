@@ -150,7 +150,7 @@ namespace litecore {
 
     bool matchGlobPattern(const string& str, const string& pattern) {
 #ifdef _MSC_VER
-        return PathMatchSpecA(str, pattern);
+        return PathMatchSpecA(str.c_str(), pattern.c_str());
 #else
         return fnmatch(pattern.c_str(), str.c_str(), 0) == 0;
 #endif
