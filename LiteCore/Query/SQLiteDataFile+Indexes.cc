@@ -231,12 +231,12 @@ namespace litecore {
             expression = col;
             if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
         }
-        SQLiteIndexSpec spec {stmt.getColumn(0).getString(),
-                (IndexSpec::Type)stmt.getColumn(1).getInt(),
-                expression,
-                queryLanguage,
-                stmt.getColumn(3).getString(),
-                stmt.getColumn(4).getString()};
+        SQLiteIndexSpec spec{stmt.getColumn(0).getString(),
+                             (IndexSpec::Type)stmt.getColumn(1).getInt(),
+                             expression,
+                             queryLanguage,
+                             stmt.getColumn(3).getString(),
+                             stmt.getColumn(4).getString()};
         if ( stmt.getColumn(5).isInteger() ) spec.lastSequence = sequence_t(stmt.getColumn(5).getInt64());
         return spec;
     }

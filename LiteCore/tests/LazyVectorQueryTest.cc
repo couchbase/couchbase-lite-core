@@ -129,7 +129,6 @@ N_WAY_TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Query", "[Query][Predic
     Retained<QueryEnumerator> e;
     e = (query->createEnumerator(&options));
     REQUIRE(e->getRowCount() == 0);  // index is empty so far
-    expectedWarningsLogged++;      // This will warn "vectorsearch: Querying without an index"
 
     REQUIRE(updateVectorIndex(200, 200));
     REQUIRE(updateVectorIndex(999, 200));

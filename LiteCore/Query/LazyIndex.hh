@@ -69,9 +69,11 @@ namespace litecore {
         /// This is the value of the expression in the index spec.
         FLValue valueAt(size_t i) const;
 
-        /// Sets the vector for the i'th value. If you don't call this, it's assumed there is no
-        /// vector, and any existing vector will be removed upon `finish`.
+        /// Sets the vector for the i'th value, or removes it if NULL.
         void setVectorAt(size_t i, const float* vector, size_t dimension);
+
+        /// Indicates that a vector can't be computed at this time.
+        void skipVectorAt(size_t i);
 
         /// Updates the index with the computed vectors, removes any index rows for which no vector
         /// was given, and updates the index's latest sequence.

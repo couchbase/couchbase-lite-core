@@ -35,7 +35,11 @@ struct C4Index
 
 #ifdef COUCHBASE_ENTERPRISE
     /// Finds new or updated documents for which vectors need to be recomputed by the application.
-    /// If there are none, returns NULL. */
+    /// If there are none, returns NULL.
+    /// @param limit  The maximum number of documents/vectors to return. If this is less than
+    ///               the total number, the rest will be returned on the next call to `beginUpdate`.
+    /// @warning  Do not call `beginUpdate` again until you're done with the returned updater;
+    ///           it's not valid to have more than one update in progress at a time.
     Retained<struct C4IndexUpdater> beginUpdate(size_t limit);
 #endif
 
@@ -52,10 +56,13 @@ struct C4Index
 /** Describes a set of index values that need to be computed by the application,
     to update a lazy index after its Collection has changed.
     You should:
+
     1. Call `valueAt` for each of the `count` items to get the Fleece value, and:
       1.1. Compute a vector from this value
       1.2. Call `setVectorAt` with the resulting vector, or with nullptr if none.
-    2. Finally, open a transaction and call `finish` to apply the updates to the index. */
+    2. Finally, open a transaction and call `finish` to apply the updates to the index.
+
+    If you need to abandon an update, simply release the updater without calling `finish`. */
 struct C4IndexUpdater final
     : public fleece::RefCounted
     , public fleece::InstanceCountedIn<C4IndexUpdater>
@@ -67,15 +74,19 @@ struct C4IndexUpdater final
     /// This is the value of the expression in the index spec.
     FLValue valueAt(size_t i) const;
 
-    /// Sets the vector for the i'th value. If you don't call this, it's assumed there is no
-    /// vector, and any existing vector will be removed upon `finish`.
-    void setVectorAt(size_t i, const float* vector, size_t dimension);
+    /// Sets the vector for the i'th value. A NULL pointer means there is no vector and any
+    /// existing vector should be removed from the index.
+    void setVectorAt(size_t i, const float* C4NULLABLE vector, size_t dimension);
+
+    /// Tells the updater that the i'th vector can't be computed at this time, e.g. because of
+    /// a transient network error. The associated document will be returned again in the next
+    /// call to `C4Index::beginUpdate()`.
+    void skipVectorAt(size_t i);
 
     /// Updates the index with the computed vectors, removes any index rows for which no vector
     /// was given, and updates the index's latest sequence.
-    /// @note  Must be called in a database transaction.
-    /// @returns  True if the index is now completely up-to-date; false if there have been
-    ///           changes to the Collection since the LazyIndexUpdate was created.
+    /// @returns  True if the index is now completely up-to-date; false if there are more vectors
+    ///           to index (including ones changed since the call to `C4Index::beginUpdate`.)
     bool finish();
 
   private:

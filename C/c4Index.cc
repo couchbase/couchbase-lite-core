@@ -73,11 +73,15 @@ void C4IndexUpdater::setVectorAt(size_t i, const float* vector, size_t dimension
     _update->setVectorAt(i, vector, dimension);
 }
 
+void C4IndexUpdater::skipVectorAt(size_t i) { return _update->skipVectorAt(i); }
+
 bool C4IndexUpdater::finish() {
-    ExclusiveTransaction& txn  = asInternal(_collection->getDatabase())->transaction();
-    bool                  done = _update->finish(txn);
-    _update                    = nullptr;
-    _collection                = nullptr;
+    auto                    db = _collection->getDatabase();
+    C4Database::Transaction txn(db);
+    bool                    done = _update->finish(asInternal(db)->transaction());
+    txn.commit();
+    _update     = nullptr;
+    _collection = nullptr;
     return done;
 }
 

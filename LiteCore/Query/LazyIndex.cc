@@ -151,16 +151,21 @@ namespace litecore {
 
     void LazyIndexUpdate::setVectorAt(size_t i, const float* vec, size_t dimension) {
         AssertArg(i < _count);
-        AssertArg(vec != nullptr);
-        AssertArg(dimension > 0);
-        if ( _dimension == 0 ) {
-            _dimension = dimension;
-        } else if ( dimension != _dimension ) {
-            error::_throw(error::InvalidParameter, "Inconsistent vector dimensions");
+        if ( vec != nullptr ) {
+            AssertArg(dimension > 0);
+            if ( _dimension == 0 ) {
+                _dimension = dimension;
+            } else if ( dimension != _dimension ) {
+                error::_throw(error::InvalidParameter, "Inconsistent vector dimensions");
+            }
+            auto heapVec = unique_ptr<float[]>(new float[dimension]);
+            std::copy(vec, vec + dimension, heapVec.get());
+            _vectors[i] = std::move(heapVec);
         }
-        auto heapVec = unique_ptr<float[]>(new float[dimension]);
-        std::copy(vec, vec + dimension, heapVec.get());
-        _vectors[i] = std::move(heapVec);
+    }
+
+    void LazyIndexUpdate::skipVectorAt(size_t i) {
+        error::_throw(error::Unimplemented);  // TODO
     }
 
     bool LazyIndexUpdate::finish(ExclusiveTransaction& txn) {
