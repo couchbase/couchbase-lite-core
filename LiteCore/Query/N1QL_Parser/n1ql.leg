@@ -127,7 +127,8 @@ indexName       = IDENTIFIER
 
 
 expression =
-    expr9
+    '((' _ x:expression _ '))' { $$ = (x) }
+    | expr9
 
 
 caseExpression =
@@ -497,9 +498,9 @@ FLMutableDict parse(const string &input, unsigned *errPos) {
 
     bool ok = parse(&ctx) != 0;
     if (ok) {
-        result = ctx.__;
+        result = ctx._;
     } else {
-        *errPos = (unsigned) ctx.__maxpos;
+        *errPos = (unsigned) ctx._maxpos;
     }
     yyrelease(&ctx);
     return (FLMutableDict) FLValue_Retain(result);
