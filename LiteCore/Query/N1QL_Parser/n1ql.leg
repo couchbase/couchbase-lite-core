@@ -128,7 +128,8 @@ indexName       = IDENTIFIER
 
 
 expression =
-    expr9
+    '((' _ x:expression _ '))' { $$ = (x) }
+    | expr9
 
 
 caseExpression =
