@@ -2238,9 +2238,9 @@
 				27098AA5216C2108002751DA /* PredictiveModel.hh */,
 				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
 				27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */,
+				27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */,
 				27D62A382B72B448004C0787 /* LazyIndex.hh */,
 				27D62A392B72B448004C0787 /* LazyIndex.cc */,
-				27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */,
 			);
 			name = EE;
 			sourceTree = "<group>";

@@ -19,6 +19,7 @@
 #include "VectorQueryTest.hh"
 #include "LazyIndex.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/function_ref.hh"
 #include <cmath>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -40,15 +41,36 @@ static void computeVector(int64_t n, float vec[kDimension]) {
 
 class LazyVectorQueryTest : public VectorQueryTest {
   public:
-    LazyVectorQueryTest(int which) : VectorQueryTest(which) {}
+    LazyVectorQueryTest() : LazyVectorQueryTest(0) {}
 
-    void makeDocs() {
+    LazyVectorQueryTest(int which) : VectorQueryTest(which) {
         addNumberedDocs(1, 400);
-        {
-            ExclusiveTransaction t(db);
-            writeArrayDoc(401, t);  // Add a row that has no 'number' property
-            t.commit();
-        }
+        addNonVectorDoc(401);
+        createVectorIndex();
+
+        string queryStr = R"(
+         ['SELECT', {
+            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
+            ORDER_BY: [ ['.distance'] ],
+         }] )";
+        _query          = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+        REQUIRE(_query != nullptr);
+
+        // Create the $target query param:
+        float           targetVector[5] = {0.0f, 1.0f, 1.0f, 0.0f, 0.0f};
+        fleece::Encoder enc;
+        enc.beginDict();
+        enc.writeKey("target");
+        enc.writeData(slice(targetVector, 5 * sizeof(float)));
+        enc.endDict();
+        _options = Query::Options(enc.finish());
+    }
+
+    void addNonVectorDoc(int n) {
+        ExclusiveTransaction t(db);
+        writeArrayDoc(n, t);  // Add a row that has no 'number' property
+        t.commit();
     }
 
     void createVectorIndex() {
@@ -61,94 +83,107 @@ class LazyVectorQueryTest : public VectorQueryTest {
         _lazyIndex = make_retained<LazyIndex>(*store, "factorsindex");
     }
 
-    bool updateVectorIndex(size_t limit, size_t expectedCount) {
-        Log("Starting index update...");
-        auto update = _lazyIndex->beginUpdate(limit);
+    using UpdaterFn = function_ref<bool(LazyIndexUpdate*, size_t, fleece::Value)>;
+
+    static bool alwaysUpdate(LazyIndexUpdate*, size_t, fleece::Value) { return true; }
+
+    size_t updateVectorIndex(size_t limit, UpdaterFn fn) {
+        Log("---- Starting index update...");
+        Retained<LazyIndexUpdate> update = _lazyIndex->beginUpdate(limit);
         if ( !update ) {
             Log("...nothing to update");
-            CHECK(0 == expectedCount);
-            return false;
+            return 0;
         }
-        Log("Updating %zu vectors...", update->count());
+        Log("---- Updating %zu vectors...", update->count());
 
-        CHECK(update->count() == expectedCount);
-        for ( size_t i = 0; i < update->count(); ++i ) {
+        size_t count = update->count();
+        CHECK(count > 0);
+        for ( size_t i = 0; i < count; ++i ) {
             fleece::Value val(update->valueAt(i));
-            if ( val.type() != kFLNull ) {
-                REQUIRE(val.type() == kFLNumber);
+            REQUIRE(val.type() == kFLNumber);
+            if ( fn(update, i, val) ) {
                 int64_t n = val.asInt();
                 float   vec[kDimension];
                 computeVector(n, vec);
                 update->setVectorAt(i, vec, kDimension);
             }
         }
-        Log("Finishing index update...");
+
+        Log("---- Finishing index update...");
         ExclusiveTransaction txn(db);
         update->finish(txn);
         txn.commit();
-        return true;
+        Log("---- End of index update");
+        return count;
     }
 
-    void testResults(Query* query) {
-        Retained<QueryEnumerator> e(query->createEnumerator());
-        int                       docNo = 0;
-        while ( e->next() ) {
-            ++docNo;
-            auto  col   = e->columns();
-            slice docID = col[0]->asString();
-            Log("%.*s : %s", SPLAT(docID), col[1]->toJSONString().c_str());
+    void checkQueryReturns(std::vector<slice> expectedIDs) {
+        auto e = _query->createEnumerator(&_options);
+        REQUIRE(e->getRowCount() == expectedIDs.size());
+        for ( size_t i = 0; i < expectedIDs.size(); ++i ) {
+            INFO("i=" << i);
+            REQUIRE(e->next());
+            slice id       = e->columns()[0]->asString();
+            float distance = e->columns()[1]->asFloat();
+            Log("%.*s: %.3f", FMTSLICE(id), distance);
+            CHECK(id == expectedIDs[i]);
+            // CHECK(fabs(distance - expectedDistances[i]) < 0.01);
         }
-        CHECK(docNo == 401);
+        CHECK(!e->next());
+        Log("done");
     }
 
     Retained<LazyIndex> _lazyIndex;
+    Retained<Query>     _query;
+    Query::Options      _options;
 };
 
-N_WAY_TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Query", "[Query][Predict][.VectorSearch]") {
-    makeDocs();
-    createVectorIndex();
-    string          queryStr = R"(
-         ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
-            ORDER_BY: [ ['.distance'] ],
-         }] )";
-    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
-    REQUIRE(query != nullptr);
-
-    // Create the $target query param:
-    float           targetVector[5] = {0.0f, 1.0f, 1.0f, 0.0f, 0.0f};
-    fleece::Encoder enc;
-    enc.beginDict();
-    enc.writeKey("target");
-    enc.writeData(slice(targetVector, 5 * sizeof(float)));
-    enc.endDict();
-    Query::Options options(enc.finish());
-
-    // Run the query:
+TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index", "[Query][.VectorSearch]") {
     Retained<QueryEnumerator> e;
-    e = (query->createEnumerator(&options));
+    e = (_query->createEnumerator(&_options));
     REQUIRE(e->getRowCount() == 0);  // index is empty so far
 
-    REQUIRE(updateVectorIndex(200, 200));
-    REQUIRE(updateVectorIndex(999, 200));
+    REQUIRE(updateVectorIndex(200, alwaysUpdate) == 200);
+    REQUIRE(updateVectorIndex(999, alwaysUpdate) == 200);
 
-    e = (query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 5);  // the call to VECTOR_MATCH requested only 5 results
+    checkQueryReturns({"rec-291", "rec-171", "rec-039", "rec-081", "rec-249"});
 
-    for ( size_t i = 0; i < 5; ++i ) {
-        INFO("i=" << i);
-        REQUIRE(e->next());
-        slice id       = e->columns()[0]->asString();
-        float distance = e->columns()[1]->asFloat();
-        Log("%.*s: %.3f", FMTSLICE(id), distance);
-        //        CHECK(id == expectedIDs[i]);
-        //        CHECK(fabs(distance - expectedDistances[i]) < 0.01);
-    }
-    CHECK(!e->next());
-    Log("done");
+    // Nothing more to update
+    REQUIRE(updateVectorIndex(200, alwaysUpdate) == 0);
 
-    REQUIRE(!updateVectorIndex(200, 0));
+    addNonVectorDoc(402);  // Add a row that has no 'number' property
+    REQUIRE(updateVectorIndex(200, alwaysUpdate) == 0);
+}
+
+TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.VectorSearch]") {
+    unsigned nSkipped = 0;
+    size_t   n        = updateVectorIndex(999, [&](LazyIndexUpdate* update, size_t i, fleece::Value val) {
+        if ( i % 10 == 0 ) {
+            update->skipVectorAt(i);  // Skip the docs whose ID ends in 1
+            ++nSkipped;
+            return false;
+        } else {
+            return true;
+        }
+    });
+    CHECK(n == 400);
+
+    // rec-291, rec-171 and rec-081 are missing because unindexed
+    checkQueryReturns({"rec-039", "rec-249", "rec-345", "rec-159", "rec-369"});
+
+    // Update the index again; only the skipped docs will appear this time.
+    size_t nIndexed = 0;
+    do {
+        n = updateVectorIndex(50, [](LazyIndexUpdate* update, size_t i, fleece::Value val) {
+            return true;  // index them
+        });
+        nIndexed += n;
+    } while ( n > 0 );
+    CHECK(nIndexed == nSkipped);
+
+    // Now everything is indexed:
+    CHECK(updateVectorIndex(200, alwaysUpdate) == 0);
+    checkQueryReturns({"rec-291", "rec-171", "rec-039", "rec-081", "rec-249"});
 }
 
 #endif

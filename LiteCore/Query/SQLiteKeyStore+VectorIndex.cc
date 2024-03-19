@@ -118,12 +118,16 @@ namespace litecore {
         string whereNewSQL  = qp.whereClauseSQL(where, "new");
         string whereOldSQL  = qp.whereClauseSQL(where, "old");
         string deleteOldSQL = CONCAT("DELETE FROM " << sqlIdentifier(vectorTableName) << " WHERE docid = old.rowid");
+
+        // Always delete obsolete vectors when a doc is updated or deleted:
+        createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
         createTrigger(vectorTableName, "del", "AFTER DELETE", whereOldSQL, deleteOldSQL);
 
         bool lazy = spec.vectorOptions()->lazy;
         if ( lazy ) {
-            // Lazy index: Mark as lazy by initializing lastSeq to 0
-            db().setIndexLastSequence(spec.name, 0_seq);
+            // Lazy index: Mark as lazy by initializing lastSeq. Vectors will not be computed
+            // automatically; app updates them via the LazyIndex class.
+            db().setIndexSequences(spec.name, "[]");
         } else {
             // Index the existing records:
             db().exec(CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName) << " (docid, vector)"
@@ -146,7 +150,6 @@ namespace litecore {
             createTrigger(vectorTableName, "ins", "AFTER INSERT", whereNewSQL, insertNewSQL);
 
             // ...on update:
-            createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
             createTrigger(vectorTableName, "postupdate", "AFTER UPDATE OF body", whereNewSQL, insertNewSQL);
         }
 

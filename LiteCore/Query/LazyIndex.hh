@@ -6,6 +6,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "SequenceSet.hh"
 #include "fleece/Fleece.h"
 #include <vector>
 
@@ -42,7 +43,7 @@ namespace litecore {
         SQLiteIndexSpec getSpec() const;
         void            insert(int64_t rowid, float vec[], size_t dimension);
         void            del(int64_t rowid);
-        void            updateLastSequence(sequence_t);
+        void            updateIndexedSequences(SequenceSet const&);
 
         KeyStore&                          _keyStore;         // The public KeyStore
         string                             _indexName;        // The index's name
@@ -83,18 +84,27 @@ namespace litecore {
 
       private:
         friend class LazyIndex;
-        LazyIndexUpdate(LazyIndex*, sequence_t curSeq, Retained<QueryEnumerator>, size_t limit);
+        LazyIndexUpdate(LazyIndex*, sequence_t firstSeq, sequence_t curSeq, SequenceSet indexedSeqs,
+                        Retained<QueryEnumerator>, size_t limit);
 
         using VectorPtr = std::unique_ptr<float[]>;
 
-        Retained<LazyIndex>       _manager;        // Owning LazyIndex
-        sequence_t                _atSeq;          // KeyStore's lastSequence at time of query
-        Retained<QueryEnumerator> _enum;           // Results of Query for updated docs
-        size_t                    _count = 0;      // Number of vectors to update
-        std::vector<size_t>       _rows;           // Maps public value# to QueryEnum row#
-        std::vector<VectorPtr>    _vectors;        // The vectors computed by the app
-        size_t                    _dimension = 0;  // Dimensions of the vectors in _vectors
-        bool                      _incomplete;     // True if query did not get all update docs
+        struct Item {
+            int64_t   queryRow;  ///< Row# in QueryEnumerator
+            VectorPtr vector;    ///< The vector set by the client
+            bool      skipped;   ///< True if client is skipping this vector for now
+        };
+
+        Retained<LazyIndex>       _manager;  // Owning LazyIndex
+        sequence_t                _firstSeq;
+        sequence_t                _lastSeq;
+        sequence_t                _atSeq;             // KeyStore's lastSequence at time of query
+        SequenceSet               _indexedSequences;  // Sequences that have been indexed
+        Retained<QueryEnumerator> _enum;              // Results of Query for updated docs
+        size_t                    _count = 0;         // Number of vectors to update
+        std::vector<Item>         _items;             // Vectors to update exposed in the public API
+        size_t                    _dimension = 0;     // Dimensions of the vectors in _vectors
+        bool                      _incomplete;        // True if query did not get all update docs
     };
 
 

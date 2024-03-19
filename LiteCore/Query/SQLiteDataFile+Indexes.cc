@@ -205,21 +205,9 @@ namespace litecore {
             return nullopt;
     }
 
-    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexesNeedingUpdate() {
-        vector<SQLiteIndexSpec> indexes;
-        if ( indexTableExists() ) {
-            SQLite::Statement stmt(*this, "SELECT I.name, I.type, I.expression, I.keyStore, "
-                                          "I.indexTableName, I.lastSeq "
-                                          "FROM indexes as I JOIN kvmeta as M on I.keyStore = M.name "
-                                          "WHERE I.lastSeq < M.lastSeq");
-            while ( stmt.executeStep() ) { indexes.emplace_back(specFromStatement(stmt)); }
-        }
-        return indexes;
-    }
-
-    void SQLiteDataFile::setIndexLastSequence(slice name, sequence_t seq) {
+    void SQLiteDataFile::setIndexSequences(slice name, slice sequencesJSON) {
         SQLite::Statement stmt(*this, "UPDATE indexes SET lastSeq=?1 WHERE name=?2");
-        stmt.bind(1, (long long)seq);
+        stmt.bindNoCopy(1, (char*)sequencesJSON.buf, int(sequencesJSON.size));
         stmt.bindNoCopy(2, (char*)name.buf, (int)name.size);
         stmt.exec();
     }
@@ -237,7 +225,7 @@ namespace litecore {
                              queryLanguage,
                              stmt.getColumn(3).getString(),
                              stmt.getColumn(4).getString()};
-        if ( stmt.getColumn(5).isInteger() ) spec.lastSequence = sequence_t(stmt.getColumn(5).getInt64());
+        if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
         return spec;
     }
 
