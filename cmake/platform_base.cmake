@@ -120,6 +120,7 @@ function(set_litecore_source_base)
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
+        LiteCore/Support/SequenceSet.cc
         LiteCore/Support/StringUtil.cc
         LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc

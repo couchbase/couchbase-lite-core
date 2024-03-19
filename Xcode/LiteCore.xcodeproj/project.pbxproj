@@ -247,6 +247,8 @@
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
+		278CE6EA2BA4C2C200245552 /* SequenceSet.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6E92BA4C2C200245552 /* SequenceSet.cc */; };
+		278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6F12BAA116300245552 /* SequenceSetTest.cc */; };
 		278F475924C9131000E1CA7A /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
 		278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		278F475B24C9131000E1CA7A /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.mm */; };
@@ -1247,6 +1249,8 @@
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
+		278CE6E92BA4C2C200245552 /* SequenceSet.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSet.cc; sourceTree = "<group>"; };
+		278CE6F12BAA116300245552 /* SequenceSetTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSetTest.cc; sourceTree = "<group>"; };
 		278F476724C9131000E1CA7A /* iOS Perf Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS Perf Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		278F478524C914BF00E1CA7A /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		278F478724C914C600E1CA7A /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
@@ -1893,6 +1897,7 @@
 				2771991B2272498300B18E0A /* QueryParserTest.hh */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				2723410F211B5FC400DA9437 /* QueryTest.hh */,
+				278CE6F12BAA116300245552 /* SequenceSetTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
@@ -2331,6 +2336,7 @@
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
+				278CE6E92BA4C2C200245552 /* SequenceSet.cc */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
@@ -4038,6 +4044,7 @@
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */,
 				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
@@ -4429,6 +4436,7 @@
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
+				278CE6EA2BA4C2C200245552 /* SequenceSet.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
