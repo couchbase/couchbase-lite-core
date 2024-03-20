@@ -538,11 +538,11 @@ namespace litecore {
         ss << "/" << iter->second.first << "#" << iter->first;
     }
 
-    std::string LogDomain::getObjectPath(unsigned obj) {
-        auto iter = sObjectMap.find(obj);
-        if ( iter == sObjectMap.end() ) { return ""; }
+    std::string LogDomain::getObjectPath(unsigned obj, const ObjectMap& objMap) {
+        auto iter = objMap.find(obj);
+        if ( iter == objMap.end() ) { return ""; }
         std::stringstream ss;
-        getObjectPathRecur(sObjectMap, iter, ss);
+        getObjectPathRecur(objMap, iter, ss);
         return ss.str() + "/";
     }
 
