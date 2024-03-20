@@ -281,6 +281,15 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
     } else {
         _observers.erase(obs);
         _pendingObservers.erase(obs);
+
+        {
+            std::unique_lock<std::mutex> lock(_updateMutex);
+            _removedObservers.insert(obs);
+            while (_updatingObserver == obs) {
+                _updateCond.wait(lock);
+            }
+        }
+
         if (_observers.empty() && _bgQuerier) {
             _bgQuerier->stop();
         }
@@ -307,6 +316,11 @@ void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
         // Clear pending observers as all pending observers are in observers and will be notified
         // with the update.
         _pendingObservers.clear();
+
+        // We are proceeding to the following notifyObservers that uses the copy of _observers.
+        // Reseting following varialbles.
+        _removedObservers.clear();
+        _updatingObserver = nullptr;
     }
     
     notifyObservers(observers, qe, err);
@@ -325,7 +339,19 @@ void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
                               QueryEnumerator *qe, C4Error err)
 {
     for(auto &obs : observers) {
+        {
+            std::scoped_lock<std::mutex> lock(_updateMutex);
+            if (_removedObservers.find(obs) != _removedObservers.end()) {
+                continue;
+            }
+            _updatingObserver = obs;
+        }
         Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe == nullptr ? nullptr : qe->clone());
         obs->notify(c4e, err);
+        {
+            std::scoped_lock<std::mutex> lock(_updateMutex);
+            _updatingObserver = nullptr;
+            _updateCond.notify_one();
+        }
     }
 }

@@ -133,6 +133,22 @@ private:
     std::set<litecore::C4QueryObserverImpl*>    _observers;
     std::set<litecore::C4QueryObserverImpl*>    _pendingObservers;
     mutable std::mutex                          _mutex;
+
+    // Simulate weak references.
+    // 1. After enableObserver(obs, false), obs will be removed from _observers.
+    // The above is done under _mutex.
+    // 2. In liveQuerierUpdated, also under _mutex, we make a copy of _observers. Then we leave
+    // the mutex and call notifyObservers.
+    // As notifyObservers is running, there can be a call of enableObserver(obs, false) in another thread
+    // that removes an observer in the copy passed to notifyObservers. The removed observer can be a candidate
+    // of being deleted. In this sense, the copy of observers are weak references; they may be deleted
+    // as we hold them in the copy.
+    // Therefore, before we use a pointer in observers, we check if it's already removed. Ignore it if so.
+    // Otherwise, we hold it in UpdatingObserver and the removing code must wait when it's being used.
+    std::set<litecore::C4QueryObserverImpl*>    _removedObservers;
+    litecore::C4QueryObserverImpl*    _Nullable _updatingObserver{nullptr};
+    std::mutex                                  _updateMutex;
+    std::condition_variable                     _updateCond;
 };
 
 
