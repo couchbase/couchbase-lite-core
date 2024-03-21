@@ -3,6 +3,7 @@
 #include "date/date.h"
 #include "fleece/slice.hh"
 #include <optional>
+#include <slice_stream.hh>
 #include <sstream>
 
 namespace fleece {
@@ -12,11 +13,11 @@ namespace fleece {
     // The default format
     // YYYY-MM-DDThh:mm:ssTZD
 
-    DateFormat::YMD DateFormat::YMD::kISO8601 = YMD{Separator::Hyphen};
+    const DateFormat::YMD DateFormat::YMD::kISO8601 = YMD{Separator::Hyphen};
 
-    DateFormat::HMS DateFormat::HMS::kISO8601 = HMS{true, Separator::Colon};
+    const DateFormat::HMS DateFormat::HMS::kISO8601 = HMS{true, Separator::Colon};
 
-    DateFormat DateFormat::kISO8601 = DateFormat{YMD::kISO8601, Separator::T, HMS::kISO8601, {Timezone::NoColon}};
+    const DateFormat DateFormat::kISO8601 = DateFormat{YMD::kISO8601, Separator::T, HMS::kISO8601, {Timezone::NoColon}};
 
     /** This parses a subset of the formatting tokens from "date.h", found 
      * here: https://howardhinnant.github.io/date/date.html#to_stream_formatting.
@@ -33,40 +34,34 @@ namespace fleece {
      *
      * ISO8601 can be represented as `%Y-%m-%dT%H:%M:%S%z` OR `%FT%T%z`
      * */
-    std::optional<DateFormat> DateFormat::parseTokenFormat(slice formatString) {
-        if ( formatString.size < 2 ) return {};
+    std::optional<DateFormat> DateFormat::parseTokenFormat(slice_istream formatStream) {
+        if ( formatStream.size < 2 ) return {};
 
         // - YMD
 
-        auto ymd = kISO8601.ymd;
+        auto ymd = std::optional<YMD>{};
+
+        // Skip past initial '%'
+        formatStream.skip(1);
 
         // %F == %Y-%m-%d
-        if ( formatString[1] == 'F' ) {
-            // ISO YMD, so we don't need to change `ymd`
-            formatString.setStart(formatString.begin() + 2);
-        } else {
-            if ( formatString[1] == 'Y' ) {
-                // Minimum %Y-%m-%d
-                if ( formatString.size < 8 || formatString[3] != '%' || formatString[4] != 'm' || formatString[6] != '%'
-                     || formatString[7] != 'd' ) {
-                    return {};
-                }
-                switch ( formatString[2] ) {
-                    case (char)YMD::Separator::Hyphen:
-                        break;
-                    case (char)YMD::Separator::Slash:
-                        ymd.value().separator = YMD::Separator::Slash;
-                        break;
-                    default:
-                        return {};
-                }
-                formatString.setStart(formatString.begin() + 8);
+        if ( const auto firstToken = formatStream.peekByte(); firstToken == 'F' ) {
+            formatStream.skip(1);
+            ymd = YMD::kISO8601;
+        } else if ( firstToken == 'Y' ) {
+            formatStream.skip(1);
+            if ( const auto md = formatStream.readAtMost(6); md == "-%m-%d" ) {
+                ymd = YMD::kISO8601;
+            } else if ( md == "/%m/%d" ) {
+                ymd                   = YMD::kISO8601;
+                ymd.value().separator = YMD::Separator::Slash;
             } else {
-                ymd = {};
+                // If the first token is Y, we must have full valid YMD.
+                return {};
             }
         }
 
-        if ( formatString.empty() ) {
+        if ( formatStream.empty() ) {
             if ( ymd.has_value() ) return DateFormat{ymd.value()};
             else
                 return {};
@@ -74,51 +69,51 @@ namespace fleece {
 
         // - SEPARATOR
 
-        auto sep = kISO8601.separator;
+        auto sep = std::optional<Separator>{};
 
-        switch ( formatString[0] ) {
-            case (char)Separator::Space:
-                sep.value() = Separator::Space;
-            case (char)Separator::T:
-                formatString.setStart(formatString.begin() + 1);
-                break;
-            default:
-                sep = {};
+        if ( ymd.has_value() ) {
+            switch ( formatStream.peekByte() ) {
+                case (char)Separator::Space:
+                    sep = Separator::Space;
+                    formatStream.skip(1);
+                    break;
+                case (char)Separator::T:
+                    sep = Separator::T;
+                    formatStream.skip(1);
+                    break;
+                default:
+                    sep = {};
+            }
+            if ( formatStream.readByte() != '%' ) return {};
         }
 
-        if ( formatString.size < 2 ) {
-            if ( ymd.has_value() ) return DateFormat{ymd.value()};
-            else
+        if ( formatStream.size < 2 ) {
+            if ( ymd.has_value() ) {
+                return DateFormat{ymd.value()};
+            } else
                 return {};
         }
 
-        if ( formatString[0] != '%' ) { return {}; }
 
         // - HMS
 
-        auto hms = kISO8601.hms;
+        auto hms = std::optional<HMS>{};
 
-        // Equivalent to %H:%M:%S
-        if ( formatString[1] == 'T' ) {
+        // %T == %H:%M:%S
+        if ( const auto firstToken = formatStream.readByte(); firstToken == 'T' ) {
             // ISO HMS, so we don't need to change `hms`
-            formatString.setStart(formatString.begin() + 2);
-        } else {
-            if ( formatString.size < 8 || formatString[1] != 'H' || formatString[3] != '%' || formatString[4] != 'M'
-                 || formatString[6] != '%' || formatString[7] != 'S' ) {
+            hms = HMS::kISO8601;
+        } else if ( firstToken == 'H' ) {
+            if ( const auto ms = formatStream.readAtMost(6); ms == ":%M:%S" ) {
+                hms = HMS::kISO8601;
+            } else {
                 return {};
             }
-            switch ( formatString[2] ) {
-                case (char)HMS::Separator::Colon:
-                    break;
-                default:
-                    return {};
-            }
-            formatString.setStart(formatString.begin() + 8);
             // Set Millis to None until we parse it later
             hms->millis = false;
         }
 
-        if ( formatString.size < 2 ) {
+        if ( formatStream.size < 2 ) {
             if ( ymd.has_value() ) {
                 if ( hms.has_value() ) {
                     // If YMD + HMS, Separator is required.
@@ -131,20 +126,21 @@ namespace fleece {
             return {};
         }
 
+        if ( formatStream.readByte() != '%' ) return {};
+
         // Millis
         // %s OR %.s
         if ( hms.has_value() ) {
-            if ( formatString[0] == '%' && formatString[1] == 's' ) {
+            const auto ms = formatStream.peekByte();
+            if ( ms == 's' ) {
                 hms.value().millis = true;
-                formatString.setStart(formatString.begin() + 2);
-            } else if ( formatString.size > 2 && formatString[0] == '.' && formatString[1] == '%'
-                        && formatString[2] == 's' ) {
+                formatStream.skip(1);
+            } else if ( ms == '.' && formatStream.readAtMost(2) == ".s" ) {
                 hms.value().millis = true;
-                formatString.setStart(formatString.begin() + 3);
             }
         }
 
-        if ( formatString.size < 2 ) {
+        if ( formatStream.size < 2 ) {
             if ( ymd.has_value() ) {
                 if ( hms.has_value() ) {
                     // If YMD + HMS, Separator is required.
@@ -161,10 +157,12 @@ namespace fleece {
 
         auto tz = kISO8601.tz;
 
-        if ( formatString[0] == '%' && formatString[1] == 'z' ) {
+        formatStream.readToDelimiter("%"_sl);
+        const auto t = formatStream.readAtMost(2);
+
+        if ( t == "z" ) {
             tz.value() = Timezone::NoColon;
-        } else if ( formatString.size >= 3 && formatString[0] == '%' && formatString[1] == 'E'
-                    && formatString[2] == 'z' ) {
+        } else if ( t == "Ez" ) {
             tz.value() = Timezone::Colon;
         } else {
             // Format string contains additional invalid tokens

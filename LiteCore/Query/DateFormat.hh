@@ -3,6 +3,7 @@
 #include "fleece/slice.hh"
 #include <chrono>
 #include <optional>
+#include <slice_stream.hh>
 
 namespace fleece {
     class DateFormat {
@@ -30,7 +31,7 @@ namespace fleece {
         static slice format(char buf[], int64_t timestamp, std::chrono::minutes tzoffset,
                             std::optional<DateFormat> fmt);
 
-        static DateFormat kISO8601;
+        const static DateFormat kISO8601;
 
         enum class Timezone : uint8_t { NoColon, Colon };
         enum class Separator : char { Space = ' ', T = 'T' };
@@ -42,7 +43,7 @@ namespace fleece {
 
             bool operator==(const YMD& other) const;
 
-            static YMD kISO8601;
+            const static YMD kISO8601;
 
             Separator separator;
         };
@@ -54,7 +55,7 @@ namespace fleece {
 
             bool operator==(const HMS& other) const;
 
-            static HMS kISO8601;
+            const static HMS kISO8601;
 
             bool      millis;
             Separator separator;
@@ -78,7 +79,7 @@ namespace fleece {
 
       private:
         // %Y-%M-%DT%H:%M:%S
-        static std::optional<DateFormat> parseTokenFormat(slice formatString);
+        static std::optional<DateFormat> parseTokenFormat(slice_istream formatStream);
 
         // 1111-11-11T11:11:11
         static std::optional<DateFormat> parseDateFormat(slice formatString);
