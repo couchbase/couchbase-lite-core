@@ -130,11 +130,11 @@ namespace litecore {
 
         ~C4QueryObserverImpl() {
             if (_query)
-                _query->enableObserver(this, false);
+                _query->enableObserver(this, false, true);
         }
 
         void setEnabled(bool enabled) override {
-            _query->enableObserver(this, enabled);
+            _query->enableObserver(this, enabled, false);
         }
 
         // called on a background thread

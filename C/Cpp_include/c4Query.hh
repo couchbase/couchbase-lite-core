@@ -113,7 +113,8 @@ protected:
 
     C4Query(C4Collection*, C4QueryLanguage language, slice queryExpression);
     ~C4Query();
-    void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable);
+    // toDelete can be true only if enable is false.
+    void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable, bool toDelete);
 
 private:
     class LiveQuerierDelegate;

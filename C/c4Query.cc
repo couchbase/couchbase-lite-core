@@ -240,7 +240,7 @@ std::unique_ptr<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObse
 }
 
 
-void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
+void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable, bool toDelete) {
     LOCK(_mutex);
     if (enable) {
         _observers.insert(obs);
@@ -282,7 +282,7 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
         _observers.erase(obs);
         _pendingObservers.erase(obs);
 
-        {
+        if (toDelete) {
             std::unique_lock<std::mutex> lock(_updateMutex);
             _removedObservers.insert(obs);
             while (_updatingObserver == obs) {
@@ -342,6 +342,7 @@ void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
         {
             std::scoped_lock<std::mutex> lock(_updateMutex);
             if (_removedObservers.find(obs) != _removedObservers.end()) {
+                // obs is to be deleted
                 continue;
             }
             _updatingObserver = obs;
