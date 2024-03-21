@@ -62,6 +62,10 @@
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "&quot;[CBL-59]&quot;"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "--break"
             isEnabled = "YES">
          </CommandLineArgument>

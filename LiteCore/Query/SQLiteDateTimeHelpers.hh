@@ -7,8 +7,7 @@
 #include <ratio>
 #include <cstdint>
 #include "SQLiteFleeceUtil.hh"
-
-#include <DateFormat.hh>
+#include "DateFormat.hh"
 
 using namespace std::chrono;
 using namespace date;
