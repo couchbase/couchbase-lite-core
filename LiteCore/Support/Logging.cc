@@ -78,7 +78,9 @@ void FleeceLogCB::log(const char* msg, int type, const void* pointer) {
                     }
                 }
             }
-            LogTo(litecore::QueryLog, "[Fleece] %s, %p, %s column", msg, pointer, inValue?"is":"is not");
+            if (inValue) {
+                LogTo(litecore::QueryLog, "[Fleece] %s, %p, is column", msg, pointer);
+            }
             if (inValue && !inNew) {
                 LogError(litecore::QueryLog, "[Fleece] JSONEncoder::writeValue, value not in New, %p", pointer);
             }
