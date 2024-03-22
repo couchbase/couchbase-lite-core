@@ -1083,7 +1083,7 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
-        DateTime dt;
+        DateTime   dt;
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( parseDateArgRaw(argv[0], &dt) ) {
@@ -1104,7 +1104,7 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        DateTime dt;
+        DateTime   dt;
         const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
         if ( argc < 2 || !isNumericNoError(argv[1]) || !parseDateArgRaw(argv[0], &dt) ) {
