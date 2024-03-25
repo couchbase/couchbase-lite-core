@@ -118,6 +118,8 @@ endif()
 add_definitions(
     -DCMAKE                  # Let the source know this is a CMAKE build
     -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
+    -D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES # Stop libc++ headers from including extra headers
+
 )
 
 if(BUILD_ENTERPRISE)
