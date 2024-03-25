@@ -137,17 +137,17 @@ typedef struct C4Error {
 
 #ifdef __cplusplus
     // C4Error C++ API:
-    static C4Error make(C4ErrorDomain, int code, fleece::slice message = {});
-    static C4Error printf(C4ErrorDomain, int code, const char* format, ...) __printflike(3, 4);
-    static C4Error vprintf(C4ErrorDomain, int code, const char* format, va_list args) __printflike(3, 0);
+    NODISCARD static C4Error make(C4ErrorDomain, int code, fleece::slice message = {});
+    NODISCARD static C4Error printf(C4ErrorDomain, int code, const char* format, ...) __printflike(3, 4);
+    NODISCARD static C4Error vprintf(C4ErrorDomain, int code, const char* format, va_list args) __printflike(3, 0);
     static void set(C4Error* C4NULLABLE, C4ErrorDomain, int code, const char* format = nullptr, ...) __printflike(4, 5);
 
     static void set(C4ErrorDomain domain, int code, fleece::slice message, C4Error* C4NULLABLE outError) {
         if ( outError ) *outError = make(domain, code, message);
     }
 
-    static C4Error fromException(const std::exception& e) noexcept;
-    static C4Error fromCurrentException() noexcept;
+    NODISCARD static C4Error fromException(const std::exception& e) noexcept;
+    NODISCARD static C4Error fromCurrentException() noexcept;
 
     static void fromException(const std::exception& e, C4Error* C4NULLABLE outError) noexcept {
         if ( outError ) *outError = fromException(e);
@@ -218,14 +218,15 @@ CBL_CORE_API FLStringResult c4error_getBacktrace(C4Error error) C4API;
 
 
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
-CBL_CORE_API C4Error c4error_make(C4ErrorDomain domain, int code, FLString message) C4API;
+NODISCARD CBL_CORE_API C4Error c4error_make(C4ErrorDomain domain, int code, FLString message) C4API;
 
 /** Creates a C4Error struct with the given domain and code, formats the message as with
     `printf`, and associates the message with the error. */
-CBL_CORE_API C4Error c4error_printf(C4ErrorDomain domain, int code, const char* format, ...) C4API __printflike(3, 4);
+NODISCARD CBL_CORE_API C4Error c4error_printf(C4ErrorDomain domain, int code, const char* format, ...) C4API
+        __printflike(3, 4);
 
 /** Same as \ref c4error_printf, but with a premade `va_list`. */
-CBL_CORE_API C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) C4API
+NODISCARD CBL_CORE_API C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char* format, va_list args) C4API
         __printflike(3, 0);
 
 /** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the

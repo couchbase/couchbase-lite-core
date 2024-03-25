@@ -173,7 +173,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Data
     C4Error     err;
     C4Database* otherConnection = c4db_openAgain(db, &err);
     REQUIRE(otherConnection);
-    c4db_close(otherConnection, &err);
+    CHECK(c4db_close(otherConnection, &err));
 #ifdef FAIL_FAST
     auto start = chrono::system_clock::now();
 #endif
@@ -843,8 +843,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     const string db2Name     = string(kDatabaseName) + "_2";
     C4Error      error;
 
-    c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
-    REQUIRE(error.code == 0);
+    if ( !c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error) ) { REQUIRE(error.code == 0); }
     CHECK(!c4db_exists(slice(db2Name), config.parentDirectory));
     C4Database* db2 = c4db_openNamed(slice(db2Name), &config, ERROR_INFO());
     REQUIRE(db2);
@@ -871,8 +870,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     CHECK(sXtraDestructed);
 
     const string copiedDBName = string(kDatabaseName) + "_copy";
-    c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, ERROR_INFO());
-    REQUIRE(error.code == 0);
+    if ( !c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error) ) { REQUIRE(error.code == 0); }
     REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, WITH_ERROR()));
     CHECK(c4db_exists(slice(copiedDBName), config.parentDirectory));
     REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, WITH_ERROR()));

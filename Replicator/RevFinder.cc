@@ -29,6 +29,7 @@ namespace litecore::repl {
 
     RevFinder::RevFinder(Replicator* replicator, Delegate* delegate, CollectionIndex coll)
         : Worker(replicator, "RevFinder", coll), _delegate(delegate) {
+        setParentObjectRef(replicator->getObjectRef());
         _mustBeProposed = passive() && _options->noIncomingConflicts() && !_db->usingVersionVectors();
         replicator->registerWorkerHandler(this, "changes", &RevFinder::handleChanges);
         replicator->registerWorkerHandler(this, "proposeChanges", &RevFinder::handleChanges);

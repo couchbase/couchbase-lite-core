@@ -142,12 +142,12 @@ namespace litecore {
             {"millis_to_utc", 1, 2},
             {"millis_to_tz", 2, 3},
             {"str_to_millis", 1, 1},
-            {"str_to_utc", 1, 1},
+            {"str_to_utc", 1, 2},
             {"date_diff_str", 3, 3},
             {"date_diff_millis", 3, 3},
-            {"date_add_str", 3, 3},
+            {"date_add_str", 3, 4},
             {"date_add_millis", 3, 3},
-            {"str_to_tz", 2, 2},
+            {"str_to_tz", 2, 3},
 
             // Math:
             {"abs", 1, 1},

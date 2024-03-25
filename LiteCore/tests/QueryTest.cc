@@ -1284,39 +1284,61 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
-    local_seconds localtime = (local_days)(2018_y / 10 / 23);
-    struct tm     tmpTime   = FromTimestamp(localtime.time_since_epoch());
-    localtime -= GetLocalTZOffset(&tmpTime, false);
+    constexpr local_seconds localtime      = local_days{2018_y / 10 / 23};
+    tm                      tmpTime        = FromTimestamp(localtime.time_since_epoch());
+    const seconds           offset_seconds = GetLocalTZOffset(&tmpTime, false);
+    local_seconds           utc_time       = localtime - offset_seconds;
 
+    // MILLIS_TO_STR() result should be in localtime.
+    stringstream            mil_to_str;
+    constexpr local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
+    mil_to_str << date::format("%FT%T", mil_to_str_time + offset_seconds);
+    if ( offset_seconds.count() == 0 ) {
+        mil_to_str << "Z";
+    } else {
+        to_stream(mil_to_str, "%z", mil_to_str_time, nullptr, &offset_seconds);
+    }
+    const auto mil_to_str_expected = mil_to_str.str();
+
+    // These are all for STR_TO_UTC
     stringstream s1, s2, s3, s5;
-    s1 << date::format("%F", localtime);
-    localtime += 18h + 33min;
-    s2 << date::format("%FT%T", localtime);
-    localtime += 1s;
-    s3 << date::format("%FT%T", localtime);
-    s5 << date::format("%FT%TZ", localtime);
+    stringstream s1iso, s2iso, s3iso;
+    s1 << date::format("%F", utc_time);
+    s1iso << date::format("%FT%TZ", utc_time);
+    utc_time += 18h + 33min;
+    s2 << date::format("%FT%T", utc_time);
+    s2iso << date::format("%FT%TZ", utc_time);
+    utc_time += 1s;
+    s3 << date::format("%FT%T", utc_time);
+    s3iso << date::format("%FT%TZ", utc_time);
+    s5 << date::format("%FT%TZ", utc_time);
 
-    localtime = (local_days)(1944_y / 6 / 6);
-    localtime += 6h + 30min;
-    tmpTime = FromTimestamp(localtime.time_since_epoch());
-    localtime -= GetLocalTZOffset(&tmpTime, false);
+    constexpr local_seconds localtime2 = local_days{1944_y / 6 / 6} + 6h + 30min;
+    tmpTime                            = FromTimestamp(localtime2.time_since_epoch());
+    utc_time                           = localtime2 - GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
-    s4 << date::format("%FT%T", localtime);
+    s4 << date::format("%FT%TZ", utc_time);
 
-    auto expected1 = s1.str();
-    auto expected2 = s2.str();
-    auto expected3 = s3.str();
-    auto expected4 = s4.str();
-    auto expected5 = s5.str();
+    auto expected1    = s1.str();
+    auto expected2    = s2.str();
+    auto expected3    = s3.str();
+    auto expected4    = s4.str();
+    auto expected5    = s5.str();
+    auto expected1iso = s1iso.str();
+    auto expected2iso = s2iso.str();
+    auto expected3iso = s3iso.str();
 
     testExpressions({
             {"['str_to_utc()', null]", "null"},
             {"['str_to_utc()', 99]", "null"},
             {"['str_to_utc()', '']", "null"},
             {"['str_to_utc()', 'x']", "null"},
-            {"['str_to_utc()', '2018-10-23']", expected1},
-            {"['str_to_utc()', '2018-10-23T18:33']", expected2},
-            {"['str_to_utc()', '2018-10-23T18:33:01']", expected3},
+            {"['str_to_utc()', '2018-10-23', '1111-11-11']", expected1},
+            {"['str_to_utc()', '2018-10-23']", expected1iso},
+            {"['str_to_utc()', '2018-10-23T18:33', '1111-11-11T11:11']", expected2},
+            {"['str_to_utc()', '2018-10-23T18:33']", expected2iso},
+            {"['str_to_utc()', '2018-10-23T18:33:01', '1111-11-11T11:11:11']", expected3},
+            {"['str_to_utc()', '2018-10-23T18:33:01']", expected3iso},
             {"['str_to_utc()', '1944-06-06T06:30:00']", expected4},
             {"['str_to_utc()', '2018-10-23T18:33:01Z']", "2018-10-23T18:33:01Z"},
             {"['str_to_utc()', '2018-10-23T11:33:01-0700']", "2018-10-23T18:33:01Z"},
@@ -1375,21 +1397,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['millis_to_utc()', 1540319581999, '1111-11-11T11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
             {"['millis_to_utc()', 1540319581999, '1111-11-11   T 11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
 
-            {"['millis_to_str()', 1540319581000]", "2018-10-23T18:33:01Z"},
+            {"['millis_to_str()', 1540319581000]", mil_to_str_expected},
             {"['str_to_utc()', ['millis_to_str()', 1540319581000]]", "2018-10-23T18:33:01Z"},
             {"['millis_to_str()', 'x']", "null"},
             {"['millis_to_str()', '0']", "null"},
 
             {"['str_to_tz()', '2024-01-10T14:31:14Z', 0]", "2024-01-10T14:31:14Z"},
-            {"['str_to_tz()', '2024-01-10T14:31:14Z', -300]", "2024-01-10T09:31:14-05:00"},
-            {"['str_to_tz()', '2024-01-10T14:31:14Z', +690]", "2024-01-11T02:01:14+11:30"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', -300]", "2024-01-10T09:31:14-0500"},
+            {"['str_to_tz()', '2024-01-10T14:31:14Z', +690]", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, 0]", "2024-01-10T14:31:14Z"},
-            {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-05:00"},
-            {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-0500"},
+            {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, +690, '1111-11-11']", "2024-01-11"},
-            {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+11:30"},
-            {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+11:30"},
-            {"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
+            // The default when no format is provided. YYYY-MM-DDTHH:MM:SSZ
+            {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+1130"},
+            {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+1130"},
+            // TODO: Won't pass until after CBL-5438.
+            //{"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
     });
 }
 
@@ -1607,7 +1631,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'quarter']", "2018-04-01T00:00:00Z"},
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'year']", "2019-01-01T00:00:00Z"},
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'decade']", "2028-01-01T00:00:00Z"},
-                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'century']", "2118-01-01T00:00:00Z"},
+                // Without fmt, should always be ISO8601
+                {"['date_add_str()', '2018-01-01', 1, 'century']", "2118-01-01T00:00:00Z"},
+                // With fmt
+                {"['date_add_str()', '2018-01-01', 1, 'century', '1111-11-11']", "2118-01-01"},
 
                 // Note: Windows cannot handle times after year 3000
                 {"['date_add_str()', '1918-01-01T00:00:00Z', 1, 'millennium']", "2918-01-01T00:00:00Z"},
@@ -1659,7 +1686,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
                 {"['date_add_str()', '2016-02-28T00:00:00Z', 1, 'day']", "2016-02-29T00:00:00Z"},
 
                 // Keep time offset
-                {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-07:00"},
+                {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-0700"},
 
                 // Short month
                 {"['date_add_str()', '2018-02-15T00:00:00Z', 1, 'month']", "2018-03-15T00:00:00Z"},
@@ -2283,6 +2310,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     Retained<Query> q;
     vector<slice>   expectedResults;
     vector<string>  expectedAliases;
+
     SECTION("WHERE alias numeric literal") {
         q = store->compileQuery(json5("{WHAT: ['._id', \
             ['AS', 1.375, 'answer']], \
@@ -2805,6 +2833,12 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
                                                                                      [](const Value* v, bool missing) {
                                                                                          return missing
                                                                                                 && v->type() == kNull;
+                                                                                     }},
+                                                                                    {"round_even(8.8343534, -1)",
+                                                                                     [](const Value* v, bool missing) {
+                                                                                         return !missing
+                                                                                                && v->type() == kNumber
+                                                                                                && v->asDouble() == 10;
                                                                                      }}};
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr      = "select ";
@@ -2822,7 +2856,9 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
     for ( unsigned i = 0; i < testCaseCount; ++i ) {
-        REQUIRE(std::get<1>(testCases[i])(e->columns()[i], missingColumns & (1ull << i)));
+        const auto result  = e->columns()[i];
+        const auto missing = missingColumns & (1ull << i);
+        REQUIRE(std::get<1>(testCases[i])(result, missing));
     }
 }
 

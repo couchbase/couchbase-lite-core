@@ -150,7 +150,7 @@ namespace litecore {
     }
 
     void DataFile::reopen() {
-        logInfo("Opening database");
+        logInfo("File=%s Opening database", _shared->loggingName().c_str());
         for ( auto& i : _keyStores ) {
             // CBL-859 If we have rekeyed, then the keystores all have invalid compiled statements
             // inside of them.  Close them all so that those get cleared, and then the next call to

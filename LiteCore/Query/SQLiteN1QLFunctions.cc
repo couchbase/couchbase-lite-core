@@ -929,11 +929,10 @@ namespace litecore {
         roundTo(ctx, argc, argv, [](double d) -> double {
             double fl = floor(d);
             double fr = d - fl;
-            if ( fr < 0.5 || int64_t(fl) % 2 == 0 ) {
-                return fl;
-            } else {
-                return fl + 1;
-            }
+
+            if ( fr > 0.5 ) { return fl + 1; }
+            if ( fr < 0.5 || int64_t(fl) % 2 == 0 ) { return fl; }
+            return fl + 1;
         });
     }
 
@@ -984,43 +983,90 @@ namespace litecore {
 
 #pragma mark - DATES:
 
+    /**
+     * The following functions service SQL++ DateTime functionality. The functions follow their
+     * Couchbase Server counterparts as closely as possible.
+     * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html.
+     * The main difference between Server and this implementation is; to avoid breaking changes
+     * with CBL3.1 `str_to_utc` functionality, functions which take a date string as input do not
+     * follow the format of the input. They will always output ISO8601, unless the optional `fmt`
+     * parameter is provided.
+     */
+
+    /**
+     * Convert milliseconds since Unix epoch to a date string with UTC timezone.
+     * Expects:
+     *   - `millis`: int,
+     *   - `fmt`: string?,
+     * Outputs:
+     *   - `date`: string,
+     * Where `fmt` is an optional format string.
+     */
     static void millis_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         DateTime format;
-        bool     valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
 
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, 0, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, true, validFormat ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
     }
 
+    /**
+     * Convert milliseconds since Unix epoch to a date string with the given timezone.
+     * Expects:
+     *   - `millis`: int,
+     *   - `tz`: int,
+     *   - `fmt`: string?,
+     * Outputs:
+     *   - `date`: string,
+     * Where `tz` is the offset in minutes from UTC, and `fmt` is an optional format string.
+     */
     static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime format;
-        bool     valid = argc > 2 && parseDateArgRaw(argv[2], &format);
+        bool     validFormat = argc > 2 && parseDateArgRaw(argv[2], &format);
 
         if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
             int64_t millis   = sqlite3_value_int64(argv[0]);
             int64_t tzoffset = sqlite3_value_int64(argv[1]);
-            setResultDateString(ctx, millis, (int)tzoffset, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, minutes{tzoffset}, validFormat ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
     }
 
+    /**
+     * Convert milliseconds since Unix epoch to a date string.
+     * Expects:
+     *   - `millis`: int,
+     *   - `fmt`: string?,
+     * Outputs:
+     *   - `date`: string,
+     * Where `fmt` is an optional format string.
+     * The local time of the current device will be assumed.
+     */
     static void millis_to_str(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         DateTime format;
-        bool     valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
 
         if ( isNumericNoError(argv[0]) ) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, valid ? format.tz : 0, valid ? &format : nullptr);
+            setResultDateString(ctx, millis, false, validFormat ? &format : nullptr);
         } else {
             setResultFleeceNull(ctx);
         }
     }
 
+    /**
+     * Convert a Date string to milliseconds since unix epoch.
+     * Expects:
+     *   - `date`: string
+     * Outputs:
+     *   - `millis`: int,
+     * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void str_to_millis(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         int64_t millis;
         if ( parseDateArg(argv[0], &millis) ) sqlite3_result_int64(ctx, millis);
@@ -1028,26 +1074,63 @@ namespace litecore {
             setResultFleeceNull(ctx);
     }
 
+    /**
+     * Convert a Date string to a Date string in UTC timezone.
+     * Expects:
+     *   - `date`: string
+     *   - `fmt`: string?
+     * Outputs:
+     *   - `date`: string,
+     * Where `fmt` is an optional format string.
+     * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void str_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         DateTime dt;
+        DateTime format;
+        bool     validFormat = argc > 1 && parseDateArgRaw(argv[1], &format);
+
         if ( parseDateArgRaw(argv[0], &dt) ) {
-            DateTime format = dt;
-            setResultDateString(ctx, ToMillis(dt), 0, &format);
+            setResultDateString(ctx, ToMillis(dt), true, validFormat ? &format : nullptr);
         } else
             setResultFleeceNull(ctx);
     }
 
+    /**
+     * Convert a Date string to a Date string with the given timezone.
+     * Expects:
+     *   - `date`: string
+     *   - `tz`: int
+     *   - `fmt`: string?
+     * Outputs:
+     *   - `date`: string,
+     * Where `tz` is the offset in minutes from UTC, and `fmt` is an optional format string.
+     * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime dt;
+        DateTime format;
+        bool     validFormat = argc > 2 && parseDateArgRaw(argv[2], &format);
+
         if ( argc < 2 || !isNumericNoError(argv[1]) || !parseDateArgRaw(argv[0], &dt) ) {
             setResultFleeceNull(ctx);
             return;
         }
-        int64_t  tzoffset = sqlite3_value_int64(argv[1]);
-        DateTime format   = dt;
-        setResultDateString(ctx, ToMillis(dt), (int)tzoffset, &format);
+        int64_t tzoffset = sqlite3_value_int64(argv[1]);
+        setResultDateString(ctx, ToMillis(dt), minutes{tzoffset}, validFormat ? &format : nullptr);
     }
 
+    /**
+     * Compute the difference in the given component between two date strings.
+     * Expects:
+     *   - `date1`: string
+     *   - `date2`: string,
+     *   - `component`: string,
+     * Outputs:
+     *   - `diff`: int,
+     * Where `component` is one of the available date components: 
+     * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
+     * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime left, right;
         if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) { return; }
@@ -1055,6 +1138,18 @@ namespace litecore {
         doDateDiff(ctx, left, right, stringSliceArgument(argv[2]));
     }
 
+    /**
+     * Compute the difference in the given component between two dates, given by milliseconds since unix epoch.
+     * Expects:
+     *   - `millis1`: int,
+     *   - `millis2`: int,
+     *   - `component`: string,
+     * Outputs:
+     *   - `diff`: int,
+     * Where `component` is one of the available date components: 
+     * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
+     * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
 
@@ -1063,16 +1158,43 @@ namespace litecore {
         doDateDiff(ctx, left, right, stringSliceArgument(argv[2]));
     }
 
+    /**
+     * Compute the result of `date` (string) + `amount` * `component`, returning a date string.
+     * Expects:
+     *   - `date`: string,
+     *   - `amount`: int,
+     *   - `component`: string,
+     *   - `fmt`: string?
+     * Outputs:
+     *   - `date`: string,
+     * Where `fmt` is an optional format string, and `component` is one of the available date components:
+     * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
+     * If the input date does not have a timezone specifier, UTC is assumed.
+     */
     static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime start;
         if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) { return; }
 
+        DateTime format;
+        bool     validFormat = argc > 3 && parseDateArgRaw(argv[3], &format);
+
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
-        DateTime   format = start;
-        setResultDateString(ctx, result, start.tz, &format);
+        setResultDateString(ctx, result, minutes{start.tz}, validFormat ? &format : nullptr);
     }
 
+    /**
+     * Compute the result of `millis` (since epoch) + `amount` * `component`, returning milliseconds since unix epoch.
+     * Expects:
+     *   - `millis`: int,
+     *   - `amount`: int,
+     *   - `component`: string,
+     * Outputs:
+     *   - `millis`: int,
+     * Where `component` is one of the available date components:
+     * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
+     * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
+     */
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
 
@@ -1559,10 +1681,13 @@ namespace litecore {
                                                      {"millis_to_tz", 3, millis_to_tz},
                                                      {"str_to_millis", 1, str_to_millis},
                                                      {"str_to_utc", 1, str_to_utc},
+                                                     {"str_to_utc", 2, str_to_utc},
                                                      {"str_to_tz", 2, str_to_tz},
+                                                     {"str_to_tz", 3, str_to_tz},
                                                      {"date_diff_str", 3, date_diff_str},
                                                      {"date_diff_millis", 3, date_diff_millis},
                                                      {"date_add_str", 3, date_add_str},
+                                                     {"date_add_str", 4, date_add_str},
                                                      {"date_add_millis", 3, date_add_millis},
 
                                                      {nullptr, 0, unimplemented}};

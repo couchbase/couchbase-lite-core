@@ -13,6 +13,7 @@
 #include "BLIPConnection.hh"
 #include "MessageOut.hh"
 #include "BLIPInternal.hh"
+#include "WebSocketImpl.hh"
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
 #include "Batcher.hh"
@@ -124,6 +125,8 @@ namespace litecore::blip {
             _pendingRequests.reserve(10);
             _pendingResponses.reserve(10);
         }
+
+        std::string loggingClassName() const override { return "BLIPIO"; }
 
         void start() { enqueue(FUNCTION_TO_QUEUE(BLIPIO::_start)); }
 
@@ -608,6 +611,9 @@ namespace litecore::blip {
 
         // Now connect the websocket:
         _io = new BLIPIO(this, webSocket, (Deflater::CompressionLevel)_compressionLevel);
+        _io->setParentObjectRef(getObjectRef());
+        websocket::WebSocketImpl* logging = dynamic_cast<websocket::WebSocketImpl*>(webSocket);
+        if ( logging ) { logging->setParentObjectRef(getObjectRef()); }
     }
 
     Connection::~Connection() { logDebug("~Connection"); }

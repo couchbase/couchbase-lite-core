@@ -1188,7 +1188,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
 
     // Create a collection with the same name as the database;
     // then that name should access the new collection, not the default one:
-    c4db_createCollection(db, {slice(dbName), kC4DefaultScopeID}, ERROR_INFO());
+    CHECK(c4db_createCollection(db, {slice(dbName), kC4DefaultScopeID}, WITH_ERROR()));
     compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + dbName + "'}]}"));
     CHECK(run().empty());
 }

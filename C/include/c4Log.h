@@ -69,7 +69,7 @@ typedef struct C4LogFileOptions {
     @param options The options to use when setting up the binary logger
     @param error  On failure, the filesystem error that caused the call to fail.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
 
 /** Returns the filesystem path of the directory where log files are kept. */
 CBL_CORE_API FLStringResult c4log_binaryFilePath(void) C4API;

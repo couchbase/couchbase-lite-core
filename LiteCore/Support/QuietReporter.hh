@@ -87,6 +87,7 @@ struct QuietReporter : public CaseListReporter {
 
             std::cerr << "////////// Replaying binary logs... //////////\n";
             multi.decodeTo(std::cerr, {"***", "", "", "WARNING", "ERROR"}, _caseStartTime);
+            std::cerr << "////////// Replaying binary logs End /////////\n";
         }
         _caseStartTime = litecore::LogIterator::now();
     }

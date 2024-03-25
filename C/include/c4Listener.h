@@ -23,8 +23,9 @@ C4API_BEGIN_DECLS
 /** Returns flags for the available APIs in this build (REST, sync, or both.) */
 CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) C4API;
 
-/** Starts a new listener. */
-CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerConfig* config, C4Error* C4NULLABLE error) C4API;
+/** Creates and starts a new listener. Caller must release it when done. */
+NODISCARD CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerConfig* config,
+                                                               C4Error* C4NULLABLE     error) C4API;
 
 /** Makes a database available from the network.
         @param listener  The listener that should share the database.
@@ -34,11 +35,12 @@ CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerConfig* con
         @param db  The database to share.
         @param outError On failure, the error info is stored here if non-NULL.
         @return  True on success, false if the name is invalid as a URI component. */
-CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Database* db,
-                                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Database* db,
+                                               C4Error* C4NULLABLE outError) C4API;
 
 /** Makes a previously-shared database unavailable. */
-CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db,
+                                                 C4Error* C4NULLABLE outError) C4API;
 
 /** Specifies a collection to be used in a P2P listener context.  NOTE: A database
         must have been previously shared under the same name, or this operation will fail.
@@ -47,12 +49,12 @@ CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4E
                      shared DB.
         @param collection  The collection to share.
         @param outError On failure, the error info is stored here if non-NULL. */
-CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name, C4Collection* collection,
-                                             C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name, C4Collection* collection,
+                                                       C4Error* C4NULLABLE outError) C4API;
 
 /** Makes a previously-shared collection unavailable. */
-CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
-                                               C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
+                                                         C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
         The URLs will differ only in their hostname -- there will be one for each IP address or known
@@ -70,8 +72,8 @@ CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String na
         @param err The error information, if any
         @return  Fleece array of or more URL strings, or null if an error occurred.
                 Caller is responsible for releasing the result. */
-CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* C4NULLABLE db,
-                                               C4ListenerAPIs api, C4Error* C4NULLABLE err) C4API;
+NODISCARD CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* C4NULLABLE db,
+                                                         C4ListenerAPIs api, C4Error* C4NULLABLE err) C4API;
 
 /** Returns the port number the listener is accepting connections on.
         This is useful if you didn't specify a port in the config (`port`=0), so you can find out which

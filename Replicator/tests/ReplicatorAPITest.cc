@@ -147,7 +147,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C
     params.socketFactory   = _socketFactory;
     _sg.remoteDBName       = "something"_sl;
 
-    _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, ERROR_INFO(err));
+    _repl = c4repl_new(db, _sg.address, _sg.remoteDBName, params, C4STR("apiTest"), ERROR_INFO(err));
     CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
@@ -235,7 +235,7 @@ __attribute__((no_sanitize("nullability-arg")))  // suppress breakpoint passing 
     C4Address                           addr{kC4Replicator2Scheme, C4STR("localhost"), 4984};
     repl::C4ReplParamsDefaultCollection params;
     params.pull                = kC4OneShot;
-    c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, ERROR_INFO(err));
+    c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(repl);
 
     CHECK(!c4repl_setProgressLevel(nullptr, kC4ReplProgressPerAttachment, &err));
@@ -325,7 +325,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
         expectedPerCollection  = 24;
     }
 
-    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(repl);
     REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, ERROR_INFO(err)));
 
@@ -372,7 +372,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][
     params.collectionCount = 1;
 
     C4Error               err;
-    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(repl);
 
     c4repl_start(repl, false);
@@ -506,7 +506,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, C4STR(""), ERROR_INFO(err));
     REQUIRE(_repl);
 
     FLSliceResult_Release(options);
@@ -566,7 +566,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, C4STR("Is_Document_Pending"), ERROR_INFO(err));
     REQUIRE(_repl);
 
     bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec, ERROR_INFO(err));
@@ -606,7 +606,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
     params.callbackContext = this;
     params.socketFactory   = _socketFactory;
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, C4STR("Pending_Document_IDs_Non-Existent_Collection"),
+                            ERROR_INFO(err));
     REQUIRE(_repl);
 
     C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, Republic, &err);
@@ -653,11 +654,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
     paramsCouncil.callbackContext = this;
     paramsCouncil.socketFactory   = _socketFactory;
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, (C4Database*)db2, paramsCouncil, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(_repl);
 
     // Not actually used for replication
-    auto replFed = c4::ref{c4repl_newLocal(db, (C4Database*)db2, paramsFederation, ERROR_INFO(err))};
+    auto replFed = c4::ref{c4repl_newLocal(db, (C4Database*)db2, paramsFederation, C4STR("apiTest"), ERROR_INFO(err))};
     REQUIRE(replFed);
 
     // Check that collection 1 has the right amount of pending documents
@@ -877,7 +878,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     };
 
     params.callbackContext     = &docIDs;
-    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(repl);
 
     {
@@ -940,7 +941,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 
     params.callbackContext = &docIDs;
 
-    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, C4STR("apiTest"), ERROR_INFO(err));
     REQUIRE(repl);
     REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, ERROR_INFO(err)));
 

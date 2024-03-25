@@ -109,7 +109,7 @@ namespace litecore {
         string whereClauseSQL(const Value*, string_view dbAlias);
         string eachExpressionSQL(const Value*);
 
-        string functionCallSQL(slice fnName, const Value* args);
+        string functionCallSQL(slice fnName, const Value* args, const Value* param = nullptr);
         /// Translates the JSON-parsed Value to a SQL expression for use in a FTS index.
         string FTSExpressionSQL(const Value*);
         /// Returns the column name of an FTS table to use for a MATCH expression.
@@ -121,8 +121,8 @@ namespace litecore {
         string predictiveTableName(const Value*) const;
 
         /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
-        string vectorExpressionSQL(const Value*);
-        string vectorIndexTableName(const Value* matchExpr);
+        string vectorToIndexExpressionSQL(const Value*, unsigned dimensions);
+        string vectorIndexTableName(const Value* matchExpr, const char* forFn);
 
       private:
         template <class T, class U>
@@ -233,6 +233,7 @@ namespace litecore {
 
         void parseJoin(const Dict*);
 
+        void                 requireTopLevelConjunction(const char* fnName);
         unsigned             findFTSProperties(const Value* root);
         void                 findPredictionCalls(const Value* root);
         void                 addVectorSearchCTEs(const Value* root);

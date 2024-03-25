@@ -42,7 +42,7 @@ namespace litecore {
         static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
         C4RemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params, const C4Address& serverAddress,
-                           C4String remoteDatabaseName)
+                           C4String remoteDatabaseName, slice logPrefix)
             : C4ReplicatorImpl(db, params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
             , _retryTimer([this] { retry(false); }) {
@@ -51,6 +51,7 @@ namespace litecore {
                 _customSocketFactory = *params.socketFactory;
                 _socketFactory       = &_customSocketFactory;
             }
+            if ( !logPrefix.empty() ) { _logPrefix = logPrefix; }
         }
 
         void start(bool reset) noexcept override {

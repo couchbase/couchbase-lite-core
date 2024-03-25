@@ -67,7 +67,7 @@ namespace litecore {
 
 #pragma mark - LOGGING:
 
-    void LogEncoder::log(const char* domain, const std::map<unsigned, std::string>& objectMap, ObjectRef object,
+    void LogEncoder::log(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
                          const char* format, ...) {
         va_list args;
         va_start(args, format);
@@ -77,7 +77,7 @@ namespace litecore {
 
     int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
-    void LogEncoder::vlog(const char* domain, const map<unsigned, string>& objectMap, ObjectRef object,
+    void LogEncoder::vlog(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
                           const char* format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
@@ -99,7 +99,7 @@ namespace litecore {
             if ( i == objectMap.end() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(slice(i->second.c_str()));
+                _writer.write(slice(i->second.first.c_str()));
                 _writer.write("\0", 1);
             }
         }

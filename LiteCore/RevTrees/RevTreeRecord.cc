@@ -110,8 +110,8 @@ namespace litecore {
 
     void RevTreeRecord::updateScope() {
         _fleeceScopes.clear();
-        addScope(_rec.body());
-        if ( _rec.extra() ) addScope(_rec.extra());
+        (void)addScope(_rec.body());
+        if ( _rec.extra() ) (void)addScope(_rec.extra());
     }
 
     alloc_slice RevTreeRecord::addScope(const alloc_slice& body) {

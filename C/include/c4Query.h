@@ -33,8 +33,9 @@ C4API_BEGIN_DECLS
                         input expression will be stored here (or -1 if not known/applicable.)
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
-CBL_CORE_API C4Query* C4NULLABLE c4query_new2(C4Database* database, C4QueryLanguage language, C4String expression,
-                                              int* C4NULLABLE outErrorPos, C4Error* C4NULLABLE error) C4API;
+NODISCARD CBL_CORE_API C4Query* C4NULLABLE c4query_new2(C4Database* database, C4QueryLanguage language,
+                                                        C4String expression, int* C4NULLABLE outErrorPos,
+                                                        C4Error* C4NULLABLE error) C4API;
 
 /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
@@ -74,8 +75,8 @@ CBL_CORE_API void c4query_setParameters(C4Query* query, C4String encodedParamete
                         it overrides the parameters assigned by \ref c4query_setParameters.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
-CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query, C4String encodedParameters,
-                                                       C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query, C4String encodedParameters,
+                                                                 C4Error* C4NULLABLE outError) C4API;
 
 /** Given a C4FullTextMatch from the enumerator, returns the entire text of the property that
         was matched. (The result depends only on the term's `dataSource` and `property` fields,
@@ -88,14 +89,14 @@ CBL_CORE_API C4StringResult c4query_fullTextMatched(C4Query* query, const C4Full
 
 /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */
-CBL_CORE_API bool c4queryenum_next(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4queryenum_next(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the total number of rows in the query, if known.
         Not all query enumerators may support this (but the current implementation does.)
         @param e  The query enumerator
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  The number of rows, or -1 on failure. */
-CBL_CORE_API int64_t c4queryenum_getRowCount(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API int64_t c4queryenum_getRowCount(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
 
 /** Jumps to a specific row. Not all query enumerators may support this (but the current
         implementation does.)
@@ -103,18 +104,19 @@ CBL_CORE_API int64_t c4queryenum_getRowCount(C4QueryEnumerator* e, C4Error* C4NU
         @param rowIndex  The number of the row, starting at 0, or -1 to restart before first row
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  True on success, false on failure. */
-CBL_CORE_API bool c4queryenum_seek(C4QueryEnumerator* e, int64_t rowIndex, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4queryenum_seek(C4QueryEnumerator* e, int64_t rowIndex,
+                                             C4Error* C4NULLABLE outError) C4API;
 
 /** Restarts the enumeration, as though it had just been created: the next call to
         \ref c4queryenum_next will read the first row, and so on from there. */
-static inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API {
+NODISCARD static inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API {
     return c4queryenum_seek(e, -1, outError);
 }
 
 /** Checks whether the query results have changed since this enumerator was created;
         if so, returns a new enumerator. Otherwise returns NULL. */
-CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4QueryEnumerator*  e,
-                                                               C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4QueryEnumerator*  e,
+                                                                         C4Error* C4NULLABLE outError) C4API;
 
 /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
