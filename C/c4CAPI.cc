@@ -1504,10 +1504,13 @@ void c4queryenum_release(C4QueryEnumerator *e) noexcept {
 
 
 C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, void *ctx) noexcept {
-    auto fn = [cb,ctx](C4QueryObserver *obs) {
-        cb(obs, obs->query(), ctx);
-    };
-    return new C4QueryObserverImpl(query, fn);
+    C4Error error;
+    return tryCatch<C4QueryObserver*>(&error, [&] {
+        auto fn = [cb,ctx](C4QueryObserver *obs) {
+            cb(obs, obs->query(), ctx);
+        };
+        return C4QueryObserverImpl::newQueryObserver(query, fn).detach();
+    });
 }
 
 void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) noexcept {
@@ -1515,7 +1518,7 @@ void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) noexcept {
 }
 
 void c4queryobs_free(C4QueryObserver* obs) noexcept {
-    delete obs;
+    c4base_release(obs);
 }
 
 C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,

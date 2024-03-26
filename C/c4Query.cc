@@ -235,8 +235,8 @@ public:
 };
 
 
-std::unique_ptr<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
-    return make_unique<C4QueryObserverImpl>(this, callback);
+Retained<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
+    return C4QueryObserverImpl::newQueryObserver(this, callback);
 }
 
 
@@ -267,7 +267,7 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
             
             // Note: the callback is called from the _bgQuerier's queue.
             _bgQuerier->getCurrentResult([&](QueryEnumerator* qe, C4Error err) {
-                set<C4QueryObserverImpl *> observers;
+                ObserverSet observers;
                 {
                     LOCK(_mutex);
                     if (qe || err.code > 0) // Have a result to notify
@@ -279,8 +279,12 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
             });
         }
     } else {
-        _observers.erase(obs);
-        _pendingObservers.erase(obs);
+        if (auto iter = _observers.find(obs); iter != _observers.end()) {
+            _observers.erase(iter);
+        }
+        if (auto iter = _pendingObservers.find(obs); iter != _pendingObservers.end()) {
+            _pendingObservers.erase(iter);
+        }
         if (_observers.empty() && _bgQuerier) {
             _bgQuerier->stop();
         }
@@ -289,7 +293,7 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
 
 
 void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
-    set<C4QueryObserverImpl *> observers;
+    ObserverSet observers;
     {
         LOCK(_mutex);
         if (!_bgQuerier) {
@@ -303,12 +307,12 @@ void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
         // coincidentally, is why this deadlocks in the first place).
         // So to counteract this, make a copy and iterate over that.
         observers = _observers;
-        
+
         // Clear pending observers as all pending observers are in observers and will be notified
         // with the update.
         _pendingObservers.clear();
     }
-    
+
     notifyObservers(observers, qe, err);
 }
 
@@ -321,7 +325,7 @@ void C4Query::liveQuerierStopped() {
     _bgQuerierDelegate = nullptr;
 }
 
-void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
+void C4Query::notifyObservers(const ObserverSet &observers,
                               QueryEnumerator *qe, C4Error err)
 {
     for(auto &obs : observers) {
