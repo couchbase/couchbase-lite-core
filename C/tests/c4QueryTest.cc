@@ -880,6 +880,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     C4Error error;
 
     struct State {
+        ~State() {
+            c4queryobs_setEnabled(obs, false);
+        }
         C4Query *query;
         c4::ref<C4QueryObserver> obs;
         atomic<int> count = 0;
@@ -963,6 +966,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parame
     C4Error error;
 
     struct State {
+        ~State() {
+            c4queryobs_setEnabled(obs, false);
+        }
         C4Query *query;
         c4::ref<C4QueryObserver> obs;
         atomic<int> count = 0;
@@ -1223,6 +1229,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
     C4Error error;
 
     struct State {
+        ~State() {
+            if (obs) {
+                c4queryobs_setEnabled(obs, false);
+            }
+        }
         C4Query *query;
         c4::ref<C4QueryObserver> obs;
         atomic<int> count = 0;
@@ -1305,6 +1316,68 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
         }
     }
     CHECK(count == 8);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observers lifetime", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    const int sw = GENERATE(0, 1, 2, 3, 4);
+    int objectCount{0};
+    if (sw == 4) objectCount = c4_getObjectCount();
+
+    struct State {
+        C4Query *query;
+        int sw;
+        C4QueryObserver *obs;
+        atomic<int> count = 0;
+    } state{query, sw};
+
+    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+        C4Log("---- Query observer called!");
+        auto state = (State*)context;
+        CHECK(query == state->query);
+        CHECK(obs == state->obs);
+        CHECK(state->count == 0);
+        ++state->count;
+        if (state->sw == 2) {
+            c4queryobs_setEnabled(state->obs, false);
+            c4queryobs_free(state->obs);
+        } else if (state->sw == 3) {
+            c4queryobs_setEnabled(state->obs, false);
+        }
+    };
+
+    state.obs = c4queryobs_create(query, callback, &state);
+    REQUIRE(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observers...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    switch (sw) {
+        case 0: // disable before release
+            c4queryobs_setEnabled(state.obs, false);
+            c4queryobs_free(state.obs);
+            break;
+        case 1: // release before disable
+            c4queryobs_free(state.obs);
+            c4queryobs_setEnabled(state.obs, false);
+            break;
+        case 2: // release the observer inside the callback
+            break;
+        case 3: // disable in callback
+            c4queryobs_free(state.obs);
+            break;
+        case 4: // forget to disable the observer
+            c4queryobs_free(state.obs);
+            std::this_thread::sleep_for(1000ms);
+            CHECK(c4_getObjectCount() > objectCount);
+            // The following statement breaks the reference cycle.
+            c4queryobs_setEnabled(state.obs, false);
+            break;
+        default:
+            break;
+    }
 }
 
 

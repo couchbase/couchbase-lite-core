@@ -123,15 +123,11 @@ namespace litecore {
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
     public:
-        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
-        :C4QueryObserver(query)
-        ,_callback(std::move(callback))
-        { }
-
-        ~C4QueryObserverImpl() {
-            if (_query)
-                _query->enableObserver(this, false);
+        static Retained<C4QueryObserver> newQueryObserver(C4Query *query, C4Query::ObserverCallback callback) {
+            return new C4QueryObserverImpl(query, callback);
         }
+
+        ~C4QueryObserverImpl() = default;
 
         void setEnabled(bool enabled) override {
             _query->enableObserver(this, enabled);
@@ -167,6 +163,11 @@ namespace litecore {
         }
 
     private:
+        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
+        :C4QueryObserver(query)
+        ,_callback(std::move(callback))
+        {}
+
         C4Query::ObserverCallback const _callback;
         mutable std::mutex              _mutex;
         Retained<C4QueryEnumeratorImpl> _currentEnumerator;
