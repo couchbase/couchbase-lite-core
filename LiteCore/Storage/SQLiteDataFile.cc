@@ -199,7 +199,12 @@ namespace litecore {
     // for more extensions.
     static void LoadVectorSearchExtension(sqlite3* sqlite) {
 #ifdef COUCHBASE_ENTERPRISE
+#    if defined(__ANDROID__)
+        static const char* extensionName = "libCouchbaseLiteVectorSearch";
+#    else
         static const char* extensionName = "CouchbaseLiteVectorSearch";
+#    endif
+
         if ( sExtensionPath.empty() ) return;
 
         // First enable extension loading (for security reasons it's off by default):
