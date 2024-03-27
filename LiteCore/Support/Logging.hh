@@ -120,14 +120,18 @@ namespace litecore {
         static unsigned warningCount();  ///< Number of warnings logged since launch
         static unsigned errorCount();    ///< Number of errors logged since launch
 
+        static std::string getObjectPath(unsigned obj, const ObjectMap& objMap);
+
       private:
         friend class Logging;
-        static std::string   getObject(unsigned);
-        unsigned             registerObject(const void* object, const unsigned* val, const std::string& description,
-                                            const std::string& nickname, LogLevel level);
-        static bool          registerParentObject(unsigned object, unsigned parentObject);
-        static void          unregisterObject(unsigned obj);
-        static std::string   getObjectPath(unsigned obj);
+        static std::string getObject(unsigned);
+        unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
+                                          const std::string& nickname, LogLevel level);
+        static bool        registerParentObject(unsigned object, unsigned parentObject);
+        static void        unregisterObject(unsigned obj);
+
+        static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
+
         static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
         void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
