@@ -2843,6 +2843,12 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
                                                                                      [](const Value* v, bool missing) {
                                                                                          return missing
                                                                                                 && v->type() == kNull;
+                                                                                     }},
+                                                                                    {"round_even(8.8343534, -1)",
+                                                                                     [](const Value* v, bool missing) {
+                                                                                         return !missing
+                                                                                                && v->type() == kNumber
+                                                                                                && v->asDouble() == 10;
                                                                                      }}};
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr      = "select ";
@@ -2860,7 +2866,9 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
     for ( unsigned i = 0; i < testCaseCount; ++i ) {
-        REQUIRE(std::get<1>(testCases[i])(e->columns()[i], missingColumns & (1ull << i)));
+        const auto result  = e->columns()[i];
+        const auto missing = missingColumns & (1ull << i);
+        REQUIRE(std::get<1>(testCases[i])(result, missing));
     }
 }
 
