@@ -929,11 +929,10 @@ namespace litecore {
         roundTo(ctx, argc, argv, [](double d) -> double {
             double fl = floor(d);
             double fr = d - fl;
-            if ( fr < 0.5 || int64_t(fl) % 2 == 0 ) {
-                return fl;
-            } else {
-                return fl + 1;
-            }
+
+            if ( fr > 0.5 ) { return fl + 1; }
+            if ( fr < 0.5 || int64_t(fl) % 2 == 0 ) { return fl; }
+            return fl + 1;
         });
     }
 
