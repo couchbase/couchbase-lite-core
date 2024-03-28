@@ -19,6 +19,7 @@
 #include "Logging.hh"
 #include "Defer.hh"
 #include "ParseDate.hh"
+#include "DateFormat.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 
@@ -303,7 +304,7 @@ namespace litecore { namespace crypto {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
-            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
+            fleece::DateFormat::format(timestr + strlen(timestr), time(nullptr)*1000, false, {});
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
