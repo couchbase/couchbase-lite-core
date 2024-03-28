@@ -633,6 +633,7 @@ unsigned C4Test::importJSONLines(const string& path, C4Collection* collection, d
     fleece::Stopwatch st;
 
     auto     database = c4coll_getDatabase(collection);
+    uint64_t docCount = c4coll_getDocumentCount(collection);
     unsigned numDocs  = 0;
     bool     completed;
     {
@@ -645,7 +646,7 @@ unsigned C4Test::importJSONLines(const string& path, C4Collection* collection, d
 
                     constexpr size_t bufSize = 80;
                     char             docID[bufSize];
-                    snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs + 1);
+                    snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), unsigned(docCount + 1));
 
                     // Save document:
                     C4DocPutRequest rq = {};
@@ -656,6 +657,7 @@ unsigned C4Test::importJSONLines(const string& path, C4Collection* collection, d
                     REQUIRE(doc != nullptr);
                     c4doc_release(doc);
                     ++numDocs;
+                    ++docCount;
                     if ( numDocs % 1000 == 0 && timeout > 0.0 && st.elapsed() >= timeout ) {
                         C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
                         return false;
@@ -667,7 +669,7 @@ unsigned C4Test::importJSONLines(const string& path, C4Collection* collection, d
         C4Log("Committing...");
     }
     if ( verbose ) st.printReport("Importing", numDocs, "doc");
-    if ( completed ) CHECK(c4coll_getDocumentCount(collection) == numDocs);
+    if ( completed ) CHECK(c4coll_getDocumentCount(collection) == docCount);
     return numDocs;
 }
 
