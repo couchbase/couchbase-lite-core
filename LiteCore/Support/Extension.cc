@@ -48,7 +48,10 @@ static string name_from_path(const string& extensionPath) {
     auto lastSlash = extensionPath.rfind(FilePath::kSeparator);
     if ( lastSlash == string::npos ) { return ""; }
 
-    return extensionPath.substr(lastSlash + 1);
+    auto raw_name = extensionPath.substr(lastSlash + 1);
+    if ( raw_name.substr(0, 3) == "lib" ) { return raw_name.substr(3); }
+
+    return raw_name;
 }
 
 static HMODULE try_open_lib(const string& extensionPath) {
@@ -63,11 +66,17 @@ static HMODULE try_open_lib(const string& extensionPath) {
     static constexpr const char* file_extension = ".so";
 #endif
 
+    LogToAt(DBLog, Info, "Looking for extension at %s...", extensionPath.c_str());
     HMODULE libHandle = cbl_dlopen(extensionPath.c_str());
-    if ( libHandle ) { return libHandle; }
+    if ( libHandle ) {
+        LogToAt(DBLog, Info, "\t...Found!");
+        return libHandle;
+    }
 
     string with_extension = extensionPath + file_extension;
-    libHandle             = cbl_dlopen(with_extension.c_str());
+    LogToAt(DBLog, Info, "Looking for extension at %s", with_extension.c_str());
+    libHandle = cbl_dlopen(with_extension.c_str());
+    if ( libHandle ) { LogToAt(DBLog, Info, "\t...Found!"); }
 
 #ifdef WIN32
     if ( libHandle ) {
