@@ -107,6 +107,39 @@ NODISCARD CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name
         @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
 CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* C4NULLABLE outError) C4API;
 
+
+#ifdef COUCHBASE_ENTERPRISE
+
+/** Finds new or updated documents for which vectors need to be recomputed by the application.
+    If there are none, returns NULL.
+    If it returns a non-NULL `C4IndexUpdater` object pointer, you should:
+    1. Call `valueAt` for each of the `count` items to get the Fleece value, and:
+      1.1. Compute a vector from this value
+      1.2. Call `setVectorAt` with the resulting vector, or with nullptr if none.
+    2. Call `finish` to apply the updates to the index.
+    3. Release the `C4IndexUpdater`, of course. */
+CBL_CORE_API C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index*, size_t limit, C4Error* outError) C4API;
+
+/** The number of vectors to compute. */
+CBL_CORE_API size_t c4indexupdater_count(C4IndexUpdater*) C4API;
+
+/** Returns the i'th value to compute a vector from.
+    This is _not_ the entire document, just the value of the expression in the index spec. */
+CBL_CORE_API FLValue c4indexupdater_valueAt(C4IndexUpdater*, size_t i) C4API;
+
+/** Sets the vector for the i'th value. If you don't call this, it's assumed there is no
+    vector, and any existing vector will be removed upon `finish`. */
+CBL_CORE_API bool c4indexupdater_setVectorAt(C4IndexUpdater*, size_t i, const float vector[_Nonnull], size_t dimension,
+                                             C4Error* outError) C4API;
+
+/** Updates the index with the computed vectors, removes any index rows for which no vector
+    was given, and updates the index's latest sequence.
+    @returns  True if the index is now completely up-to-date; false if there have been
+              changes to the Collection since the LazyIndexUpdate was created. */
+CBL_CORE_API bool c4indexupdater_finish(C4IndexUpdater*, C4Error* outError) C4API;
+
+#endif
+
 /** @} */
 
 C4API_END_DECLS

@@ -30,6 +30,8 @@ typedef C4_ENUM(uint32_t, C4IndexType){
         kC4VectorIndex,      ///< Index of ML vector similarity (Enterprise Edition only)
 };
 
+#ifdef COUCHBASE_ENTERPRISE
+
 /** Distance metric to use in vector indexes. */
 typedef C4_ENUM(uint32_t, C4VectorMetricType){
         kC4VectorMetricDefault,    ///< Use default metric, Euclidean
@@ -76,7 +78,10 @@ typedef struct C4VectorIndexOptions {
     unsigned           minTrainingSize;  ///< Minimum # of vectors to train index (0 for default)
     unsigned           maxTrainingSize;  ///< Maximum # of vectors to train index on (0 for default)
     unsigned           numProbes;        ///< Number of probes when querying (0 for default)
+    bool               lazy;             ///< If true, app must compute vectors itself
 } C4VectorIndexOptions;
+
+#endif
 
 /** Options for indexes; these each apply to specific types of indexes. */
 typedef struct C4IndexOptions {
@@ -111,8 +116,10 @@ typedef struct C4IndexOptions {
         separated by spaces. */
     const char* C4NULLABLE stopWords;
 
+#ifdef COUCHBASE_ENTERPRISE
     /** Options for vector indexes. */
     C4VectorIndexOptions vector;
+#endif
 } C4IndexOptions;
 
 /** @} */

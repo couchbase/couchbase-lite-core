@@ -200,6 +200,7 @@ namespace litecore {
         }
 
         virtual void                                 deleteIndex(slice name) = 0;
+        virtual std::optional<IndexSpec>             getIndex(slice name)    = 0;
         [[nodiscard]] virtual std::vector<IndexSpec> getIndexes() const      = 0;
 
         // public for complicated reasons; clients should never call it

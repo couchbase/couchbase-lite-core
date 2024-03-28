@@ -30,6 +30,7 @@ namespace litecore::qp {
     constexpr slice kDeletedProperty    = "_deleted"_sl;
     constexpr slice kExpirationProperty = "_expiration"_sl;
     constexpr slice kRevIDProperty      = "_revisionID"_sl;
+    constexpr slice kRowIDProperty      = "_rowID"_sl;
 
 
     // Names of the SQLite functions we register for working with Fleece data,

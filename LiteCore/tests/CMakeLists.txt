@@ -63,6 +63,7 @@ add_executable(
     PredictiveVectorQueryTest.cc
     QueryParserTest.cc
     QueryTest.cc
+    SequenceSetTest.cc
     SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
