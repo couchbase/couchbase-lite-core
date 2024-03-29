@@ -203,8 +203,15 @@ namespace litecore {
             }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
-            *sFileOut[(int)level] << "---- " << fileLogHeader(level) << " ----" << endl;
-            if ( !sInitialMessage.empty() ) { *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl; }
+            auto fout = sFileOut[(int)level];
+            LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+            LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+            *fout << "---- " << fileLogHeader(level) << " ----" << endl;
+            if ( !sInitialMessage.empty() ) {
+                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
+            }
         }
     }
 
@@ -264,8 +271,15 @@ namespace litecore {
                 }
             } else {
                 for ( auto& fout : sFileOut ) {
-                    *fout << "---- " << fileLogHeader(LogLevel{level++}) << " ----" << endl;
-                    if ( !sInitialMessage.empty() ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
+                    LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                    LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                    *fout << "---- " << fileLogHeader(LogLevel{level}) << " ----" << endl;
+                    if ( !sInitialMessage.empty() ) {
+                        LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                        LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                        *fout << "---- " << sInitialMessage << " ----" << endl;
+                    }
+                    ++level;
                 }
             }
 
@@ -277,6 +291,13 @@ namespace litecore {
                         if ( sLogEncoder[0] ) {
                             for ( auto& encoder : sLogEncoder ) {
                                 encoder->log("", {}, LogEncoder::None, "---- END ----");
+                            }
+                        } else if ( sFileOut[0] ) {
+                            int8_t level = 0;
+                            for ( auto& fout : sFileOut ) {
+                                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                                LogDecoder::writeHeader(kLevels[(int)level++], "", *fout);
+                                *fout << "---- END ----" << endl;
                             }
                         }
 
@@ -463,8 +484,8 @@ namespace litecore {
         } else if ( file ) {
             static char formatBuffer[2048];
             size_t      n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
-            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
+            LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *file);
             if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *file << formatBuffer << endl;
