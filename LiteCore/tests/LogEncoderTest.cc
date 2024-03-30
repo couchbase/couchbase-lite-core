@@ -24,9 +24,8 @@
 using namespace std;
 
 // These formats are used in the decoded log files. They are UTC times.
-#define DATESTAMP     "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
-#define TIMESTAMP     "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\\| "
-#define TIMESTAMP_NEW "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z"
+#define DATESTAMP "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
+#define TIMESTAMP "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z"
 
 constexpr size_t kFolderBufSize = 64;
 
@@ -83,12 +82,12 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     string result  = dumpLog(encoded, {});
 
     regex expected(
-            TIMESTAMP_NEW
-            " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP_NEW
+            TIMESTAMP
+            " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
             "   Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
-            "0x7fff5fbc\\n" TIMESTAMP_NEW "   Int -1234567890, Long -234567890, LongLong -123456789123456789, Size "
-            "-1234567890, Char @\\n" TIMESTAMP_NEW
-            "   Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP_NEW
+            "0x7fff5fbc\\n" TIMESTAMP "   Int -1234567890, Long -234567890, LongLong -123456789123456789, Size "
+            "-1234567890, Char @\\n" TIMESTAMP
+            "   Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
             "   String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
 
@@ -97,7 +96,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     // We also add the timestamp inside the log. When decoded to string, it is
     // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
     // We want to ensure they are consistent.
-    regex  catchUTCTimeTag{"^" TIMESTAMP_NEW " ---- Logging begins on (" DATESTAMP ")"};
+    regex  catchUTCTimeTag{"^" TIMESTAMP " ---- Logging begins on (" DATESTAMP ")"};
     smatch m;
     REQUIRE(regex_search(result, m, catchUTCTimeTag));
     CHECK(m.size() == 2);
@@ -177,18 +176,18 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
-    regex  expected(TIMESTAMP_NEW " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP_NEW
-                                  "   \\{1\\|/Tweedledum#1/\\} I'm Tweedledum\\n" TIMESTAMP_NEW
-                                  "   \\{3\\|/Tweedledum#1/rattle#2/Tweedledee#3/\\} I'm Tweedledee\\n" TIMESTAMP_NEW
-                                  "   \\{2\\|/Tweedledum#1/rattle#2/\\} and I'm the rattle\\n");
+    regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/ I'm Tweedledum\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/Tweedledee#3/ I'm Tweedledee\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/ and I'm the rattle\\n");
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
     result  = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP_NEW " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP_NEW
-                                   "   \\{2\\|/Tweedledum#1/rattle#2/\\} Am I the rattle too\\?\\n");
+    expected = regex(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                               "   Obj=/Tweedledum#1/rattle#2/ Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
 
@@ -474,18 +473,19 @@ TEST_CASE("Logging plaintext", "[Log]") {
 
     int n = 0;
 #ifdef LITECORE_CPPTEST
-    regex  checkHeader{R"(---- serialNo=1,logDirectory=[^,]*,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=5 ----)"};
+    regex checkHeader{
+            TIMESTAMP
+            R"(  Info ---- serialNo=1,logDirectory=[^,]*,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=5 ----)"};
     smatch m;
     CHECK(regex_match(lines[n++], m, checkHeader));
 #else
     n++;
 #endif
-    CHECK(lines[n++] == "---- Hello ----");
-    regex utctimeRe{"^" TIMESTAMP_NEW};
-    CHECK(regex_search(lines[n], utctimeRe));
-    CHECK(lines[n].find(" DB ") != string::npos);
-    CHECK(lines[n].find("/dummy#") != string::npos);
-    CHECK(lines[n].find("This will be in plaintext") != string::npos);
+    smatch m2;
+    regex  checkLine1{TIMESTAMP "  Info ---- Hello ----"};
+    CHECK(regex_match(lines[n++], m2, checkLine1));
+    regex checkLine2{TIMESTAMP " DB Info Obj=/dummy#[0-9]+/ This will be in plaintext"};
+    CHECK(regex_match(lines[n], m2, checkLine2));
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
