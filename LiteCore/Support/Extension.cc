@@ -67,7 +67,7 @@ static HMODULE try_open_lib(const string& extensionPath) {
     static constexpr const char* file_extension = ".so";
 #endif
 
-    LogToAt(DBLog, Info, "Looking for extension at %s...", extensionPath.c_str());
+    LogToAt(DBLog, Info, "Looking for extension at %s", extensionPath.c_str());
     HMODULE libHandle = cbl_dlopen(extensionPath.c_str());
     if ( libHandle ) {
         LogToAt(DBLog, Info, "\t...Found!");

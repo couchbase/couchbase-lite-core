@@ -37,6 +37,9 @@
 #include <mutex>
 #include <thread>
 #include <cinttypes>
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"
@@ -226,6 +229,14 @@ namespace litecore {
                           "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
                           extensionName);
         }
+
+        #if defined(_WIN32) && defined(_M_X64)
+        // Flimsy hack to get around the fact that we need to load this dep from a non-standard
+        // location, and SQLite only uses the basic LoadLibraryA
+        string windowsDependentPath = sExtensionPath + FilePath::kSeparator + "libomp140.x86_64.dll";
+        HMODULE dep = LoadLibraryA(windowsDependentPath.c_str());
+        if ( !dep ) { error::_throw(error::CantOpenFile, "Unable to load libomp140.x86_64.dll..."); }
+        #endif
 
         char* message = nullptr;
         rc            = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
