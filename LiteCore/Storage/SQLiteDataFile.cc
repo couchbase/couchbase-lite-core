@@ -38,7 +38,7 @@
 #include <thread>
 #include <cinttypes>
 #ifdef _WIN32
-#include <Windows.h>
+#    include <Windows.h>
 #endif
 
 extern "C" {
@@ -230,13 +230,13 @@ namespace litecore {
                           extensionName);
         }
 
-        #if defined(_WIN32) && defined(_M_X64)
+#    if defined(_WIN32) && defined(_M_X64)
         // Flimsy hack to get around the fact that we need to load this dep from a non-standard
         // location, and SQLite only uses the basic LoadLibraryA
-        string windowsDependentPath = sExtensionPath + FilePath::kSeparator + "libomp140.x86_64.dll";
-        HMODULE dep = LoadLibraryA(windowsDependentPath.c_str());
+        string  windowsDependentPath = sExtensionPath + FilePath::kSeparator + "libomp140.x86_64.dll";
+        HMODULE dep                  = LoadLibraryA(windowsDependentPath.c_str());
         if ( !dep ) { error::_throw(error::CantOpenFile, "Unable to load libomp140.x86_64.dll..."); }
-        #endif
+#    endif
 
         char* message = nullptr;
         rc            = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
