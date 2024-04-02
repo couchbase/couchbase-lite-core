@@ -87,23 +87,25 @@ namespace litecore {
         _lastElapsed     = elapsed;
         _writeUVarInt(delta);
 
-        // Write level, domain, format string:
+        // Write level, domain
         _writer.write(&_level, sizeof(_level));
         _writeStringToken(domain ? domain : "");
 
+        // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
         if ( object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end() ) {
             _seenObjects.insert(objRef);
-            const auto i = objectMap.find(objRef);
-            if ( i == objectMap.end() ) {
+            auto objPath = LogDomain::getObjectPath(objRef, objectMap);
+            if ( objPath.empty() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(slice(i->second.first.c_str()));
+                _writer.write(slice(objPath.c_str()));
                 _writer.write("\0", 1);
             }
         }
 
+        // Write format string:
         _writeStringToken(format);
 
         // Parse the format string looking for substitutions:
