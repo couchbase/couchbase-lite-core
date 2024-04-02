@@ -23,7 +23,8 @@ typedef int (*version_number_func)();
 
 #ifdef WIN32
 #    include <windows.h>
-#    define cbl_dlopen  LoadLibraryA
+#    define cbl_dlopen(path)                                                                                           \
+        LoadLibraryExA(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)
 #    define cbl_dlsym   GetProcAddress
 #    define cbl_dlclose FreeLibrary
 #else
@@ -66,7 +67,7 @@ static HMODULE try_open_lib(const string& extensionPath) {
     static constexpr const char* file_extension = ".so";
 #endif
 
-    LogToAt(DBLog, Info, "Looking for extension at %s...", extensionPath.c_str());
+    LogToAt(DBLog, Info, "Looking for extension at %s", extensionPath.c_str());
     HMODULE libHandle = cbl_dlopen(extensionPath.c_str());
     if ( libHandle ) {
         LogToAt(DBLog, Info, "\t...Found!");
