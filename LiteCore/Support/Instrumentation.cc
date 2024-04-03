@@ -21,10 +21,8 @@ namespace litecore {
 
 #if defined(__APPLE__) && LITECORE_SIGNPOSTS
 
-#    if TARGET_OS_MACCATALYST
     os_log_t LiteCore = os_log_create("com.couchbase.litecore", "signposts");
     ;
-#    endif
 
     enum Color {
         blue,
@@ -35,30 +33,15 @@ namespace litecore {
     };
 
     void Signpost::mark(Type t, uintptr_t param, uintptr_t param2) {
-#    if TARGET_OS_MACCATALYST
-        if ( __builtin_available(iOS 12.0, *) )
             os_signpost_event_emit(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
-#    else
-        kdebug_signpost(t, param, param2, 0, (t % 5));
-#    endif
     }
 
     void Signpost::begin(Type t, uintptr_t param, uintptr_t param2) {
-#    if TARGET_OS_MACCATALYST
-        if ( __builtin_available(iOS 12.0, *) )
             os_signpost_interval_begin(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
-#    else
-        kdebug_signpost_start(t, param, param2, 0, (t % 5));
-#    endif
     }
 
     void Signpost::end(Type t, uintptr_t param, uintptr_t param2) {
-#    if TARGET_OS_MACCATALYST
-        if ( __builtin_available(iOS 12.0, *) )
             os_signpost_interval_end(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
-#    else
-        kdebug_signpost_end(t, param, param2, 0, (t % 5));
-#    endif
     }
 #endif
 
