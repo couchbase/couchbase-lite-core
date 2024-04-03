@@ -62,10 +62,6 @@ SQLITE_API int sqlite3_rekey_v2(sqlite3*    db,            /* Database to be rek
 
 #if __APPLE__
 #    include <TargetConditionals.h>
-#else
-#    if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#        include "SQLiteTempDirectory.h"
-#    endif
 #endif
 
 using namespace std;
@@ -163,9 +159,6 @@ namespace litecore {
         };
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
-#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-        setSqliteTempDirectory();
-#endif
     }
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {

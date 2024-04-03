@@ -364,7 +364,6 @@ namespace litecore {
 
     // Returns the LogLevel override set by an environment variable, or Uninitialized if none
     LogLevel LogDomain::levelFromEnvironment() const noexcept {
-#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         char* val = getenv((string("LiteCoreLog") + _name).c_str());
         if ( val ) {
             static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", "none", nullptr};
@@ -373,7 +372,7 @@ namespace litecore {
             }
             return LogLevel::Info;
         }
-#endif
+
         return LogLevel::Uninitialized;
     }
 
