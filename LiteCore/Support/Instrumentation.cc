@@ -33,15 +33,15 @@ namespace litecore {
     };
 
     void Signpost::mark(Type t, uintptr_t param, uintptr_t param2) {
-            os_signpost_event_emit(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
+        os_signpost_event_emit(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
     }
 
     void Signpost::begin(Type t, uintptr_t param, uintptr_t param2) {
-            os_signpost_interval_begin(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
+        os_signpost_interval_begin(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
     }
 
     void Signpost::end(Type t, uintptr_t param, uintptr_t param2) {
-            os_signpost_interval_end(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
+        os_signpost_interval_end(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
     }
 #endif
 
