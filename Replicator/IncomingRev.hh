@@ -46,6 +46,8 @@ namespace litecore::repl {
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
       protected:
+        std::string loggingClassName() const override { return "IncomingRev"; }
+
         ActivityLevel computeActivityLevel() const override;
 
       private:

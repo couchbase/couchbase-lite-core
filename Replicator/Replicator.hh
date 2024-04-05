@@ -115,7 +115,7 @@ namespace litecore::repl {
         }
 
       protected:
-        std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "repl"; }
+        std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "PsvRepl"; }
 
         // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
         // pass the collectionIndex manually for log calls

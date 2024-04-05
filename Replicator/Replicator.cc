@@ -72,25 +72,28 @@ namespace litecore::repl {
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
-            connection().setParentObjectRef(getObjectRef());
-            db->setParentObjectRef(getObjectRef());
-
+            _options->verify();
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
             //                                           collectionOpts[0].collectionPath == defaultCollectionPath
             //   isActive == true ? all collections are active
             //                    : all collections are passive.
-            _options->verify();
+
+            if ( Logging* parentObj = dynamic_cast<Logging*>(&delegate); parentObj != nullptr ) {
+                setParentObjectRef(parentObj->getObjectRef());
+            }
+            connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
 
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            string logName = db->useLocked<std::string>([](const C4Database* db) {
+            string dbLogName = db->useLocked<std::string>([](const C4Database* db) {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
-            logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
+            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }
