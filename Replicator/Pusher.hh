@@ -51,6 +51,8 @@ namespace litecore::repl {
       protected:
         friend class BlobDataSource;
 
+        std::string loggingClassName() const override { return "Pusher"; }
+
         void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
 
         void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {

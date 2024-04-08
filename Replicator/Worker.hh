@@ -35,7 +35,7 @@ namespace litecore::repl {
     extern LogDomain SyncBusyLog;
 
     // The log format string for logging a collection index
-    constexpr const char* kCollectionLogFormat = "{Coll#%i}";
+    constexpr const char* kCollectionLogFormat = "{Coll=%i}";
 
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
@@ -123,9 +123,6 @@ namespace litecore::repl {
         /// On Apple platforms, a mailbox is a GCD queue, so this reduces the number of queues.
         virtual actor::Mailbox* mailboxForChildren() { return _parent ? _parent->mailboxForChildren() : nullptr; }
 
-        // overrides:
-        std::string loggingClassName() const override;
-
         std::string loggingIdentifier() const override { return _loggingID; }
 
         void afterEvent() override;
@@ -149,21 +146,33 @@ namespace litecore::repl {
         // overrides for Logging functions which insert collection index to the format string
         template <class... Args>
         inline void logInfo(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logInfo(fmt_, collectionID(), args...);
+            if ( int32_t cid = collectionID(); cid >= 0 ) {
+                const char* fmt_ = formatWithCollection(fmt);
+                Logging::logInfo(fmt_, cid, args...);
+            } else {
+                Logging::logInfo(fmt, args...);
+            }
         }
 
         template <class... Args>
         inline void logVerbose(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, collectionID(), args...);
+            if ( int32_t cid = collectionID(); cid >= 0 ) {
+                const char* fmt_ = formatWithCollection(fmt);
+                Logging::logVerbose(fmt_, cid, args...);
+            } else {
+                Logging::logVerbose(fmt, args...);
+            }
         }
 
 #if DEBUG
         template <class... Args>
         inline void logDebug(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logDebug(fmt_, collectionID(), args...);
+            if ( int32_t cid = collectionID(); cid >= 0 ) {
+                const char* fmt_ = formatWithCollection(fmt);
+                Logging::logDebug(fmt_, cid, args...);
+            } else {
+                Logging::logDebug(fmt, args...);
+            }
         }
 #else
         template <class... Args>

@@ -112,12 +112,6 @@ namespace litecore::repl {
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
 
-    string Worker::loggingClassName() const {
-        string className = Logging::loggingClassName();
-        if ( passive() ) toLowercase(className);
-        return className;
-    }
-
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
         if ( callback ) {
             increment(_pendingResponseCount);
