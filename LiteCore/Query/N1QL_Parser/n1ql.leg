@@ -128,7 +128,7 @@ indexName       = IDENTIFIER
 
 
 expression =
-    '((' _ x:expression _ '))' { $$ = (x) }
+    '(' _ '(' _ x:expression _ ')' _ ')' { $$ = (x) }
     | expr9
 
 
