@@ -37,7 +37,7 @@ CBL_CORE_API void c4cert_getValidTimespan(C4Cert* cert, C4Timestamp* C4NULLABLE 
           will represent only the first, and you can iterate over the next by calling
           \ref c4cert_nextInChain.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4Cert* c4cert_fromData(C4Slice certData, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Cert* c4cert_fromData(C4Slice certData, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
     \warning DER format can only encode a _single_ certificate, so if this C4Cert includes
@@ -68,7 +68,7 @@ CBL_CORE_API C4StringResult c4cert_subjectNameComponent(C4Cert*, C4CertNameAttri
     @param outInfo  The component's name and value will be written here.
     @return  True if the index was valid, false if out of range.
     \note You are responsible for releasing `outInfo->value`. */
-CBL_CORE_API bool c4cert_subjectNameAtIndex(C4Cert* cert, unsigned index, C4CertNameInfo* outInfo) C4API;
+NODISCARD CBL_CORE_API bool c4cert_subjectNameAtIndex(C4Cert* cert, unsigned index, C4CertNameInfo* outInfo) C4API;
 
 
 /** Returns the usage flags of a cert. */
@@ -80,12 +80,12 @@ CBL_CORE_API bool c4cert_isSelfSigned(C4Cert*) C4API;
 
 /** Returns a certificate's public key.
     \note You are responsible for releasing the returned key reference. */
-CBL_CORE_API C4KeyPair* c4cert_getPublicKey(C4Cert*) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4cert_getPublicKey(C4Cert*) C4API;
 
 /** Loads a certificate's matching private key from the OS's persistent store, if it exists,
     and returns the key-pair with both private and public key.
     \note You are responsible for releasing the returned key reference. */
-CBL_CORE_API C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert*, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert*, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
 
@@ -102,13 +102,13 @@ CBL_CORE_API C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert*, C4Error* C4NULL
     @param subjectKey  The owner's private key that this certificate will attest to.
     @param outError  On failure, the error info will be stored here.
     @return  The new certificate request, or NULL on failure. */
-CBL_CORE_API C4Cert* c4cert_createRequest(const C4CertNameComponent* nameComponents, size_t nameCount,
-                                          C4CertUsage certUsages, C4KeyPair* subjectKey,
-                                          C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Cert* c4cert_createRequest(const C4CertNameComponent* nameComponents, size_t nameCount,
+                                                    C4CertUsage certUsages, C4KeyPair* subjectKey,
+                                                    C4Error* C4NULLABLE outError) C4API;
 
 /** Instantiates a C4Cert from an X.509 certificate signing request (CSR) in DER or PEM form.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if this is a signed certificate, false if it's a signing request (CSR). */
 CBL_CORE_API bool c4cert_isSigned(C4Cert*) C4API;
@@ -133,9 +133,9 @@ typedef void (*C4CertSigningCallback)(void* context, C4Cert* signedCert, C4Error
     @param context  An arbitrary value that will be passed to the callback function.
     @param outError If the parameters are invalid, error info will be written here.
     @return  True if the parameters are valid and the request will be sent; else false. */
-CBL_CORE_API bool c4cert_sendSigningRequest(C4Cert* certRequest, C4Address address, C4Slice optionsDictFleece,
-                                            C4CertSigningCallback callback, void* C4NULLABLE context,
-                                            C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4cert_sendSigningRequest(C4Cert* certRequest, C4Address address, C4Slice optionsDictFleece,
+                                                      C4CertSigningCallback callback, void* C4NULLABLE context,
+                                                      C4Error* C4NULLABLE outError) C4API;
 
 /** Signs an unsigned certificate (a CSR) with a private key, and returns the new signed
     certificate. This is the primary function of a Certificate Authority; but it can also
@@ -149,9 +149,9 @@ CBL_CORE_API bool c4cert_sendSigningRequest(C4Cert* certRequest, C4Address addre
                 \p issuerPrivateKey), or NULL if self-signing.
     @param outError  On failure, the error info will be stored here.
     @return  The signed certificate, or NULL on failure. */
-CBL_CORE_API C4Cert* c4cert_signRequest(C4Cert* certRequest, const C4CertIssuerParameters* C4NULLABLE params,
-                                        C4KeyPair* issuerPrivateKey, C4Cert* C4NULLABLE issuerCert,
-                                        C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4Cert* c4cert_signRequest(C4Cert* certRequest, const C4CertIssuerParameters* C4NULLABLE params,
+                                                  C4KeyPair* issuerPrivateKey, C4Cert* C4NULLABLE issuerCert,
+                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
 
@@ -161,7 +161,7 @@ CBL_CORE_API C4Cert* c4cert_signRequest(C4Cert* certRequest, const C4CertIssuerP
 
 /** Returns the next certificate in the chain after this one, if any.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4Cert* C4NULLABLE c4cert_nextInChain(C4Cert*) C4API;
+NODISCARD CBL_CORE_API C4Cert* C4NULLABLE c4cert_nextInChain(C4Cert*) C4API;
 
 /** Returns the encoded data of this cert and the following ones in the chain, in PEM form.
     \note You are responsible for releasing the returned data.*/
@@ -180,21 +180,22 @@ CBL_CORE_API C4SliceResult c4cert_copyChainData(C4Cert*) C4API;
     @param name  The name to save as.
     @param outError  On failure, the error info will be stored here.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4cert_save(C4Cert* C4NULLABLE cert, bool entireChain, C4String name, C4Error* C4NULLABLE outError);
+NODISCARD CBL_CORE_API bool c4cert_save(C4Cert* C4NULLABLE cert, bool entireChain, C4String name,
+                                        C4Error* C4NULLABLE outError);
 
 /** Loads a certificate from a persistent storage given the name it was saved under.
     \note You are responsible for releasing the returned key reference.
     @param name  The name the certificate was saved with.
     @param outError  On failure, the error info will be stored here.
     @return  The certificate, or NULL if missing or if it failed to parse. */
-CBL_CORE_API C4Cert* c4cert_load(C4String name, C4Error* C4NULLABLE outError);
+NODISCARD CBL_CORE_API C4Cert* c4cert_load(C4String name, C4Error* C4NULLABLE outError);
 
 /** Check if a certificate with the given name exists in the persistent keystore.
  * @param name The name the certificate was saved with.
  * @param outError On failure, the error info will be stored here.
  * @return true if the certificate exists, otherwise false.
  */
-CBL_CORE_API bool c4cert_exists(C4String name, C4Error* C4NULLABLE outError);
+NODISCARD CBL_CORE_API bool c4cert_exists(C4String name, C4Error* C4NULLABLE outError);
 
 /** @} */
 
@@ -214,19 +215,20 @@ CBL_CORE_API bool c4cert_exists(C4String name, C4Error* C4NULLABLE outError);
     @param persistent  True if the key should be managed by the OS's persistent store.
     @param outError  On failure, the error info will be stored here.
     @return  The new key, or NULL on failure. */
-CBL_CORE_API C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent,
-                                           C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent,
+                                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Loads a public key from its data.
     The resulting C4KeyPair will not have a private key.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4keypair_fromPublicKeyData(C4Slice             publicKeyData,
+                                                              C4Error* C4NULLABLE outError) C4API;
 
 /** Loads a private key from its data.
     The resulting C4KeyPair will have both a public and private key.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData, C4Slice passwordOrNull,
-                                                     C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData, C4Slice passwordOrNull,
+                                                               C4Error* C4NULLABLE outError) C4API;
 
 /** Returns true if the C4KeyPair has a private as well as a public key. */
 CBL_CORE_API bool c4keypair_hasPrivateKey(C4KeyPair*) C4API;
@@ -250,10 +252,10 @@ CBL_CORE_API bool c4keypair_isPersistent(C4KeyPair*) C4API;
 /** Attempts to find & load the persistent key-pair matching this public key.
     \note If there is no matching persistent key, returns NULL but sets no error.
     \note You are responsible for releasing the returned reference. */
-CBL_CORE_API C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair*, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair*, C4Error* C4NULLABLE outError) C4API;
 
 /** Removes a private key from persistent storage. */
-CBL_CORE_API bool c4keypair_removePersistent(C4KeyPair*, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API bool c4keypair_removePersistent(C4KeyPair*, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
 
@@ -270,8 +272,9 @@ CBL_CORE_API bool c4keypair_removePersistent(C4KeyPair*, C4Error* C4NULLABLE out
     @param callbacks  A struct containing callback functions to do the work.
     @param outError  On failure, the error info will be stored here.
     @return  The key object, or NULL on failure. */
-CBL_CORE_API C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
-                                               C4ExternalKeyCallbacks callbacks, C4Error* C4NULLABLE outError);
+NODISCARD CBL_CORE_API C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits,
+                                                         void* externalKey, C4ExternalKeyCallbacks callbacks,
+                                                         C4Error* C4NULLABLE outError);
 
 /** @} */
 

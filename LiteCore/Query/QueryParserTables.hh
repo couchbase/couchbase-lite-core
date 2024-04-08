@@ -138,10 +138,16 @@ namespace litecore {
             {"nullif", 2, 2, "N1QL_nullif"},
 
             // Dates/times:
-            {"millis_to_str", 1, 1},
-            {"millis_to_utc", 1, 1},
+            {"millis_to_str", 1, 2},
+            {"millis_to_utc", 1, 2},
+            {"millis_to_tz", 2, 3},
             {"str_to_millis", 1, 1},
-            {"str_to_utc", 1, 1},
+            {"str_to_utc", 1, 2},
+            {"date_diff_str", 3, 3},
+            {"date_diff_millis", 3, 3},
+            {"date_add_str", 3, 4},
+            {"date_add_millis", 3, 3},
+            {"str_to_tz", 2, 3},
 
             // Math:
             {"abs", 1, 1},
@@ -227,11 +233,15 @@ namespace litecore {
             {"min", 1, 1, nullslice, true},
             {"sum", 1, 1, nullslice, true},
 
-    // Predictive query:
 #ifdef COUCHBASE_ENTERPRISE
+            // Predictive query:
             {"prediction", 2, 3},
             {"euclidean_distance", 2, 3},
             {"cosine_distance", 2, 2},
+
+            // Vector search:
+            {"vector_match", 2, 3},
+            {"vector_distance", 1, 1},
 #endif
 
             {nullslice}  // End of data

@@ -218,6 +218,22 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
+    void testExpressions(const std::vector<std::pair<std::string, int64_t>>& tests) {
+        {
+            ExclusiveTransaction t(store->dataFile());
+            writeNumberedDoc(1, nullslice, t);
+            t.commit();
+        }
+        for ( auto& test : tests ) {
+            INFO("Testing " << test.first);
+            auto                      query = store->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
+            Retained<QueryEnumerator> e(query->createEnumerator());
+            REQUIRE(e->getRowCount() == 1);
+            REQUIRE(e->next());
+            CHECK(e->columns()[0]->asInt() == test.second);
+        }
+    }
+
     static void checkOptimized(Query* query, bool expectOptimized = true) {
         string explanation = query->explain();
         Log("Query:\n%s", explanation.c_str());

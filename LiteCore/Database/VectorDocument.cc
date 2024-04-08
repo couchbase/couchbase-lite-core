@@ -207,7 +207,7 @@ namespace litecore {
                     if ( _remoteID == RemoteID::Local ) {
                         if ( RemoteID parID = _doc.legacyTreeParent(); parID != RemoteID::Local ) {
                             auto parent = _doc.remoteRevision(parID);
-                            if ( parent.value().revID != rev->revID ) { history += ", " + parent->revID.str(); }
+                            if ( parent && parent->revID != rev->revID ) { history += ", " + parent->revID.str(); }
                         }
                     }
                     return alloc_slice(history);
@@ -245,7 +245,7 @@ namespace litecore {
 
         bool exists() const override { return _doc.exists(); }
 
-        bool loadRevisions() const override MUST_USE_RESULT {
+        [[nodiscard]] bool loadRevisions() const override {
             return _doc.contentAvailable() >= kEntireBody || const_cast<VectorRecord&>(_doc).loadData(kEntireBody);
         }
 
@@ -253,7 +253,7 @@ namespace litecore {
 
         bool hasRevisionBody() const noexcept override { return _doc.exists() && _remoteID; }
 
-        bool loadRevisionBody() const override MUST_USE_RESULT {
+        [[nodiscard]] bool loadRevisionBody() const override {
             if ( !_remoteID ) return false;
             auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
             return const_cast<VectorRecord&>(_doc).loadData(which);

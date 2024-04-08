@@ -31,6 +31,7 @@ namespace litecore::repl {
         , _continuous(_options->push(collectionIndex()) == kC4Continuous)
         , _checkpointer(checkpointer)
         , _changesFeed(*this, _options, *_db, &checkpointer) {
+        setParentObjectRef(replicator->getObjectRef());
         if ( _options->push(collectionIndex()) <= kC4Passive
              // Always use "changes" with version vectors
              || _db->usingVersionVectors() ) {

@@ -59,6 +59,9 @@ namespace litecore {
 
     class LogDomain {
       public:
+        // objectRef -> (loggingName, parentObectRef)
+        using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
+
         explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
             : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
@@ -114,12 +117,18 @@ namespace litecore {
 
         static void flushLogFiles();
 
+        static unsigned warningCount();  ///< Number of warnings logged since launch
+        static unsigned errorCount();    ///< Number of errors logged since launch
+
       private:
         friend class Logging;
-        static std::string getObject(unsigned);
-        unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
-                                          const std::string& nickname, LogLevel level);
-        static void        unregisterObject(unsigned obj);
+        static std::string   getObject(unsigned);
+        unsigned             registerObject(const void* object, const unsigned* val, const std::string& description,
+                                            const std::string& nickname, LogLevel level);
+        static bool          registerParentObject(unsigned object, unsigned parentObject);
+        static void          unregisterObject(unsigned obj);
+        static std::string   getObjectPath(unsigned obj);
+        static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
         void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
       private:
@@ -135,11 +144,11 @@ namespace litecore {
         const char* const     _name;
         LogDomain* const      _next;
 
-        static unsigned                        slastObjRef;
-        static std::map<unsigned, std::string> sObjNames;
-        static LogDomain*                      sFirstDomain;
-        static LogLevel                        sCallbackMinLevel;
-        static LogLevel                        sFileMinLevel;
+        static unsigned   slastObjRef;
+        static ObjectMap  sObjectMap;
+        static LogDomain* sFirstDomain;
+        static LogLevel   sCallbackMinLevel;
+        static LogLevel   sFileMinLevel;
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
@@ -203,6 +212,9 @@ namespace litecore {
       public:
         std::string loggingName() const;
 
+        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
+        void     setParentObjectRef(unsigned parentObjRef);
+
       protected:
         explicit Logging(LogDomain& domain) : _domain(domain) {}
 
@@ -260,8 +272,6 @@ namespace litecore {
 #else
         virtual inline void logDebug(const char* format, ...) const {}
 #endif
-
-        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
         LogDomain& _domain;
 

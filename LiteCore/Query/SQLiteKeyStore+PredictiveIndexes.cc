@@ -26,6 +26,8 @@ using namespace fleece::impl;
 
 namespace litecore {
 
+    // Creates a predictive index, implemented as a SQLite table that caches the value of a PREDICT()
+    // call for each document, plus SQLite indexes on properties of the predicted dicts.
     bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec& spec) {
         auto expressions = spec.what();
         if ( expressions->count() != 1 )
@@ -54,6 +56,7 @@ namespace litecore {
         return createIndex(spec, predTableName, i);
     }
 
+    // Creates the SQLite table for a predictive index, and the triggers that keep it up to date.
     string SQLiteKeyStore::createPredictionTable(const Value* expression) {
         // Derive the table name from the expression (path) it unnests:
         auto        kvTableName   = tableName();

@@ -29,6 +29,8 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include "Extension.hh"
+#include "Defer.hh"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -78,6 +80,10 @@ namespace litecore {
     // Maximum size WAL journal will be left at after a commit
     static const int64_t kJournalSize = 5 * MB;
 
+#ifdef COUCHBASE_ENTERPRISE
+    static constexpr int kVectorSearchCompatibleVersion = 1;
+#endif
+
     // Amount of file to memory-map
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
     static const int kMMapSize = -1;  // Avoid possible file corruption hazard on macOS
@@ -98,22 +104,33 @@ namespace litecore {
     // Prefix of the KeyStores for deleted documents
     static const string kDeletedKeyStorePrefix = "del_";
 
+    // Directory where SQLite extensions are found (set by setExtensionPath() fn)
+    static string sExtensionPath;
+
     LogDomain SQL("SQL", LogLevel::Warning);
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
     static void sqlite3_log_callback(C4UNUSED void* pArg, int errCode, const char* msg) {
-        if ( errCode == SQLITE_NOTICE_RECOVER_WAL ) return;  // harmless "recovered __ frames from WAL file" message
-        int baseCode = errCode & 0xFF;
-        if ( baseCode == SQLITE_SCHEMA )
-            return;  // ignore harmless "statement aborts ... database schema has changed" warning
-        if ( errCode == SQLITE_WARNING && strncmp(msg, "file unlinked while open:", 25) == 0 )
-            return;  // ignore warning closing zombie db that's been deleted (#381)
-
-        if ( baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY ) {
-            LogTo(DBLog, "SQLite message: %s", msg);
-        } else {
-            LogError(DBLog, "SQLite error (code %d): %s", errCode, msg);
+        switch ( errCode & 0xFF ) {
+            case SQLITE_OK:
+            case SQLITE_NOTICE:
+            case SQLITE_READONLY:
+            case SQLITE_CONSTRAINT:
+                if ( errCode == SQLITE_NOTICE_RECOVER_WAL )
+                    break;  // harmless "recovered __ frames from WAL file" message
+                LogTo(DBLog, "SQLite message: %s", msg);
+                break;
+            case SQLITE_SCHEMA:
+                break;  // ignore harmless "statement aborts ... database schema has changed" warning
+            case SQLITE_WARNING:
+                if ( strncmp(msg, "file unlinked while open:", 25) == 0 )
+                    break;  // ignore warning closing zombie db that's been deleted (#381)
+                LogWarn(DBLog, "SQLite warning: %s", msg);
+                break;
+            default:
+                LogError(DBLog, "SQLite error (code %d): %s", errCode, msg);
+                break;
         }
     }
 
@@ -169,12 +186,52 @@ namespace litecore {
         return ok;
     }
 
+    void SQLiteDataFile::setExtensionPath(string path) { sExtensionPath = std::move(path); }
+
     SQLiteDataFile::SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options* options)
         : DataFile(path, delegate, options) {
         reopen();
     }
 
     SQLiteDataFile::~SQLiteDataFile() { close(); }
+
+    // A lot of this logic can be turned into a reusable function later if needed
+    // for more extensions.
+    static void LoadVectorSearchExtension(sqlite3* sqlite) {
+#ifdef COUCHBASE_ENTERPRISE
+        static const char* extensionName = "CouchbaseLiteVectorSearch";
+        if ( sExtensionPath.empty() ) return;
+
+        // First enable extension loading (for security reasons it's off by default):
+        int rc = sqlite3_db_config(sqlite, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 1, NULL);
+        if ( rc != SQLITE_OK ) {
+            LogToAt(DBLog, Error, "Unable to enable SQLite extension loading: err %d", rc);
+            error::_throw(error::UnexpectedError, "Unable to enable SQLite extension loading: err %d", rc);
+        }
+
+        DEFER {
+            // Disable extension-loading again, for safety's sake.
+            sqlite3_db_config(sqlite, SQLITE_DBCONFIG_ENABLE_LOAD_EXTENSION, 0, NULL);
+        };
+
+        string pluginPath = sExtensionPath + FilePath::kSeparator + extensionName;
+        if ( !litecore::extension::check_extension_version(pluginPath, kVectorSearchCompatibleVersion) ) {
+            // This function logs the reason for the version match failure, no need to log here.
+            error::_throw(error::UnsupportedOperation,
+                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
+                          extensionName);
+        }
+
+        char* message = nullptr;
+        rc            = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
+        if ( rc != SQLITE_OK ) {
+            LogToAt(DBLog, Error, "Unable to load '%s' extension: %s (%d)", extensionName, message, rc);
+            sqlite3_free(message);
+            error::_throw(error::CantOpenFile, "Unable to load '%s' extension: %s (%d)", extensionName, message, rc);
+        }
+
+#endif
+    }
 
     void SQLiteDataFile::reopen() {
         DataFile::reopen();
@@ -245,6 +302,9 @@ namespace litecore {
         int rc = register_unicodesn_tokenizer(sqlite);
         if ( rc != SQLITE_OK ) warn("Unable to register FTS tokenizer: SQLite err %d", rc);
 
+        // Load vector search extension if present:
+        LoadVectorSearchExtension(sqlite);
+
         withFileLock([this] {
             if ( !upgradeSchema(SchemaVersion::WithDeletedTable, "Migrating deleted docs to `del_` tables", [&] {
                      // Migrate deleted docs to separate table:
@@ -275,6 +335,8 @@ namespace litecore {
                 error::_throw(error::CantUpgradeDatabase);
             }
         });
+        // Enable some security features:
+        sqlite3_db_config(sqlite, SQLITE_DBCONFIG_DEFENSIVE, 1, NULL);
     }
 
     bool SQLiteDataFile::upgradeSchema(SchemaVersion minVersion, const char* what, function_ref<void()> upgrade) {
@@ -754,17 +816,26 @@ namespace litecore {
         return name;
     }
 
+    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator,
+                                              const string& property) const {
+        return onTable + string(typeSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
+    }
+
     string SQLiteDataFile::FTSTableName(const string& onTable, const string& property) const {
-        return onTable + string(KeyStore::kIndexSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
+        return auxiliaryTableName(onTable, KeyStore::kIndexSeparator, property);
     }
 
     string SQLiteDataFile::unnestedTableName(const string& onTable, const string& property) const {
-        return onTable + string(KeyStore::kUnnestSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
+        return auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
     }
 
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string& onTable, const std::string& property) const {
-        return onTable + string(KeyStore::kPredictSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
+        return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
+    }
+
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& property) const {
+        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, property);
     }
 #endif
 

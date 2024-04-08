@@ -38,6 +38,8 @@ namespace litecore::qp {
     constexpr slice kNestedValueFnName     = "fl_nested_value"_sl;
     constexpr slice kUnnestedValueFnName   = "fl_unnested_value"_sl;
     constexpr slice kFTSValueFnName        = "fl_fts_value"_sl;
+    constexpr slice kVectorToIndexFnName   = "fl_vector_to_index"_sl;
+    constexpr slice kEncodeVectorFnName    = "encode_vector"_sl;
     constexpr slice kBlobFnName            = "fl_blob"_sl;
     constexpr slice kRootFnName            = "fl_root"_sl;
     constexpr slice kEachFnName            = "fl_each"_sl;
@@ -59,6 +61,10 @@ namespace litecore::qp {
 
     constexpr slice kPredictionFnName           = "prediction"_sl;
     constexpr slice kPredictionFnNameWithParens = "prediction()"_sl;
+
+    constexpr slice kVectorMatchFnName           = "vector_match"_sl;
+    constexpr slice kVectorMatchFnNameWithParens = "vector_match()"_sl;
+    constexpr slice kVectorDistanceFnName        = "vector_distance"_sl;
 
     const char* const kDefaultTableAlias = "_doc";
 

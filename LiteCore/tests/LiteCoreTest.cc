@@ -52,7 +52,7 @@ string stringWithFormat(const char* format, ...) {
     return str;
 }
 
-void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+void ExpectException(litecore::error::Domain domain, int code, const char* what, const std::function<void()>& lambda) {
     try {
         ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
@@ -62,9 +62,14 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
         error err = error::convertRuntimeError(x).standardized();
         CHECK(err.domain == domain);
         CHECK(err.code == code);
+        if ( what ) CHECK(string_view(err.what()) == string_view(what));
         return;
     }
     FAIL("Should have thrown an exception");
+}
+
+void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+    ExpectException(domain, code, nullptr, lambda);
 }
 
 #pragma mark - TESTFIXTURE:
@@ -186,15 +191,19 @@ sequence_t DataFileTestFixture::createDoc(KeyStore& s, slice docID, slice body, 
 }
 
 sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, DocumentFlags flags, ExclusiveTransaction& t,
-                                         const function<void(fleece::impl::Encoder&)>& writeProperties) {
+                                         const function<void(fleece::impl::Encoder&)>& writeProperties,
+                                         bool                                          inOuterDict) {
     fleece::impl::Encoder enc;
-    enc.beginDictionary();
+    if ( inOuterDict ) enc.beginDictionary();
     writeProperties(enc);
-    enc.endDictionary();
+    if ( inOuterDict ) enc.endDictionary();
     alloc_slice body = enc.finish();
 
     if ( toStore.capabilities().sequences ) {
-        RecordUpdate rec(docID, body, flags);
+        Record       existing = toStore.get(docID);
+        RecordUpdate rec(existing);
+        rec.body  = body;
+        rec.flags = flags;
         return toStore.set(rec, KeyStore::kUpdateSequence, t);
     } else {
         toStore.setKV(docID, body, t);

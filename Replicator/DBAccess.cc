@@ -11,6 +11,7 @@
 //
 
 #include "DBAccess.hh"
+#include "DatabaseImpl.hh"
 #include "ReplicatedRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
@@ -45,7 +46,9 @@ namespace litecore::repl {
                 if ( !_insertionDB ) {
                     Retained<C4Database> idb;
                     try {
-                        idb = db->openAgain();
+                        idb                = db->openAgain();
+                        DatabaseImpl* impl = asInternal(idb);
+                        logInfo("InsertionDB=%s", impl->dataFile()->loggingName().c_str());
                         _c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     } catch ( const exception& x ) {
                         C4Error error = C4Error::fromException(x);
@@ -301,6 +304,7 @@ namespace litecore::repl {
 
                 assert(_tempSharedKeys);
             }
+            _tempSharedKeys.disableCaching();
             return _tempSharedKeys;
         });
     }

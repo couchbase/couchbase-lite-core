@@ -21,6 +21,7 @@
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "DatabaseImpl.hh"
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
@@ -71,6 +72,9 @@ namespace litecore::repl {
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
+            connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
+
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
@@ -82,7 +86,11 @@ namespace litecore::repl {
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            logInfo("%s", string(*options).c_str());
+            string logName = db->useLocked<std::string>([](const C4Database* db) {
+                DatabaseImpl* impl = asInternal(db);
+                return impl->dataFile()->loggingName();
+            });
+            logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
 
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }
@@ -127,14 +135,6 @@ namespace litecore::repl {
             if ( !_options->isActive() ) { return; }
 
             _findExistingConflicts();
-
-            // Get the remote DB ID:
-            slice key;
-            // Assertion: _collections.size() > 0
-            // All _checkpointer's share the same key.
-            key                   = _subRepls[0].checkpointer->remoteDBIDString();
-            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
-            logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
 
             bool goOn = true;
             for ( CollectionIndex i = 0; goOn && i < _subRepls.size(); ++i ) {
@@ -1177,6 +1177,14 @@ namespace litecore::repl {
         }
         _pushStatus = Worker::Status(isPushBusy ? kC4Busy : kC4Stopped);
         _pullStatus = Worker::Status(isPullBusy ? kC4Busy : kC4Stopped);
+
+        // Get the remote DB ID:
+        slice key;
+        // Assertion: _collections.size() > 0
+        // All _checkpointer's share the same key.
+        key                   = _subRepls[0].checkpointer->remoteDBIDString();
+        C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
+        logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
     }
 
     void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {

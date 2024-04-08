@@ -185,7 +185,6 @@ target_compile_definitions(
     -DHAVE_LOCALTIME_R                  # Use localtime_r instead of localtime
     -DHAVE_USLEEP                       # Allow millisecond precision sleep
     -DHAVE_UTIME                        # Use utime() instead of utimes()
-    -DSQLITE_OMIT_LOAD_EXTENSION        # Disable extensions (not needed for LiteCore)
     -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
     -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
     -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer

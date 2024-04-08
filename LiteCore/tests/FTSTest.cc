@@ -64,8 +64,8 @@ class FTSTest : public DataFileTestFixture {
         _stringsInDB[i] = sentence;
     }
 
-    void createIndex(IndexSpec::Options options) {
-        store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, &options);
+    void createIndex(IndexSpec::FTSOptions options) {
+        store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, options);
     }
 
     void testQuery(const char* queryStr, vector<int> expectedOrder, vector<int> expectedTerms,
@@ -169,9 +169,9 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
     // the WHERE clause prevents row 4 from being indexed/searched.
-    IndexSpec::Options options{"english", true};
+    IndexSpec::FTSOptions options{"english", true};
     store->createIndex("sentence", R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
-                       IndexSpec::kFullText, &options);
+                       IndexSpec::kFullText, options);
     testQuery("['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
@@ -203,8 +203,8 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     QueryLanguage     lang      = QueryLanguage::kJSON;
 
     SECTION("Create Index First") {
-        IndexSpec::Options options{"en", false, true};
-        CHECK(store->createIndex("List"_sl, "List"_sl, QueryLanguage::kN1QL, IndexSpec::kFullText, &options));
+        IndexSpec::FTSOptions options{"en", false, true};
+        CHECK(store->createIndex("List"_sl, "List"_sl, QueryLanguage::kN1QL, IndexSpec::kFullText, options));
         queryStr = jsonQuery;
         lang     = QueryLanguage::kJSON;
     }
@@ -286,8 +286,8 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     }
 
     SECTION("Create Index After") {
-        IndexSpec::Options options{"en", false, true};
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
+        IndexSpec::FTSOptions options{"en", false, true};
+        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, options));
         queryStr = n1qlQuery;
         lang     = QueryLanguage::kN1QL;
     }
@@ -343,13 +343,13 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
         t.commit();
     }
 
-    IndexSpec::Options options{"en", false, false};
+    IndexSpec::FTSOptions options{"en", false, false};
 
     SECTION("JSON index expression") {
-        CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]", IndexSpec::kFullText, &options));
+        CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]", IndexSpec::kFullText, options));
     }
     SECTION("N1QL index expression") {
-        CHECK(store->createIndex("fts"_sl, "dict_value", QueryLanguage::kN1QL, IndexSpec::kFullText, &options));
+        CHECK(store->createIndex("fts"_sl, "dict_value", QueryLanguage::kN1QL, IndexSpec::kFullText, options));
     }
 
     Retained<Query>           query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', 'bar']}"));
@@ -411,8 +411,8 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
 
     SECTION("Double") { valueToCheck = "1.234"_sl; }
 
-    IndexSpec::Options options{"en", false, true};
-    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, &options));
+    IndexSpec::FTSOptions options{"en", false, true};
+    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, options));
     Retained<Query> query = db->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', ['$value']]}"));
     Encoder         e;
     e.beginDictionary(1);
@@ -428,8 +428,8 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
     // CBL-977: FTS rows have special meta columns in front, and
     // so the missing columns need to ignore those
 
-    IndexSpec::Options options{"", false, false};
-    CHECK(store->createIndex("ftsIndex"_sl, "[[\".key-fts\"]]"_sl, IndexSpec::kFullText, &options));
+    IndexSpec::FTSOptions options{"", false, false};
+    CHECK(store->createIndex("ftsIndex"_sl, "[[\".key-fts\"]]"_sl, IndexSpec::kFullText, options));
 
     {
         ExclusiveTransaction t(store->dataFile());

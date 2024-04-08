@@ -14,6 +14,7 @@ DerivedData/
 
 # CLion:
 .idea/
+build-ee/
 
 # CMake:
 /build_cmake/*

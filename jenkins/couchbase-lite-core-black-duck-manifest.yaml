@@ -45,6 +45,15 @@ components:
     versions: [ 1.2.13 ]
     src-path: vendor/zlib
 
+  # ======================================================#
+  # Below this are dependencies that are needed for       #
+  # https://github.com/couchbaselabs/mobile-vector-search #
+  # which is built in tandem with LiteCore                #
+  # ======================================================#
+  faiss:
+    bd-id: 9c5b89a8-e3a1-4f7a-af8e-ebac244b7791
+    versions: [ 1.7.4 ]
+
 # [0]
 # The KB doesn't track the versions of this library well,
 # so this is not the actual version we use, just the newest

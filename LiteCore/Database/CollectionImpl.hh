@@ -47,18 +47,20 @@ namespace litecore {
             if ( !(_database->getConfiguration().flags & kC4DB_NonObservable) )
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(SequenceTracker(store.name()));
 
-            logInfo("Instantiated");
+            DatabaseImpl* dbImpl = asInternal(db);
+            logInfo("DB=%s Instantiated", dbImpl->dataFile()->loggingName().c_str());
         }
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
         void close() {
-            logInfo("Closed");
+            logInfo("Closing");
             stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore        = nullptr;
             _database        = nullptr;
+            logInfo("Closed");
         }
 
         std::string fullName() const {
@@ -68,6 +70,8 @@ namespace litecore {
             name += std::string_view(slice(spec.name));
             return name;
         }
+
+        std::string loggingClassName() const override { return "Collection"; }
 
         std::string loggingIdentifier() const override {  // Logging API
             if ( _usuallyFalse(!isValid()) ) { return format("Closed collection %.*s", SPLAT(_name)); }
@@ -375,6 +379,7 @@ namespace litecore {
             if ( !_housekeeper && isValid() ) {
                 if ( (getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0 ) {
                     _housekeeper = new Housekeeper(this);
+                    _housekeeper->setParentObjectRef(getObjectRef());
                     _housekeeper->start();
                 }
             }
@@ -389,13 +394,46 @@ namespace litecore {
 
 #pragma mark - INDEXES:
 
-
-        static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
-
         void createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                          const C4IndexOptions* indexOptions = nullptr) override {
+            IndexSpec::Options options;
+            switch ( indexType ) {
+                case kC4FullTextIndex:
+                    if ( indexOptions ) {
+                        auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
+                        ftsOpt.language         = indexOptions->language;
+                        ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
+                        ftsOpt.disableStemming  = indexOptions->disableStemming;
+                        ftsOpt.stopWords        = indexOptions->stopWords;
+                    }
+                    break;
+                case kC4VectorIndex:
+                    if ( indexOptions ) {
+                        auto& c4Opt   = indexOptions->vector;
+                        auto& vecOpt  = options.emplace<IndexSpec::VectorOptions>(c4Opt.dimensions);
+                        vecOpt.metric = IndexSpec::VectorOptions::MetricType(c4Opt.metric);
+
+                        vecOpt.clustering.type = IndexSpec::VectorOptions::ClusteringType(c4Opt.clustering.type);
+                        vecOpt.clustering.flat_centroids      = c4Opt.clustering.flat_centroids;
+                        vecOpt.clustering.multi_subquantizers = c4Opt.clustering.multi_subquantizers;
+                        vecOpt.clustering.multi_bits          = c4Opt.clustering.multi_bits;
+
+                        vecOpt.encoding.type             = IndexSpec::VectorOptions::EncodingType(c4Opt.encoding.type);
+                        vecOpt.encoding.pq_subquantizers = c4Opt.encoding.pq_subquantizers;
+                        vecOpt.encoding.bits             = c4Opt.encoding.bits;
+
+                        vecOpt.minTrainingSize = c4Opt.minTrainingSize;
+                        vecOpt.maxTrainingSize = c4Opt.maxTrainingSize;
+                        vecOpt.numProbes       = c4Opt.numProbes;
+                    } else {
+                        error::_throw(error::InvalidParameter, "Vector index requires options");
+                    }
+                    break;
+                default:
+                    break;
+            }
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
-                                   (const IndexSpec::Options*)indexOptions);
+                                   options);
         }
 
         void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }

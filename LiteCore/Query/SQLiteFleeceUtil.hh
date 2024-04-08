@@ -75,9 +75,29 @@ namespace litecore {
         return {blob, static_cast<size_t>(sqlite3_value_bytes(arg))};
     }
 
-    // Interprets the arg, which must be a blob, as a Fleece value and returns it as a Value*.
-    // On error returns nullptr (and sets the SQLite result error.)
-    const fleece::impl::Value* fleeceParam(sqlite3_context*, sqlite3_value* arg, bool required = true) noexcept;
+    // Returns a string argument as a slice, or a null slice if the argument isn't a string.
+    static inline slice stringSliceArgument(sqlite3_value* arg) noexcept {
+        if ( sqlite3_value_type(arg) != SQLITE_TEXT ) return nullslice;
+        return valueAsStringSlice(arg);
+    }
+
+    // Gets a Fleece value from a function argument that is a Fleece-encoded blob
+    // (such as the doc body) or a null-wrapped pointer of type `kFleeceValuePointerType`.
+    // If the arg is not one of those, the value will be nullptr, and if `required` is true
+    // the constructor will call `sqlite3_result_error`.
+    // @note When necessary, this creates a Fleece Scope for decoding Dict keys.
+    class QueryFleeceParam {
+      public:
+        QueryFleeceParam(sqlite3_context*, sqlite3_value* arg, bool required = true) noexcept;
+
+        operator const fleece::impl::Value*() const noexcept { return _value; }
+
+        const fleece::impl::Value* operator->() const noexcept { return _value; }
+
+      private:
+        const fleece::impl::Value*         _value = nullptr;
+        std::optional<fleece::impl::Scope> _scope;
+    };
 
     // Evaluates a path from the current value of *pValue and stores the result back to
     // *pValue. Returns a SQLite error code, or SQLITE_OK on success.

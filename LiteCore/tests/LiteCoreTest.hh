@@ -16,6 +16,7 @@
 #include "TestsCommon.hh"
 #include "c4Base.hh"
 #include "Error.hh"
+#include "fleece/function_ref.hh"
 #include "Logging.hh"
 #include <array>
 #include <functional>
@@ -78,7 +79,8 @@ static std::array<std::string, count> randomDigitStrings() {
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.
 void ExpectException(litecore::error::Domain, int code, const std::function<void()>& lambda);
-
+// In this variant the exception message must match too, unless `what` is nullptr.
+void ExpectException(litecore::error::Domain domain, int code, const char* what, const std::function<void()>& lambda);
 
 #include "CatchHelper.hh"
 
@@ -131,12 +133,12 @@ class DataFileTestFixture
     };
 
     sequence_t writeDoc(slice docID, DocumentFlags flags, ExclusiveTransaction& t,
-                        std::function<void(fleece::impl::Encoder&)> fn) {
-        return writeDoc(*store, docID, flags, t, std::move(fn));
+                        std::function<void(fleece::impl::Encoder&)> fn, bool inOuterDict = true) {
+        return writeDoc(*store, docID, flags, t, std::move(fn), inOuterDict);
     }
 
     static sequence_t writeDoc(KeyStore&, slice docID, DocumentFlags, ExclusiveTransaction&,
-                               const std::function<void(fleece::impl::Encoder&)>&);
+                               const std::function<void(fleece::impl::Encoder&)>&, bool inOuterDict = true);
 
     [[nodiscard]] string databaseName() const override { return _databaseName; }
 

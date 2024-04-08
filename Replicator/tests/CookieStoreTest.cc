@@ -296,12 +296,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
                              WITH_ERROR(&error)));
         {
             ExpectingExceptions x;
-            c4db_setCookie(db, "dest=Example; Domain=Example.Com; Max-Age=30"_sl, request.hostname, request.path, false,
-                           &error);
+            CHECK_FALSE(c4db_setCookie(db, "dest=Example; Domain=Example.Com; Max-Age=30"_sl, request.hostname,
+                                       request.path, false, &error));
             CHECK(error.domain == LiteCoreDomain);
             CHECK(error.code == kC4ErrorInvalidParameter);
-            c4db_setCookie(db, "dest=entireWorld; Domain=.Com; Max-Age=30"_sl, request.hostname, request.path, false,
-                           &error);
+            CHECK_FALSE(c4db_setCookie(db, "dest=entireWorld; Domain=.Com; Max-Age=30"_sl, request.hostname,
+                                       request.path, false, &error));
             CHECK(error.domain == LiteCoreDomain);
             CHECK(error.code == kC4ErrorInvalidParameter);
         }

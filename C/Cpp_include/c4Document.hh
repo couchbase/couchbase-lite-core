@@ -69,7 +69,7 @@ struct C4Document
 
     virtual bool revisionsLoaded() const noexcept = 0;
 
-    virtual bool loadRevisions() const MUST_USE_RESULT = 0;
+    [[nodiscard]] virtual bool loadRevisions() const = 0;
 
     virtual bool loadRevisionBody() const = 0;  // can throw; returns false if compacted away
 

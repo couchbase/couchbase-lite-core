@@ -81,11 +81,11 @@ namespace litecore::net {
         ///   reached or not.
         ///
         /// On other error returns -1.
-        ssize_t read(void* dst, size_t byteCount) MUST_USE_RESULT;
+        [[nodiscard]] ssize_t read(void* dst, size_t byteCount);
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
         /// On premature EOF returns 0 and sets error {WebSocket, 400}.
-        ssize_t readExactly(void* dst, size_t byteCount) MUST_USE_RESULT;
+        [[nodiscard]] ssize_t readExactly(void* dst, size_t byteCount);
 
         static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
@@ -96,8 +96,8 @@ namespace litecore::net {
         /// @param delimiter  The byte sequence that ends the data.
         /// @param includeDelimiter  If true, delimiter is included at end of returned data.
         /// @param maxSize  Maximum number of bytes to read; if exceeded, sets error & returns null.
-        fleece::alloc_slice readToDelimiter(slice delimiter, bool includeDelimiter = true,
-                                            size_t maxSize = kMaxDelimitedReadSize) MUST_USE_RESULT;
+        [[nodiscard]] fleece::alloc_slice readToDelimiter(slice delimiter, bool includeDelimiter = true,
+                                                          size_t maxSize = kMaxDelimitedReadSize);
 
         /// Reads all remaining data until EOF on the read side.
         fleece::alloc_slice readToEOF();
@@ -108,23 +108,23 @@ namespace litecore::net {
         /// Reads an HTTP body, given the headers.
         /// Supports explicit Content-Length, Chunked transfer encoding, or old-school read-to-EOF.
         /// On error, sets the error property and returns false.
-        bool readHTTPBody(const websocket::Headers& headers, fleece::alloc_slice& body) MUST_USE_RESULT;
+        [[nodiscard]] bool readHTTPBody(const websocket::Headers& headers, fleece::alloc_slice& body);
 
         [[nodiscard]] bool atReadEOF() const { return _eofOnRead; }
 
         //-------- WRITING:
 
         /// Writes to the socket and returns the number of bytes written:
-        ssize_t write(slice) MUST_USE_RESULT;
+        [[nodiscard]] ssize_t write(slice);
 
         /// Writes all the bytes to the socket.
-        ssize_t write_n(slice) MUST_USE_RESULT;
+        [[nodiscard]] ssize_t write_n(slice);
 
         /// Writes multiple byte ranges (slices) to the socket.
         /// Those that are completely written are removed from the head of the vector.
         /// One that's partially written has its `buf` and `size` adjusted to cover only the
         /// unsent bytes. (This will always be the 1st in the vector on return.)
-        ssize_t write(std::vector<fleece::slice>& ioByteRanges) MUST_USE_RESULT;
+        [[nodiscard]] ssize_t write(std::vector<fleece::slice>& ioByteRanges);
 
         [[nodiscard]] bool atWriteEOF() const { return _eofOnWrite; }
 
@@ -146,14 +146,14 @@ namespace litecore::net {
         void cancelCallbacks();
 
       protected:
-        bool    setSocket(std::unique_ptr<sockpp::stream_socket>);
-        void    setError(C4ErrorDomain, int code, slice message = fleece::nullslice);
-        void    checkStreamError();
-        bool    checkReadWriteStreamError();
-        bool    checkSocketFailure();
-        ssize_t _read(void* dst, size_t byteCount) MUST_USE_RESULT;
-        void    pushUnread(slice);
-        int     fileDescriptor();
+        bool                  setSocket(std::unique_ptr<sockpp::stream_socket>);
+        void                  setError(C4ErrorDomain, int code, slice message = fleece::nullslice);
+        void                  checkStreamError();
+        bool                  checkReadWriteStreamError();
+        bool                  checkSocketFailure();
+        [[nodiscard]] ssize_t _read(void* dst, size_t byteCount);
+        void                  pushUnread(slice);
+        int                   fileDescriptor();
 
       private:
         bool                                 _setTimeout(double secs);
@@ -179,7 +179,7 @@ namespace litecore::net {
         explicit ClientSocket(TLSContext* = nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
-        bool connect(const Address& addr) MUST_USE_RESULT;
+        [[nodiscard]] bool connect(const Address& addr);
 
         /// Set a specific a network interface name (e.g. en0) for connecting to the host
         void setNetworkInterface(slice interface) { _interface = interface; }
@@ -196,8 +196,8 @@ namespace litecore::net {
       public:
         explicit ResponderSocket(TLSContext* = nullptr);
 
-        bool acceptSocket(sockpp::stream_socket&&) MUST_USE_RESULT;
-        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;
+        [[nodiscard]] bool acceptSocket(sockpp::stream_socket&&);
+        [[nodiscard]] bool acceptSocket(std::unique_ptr<sockpp::stream_socket>);
 
         /// Perform server-side TLS handshake.
         bool wrapTLS() { return TCPSocket::wrapTLS(fleece::nullslice); }

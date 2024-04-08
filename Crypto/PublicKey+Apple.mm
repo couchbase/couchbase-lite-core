@@ -303,7 +303,7 @@ namespace litecore { namespace crypto {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
-            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false);
+            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),

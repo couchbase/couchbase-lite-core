@@ -79,7 +79,7 @@ namespace litecore {
 
         // This method can throw exceptions, so should not be called from 'noexcept' overrides!
         // Such methods should call requireRevisions instead.
-        bool loadRevisions() const override MUST_USE_RESULT {
+        [[nodiscard]] bool loadRevisions() const override {
             if ( !_revTree.revsAvailable() ) {
                 LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(_docID));
                 alloc_slice curRev = _selectedRevID;
@@ -102,7 +102,7 @@ namespace litecore {
                 return _revTree.currentRevAvailable();
         }
 
-        bool loadRevisionBody() const override MUST_USE_RESULT {
+        [[nodiscard]] bool loadRevisionBody() const override {
             if ( !_selectedRev && _revTree.currentRevAvailable() )
                 return true;  // current rev is selected & available, so return true
             return loadRevisions() && (!_selectedRev || _selectedRev->body());
@@ -523,6 +523,7 @@ namespace litecore {
                           SPLAT(_docID), SPLAT(oldRev->revID.expanded()), SPLAT(newRev->revID.expanded()), effect);
                 }
                 _revTree.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
+                _revTree.keepBody(newRev);
             }
 
             if ( !saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID)) ) {

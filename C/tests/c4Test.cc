@@ -179,7 +179,7 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 #endif
     });
 
-    c4_shutdown(nullptr);
+    CHECK(c4_shutdown(nullptr));
 
     objectCount = c4_getObjectCount();
 
@@ -578,25 +578,7 @@ fleece::alloc_slice C4Test::readFile(const std::string& filepath) {
 }
 
 bool C4Test::readFileByLines(const string& path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
-    INFO("Reading lines from " << path);
-    fstream fd(path.c_str(), ios_base::in);
-    REQUIRE(fd);
-    vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
-    size_t       lineCount = 0;
-    while ( fd.good() ) {
-        if ( maxLines > 0 && lineCount == maxLines ) { break; }
-        // Ensure that buf.capacity (size_t/uint64) will not exceed limit of std::streamsize (int64)
-        DebugAssert(buf.capacity() <= std::numeric_limits<std::streamsize>::max());
-        fd.getline(buf.data(), buf.capacity());  // NOLINT(cppcoreguidelines-narrowing-conversions)
-        auto len = fd.gcount();
-        if ( len <= 0 ) break;
-        ++lineCount;
-        REQUIRE(buf[len - 1] == '\0');
-        --len;
-        if ( !callback({buf.data(), (size_t)len}) ) return false;
-    }
-    REQUIRE((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
-    return true;
+    return ReadFileByLines(path, callback, maxLines);
 }
 
 unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, double timeout, bool verbose) const {
@@ -615,7 +597,7 @@ unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, doub
     unsigned         numDocs = 0;
     constexpr size_t bufSize = 20;
     for ( FLArrayIterator_Begin(root, &iter); nullptr != (item = FLArrayIterator_GetValue(&iter));
-          FLArrayIterator_Next(&iter) ) {
+          (void)FLArrayIterator_Next(&iter) ) {
         char docID[bufSize];
         snprintf(docID, bufSize, "%s%07u", idPrefix.c_str(), numDocs + 1);
 

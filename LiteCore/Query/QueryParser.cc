@@ -135,7 +135,7 @@ namespace litecore {
         alloc_slice escaped(in.size + 1);
         auto        dst = (char*)escaped.buf;
         dst[0]          = '\\';
-        in.readAll(dst + 1, escaped.size - 1);
+        Assert(in.readAll(dst + 1, escaped.size - 1));
         return escaped;
     }
 
@@ -222,6 +222,12 @@ namespace litecore {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(), "Sorry, multiple MATCHes of the same property are not allowed");
         }
+
+#ifdef COUCHBASE_ENTERPRISE
+        // Process VECTOR_DISTANCE() calls using an index if available.
+        // This may write a "WITH ..." (CTS) expression to _sql.
+        addVectorSearchCTEs(operands);
+#endif
 
         // Add the indexed prediction() calls to _indexJoinTables now
         findPredictionCalls(operands);
@@ -573,14 +579,23 @@ namespace litecore {
 
         // Add joins to index tables (FTS, predictive):
         for ( auto& ftsTable : _indexJoinTables ) {
-            auto& table = ftsTable.first;
-            auto& alias = ftsTable.second;
-            auto  idxAt = table.find(KeyStore::kIndexSeparator);
+            auto&       table          = ftsTable.first;
+            auto&       alias          = ftsTable.second;
+            string_view docidCol       = "docid";
+            auto        idxAt          = table.find(KeyStore::kIndexSeparator);
+            bool        writeTableName = true;
             // Encoded in the name of the index table is collection against which the index
             // is created. "docID" of this table is to match the "rowid" of the collection table.
             // The left-side of the separator is the original collection.
             // The Prediction method also uses a separate table; only the separator is different.
             if ( idxAt == string::npos ) { idxAt = table.find(KeyStore::kPredictSeparator); }
+            if ( idxAt == string::npos ) {
+                idxAt = table.find(KeyStore::kVectorSeparator);
+                if ( idxAt != string::npos ) {
+                    docidCol       = "rowid";
+                    writeTableName = false;  // vector index is already given an alias in a WITH stmt
+                }
+            }
             string coAlias;
             auto [prefixBegin, prefixEnd] = _ftsTableAliases.equal_range(table);
             if ( idxAt != string::npos ) {
@@ -602,8 +617,9 @@ namespace litecore {
                 Warn("The collecion is not specified. Hacked it to default.");
                 coAlias = _dbAlias;
             }
-            _sql << " JOIN " << sqlIdentifier(table) << " AS " << alias << " ON " << alias
-                 << ".docid = " << sqlIdentifier(coAlias) << ".rowid";
+            _sql << " JOIN ";
+            if ( writeTableName ) _sql << sqlIdentifier(table) << " AS ";
+            _sql << alias << " ON " << alias << "." << docidCol << " = " << sqlIdentifier(coAlias) << ".rowid";
         }
     }
 
@@ -1128,14 +1144,7 @@ namespace litecore {
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
     void QueryParser::matchOp(C4UNUSED slice op, Array::iterator& operands) {
-        // Is a MATCH legal here? Look at the parent operation(s):
-        auto parentCtx = _context.rbegin() + 1;
-        auto parentOp  = (*parentCtx)->op;
-        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
-        require(parentOp == "SELECT"_sl || parentOp == nullslice,
-                "MATCH can only appear at top-level, or in a top-level AND");
-
-        // Write the expression:
+        requireTopLevelConjunction("MATCH");
         auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
         Assert(!ftsTableAlias.empty());
         _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0]).first) << " MATCH ";
@@ -1469,9 +1478,19 @@ namespace litecore {
             return;
         }
 
-        // Special case: "prediction()" may be indexed:
 #ifdef COUCHBASE_ENTERPRISE
-        if ( op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode) ) return;
+        if ( op.caseEquivalent(kPredictionFnName) ) {
+            // Special case: "prediction()" may be indexed:
+            if ( writeIndexedPrediction((const Array*)_curNode) ) return;
+        } else if ( op.caseEquivalent(kVectorMatchFnName) ) {
+            // Special case: "vector_match()":
+            writeVectorMatchFn(operands);
+            return;
+        } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
+            // Special case: "vector_distance()":
+            writeVectorDistanceFn(operands);
+            return;
+        }
 #endif
 
         if ( !_collationUsed && spec->wants_collation ) {
@@ -1567,6 +1586,7 @@ namespace litecore {
     void QueryParser::writeFunctionGetter(slice fn, const Value* source, const Value* param) {
         Path property = propertyFromNode(source);
         if ( property.empty() ) {
+            // If source is not a property path, pass it directly to fn:
             _sql << fn << "(";
             parseNode(source);
             if ( param ) {
@@ -1857,11 +1877,15 @@ namespace litecore {
         return SQL();
     }
 
-    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+    std::string QueryParser::functionCallSQL(slice fnName, const Value* args, const Value* param) {
         reset();
         addDefaultAlias();
-        writeFunctionGetter(kFTSValueFnName, ftsExpr);
+        writeFunctionGetter(fnName, args, param);
         return SQL();
+    }
+
+    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+        return functionCallSQL(kFTSValueFnName, ftsExpr);
     }
 
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
@@ -1881,6 +1905,15 @@ namespace litecore {
 
 #pragma mark - FULL-TEXT-SEARCH:
 
+    // Fail if the current op is not at the top level of a SELECT nor within AND expressions.
+    void QueryParser::requireTopLevelConjunction(const char* fnName) {
+        auto parentCtx = _context.rbegin() + 1;
+        auto parentOp  = (*parentCtx)->op;
+        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
+        require(parentOp == "SELECT"_sl || parentOp == nullslice,
+                "%s can only appear at top-level, or in a top-level AND", fnName);
+    }
+
     // Recursively looks for MATCH expressions and adds the properties being matched to
     // _indexJoinTables. Returns the number of expressions found.
     unsigned QueryParser::findFTSProperties(const Value* root) {
@@ -1890,11 +1923,12 @@ namespace litecore {
     }
 
     // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
-    pair<string, string> QueryParser::FTSTableName(const Value* key) const {
-        Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
+    pair<string, string> QueryParser::FTSTableName(const Value* key, bool vector) const {
+        Path keyPath(requiredString(key, vector ? "first arg of VECTOR_MATCH" : "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
-        require((0 < compCount && compCount <= 2), "Reference to FTS table may take at most one dotted prefix.");
+        require((0 < compCount && compCount <= 2),
+                "Reference to FTS or vector index may take at most one dotted prefix.");
         Path keyPathBeforeVerifyDbAlias = keyPath;
         auto iAlias                     = _aliases.end();
 
@@ -1928,8 +1962,19 @@ namespace litecore {
 
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
-                "FTS index name may not contain double-quotes nor be empty");
-        return {_delegate.FTSTableName(iAlias->second.tableName, indexName), string(prefix)};
+                "FTS or vector index name may not contain double-quotes nor be empty");
+        string tableName;
+        if ( vector ) {
+#ifdef COUCHBASE_ENTERPRISE
+            tableName = _delegate.vectorTableName(iAlias->second.tableName, indexName);
+#else
+            // should be unreachable, but just in case:
+            error::_throw(error::AssertionFailed, "CE doesn't support vector indexes");
+#endif
+        } else {
+            tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
+        }
+        return {tableName, string(prefix)};
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
@@ -2002,6 +2047,8 @@ namespace litecore {
 
 #ifndef COUCHBASE_ENTERPRISE
     void QueryParser::findPredictionCalls(const Value* root) {}
+
+    void QueryParser::addVectorSearchCTEs(const Value* root) {}
 #endif
 
 }  // namespace litecore

@@ -25,6 +25,9 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
+    // Implementation of N1QL function PREDICTION(NAME, INPUT, [PROPERTY]).
+    // Calls the named PredictiveModel, passing it the INPUT dict, returning the output dict.
+    // If PROPERTY is given, only that named property of the output dict is returned.
     static void predictionFunc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         try {
             auto name  = (const char*)sqlite3_value_text(argv[0]);
@@ -35,7 +38,7 @@ namespace litecore {
                 return;
             }
 
-            const Value* input = fleeceParam(ctx, argv[1], false);
+            const QueryFleeceParam input{ctx, argv[1], false};
             if ( !input || input->type() != kDict ) {
                 if ( !input && sqlite3_value_type(argv[1]) == SQLITE_NULL ) sqlite3_result_null(ctx);
                 else
@@ -51,8 +54,9 @@ namespace litecore {
                 st.start();
             }
 
-            C4Error     error  = {};
-            alloc_slice result = model->prediction((const Dict*)input, getDBDelegate(ctx), &error);
+            C4Error     error     = {};
+            const auto  inputDict = reinterpret_cast<const Dict*>(static_cast<const Value*>(input));
+            alloc_slice result    = model->prediction(inputDict, getDBDelegate(ctx), &error);
             if ( !result ) {
                 if ( error.code == 0 ) {
                     LogVerbose(QueryLog, "    ...prediction returned no result");
@@ -80,7 +84,8 @@ namespace litecore {
 
     // Creates Fleece array iterators on the 1st two parameters of the function.
     static bool getArrays(sqlite3_context* ctx, sqlite3_value** argv, Array::iterator& i1, Array::iterator& i2) {
-        auto p1 = fleeceParam(ctx, argv[0], false), p2 = fleeceParam(ctx, argv[1], false);
+        const QueryFleeceParam p1{ctx, argv[0], false};
+        const QueryFleeceParam p2{ctx, argv[1], false};
         if ( !p1 || !p2 ) return false;
         auto a1 = p1->asArray(), a2 = p2->asArray();
         if ( !a1 || !a2 ) return false;
@@ -89,7 +94,10 @@ namespace litecore {
         return (i1.count() == i2.count());
     }
 
+    // Implementation of N1QL function EUCLIDEAN_DISTANCE(ARRAY1, ARRAY2)
+    // Given two arrays of numbers, returns their Euclidean distance:
     // https://en.wikipedia.org/wiki/Euclidean_distance
+    // Returns NULL if args are not both arrays and of equal length.
     static void euclidean_distance(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
@@ -111,7 +119,10 @@ namespace litecore {
         sqlite3_result_double(ctx, dist);
     }
 
+    // Implementation of N1QL function COSINE_DISTANCE(ARRAY1, ARRAY2)
+    // Given two arrays of numbers, returns their cosine distance:
     // https://en.wikipedia.org/wiki/Cosine_similarity
+    // Returns NULL if args are not both arrays and of equal length.
     static void cosine_distance(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;

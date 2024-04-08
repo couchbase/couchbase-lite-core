@@ -11,6 +11,7 @@
 //
 
 #include "QueryParserTest.hh"
+#include "catch.hpp"
 #include "n1ql_parser.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
@@ -268,6 +269,15 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
 
     CHECK(translate("SELECT count(*)") == "{'WHAT':[['count()',['.']]]}");
     CHECK(translate("SELECT count(db.*)") == "{'WHAT':[['count()',['.db.']]]}");
+    CHECK(translate("SELECT concat(a, b)") == "{'WHAT':[['concat()',['.a'],['.b']]]}");
+    CHECK(translate("SELECT concat('hello', \"world\", ' ', concat(true, 123.45 , sin(1)))")
+          == "{'WHAT':[['concat()','hello','world',' ',['concat()',true,123.45,['sin()',1]]]]}");
+#ifdef COUCHBASE_ENTERPRISE
+    CHECK(translate("SELECT PREDICTION(factors, {\"numbers\" : num}, vec)")
+          == "{'WHAT':[['PREDICTION()','factors',{'numbers':['.num']},['.vec']]]}");
+    CHECK(translate("SELECT PREDICTION(factors, {\"numbers\" : num})")
+          == "{'WHAT':[['PREDICTION()','factors',{'numbers':['.num']}]]}");
+#endif
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
@@ -517,3 +527,94 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
     cerr << "\t\tElapsed time/check time = " << elapsed << "/" << checkBound << endl;
     CHECK(elapsed < checkBound);
 }
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL DateTime", "[Query][N1QL]") {
+    // millis
+    CHECK(translate("SELECT MILLIS_TO_UTC(1540319581000) AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_UTC()',1540319581000],'RESULT']]}");
+    // millis, fmt
+    CHECK(translate("SELECT MILLIS_TO_UTC(1540319581000,'1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_UTC()',1540319581000,'1111-11-11'],'RESULT']]}");
+    // millis, tz
+    CHECK(translate("SELECT MILLIS_TO_TZ(1540319581000, 500) AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_TZ()',1540319581000,500],'RESULT']]}");
+    // millis, tz, fmt
+    CHECK(translate("SELECT MILLIS_TO_TZ(1540319581000, 500, '1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_TZ()',1540319581000,500,'1111-11-11'],'RESULT']]}");
+    // millis
+    CHECK(translate("SELECT MILLIS_TO_STR(1540319581000) AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_STR()',1540319581000],'RESULT']]}");
+    // millis, fmt
+    CHECK(translate("SELECT MILLIS_TO_STR(1540319581000,'1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['MILLIS_TO_STR()',1540319581000,'1111-11-11'],'RESULT']]}");
+    // date
+    CHECK(translate("SELECT STR_TO_MILLIS('2018-10-23T18:33:01Z') AS RESULT")
+          == "{'WHAT':[['AS',['STR_TO_MILLIS()','2018-10-23T18:33:01Z'],'RESULT']]}");
+    // date
+    CHECK(translate("SELECT STR_TO_UTC('2018-10-23T18:33:01Z') AS RESULT")
+          == "{'WHAT':[['AS',['STR_TO_UTC()','2018-10-23T18:33:01Z'],'RESULT']]}");
+    // date, fmt
+    CHECK(translate("SELECT STR_TO_UTC('2018-10-23T18:33:01Z','1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['STR_TO_UTC()','2018-10-23T18:33:01Z','1111-11-11'],'RESULT']]}");
+    // date, tz
+    CHECK(translate("SELECT STR_TO_TZ('2018-10-23T18:33:01Z', 500) AS RESULT")
+          == "{'WHAT':[['AS',['STR_TO_TZ()','2018-10-23T18:33:01Z',500],'RESULT']]}");
+    // date, tz, fmt
+    CHECK(translate("SELECT STR_TO_TZ('2018-10-23T18:33:01Z', 500, '1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['STR_TO_TZ()','2018-10-23T18:33:01Z',500,'1111-11-11'],'RESULT']]}");
+    // date, date, component
+    CHECK(translate("SELECT DATE_DIFF_STR('2018-10-23','2018-10-24','day') AS RESULT")
+          == "{'WHAT':[['AS',['DATE_DIFF_STR()','2018-10-23','2018-10-24','day'],'RESULT']]}");
+    // millis, millis, component
+    CHECK(translate("SELECT DATE_DIFF_MILLIS(1540319581000,1540405981000,'day') AS RESULT")
+          == "{'WHAT':[['AS',['DATE_DIFF_MILLIS()',1540319581000,1540405981000,'day'],'RESULT']]}");
+    // date, amount, component
+    CHECK(translate("SELECT DATE_ADD_STR('2018-10-23T18:33:01Z',3,'day') AS RESULT")
+          == "{'WHAT':[['AS',['DATE_ADD_STR()','2018-10-23T18:33:01Z',3,'day'],'RESULT']]}");
+    // date, amount, component, fmt
+    CHECK(translate("SELECT DATE_ADD_STR('2018-10-23T18:33:01Z',3,'day','1111-11-11') AS RESULT")
+          == "{'WHAT':[['AS',['DATE_ADD_STR()','2018-10-23T18:33:01Z',3,'day','1111-11-11'],'RESULT']]}");
+    // millis, amount, component
+    CHECK(translate("SELECT DATE_ADD_MILLIS(1540319581000,3,'day') AS RESULT")
+          == "{'WHAT':[['AS',['DATE_ADD_MILLIS()',1540319581000,3,'day'],'RESULT']]}");
+}
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
+    tableNames.emplace("kv_default:vector:vecIndex");
+    tableNames.emplace("kv_.coll");
+    tableNames.emplace("kv_.coll:vector:vecIndex");
+    tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.scope.coll:vector:vecIndex");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
+                    "WHERE VECTOR_MATCH(vecIndex, $target, 5) ORDER BY distance")
+          == "{'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target'],5]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(coll.vecIndex) AS distance "
+                    "FROM coll "
+                    "WHERE VECTOR_MATCH(coll.vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'COLLECTION':'coll'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','coll.vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','coll.vecIndex',['$target']]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(C.vecIndex) AS distance "
+                    "FROM scope.coll C "
+                    "WHERE VECTOR_MATCH(C.vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','C.vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','C.vecIndex',['$target']]}");
+
+    CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
+                    "FROM scope.coll C "
+                    "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+             "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+             "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target']]}");
+}
+#endif

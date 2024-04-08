@@ -84,10 +84,15 @@ namespace litecore {
         if ( auto existingSpec = getIndex(spec.name) ) {
             if ( existingSpec->type == spec.type && existingSpec->keyStoreName == keyStore->name() ) {
                 bool same;
-                if ( spec.type == IndexSpec::kFullText )
-                    same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
-                else
-                    same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                switch ( spec.type ) {
+                    case IndexSpec::kFullText:
+                    case IndexSpec::kVector:
+                        same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
+                        break;
+                    default:
+                        same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                        break;
+                }
                 if ( same ) return false;  // This is a duplicate of an existing index; do nothing
             }
             // Existing index is different, so delete it first:
@@ -105,7 +110,8 @@ namespace litecore {
         ensureIndexTableExists();
         LogTo(QueryLog, "Deleting %s index '%s'", spec.typeName(), spec.name.c_str());
         unregisterIndex(spec.name);
-        if ( spec.type != IndexSpec::kFullText ) exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
+        if ( spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector )
+            exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
         if ( !spec.indexTableName.empty() ) garbageCollectIndexTable(spec.indexTableName);
     }
 
@@ -161,7 +167,8 @@ namespace litecore {
             string indexName    = getIndex.getColumn(0);
             string keyStoreName = getIndex.getColumn(1).getString().substr(3);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), keyStoreName, "");
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
+                                     "");
         }
 
         // FTS indexes:
@@ -174,7 +181,8 @@ namespace litecore {
             string keyStoreName = tableName.substr(delim);
             string indexName    = tableName.substr(delim + 2);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), keyStoreName, tableName);
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
+                                     tableName);
         }
         return indexes;
     }
@@ -191,10 +199,18 @@ namespace litecore {
     }
 
     SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
-        alloc_slice expressionJSON;
-        if ( string col = stmt.getColumn(2).getString(); !col.empty() ) expressionJSON = col;
-        return {stmt.getColumn(0).getString(), (IndexSpec::Type)stmt.getColumn(1).getInt(), expressionJSON,
-                stmt.getColumn(3).getString(), stmt.getColumn(4).getString()};
+        QueryLanguage queryLanguage = QueryLanguage::kJSON;
+        alloc_slice   expression;
+        if ( string col = stmt.getColumn(2).getString(); !col.empty() ) {
+            expression = col;
+            if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
+        }
+        return {stmt.getColumn(0).getString(),
+                (IndexSpec::Type)stmt.getColumn(1).getInt(),
+                expression,
+                queryLanguage,
+                stmt.getColumn(3).getString(),
+                stmt.getColumn(4).getString()};
     }
 
     void SQLiteDataFile::inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows) {
@@ -206,8 +222,8 @@ namespace litecore {
 
         auto spec = getIndex(name);
         if ( !spec ) error::_throw(error::NoSuchIndex);
-        else if ( spec->type == IndexSpec::kFullText )
-            error::_throw(error::UnsupportedOperation);
+        else if ( spec->type != IndexSpec::kValue )
+            error::_throw(error::UnsupportedOperation, "Only supported for value indexes");
 
         // Construct a list of column names:
         stringstream columns;

@@ -80,29 +80,57 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_vector_clustering.html">C4VectorClustering</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clustering options for vector indexes.  <a href="struct_c4_vector_clustering.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_vector_encoding.html">C4VectorEncoding</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encoding options for vector indexes.  <a href="struct_c4_vector_encoding.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_vector_index_options.html">C4VectorIndexOptions</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top-level options for vector indexes.  <a href="struct_c4_vector_index_options.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_index_options.html">C4IndexOptions</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Options for indexes; these each apply to specific types of indexes.  <a href="struct_c4_index_options.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:gaf0b8613e821a59cfdea501bec2d661cb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> : uint32_t { <a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba5766cf8762fa8efe9d8d3a0049a46c8b">kC4ValueIndex</a>
+<tr class="memitem:gaf0b8613e821a59cfdea501bec2d661cb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> : uint32_t { <br />
+&#160;&#160;<a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba5766cf8762fa8efe9d8d3a0049a46c8b">kC4ValueIndex</a>
 , <a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba302557d4c038fa656e15540e7d949cf6">kC4FullTextIndex</a>
 , <a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba0d12c792025a20b6b01036743309a931">kC4ArrayIndex</a>
 , <a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cbae112b2969f8e5d310f396b480eb071a2">kC4PredictiveIndex</a>
+, <br />
+&#160;&#160;<a class="el" href="group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba48dfdfd073eb7356b5a4ab0fe3723bb0">kC4VectorIndex</a>
+<br />
  }</td></tr>
 <tr class="separator:gaf0b8613e821a59cfdea501bec2d661cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7271b3b3c4d2f7e2309e62d9f6b61159"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga7271b3b3c4d2f7e2309e62d9f6b61159">C4VectorMetricType</a> : uint32_t { <a class="el" href="group___indexing.html#gga7271b3b3c4d2f7e2309e62d9f6b61159a5ab800272216a8d7661a2c15bee75ead">kC4VectorMetricDefault</a>
+, <a class="el" href="group___indexing.html#gga7271b3b3c4d2f7e2309e62d9f6b61159a581411a206f5bbf76b8dce5525541b15">kC4VectorMetricEuclidean</a>
+, <a class="el" href="group___indexing.html#gga7271b3b3c4d2f7e2309e62d9f6b61159a4691ffb3cdeccbf359a333645b32b18b">kC4VectorMetricCosine</a>
+ }</td></tr>
+<tr class="separator:ga7271b3b3c4d2f7e2309e62d9f6b61159"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab660d7bd0a4f3d9e3ea0e7c25837ce3b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#gab660d7bd0a4f3d9e3ea0e7c25837ce3b">C4VectorClusteringType</a> : uint32_t { <a class="el" href="group___indexing.html#ggab660d7bd0a4f3d9e3ea0e7c25837ce3bad9f040032598c69caefdab98ae98f59d">kC4VectorClusteringFlat</a>
+, <a class="el" href="group___indexing.html#ggab660d7bd0a4f3d9e3ea0e7c25837ce3ba18de1017389f802b6593777e13d69cb9">kC4VectorClusteringMulti</a>
+ }</td></tr>
+<tr class="separator:gab660d7bd0a4f3d9e3ea0e7c25837ce3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9aa3c78733fd004fd7a1f5b4ad71a85c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga9aa3c78733fd004fd7a1f5b4ad71a85c">C4VectorEncodingType</a> : uint32_t { <a class="el" href="group___indexing.html#gga9aa3c78733fd004fd7a1f5b4ad71a85ca5068e951a4ec2e32fc8561ab0cbc2f13">kC4VectorEncodingDefault</a>
+, <a class="el" href="group___indexing.html#gga9aa3c78733fd004fd7a1f5b4ad71a85ca1b5492e58f6becbcfa911814eb9a25d8">kC4VectorEncodingNone</a>
+, <a class="el" href="group___indexing.html#gga9aa3c78733fd004fd7a1f5b4ad71a85ca1876d61920cf4235828ab406dd806955">kC4VectorEncodingPQ</a>
+, <a class="el" href="group___indexing.html#gga9aa3c78733fd004fd7a1f5b4ad71a85ca0e2b86989d2a343737c6be454def840f">kC4VectorEncodingSQ</a>
+ }</td></tr>
+<tr class="separator:ga9aa3c78733fd004fd7a1f5b4ad71a85c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga6e9a4999b1471755d2567c3df59cc11a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga6e9a4999b1471755d2567c3df59cc11a">c4db_createIndex</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpecJSON, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga6e9a4999b1471755d2567c3df59cc11a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a database index, of the values of specific expressions across all documents.  <br /></td></tr>
-<tr class="separator:ga6e9a4999b1471755d2567c3df59cc11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabaafc3c0e643756d5b00b058b4f556ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#gabaafc3c0e643756d5b00b058b4f556ca">c4db_createIndex2</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpec, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> queryLanguage, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="separator:gabaafc3c0e643756d5b00b058b4f556ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga293c5b9ddf776e7ee1affead6a8820a9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga293c5b9ddf776e7ee1affead6a8820a9">c4db_deleteIndex</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga293c5b9ddf776e7ee1affead6a8820a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes an index that was created by <code>c4db_createIndex</code>.  <br /></td></tr>
-<tr class="separator:ga293c5b9ddf776e7ee1affead6a8820a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaed82260bbca129959b6315fdde1c3909"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#gaed82260bbca129959b6315fdde1c3909">c4db_createIndex</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpecJSON, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaed82260bbca129959b6315fdde1c3909"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a database index, of the values of specific expressions across all documents.  <br /></td></tr>
+<tr class="separator:gaed82260bbca129959b6315fdde1c3909"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13093330395ddacd1cc4c3f8ca83f081"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga13093330395ddacd1cc4c3f8ca83f081">c4db_createIndex2</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpec, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> queryLanguage, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="separator:ga13093330395ddacd1cc4c3f8ca83f081"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga074a21b2e35c9ba41df7e7d7f15cb5b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga074a21b2e35c9ba41df7e7d7f15cb5b7">c4db_deleteIndex</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga074a21b2e35c9ba41df7e7d7f15cb5b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes an index that was created by <code>c4db_createIndex</code>.  <br /></td></tr>
+<tr class="separator:ga074a21b2e35c9ba41df7e7d7f15cb5b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga796678ebe8e3c78612b0a0cb1d4a7e00"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___indexing.html#ga796678ebe8e3c78612b0a0cb1d4a7e00">c4db_getIndexesInfo</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga796678ebe8e3c78612b0a0cb1d4a7e00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns information about all indexes in the database.  <br /></td></tr>
 <tr class="separator:ga796678ebe8e3c78612b0a0cb1d4a7e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,19 +157,87 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="ggaf0b8613e821a59cfdea501bec2d661cbae112b2969f8e5d310f396b480eb071a2" name="ggaf0b8613e821a59cfdea501bec2d661cbae112b2969f8e5d310f396b480eb071a2"></a>kC4PredictiveIndex&#160;</td><td class="fielddoc"><p>Index of prediction() results (Enterprise Edition only) </p>
 </td></tr>
+<tr><td class="fieldname"><a id="ggaf0b8613e821a59cfdea501bec2d661cba48dfdfd073eb7356b5a4ab0fe3723bb0" name="ggaf0b8613e821a59cfdea501bec2d661cba48dfdfd073eb7356b5a4ab0fe3723bb0"></a>kC4VectorIndex&#160;</td><td class="fielddoc"><p>Index of ML vector similarity (Enterprise Edition only) </p>
+</td></tr>
 </table>
 
 </div>
 </div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ga6e9a4999b1471755d2567c3df59cc11a" name="ga6e9a4999b1471755d2567c3df59cc11a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6e9a4999b1471755d2567c3df59cc11a">&#9670;&#160;</a></span>c4db_createIndex()</h2>
+<a id="gab660d7bd0a4f3d9e3ea0e7c25837ce3b" name="gab660d7bd0a4f3d9e3ea0e7c25837ce3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab660d7bd0a4f3d9e3ea0e7c25837ce3b">&#9670;&#160;</a></span>C4VectorClusteringType</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_createIndex </td>
+          <td class="memname">enum <a class="el" href="group___indexing.html#gab660d7bd0a4f3d9e3ea0e7c25837ce3b">C4VectorClusteringType</a> : uint32_t</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggab660d7bd0a4f3d9e3ea0e7c25837ce3bad9f040032598c69caefdab98ae98f59d" name="ggab660d7bd0a4f3d9e3ea0e7c25837ce3bad9f040032598c69caefdab98ae98f59d"></a>kC4VectorClusteringFlat&#160;</td><td class="fielddoc"><p>Flat k-means clustering. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ggab660d7bd0a4f3d9e3ea0e7c25837ce3ba18de1017389f802b6593777e13d69cb9" name="ggab660d7bd0a4f3d9e3ea0e7c25837ce3ba18de1017389f802b6593777e13d69cb9"></a>kC4VectorClusteringMulti&#160;</td><td class="fielddoc"><p>Inverted Multi-Index clustering. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="ga9aa3c78733fd004fd7a1f5b4ad71a85c" name="ga9aa3c78733fd004fd7a1f5b4ad71a85c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9aa3c78733fd004fd7a1f5b4ad71a85c">&#9670;&#160;</a></span>C4VectorEncodingType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___indexing.html#ga9aa3c78733fd004fd7a1f5b4ad71a85c">C4VectorEncodingType</a> : uint32_t</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga9aa3c78733fd004fd7a1f5b4ad71a85ca5068e951a4ec2e32fc8561ab0cbc2f13" name="gga9aa3c78733fd004fd7a1f5b4ad71a85ca5068e951a4ec2e32fc8561ab0cbc2f13"></a>kC4VectorEncodingDefault&#160;</td><td class="fielddoc"><p>Use default encoding, which is currently SQ8. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga9aa3c78733fd004fd7a1f5b4ad71a85ca1b5492e58f6becbcfa911814eb9a25d8" name="gga9aa3c78733fd004fd7a1f5b4ad71a85ca1b5492e58f6becbcfa911814eb9a25d8"></a>kC4VectorEncodingNone&#160;</td><td class="fielddoc"><p>No encoding: 32 bits per dimension, no data loss. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga9aa3c78733fd004fd7a1f5b4ad71a85ca1876d61920cf4235828ab406dd806955" name="gga9aa3c78733fd004fd7a1f5b4ad71a85ca1876d61920cf4235828ab406dd806955"></a>kC4VectorEncodingPQ&#160;</td><td class="fielddoc"><p>Product Quantizer. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga9aa3c78733fd004fd7a1f5b4ad71a85ca0e2b86989d2a343737c6be454def840f" name="gga9aa3c78733fd004fd7a1f5b4ad71a85ca0e2b86989d2a343737c6be454def840f"></a>kC4VectorEncodingSQ&#160;</td><td class="fielddoc"><p>Scalar Quantizer. </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a id="ga7271b3b3c4d2f7e2309e62d9f6b61159" name="ga7271b3b3c4d2f7e2309e62d9f6b61159"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7271b3b3c4d2f7e2309e62d9f6b61159">&#9670;&#160;</a></span>C4VectorMetricType</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group___indexing.html#ga7271b3b3c4d2f7e2309e62d9f6b61159">C4VectorMetricType</a> : uint32_t</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7271b3b3c4d2f7e2309e62d9f6b61159a5ab800272216a8d7661a2c15bee75ead" name="gga7271b3b3c4d2f7e2309e62d9f6b61159a5ab800272216a8d7661a2c15bee75ead"></a>kC4VectorMetricDefault&#160;</td><td class="fielddoc"><p>Use default metric, Euclidean. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7271b3b3c4d2f7e2309e62d9f6b61159a581411a206f5bbf76b8dce5525541b15" name="gga7271b3b3c4d2f7e2309e62d9f6b61159a581411a206f5bbf76b8dce5525541b15"></a>kC4VectorMetricEuclidean&#160;</td><td class="fielddoc"><p>Euclidean distance (squared) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7271b3b3c4d2f7e2309e62d9f6b61159a4691ffb3cdeccbf359a333645b32b18b" name="gga7271b3b3c4d2f7e2309e62d9f6b61159a4691ffb3cdeccbf359a333645b32b18b"></a>kC4VectorMetricCosine&#160;</td><td class="fielddoc"><p>Cosine distance (1.0 - cosine similarity) </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="gaed82260bbca129959b6315fdde1c3909" name="gaed82260bbca129959b6315fdde1c3909"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaed82260bbca129959b6315fdde1c3909">&#9670;&#160;</a></span>c4db_createIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_createIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
@@ -209,14 +305,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gabaafc3c0e643756d5b00b058b4f556ca" name="gabaafc3c0e643756d5b00b058b4f556ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabaafc3c0e643756d5b00b058b4f556ca">&#9670;&#160;</a></span>c4db_createIndex2()</h2>
+<a id="ga13093330395ddacd1cc4c3f8ca83f081" name="ga13093330395ddacd1cc4c3f8ca83f081"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga13093330395ddacd1cc4c3f8ca83f081">&#9670;&#160;</a></span>c4db_createIndex2()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_createIndex2 </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_createIndex2 </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
@@ -280,14 +376,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga293c5b9ddf776e7ee1affead6a8820a9" name="ga293c5b9ddf776e7ee1affead6a8820a9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga293c5b9ddf776e7ee1affead6a8820a9">&#9670;&#160;</a></span>c4db_deleteIndex()</h2>
+<a id="ga074a21b2e35c9ba41df7e7d7f15cb5b7" name="ga074a21b2e35c9ba41df7e7d7f15cb5b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga074a21b2e35c9ba41df7e7d7f15cb5b7">&#9670;&#160;</a></span>c4db_deleteIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_deleteIndex </td>
+          <td class="memname"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool c4db_deleteIndex </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>

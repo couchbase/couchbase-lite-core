@@ -16,9 +16,9 @@
 
 #define CATCH_CONFIG_CONSOLE_WIDTH 120
 #define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
 
 #import "c4Test.hh"
+#include "catch.hpp"
 
 
 @interface Catch_Tests : XCTestCase
@@ -31,7 +31,7 @@
     C4Test::sFixturesDir = std::string([[NSBundle bundleForClass: [self class]] resourcePath].UTF8String) + "/data/";
 
     Catch::Session session;
-    session.configData().reporterNames.push_back("list");
+//    session.configData().reporterNames.push_back("list");
     session.configData().useColour = Catch::UseColour::No; // otherwise it tries to use ANSI escapes in Xcode console
 
     NSArray* args = [NSProcessInfo.processInfo arguments];

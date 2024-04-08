@@ -117,8 +117,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Pre
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
+    auto allKeyStores = db->allKeyStoreNames();
     store->createIndex("nums"_sl, json5("[['PREDICTION()', '8ball', {number: ['.num']}, '.square']]"),
                        IndexSpec::kPredictive);
+    CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     store->deleteIndex("nums"_sl);
 
     PredictiveModel::unregister("8ball");

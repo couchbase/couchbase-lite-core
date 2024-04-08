@@ -27,10 +27,59 @@ typedef C4_ENUM(uint32_t, C4IndexType){
         kC4FullTextIndex,    ///< Full-text index
         kC4ArrayIndex,       ///< Index of array values, for use with UNNEST
         kC4PredictiveIndex,  ///< Index of prediction() results (Enterprise Edition only)
+        kC4VectorIndex,      ///< Index of ML vector similarity (Enterprise Edition only)
 };
 
+/** Distance metric to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorMetricType){
+        kC4VectorMetricDefault,    ///< Use default metric, Euclidean
+        kC4VectorMetricEuclidean,  ///< Euclidean distance (squared)
+        kC4VectorMetricCosine,     ///< Cosine distance (1.0 - cosine similarity)
+};                                 // Values must match IndexSpec::VectorOptions::MetricType
+
+/** Types of clustering in vector indexes. There is no default type because you must fill in
+    the C4VectorClustering struct with a number of centroids or subquantizers+bits. */
+typedef C4_ENUM(uint32_t, C4VectorClusteringType){
+        kC4VectorClusteringFlat,   ///< Flat k-means clustering
+        kC4VectorClusteringMulti,  ///< Inverted Multi-Index clustering
+};                                 // Values must match IndexSpec::VectorOptions::ClusteringType
+
+/** Types of encoding (compression) to use in vector indexes. */
+typedef C4_ENUM(uint32_t, C4VectorEncodingType){
+        kC4VectorEncodingDefault,  ///< Use default encoding, which is currently SQ8
+        kC4VectorEncodingNone,     ///< No encoding: 32 bits per dimension, no data loss
+        kC4VectorEncodingPQ,       ///< Product Quantizer
+        kC4VectorEncodingSQ,       ///< Scalar Quantizer
+};                                 // Values must match IndexSpec::VectorOptions::EncodingType
+
+/** Clustering options for vector indexes. */
+typedef struct C4VectorClustering {
+    C4VectorClusteringType type;                 ///< Clustering type: flat or multi
+    unsigned               flat_centroids;       ///< Number of centroids (for flat)
+    unsigned               multi_subquantizers;  ///< Number of pieces to split vectors into (for multi)
+    unsigned               multi_bits;           ///< log2 of # of centroids per subquantizer (for multi)
+} C4VectorClustering;
+
+/** Encoding options for vector indexes. */
+typedef struct C4VectorEncoding {
+    C4VectorEncodingType type;              ///< Encoding type: default, none, PQ, SQ
+    unsigned             pq_subquantizers;  ///< Number of subquantizers (when type is PQ)
+    unsigned             bits;              ///< Number of bits (when type is PQ or SQ)
+} C4VectorEncoding;
+
+/** Top-level options for vector indexes. */
+typedef struct C4VectorIndexOptions {
+    unsigned           dimensions;       ///< Number of dimensions of the vectors
+    C4VectorMetricType metric;           ///< Distance metric
+    C4VectorClustering clustering;       ///< Clustering type & parameters
+    C4VectorEncoding   encoding;         ///< Vector compression type & parameters
+    unsigned           minTrainingSize;  ///< Minimum # of vectors to train index (0 for default)
+    unsigned           maxTrainingSize;  ///< Maximum # of vectors to train index on (0 for default)
+    unsigned           numProbes;        ///< Number of probes when querying (0 for default)
+} C4VectorIndexOptions;
+
 /** Options for indexes; these each apply to specific types of indexes. */
-typedef struct {
+typedef struct C4IndexOptions {
     /** Dominant language of text to be indexed; setting this enables word stemming, i.e.
         matching different cases of the same word ("big" and "bigger", for instance.)
         Can be an ISO-639 language code or a lowercase (English) language name; supported
@@ -61,6 +110,9 @@ typedef struct {
         To provide a custom list of words, use a string containing the words in lowercase
         separated by spaces. */
     const char* C4NULLABLE stopWords;
+
+    /** Options for vector indexes. */
+    C4VectorIndexOptions vector;
 } C4IndexOptions;
 
 /** @} */
