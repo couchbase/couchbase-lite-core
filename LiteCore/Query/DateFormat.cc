@@ -198,14 +198,10 @@ namespace fleece {
 
         if ( hmsResult.has_value() ) formatString = hmsResult.value().second;
 
-        std::optional<char> separatorChar = formatString.empty() || !hmsResult.has_value()
-                                                    ? std::optional<char>()
-                                                    : formatString[formatString.size - 1];
+        auto separator = std::optional<Separator>{};
 
-        std::optional<Separator> separator{};
-
-        if ( separatorChar.has_value() ) {
-            char sep = separatorChar.value();
+        if ( !formatString.empty() && hmsResult.has_value() ) {
+            char sep = (char)formatString[formatString.size - 1];
             if ( sep == (char)Separator::Space ) {
                 separator = Separator::Space;
             } else if ( sep == (char)Separator::T ) {
