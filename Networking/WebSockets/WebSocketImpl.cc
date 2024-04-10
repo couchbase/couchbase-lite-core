@@ -135,7 +135,7 @@ namespace litecore::websocket {
     }
 
     bool WebSocketImpl::send(fleece::slice message, bool binary) {
-        logVerbose("Sending %zu-byte message", message.size);
+        logDebug("Sending %zu-byte message", message.size);
         return sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
     }
 
@@ -298,7 +298,7 @@ namespace litecore::websocket {
     }
 
     void WebSocketImpl::deliverMessageToDelegate(slice data, C4UNUSED bool binary) {
-        logVerbose("Received %zu-byte message", data.size);
+        logDebug("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
         delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
