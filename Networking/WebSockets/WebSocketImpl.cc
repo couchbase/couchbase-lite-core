@@ -36,8 +36,8 @@ namespace c4SocketTrace {
         string     func;
         string     remark;
 
-        Event(const C4Socket* sock, const string& f);
-        Event(const C4Socket* sock, const string& f, const string& rem);
+                 Event(const C4Socket* sock, const string& f);
+                 Event(const C4Socket* sock, const string& f, const string& rem);
         explicit operator string();
     };
 
@@ -135,7 +135,7 @@ namespace litecore::websocket {
     }
 
     bool WebSocketImpl::send(fleece::slice message, bool binary) {
-        logDebug("Sending %zu-byte message", message.size);
+        logVerbose("Sending %zu-byte message", message.size);
         return sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
     }
 
@@ -298,7 +298,7 @@ namespace litecore::websocket {
     }
 
     void WebSocketImpl::deliverMessageToDelegate(slice data, C4UNUSED bool binary) {
-        logDebug("Received %zu-byte message", data.size);
+        logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
         delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
