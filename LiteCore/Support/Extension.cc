@@ -93,7 +93,7 @@ static HMODULE try_open_lib(const string& extensionPath) {
 bool litecore::extension::check_extension_version(const string& extensionPath, int expectedVersion) {
     HMODULE libHandle = try_open_lib(extensionPath.c_str());
     if ( !libHandle ) {
-        LogToAt(DBLog, Error, "Unable to open extension to check version");
+        LogToAt(DBLog, Error, "Unable to open extension at %s to check version", extensionPath.c_str());
         return false;
     }
 
