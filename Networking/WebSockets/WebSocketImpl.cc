@@ -36,8 +36,9 @@ namespace c4SocketTrace {
         string     func;
         string     remark;
 
-                 Event(const C4Socket* sock, const string& f);
-                 Event(const C4Socket* sock, const string& f, const string& rem);
+        Event(const C4Socket* sock, const string& f);
+        Event(const C4Socket* sock, const string& f, const string& rem);
+
         explicit operator string();
     };
 
