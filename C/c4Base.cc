@@ -215,7 +215,7 @@ bool c4log_getWarnOnErrors() noexcept { return error::sWarnOnError; }
 void c4log_enableFatalExceptionBacktrace() C4API {
     fleece::Backtrace::installTerminateHandler([](const string& backtrace) {
         c4log(kC4DefaultLog, kC4LogError,
-              "COUCHBASE LITE CORE FATAL ERROR (backtrace follows)\n"
+              "FATAL ERROR (backtrace follows)\n"
               "********************\n"
               "%s\n"
               "******************** NOW TERMINATING",
