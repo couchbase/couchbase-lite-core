@@ -53,11 +53,15 @@ namespace litecore {
     }
 
 
-    void LogIterator::writeTimestamp(Timestamp t, ostream &out) {
-        local_time<microseconds> tp { seconds(t.secs) + microseconds(t.microsecs) };
-        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
-        out << format("%T| ", tp);
+    void LogIterator::writeTimestamp(Timestamp t, ostream& out, bool inUtcTime) {
+        local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
+        const char*              fmt = "%FT%TZ| ";
+        if ( !inUtcTime ) {
+            struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+            tp += GetLocalTZOffset(&tmpTime, true);
+            fmt = "%FT%T| ";
+        }
+        out << format(fmt, tp);
     }
 
 
@@ -69,8 +73,8 @@ namespace litecore {
 
     string LogIterator::formatDate(Timestamp t) {
         local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        tp -= GetLocalTZOffset(&tmpTime, true);
+        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        tp += GetLocalTZOffset(&tmpTime, true);
         stringstream out;
         out << format("%c", tp);
         return out.str();
@@ -104,9 +108,8 @@ namespace litecore {
                                optional<Timestamp> start) {
         while (next()) {
             auto ts = timestamp();
-            if (start && ts < *start)
-                continue;
-            writeTimestamp(ts, out);
+            if ( start && ts < *start ) continue;
+            writeTimestamp(ts, out, true);
 
             string levelName;
             if (level() >= 0 && level() < levelNames.size())
@@ -178,16 +181,12 @@ namespace litecore {
     }
 
 
-    void LogDecoder::decodeTo(ostream &out,
-                              const std::vector<std::string> &levelNames,
-                              std::optional<Timestamp> startingAt)
-    {
-        if (!startingAt || *startingAt < Timestamp{_startTime, 0}) {
-            writeTimestamp({_startTime, 0}, out);
-        	local_time<seconds> tp {seconds(_startTime)};
-        	struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
-        	tp -= GetLocalTZOffset(&tmpTime, true);
-        	out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
+    void LogDecoder::decodeTo(ostream& out, const std::vector<std::string>& levelNames,
+                              std::optional<Timestamp> startingAt) {
+        if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
+            writeTimestamp({_startTime, 0}, out, true);
+            local_time<seconds> tp{seconds(_startTime)};
+            out << "---- Logging begins on " << format("%A %FT%TZ", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);

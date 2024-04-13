@@ -15,6 +15,7 @@
 #include "LogDecoder.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
+#include "ParseDate.hh"
 #include "fleece/PlatformCompat.hh"
 #include <regex>
 #include <sstream>
@@ -22,8 +23,9 @@
 
 using namespace std;
 
-#define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
-#define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
+// These formats are used in the decoded log files. They are UTC times.
+#define DATESTAMP "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
+#define TIMESTAMP "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\\| "
 
 constexpr size_t kFolderBufSize = 64;
 
@@ -72,6 +74,7 @@ static string dumpLog(string encoded, vector<string> levelNames) {
 
 
 TEST_CASE("LogEncoder formatting", "[Log]") {
+    // For checking the timestamp in the path to the binary log file.
     stringstream out;
     {
         LogEncoder logger(out, LogLevel::Info);
@@ -331,10 +334,13 @@ TEST_CASE("Logging plaintext", "[Log]") {
         lines.push_back(line);
     }
 
-    CHECK(lines[0] == "---- Hello ----");
-    CHECK(lines[1].find("[DB]") != string::npos);
-    CHECK(lines[1].find("{dummy#") != string::npos);
-    CHECK(lines[1].find("This will be in plaintext") != string::npos);
+    int n = 0;
+    CHECK(lines[n++] == "---- Hello ----");
+    regex utctimeRe{"^" TIMESTAMP};
+    CHECK(regex_search(lines[n], utctimeRe));
+    CHECK(lines[n].find("[DB]") != string::npos);
+    CHECK(lines[n].find("{dummy#") != string::npos);
+    CHECK(lines[n].find("This will be in plaintext") != string::npos);
 
     LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
 }
