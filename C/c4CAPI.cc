@@ -1529,6 +1529,10 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
     return asInternal(obs)->getEnumeratorImpl(forget, outError).detach();
 }
 
+void c4queryobs_setDisposeCallback(C4QueryObserver* obs, C4QueryObserverDisposeCallback disposeCallback, void* context)
+{
+    obs->onDispose(disposeCallback, context);
+}
 
 #pragma mark - CERTIFICATE API: (EE)
 

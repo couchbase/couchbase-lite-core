@@ -378,6 +378,7 @@ _c4queryobs_create
 _c4queryobs_setEnabled
 _c4queryobs_getEnumerator
 _c4queryobs_free
+_c4queryobs_setDisposeCallback
 
 _c4blob_computeKey
 _c4blob_freeStore

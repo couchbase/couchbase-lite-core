@@ -165,7 +165,13 @@ public:
                                                       C4Query::ObserverCallback cb,
                                                       void *ctx);
 
-    virtual ~C4QueryObserver() = default;
+     virtual ~C4QueryObserver() {
+         if (_onDispose) {
+             _onDispose(this, _onDisposeCtx);
+         }
+     }
+
+    using OnDispose = std::function<void(C4QueryObserver*, void*)>;
 
     C4Query* query() const                  {return _query;}
 
@@ -179,11 +185,18 @@ public:
     /// If the query failed, throws that error as an exception.
     virtual C4Query::Enumerator getEnumerator(bool forget =true) =0;
 
+     void onDispose(OnDispose disposeCallback, void* context) {
+         _onDispose = disposeCallback;
+         _onDisposeCtx = context;
+     }
+
 protected:
     C4QueryObserver(C4Query *query) :_query(query) { }
     
     Retained<C4Query>                           _query;
     C4Error                                     _currentError {};
+    OnDispose                                   _onDispose {};
+    void*                                       _onDisposeCtx;
 };
 
 
