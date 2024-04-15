@@ -41,6 +41,7 @@ namespace litecore {
         void _stop();
         void _scheduleExpiration(bool onlyIfEarlier);
         void _doExpiration();
+        void doExpirationAsync();
 
         alloc_slice                    _keyStoreName;
         BackgroundDB*                  _bgdb{nullptr};
