@@ -119,11 +119,15 @@ namespace litecore {
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
     public:
-        static Retained<C4QueryObserver> newQueryObserver(C4Query *query, C4Query::ObserverCallback callback) {
-            return new C4QueryObserverImpl(query, callback);
+        static Retained<C4QueryObserver> newQueryObserver(C4Query *query, C4Query::ObserverCallback callback, void* ctx) {
+            return new C4QueryObserverImpl(query, callback, ctx);
         }
 
-        ~C4QueryObserverImpl() = default;
+        ~C4QueryObserverImpl() {
+            if (_onDispose) {
+                _onDispose(this, _callbackCtx);
+            }
+        }
 
         void setEnabled(bool enabled) override {
             _query->enableObserver(this, enabled);
@@ -136,7 +140,7 @@ namespace litecore {
                 _currentEnumerator = e;
                 _currentError = err;
             }
-            _callback(this);
+            _callback(this, _query, _callbackCtx);
         }
 
         Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error* C4NULLABLE outError) {
@@ -158,13 +162,20 @@ namespace litecore {
             return C4Query::Enumerator(std::move(e));
         }
 
+        void onDispose(OnDispose disposeCallback) override {
+             _onDispose = disposeCallback;
+         }
+
     private:
-        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
+        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback, void* ctx)
         :C4QueryObserver(query)
         ,_callback(std::move(callback))
+        ,_callbackCtx(ctx)
         {}
 
         C4Query::ObserverCallback const _callback;
+        OnDispose                       _onDispose {};
+        void*                           _callbackCtx;
         mutable std::mutex              _mutex;
         Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     };

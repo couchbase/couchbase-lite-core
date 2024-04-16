@@ -213,7 +213,7 @@ C4API_BEGIN_DECLS
 
 
     typedef void (*C4QueryObserverDisposeCallback)(C4QueryObserver* observer, void* C4NULLABLE context);
-    void c4queryobs_setDisposeCallback(C4QueryObserver* obs, C4QueryObserverDisposeCallback disposeCallback, void* C4NULLABLE context);
+    void c4queryobs_setDisposeCallback(C4QueryObserver* obs, C4QueryObserverDisposeCallback disposeCallback);
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END

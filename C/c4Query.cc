@@ -232,9 +232,9 @@ public:
 };
 
 
-Retained<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
-    return C4QueryObserverImpl::newQueryObserver(this, callback);
-}
+//Retained<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
+//    return C4QueryObserverImpl::newQueryObserver(this, callback, nullptr);
+//}
 
 
 void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
