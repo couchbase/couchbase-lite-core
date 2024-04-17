@@ -29,6 +29,7 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include "../HTTP/Headers.hh"
 
 using namespace std;
 using namespace fleece;
@@ -175,9 +176,8 @@ namespace litecore { namespace blip {
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
-                                                const websocket::Headers &headers) override
-        {
-            _connection->gotHTTPResponse(status, headers);
+                                                const websocket::Headers &headers) override {
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
         virtual void onWebSocketGotTLSCertificate(slice certData) override {
@@ -211,6 +211,11 @@ namespace litecore { namespace blip {
             Assert(!_connectedWebSocket.test_and_set());
             retain(this); // keep myself from being freed while I'm the webSocket's delegate
             _webSocket->connect(_weakThis);
+        }
+
+        void _gotHTTPResponse(int status, websocket::Headers headers) {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) _connection->gotHTTPResponse(status, headers);
         }
 
         /** Implementation of public close() method. Closes the WebSocket. */
