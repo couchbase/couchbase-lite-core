@@ -18,6 +18,7 @@
 #include "Batcher.hh"
 #include "Codec.hh"
 #include "Error.hh"
+#include "Headers.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
@@ -29,7 +30,6 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
-#include "../HTTP/Headers.hh"
 
 using namespace std;
 using namespace fleece;
