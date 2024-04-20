@@ -356,21 +356,59 @@ namespace litecore::repl {
         }
     }
 
-    Worker::ActivityLevel Puller::computeActivityLevel() const {
-        ActivityLevel level;
+    Worker::ActivityLevel Puller::computeActivityLevel(std::string* reason) const {
+        ActivityLevel         level;
+        int                   k = -1;
+        std::string           reason0;
+        Worker::ActivityLevel workerLevel{kC4Stopped};
         if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
             // CBL-221: Crash when scheduling document ended events
             level = kC4Busy;
+            k     = 0;
         } else if ( _fatalError || !connected() ) {
             level = kC4Stopped;
-        } else if ( Worker::computeActivityLevel() == kC4Busy || (!_caughtUp && !passive())
-                    || _pendingRevMessages > 0 ) {
+            k     = 1;
+        } else if ( (workerLevel = Worker::computeActivityLevel(reason ? &reason0 : nullptr)) == kC4Busy
+                    || (!_caughtUp && !passive()) || _pendingRevMessages > 0 ) {
             level = kC4Busy;
+            k     = 2;
         } else if ( _options->pull(collectionIndex()) == kC4Continuous || isOpenServer() ) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
+            k     = 3;
         } else {
             level = kC4Stopped;
+            k     = 4;
+        }
+        if ( reason ) {
+            switch ( k ) {
+                case 0:
+                    if ( _unfinishedIncomingRevs ) *reason = "unfinishedIncomingRevs";
+                    else
+                        *reason = "unfinishedIncomingRevoked";
+                    break;
+                case 1:
+                    if ( _fatalError ) *reason = "fatalError";
+                    else
+                        *reason = "notConnected";
+                    break;
+                case 2:
+                    if ( workerLevel == kC4Busy ) *reason = std::move(reason0);
+                    else if ( !_caughtUp && !passive() )
+                        *reason = "notCaughtUp";
+                    else
+                        *reason = "pendingRevMessages";
+                    break;
+                case 3:
+                    *reason = "continuousOrOpenServer";
+                    break;
+                case 4:
+                    *reason = "oneShot";
+                    break;
+                default:
+                    DebugAssert(false);
+                    break;
+            }
         }
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d,"

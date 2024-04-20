@@ -512,26 +512,76 @@ namespace litecore::repl {
         Worker::_connectionClosed();
     }
 
-    bool Pusher::isBusy() const {
-        return Worker::computeActivityLevel() == kC4Busy || (_started && (!_caughtUp || !_continuousCaughtUp))
-               || _changeListsInFlight > 0 || _revisionsInFlight > 0 || _blobsInFlight > 0 || !_revQueue.empty()
-               || !_pushingDocs.empty() || _revisionBytesAwaitingReply > 0;
+    bool Pusher::isBusy(std::string* reason) const {
+        std::string reason0;
+        auto        workerLevel = Worker::computeActivityLevel(reason ? &reason0 : nullptr);
+        bool        ret         = workerLevel == kC4Busy || (_started && (!_caughtUp || !_continuousCaughtUp))
+                   || _changeListsInFlight > 0 || _revisionsInFlight > 0 || _blobsInFlight > 0 || !_revQueue.empty()
+                   || !_pushingDocs.empty() || _revisionBytesAwaitingReply > 0;
+        if ( ret && reason ) {
+            if ( workerLevel == kC4Busy ) *reason = std::move(reason0);
+            else if ( _started && (!_caughtUp || !_continuousCaughtUp) )
+                *reason = "notCaughtUp";
+            else if ( _changeListsInFlight > 0 )
+                *reason = "changeListsInFlight";
+            else if ( _revisionsInFlight > 0 )
+                *reason = "revisionsInFlight";
+            else if ( _blobsInFlight > 0 )
+                *reason = "blobsInFlight";
+            else if ( !_revQueue.empty() )
+                *reason = "revQueue";
+            else if ( !_pushingDocs.empty() )
+                *reason = "pushingDocs";
+            else
+                *reason = "revisionBytesAwaitingReply";
+        }
+        return ret;
     }
 
-    Worker::ActivityLevel Pusher::computeActivityLevel() const {
+    Worker::ActivityLevel Pusher::computeActivityLevel(std::string* reason) const {
         ActivityLevel level;
+        int           k = -1;
+        std::string   reason0;
         if ( !connected() ) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
             level = kC4Stopped;
-        } else if ( isBusy() ) {
+            k     = 0;
+        } else if ( isBusy(reason ? &reason0 : nullptr) ) {
             level = kC4Busy;
+            k     = 1;
         } else if ( _continuous || isOpenServer() || !_conflictsIMightRetry.empty() ) {
             level = kC4Idle;
+            k     = 2;
         } else {
             level = kC4Stopped;
+            k     = 3;
         }
+        if ( reason ) {
+            switch ( k ) {
+                case 0:
+                    *reason = "notConnected";
+                    break;
+                case 1:
+                    *reason = std::move(reason0);
+                    break;
+                case 2:
+                    if ( _continuous ) *reason = "continuous";
+                    else if ( isOpenServer() )
+                        *reason = "openServer";
+                    else
+                        *reason = "conflictsIMightRetry";
+                    break;
+                case 3:
+                    *reason = "oneShot";
+                    break;
+                default:
+                    DebugAssert(false);
+                    break;
+            }
+        }
+
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             size_t pendingSequences = _parent ? _checkpointer.pendingSequenceCount() : 0;
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, "

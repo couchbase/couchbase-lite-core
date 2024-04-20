@@ -160,7 +160,7 @@ namespace litecore::repl {
         void onError(C4Error error) override;
 
         // Worker method overrides:
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
         void          _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
       private:
