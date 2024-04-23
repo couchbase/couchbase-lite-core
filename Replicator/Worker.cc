@@ -269,7 +269,7 @@ namespace litecore::repl {
         }
 
         std::string reason;
-        auto        newLevel = computeActivityLevel(&reason);
+        auto        newLevel = computeActivityLevel(willLog(LogLevel::Info) ? &reason : nullptr);
         if ( newLevel != _status.level ) {
             auto oldLevel = _status.level;
             _status.level = newLevel;

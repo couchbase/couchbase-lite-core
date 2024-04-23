@@ -453,8 +453,8 @@ namespace litecore::repl {
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
-        std::string           reason0;
-        Worker::ActivityLevel workerLevel = Worker::computeActivityLevel(reason ? &reason0 : nullptr);
+        std::string           parentReason;
+        Worker::ActivityLevel workerLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
         Worker::ActivityLevel level;
         if ( workerLevel == kC4Busy || _pendingCallbacks > 0 || (_blob != _pendingBlobs.end()) ) {
             level = kC4Busy;
@@ -463,7 +463,7 @@ namespace litecore::repl {
         }
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( workerLevel == kC4Busy ) *reason = std::move(reason0);
+                if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
                 else if ( _pendingCallbacks > 0 )
                     *reason = "pendingCallbacks";
                 else

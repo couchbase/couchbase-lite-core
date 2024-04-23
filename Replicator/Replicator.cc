@@ -373,37 +373,37 @@ namespace litecore::repl {
         auto currentLevel = status().level;
         if ( currentLevel == kC4Stopped ) return kC4Stopped;
 
-        ActivityLevel level      = kC4Busy;
+        ActivityLevel level = kC4Busy;
+        int           levelSetAt{-1};
         bool          hasUnsaved = false;
-        int           k{-1};
-        std::string   reason0;
+        std::string   parentReason;
         switch ( _connectionState ) {
             case Connection::kConnecting:
-                level = kC4Connecting;
-                k     = 0;
+                level      = kC4Connecting;
+                levelSetAt = 0;
                 break;
             case Connection::kConnected:
                 {
                     hasUnsaved = std::any_of(_subRepls.begin(), _subRepls.end(),
                                              [](const SubReplicator& sub) { return sub.checkpointer->isUnsaved(); });
                     if ( hasUnsaved ) {
-                        level = kC4Busy;
-                        k     = 1;
+                        level      = kC4Busy;
+                        levelSetAt = 1;
                     } else {
-                        level = Worker::computeActivityLevel(reason ? &reason0 : nullptr);
-                        k     = 2;
+                        level      = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                        levelSetAt = 2;
                     }
                     auto childLevel = max(_pushStatus.level, _pullStatus.level);
                     if ( level < childLevel ) {
-                        level = childLevel;
-                        k     = 3;
+                        level      = childLevel;
+                        levelSetAt = 3;
                     }
                     if ( level == kC4Idle && !isContinuous() && !isOpenServer() ) {
                         // Detect that a non-continuous active push or pull replication is done:
                         logInfo("Replication complete! Closing connection");
                         const_cast<Replicator*>(this)->_stop();
-                        level = kC4Busy;
-                        k     = 4;
+                        level      = kC4Busy;
+                        levelSetAt = 4;
                     }
                     DebugAssert(level > kC4Stopped);
                     break;
@@ -411,31 +411,31 @@ namespace litecore::repl {
             case Connection::kClosing:
                 // Remain active while I wait for the connection to finish closing:
                 logDebug("Connection closing... (activityLevel=busy)waiting to finish");
-                level = kC4Busy;
-                k     = 5;
+                level      = kC4Busy;
+                levelSetAt = 5;
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
                 // After connection closes, remain Busy (or Connecting) while I wait for db to
                 // finish writes and for myself to process any pending messages; then go to Stopped.
-                level           = Worker::computeActivityLevel(reason ? &reason0 : nullptr);
-                k               = 6;
+                level           = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                levelSetAt      = 6;
                 auto childLevel = max(_pushStatus.level, _pullStatus.level);
                 if ( level < childLevel ) {
-                    level = childLevel;
-                    k     = 7;
+                    level      = childLevel;
+                    levelSetAt = 7;
                 }
                 if ( level < kC4Busy ) {
-                    level = kC4Stopped;
-                    k     = 8;
+                    level      = kC4Stopped;
+                    levelSetAt = 8;
                 } else if ( currentLevel == kC4Connecting ) {
-                    level = kC4Connecting;
-                    k     = 9;
+                    level      = kC4Connecting;
+                    levelSetAt = 9;
                 }
                 break;
         }
         if ( reason ) {
-            switch ( k ) {
+            switch ( levelSetAt ) {
                 case 0:
                     *reason = "Connecting";
                     break;
@@ -443,7 +443,7 @@ namespace litecore::repl {
                     *reason = "UnsavedCheckpointer";
                     break;
                 case 2:
-                    *reason = std::move(reason0);
+                    *reason = std::move(parentReason);
                     break;
                 case 3:
                     *reason = "pushOrPull";
@@ -455,7 +455,7 @@ namespace litecore::repl {
                     *reason = "Closing";
                     break;
                 case 6:
-                    *reason = "closed:"s + std::move(reason0);
+                    *reason = "closed:"s + std::move(parentReason);
                     break;
                 case 7:
                     *reason = "closed:pushOrPull";

@@ -513,13 +513,13 @@ namespace litecore::repl {
     }
 
     bool Pusher::isBusy(std::string* reason) const {
-        std::string reason0;
-        auto        workerLevel = Worker::computeActivityLevel(reason ? &reason0 : nullptr);
+        std::string parentReason;
+        auto        workerLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
         bool        ret         = workerLevel == kC4Busy || (_started && (!_caughtUp || !_continuousCaughtUp))
                    || _changeListsInFlight > 0 || _revisionsInFlight > 0 || _blobsInFlight > 0 || !_revQueue.empty()
                    || !_pushingDocs.empty() || _revisionBytesAwaitingReply > 0;
         if ( ret && reason ) {
-            if ( workerLevel == kC4Busy ) *reason = std::move(reason0);
+            if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
             else if ( _started && (!_caughtUp || !_continuousCaughtUp) )
                 *reason = "notCaughtUp";
             else if ( _changeListsInFlight > 0 )
@@ -540,31 +540,31 @@ namespace litecore::repl {
 
     Worker::ActivityLevel Pusher::computeActivityLevel(std::string* reason) const {
         ActivityLevel level;
-        int           k = -1;
-        std::string   reason0;
+        int           levelSetAt = -1;
+        std::string   parentReason;
         if ( !connected() ) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
-            level = kC4Stopped;
-            k     = 0;
-        } else if ( isBusy(reason ? &reason0 : nullptr) ) {
-            level = kC4Busy;
-            k     = 1;
+            level      = kC4Stopped;
+            levelSetAt = 0;
+        } else if ( isBusy(reason ? &parentReason : nullptr) ) {
+            level      = kC4Busy;
+            levelSetAt = 1;
         } else if ( _continuous || isOpenServer() || !_conflictsIMightRetry.empty() ) {
-            level = kC4Idle;
-            k     = 2;
+            level      = kC4Idle;
+            levelSetAt = 2;
         } else {
-            level = kC4Stopped;
-            k     = 3;
+            level      = kC4Stopped;
+            levelSetAt = 3;
         }
         if ( reason ) {
-            switch ( k ) {
+            switch ( levelSetAt ) {
                 case 0:
                     *reason = "notConnected";
                     break;
                 case 1:
-                    *reason = std::move(reason0);
+                    *reason = std::move(parentReason);
                     break;
                 case 2:
                     if ( _continuous ) *reason = "continuous";
@@ -574,7 +574,7 @@ namespace litecore::repl {
                         *reason = "conflictsIMightRetry";
                     break;
                 case 3:
-                    *reason = "oneShot";
+                    *reason = "oneShotFinished";
                     break;
                 default:
                     DebugAssert(false);
