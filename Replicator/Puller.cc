@@ -66,8 +66,9 @@ namespace litecore::repl {
         assignCollectionToMsg(msg, collectionIndex());
         if ( sinceStr ) msg["since"_sl] = sinceStr;
         if ( _options->pull(collectionIndex()) == kC4Continuous ) msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl]   = tuning::kChangesBatchSize;
-        msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
+        msg["batch"_sl]            = tuning::kChangesBatchSize;
+        msg["sendReplacementRevs"] = tuning::kChangesReplacementRevs;
+        msg["versioning"]          = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
         if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
             msg["revocations"] = "true";  // Enable revocation notification in "changes" (SG 3.0)
