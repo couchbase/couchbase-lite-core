@@ -119,27 +119,15 @@ namespace litecore::repl {
 
         // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
         // pass the collectionIndex manually for log calls
-        template <class... Args>
-        inline void cLogInfo(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logInfo(fmt_, idx, args...);
-        }
-
-        template <class... Args>
-        inline void cLogVerbose(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, idx, args...);
-        }
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
 #if DEBUG
-        template <class... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, idx, args...);
-        }
+#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
 #else
-        template <class... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {}
+#    define cLogDebug(IDX, FMT, ...)
 #endif
+        void addKeyValuePairs(std::stringstream& output) const override;
 
         // BLIP ConnectionDelegate API:
         void onHTTPResponse(int status, const websocket::Headers& headers) override;
@@ -257,6 +245,7 @@ namespace litecore::repl {
         alloc_slice           _remoteURL;
         bool                  _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+        alloc_slice                                    _correlationID{};
     };
 
 }  // namespace litecore::repl

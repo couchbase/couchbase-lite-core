@@ -337,8 +337,7 @@ namespace litecore::repl {
         auto since = _missingSequences.since();
         if ( since != _lastSequence ) {
             _lastSequence = since;
-            logVerbose("Checkpoint now at '%s' (collection: %u", _lastSequence.toJSONString().c_str(),
-                       collectionIndex());
+            logVerbose("Checkpoint now at '%s'", _lastSequence.toJSONString().c_str());
             if ( auto replicator = replicatorIfAny(); replicator )
                 replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }

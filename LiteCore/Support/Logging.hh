@@ -238,44 +238,22 @@ namespace litecore {
 
         void logError(const char* format, ...) const __printflike(2, 3) { LOGBODY(Error) }
 
-        virtual void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
+        // For performance reasons, logInfo(), logVerbose(), logDebug() are macros (below)
+        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        virtual void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
+        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        virtual void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
+        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
-        virtual bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
+        bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char* format, va_list) const;
+        void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
-        inline void _logAt(LogLevel level, const char* format, va_list args) const {
-            if ( _usuallyFalse(this->willLog(level)) ) this->_logv(level, format, args);
-        }
-
-        inline void logInfo(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Info, format, args);
-            va_end(args);
-        }
-
-        inline void logVerbose(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Verbose, format, args);
-            va_end(args);
-        }
-#if DEBUG
-        inline void logDebug(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Debug, format, args);
-            va_end(args);
-        }
-#else
-        virtual inline void logDebug(const char* format, ...) const {}
-#endif
+        // Add key=value pairs to the output. They are space separated. If output is not empty
+        // upon entry, add a space to start new key=value pairs.
+        // Warning: the string must not include printf format specifier, '%'.
+        virtual void addKeyValuePairs(std::stringstream& output) const {}
 
         LogDomain& _domain;
 
@@ -285,8 +263,24 @@ namespace litecore {
 
         mutable unsigned _objectRef{0};
     };
+
 #ifdef LITECORE_CPPTEST
     std::string createLogPath_forUnitTest(LogLevel level);
     void        resetRotateSerialNo();
 #endif
+
+#define _logAt(LEVEL, FMT, ...)                                                                                        \
+    do {                                                                                                               \
+        if ( _usuallyFalse(this->willLog(litecore::LogLevel::LEVEL)) )                                                 \
+            this->_log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                                 \
+    } while ( 0 )
+#define logInfo(FMT, ...)    _logAt(Info, FMT, ##__VA_ARGS__)
+#define logVerbose(FMT, ...) _logAt(Verbose, FMT, ##__VA_ARGS__)
+
+#if DEBUG
+#    define logDebug(FMT, ...) _logAt(Debug, FMT, ##__VA_ARGS__)
+#else
+#    define logDebug(FMT, ...)
+#endif
+
 }  // namespace litecore

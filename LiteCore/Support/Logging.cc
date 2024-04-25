@@ -656,13 +656,29 @@ namespace litecore {
         va_end(args);
     }
 
+    void Logging::_logv(LogLevel level, const char* format, va_list args) const {
+        _domain.computeLevel();
+
+        // Argument format is checked by __printflike(3, 0); it is guaranteed a literal constant.
+        // Here, we want to add a prefix to the format. This prefix is assigned by
+        // derived classes. It is generated from the LiteCore source, appendKeyValuePrefix,
+        // and we can trust that it does not include format specifier, '%'.
+        // We will pass the prefixedFormat to _domain.vlog by ignoring "-Wformat-nonliteral."
+
+        std::stringstream prefixOutput;
+        addKeyValuePairs(prefixOutput);
+        std::string prefixedFormat = prefixOutput.str();
+        DebugAssert(prefixedFormat.find('%') == std::string::npos);
+
+        if ( prefixedFormat.empty() ) prefixedFormat = format;
+        else
+            (prefixedFormat += " ") += format;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-    void Logging::_logv(LogLevel level, const char* format, va_list args) const {
-        _domain.computeLevel();
-        if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, format, args);
-    }
+        if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, prefixedFormat.c_str(), args);
 
 #pragma GCC diagnostic pop
+    }
 }  // namespace litecore

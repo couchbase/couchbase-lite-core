@@ -68,16 +68,16 @@ namespace litecore {
         void                  _scheduleFlush();
         void                  performScheduledFlush();
 
-        std::mutex                           _mutex;
-        fleece::Writer                       _writer;
-        std::ostream&                        _out;
-        std::unique_ptr<actor::Timer>        _flushTimer;
-        fleece::Stopwatch                    _st;
-        int64_t                              _lastElapsed{0};
-        int64_t                              _lastSaved{0};
-        LogLevel                             _level;
-        std::unordered_map<size_t, unsigned> _formats;
-        std::unordered_set<unsigned>         _seenObjects;
+        std::mutex                                _mutex;
+        fleece::Writer                            _writer;
+        std::ostream&                             _out;
+        std::unique_ptr<actor::Timer>             _flushTimer;
+        fleece::Stopwatch                         _st;
+        int64_t                                   _lastElapsed{0};
+        int64_t                                   _lastSaved{0};
+        LogLevel                                  _level;
+        std::unordered_map<std::string, unsigned> _formats;
+        std::unordered_set<unsigned>              _seenObjects;
     };
 
 }  // namespace litecore

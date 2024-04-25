@@ -476,7 +476,7 @@ namespace litecore::websocket {
             if ( willLog() ) {
                 auto close = ClientProtocol::parseClosePayload((std::byte*)message.buf, message.size);
                 logInfo("Client is requesting close (%d '%.*s'); echoing it", close.code, (int)close.length,
-                        close.message);
+                        (char*)close.message);
             }
             _closeSent    = true;
             _closeMessage = message;
@@ -590,7 +590,7 @@ namespace litecore::websocket {
 
                 _timeConnected.stop();
                 double t = _timeConnected.elapsed();
-                logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)", _bytesSent,
+                logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0Lf/sec, %.0Lf/sec)", _bytesSent,
                         _bytesReceived, t, (long double)_bytesSent / t, (long double)_bytesReceived / t);
             } else {
                 logErrorForStatus("WebSocket failed to connect!", status);
