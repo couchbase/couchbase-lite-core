@@ -369,7 +369,7 @@ namespace litecore::repl {
     }
 
     namespace {
-        enum ReasonCode : u_int8_t {
+        enum ReasonCode : uint8_t {
             rcConnecting,
             rcUnsavedCheckpointer,
             rcParentLevel,
