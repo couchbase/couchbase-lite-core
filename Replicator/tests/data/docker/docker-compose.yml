@@ -4,7 +4,7 @@ services:
     build:
       context: ./cbs
       args:
-        - COUCHBASE_VERSION=${COUCHBASE_VERSION:-7.1.4}
+        - COUCHBASE_VERSION=${COUCHBASE_VERSION:-7.6.1}
     ports:
       - "8091:8091"
       - "8092:8092"
@@ -22,25 +22,25 @@ services:
     build:
       context: ./sg
       args:
-        - SG_DEB_ARM64=${SG_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.0/couchbase-sync-gateway-enterprise_3.1.0_aarch64.deb}
-        - SG_DEB_AMD64=${SG_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.0/couchbase-sync-gateway-enterprise_3.1.0_x86_64.deb}
+        - SG_DEB_ARM64=${SG_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.5/couchbase-sync-gateway-enterprise_3.1.5_aarch64.deb}
+        - SG_DEB_AMD64=${SG_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.5/couchbase-sync-gateway-enterprise_3.1.5_x86_64.deb}
         - SSL=${SSL:-true}
     ports:
       - "4984:4984"
       - "4985:4985"
-    depends_on: 
+    depends_on:
       - "lite-core-cbs"
 
   lite-core-sg-legacy:
     build:
       context: ./sg
       args:
-        - SG_DEB_ARM64=${SG_LEGACY_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.7/couchbase-sync-gateway-enterprise_3.0.7_aarch64.deb}
-        - SG_DEB_AMD64=${SG_LEGACY_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.7/couchbase-sync-gateway-enterprise_3.0.7_x86_64.deb}
+        - SG_DEB_ARM64=${SG_LEGACY_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_aarch64.deb}
+        - SG_DEB_AMD64=${SG_LEGACY_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_x86_64.deb}
         - SSL=${SSL:-true}
         - LEGACY_MODE=true
     ports:
       - "4884:4884"
       - "4885:4885"
-    depends_on: 
+    depends_on:
       - "lite-core-cbs"
