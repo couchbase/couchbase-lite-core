@@ -461,6 +461,7 @@ namespace litecore::repl {
         } else {
             level = kC4Stopped;
         }
+
         if ( reason ) {
             if ( level == kC4Busy ) {
                 if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
@@ -472,6 +473,7 @@ namespace litecore::repl {
                 *reason = "notBusy";
             }
         }
+
         return level;
     }
 

@@ -463,12 +463,14 @@ namespace litecore::repl {
                 }
                 break;
         }
+
         if ( reason ) *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
 
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d", kC4ReplicatorActivityLevelNames[level],
                     _connectionState, hasUnsaved);
         }
+
         return level;
     }
 

@@ -419,6 +419,7 @@ namespace litecore::repl {
             level = kC4Stopped;
             rc    = rcOneShotFinished;
         }
+
         if ( reason ) {
             *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
             for ( const auto& counter : counters ) {
@@ -428,6 +429,7 @@ namespace litecore::repl {
                 }
             }
         }
+
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d,"
                     " _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingRevMessages=%zu,"

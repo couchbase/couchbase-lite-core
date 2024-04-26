@@ -578,6 +578,7 @@ namespace litecore::repl {
             level = kC4Stopped;
             rc    = rcOneShotFinished;
         }
+
         if ( reason ) {
             *reason = reasonTable[rc] ? reasonTable[rc] : delegateReason;
             for ( const auto& counter : counters ) {
@@ -597,6 +598,7 @@ namespace litecore::repl {
                     _revisionsInFlight, _blobsInFlight, _revisionBytesAwaitingReply, _revQueue.size(),
                     _pushingDocs.size(), pendingSequences);
         }
+
         return level;
     }
 

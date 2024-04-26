@@ -242,6 +242,7 @@ namespace litecore::repl {
         if ( eventCount() > 1 || _pendingResponseCount > 0 ) level = kC4Busy;
         else
             level = kC4Idle;
+
         if ( reason ) {
             if ( level == kC4Busy ) {
                 if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
@@ -251,6 +252,7 @@ namespace litecore::repl {
                 *reason = "noPendingEventOrResponse";
             }
         }
+
         return level;
     }
 
