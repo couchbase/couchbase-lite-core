@@ -244,9 +244,9 @@ namespace litecore::repl {
             level = kC4Idle;
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = "pendingEvent";
-                else if ( _pendingResponseCount > 0 )
-                    *reason = "pendingResponse";
+                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                else
+                    *reason = format("pendingResponse/%d", _pendingResponseCount);
             } else {
                 *reason = "noPendingEventOrResponse";
             }
@@ -278,13 +278,13 @@ namespace litecore::repl {
                 auto oldName = kC4ReplicatorActivityLevelNames[oldLevel];
                 auto name    = kC4ReplicatorActivityLevelNames[newLevel];
                 if ( _importance > 1 ) {
-                    if ( reason.empty() ) logInfo("status=%-s from=%-s", name, oldName);
+                    if ( reason.empty() ) logInfo("status=%s from=%s", name, oldName);
                     else
-                        logInfo("status=%-s from=%-s reason=%s", name, oldName, reason.c_str());
+                        logInfo("status=%s from=%s reason=%s", name, oldName, reason.c_str());
                 } else {
-                    if ( reason.empty() ) logVerbose("status=%-s from=%-s", name, oldName);
+                    if ( reason.empty() ) logVerbose("status=%s from=%s", name, oldName);
                     else
-                        logVerbose("status=%-s from=%-s reason=%s", name, oldName, reason.c_str());
+                        logVerbose("status=%s from=%s reason=%s", name, oldName, reason.c_str());
                 }
             }
         }

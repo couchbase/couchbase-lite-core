@@ -356,58 +356,76 @@ namespace litecore::repl {
         }
     }
 
+    namespace {
+        enum ReasonCode : u_int8_t {
+            rcUnfinishedIncomingRevs,
+            rcUnfinishedIncomingRevoked,
+            rcFatalError,
+            rcNotConnected,
+            rcParentLevel,
+            rcNotCaughtUp,
+            rcPendingRevMessages,
+            rcContinuous,
+            rcOpenServer,
+            rcOneShotFinished,
+
+            rcEnd
+        };
+
+        const char* const reasonTable[rcEnd]{"unfinishedIncomingRevs",
+                                             "unfinishedIncomingRevoked",
+                                             "fatalError",
+                                             "notConnected",
+                                             nullptr,  // dynamically available in parentReason
+                                             "notCaughtUp",
+                                             "pendingRevMessages",
+                                             "continuous",
+                                             "openServer",
+                                             "oneShotFinished"};
+    }  // namespace
+
     Worker::ActivityLevel Puller::computeActivityLevel(std::string* reason) const {
-        ActivityLevel         level;
-        int                   levelSetAt = -1;
-        std::string           parentReason;
-        Worker::ActivityLevel workerLevel{kC4Stopped};
+        ActivityLevel                                level;
+        ReasonCode                                   rc{rcEnd};
+        std::string                                  parentReason;
+        Worker::ActivityLevel                        parentLevel{kC4Stopped};
+        std::vector<std::pair<ReasonCode, unsigned>> counters;
+        counters.reserve(2);
         if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
             // CBL-221: Crash when scheduling document ended events
-            level      = kC4Busy;
-            levelSetAt = 0;
+            level = kC4Busy;
+            if ( _unfinishedIncomingRevs > 0 ) {
+                rc = rcUnfinishedIncomingRevs;
+                counters.emplace_back(rc, _unfinishedIncomingRevs);
+            } else {
+                rc = rcUnfinishedIncomingRevoked;
+                counters.emplace_back(rc, _unfinishedIncomingRevoked);
+            }
         } else if ( _fatalError || !connected() ) {
-            level      = kC4Stopped;
-            levelSetAt = 1;
-        } else if ( (workerLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr)) == kC4Busy
+            level = kC4Stopped;
+            rc    = _fatalError ? rcFatalError : rcNotConnected;
+        } else if ( (parentLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr)) == kC4Busy
                     || (!_caughtUp && !passive()) || _pendingRevMessages > 0 ) {
-            level      = kC4Busy;
-            levelSetAt = 2;
+            level = kC4Busy;
+            rc    = parentLevel == kC4Busy       ? rcParentLevel
+                    : (!_caughtUp && !passive()) ? rcNotCaughtUp
+                                                 : rcPendingRevMessages;
+            if ( rc == rcPendingRevMessages ) counters.emplace_back(rc, _pendingRevMessages);
         } else if ( _options->pull(collectionIndex()) == kC4Continuous || isOpenServer() ) {
             _spareIncomingRevs.clear();
-            level      = kC4Idle;
-            levelSetAt = 3;
+            level = kC4Idle;
+            rc    = _options->pull(collectionIndex()) == kC4Continuous ? rcContinuous : rcOpenServer;
         } else {
-            level      = kC4Stopped;
-            levelSetAt = 4;
+            level = kC4Stopped;
+            rc    = rcOneShotFinished;
         }
         if ( reason ) {
-            switch ( levelSetAt ) {
-                case 0:
-                    if ( _unfinishedIncomingRevs ) *reason = "unfinishedIncomingRevs";
-                    else
-                        *reason = "unfinishedIncomingRevoked";
+            *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
+            for ( const auto& counter : counters ) {
+                if ( counter.first == rc ) {
+                    *reason = format("%s/%d", reason->c_str(), counter.second);
                     break;
-                case 1:
-                    if ( _fatalError ) *reason = "fatalError";
-                    else
-                        *reason = "notConnected";
-                    break;
-                case 2:
-                    if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
-                    else if ( !_caughtUp && !passive() )
-                        *reason = "notCaughtUp";
-                    else
-                        *reason = "pendingRevMessages";
-                    break;
-                case 3:
-                    *reason = "continuousOrOpenServer";
-                    break;
-                case 4:
-                    *reason = "oneShotFinished";
-                    break;
-                default:
-                    DebugAssert(false);
-                    break;
+                }
             }
         }
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {

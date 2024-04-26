@@ -523,62 +523,68 @@ namespace litecore::repl {
             else if ( _started && (!_caughtUp || !_continuousCaughtUp) )
                 *reason = "notCaughtUp";
             else if ( _changeListsInFlight > 0 )
-                *reason = "changeListsInFlight";
+                *reason = format("changeListsInFlight/%d", _changeListsInFlight);
             else if ( _revisionsInFlight > 0 )
-                *reason = "revisionsInFlight";
+                *reason = format("revisionsInFlight/%d", _revisionsInFlight);
             else if ( _blobsInFlight > 0 )
-                *reason = "blobsInFlight";
+                *reason = format("blobsInFlight/%d", _blobsInFlight);
             else if ( !_revQueue.empty() )
-                *reason = "revQueue";
+                *reason = format("revQueue/%zu", _revQueue.size());
             else if ( !_pushingDocs.empty() )
-                *reason = "pushingDocs";
+                *reason = format("pushingDocs/%zu", _pushingDocs.size());
             else
-                *reason = "revisionBytesAwaitingReply";
+                *reason = format("revisionBytesAwaitingReply/%llu", _revisionBytesAwaitingReply);
         }
         return ret;
     }
 
+    namespace {
+        enum ReasonCode : u_int8_t {
+            rcNotConnected,
+            rcIsBusy,
+            rcContinuous,
+            rcOpenServer,
+            rcConflictsMightRetry,
+            rcOneShotFinished,
+
+            rcEnd
+        };
+
+        const char* const reasonTable[rcEnd]{"notConnected",
+                                             nullptr,  // dynamically available in delegateReason.
+                                             "continuous",   "openServer", "conflictsMightRetry", "oneShotFinished"};
+    }  // namespace
+
     Worker::ActivityLevel Pusher::computeActivityLevel(std::string* reason) const {
-        ActivityLevel level;
-        int           levelSetAt = -1;
-        std::string   parentReason;
+        ActivityLevel                              level;
+        ReasonCode                                 rc = rcEnd;
+        std::string                                delegateReason;
+        std::vector<std::pair<ReasonCode, size_t>> counters;
+        counters.reserve(1);
         if ( !connected() ) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
-            level      = kC4Stopped;
-            levelSetAt = 0;
-        } else if ( isBusy(reason ? &parentReason : nullptr) ) {
-            level      = kC4Busy;
-            levelSetAt = 1;
+            level = kC4Stopped;
+            rc    = rcNotConnected;
+        } else if ( isBusy(reason ? &delegateReason : nullptr) ) {
+            level = kC4Busy;
+            rc    = rcIsBusy;
         } else if ( _continuous || isOpenServer() || !_conflictsIMightRetry.empty() ) {
-            level      = kC4Idle;
-            levelSetAt = 2;
+            level = kC4Idle;
+            rc    = (_continuous ? rcContinuous : (isOpenServer() ? rcOpenServer : rcConflictsMightRetry));
+            if ( rc == rcConflictsMightRetry ) counters.emplace_back(rc, _conflictsIMightRetry.size());
         } else {
-            level      = kC4Stopped;
-            levelSetAt = 3;
+            level = kC4Stopped;
+            rc    = rcOneShotFinished;
         }
         if ( reason ) {
-            switch ( levelSetAt ) {
-                case 0:
-                    *reason = "notConnected";
+            *reason = reasonTable[rc] ? reasonTable[rc] : delegateReason;
+            for ( const auto& counter : counters ) {
+                if ( counter.first == rc ) {
+                    *reason = format("%s/%zu", reason->c_str(), counter.second);
                     break;
-                case 1:
-                    *reason = std::move(parentReason);
-                    break;
-                case 2:
-                    if ( _continuous ) *reason = "continuous";
-                    else if ( isOpenServer() )
-                        *reason = "openServer";
-                    else
-                        *reason = "conflictsIMightRetry";
-                    break;
-                case 3:
-                    *reason = "oneShotFinished";
-                    break;
-                default:
-                    DebugAssert(false);
-                    break;
+                }
             }
         }
 

@@ -465,7 +465,7 @@ namespace litecore::repl {
             if ( level == kC4Busy ) {
                 if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
                 else if ( _pendingCallbacks > 0 )
-                    *reason = "pendingCallbacks";
+                    *reason = format("pendingCallbacks/%d", _pendingCallbacks);
                 else
                     *reason = "pendingBlob";
             } else {
