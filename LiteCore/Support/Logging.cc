@@ -663,21 +663,23 @@ namespace litecore {
         // Here, we want to add a prefix to the format. This prefix is assigned by
         // derived classes. It is generated from the LiteCore source, appendKeyValuePrefix,
         // and we can trust that it does not include format specifier, '%'.
-        // We will pass the prefixedFormat to _domain.vlog by ignoring "-Wformat-nonliteral."
+        // We will pass uncheckedFormat to _domain.vlog by ignoring "-Wformat-nonliteral."
 
         std::stringstream prefixOutput;
         addKeyValuePairs(prefixOutput);
-        std::string prefixedFormat = prefixOutput.str();
-        DebugAssert(prefixedFormat.find('%') == std::string::npos);
+        std::string prefix = prefixOutput.str();
 
-        if ( prefixedFormat.empty() ) prefixedFormat = format;
-        else
-            (prefixedFormat += " ") += format;
+        const char* uncheckedFormat = format;
+        if ( !prefix.empty() ) {
+            DebugAssert(prefix.find('%') == std::string::npos);
+            (prefix += " ") += format;
+            uncheckedFormat = prefix.c_str();
+        }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-        if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, prefixedFormat.c_str(), args);
+        if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, uncheckedFormat, args);
 
 #pragma GCC diagnostic pop
     }

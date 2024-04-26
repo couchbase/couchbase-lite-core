@@ -40,6 +40,17 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
+// Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
+// pass the collectionIndex manually for log calls
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#if DEBUG
+#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#else
+#    define cLogDebug(IDX, FMT, ...)
+#endif
+
     struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool    isFatal;
