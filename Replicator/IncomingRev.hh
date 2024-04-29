@@ -48,7 +48,7 @@ namespace litecore::repl {
       protected:
         std::string loggingClassName() const override { return "IncomingRev"; }
 
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
 
       private:
         void        reinitialize();

@@ -271,7 +271,7 @@ namespace litecore::repl {
         /// Called after every event, to update `_status.level`.
         /// The default implementation returns `kC4Busy` if there are pending BLIP responses,
         /// or this Actor has pending events in its queue, else `kC4Idle`.
-        virtual ActivityLevel computeActivityLevel() const;
+        virtual ActivityLevel computeActivityLevel(std::string* reason = nullptr) const;
 
 #pragma mark - INSTANCE DATA:
       protected:

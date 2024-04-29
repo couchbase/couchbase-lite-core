@@ -61,11 +61,11 @@ namespace litecore::repl {
 
         void          afterEvent() override;
         void          _connectionClosed() override;
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
 
       private:
         void _start();
-        bool isBusy() const;
+        bool isBusy(std::string* reason = nullptr) const;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
