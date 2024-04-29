@@ -239,7 +239,8 @@ class ReplicatorLoopbackTest
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
-        if ( repl == _replClient && _gotResponse ) {
+        if ( repl == _replClient ) {
+            Assert(_gotResponse);
             ++_statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu, %lu docs", kC4ReplicatorActivityLevelNames[status.level],
                 (unsigned long)status.progress.unitsCompleted, (unsigned long)status.progress.unitsTotal,
