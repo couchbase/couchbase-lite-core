@@ -57,11 +57,15 @@ namespace litecore::repl {
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
-        _revMessage         = msg;
-        _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
-                                              _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
-                                              _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
-                                              getCollection()->getSpec(), _options->collectionCallbackContext(collectionIndex()));
+        _revMessage = msg;
+        // SG may have sent a newer revision than we requested via the "replacedRev" property.
+        auto revID = _revMessage->property("replacedRev"_sl);
+        if ( revID.empty() ) { revID = _revMessage->property("rev"_sl); }
+
+        _rev = new RevToInsert(this, _revMessage->property("id"_sl), revID, _revMessage->property("history"_sl),
+                               _revMessage->boolProperty("deleted"_sl),
+                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
+                               getCollection()->getSpec(), _options->collectionCallbackContext(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr   = _revMessage->property(slice("sequence"));
         _remoteSequence     = RemoteSequence(sequenceStr);
