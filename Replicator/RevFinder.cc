@@ -30,6 +30,9 @@ namespace litecore::repl {
     RevFinder::RevFinder(Replicator* replicator, Delegate* delegate, CollectionIndex coll)
         : Worker(replicator, "RevFinder", coll), _delegate(delegate) {
         setParentObjectRef(replicator->getObjectRef());
+#ifdef DEBUG
+        _disableReplacementRevs = replicator->_disableReplacementRevs;
+#endif
         _mustBeProposed = passive() && _options->noIncomingConflicts() && !_db->usingVersionVectors();
         replicator->registerWorkerHandler(this, "changes", &RevFinder::handleChanges);
         replicator->registerWorkerHandler(this, "proposeChanges", &RevFinder::handleChanges);
@@ -124,6 +127,12 @@ namespace litecore::repl {
                     response["deltas"_sl]  = "true"_sl;
                     _announcedDeltaSupport = true;
                 }
+
+#ifdef DEBUG
+                response["sendReplacementRevs"] = !_disableReplacementRevs;
+#else
+                response["sendReplacementRevs"] = tuning::kChangesReplacementRevs;
+#endif
 
                 Stopwatch st;
 

@@ -92,6 +92,11 @@ namespace litecore::repl {
             });
             logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
 
+#ifdef DEBUG
+            _delayChangesResponse   = _options->delayChangesResponse();
+            _disableReplacementRevs = _options->disableReplacementRevs();
+#endif
+
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }
 
@@ -1200,6 +1205,13 @@ namespace litecore::repl {
                 return;
             }
         }
+
+#ifdef DEBUG
+        if ( _delayChangesResponse && (profile == "changes"_sl || profile == "proposeChanges"_sl) ) {
+            C4Log("Delaying changes response...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+#endif
 
         auto it = _workerHandlers.find({profile.asString(), i});
         if ( it != _workerHandlers.end() ) {

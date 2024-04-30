@@ -66,7 +66,12 @@ namespace litecore::repl {
         assignCollectionToMsg(msg, collectionIndex());
         if ( sinceStr ) msg["since"_sl] = sinceStr;
         if ( _options->pull(collectionIndex()) == kC4Continuous ) msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl]   = tuning::kChangesBatchSize;
+        msg["batch"_sl] = tuning::kChangesBatchSize;
+#ifdef DEBUG
+        msg["sendReplacementRevs"] = !_revFinder->_disableReplacementRevs;
+#else
+        msg["sendReplacementRevs"] = tuning::kChangesReplacementRevs;
+#endif
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
         if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
