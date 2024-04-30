@@ -1274,7 +1274,7 @@ namespace litecore::repl {
     void Replicator::addKeyValuePairs(std::stringstream& output) const {
         Worker::addKeyValuePairs(output);
         if ( _correlationID ) {
-            if ( !output.str().empty() ) output << " ";
+            if ( output.tellp() > 0 ) output << " ";
             output << "CorrID=" << _correlationID.asString();
         }
     }

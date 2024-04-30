@@ -667,13 +667,14 @@ namespace litecore {
 
         std::stringstream prefixOutput;
         addKeyValuePairs(prefixOutput);
-        std::string prefix = prefixOutput.str();
+        std::string withPrefix;
 
         const char* uncheckedFormat = format;
-        if ( !prefix.empty() ) {
-            DebugAssert(prefix.find('%') == std::string::npos);
-            (prefix += " ") += format;
-            uncheckedFormat = prefix.c_str();
+        if ( prefixOutput.tellp() > 0 ) {
+            DebugAssert(prefixOutput.str().find('%') == std::string::npos);
+            prefixOutput << " " << format;
+            withPrefix      = prefixOutput.str();
+            uncheckedFormat = withPrefix.c_str();
         }
 
 #pragma GCC diagnostic push

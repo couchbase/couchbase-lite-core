@@ -310,7 +310,7 @@ namespace litecore::repl {
     void Worker::addKeyValuePairs(std::stringstream& output) const {
         actor::Actor::addKeyValuePairs(output);
         if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
-            if ( !output.str().empty() ) output << " ";
+            if ( output.tellp() > 0 ) output << " ";
             output << "Coll=" << collIdx;
         }
     }
