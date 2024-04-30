@@ -1705,7 +1705,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
 
     Log("-------- Mutate Doc In db --------");
     bool modifiedDigest = false;
-         SECTION("Not Modifying Digest") {
+
+    SECTION("Not Modifying Digest") {
         // Modify attachment metadata (other than the digest):
         mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
             auto atts               = rev["_attachments"_sl].asDict().asMutable();
