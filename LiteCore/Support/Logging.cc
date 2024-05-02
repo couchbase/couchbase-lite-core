@@ -414,11 +414,56 @@ namespace litecore {
         return snprintf(destBuf, bufSize, "Obj=%s ", objPath.c_str());
     }
 
-    void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char* fmt, va_list args) {
+    namespace {
+        using CheckedFmt2Interned = std::unordered_map<size_t, std::string>;
+        std::unordered_map<std::string_view, CheckedFmt2Interned> prefix2InternedMap;
+
+        // "checkedFormat" is checked by __printflike to be literal c string. Therefore, the pointer
+        // itself is persistently associated with the string.
+        // We intend to prepend it with "prefix." The result string is movable, but we want to have
+        // a persistent pointer so that downstream can save/hash the pointer.
+        // We do it by intern it in the above maps.
+        // The pair, (prefix, (size_t)uncheckedFormat) uniquely determines the content of the concatenated
+        // string. The following maps find the interned string from the pair,
+        //   prefix -> (checkedFormat -> interned)
+
+        const char* intern(std::stringstream& prefix, const char* checkedFormat) {
+            auto prefixLen = prefix.tellp();
+            if ( prefixLen == 0 ) { return checkedFormat; }
+
+            prefix << " " << checkedFormat;
+            std::string prefixedFmt = prefix.str();
+
+            std::string_view prefixKey{prefixedFmt.data(), (size_t)prefixLen};
+            // To be safe w.r.t. RCE (Remote Code Execution), we ensure it do not contain the format
+            // specifier.
+            DebugAssert(prefixKey.find('%') == std::string::npos);
+
+            auto insertRet = prefix2InternedMap[prefixKey].emplace((size_t)checkedFormat, std::move(prefixedFmt));
+            return insertRet.first->second.c_str();
+        }
+    }  // namespace
+
+    void LogDomain::vlog(LogLevel level, const Logging* logObj, bool doCallback, const char* fmt, va_list args) {
         if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
         if ( !willLog(level) ) return;
 
+        unsigned          objRef = LogEncoder::None;
+        std::stringstream prefixOutput;
+        if ( logObj ) {
+            objRef = logObj->getObjectRef();
+            logObj->addKeyValuePairs(prefixOutput);
+        }
+
         unique_lock<mutex> lock(sLogMutex);
+
+        const char* uncheckedFmt = fmt;
+        if ( prefixOutput.tellp() > 0 ) { uncheckedFmt = intern(prefixOutput, fmt); }
+
+        // In the following, we will use uncheckedFmt in lieu of checked fmt. However, we ensure that
+        // the prefix prepended to fmt do not contain the format specifier, '%'.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
         // Invoke the client callback:
         if ( doCallback && sCallback && level >= _callbackLogLevel() ) {
@@ -427,13 +472,13 @@ namespace litecore {
             va_list noArgs{};
 
             size_t      n      = 0;
-            const char* useFmt = fmt;
+            const char* useFmt = uncheckedFmt;
             if ( objRef ) n = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), objRef);
             if ( sCallbackPreformatted ) {
-                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
+                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, uncheckedFmt, args2);
                 useFmt = sFormatBuffer;
             } else if ( n > 0 ) {
-                snprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, "%s ", fmt);
+                snprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, "%s ", uncheckedFmt);
                 useFmt = sFormatBuffer;
             }
             sCallback(*this, level, useFmt, sCallbackPreformatted ? noArgs : args2);
@@ -442,28 +487,28 @@ namespace litecore {
         }
 
         // Write to the encoded log file:
-        if ( level >= sFileMinLevel ) { dylog(level, _name, (LogEncoder::ObjectRef)objRef, fmt, args); }
+        if ( level >= sFileMinLevel ) { dylog(level, _name, (LogEncoder::ObjectRef)objRef, uncheckedFmt, args); }
+
+#pragma GCC diagnostic pop
     }
 
-    void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) {
-        vlog(level, LogEncoder::None, true, fmt, args);
-    }
+    void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) { vlog(level, nullptr, true, fmt, args); }
 
     void LogDomain::log(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, true, fmt, args);
+        vlog(level, nullptr, true, fmt, args);
         va_end(args);
     }
 
     void LogDomain::vlogNoCallback(LogLevel level, const char* fmt, va_list args) {
-        vlog(level, LogEncoder::None, false, fmt, args);
+        vlog(level, nullptr, false, fmt, args);
     }
 
     void LogDomain::logNoCallback(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, false, fmt, args);
+        vlog(level, nullptr, false, fmt, args);
         va_end(args);
     }
 
@@ -471,7 +516,6 @@ namespace litecore {
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
     // Must have sLogMutex held
     void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char* fmt, va_list args) {
-        auto     obj = getObject(objRef);
         uint64_t pos;
 
         // Safe to store these in variables, since they only change in the rotateLog method
@@ -658,30 +702,6 @@ namespace litecore {
 
     void Logging::_logv(LogLevel level, const char* format, va_list args) const {
         _domain.computeLevel();
-
-        // Argument format is checked by __printflike(3, 0); it is guaranteed a literal constant.
-        // Here, we want to add a prefix to the format. This prefix is assigned by
-        // derived classes. It is generated from the LiteCore source, appendKeyValuePrefix,
-        // and we can trust that it does not include format specifier, '%'.
-        // We will pass uncheckedFormat to _domain.vlog by ignoring "-Wformat-nonliteral."
-
-        std::stringstream prefixOutput;
-        addKeyValuePairs(prefixOutput);
-        std::string withPrefix;
-
-        const char* uncheckedFormat = format;
-        if ( prefixOutput.tellp() > 0 ) {
-            DebugAssert(prefixOutput.str().find('%') == std::string::npos);
-            prefixOutput << " " << format;
-            withPrefix      = prefixOutput.str();
-            uncheckedFormat = withPrefix.c_str();
-        }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-
-        if ( _domain.willLog(level) ) _domain.vlog(level, getObjectRef(), true, uncheckedFormat, args);
-
-#pragma GCC diagnostic pop
+        if ( _domain.willLog(level) ) _domain.vlog(level, this, true, format, args);
     }
 }  // namespace litecore

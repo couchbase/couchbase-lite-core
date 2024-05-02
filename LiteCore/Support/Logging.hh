@@ -57,6 +57,8 @@ namespace litecore {
         bool        isPlaintext;
     };
 
+    class Logging;
+
     class LogDomain {
       public:
         // objectRef -> (loggingName, parentObectRef)
@@ -133,7 +135,7 @@ namespace litecore {
         static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
 
         static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
-        void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
+        void vlog(LogLevel level, const Logging* logObj, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
       private:
         static LogLevel _callbackLogLevel() noexcept;
