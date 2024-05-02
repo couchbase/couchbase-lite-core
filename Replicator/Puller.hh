@@ -68,7 +68,7 @@ namespace litecore::repl {
         }
 
         void          _childChangedStatus(Retained<Worker>, Status) override;
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
         void          activityLevelChanged(ActivityLevel level);
 
       private:

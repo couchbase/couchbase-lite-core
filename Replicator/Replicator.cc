@@ -379,30 +379,70 @@ namespace litecore::repl {
         }
     }
 
-    Worker::ActivityLevel Replicator::computeActivityLevel() const {
+    namespace {
+        enum ReasonCode : uint8_t {
+            rcConnecting,
+            rcUnsavedCheckpointer,
+            rcParentLevel,
+            rcPushOrPull,
+            rcOneShotBeforeStop,
+            rcClosing,
+            rcClosedParentLevel,
+            rcClosedPushOrPull,
+            rcClosed,
+            rcClosedBusyWhenConnecting,
+
+            rcEnd
+        };
+
+        const char* const reasonTable[rcEnd]{"connecting",
+                                             "unsavedCheckpointer",
+                                             nullptr,  // dynamically available in parentReason
+                                             "pushOrPull",
+                                             "oneShotBeforeStop",
+                                             "closing",
+                                             nullptr,  // dynamically available in parentReason
+                                             "closed:pushOrPull",
+                                             "closed",
+                                             "closed:busyWhenConnecting"};
+    }  // namespace
+
+    Worker::ActivityLevel Replicator::computeActivityLevel(std::string* reason) const {
         // Once I've announced I've stopped, don't return any other status again:
         auto currentLevel = status().level;
         if ( currentLevel == kC4Stopped ) return kC4Stopped;
 
-        ActivityLevel level      = kC4Busy;
+        ActivityLevel level = kC4Busy;
+        ReasonCode    rc{rcEnd};
         bool          hasUnsaved = false;
+        std::string   parentReason;
         switch ( _connectionState ) {
             case Connection::kConnecting:
                 level = kC4Connecting;
+                rc    = rcConnecting;
                 break;
             case Connection::kConnected:
                 {
                     hasUnsaved = std::any_of(_subRepls.begin(), _subRepls.end(),
                                              [](const SubReplicator& sub) { return sub.checkpointer->isUnsaved(); });
-                    if ( hasUnsaved ) level = kC4Busy;
-                    else
-                        level = Worker::computeActivityLevel();
-                    level = max(level, max(_pushStatus.level, _pullStatus.level));
+                    if ( hasUnsaved ) {
+                        level = kC4Busy;
+                        rc    = rcUnsavedCheckpointer;
+                    } else {
+                        level = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                        rc    = rcParentLevel;
+                    }
+                    auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                    if ( level < childLevel ) {
+                        level = childLevel;
+                        rc    = rcPushOrPull;
+                    }
                     if ( level == kC4Idle && !isContinuous() && !isOpenServer() ) {
                         // Detect that a non-continuous active push or pull replication is done:
                         logInfo("Replication complete! Closing connection");
                         const_cast<Replicator*>(this)->_stop();
                         level = kC4Busy;
+                        rc    = rcOneShotBeforeStop;
                     }
                     DebugAssert(level > kC4Stopped);
                     break;
@@ -411,22 +451,37 @@ namespace litecore::repl {
                 // Remain active while I wait for the connection to finish closing:
                 logDebug("Connection closing... (activityLevel=busy)waiting to finish");
                 level = kC4Busy;
+                rc    = rcClosing;
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
                 // After connection closes, remain Busy (or Connecting) while I wait for db to
                 // finish writes and for myself to process any pending messages; then go to Stopped.
-                level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, _pullStatus.level));
-                if ( level < kC4Busy ) level = kC4Stopped;
-                else if ( currentLevel == kC4Connecting )
+                level           = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                rc              = rcClosedParentLevel;
+                parentReason    = "closed:"s + parentReason;
+                auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                if ( level < childLevel ) {
+                    level = childLevel;
+                    rc    = rcClosedPushOrPull;
+                }
+                if ( level < kC4Busy ) {
+                    level = kC4Stopped;
+                    rc    = rcClosed;
+                } else if ( currentLevel == kC4Connecting ) {
                     level = kC4Connecting;
+                    rc    = rcClosedBusyWhenConnecting;
+                }
                 break;
         }
+
+        if ( reason ) *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
+
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d", kC4ReplicatorActivityLevelNames[level],
                     _connectionState, hasUnsaved);
         }
+
         return level;
     }
 

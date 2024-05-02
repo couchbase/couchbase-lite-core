@@ -40,6 +40,13 @@ namespace litecore::repl::tuning {
             message. (This is sent as a parameter in the puller's opening `subChanges` message.) */
     constexpr unsigned kChangesBatchSize = 200;
 
+    /* The value for the `sendReplacementRevs` property on the `subChanges` message we send to the remote during
+     * pull replication. If true, when the remote is sending a changes message and a document is updated before
+     * the body is sent (which will mean the body for the rev we requested is lost), the remote will send the newest
+     * body instead.
+     */
+    constexpr bool kChangesReplacementRevs = true;
+
     /* Maximum desirable number of incoming `rev` messages that aren't being handled yet.
             Past this number, the puller will stop handling or responding to `changes` messages,
             to attempt to stop getting more `revs`. */

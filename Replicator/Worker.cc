@@ -238,10 +238,23 @@ namespace litecore::repl {
         }
     }
 
-    Worker::ActivityLevel Worker::computeActivityLevel() const {
-        if ( eventCount() > 1 || _pendingResponseCount > 0 ) return kC4Busy;
+    Worker::ActivityLevel Worker::computeActivityLevel(std::string* reason) const {
+        Worker::ActivityLevel level{kC4Idle};
+        if ( eventCount() > 1 || _pendingResponseCount > 0 ) level = kC4Busy;
         else
-            return kC4Idle;
+            level = kC4Idle;
+
+        if ( reason ) {
+            if ( level == kC4Busy ) {
+                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                else
+                    *reason = format("pendingResponse/%d", _pendingResponseCount);
+            } else {
+                *reason = "noPendingEventOrResponse";
+            }
+        }
+
+        return level;
     }
 
     // Called after every event; updates busy status & detects when I'm done
@@ -258,15 +271,24 @@ namespace litecore::repl {
                        _status.progress.unitsTotal, _status.progress.documentCount);
         }
 
-        auto newLevel = computeActivityLevel();
+        std::string reason;
+        auto        newLevel = computeActivityLevel(willLog(LogLevel::Info) ? &reason : nullptr);
         if ( newLevel != _status.level ) {
+            auto oldLevel = _status.level;
             _status.level = newLevel;
             changed       = true;
             if ( _importance ) {
-                auto name = kC4ReplicatorActivityLevelNames[newLevel];
-                if ( _importance > 1 ) logInfo("now %-s", name);
-                else
-                    logVerbose("now %-s", name);
+                auto oldName = kC4ReplicatorActivityLevelNames[oldLevel];
+                auto name    = kC4ReplicatorActivityLevelNames[newLevel];
+                if ( _importance > 1 ) {
+                    if ( reason.empty() ) logInfo("status=%s from=%s", name, oldName);
+                    else
+                        logInfo("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                } else {
+                    if ( reason.empty() ) logVerbose("status=%s from=%s", name, oldName);
+                    else
+                        logVerbose("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                }
             }
         }
         if ( changed ) changedStatus();
