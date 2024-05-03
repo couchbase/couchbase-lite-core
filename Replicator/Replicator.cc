@@ -40,6 +40,17 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
+// Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
+// pass the collectionIndex manually for log calls
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#if DEBUG
+#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#else
+#    define cLogDebug(IDX, FMT, ...)
+#endif
+
     struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool    isFatal;
@@ -575,6 +586,10 @@ namespace litecore::repl {
                                    "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
         if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+            _correlationID = x_corr;
+            logInfo("Received X-Correlation-Id");
+        }
     }
 
     void Replicator::_onConnect() {
@@ -640,8 +655,12 @@ namespace litecore::repl {
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         auto collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
-        warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
-             msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        if ( collection == kNotCollectionIndex )
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: none) with Profile '%.*s', %zu bytes",
+                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        else
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
+                 msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
     }
 
@@ -909,7 +928,7 @@ namespace litecore::repl {
                     getRemoteCheckpoint(true, coll);
                 } else {
                     gotError(response);
-                    warn("Failed to save remote checkpoint (collection: %u)!", coll);
+                    cWarn(coll, "Failed to save remote checkpoint!");
                     // If the checkpoint didn't save, something's wrong; but if we don't mark it as
                     // saved, the replicator will stay busy (see computeActivityLevel, line 169).
                     sub.checkpointer->saveCompleted();
@@ -1304,6 +1323,14 @@ namespace litecore::repl {
             return;
         } else {
             prepareWorkers();
+        }
+    }
+
+    void Replicator::addKeyValuePairs(std::stringstream& output) const {
+        Worker::addKeyValuePairs(output);
+        if ( _correlationID ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "CorrID=" << _correlationID.asString();
         }
     }
 
