@@ -34,9 +34,6 @@ namespace litecore::repl {
 
     extern LogDomain SyncBusyLog;
 
-    // The log format string for logging a collection index
-    constexpr const char* kCollectionLogFormat = "{Coll=%i}";
-
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
         - Access to the replicator options, the database, and the BLIP connection.
@@ -127,57 +124,6 @@ namespace litecore::repl {
 
         void afterEvent() override;
         void caughtException(const std::exception& x) override;
-
-        // Add the token for collection info to the format string (and cache the string, returning the pointer)
-        // Concurrent read-write of cache is technically safe, but if a rehash occurs (capacity of _formatCache is
-        // exceeded), all iterators are invalidated. So we use a shared_mutex, with a shared_lock on reads and a
-        // unique_lock on writes - this allows multiple concurrent reads, but blocks reads when a write needs to occur
-        static inline const char* formatWithCollection(const char* fmt) {
-            const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-            {
-                std::shared_lock sharedLock(_formatMutex);  // Multiple threads can read concurrently
-                const auto       found = _formatCache.find(fmtStr);
-                if ( found != _formatCache.end() ) { return found->data(); }
-            }
-            std::unique_lock lock(_formatMutex);  // Block all other threads if we need to perform an insert
-            return _formatCache.insert(fmtStr).first->data();
-        }
-
-        // overrides for Logging functions which insert collection index to the format string
-        template <class... Args>
-        inline void logInfo(const char* fmt, Args... args) const {
-            if ( int32_t cid = collectionID(); cid >= 0 ) {
-                const char* fmt_ = formatWithCollection(fmt);
-                Logging::logInfo(fmt_, cid, args...);
-            } else {
-                Logging::logInfo(fmt, args...);
-            }
-        }
-
-        template <class... Args>
-        inline void logVerbose(const char* fmt, Args... args) const {
-            if ( int32_t cid = collectionID(); cid >= 0 ) {
-                const char* fmt_ = formatWithCollection(fmt);
-                Logging::logVerbose(fmt_, cid, args...);
-            } else {
-                Logging::logVerbose(fmt, args...);
-            }
-        }
-
-#if DEBUG
-        template <class... Args>
-        inline void logDebug(const char* fmt, Args... args) const {
-            if ( int32_t cid = collectionID(); cid >= 0 ) {
-                const char* fmt_ = formatWithCollection(fmt);
-                Logging::logDebug(fmt_, cid, args...);
-            } else {
-                Logging::logDebug(fmt, args...);
-            }
-        }
-#else
-        template <class... Args>
-        inline void logDebug(const char* fmt, Args... args) const {}
-#endif
 
         // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
         int32_t collectionID() const {
@@ -294,6 +240,8 @@ namespace litecore::repl {
         C4Collection* getCollection() { return const_cast<C4Collection*>(((const Worker*)this)->getCollection()); }
 
         const C4Collection* getCollection() const;
+
+        void addLoggingKeyValuePairs(std::stringstream& output) const override;
 
         RetainedConst<Options>    _options;        // The replicator options
         Retained<Worker>          _parent;         // Worker that owns me

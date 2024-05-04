@@ -80,7 +80,8 @@ namespace litecore::blip {
                            size_t maxInput) {
         _z.next_in  = (Bytef*)input.buf;
         auto inSize = _z.avail_in = (unsigned)std::min(input.size, maxInput);
-        _z.next_out               = (Bytef*)output.next();
+        (void)inSize;  // used in logDebug which is empty in release buid.
+        _z.next_out  = (Bytef*)output.next();
         auto outSize = _z.avail_out = (unsigned)output.capacity();
         Assert(outSize > 0);
         Assert(mode > Mode::Raw);
@@ -125,7 +126,7 @@ namespace litecore::blip {
 
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed", (origInput.size - input.size),
                 (origOutputSize - output.capacity()),
-                (origOutputSize - output.capacity()) * 100 / (origInput.size - input.size), unflushedBytes());
+                (origOutputSize - output.capacity()) * 100.0 / (origInput.size - input.size), unflushedBytes());
     }
 
     void Deflater::_writeAndFlush(slice_istream& input, slice_ostream& output) {

@@ -71,7 +71,8 @@ namespace litecore::repl {
             } else {
                 firstline = false;
             }
-            s << format(string(kCollectionLogFormat), i++) << " "
+            s << "{Coll#" << i++ << "}"
+              << " "
               << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
               << "\"Push\": " << kModeNames[c.push] << ", "
               << "\"Pull\": " << kModeNames[c.pull] << ", "
@@ -263,9 +264,9 @@ namespace litecore::repl {
         bool changed   = _statusChanged;
         _statusChanged = false;
         if ( changed && _importance ) {
-            logVerbose("(collection: %u) progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64
-                       " / %" PRIu64 ", %" PRIu64 " docs",
-                       collectionIndex(), _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
+            logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64
+                       " docs",
+                       _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount, _status.progress.unitsCompleted,
                        _status.progress.unitsTotal, _status.progress.documentCount);
         }
@@ -326,5 +327,13 @@ namespace litecore::repl {
         Assert(collectionIndex() != kNotCollectionIndex);
         auto* nonConstThis = const_cast<Worker*>(this);
         return nonConstThis->replicator()->collection(collectionIndex());
+    }
+
+    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
+        actor::Actor::addLoggingKeyValuePairs(output);
+        if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "Coll=" << collIdx;
+        }
     }
 }  // namespace litecore::repl
