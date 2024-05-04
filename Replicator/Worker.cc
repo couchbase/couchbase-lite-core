@@ -329,8 +329,8 @@ namespace litecore::repl {
         return nonConstThis->replicator()->collection(collectionIndex());
     }
 
-    void Worker::addKeyValuePairs(std::stringstream& output) const {
-        actor::Actor::addKeyValuePairs(output);
+    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
+        actor::Actor::addLoggingKeyValuePairs(output);
         if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
             if ( output.tellp() > 0 ) output << " ";
             output << "Coll=" << collIdx;

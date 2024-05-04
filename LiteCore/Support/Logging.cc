@@ -422,7 +422,7 @@ namespace litecore {
         std::stringstream prefixOut;
         if ( logger ) {
             objRef = logger->getObjectRef();
-            logger->addKeyValuePairs(prefixOut);
+            logger->addLoggingKeyValuePairs(prefixOut);
         }
         const char* uncheckedFmt = fmt;
         std::string prefix       = prefixOut.str();
@@ -444,7 +444,7 @@ namespace litecore {
 
             // Argument fmt is checked by __printflike(5, 0); it is guaranteed a literal constant.
             // Here, we want to add a prefix to the format. This prefix is assigned by
-            // logger. It is generated from the LiteCore source, Logging::addKeyValuePairs,
+            // logger. It is generated from the LiteCore source, Logging::addLoggingKeyValuePairs,
             // and we can trust that it does not include format specifier, '%'.
             // We will pass down uncheckedFmt by ignoring "-Wformat-nonliteral."
 #pragma GCC diagnostic push

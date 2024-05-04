@@ -241,7 +241,7 @@ namespace litecore::repl {
 
         const C4Collection* getCollection() const;
 
-        void addKeyValuePairs(std::stringstream& output) const override;
+        void addLoggingKeyValuePairs(std::stringstream& output) const override;
 
         RetainedConst<Options>    _options;        // The replicator options
         Retained<Worker>          _parent;         // Worker that owns me

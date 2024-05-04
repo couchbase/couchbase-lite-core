@@ -256,7 +256,7 @@ namespace litecore {
         // Add key=value pairs to the output. They are space separated. If output is not empty
         // upon entry, add a space to start new key=value pairs.
         // Warning: the string must not include printf format specifier, '%'.
-        virtual void addKeyValuePairs(std::stringstream& output) const {}
+        virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
 
         LogDomain& _domain;
 
