@@ -22,6 +22,7 @@
 #include "HTTPTypes.hh"
 #include <sstream>
 #include <thread>
+#include <utility>
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #include <cxxabi.h>
@@ -76,10 +77,14 @@ namespace litecore { namespace repl {
             } else {
                 firstline = false;
             }
-            s << format(string(kCollectionLogFormat), i++) << " "
-            << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
-            << "\"Push\": " << kModeNames[c.push] << ", "
-            << "\"Pull\": " << kModeNames[c.pull] << "}";
+            s << "{Coll#" << i++ << "}"
+              << " "
+              << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
+              << "\"Push\": " << kModeNames[c.push] << ", "
+              << "\"Pull\": " << kModeNames[c.pull] << ", "
+              << "Options=";
+            writeRedacted(c.properties, s);
+            s << "}";
         }
         s << "}\n";
 
@@ -125,17 +130,8 @@ namespace litecore { namespace repl {
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
 
-
-    string Worker::loggingClassName() const  {
-        string className = Logging::loggingClassName();
-        if (passive())
-            toLowercase(className);
-        return className;
-    }
-
-
-    void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
-        if (callback) {
+    void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
+        if ( callback ) {
             increment(_pendingResponseCount);
             builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
                 if (progress.state >= MessageProgress::kComplete)
@@ -282,42 +278,60 @@ namespace litecore { namespace repl {
         }
     }
 
-    Worker::ActivityLevel Worker::computeActivityLevel() const {
-        if (eventCount() > 1 || _pendingResponseCount > 0)
-            return kC4Busy;
+    Worker::ActivityLevel Worker::computeActivityLevel(std::string* reason) const {
+        Worker::ActivityLevel level{kC4Idle};
+        if ( eventCount() > 1 || _pendingResponseCount > 0 ) level = kC4Busy;
         else
-            return kC4Idle;
+            level = kC4Idle;
+
+        if ( reason ) {
+            if ( level == kC4Busy ) {
+                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                else
+                    *reason = format("pendingResponse/%d", _pendingResponseCount);
+            } else {
+                *reason = "noPendingEventOrResponse";
+            }
+        }
+
+        return level;
     }
 
-    
     // Called after every event; updates busy status & detects when I'm done
     void Worker::afterEvent() {
         (void)SyncBusyLog.level(); // initialize its level
 
         bool changed = _statusChanged;
         _statusChanged = false;
-        if (changed && _importance) {
-            logVerbose("(collection: %u) progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs", collectionIndex(),
+        if ( changed && _importance ) {
+            logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64
+                       " docs",
                        _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
-                       _status.progressDelta.documentCount,
-                       _status.progress.unitsCompleted, _status.progress.unitsTotal,
-                       _status.progress.documentCount);
+                       _status.progressDelta.documentCount, _status.progress.unitsCompleted,
+                       _status.progress.unitsTotal, _status.progress.documentCount);
         }
 
-        auto newLevel = computeActivityLevel();
-        if (newLevel != _status.level) {
+        std::string reason;
+        auto        newLevel = computeActivityLevel(willLog(LogLevel::Info) ? &reason : nullptr);
+        if ( newLevel != _status.level ) {
+            auto oldLevel = _status.level;
             _status.level = newLevel;
-            changed = true;
-            if (_importance) {
-                auto name = kC4ReplicatorActivityLevelNames[newLevel];
-                if (_importance > 1)
-                    logInfo("now %-s", name);
-                else
-                    logVerbose("now %-s", name);
+            changed       = true;
+            if ( _importance ) {
+                auto oldName = kC4ReplicatorActivityLevelNames[oldLevel];
+                auto name    = kC4ReplicatorActivityLevelNames[newLevel];
+                if ( _importance > 1 ) {
+                    if ( reason.empty() ) logInfo("status=%s from=%s", name, oldName);
+                    else
+                        logInfo("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                } else {
+                    if ( reason.empty() ) logVerbose("status=%s from=%s", name, oldName);
+                    else
+                        logVerbose("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                }
             }
         }
-        if (changed)
-            changedStatus();
+        if ( changed ) changedStatus();
         _status.progressDelta = {0, 0};
     }
 
@@ -362,5 +376,13 @@ namespace litecore { namespace repl {
         Assert(collectionIndex() != kNotCollectionIndex);
         Worker* nonConstThis = const_cast<Worker*>(this);
         return nonConstThis->replicator()->collection(collectionIndex());
+    }
+
+    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
+        actor::Actor::addLoggingKeyValuePairs(output);
+        if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "Coll=" << collIdx;
+        }
     }
 } }

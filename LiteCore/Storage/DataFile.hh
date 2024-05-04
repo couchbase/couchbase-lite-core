@@ -132,7 +132,7 @@ namespace litecore {
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
         //////// QUERIES:
-        
+
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr,
                                              QueryLanguage =QueryLanguage::kJSON,
@@ -202,7 +202,7 @@ namespace litecore {
 
             /** Does a file exist at this path? */
             virtual bool fileExists(const FilePath &path);
-            
+
         protected:
             /** Deletes a non-open file. Returns false if it doesn't exist. */
             virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) =0;
@@ -272,7 +272,7 @@ namespace litecore {
 
         static bool deleteDataFile(DataFile *file, const Options *options,
                                    Shared *shared, Factory &factory);
-        
+
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
         void closeAllQueries();
         void beginTransactionScope(ExclusiveTransaction*);

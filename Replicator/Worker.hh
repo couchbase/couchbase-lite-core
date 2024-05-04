@@ -36,9 +36,6 @@ namespace litecore { namespace repl {
 
     extern LogDomain SyncBusyLog;
 
-    // The log format string for logging a collection index
-    constexpr const char* kCollectionLogFormat = "{Coll#%i}";
-
     /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
         It provides:
         - Access to the replicator options, the database, and the BLIP connection.
@@ -48,7 +45,7 @@ namespace litecore { namespace repl {
         - Some BLIP convenience methods for registering handlers and sending messages. */
     class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
     public:
-        
+
         using slice = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
         using ActivityLevel = C4ReplicatorActivityLevel;
@@ -60,10 +57,9 @@ namespace litecore { namespace repl {
         static constexpr slice kCollectionProperty = slice("collection");
 
         struct Status : public C4ReplicatorStatus {
-            Status(ActivityLevel lvl =kC4Stopped) {
-                level = lvl; error = {}; progress = progressDelta = {};
-            }
-            C4Progress progressDelta;
+            explicit Status(ActivityLevel lvl = kC4Stopped) : C4ReplicatorStatus({lvl, {}, {}, 0}) {}
+
+            C4Progress progressDelta{};
         };
 
         /// The Replicator at the top of the tree.
@@ -94,6 +90,9 @@ namespace litecore { namespace repl {
         }
 
         CollectionIndex collectionIndex() const         {return _collectionIndex;}
+
+        /// My current status.
+        const Status& status() const { return _status; }
 
 #if !DEBUG
     protected:
@@ -130,55 +129,18 @@ namespace litecore { namespace repl {
         }
 
         // overrides:
-        virtual std::string loggingClassName() const override;
         virtual std::string loggingIdentifier() const override {return _loggingID;}
         virtual void afterEvent() override;
         virtual void caughtException(const std::exception &x) override;
 
-        // Add the token for collection info to the format string (and cache the string, returning the pointer)
-        // Concurrent read-write of cache is technically safe, but if a rehash occurs (capacity of _formatCache is
-        // exceeded), all iterators are invalidated. So we use a shared_mutex, with a shared_lock on reads and a
-        // unique_lock on writes - this allows multiple concurrent reads, but blocks reads when a write needs to occur
-        static inline const char* formatWithCollection(const char* fmt) {
-          const std::string fmtStr = format("%s %s", kCollectionLogFormat, fmt);
-          {
-            std::shared_lock sharedLock(_formatMutex);  // Multiple threads can read concurrently
-            const auto       found = _formatCache.find(fmtStr);
-            if ( found != _formatCache.end() ) { return found->data(); }
-          }
-          std::unique_lock lock(_formatMutex);  // Block all other threads if we need to perform an insert
-          return _formatCache.insert(fmtStr).first->data();
-        }
-
-        // overrides for Logging functions which insert collection index to the format string
-        template <class... Args>
-        inline void logInfo(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logInfo(fmt_, collectionID(), args...);
-        }
-
-        template <class... Args>
-        inline void logVerbose(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, collectionID(), args...);
-        }
-
-#if DEBUG
-        template <class... Args>
-        inline void logDebug(const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logDebug(fmt_, collectionID(), args...);
-        }
-#else
-        template <class... Args>
-        inline void logDebug(const char* fmt, Args... args) const {}
-#endif
-
+        // NOLINTBEGIN(cppcoreguidelines-narrowing-conversions)
         int32_t collectionID() const {
             // DebugAssert that collection index is within range of int32_t (we expect so), so we can ignore narrowing conversion warning
             DebugAssert(_collectionIndex == kNotCollectionIndex || _collectionIndex <= std::numeric_limits<int32_t>::max());
             return _collectionIndex != kNotCollectionIndex ? _collectionIndex : -1; // NOLINT(cppcoreguidelines-narrowing-conversions)
         }
+
+        // NOLINTEND(cppcoreguidelines-narrowing-conversions)
 
 #pragma mark - BLIP:
 
@@ -251,9 +213,6 @@ namespace litecore { namespace repl {
 
 #pragma mark - STATUS & PROGRESS:
 
-        /// My current status.
-        const Status& status() const            {return _status;}
-
         /// Called by `afterEvent` if my status has changed.
         /// Default implementation calls the parent's `childChangedStatus`,
         /// then if status is `kC4Stopped`, clears the parent pointer.
@@ -261,7 +220,7 @@ namespace litecore { namespace repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Retained<Worker> task, Status) { 
+        virtual void _childChangedStatus(Retained<Worker> task, Status) {
         }
 
         /// Adds the counts in the given struct to my status's progress.
@@ -273,7 +232,7 @@ namespace litecore { namespace repl {
         /// Called after every event, to update `_status.level`.
         /// The default implementation returns `kC4Busy` if there are pending BLIP responses,
         /// or this Actor has pending events in its queue, else `kC4Idle`.
-        virtual ActivityLevel computeActivityLevel() const;
+        virtual ActivityLevel computeActivityLevel(std::string* reason = nullptr) const;
 
 #pragma mark - INSTANCE DATA:
     protected:
@@ -302,6 +261,8 @@ namespace litecore { namespace repl {
         }
 
         const C4Collection* getCollection() const;
+
+        void addLoggingKeyValuePairs(std::stringstream& output) const override;
 
         RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me

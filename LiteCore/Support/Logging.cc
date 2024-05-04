@@ -292,7 +292,7 @@ namespace litecore {
                                              "---- END ----");
                             }
                         }
-                            
+
                         teardownEncoders();
                         teardownFileOut();
                         sLogMutex.unlock();
@@ -424,11 +424,30 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
-    void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char *fmt, va_list args) {
-        if (_effectiveLevel == LogLevel::Uninitialized)
-            computeLevel();
-        if (!willLog(level))
-            return;
+    /*static*/ inline size_t LogDomain::addObjectPath(char* destBuf, size_t bufSize, unsigned obj) {
+        auto objPath = getObjectPath(obj);
+        return snprintf(destBuf, bufSize, "Obj=%s ", objPath.c_str());
+    }
+
+    void LogDomain::vlog(LogLevel level, const Logging* logger, bool doCallback, const char* fmt, va_list args) {
+        if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
+        if ( !willLog(level) ) return;
+
+        unsigned          objRef{LogEncoder::None};
+        std::stringstream prefixOut;
+        if ( logger ) {
+            objRef = logger->getObjectRef();
+            logger->addLoggingKeyValuePairs(prefixOut);
+        }
+        const char* uncheckedFmt = fmt;
+        std::string prefix       = prefixOut.str();
+        std::string prefixedFmt;
+        if ( !prefix.empty() ) {
+            DebugAssert(prefix.find('%') == std::string::npos);
+            prefixOut << " " << fmt;
+            prefixedFmt  = prefixOut.str();
+            uncheckedFmt = prefixedFmt.c_str();
+        }
 
         unique_lock<mutex> lock(sLogMutex);
 
@@ -438,79 +457,90 @@ namespace litecore {
 
             va_list args2;
             va_copy(args2, args);
-            if (sCallbackPreformatted) {
-                // Preformatted: Do the formatting myself and pass the resulting string:
-                size_t n = 0;
-                if (objRef)
-                    n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} ", obj.c_str(), objRef);
-                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
-                va_list noArgs { };
-                sCallback(*this, level, sFormatBuffer, noArgs);
-            } else {
-                // Not preformatted: pass the format string and va_list to the callback
-                // (prefixing the object ref # if any):
-                if (objRef) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} %s", obj.c_str(), objRef, fmt);
-                    sCallback(*this, level, sFormatBuffer, args2);
-                } else {
-                    sCallback(*this, level, fmt, args2);
-                }
+            va_list noArgs{};
+
+            // Argument fmt is checked by __printflike(5, 0); it is guaranteed a literal constant.
+            // Here, we want to add a prefix to the format. This prefix is assigned by
+            // logger. It is generated from the LiteCore source, Logging::addLoggingKeyValuePairs,
+            // and we can trust that it does not include format specifier, '%'.
+            // We will pass down uncheckedFmt by ignoring "-Wformat-nonliteral."
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
+            size_t      n      = 0;
+            const char* useFmt = uncheckedFmt;
+            if ( objRef ) n = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), objRef);
+            if ( sCallbackPreformatted ) {
+                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, uncheckedFmt, args2);
+                useFmt = sFormatBuffer;
+            } else if ( n > 0 ) {
+                snprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, "%s ", uncheckedFmt);
+                useFmt = sFormatBuffer;
             }
+            sCallback(*this, level, useFmt, sCallbackPreformatted ? noArgs : args2);
+
+#pragma GCC diagnostic pop
+
             va_end(args2);
         }
 
         // Write to the encoded log file:
-        if (level >= sFileMinLevel) {
-            dylog(level, _name, (LogEncoder::ObjectRef)objRef, fmt, args);
-        }
+        if ( level >= sFileMinLevel ) { dylog(level, _name, (LogEncoder::ObjectRef)objRef, prefix, fmt, args); }
     }
 
 
-    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
-        vlog(level, LogEncoder::None, true, fmt, args);
-    }
+    void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) { vlog(level, nullptr, true, fmt, args); }
 
 
     void LogDomain::log(LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, true, fmt, args);
+        vlog(level, nullptr, true, fmt, args);
         va_end(args);
     }
 
-    void LogDomain::vlogNoCallback(LogLevel level, const char *fmt, va_list args) {
-        vlog(level, LogEncoder::None, false, fmt, args);
+    void LogDomain::vlogNoCallback(LogLevel level, const char* fmt, va_list args) {
+        vlog(level, nullptr, false, fmt, args);
     }
 
 
     void LogDomain::logNoCallback(LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, false, fmt, args);
+        vlog(level, nullptr, false, fmt, args);
         va_end(args);
     }
 
     // Must have sLogMutex held
-    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
-    {
-        auto obj = getObject(objRef);
-        uint64_t pos = 0;
+    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix,
+                          const char* fmt, va_list args) {
+        auto     obj = getObject(objRef);
+        uint64_t pos;
 
         // Safe to store these in variables, since they only change in the rotateLog method
         // and the rotateLog method is only called here (and this method holds a mutex)
         const auto encoder = sLogEncoder[(int)level];
-        const auto file = sFileOut[(int)level];
-        if(encoder) {
-            encoder->vlog(domain, sObjNames, (LogEncoder::ObjectRef)objRef, fmt, args);
+        const auto file    = sFileOut[(int)level];
+        if ( encoder ) {
+            encoder->vlog(domain, sObjectMap, (LogEncoder::ObjectRef)objRef, prefix, fmt, args);
             pos = encoder->tellp();
         } else if(file) {
             static char formatBuffer[2048];
             size_t      n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
-            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
-            if (objRef)
-                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
-            vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
+            LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *file);
+            if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
+            if ( prefix.empty() ) vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
+            else {
+                std::string prefixedFmt = format("%s %s", prefix.c_str(), fmt);
+                // we pass unchecked prefixedFmt to following function.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-nonliteral"
+
+                vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, prefixedFmt.c_str(), args);
+
+#pragma GCC diagnostic pop
+            }
             *file << formatBuffer << endl;
             pos = file->tellp();
         } else {
@@ -631,7 +661,7 @@ namespace litecore {
             name = name.substr(colon+1);
         return name;
     }
-    
+
 
     std::string Logging::loggingIdentifier() const {
         return format("%p", this);
@@ -655,14 +685,8 @@ namespace litecore {
         va_end(args);
     }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-
-    void Logging::_logv(LogLevel level, const char *format, va_list args) const {
+    void Logging::_logv(LogLevel level, const char* format, va_list args) const {
         _domain.computeLevel();
-        if (_domain.willLog(level))
-            _domain.vlog(level, getObjectRef(), true, format, args);
+        if ( _domain.willLog(level) ) _domain.vlog(level, this, true, format, args);
     }
-
-#pragma GCC diagnostic pop
-}
+}  // namespace litecore

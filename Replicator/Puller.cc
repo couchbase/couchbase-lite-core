@@ -111,7 +111,7 @@ namespace litecore { namespace repl {
             enc.writeValue(docIDs);
             enc.endDict();
         }
-        
+
         sendRequest(msg, [=](blip::MessageProgress progress) {
             //... After request is sent:
             if (progress.reply && progress.reply->isError()) {
@@ -364,9 +364,8 @@ namespace litecore { namespace repl {
         auto since = _missingSequences.since();
         if (since != _lastSequence) {
             _lastSequence = since;
-            logVerbose("Checkpoint now at '%s' (collection: %u",
-                       _lastSequence.toJSONString().c_str(), collectionIndex());
-            if (auto replicator = replicatorIfAny(); replicator)
+            logVerbose("Checkpoint now at '%s'", _lastSequence.toJSONString().c_str());
+            if ( auto replicator = replicatorIfAny(); replicator )
                 replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }
     }
@@ -389,7 +388,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    
+
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
         if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
@@ -420,7 +419,7 @@ namespace litecore { namespace repl {
 
         if (level == kC4Stopped)
             _revFinder = nullptr;       // break cycle
-        
+
         return level;
     }
 

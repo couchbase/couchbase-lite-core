@@ -45,7 +45,7 @@
         Warn(@"Reactor coolant system has failed");
  
     Note: Logging is still present in release/nondebug builds. I've found this to be very useful in tracking down problems in the field, since I can tell a user how to turn on logging, and then get detailed logs back. To disable logging code from being compiled at all, define the preprocessor symbol _DISABLE_LOGGING (in your prefix header or target build settings.)
-*/ 
+*/
 
 namespace litecore {
 
@@ -70,20 +70,17 @@ struct LogFileOptions
     bool isPlaintext;
 };
 
-class LogDomain {
-public:
-    LogDomain(const char *name, LogLevel level =LogLevel::Info, bool internName =false)
-    :_level(level),
-     _name(name),
-     _next(sFirstDomain)
-    {
-        sFirstDomain = this;
-        if ( internName ) {
-            slice nslice{_name};
-            sInternedNames.push_back(alloc_slice::nullPaddedString(nslice));
-            _name = (const char*)sInternedNames.back().buf;
+    class Logging;
+
+    class LogDomain {
+      public:
+        // objectRef -> (loggingName, parentObectRef)
+        using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
+
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
+            : _level(level), _name(name), _next(sFirstDomain) {
+            sFirstDomain = this;
         }
-    }
 
     static LogDomain* named(const char *name);
 
@@ -132,14 +129,23 @@ public:
 
     static void flushLogFiles();
 
-private:
-    friend class Logging;
-    static std::string getObject(unsigned);
-    unsigned registerObject(const void *object, const unsigned* val, const std::string &description,
-                            const std::string &nickname, LogLevel level);
-    void unregisterObject(unsigned obj);
-    void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list)
-        __printflike(5, 0);
+        static unsigned warningCount();  ///< Number of warnings logged since launch
+        static unsigned errorCount();    ///< Number of errors logged since launch
+
+        static std::string getObjectPath(unsigned obj, const ObjectMap& objMap);
+
+      private:
+        friend class Logging;
+        static std::string getObject(unsigned);
+        unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
+                                          const std::string& nickname, LogLevel level);
+        static bool        registerParentObject(unsigned object, unsigned parentObject);
+        static void        unregisterObject(unsigned obj);
+
+        static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
+
+        static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
+        void vlog(LogLevel level, const Logging* logger, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
 private:
     static LogLevel _callbackLogLevel() noexcept;
@@ -147,8 +153,8 @@ private:
     LogLevel levelFromEnvironment() const noexcept;
     static void _invalidateEffectiveLevels() noexcept;
 
-    void dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list)
-        __printflike(5, 0);
+        void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix, const char* fmt,
+                   va_list) __printflike(6, 0);
 
     std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
     std::atomic<LogLevel> _level;
@@ -238,43 +244,22 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         void warn(const char *format, ...) const __printflike(2, 3)       {LOGBODY(Warning)}
         void logError(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Error)}
 
-        void _logInfo(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Info)}
-        void _logVerbose(const char *format, ...) const __printflike(2, 3){LOGBODY(Verbose)}
-        void _logDebug(const char *format, ...) const __printflike(2, 3)  {LOGBODY(Debug)}
+        // For performance reasons, logInfo(), logVerbose(), logDebug() are macros (below)
+        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        bool willLog(LogLevel level =LogLevel::Info) const         {return _domain.willLog(level);}
+        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char *format, va_list) const;
+        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
-        inline void _logAt(LogLevel level, const char *format, va_list args) const {
-            if(_usuallyFalse(this->willLog(level)))
-                this->_logv(level, format, args);
-        }
+        bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
-        inline void logInfo(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Info, format, args);
-            va_end(args);
-        }
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
+        void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
-        inline void logVerbose(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Verbose, format, args);
-            va_end(args);
-        }
-#if DEBUG
-        inline void logDebug(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Debug, format, args);
-            va_end(args);
-        }
-#else
-        virtual inline void logDebug(const char *format, ...) const {}
-#endif
+        // Add key=value pairs to the output. They are space separated. If output is not empty
+        // upon entry, add a space to start new key=value pairs.
+        // Warning: the string must not include printf format specifier, '%'.
+        virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
 
         unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
@@ -285,5 +270,25 @@ private:
 
         mutable unsigned _objectRef {0};
     };
+
+#ifdef LITECORE_CPPTEST
+    std::string createLogPath_forUnitTest(LogLevel level);
+    void        resetRotateSerialNo();
+#endif
+
+#define _logAt(LEVEL, FMT, ...)                                                                                        \
+    do {                                                                                                               \
+        if ( _usuallyFalse(this->willLog(litecore::LogLevel::LEVEL)) )                                                 \
+            this->_log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                                 \
+    } while ( 0 )
+#define logInfo(FMT, ...)    _logAt(Info, FMT, ##__VA_ARGS__)
+#define logVerbose(FMT, ...) _logAt(Verbose, FMT, ##__VA_ARGS__)
+
+#if DEBUG
+#    define logDebug(FMT, ...) _logAt(Debug, FMT, ##__VA_ARGS__)
+#else
+#    define logDebug(FMT, ...)
+#endif
+
 }  // namespace litecore
 

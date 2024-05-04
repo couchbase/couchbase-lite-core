@@ -35,16 +35,15 @@ namespace litecore {
         LogEncoder(std::ostream &out, LogLevel level);
         ~LogEncoder();
 
-        enum ObjectRef : unsigned {
-            None = 0
-        };
-        
-        void vlog(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, va_list args) __printflike(5, 0);
+        enum ObjectRef : unsigned { None = 0 };
+
+        void vlog(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const std::string& prefix,
+                  const char* format, va_list args) __printflike(6, 0);
 
         void log(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, ...) __printflike(5, 6);
 
         void flush();
-        
+
         uint64_t tellp();
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
@@ -61,24 +60,52 @@ namespace litecore {
             with(_out);
         }
 
-    private:
-        int64_t _timeElapsed() const;
-        void _writeUVarInt(uint64_t);
-        void _writeStringToken(const char *token);
-        void _flush();
-        void _scheduleFlush();
-        void performScheduledFlush();
+      private:
+        class Formats {
+          public:
+            unsigned find(const std::string& prefix, size_t fmt) {
+                auto it = _map.find(prefix);
+                if ( it == _map.end() ) { return end(); }
+                auto innerIt = it->second.find(fmt);
+                if ( innerIt == it->second.end() ) { return end(); }
+                return innerIt->second;
+            }
 
-        std::mutex _mutex;
-        fleece::Writer _writer;
-        std::ostream &_out;
+            // Pre-condition: find(prefix, fmt) == end()
+            unsigned insert(const std::string& prefix, size_t fmt) {
+                unsigned ret = _count;
+                _map[prefix].emplace(fmt, _count++);
+                return ret;
+            }
+
+            unsigned end() const { return _count; }
+
+            unsigned size() const { return _count; }
+
+          private:
+            // Invariants: _count == number of _map[x][y] && _map[x][y] represents the order (x, y)
+            //             is inserted, starting from 0.
+            unsigned                                                              _count = 0;
+            std::unordered_map<std::string, std::unordered_map<size_t, unsigned>> _map;
+        };
+
+        [[nodiscard]] int64_t _timeElapsed() const;
+        void                  _writeUVarInt(uint64_t);
+        void                  _writeStringToken(const char* token, const std::string& prefix = "");
+        void                  _flush();
+        void                  _scheduleFlush();
+        void                  performScheduledFlush();
+
+        std::mutex                    _mutex;
+        fleece::Writer                _writer;
+        std::ostream&                 _out;
         std::unique_ptr<actor::Timer> _flushTimer;
-        fleece::Stopwatch _st;
-        int64_t _lastElapsed {0};
-        int64_t _lastSaved {0};
-        LogLevel _level;
-        std::unordered_map<size_t, unsigned> _formats;
-        std::unordered_set<unsigned> _seenObjects;
+        fleece::Stopwatch             _st;
+        int64_t                       _lastElapsed{0};
+        int64_t                       _lastSaved{0};
+        LogLevel                      _level;
+        Formats                       _formats;
+        std::unordered_set<unsigned>  _seenObjects;
     };
 
 }

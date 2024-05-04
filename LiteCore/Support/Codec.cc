@@ -93,6 +93,7 @@ namespace litecore { namespace blip {
     {
         _z.next_in = (Bytef*)input.buf;
         auto inSize = _z.avail_in = (unsigned)std::min(input.size, maxInput);
+        (void)inSize;  // used in logDebug which is empty in release buid.
         _z.next_out = (Bytef*)output.next();
         auto outSize = _z.avail_out = (unsigned)output.capacity();
         Assert(outSize > 0);

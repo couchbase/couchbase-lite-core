@@ -11,12 +11,17 @@
 //
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
+#include <memory>
+
+#include <utility>
+
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "DatabaseImpl.hh"
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
@@ -35,10 +40,20 @@ using namespace std::placeholders;
 using namespace fleece;
 using namespace litecore::blip;
 
-
 namespace litecore { namespace repl {
 
-    struct StoppingErrorEntry {
+// Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
+// pass the collectionIndex manually for log calls
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#if DEBUG
+#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#else
+#    define cLogDebug(IDX, FMT, ...)
+#endif
+
+    struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool isFatal;
         slice msg;
@@ -53,7 +68,7 @@ namespace litecore { namespace repl {
         {{ LiteCoreDomain, kC4ErrorRemoteError, 0 }, true, "Unexpected error from remote"_sl }
     };
 
-                             
+
     std::string Replicator::ProtocolName() {
         stringstream result;
         delimiter delim(",");
@@ -89,18 +104,28 @@ namespace litecore { namespace repl {
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     {
         try {
+            _options->verify();
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
             //                                           collectionOpts[0].collectionPath == defaultCollectionPath
             //   isActive == true ? all collections are active
             //                    : all collections are passive.
-            _options->verify();
+
+            if ( Logging* parentObj = dynamic_cast<Logging*>(&delegate); parentObj != nullptr ) {
+                setParentObjectRef(parentObj->getObjectRef());
+            }
+            connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
 
             _loggingID = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            logInfo("%s", string(*options).c_str());
+            string dbLogName = db->useLocked<std::string>([](const C4Database* db) {
+                DatabaseImpl* impl = asInternal(db);
+                return impl->dataFile()->loggingName();
+            });
+            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
             _remoteURL = webSocket->url();
             if (_options->isActive()) {
@@ -359,11 +384,10 @@ namespace litecore { namespace repl {
 
         // Status::error
         sub.pullStatus.error = status.error;
-        if (_pullStatus.error.code == 0) {
-            // overall error moves from 0 to non-0.
-            _pullStatus.error = status.error;
-        } else if (_pullStatus.error.mayBeTransient() && !status.error.mayBeTransient()) {
-            // transient error is superceded by non-transient error.
+        // overall error moves from 0 to non-0.
+        if ( _pullStatus.error.code == 0 ||
+             // transient error is superceded by non-transient error.
+             (_pullStatus.error.mayBeTransient() && !status.error.mayBeTransient()) ) {
             _pullStatus.error = status.error;
         }
     }
@@ -399,7 +423,7 @@ namespace litecore { namespace repl {
             onError(_pullStatus.error);
         else if (_pushStatus.error.code)
             onError(_pushStatus.error);
-        
+
         if (coll != kNotCollectionIndex) {
             // Save a checkpoint immediately when push or pull finishes or goes idle:
             if (taskStatus.level == kC4Stopped || taskStatus.level == kC4Idle)
@@ -407,58 +431,108 @@ namespace litecore { namespace repl {
         }
     }
 
+    namespace {
+        enum ReasonCode : uint8_t {
+            rcConnecting,
+            rcUnsavedCheckpointer,
+            rcParentLevel,
+            rcPushOrPull,
+            rcOneShotBeforeStop,
+            rcClosing,
+            rcClosedParentLevel,
+            rcClosedPushOrPull,
+            rcClosed,
+            rcClosedBusyWhenConnecting,
 
-    Worker::ActivityLevel Replicator::computeActivityLevel() const {
+            rcEnd
+        };
+
+        const char* const reasonTable[rcEnd]{"connecting",
+                                             "unsavedCheckpointer",
+                                             nullptr,  // dynamically available in parentReason
+                                             "pushOrPull",
+                                             "oneShotBeforeStop",
+                                             "closing",
+                                             nullptr,  // dynamically available in parentReason
+                                             "closed:pushOrPull",
+                                             "closed",
+                                             "closed:busyWhenConnecting"};
+    }  // namespace
+
+    Worker::ActivityLevel Replicator::computeActivityLevel(std::string* reason) const {
         // Once I've announced I've stopped, don't return any other status again:
         auto currentLevel = status().level;
         if (currentLevel == kC4Stopped)
             return kC4Stopped;
 
         ActivityLevel level = kC4Busy;
-        bool hasUnsaved = false;
-        switch (_connectionState) {
+        ReasonCode    rc{rcEnd};
+        bool          hasUnsaved = false;
+        std::string   parentReason;
+        switch ( _connectionState ) {
             case Connection::kConnecting:
                 level = kC4Connecting;
+                rc    = rcConnecting;
                 break;
-            case Connection::kConnected: {
-                hasUnsaved = std::any_of(_subRepls.begin(), _subRepls.end(),
-                                         [](const SubReplicator& sub) {
-                    return sub.checkpointer->isUnsaved();
-                });
-                if (hasUnsaved)
-                    level = kC4Busy;
-                else
-                    level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, _pullStatus.level));
-                if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
-                    // Detect that a non-continuous active push or pull replication is done:
-                    logInfo("Replication complete! Closing connection");
-                    const_cast<Replicator*>(this)->_stop();
-                    level = kC4Busy;
+            case Connection::kConnected:
+                {
+                    hasUnsaved = std::any_of(_subRepls.begin(), _subRepls.end(),
+                                             [](const SubReplicator& sub) { return sub.checkpointer->isUnsaved(); });
+                    if ( hasUnsaved ) {
+                        level = kC4Busy;
+                        rc    = rcUnsavedCheckpointer;
+                    } else {
+                        level = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                        rc    = rcParentLevel;
+                    }
+                    auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                    if ( level < childLevel ) {
+                        level = childLevel;
+                        rc    = rcPushOrPull;
+                    }
+                    if ( level == kC4Idle && !isContinuous() && !isOpenServer() ) {
+                        // Detect that a non-continuous active push or pull replication is done:
+                        logInfo("Replication complete! Closing connection");
+                        const_cast<Replicator*>(this)->_stop();
+                        level = kC4Busy;
+                        rc    = rcOneShotBeforeStop;
+                    }
+                    DebugAssert(level > kC4Stopped);
+                    break;
                 }
-                DebugAssert(level > kC4Stopped);
-                break;
-            }
             case Connection::kClosing:
                 // Remain active while I wait for the connection to finish closing:
                 logDebug("Connection closing... (activityLevel=busy)waiting to finish");
                 level = kC4Busy;
+                rc    = rcClosing;
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
                 // After connection closes, remain Busy (or Connecting) while I wait for db to
                 // finish writes and for myself to process any pending messages; then go to Stopped.
-                level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, _pullStatus.level));
-                if (level < kC4Busy)
+                level           = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                rc              = rcClosedParentLevel;
+                parentReason    = "closed:"s + parentReason;
+                auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                if ( level < childLevel ) {
+                    level = childLevel;
+                    rc    = rcClosedPushOrPull;
+                }
+                if ( level < kC4Busy ) {
                     level = kC4Stopped;
-                else if (currentLevel == kC4Connecting)
+                    rc    = rcClosed;
+                } else if ( currentLevel == kC4Connecting ) {
                     level = kC4Connecting;
+                    rc    = rcClosedBusyWhenConnecting;
+                }
                 break;
         }
-        if (SyncBusyLog.willLog(LogLevel::Info)) {
-            logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d",
-                    kC4ReplicatorActivityLevelNames[level], _connectionState, hasUnsaved);
+
+        if ( reason ) *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
+
+        if ( SyncBusyLog.willLog(LogLevel::Info) ) {
+            logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d", kC4ReplicatorActivityLevelNames[level],
+                    _connectionState, hasUnsaved);
         }
         return level;
     }
@@ -472,7 +546,7 @@ namespace litecore { namespace repl {
             logVerbose("kWebSocketCloseAppPermanent or kWebSocketCloseAppTransient received, ignoring (only relevant for underlying connection...)");
             return;
         }
-        
+
         Worker::onError(error);
         for (const StoppingErrorEntry& stoppingErr : StoppingErrors) {
             if (stoppingErr.err == error) {
@@ -576,8 +650,11 @@ namespace litecore { namespace repl {
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-        if (_delegate)
-            _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+            _correlationID = x_corr;
+            logInfo("Received X-Correlation-Id");
+        }
     }
 
 
@@ -612,12 +689,9 @@ namespace litecore { namespace repl {
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
-        for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-            SubReplicator& sub = _subRepls[i];
-            if (sub.pusher)
-                sub.pusher->connectionClosed();
-            if (sub.puller)
-                sub.puller->connectionClosed();
+        for ( auto& sub : _subRepls ) {
+            if ( sub.pusher ) sub.pusher->connectionClosed();
+            if ( sub.puller ) sub.puller->connectionClosed();
         }
 
         if (status.isNormal() && closedByPeer && _options->isActive()) {
@@ -652,10 +726,13 @@ namespace litecore { namespace repl {
 
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        CollectionIndex collection = (CollectionIndex)msg->intProperty(kCollectionProperty,
-                                                                       kNotCollectionIndex);
-        warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
-                msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        auto collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
+        if ( collection == kNotCollectionIndex )
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: none) with Profile '%.*s', %zu bytes",
+                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        else
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
+                 msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
     }
 
@@ -783,15 +860,14 @@ namespace litecore { namespace repl {
         if (_connectionState != Connection::kConnected)
             return;         // Not ready yet; Will be called again from _onConnect.
 
-        for (int i = 0; i < _subRepls.size(); i++) {
-            if (!_subRepls[i].remoteCheckpointDocID)
-                _subRepls[i].remoteCheckpointDocID = _subRepls[i].checkpointer->initialCheckpointID();
+        for ( auto& _subRepl : _subRepls ) {
+            if ( !_subRepl.remoteCheckpointDocID )
+                _subRepl.remoteCheckpointDocID = _subRepl.checkpointer->initialCheckpointID();
 
             // Note:
             // This check is copied from getRemoteCheckpoint().
             // Is there a case that _remoteCheckpointDocID[i] is nullslice?
-            if (!_subRepls[i].remoteCheckpointDocID)
-                return;     // Not ready yet.
+            if ( !_subRepl.remoteCheckpointDocID ) return;  // Not ready yet.
         }
 
         logVerbose("Requesting get collections");
@@ -801,9 +877,7 @@ namespace litecore { namespace repl {
         enc.beginDict();
         enc.writeKey("checkpoint_ids"_sl);
         enc.beginArray();
-        for (int i = 0; i < _subRepls.size(); i++) {
-            enc.writeString(_subRepls[i].remoteCheckpointDocID);
-        }
+        for ( auto& _subRepl : _subRepls ) { enc.writeString(_subRepl.remoteCheckpointDocID); }
         enc.endArray();
         enc.writeKey("collections"_sl);
         enc.beginArray();
@@ -812,7 +886,7 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
         enc.endDict();
-        
+
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this](MessageProgress progress) {
             // ...after the checkpoint is received:
@@ -857,7 +931,7 @@ namespace litecore { namespace repl {
                                                  "Invalid number of checkpoints: %.*s", SPLAT(json));
                     return gotError(error);
                 }
-                
+
                 // Validate and read each checkpoints:
                 vector<Checkpoint> remoteCheckpoints(_subRepls.size());
                 for (int i = 0; i < _subRepls.size(); i++) {
@@ -873,7 +947,7 @@ namespace litecore { namespace repl {
                         _stop();
                         return;
                     }
-                    
+
                     if (dict.empty()) {
                         cLogInfo(i, "No remote checkpoint '%.*s'",
                                 SPLAT(sub.remoteCheckpointDocID));
@@ -885,10 +959,10 @@ namespace litecore { namespace repl {
                                 SPLAT(sub.remoteCheckpointRevID), SPLAT(dict.toString()));
                     }
                 }
-                
+
                 for (int i = 0; i < _subRepls.size(); i++) {
                     _subRepls[i].remoteCheckpointReceived = true;
-                    
+
                     if (_subRepls[i].hadLocalCheckpoint) {
                         // Compare checkpoints, reset if mismatched:
                         bool valid = _subRepls[i].checkpointer->validateWith(remoteCheckpoints[i]);
@@ -956,7 +1030,7 @@ namespace litecore { namespace repl {
                     getRemoteCheckpoint(true, coll);
                 } else {
                     gotError(response);
-                    warn("Failed to save remote checkpoint (collection: %u)!", coll);
+                    cWarn(coll, "Failed to save remote checkpoint!");
                     // If the checkpoint didn't save, something's wrong; but if we don't mark it as
                     // saved, the replicator will stay busy (see computeActivityLevel, line 169).
                     sub.checkpointer->saveCompleted();
@@ -993,9 +1067,9 @@ namespace litecore { namespace repl {
         try {
             bool attempted = false;
             db->useLocked([this, spec, callback, &attempted](const Retained<C4Database>& db) {
-                for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                    if (_subRepls[i].collection->getSpec() == spec) {
-                        _subRepls[i].checkpointer->pendingDocumentIDs(db, callback);
+                for ( auto& _subRepl : _subRepls ) {
+                    if ( _subRepl.collection->getSpec() == spec ) {
+                        _subRepl.checkpointer->pendingDocumentIDs(db, callback);
                         attempted = true;
                         break;
                     }
@@ -1020,10 +1094,10 @@ namespace litecore { namespace repl {
         }
 
         try {
-            return db->useLocked<bool>([this,docID, spec](const Retained<C4Database>&db) {
-                for (CollectionIndex i = 0; i < _subRepls.size(); ++i) {
-                    if (_subRepls[i].collection->getSpec() == spec) {
-                        return _subRepls[i].checkpointer->isDocumentPending(db, docID);
+            return db->useLocked<bool>([this, docID, spec](const Retained<C4Database>& db) {
+                for ( auto& _subRepl : _subRepls ) {
+                    if ( _subRepl.collection->getSpec() == spec ) {
+                        return _subRepl.checkpointer->isDocumentPending(db, docID);
                     }
                 }
                 throw error(error::LiteCore, error::NotFound, format("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
@@ -1136,7 +1210,7 @@ namespace litecore { namespace repl {
     void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
         // This message only comes from 3.1+ client.
 
-        if (_subRepls.size() != 0) {
+        if ( !_subRepls.empty() ) {
             // Request of 3.0 style has been received prior to this one.
             logError("Some message has preceded 'getCollections'");
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: not the first message"_sl});
@@ -1148,19 +1222,19 @@ namespace litecore { namespace repl {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no root"_sl});
             return;
         }
-        
+
         auto checkpointIDs = root["checkpoint_ids"].asArray();
         if (!checkpointIDs || checkpointIDs.empty()) {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no checkpoint_ids"_sl});
             return;
         }
-        
+
         auto collections = root["collections"].asArray();
         if (!collections || collections.empty()) {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: no collections"_sl});
             return;
         }
-        
+
         if (checkpointIDs.count() != collections.count()) {
             request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: mismatched checkpoint_ids and collections"_sl});
             return;
@@ -1176,14 +1250,15 @@ namespace litecore { namespace repl {
             }
             collSpecs.emplace_back(Options::collectionPathToSpec(i.value().asString()));
         }
-        
+
         // check duplicates
         std::unordered_set<C4CollectionSpec> specSet;
-        for (size_t i = 0; i < collSpecs.size(); ++i) {
+        for ( auto& collSpec : collSpecs ) {
             bool b;
-            std::tie(std::ignore, b) = specSet.insert(collSpecs[i]);
-            if (!b) {
-                request->respondWithError({"BLIP"_sl, 400, "Invalid getCollections message: duplicate collection path"_sl});
+            std::tie(std::ignore, b) = specSet.insert(collSpec);
+            if ( !b ) {
+                request->respondWithError(
+                        {"BLIP"_sl, 400, "Invalid getCollections message: duplicate collection path"_sl});
                 return;
             }
         }
@@ -1226,7 +1301,7 @@ namespace litecore { namespace repl {
                 request->respondWithError({"HTTP"_sl, status});
                 return;
             }
-            
+
             FLError flError = kFLNoError;
             Doc doc = Doc::fromJSON(body, &flError);
             DebugAssert(flError == kFLNoError);
@@ -1275,29 +1350,29 @@ namespace litecore { namespace repl {
         bool isPullBusy = false;
         for (CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i) {
             SubReplicator& sub = _subRepls[i];
-            if (_options->push(i) != kC4Disabled) {
-                sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
-                sub.pusher = new Pusher(this, *sub.checkpointer, i);
-                sub.pushStatus = kC4Busy;
-                isPushBusy = true;
+            if ( _options->push(i) != kC4Disabled ) {
+                sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
+                sub.pusher       = new Pusher(this, *sub.checkpointer, i);
+                sub.pushStatus   = Worker::Status(kC4Busy);
+                isPushBusy       = true;
             } else {
-                sub.pushStatus = kC4Stopped;
+                sub.pushStatus = Worker::Status(kC4Stopped);
             }
-            if (_options->pull(i) != kC4Disabled) {
-                sub.puller = new Puller(this, i);
-                sub.pullStatus = kC4Busy;
-                if (sub.checkpointer.get() == nullptr) {
-                    sub.checkpointer.reset(new Checkpointer(_options, _remoteURL, sub.collection));
+            if ( _options->pull(i) != kC4Disabled ) {
+                sub.puller     = new Puller(this, i);
+                sub.pullStatus = Worker::Status(kC4Busy);
+                if ( sub.checkpointer == nullptr ) {
+                    sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
                 }
                 isPullBusy = true;
             } else {
-                sub.pullStatus = kC4Stopped;
+                sub.pullStatus = Worker::Status(kC4Stopped);
             }
             DebugAssert(sub.checkpointer.get() != nullptr);
             sub.checkpointer->enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, i, _1));
         }
-        _pushStatus = isPushBusy ? kC4Busy : kC4Stopped;
-        _pullStatus = isPullBusy ? kC4Busy : kC4Stopped;
+        _pushStatus = Worker::Status(isPushBusy ? kC4Busy : kC4Stopped);
+        _pullStatus = Worker::Status(isPullBusy ? kC4Busy : kC4Stopped);
 
         // Get the remote DB ID:
         slice key;
@@ -1369,6 +1444,14 @@ namespace litecore { namespace repl {
             return;
         } else {
             prepareWorkers();
+        }
+    }
+
+    void Replicator::addLoggingKeyValuePairs(std::stringstream& output) const {
+        Worker::addLoggingKeyValuePairs(output);
+        if ( _correlationID ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "CorrID=" << _correlationID.asString();
         }
     }
 

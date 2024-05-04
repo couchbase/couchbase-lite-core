@@ -21,7 +21,7 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    
+
 #if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
     // digittoint is a BSD function, not available on Android, Linux, etc.
     int digittoint(char ch) {
@@ -220,13 +220,13 @@ namespace litecore {
         uint8_t c = *(const uint8_t*)str.buf;
         if (_usuallyTrue((c & 0x80) == 0))
             return 1;
-        
+
         if (_usuallyTrue((c & 0xE0) == 0xC0))
             return _usuallyTrue(str.size > 1) ? 2 : 0;
-        
+
         if ((c & 0xF0) == 0xE0)
             return _usuallyTrue(str.size > 2) ? 3 : 0;
-        
+
         if ((c & 0xF8) == 0xF0)
             return _usuallyTrue(str.size > 3) ? 4 : 0;
 
