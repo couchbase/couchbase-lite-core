@@ -2562,7 +2562,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
     alloc_slice remotePrefix {idPrefix + "remote-"};
     unsigned docCount = 20;
 
-    // push documents to the push/pull collection
+    // push documents prefixed with "remote-" to the push/pull collection
     for (size_t i = 0; i < _collectionCount; ++i) {
         for (int d = 1; d <= docCount; ++d) {
             constexpr size_t bufSize = 80;
@@ -2572,8 +2572,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
         }
     }
 
+    // And send them to remote
     {
-        // Send the docs to remote
         ReplParams replParams { _collectionSpecs };
         replParams.setPushPull(kC4OneShot, kC4Disabled);
         replicate(replParams);
@@ -2581,7 +2581,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
 
     deleteAndRecreateDBAndCollections();
 
-    // add 20(docCount) "local-" docs to Push/Pull collection
+    // add 20(docCount) "local-" docs to the local db
     // The 20(docCount) "remote-" docs are already in the remote db
     for (size_t i = 0; i < _collectionCount; ++i) {
         for (int d = 1; d <= docCount; ++d) {
@@ -2601,7 +2601,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
         replicate(replParams);
     }
 
-    auto check = [&]() {
+    auto require = [&]() {
         for (size_t i = 0; i < _collectionCount; ++i) {
             c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(_collections[i],
                                                                  nullptr, ERROR_INFO());
@@ -2622,16 +2622,19 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
             }
             switch (i) {
                 case iPushPull:
-                    CHECK(total == 2 * docCount);
-                    CHECK(local == docCount);
-                    CHECK(remote == docCount);
+                    REQUIRE(total == 2 * docCount);
+                    REQUIRE(local == docCount);
+                    REQUIRE(remote == docCount);
                     break;
                 default:
                     break;
             }
         }
     };
-    check();
+    // Make sure in the local db, there are docCount docs prefixed with "local-", which are
+    // in the local db prior to Push/Pull sync, and docCount docs prefixed "remote-", which are
+    // pulled from the remote db.
+    require();
 
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error error;
@@ -2650,10 +2653,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
         replParams.setPushPull(kC4OneShot, kC4OneShot);
         replicate(replParams);
     }
-    check();
+    require();
 
     // The Pull/Push replicator finishes without pushing or pulling any documents because the
-    // checkpointer of the copied db is inheritted from the original db.
+    // checkpoints of the copied (prebuilt) db are inheritted from the original db.
     CHECK((_callbackStatus.progress == C4Progress{0,0,0}));
 }
 
