@@ -75,9 +75,14 @@ namespace litecore::repl {
             return;
         }
 
+        if ( const auto replacedRev = _revMessage->property("replacedRev"); replacedRev ) {
+            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s') (replaced rev #%.*s)", SPLAT(_rev->docID),
+                       SPLAT(_rev->revID), SPLAT(sequenceStr), SPLAT(replacedRev));
+        } else {
+            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
+                       SPLAT(sequenceStr));
+        }
         // Validate the docID, revID, and sequence:
-        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
-                   SPLAT(sequenceStr));
         if ( _rev->docID.size == 0 ) {
             failWithError(WebSocketDomain, 400, "received invalid docID ''"_sl);
             return;
