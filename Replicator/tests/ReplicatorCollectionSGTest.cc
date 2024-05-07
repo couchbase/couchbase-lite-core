@@ -2544,6 +2544,120 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
     _repl = nullptr;
 }
 
+
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Copy of Fully Synced Database SG",
+                 "[.SyncServerCollection]") {
+    string idPrefix = timePrefix();
+    const string channelID = idPrefix;
+    initTest({ Lavenders },
+             { channelID }
+            );
+    enum {
+        iPushPull
+    };
+
+    constexpr slice body = "{\"ans*wer\":42}"_sl;
+    alloc_slice bodyWithChannel = SG::addChannelToJSON(body, "channels", {channelID});
+    alloc_slice localPrefix {idPrefix + "local-"};
+    alloc_slice remotePrefix {idPrefix + "remote-"};
+    unsigned docCount = 20;
+
+    // push documents to the push/pull collection
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        for (int d = 1; d <= docCount; ++d) {
+            constexpr size_t bufSize = 80;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%.*s%d", SPLAT(remotePrefix), d);
+            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
+        }
+    }
+
+    {
+        // Send the docs to remote
+        ReplParams replParams { _collectionSpecs };
+        replParams.setPushPull(kC4OneShot, kC4Disabled);
+        replicate(replParams);
+    }
+
+    deleteAndRecreateDBAndCollections();
+
+    // add 20(docCount) "local-" docs to Push/Pull collection
+    // The 20(docCount) "remote-" docs are already in the remote db
+    for (size_t i = 0; i < _collectionCount; ++i) {
+        for (int d = 1; d <= docCount; ++d) {
+            constexpr size_t bufSize = 80;
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%.*s%d", SPLAT(localPrefix), d);
+            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
+        }
+    }
+
+    // Perform a Push&Pull replication on db
+    // It will push 20 "local-" docs to the remote, and pull "remote-" docs to local db
+    {
+        ReplParams replParams { _collectionSpecs };
+        replParams.collections[iPushPull].push = kC4OneShot;
+        replParams.collections[iPushPull].pull = kC4OneShot;
+        replicate(replParams);
+    }
+
+    auto check = [&]() {
+        for (size_t i = 0; i < _collectionCount; ++i) {
+            c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(_collections[i],
+                                                                 nullptr, ERROR_INFO());
+            unsigned total = 0;
+            unsigned local = 0;
+            unsigned remote = 0;
+            while (c4enum_next(e, ERROR_INFO())) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                slice docID_sl {info.docID};
+                total++;
+                if (docID_sl.hasPrefix(localPrefix)) {
+                    local++;
+                }
+                if (docID_sl.hasPrefix(remotePrefix)) {
+                    remote++;
+                }
+            }
+            switch (i) {
+                case iPushPull:
+                    CHECK(total == 2 * docCount);
+                    CHECK(local == docCount);
+                    CHECK(remote == docCount);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+    check();
+
+    // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
+    C4Error error;
+    alloc_slice path(c4db_getPath(db));
+    string scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
+
+    // release the old db and Open the copied db:
+    c4db_release(db);
+    db = c4db_openNamed(slice(scratchDBName), &dbConfig(), ERROR_INFO(error));
+    REQUIRE(db);
+    _collections = collectionPreamble(_collectionSpecs);
+
+    {
+        ReplParams replParams { _collectionSpecs };
+        replParams.setPushPull(kC4OneShot, kC4OneShot);
+        replicate(replParams);
+    }
+    check();
+
+    // The Pull/Push replicator finishes without pushing or pulling any documents because the
+    // checkpointer of the copied db is inheritted from the original db.
+    CHECK((_callbackStatus.progress == C4Progress{0,0,0}));
+}
+
+
 static C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
     const auto   dbPath  = db->getPath();
     const string db2Name = idPrefix + "db2";
