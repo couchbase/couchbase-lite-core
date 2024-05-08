@@ -2078,6 +2078,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
     std::shared_ptr<Replicator::Options> serverOpts;
     auto                                 testMode = TestMode::ClientPush;
 
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
     SECTION("Client Push") {
         testMode = TestMode::ClientPush;
         createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
@@ -2088,6 +2089,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
         serverOpts->setDelayChangesResponse(true);
         _expectedDocumentCount = 1;
     }
+#    endif
     SECTION("Client Pull") {
         testMode = TestMode::ClientPull;
         createRev(_collDB2, "doc"_sl, kRevID, kFleeceBody);
@@ -2096,6 +2098,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
         clientOpts->setDelayChangesResponse(true);
         _expectedDocumentCount = 1;
     }
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
     SECTION("Server Push") {
         testMode = TestMode::ServerPush;
         createRev(_collDB2, "doc"_sl, kRevID, kFleeceBody);
@@ -2104,6 +2107,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
         clientOpts->setDelayChangesResponse(true);
         _expectedDocumentCount = 1;
     }
+#    endif
     SECTION("Server Pull") {
         testMode = TestMode::ServerPull;
         createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
@@ -2112,6 +2116,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
         serverOpts->setDelayChangesResponse(true);
         _expectedDocumentCount = 1;
     }
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
     SECTION("ClientPush Do not send Replacement Rev") {
         testMode = TestMode::ClientPush;
         createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
@@ -2122,6 +2127,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
         // Disable the Puller from requesting replacementRev
         serverOpts->setDisableReplacementRevs(true);
     }
+#    endif
     SECTION("ServerPull Do not send Replacement Rev") {
         testMode = TestMode::ServerPull;
         createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
