@@ -1056,6 +1056,11 @@ bool c4indexupdater_setVectorAt(C4IndexUpdater* update, size_t i, const float ve
     return tryCatch(outError, [&] { update->setVectorAt(i, vec, dimension); });
 }
 
+bool c4indexupdater_skipVectorAt(C4IndexUpdater* update, size_t i) noexcept {
+    return tryCatch(nullptr, [&] { update->skipVectorAt(i); });
+}
+
+
 bool c4indexupdater_finish(C4IndexUpdater* update, C4Error* outError) noexcept {
     return tryCatch(outError, [&] { update->finish(); });
 }
