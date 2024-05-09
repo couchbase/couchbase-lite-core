@@ -247,6 +247,8 @@
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
+		278CE6EA2BA4C2C200245552 /* SequenceSet.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6E92BA4C2C200245552 /* SequenceSet.cc */; };
+		278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6F12BAA116300245552 /* SequenceSetTest.cc */; };
 		278F475924C9131000E1CA7A /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
 		278F475A24C9131000E1CA7A /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		278F475B24C9131000E1CA7A /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.mm */; };
@@ -345,6 +347,9 @@
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A392B72B448004C0787 /* LazyIndex.cc */; };
+		27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */; };
+		27D62A5C2B7BF4AA004C0787 /* c4Index.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A5B2B7BF4AA004C0787 /* c4Index.cc */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
 		27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
@@ -1245,6 +1250,8 @@
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
+		278CE6E92BA4C2C200245552 /* SequenceSet.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSet.cc; sourceTree = "<group>"; };
+		278CE6F12BAA116300245552 /* SequenceSetTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSetTest.cc; sourceTree = "<group>"; };
 		278F476724C9131000E1CA7A /* iOS Perf Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS Perf Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		278F478524C914BF00E1CA7A /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		278F478724C914C600E1CA7A /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
@@ -1391,6 +1398,11 @@
 		27CE4CEF2077F51000ACA225 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
 		27CE4CF02077F51000ACA225 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
 		27D629CA2B644024004C0787 /* VectorQueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VectorQueryTest.hh; sourceTree = "<group>"; };
+		27D62A382B72B448004C0787 /* LazyIndex.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LazyIndex.hh; sourceTree = "<group>"; };
+		27D62A392B72B448004C0787 /* LazyIndex.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LazyIndex.cc; sourceTree = "<group>"; };
+		27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LazyVectorQueryTest.cc; sourceTree = "<group>"; };
+		27D62A572B7BF403004C0787 /* c4Index.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Index.hh; sourceTree = "<group>"; };
+		27D62A5B2B7BF4AA004C0787 /* c4Index.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Index.cc; sourceTree = "<group>"; };
 		27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteDataFile.cc; sourceTree = "<group>"; };
 		27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDataFile.hh; sourceTree = "<group>"; };
 		27D74A741D4D3F2300D806E0 /* Backup.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Backup.cpp; path = src/Backup.cpp; sourceTree = "<group>"; };
@@ -1880,12 +1892,14 @@
 				27D629CA2B644024004C0787 /* VectorQueryTest.hh */,
 				27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */,
 				27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */,
+				27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */,
 				276CE68D2267A02500B681AC /* N1QLParserTest.cc */,
 				27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
 				2771991B2272498300B18E0A /* QueryParserTest.hh */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				2723410F211B5FC400DA9437 /* QueryTest.hh */,
+				278CE6F12BAA116300245552 /* SequenceSetTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
@@ -2065,6 +2079,7 @@
 				2764ED3623870F15007F020F /* c4Database.hh */,
 				2758DFE425F197B9007C7487 /* c4Document.hh */,
 				2758E09825F3026F007C7487 /* c4DocEnumerator.hh */,
+				27D62A572B7BF403004C0787 /* c4Index.hh */,
 				274D184C261683F40018D39C /* c4Listener.hh */,
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
@@ -2226,6 +2241,8 @@
 				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
 				27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */,
 				27BEEE742A7834B8005AD4BF /* QueryParser+VectorSearch.cc */,
+				27D62A382B72B448004C0787 /* LazyIndex.hh */,
+				27D62A392B72B448004C0787 /* LazyIndex.cc */,
 			);
 			name = EE;
 			sourceTree = "<group>";
@@ -2322,6 +2339,7 @@
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
+				278CE6E92BA4C2C200245552 /* SequenceSet.cc */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
@@ -2408,6 +2426,7 @@
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				2712F5AE25D5A9AB0082D526 /* c4Error.cc */,
+				27D62A5B2B7BF4AA004C0787 /* c4Index.cc */,
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
 				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
@@ -4029,12 +4048,14 @@
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */,
 				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
+				27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
@@ -4321,6 +4342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
+				27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
@@ -4418,6 +4440,7 @@
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
+				278CE6EA2BA4C2C200245552 /* SequenceSet.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
@@ -4426,6 +4449,7 @@
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
+				27D62A5C2B7BF4AA004C0787 /* c4Index.cc in Sources */,
 				27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */,
 				273D25F62564666A008643D2 /* VectorDocument.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,

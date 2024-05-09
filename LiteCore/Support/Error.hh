@@ -165,4 +165,9 @@ namespace litecore {
 #    define DebugAssert(e, ...) Assert(e, ##__VA_ARGS__)
 #endif
 
+// Checks the value of a function argument.
+// `e` is a predicate like `i > 0`. It will be included in the exception message.
+#define AssertArg(e)                                                                                                   \
+    (_usuallyFalse(!(e)) ? litecore::error::_throw(litecore::error::InvalidParameter, "Requires " #e) : (void)0)
+
 }  // namespace litecore
