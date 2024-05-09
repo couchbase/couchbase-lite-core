@@ -111,11 +111,7 @@ namespace litecore {
 
     static HINSTANCE kernelLib() {
         // Defer the LoadLibrary call from static-init time, until it's actually needed:
-#    if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         static HINSTANCE sKernelLib = LoadLibrary(TEXT("kernel32.dll"));
-#    else
-        static HINSTANCE sKernelLib = LoadPackagedLibrary(L"kernel32.dll", 0);
-#    endif
         return sKernelLib;
     }
 

@@ -1306,7 +1306,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     s1 << date::format("%F", utc_time);
     s1iso << date::format("%FT%TZ", utc_time);
     utc_time += 18h + 33min;
-    s2 << date::format("%FT%T", utc_time);
+    s2 << date::format("%FT%TZ", utc_time);
     s2iso << date::format("%FT%TZ", utc_time);
     utc_time += 1s;
     s3 << date::format("%FT%T", utc_time);
@@ -1333,10 +1333,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['str_to_utc()', 99]", "null"},
             {"['str_to_utc()', '']", "null"},
             {"['str_to_utc()', 'x']", "null"},
+            // Valid format
             {"['str_to_utc()', '2018-10-23', '1111-11-11']", expected1},
             {"['str_to_utc()', '2018-10-23']", expected1iso},
+            // Invalid format
             {"['str_to_utc()', '2018-10-23T18:33', '1111-11-11T11:11']", expected2},
             {"['str_to_utc()', '2018-10-23T18:33']", expected2iso},
+            // Valid format
             {"['str_to_utc()', '2018-10-23T18:33:01', '1111-11-11T11:11:11']", expected3},
             {"['str_to_utc()', '2018-10-23T18:33:01']", expected3iso},
             {"['str_to_utc()', '1944-06-06T06:30:00']", expected4},
@@ -1344,6 +1347,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['str_to_utc()', '2018-10-23T11:33:01-0700']", "2018-10-23T18:33:01Z"},
             {"['str_to_utc()', '2018-10-23T11:33:01+03:30']", "2018-10-23T08:03:01Z"},
             {"['str_to_utc()', '2018-10-23T18:33:01.123Z']", "2018-10-23T18:33:01.123Z"},
+            {"['str_to_utc()', '2018-10-23T18:33:01.123Z', '%FT%T%s%z']", "2018-10-23T18:33:01.123Z"},
             {"['str_to_utc()', '2018-10-23T11:33:01.123-0700']", "2018-10-23T18:33:01.123Z"},
 
             {"['str_to_millis()', '']", "null"},
@@ -1386,15 +1390,18 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['millis_to_utc()', 0]", "1970-01-01T00:00:00Z"},
             {"['millis_to_utc()', 1540319581000]", "2018-10-23T18:33:01Z"},
             {"['millis_to_utc()', 1540319581123]", "2018-10-23T18:33:01.123Z"},
+            {"['millis_to_utc()', 1540319581123, '%F %T%s']", "2018-10-23 18:33:01.123"},
             {"['millis_to_utc()', 1540319581999]", "2018-10-23T18:33:01.999Z"},
             {"['millis_to_utc()', -806956200000]", "1944-06-06T05:30:00Z"},
             {"['millis_to_utc()', 1540319581999, 'invalid']", "2018-10-23T18:33:01.999Z"},
             {"['millis_to_utc()', 1540319581999, '1111-11-11']", "2018-10-23"},
-            {"['millis_to_utc()', 1540319581999, '11:11:11']", "18:33:01.999"},
-            {"['millis_to_utc()', 1540319581999, '11:11:11Z']", "18:33:01.999Z"},
-            {"['millis_to_utc()', 1540319581999, '11:11:11+09:00']", "18:33:01.999Z"},
-            {"['millis_to_utc()', 1540319581999, '1111-11-11 11:11:11+09:00']", "2018-10-23 18:33:01.999Z"},
-            {"['millis_to_utc()', 1540319581999, '1111-11-11T11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11']", "18:33:01"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11.111']", "18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '%T%s']", "18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11Z']", "18:33:01Z"},
+            {"['millis_to_utc()', 1540319581999, '11:11:11+09:00']", "18:33:01Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11 11:11:11.111+09:00']", "2018-10-23 18:33:01.999Z"},
+            {"['millis_to_utc()', 1540319581999, '1111-11-11T11:11:11+09:00']", "2018-10-23T18:33:01Z"},
             {"['millis_to_utc()', 1540319581999, '1111-11-11   T 11:11:11+09:00']", "2018-10-23T18:33:01.999Z"},
 
             {"['millis_to_str()', 1540319581000]", mil_to_str_expected},
@@ -1409,11 +1416,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['millis_to_tz()', 1704897074000, -300]", "2024-01-10T09:31:14-0500"},
             {"['millis_to_tz()', 1704897074000, +690]", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, +690, '1111-11-11']", "2024-01-11"},
-            // The default when no format is provided. YYYY-MM-DDTHH:MM:SSZ
             {"['millis_to_tz()', 1704897074000, +690, 'invalid']", "2024-01-11T02:01:14+1130"},
             {"['millis_to_tz()', 1704897074000, +690, '11:11:11Z']", "02:01:14+1130"},
-            // TODO: Won't pass until after CBL-5438.
-            //{"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, +690, '11:11:11-05:00']", "02:01:14+11:30"},
+            {"['millis_to_tz()', 1704897074000, +690, '%T%Ez']", "02:01:14+11:30"},
     });
 }
 
@@ -1619,9 +1625,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query date diff millis", "[Query][CBL-59]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
     SECTION("Basic") {
         testExpressions({
-                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'millisecond']", "2018-01-01T00:00:00.001Z"},
-                {"['date_add_str()', '2018-01-01T00:00:00Z', 10, 'millisecond']", "2018-01-01T00:00:00.010Z"},
-                {"['date_add_str()', '2018-01-01T00:00:00Z', 100, 'millisecond']", "2018-01-01T00:00:00.100Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'millisecond', '%FT%T%s%z']",
+                 "2018-01-01T00:00:00.001Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 10, 'millisecond', '%FT%T%s%z']",
+                 "2018-01-01T00:00:00.010Z"},
+                {"['date_add_str()', '2018-01-01T00:00:00Z', 100, 'millisecond', '%FT%T%s%z']",
+                 "2018-01-01T00:00:00.100Z"},
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'second']", "2018-01-01T00:00:01Z"},
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'minute']", "2018-01-01T00:01:00Z"},
                 {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'hour']", "2018-01-01T01:00:00Z"},
@@ -1664,7 +1673,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query][CBL-59]") {
 
     SECTION("Overflow") {
         testExpressions(
-                {{"['date_add_str()', '2018-01-01T00:00:00Z', 1500, 'millisecond']", "2018-01-01T00:00:01.500Z"},
+                {{"['date_add_str()', '2018-01-01T00:00:00Z', 1500, 'millisecond', '%FT%T%s%z']",
+                  "2018-01-01T00:00:01.500Z"},
                  {"['date_add_str()', '2018-01-01T00:00:00Z', 61, 'second']", "2018-01-01T00:01:01Z"},
                  {"['date_add_str()', '2018-01-01T00:00:00Z', 61, 'minute']", "2018-01-01T01:01:00Z"},
                  {"['date_add_str()', '2018-01-01T00:00:00Z', 25, 'hour']", "2018-01-02T01:00:00Z"},
@@ -2310,6 +2320,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     Retained<Query> q;
     vector<slice>   expectedResults;
     vector<string>  expectedAliases;
+
     SECTION("WHERE alias numeric literal") {
         q = store->compileQuery(json5("{WHAT: ['._id', \
             ['AS', 1.375, 'answer']], \
@@ -2832,6 +2843,12 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
                                                                                      [](const Value* v, bool missing) {
                                                                                          return missing
                                                                                                 && v->type() == kNull;
+                                                                                     }},
+                                                                                    {"round_even(8.8343534, -1)",
+                                                                                     [](const Value* v, bool missing) {
+                                                                                         return !missing
+                                                                                                && v->type() == kNumber
+                                                                                                && v->asDouble() == 10;
                                                                                      }}};
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr      = "select ";
@@ -2849,7 +2866,9 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
     for ( unsigned i = 0; i < testCaseCount; ++i ) {
-        REQUIRE(std::get<1>(testCases[i])(e->columns()[i], missingColumns & (1ull << i)));
+        const auto result  = e->columns()[i];
+        const auto missing = missingColumns & (1ull << i);
+        REQUIRE(std::get<1>(testCases[i])(result, missing));
     }
 }
 

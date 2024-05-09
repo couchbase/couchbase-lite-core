@@ -538,6 +538,7 @@
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA2527C12BAC5B60004BE393 /* DateFormat.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA2527C02BAC5B60004BE393 /* DateFormat.cc */; };
 		EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
 		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
@@ -1692,6 +1693,8 @@
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA2527BF2BAC5B60004BE393 /* DateFormat.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DateFormat.hh; sourceTree = "<group>"; };
+		EA2527C02BAC5B60004BE393 /* DateFormat.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DateFormat.cc; sourceTree = "<group>"; };
 		EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSG30Test.cc; sourceTree = "<group>"; };
 		EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorSG30Test.hh; sourceTree = "<group>"; };
 		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
@@ -2613,24 +2616,26 @@
 		276D153D1DFF528B00543B1B /* Query */ = {
 			isa = PBXGroup;
 			children = (
+				EA2527C02BAC5B60004BE393 /* DateFormat.cc */,
+				EA2527BF2BAC5B60004BE393 /* DateFormat.hh */,
+				274D178B2178101B007FD01A /* EE */,
+				275BED7B2374E7FF003AEAFD /* Indexes */,
+				276CE676226798D200B681AC /* N1QL_Parser */,
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
-				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				274D17842177F212007FD01A /* QueryParser+Private.hh */,
 				275FF6661E42A90C005F90DD /* QueryParserTables.hh */,
-				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
-				27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */,
 				27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */,
-				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */,
+				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
 				27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */,
 				27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */,
-				2747A1CE279B37E100F286AF /* SQLUtil.hh */,
+				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */,
+				27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */,
+				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
 				2747A1CF279B37E100F286AF /* SQLUtil.cc */,
-				275BED7B2374E7FF003AEAFD /* Indexes */,
-				276CE676226798D200B681AC /* N1QL_Parser */,
-				274D178B2178101B007FD01A /* EE */,
+				2747A1CE279B37E100F286AF /* SQLUtil.hh */,
 			);
 			path = Query;
 			sourceTree = "<group>";
@@ -4337,6 +4342,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA2527C12BAC5B60004BE393 /* DateFormat.cc in Sources */,
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27D62A3A2B72B448004C0787 /* LazyIndex.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,

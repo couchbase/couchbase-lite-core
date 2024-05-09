@@ -44,6 +44,7 @@ function(set_litecore_source_base)
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc
         LiteCore/Database/VectorDocument.cc
+        LiteCore/Query/DateFormat.cc
         LiteCore/Query/IndexSpec.cc
         LiteCore/Query/LazyIndex.cc
         LiteCore/Query/PredictiveModel.cc

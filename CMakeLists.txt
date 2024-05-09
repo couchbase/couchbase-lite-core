@@ -35,7 +35,6 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
             - platform_android
     - platform_win
         - platform_win_desktop
-        - platform_win_store
 ]]#
 
 cmake_minimum_required (VERSION 3.9)
@@ -118,6 +117,8 @@ endif()
 add_definitions(
     -DCMAKE                  # Let the source know this is a CMAKE build
     -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
+    -D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES # Stop libc++ headers from including extra headers
+
 )
 
 if(BUILD_ENTERPRISE)
@@ -129,7 +130,7 @@ endif()
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)
-        include("${PROJECT_SOURCE_DIR}/cmake/platform_win_store.cmake")
+        message(FATAL_ERROR "UWP no longer supported")
     else()
         include("${PROJECT_SOURCE_DIR}/cmake/platform_win_desktop.cmake")
     endif()
@@ -261,15 +262,7 @@ target_include_directories(
     ${LiteCoreObjectsIncludes}
 )
 
-if(WIN32)
-    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
-    target_include_directories(
-        LiteCore PRIVATE
-        vendor/SQLiteCpp/sqlite3
-    )
-else()
-    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
-endif()
+add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
 
 add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
 target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)

@@ -203,8 +203,15 @@ namespace litecore {
             }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
-            *sFileOut[(int)level] << "---- " << fileLogHeader(level) << " ----" << endl;
-            if ( !sInitialMessage.empty() ) { *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl; }
+            auto fout = sFileOut[(int)level];
+            LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+            LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+            *fout << "---- " << fileLogHeader(level) << " ----" << endl;
+            if ( !sInitialMessage.empty() ) {
+                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
+            }
         }
     }
 
@@ -264,8 +271,15 @@ namespace litecore {
                 }
             } else {
                 for ( auto& fout : sFileOut ) {
-                    *fout << "---- " << fileLogHeader(LogLevel{level++}) << " ----" << endl;
-                    if ( !sInitialMessage.empty() ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
+                    LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                    LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                    *fout << "---- " << fileLogHeader(LogLevel{level}) << " ----" << endl;
+                    if ( !sInitialMessage.empty() ) {
+                        LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                        LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                        *fout << "---- " << sInitialMessage << " ----" << endl;
+                    }
+                    ++level;
                 }
             }
 
@@ -277,6 +291,13 @@ namespace litecore {
                         if ( sLogEncoder[0] ) {
                             for ( auto& encoder : sLogEncoder ) {
                                 encoder->log("", {}, LogEncoder::None, "---- END ----");
+                            }
+                        } else if ( sFileOut[0] ) {
+                            int8_t level = 0;
+                            for ( auto& fout : sFileOut ) {
+                                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                                LogDecoder::writeHeader(kLevels[(int)level++], "", *fout);
+                                *fout << "---- END ----" << endl;
                             }
                         }
 
@@ -343,7 +364,6 @@ namespace litecore {
 
     // Returns the LogLevel override set by an environment variable, or Uninitialized if none
     LogLevel LogDomain::levelFromEnvironment() const noexcept {
-#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         char* val = getenv((string("LiteCoreLog") + _name).c_str());
         if ( val ) {
             static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", "none", nullptr};
@@ -352,7 +372,7 @@ namespace litecore {
             }
             return LogLevel::Info;
         }
-#endif
+
         return LogLevel::Uninitialized;
     }
 
@@ -464,8 +484,8 @@ namespace litecore {
         } else if ( file ) {
             static char formatBuffer[2048];
             size_t      n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
-            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
+            LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *file);
             if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *file << formatBuffer << endl;
@@ -538,11 +558,11 @@ namespace litecore {
         ss << "/" << iter->second.first << "#" << iter->first;
     }
 
-    std::string LogDomain::getObjectPath(unsigned obj) {
-        auto iter = sObjectMap.find(obj);
-        if ( iter == sObjectMap.end() ) { return ""; }
+    std::string LogDomain::getObjectPath(unsigned obj, const ObjectMap& objMap) {
+        auto iter = objMap.find(obj);
+        if ( iter == objMap.end() ) { return ""; }
         std::stringstream ss;
-        getObjectPathRecur(sObjectMap, iter, ss);
+        getObjectPathRecur(objMap, iter, ss);
         return ss.str() + "/";
     }
 
