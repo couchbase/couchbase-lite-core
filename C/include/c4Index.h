@@ -145,8 +145,8 @@ CBL_CORE_API FLValue c4indexupdater_valueAt(C4IndexUpdater* updater, size_t i) C
     @param dimension  The dimension of `vector`; must be equal to the index's declared dimension.
     @param outError  On failure, will be set to the error status.
     @return  True on success, false on failure. */
-CBL_CORE_API bool c4indexupdater_setVectorAt(C4IndexUpdater* updater, size_t i, const float vector[_Nullable], size_t dimension,
-                                             C4Error* outError) C4API;
+CBL_CORE_API bool c4indexupdater_setVectorAt(C4IndexUpdater* updater, size_t i, const float vector[_Nullable],
+                                             size_t dimension, C4Error* outError) C4API;
 
 /** Explicitly skips updating the i'th vector. No index entry will be created or deleted.
     The vector still needs to be recomputed, and will be included in the next update request.
