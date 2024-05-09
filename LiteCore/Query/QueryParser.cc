@@ -1382,6 +1382,13 @@ namespace litecore {
         string tablePrefix;
         if ( !dbAlias.empty() ) { tablePrefix = quotedIdentifierString(dbAlias) + "."; }
 
+        if ( metaKey == "rowid" ) {
+            // `rowid` is an unlisted meta key, not included in the `meta()` dict but can be
+            // accessed explicitly. It's used by LazyIndexUpdate.
+            writeMetaProperty(kValueFnName, tablePrefix, "rowid");
+            return;
+        }
+
         auto b  = &kMetaKeys[0];
         auto it = find_if(b, b + mkCount, [metaKey](auto& p) { return p == metaKey; });
         require(it != b + mkCount, "'%s' is not a valid Meta key", metaKey.asString().c_str());
@@ -1794,6 +1801,9 @@ namespace litecore {
             } else if ( meta == kRevIDProperty ) {
                 _sql << kVersionFnName << "(" << tablePrefix << "version"
                      << ")";
+                return;
+            } else if ( meta == kRowIDProperty ) {
+                writeMetaProperty(fn, tablePrefix, "rowid");
                 return;
             }
         }

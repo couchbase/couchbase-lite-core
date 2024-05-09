@@ -48,6 +48,13 @@ PRODUCT_NAME                                       = $(TARGET_NAME)
 
 ALWAYS_SEARCH_USER_PATHS                           = NO
 
+// defining `_LIBCPP_REMOVE_TRANSITIVE_INCLUDES` stops libc++'s headers from including other
+// libc++ headers except as defined in the language standard. This is a good idea because it will
+// catch situations where a header isn't explicitly included, which will cause build errors with
+// other standard libs like GCC's and MSVC's.
+GCC_PREPROCESSOR_DEFINITIONS = $(GCC_PREPROCESSOR_DEFINITIONS) _LIBCPP_REMOVE_TRANSITIVE_INCLUDES
+
+
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
 CLANG_UNDEFINED_BEHAVIOR_SANITIZER_INTEGER         = NO     // don't flag int over/underflows
 

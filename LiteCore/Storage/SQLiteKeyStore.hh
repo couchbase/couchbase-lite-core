@@ -78,8 +78,9 @@ namespace litecore {
 
         bool createIndex(const IndexSpec&) override;
 
-        void                   deleteIndex(slice name) override;
-        std::vector<IndexSpec> getIndexes() const override;
+        void                     deleteIndex(slice name) override;
+        std::optional<IndexSpec> getIndex(slice name) override;
+        std::vector<IndexSpec>   getIndexes() const override;
 
         std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback) override;
 
@@ -115,6 +116,7 @@ namespace litecore {
       private:
         friend class SQLiteDataFile;
         friend class SQLiteEnumerator;
+        friend class LazyIndexUpdate;
 
         SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
         void createTable();

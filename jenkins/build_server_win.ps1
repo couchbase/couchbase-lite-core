@@ -63,42 +63,6 @@ function Make-Package() {
     Pop-Location
 }
 
-function Build-Store() {
-    param(
-        [Parameter(Mandatory=$true, Position = 0)][string]$directory,
-        [Parameter(Mandatory=$true, Position = 1)][string]$architecture,
-        [Parameter(Mandatory=$true, Position = 2)][string]$config
-    )
-
-    Write-Host "Building blddir:$directory, arch:$architecture, flavor:$config"
-    New-Item -ItemType Directory -ErrorAction Ignore $directory
-    Push-Location $directory
-    $MsArchStore = $architecture
-    if($architecture -eq "Win64") {
-        $MsArchStore = "x64"
-    }
-
-    & "C:\Program Files\CMake\bin\cmake.exe" `
-        -A $MsArchStore `
-        -DCMAKE_SYSTEM_NAME=WindowsStore `
-        -DCMAKE_SYSTEM_VERSION="10.0" `
-        -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="$WindowsMinimum" `
-        -DEDITION="$Edition" `
-        -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
-        ..
-
-    if($LASTEXITCODE -ne 0) {
-        throw "CMake failed"
-    }
-
-    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config --target install
-    if($LASTEXITCODE -ne 0) {
-        throw "Build failed"
-    }
-
-    Pop-Location
-}
-
 function Build() {
     param(
         [Parameter(Mandatory=$true, Position = 0)][string]$directory,
@@ -179,7 +143,6 @@ Write-Host "Building $Architectures using $Parallel parallel subjobs"
 foreach ($arch in $Architectures) {
     $Target = "${arch}_Debug"
     $arch_lower = $arch.ToLowerInvariant()
-    Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "Debug"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "Debug"
         Make-Package "${env:WORKSPACE}\build_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$arch" "DEBUG"
@@ -187,12 +150,7 @@ foreach ($arch in $Architectures) {
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-debug.zip"
     }
 
-    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "STORE_$arch" "DEBUG"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower-store-debug.zip"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-store-debug.zip"
-
     $Target = "${arch}_MinSizeRel"
-    Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "MinSizeRel"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "MinSizeRel"
         if($Edition -eq "enterprise" -and $arch -eq "Win64") {
@@ -203,8 +161,4 @@ foreach ($arch in $Architectures) {
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower.zip"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower.zip"
     }
-
-    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\install" "couchbase-lite-core-$Version-$ShaVersion-windows-${arch_lower}-winstore.zip" "STORE_$arch" "RELEASE"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsShaDir\couchbase-lite-core-windows-$arch_lower-store.zip"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsBuildDir\couchbase-lite-core-$Edition-$Version-$BldNum-windows-$arch_lower-store.zip"
 }

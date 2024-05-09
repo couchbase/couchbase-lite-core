@@ -178,11 +178,7 @@ namespace litecore {
             _readMessage = true;
 
             // Write the object ID, unless the caller's already accessed it through the API:
-            if ( _putCurObjectInMessage && _curObject > 0 ) {
-                out << '{' << _curObject;
-                if ( _curObjectIsNew ) out << "|" << *objectDescription();
-                out << "} ";
-            }
+            if ( _putCurObjectInMessage && _curObject > 0 ) { out << "Obj=" << *objectDescription() << " "; }
 
             // Read the format string, then the parameters:
             std::string format = readStringToken();

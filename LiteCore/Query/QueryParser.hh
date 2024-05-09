@@ -13,6 +13,7 @@
 #pragma once
 #include "Base.hh"
 #include "UnicodeCollator.hh"
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>

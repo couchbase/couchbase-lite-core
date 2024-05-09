@@ -50,6 +50,7 @@ file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/T
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
 add_executable(
     CppTests
+    ResultTest.cc
     c4BaseTest.cc
     c4DocumentTest_Internal.cc
     DataFileTest.cc
@@ -62,6 +63,7 @@ add_executable(
     PredictiveVectorQueryTest.cc
     QueryParserTest.cc
     QueryTest.cc
+    SequenceSetTest.cc
     SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
@@ -151,7 +153,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    CppTests PRIVATE 
+    CppTests PRIVATE
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
