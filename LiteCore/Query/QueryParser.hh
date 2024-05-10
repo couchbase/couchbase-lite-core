@@ -165,8 +165,8 @@ namespace litecore {
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kResultListOperation,
                 kExpressionListOperation, kHighPrecedenceOperation;
-        struct JoinedOperations;
-        static const JoinedOperations kJoinedOperationsList[];
+//        struct JoinedOperations;
+//        static const JoinedOperations kJoinedOperationsList[];
 
         explicit QueryParser(const QueryParser* qp)
             : QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName) {
