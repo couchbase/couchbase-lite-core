@@ -109,14 +109,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
         Log("---- Querying with $target = data");
-        Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("target");
-        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-        enc.endDictionary();
-        Query::Options options(enc.finish());
-
-        // Run the query:
+        Query::Options options = optionsWithTargetVector(kTargetVector, kData);
         checkExpectedResults(query->createEnumerator(&options),
                              {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020", "rec-0076", "rec-0087",
                               "rec-3327", "rec-1915", "rec-8265"},
@@ -132,55 +125,16 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
      }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
-    // Query, using a vector parameter provided as raw data:
-    {
-        Log("---- Querying with $target = data");
-        Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("target");
-        enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-        enc.endDictionary();
-        Query::Options options(enc.finish());
-
-        // Run the query:
+    static constexpr valueType kParamTypes[] = {kData, kString, kArray};
+    for ( valueType asType : kParamTypes ) {
+        Log("---- Querying with $target of Fleece type %d", int(asType));
+        Query::Options options = optionsWithTargetVector(kTargetVector, asType);
         checkExpectedResults(query->createEnumerator(&options),
                              {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
                              {0, 4172, 10549, 29275, 32025});
     }
 
-    // Query, using a vector parameter provided as a Base64-encoded string:
     {
-        Log("---- Querying with $target = base64 string");
-        Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("target");
-        enc.writeString(base64::encode(slice(kTargetVector, sizeof(kTargetVector))));
-        enc.endDictionary();
-        Query::Options options(enc.finish());
-
-        // Run the query:
-        checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
-                             {0, 4172, 10549, 29275, 32025});
-    }
-
-    // Query, using a vector parameter provided as an array of floats:
-    {
-        Log("---- Querying with $target = array");
-        Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("target");
-        enc.beginArray();
-        for ( float n : kTargetVector ) enc.writeFloat(n);
-        enc.endArray();
-        enc.endDictionary();
-        Query::Options options(enc.finish());
-
-        // Run the query:
-        checkExpectedResults(query->createEnumerator(&options),
-                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
-                             {0, 4172, 10549, 29275, 32025});
-
         // Update a document with an invalid vector property:
         {
             Log("---- Updating rec-0031 to remove its vector");
@@ -193,11 +147,41 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
             ++expectedWarningsLogged;
         }
         // Verify the updated document is missing from the results:
+        Query::Options options = optionsWithTargetVector(kTargetVector, kData);
         checkExpectedResults(query->createEnumerator(&options),
                              {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"},
                              {0, 10549, 29275, 32025, 65417});
     }
+
     reopenDatabase();
+}
+
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.VectorSearch]") {
+    readVectorDocs();
+    {
+        // Add some docs without vector data, to ensure that doesn't break indexing:
+        ExclusiveTransaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+    createVectorIndex();
+
+    string          queryStr = R"(
+     ['SELECT', {
+        WHERE:    ['AND', ['VECTOR_MATCH()', 'vecIndex', ['$target']],
+                          ['=', 0, ['%', ['._sequence'], 100]] ],
+        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+        ORDER_BY: [ ['.distance'] ],
+        LIMIT:    10
+     }] )";
+    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+
+    Log("---- Querying with $target = data");
+    Query::Options options = optionsWithTargetVector(kTargetVector, kData);
+    checkExpectedResults(query->createEnumerator(&options),
+                         {"rec-5300", "rec-4900", "rec-7100", "rec-3600", "rec-8700", "rec-8500", "rec-2400",
+                          "rec-4700", "rec-4300", "rec-2600"},
+                         {85776, 90431, 92142, 92629, 94598, 94989, 104787, 106750, 113260, 116129});
 }
 
 // Test joining the result of VECTOR_MATCH with a property of another collection. In particular, it joins
@@ -300,7 +284,6 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
         });
         writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("refID");
-            // "rec-0011" is not in the result of VECTOR_MATCH
             enc.writeString("rec-0011");
             enc.writeKey("sentence");
             enc.writeString(kFTSSentences[1]);
@@ -329,9 +312,12 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
     otherStore->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText,
                             IndexSpec::FTSOptions{"english", true});
 
-    string queryStr = R"(SELECT META(a).id, META(other).id FROM )"s + collectionName;
-    queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) AND MATCH(other.sentence, "search") )";
+    string queryStr = R"(SELECT META(a).id, META(other).id, VECTOR_DISTANCE(a.vecIndex) )"
+                      R"( FROM )"s
+                      + collectionName
+                      + R"( AS a JOIN other ON META(a).id = other.refID )"
+                        R"( WHERE VECTOR_MATCH(a.vecIndex, $target) AND MATCH(other.sentence, "search") )"
+                        R"( ORDER BY VECTOR_DISTANCE(a.vecIndex) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -347,22 +333,29 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 3);
+    REQUIRE(e->getRowCount() == 4);
 
-    // VECTOR_MATCH will fecth these docs: {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}
+    // VECTOR_MATCH will fetch these docs: {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}
     // FTS MATCH will fetch {"doc02", "doc03", "doc01", "doc05"}
     // "doc03" does not refer to any in result of VECTOR_MATCH.
-    static constexpr slice expectedID1s[] = {"rec-0031", "rec-0022", "rec-0012"};
-    static constexpr slice expectedID2s[] = {"doc01", "doc05", "doc03"};
+    static constexpr slice expectedID1s[] = {"rec-0031", "rec-0022", "rec-0012", "rec-0011"};
+    static constexpr slice expectedID2s[] = {"doc01", "doc05", "doc03", "doc02"};
+    static constexpr float expectedDist[] = {4172, 10549, 29275, 121566};
 
-    size_t i = 0;
-    while ( e->next() ) {
-        slice id1 = e->columns()[0]->asString();
-        slice id2 = e->columns()[1]->asString();
+    size_t i;
+    for ( i = 0; e->next(); ++i ) {
+        slice id1  = e->columns()[0]->asString();
+        slice id2  = e->columns()[1]->asString();
+        float dist = e->columns()[2]->asFloat();
+#    if 0
+        Log("id1 = %.*s, id2 = %.*s", FMTSLICE(id1), FMTSLICE(id2));
+#    else
         CHECK(id1 == expectedID1s[i]);
-        CHECK(id2 == expectedID2s[i++]);
+        CHECK(id2 == expectedID2s[i]);
+        CHECK_distances(dist, expectedDist[i]);
+#    endif
     }
-    CHECK(i == 3);
+    CHECK(i == 4);
 }
 
 // Test intersection of vector-search and FTS
