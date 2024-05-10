@@ -30,6 +30,7 @@
 #include "c4Database.hh"       // IWYU pragma: keep
 #include "c4Document.hh"       // IWYU pragma: keep
 #include "c4DocEnumerator.hh"  // IWYU pragma: keep
+#include "c4Index.hh"          // IWYU pragma: keep
 #include "c4Listener.hh"       // IWYU pragma: keep
 #include "c4Observer.hh"       // IWYU pragma: keep
 #include "c4Query.hh"          // IWYU pragma: keep
