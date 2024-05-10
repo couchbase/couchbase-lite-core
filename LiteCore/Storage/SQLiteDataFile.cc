@@ -22,6 +22,7 @@
 #include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "BothKeyStore.hh"
+#include "carray.h"
 #include "UnicodeCollator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -294,11 +295,14 @@ namespace litecore {
         auto sqlite = _sqlDb->getHandle();
         if ( thread::hardware_concurrency() > 2 ) sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, 2);
 
-        // Register collators, custom functions, and the FTS tokenizer:
+        // Register collators, custom functions, the FTS tokenizer, and the `carray` extension:
         RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
         RegisterSQLiteFunctions(sqlite, {delegate(), documentKeys()});
         int rc = register_unicodesn_tokenizer(sqlite);
         if ( rc != SQLITE_OK ) warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+        char* errMsg = nullptr;
+        rc           = sqlite3_carray_init(sqlite, &errMsg, nullptr);
+        if ( rc != SQLITE_OK ) throw SQLite::Exception(errMsg, rc);
 
         // Load vector search extension if present:
         LoadVectorSearchExtension(sqlite);
