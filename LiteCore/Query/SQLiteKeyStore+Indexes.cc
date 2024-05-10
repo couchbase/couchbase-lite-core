@@ -132,6 +132,12 @@ namespace litecore {
         _createFlagsIndex("blobs", DocumentFlags::kHasAttachments, _createdBlobsIndex);
     }
 
+    optional<IndexSpec> SQLiteKeyStore::getIndex(slice indexName) {
+        optional<SQLiteIndexSpec> spec = db().getIndex(indexName);
+        if ( spec && spec->keyStoreName != name() ) spec = nullopt;
+        return spec;
+    }
+
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
         for ( auto& spec : db().getIndexes(this) ) result.push_back(std::move(spec));
