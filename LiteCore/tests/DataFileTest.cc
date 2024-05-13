@@ -656,8 +656,9 @@ TEST_CASE("CanonicalPath") {
     auto endPath = tmpPath + "subfolder";
     ::mkdir(endPath.c_str(), 777);
 #    if __APPLE__ && !TARGET_OS_IPHONE
-    //
+    // clang-format off
     endPath = "/private" + endPath;
+    // clang-format on
 #    endif
 #endif
 
