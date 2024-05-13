@@ -656,7 +656,7 @@ TEST_CASE("CanonicalPath") {
     auto endPath = tmpPath + "subfolder";
     ::mkdir(endPath.c_str(), 777);
 #    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath   = "/private" + endPath;
+    endPath = "/private" + endPath;
 #    endif
 #endif
 
@@ -720,7 +720,8 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&] { reopenDatabase(&options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws][EE]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key",
+                       "[DataFile][Encryption][!throws][EE]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;

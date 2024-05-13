@@ -421,8 +421,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]")
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
-         SECTION("Default") {}
-         SECTION("No-conflicts") { serverOpts.setNoIncomingConflicts(); }
+
+    SECTION("Default") {}
+    SECTION("No-conflicts") { serverOpts.setNoIncomingConflicts(); }
 
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
@@ -1497,8 +1498,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     Log("-------- Second Push --------");
     atomic<int> validationCount{0};
-                SECTION("No filter") {}
-                SECTION("With filter") {
+
+    SECTION("No filter") {}
+    SECTION("With filter") {
         Options::CollectionOptions& collOpts = serverOpts.collectionOpts[0];
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
         collOpts.callbackContext = &validationCount;
@@ -1606,7 +1608,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Mutate Doc In db --------");
     bool modifiedDigest = false;
-         SECTION("Not Modifying Digest") {
+
+    SECTION("Not Modifying Digest") {
         // Modify attachment metadata (other than the digest):
         mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
             auto atts               = rev["attached"_sl].asArray().asMutable();
@@ -1702,7 +1705,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
 
     Log("-------- Mutate Doc In db --------");
     bool modifiedDigest = false;
-         SECTION("Not Modifying Digest") {
+
+    SECTION("Not Modifying Digest") {
         // Modify attachment metadata (other than the digest):
         mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
             auto atts               = rev["_attachments"_sl].asDict().asMutable();
