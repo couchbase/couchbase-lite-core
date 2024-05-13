@@ -39,7 +39,7 @@ class C4EncryptionTest : public C4Test {
     }
 };
 
-TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
+TEST_CASE("Database Key Derivation", "[Database][Encryption][C][EE]") {
     bool (*c4key_setPasswordFunc)(C4EncryptionKey* encryptionKey, C4String password, C4EncryptionAlgorithm alg) =
             nullptr;
     string          expectedKey;
@@ -63,7 +63,7 @@ TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
     CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() == expectedKey);
 }
 
-N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C]") {
+N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C][EE]") {
     createNumberedDocs(99);
 
     C4DatabaseConfig2 config = dbConfig(), badConfig = config;
@@ -93,7 +93,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     CHECK(c4coll_getDocumentCount(defaultColl) == 99);
 }
 
-N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryption][blob][C]") {
+N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryption][blob][C][EE]") {
     createNumberedDocs(99);
 
     // Add blob to the store:
@@ -151,14 +151,14 @@ static void testOpeningEncryptedDBFixture(const char* dbPath, const void* key) {
     }
 }
 
-TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C]") {
+TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C][EE]") {
     testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.5_AES256.cblite2", "a different key than default....");
 }
 
 
 #    ifdef __APPLE__
 
-TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C]") {
+TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C][EE]") {
     C4EncryptionKey key;
     REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
     testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.1_AES128.cblite2", key.bytes);

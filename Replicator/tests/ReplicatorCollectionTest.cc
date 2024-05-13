@@ -763,7 +763,7 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 }
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
-                 "[Push][Pull][Encryption]") {
+                 "[Push][Pull][Encryption][EE]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 
@@ -839,7 +839,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters][EE]") {
     string db_roses   = "db-roses-";
     string db_tulips  = "db-tulips-";
     string db2_roses  = "db2-roses-";

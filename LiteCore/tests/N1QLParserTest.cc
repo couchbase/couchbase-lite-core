@@ -570,7 +570,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL DateTime", "[Query][N1QL]") {
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSearch][EE]") {
     tableNames.emplace("kv_default:vector:vecIndex");
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.coll:vector:vecIndex");

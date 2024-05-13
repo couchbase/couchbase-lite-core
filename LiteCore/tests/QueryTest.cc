@@ -1264,7 +1264,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query][EE]") {
     testExpressions({
             {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14]]", "5.0"},
             {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25.0"},

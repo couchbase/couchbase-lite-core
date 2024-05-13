@@ -89,7 +89,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
@@ -105,7 +105,7 @@ TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C]") {
 }
 
 
-TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
     // Missing 'greenhouses' parameter:
@@ -129,7 +129,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'sentiment', "
@@ -160,7 +160,7 @@ public:
 // This test is skipped by default because the CoreML model is too large to include in the Git repo.
 // You can download it at https://docs-assets.developer.apple.com/coreml/models/MobileNet.mlmodel
 // and copy it to C/tests/data/imagePrediction/MobileNet.mlmodel .
-TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
     {
@@ -261,7 +261,7 @@ public:
     }
 };
 
-TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face query", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
 
@@ -298,7 +298,7 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face query", "[Query][Predict][C]") {
 }
 
 
-TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predict][C][EE]") {
     if (!_model)
         return;
 

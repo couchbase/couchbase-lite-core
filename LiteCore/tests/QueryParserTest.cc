@@ -672,7 +672,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried FTS", "[Query][QueryParser
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryParser][VectorSearch]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryParser][VectorSearch][EE]") {
     tableNames.insert("kv_default:vector:vecIndex");
     // Pure vector search (no other WHERE criteria):
     CHECK(parse("['SELECT', {WHERE: ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],"
@@ -699,7 +699,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
              "'x') AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
 }
 
-TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried Vector Search", "[Query][QueryParser][VectorSearch]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried Vector Search", "[Query][QueryParser][VectorSearch][EE]") {
     // Like FTS, vector_match can only be used at top level or within an AND.
     tableNames.insert("kv_default:vector:vecIndex");
     parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],\

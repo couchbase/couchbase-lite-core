@@ -34,14 +34,14 @@ try {
     }
 
     Set-Location LiteCore\tests\Debug
-    .\CppTests -r quiet
+    .\CppTests "[EE]" -r quiet
     if($LASTEXITCODE -ne 0) {
         Write-Host "C++ tests failed!" -ForegroundColor Red
         exit 1
     }
 
     Set-Location ..\..\..\C\tests\Debug
-    .\C4Tests -r quiet
+    .\C4Tests "[EE]" -r quiet
     if($LASTEXITCODE -ne 0) {
         Write-Host "C tests failed!" -ForegroundColor Red
         exit 1

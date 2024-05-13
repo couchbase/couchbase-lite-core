@@ -250,7 +250,7 @@ __attribute__((no_sanitize("nullability-arg")))  // suppress breakpoint passing 
 C4_STOP_WARNINGS_SUPPRESSION
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push][EE]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
@@ -265,7 +265,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Push][Pull][EE]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
@@ -285,7 +285,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     CHECK(doc->selectedRev.revID == kRevID);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[Pull][Sync]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[Pull][Sync][EE]") {
     createDB2();
     createRev(db2, "doc"_sl, kRevID, kFleeceBody);
 
@@ -337,7 +337,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
     CHECK(perCollection == expectedPerCollection);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][Sync]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][Sync][EE]") {
     createDB2();
 
     C4CollectionSpec Roses     = {"roses"_sl, "flowers"_sl};
@@ -419,7 +419,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]
 
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push][EE]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -445,7 +445,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
 
 // CBL-221
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull][EE]") {
     createDB2();
     // Need a large enough data set so that the pulled documents come
     // through in more than one batch
@@ -469,7 +469,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push][EE]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -526,7 +526,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push][EE]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -584,7 +584,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collection", "[C][Push][EE]") {
     ExpectingExceptions x;
     // Create collection in the db and import documents
     C4CollectionSpec Kyber     = {"kyber"_sl, "crystal"_sl};
@@ -623,7 +623,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Non-Existent Collectio
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections", "[C][Push][EE]") {
     // Create collections and import documents to them
     C4CollectionSpec Council        = {"council"_sl, "jedi"_sl};
     C4CollectionSpec Federation     = {"federation"_sl, "trade"_sl};
@@ -688,7 +688,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull][EE]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
@@ -764,7 +764,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull][EE]") {
     C4SocketFactory factory = {};
     SECTION("Using framing") {
         factory.open = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
@@ -805,7 +805,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     _socketFactory = nullptr;
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull][EE]") {
     _mayGoOffline           = true;
     C4SocketFactory factory = {};
     factory.open            = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
@@ -826,7 +826,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     waitForStatus(kC4Stopped);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull][EE]") {
     // c.f. the flow with test case "Stop after transient connect failure"
     _mayGoOffline            = true;
     C4SocketFactory factory  = {};
@@ -864,7 +864,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     c4socket_release(c4socket);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C][EE]") {
     createDB2();
 
     C4Error                             err;
@@ -926,7 +926,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C][EE]") {
     createDB2();
 
     C4Error                             err;

@@ -60,9 +60,9 @@ class C4SyncListenerTest
     }
 };
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C]") { run(); }
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C][EE]") { run(); }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Listener][TLS][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Listener][TLS][C][EE]") {
     C4NetworkErrorCode expectedError = (C4NetworkErrorCode)0;
 
     // Pinned shouldn't differ betwen modes
@@ -93,7 +93,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Li
     CHECK(receivedCert == expectedCert);
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push][Listener][TLS][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push][Listener][TLS][C][EE]") {
     ::Identity caIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLS_CA, kCAName, nullptr, nullptr, true);
     ::Identity endIdentity =
             CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
     }
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener][TLS][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener][TLS][C][EE]") {
     // CA without the CA-bits sit
     Identity caIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kCAName, nullptr, nullptr, true);
     Identity endIdentity =
@@ -158,7 +158,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listene
     run();
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listener][TLS][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listener][TLS][C][EE]") {
     Identity id;
     id.key = c4keypair_generate(kC4RSA, 2048, false, ERROR_INFO());
     REQUIRE(id.key);
@@ -187,7 +187,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listen
 
 
 #    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C][EE]") {
     {
         ExpectingExceptions x;
         _sg.pinnedCert = useServerTLSWithPersistentKey();
@@ -197,7 +197,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", 
 #    endif
 
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C][EE]") {
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
     _sg.address.port = c4listener_getPort(listener());
@@ -233,7 +233,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
     CHECK(activeConns == 0);
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener][C][EE]") {
     C4ReplicatorMode pushMode = kC4Disabled;
     C4ReplicatorMode pullMode = kC4Disabled;
     SECTION("Push") {
@@ -260,7 +260,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener
     CHECK(c4coll_getDocumentCount(defaultColl) == 0);
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener][EE]") {
     fleece::Retained<Server> s(new Server());
     s->start(0);
     auto addresses = s->addresses();
@@ -304,7 +304,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
     }
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener][EE]") {
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
     _sg.address.port = c4listener_getPort(listener());

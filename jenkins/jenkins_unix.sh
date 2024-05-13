@@ -38,8 +38,8 @@ export MallocDebugReport=stderr
 export LiteCoreTestsQuiet=1
 
 pushd LiteCore/tests
-./CppTests -r list
+./CppTests "[EE]" -r list
 popd
 
 pushd C/tests
-./C4Tests -r list
+./C4Tests "[EE]" -r list

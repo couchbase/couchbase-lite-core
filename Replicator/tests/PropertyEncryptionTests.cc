@@ -193,7 +193,7 @@ TEST_CASE_METHOD(PropEncryptionTest, "No Property Encryption", "[Sync][Encryptio
 
 #ifdef COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encrypt One Property", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encrypt One Property", "[Sync][Encryption][EE]") {
     MutableDict props = encryptProperties(kDecryptedOneProperty);
     CHECK(_numCallbacks == 1);
     CHECK(slice(props.toJSONString()) == kEncryptedOneProperty);
@@ -203,7 +203,7 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encrypt One Property", "[Sync][Encryption]
     CHECK(base64::decode(cipher) == kDefaultCiphertext);
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Custom Alg and KeyID", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Custom Alg and KeyID", "[Sync][Encryption][EE]") {
     _algorithm        = kCustomAlgorithm;
     _keyID            = kCustomKeyID;
     MutableDict props = encryptProperties(kDecryptedCustomAlg);
@@ -211,21 +211,21 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Custom Alg and KeyID", "[Sync][Enc
     CHECK(props.toJSON() == kEncryptedCustomAlg);
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Nested Property", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Nested Property", "[Sync][Encryption][EE]") {
     _expectedKeyPath  = kNestedKeyPath;
     MutableDict props = encryptProperties(kDecryptedNested);
     CHECK(_numCallbacks == 1);
     CHECK(props.toJSON() == kEncryptedNested);
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Two Properties", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encrypt Two Properties", "[Sync][Encryption][EE]") {
     _expectedKeyPath  = "";  // there are two
     MutableDict props = encryptProperties(kDecryptedTwoProps);
     CHECK(_numCallbacks == 2);
     CHECK(props.toJSON() == kEncryptedTwoProps);
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encryption Fails Without Callback", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encryption Fails Without Callback", "[Sync][Encryption][EE]") {
     _callback = nullptr;
     C4Error             error;
     ExpectingExceptions x;
@@ -234,7 +234,7 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encryption Fails Without Callback", "[Sync
     REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Skip Encryption Not Allowed", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Skip Encryption Not Allowed", "[Sync][Encryption][EE]") {
     _returnNull = true;
     C4Error             error;
     ExpectingExceptions x;
@@ -243,7 +243,7 @@ TEST_CASE_METHOD(PropEncryptionTest, "Skip Encryption Not Allowed", "[Sync][Encr
     REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
 }
 
-TEST_CASE_METHOD(PropEncryptionTest, "Encryption returns error", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropEncryptionTest, "Encryption returns error", "[Sync][Encryption][EE]") {
     _returnError = true;
     C4Error             error;
     ExpectingExceptions x;
@@ -284,13 +284,13 @@ TEST_CASE_METHOD(PropDecryptionTest, "No Property Decryption", "[Sync][Encryptio
 
 #ifdef COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(PropDecryptionTest, "Decrypt One Property", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Decrypt One Property", "[Sync][Encryption][EE]") {
     MutableDict props = decryptProperties(kEncryptedOneProperty);
     CHECK(_numCallbacks == 1);
     CHECK(props.toJSON() == kDecryptedOneProperty);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Custom Alg and KeyID", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Custom Alg and KeyID", "[Sync][Encryption][EE]") {
     _expectedAlgorithm = kCustomAlgorithm;
     _expectedKeyID     = kCustomKeyID;
     MutableDict props  = decryptProperties(kEncryptedCustomAlg);
@@ -298,21 +298,21 @@ TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Custom Alg and KeyID", "[Sync][Enc
     CHECK(props.toJSON() == kDecryptedCustomAlg);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Nested Property", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Nested Property", "[Sync][Encryption][EE]") {
     _expectedKeyPath  = kNestedKeyPath;
     MutableDict props = decryptProperties(kEncryptedNested);
     CHECK(_numCallbacks == 1);
     CHECK(props.toJSON() == kDecryptedNested);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Two Properties", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Decrypt Two Properties", "[Sync][Encryption][EE]") {
     _expectedKeyPath  = nullslice;  // there are two
     MutableDict props = decryptProperties(kEncryptedTwoProps);
     CHECK(_numCallbacks == 2);
     CHECK(props.toJSON() == kDecryptedTwoProps);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "No Decryption Without Callback", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "No Decryption Without Callback", "[Sync][Encryption][EE]") {
     _callback = nullptr;
     C4Error     error;
     MutableDict props = decryptProperties(kEncryptedOneProperty, &error);
@@ -320,7 +320,7 @@ TEST_CASE_METHOD(PropDecryptionTest, "No Decryption Without Callback", "[Sync][E
     CHECK(!error);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "Skip Decryption", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Skip Decryption", "[Sync][Encryption][EE]") {
     _returnNull = true;
     C4Error     error;
     MutableDict props = decryptProperties(kEncryptedOneProperty, &error);
@@ -328,7 +328,7 @@ TEST_CASE_METHOD(PropDecryptionTest, "Skip Decryption", "[Sync][Encryption]") {
     CHECK(!error);
 }
 
-TEST_CASE_METHOD(PropDecryptionTest, "Decryption returns error", "[Sync][Encryption]") {
+TEST_CASE_METHOD(PropDecryptionTest, "Decryption returns error", "[Sync][Encryption][EE]") {
     _returnError = true;
     C4Error             error;
     ExpectingExceptions x;

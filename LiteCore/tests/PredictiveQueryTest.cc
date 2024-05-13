@@ -54,7 +54,7 @@ class EightBall : public PredictiveModel {
     static double intness(double n) { return abs(n - floor(n) - 0.5) * 2.0; }
 };
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict][EE]") {
     addNumberedDocs(1, 10);
     Retained<Query> query{store->compileQuery(json5("{'WHAT': [['PREDICTION()', '8ball', {number: ['.num']}]]}"))};
     ExpectException(error::SQLite, 1, [&] { Retained<QueryEnumerator> e(query->createEnumerator()); });
@@ -79,7 +79,7 @@ static void testResults(Query* query) {
     CHECK(docNo == 101);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict][EE]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -97,7 +97,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict][EE]") {
     {
         ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
@@ -113,7 +113,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Pre
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict][EE]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
@@ -126,7 +126,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Pre
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict][EE]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -179,7 +179,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]"
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict][EE]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -228,7 +228,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict][EE]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);

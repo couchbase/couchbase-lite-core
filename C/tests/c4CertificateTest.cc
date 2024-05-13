@@ -17,7 +17,7 @@
 
 using namespace std;
 
-TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
+TEST_CASE("C4Certificate smoke test", "[Certs][C][EE]") {
     // Just make sure c4cert functions are exported from LiteCore and minimally functional...
     CertHelper certs;
 

@@ -711,7 +711,7 @@ TEST_CASE("ParentDir") {
 #ifdef COUCHBASE_ENTERPRISE
 
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws][EE]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     REQUIRE(!factory().encryptionEnabled((EncryptionAlgorithm)2));
     DataFile::Options options   = db->options();
@@ -720,7 +720,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&] { reopenDatabase(&options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws][EE]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
@@ -728,7 +728,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key"
     ExpectException(error::LiteCore, error::NotADatabaseFile, [&] { reopenDatabase(&options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws][EE]") {
     REQUIRE(factory().encryptionEnabled(kAES256));
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
@@ -762,7 +762,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][E
     deleteDatabase(dbPath);
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption][EE]") {
     REQUIRE(factory().encryptionEnabled(kAES256));
     auto dbPath  = db->filePath();
     auto options = db->options();
