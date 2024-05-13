@@ -58,11 +58,14 @@ namespace litecore::repl {
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
         _revMessage = msg;
+        // SG may have sent a newer revision than we requested via the "replacedRev" property.
+        auto revID = _revMessage->property("replacedRev"_sl);
+        if ( revID.empty() ) { revID = _revMessage->property("rev"_sl); }
 
-        _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
-                                              _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
-                                              _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
-                                              getCollection()->getSpec(), _options->collectionCallbackContext(collectionIndex()));
+        _rev = new RevToInsert(this, _revMessage->property("id"_sl), revID, _revMessage->property("history"_sl),
+                               _revMessage->boolProperty("deleted"_sl),
+                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
+                               getCollection()->getSpec(), _options->collectionCallbackContext(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr   = _revMessage->property(slice("sequence"));
         _remoteSequence     = RemoteSequence(sequenceStr);
@@ -75,14 +78,9 @@ namespace litecore::repl {
             return;
         }
 
-        if ( const auto replacedRev = _revMessage->property("replacedRev"); replacedRev ) {
-            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s') (replaced rev #%.*s)", SPLAT(_rev->docID),
-                       SPLAT(_rev->revID), SPLAT(sequenceStr), SPLAT(replacedRev));
-        } else {
-            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
-                       SPLAT(sequenceStr));
-        }
         // Validate the docID, revID, and sequence:
+        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
+                   SPLAT(sequenceStr));
         if ( _rev->docID.size == 0 ) {
             failWithError(WebSocketDomain, 400, "received invalid docID ''"_sl);
             return;
