@@ -53,7 +53,7 @@ FilePath GetTempDirectory() {
     call_once(f, [=] {
         constexpr size_t bufSize = 64;
         char             folderName[bufSize];
-        snprintf(folderName, bufSize, "LiteCore_Tests_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
+        snprintf(folderName, bufSize, "LiteCore_Tests_%" PRIms ".cblite2/", chrono::milliseconds(time(nullptr)).count());
         kTempDir = GetSystemTempDirectory()[folderName];
         kTempDir.mkdir();
     });
