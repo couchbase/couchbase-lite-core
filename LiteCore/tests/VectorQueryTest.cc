@@ -18,12 +18,16 @@
 
 #include "VectorQueryTest.hh"
 #include "Base64.hh"
+#include "c4Database.hh"
+#include "c4Collection.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
 class SIFTVectorQueryTest : public VectorQueryTest {
   public:
     SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
+
+    SIFTVectorQueryTest() : VectorQueryTest(0) {}
 
     void createVectorIndex() {
         IndexSpec::VectorOptions options(128);
@@ -457,6 +461,118 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
         checks.erase(iter);
     }
     CHECK(checks.size() == 0);
+}
+
+static pair<string, string> splitCollectionName(const string& input) {
+    // This system of randomizing REALLY messes with this test...
+    if ( input == "_" ) { return {"_default", "_default"}; }
+
+    auto dotPos = input.find('.');
+    if ( dotPos == string::npos ) { return {"_default", input}; }
+
+    return {input.substr(0, dotPos), input.substr(dotPos + 1)};
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
+    bool expectedTrained;
+
+    // Undo this silliness, I'm not spending the effort to find out the name it really wants
+    // which is LiteCore_Tests_<random number> or something
+    if ( collectionName == "db" ) collectionName = "_";
+
+    // N_WAY_TEST_CASE_METHOD is not compatible with section, so redo all the
+    // extra collections here
+
+    SECTION("Insufficient docs") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = false;
+        createVectorIndex();
+        readVectorDocs(100);
+    }
+
+    SECTION("Sufficient docs, index first") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = true;
+        createVectorIndex();
+        readVectorDocs(256 * 30);
+    }
+
+    SECTION("Sufficient docs, load first") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = true;
+        readVectorDocs(256 * 30);
+        createVectorIndex();
+    }
+
+    store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, IndexSpec::FTSOptions{"english", true});
+
+    auto              dbPath = db->filePath().dir();
+    auto              parts  = FilePath::splitPath(dbPath.path().substr(0, dbPath.path().size() - 1));
+    C4DatabaseConfig2 dbConfig{slice(parts.first), kC4DB_Create};
+
+    auto                       fileNameParts = FilePath::splitExtension(parts.second);
+    auto                       database  = C4Database::openNamed(FilePath(fileNameParts.first).fileName(), dbConfig);
+    auto                       collParts = splitCollectionName(collectionName);
+    C4Database::CollectionSpec collSpec(collParts.second, collParts.first);
+    auto                       collection = database->createCollection(collSpec);
+    REQUIRE(collection);
+
+    {
+        ExpectingExceptions e;
+        try {
+            collection->isIndexTrained("nonexistent"_sl);
+            FAIL("No exception throw for non-existent collection");
+        } catch ( error& e ) { CHECK(e == error::NoSuchIndex); }
+
+        try {
+            collection->isIndexTrained("sentence"_sl);
+            FAIL("No exception throw for invalid collection type");
+        } catch ( error& e ) { CHECK(e == error::InvalidParameter); }
+    }
+
+    // Need to run an arbitrary query to actually train the index
+    string queryStr =
+            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target, 5) )";
+
+    Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
+
+    Encoder enc;
+    enc.beginDictionary();
+    enc.writeKey("target");
+    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+    enc.endDictionary();
+    Query::Options            options(enc.finish());
+    Retained<QueryEnumerator> e(query->createEnumerator(&options));
+
+    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    CHECK(isTrained == expectedTrained);
 }
 
 #endif

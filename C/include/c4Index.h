@@ -107,6 +107,17 @@ NODISCARD CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name
         @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
 CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* C4NULLABLE outError) C4API;
 
+/** Returns whether or not a given vector index is trained
+ *      If the index doesn't exist, or is not a vector index, then this method will
+ *      return false with an appropriate error set.  Otherwise, in the absence of errors,
+ *      this method will zero the error and set the return value.
+ *      @param collection The collection to look up the index in
+ *      @param name The name of the index to check
+ *      @param outError On failure, will be set to the error status
+ *      @return true if the index is trained, false if the index was not valid or is not yet trained
+ */
+CBL_CORE_API bool c4coll_isIndexTrained(C4Collection* collection, C4String name, C4Error* C4NULLABLE outError) C4API;
+
 
 #ifdef COUCHBASE_ENTERPRISE
 

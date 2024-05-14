@@ -105,6 +105,8 @@ struct C4Collection
 
     virtual alloc_slice getIndexRows(slice name) const = 0;
 
+    virtual bool isIndexTrained(slice name) const = 0;
+
     // Observers:
 
     using CollectionObserverCallback = std::function<void(C4CollectionObserver*)>;

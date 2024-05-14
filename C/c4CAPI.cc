@@ -31,6 +31,7 @@
 #include "c4Replicator.h"
 #include "c4Private.h"
 #include "NumConversion.hh"
+#include "CollectionImpl.hh"
 #include "StringUtil.hh"
 #include <sstream>
 
@@ -549,6 +550,11 @@ bool c4db_createIndex2(C4Database* database, C4Slice name, C4Slice indexSpec, C4
     auto coll = database->getDefaultCollection();
     returnIfCollectionInvalid(coll, outError, false);
     return c4coll_createIndex(coll, name, indexSpec, queryLanguage, indexType, indexOptions, outError);
+}
+
+bool c4coll_isIndexTrained(C4Collection* collection, C4Slice name, C4Error* outError) noexcept {
+    memset(outError, 0, sizeof(C4Error));
+    return tryCatch(outError, [=] { return collection->isIndexTrained(name); });
 }
 
 // semi-deprecated
