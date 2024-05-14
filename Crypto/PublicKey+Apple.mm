@@ -337,7 +337,10 @@ namespace litecore { namespace crypto {
             if (@available(macOS 11.0, iOS 14.0, *)) {
                 publicKeyRef = SecTrustCopyKey(trustRef);
             } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                 publicKeyRef = SecTrustCopyPublicKey(trustRef);
+#pragma clang diagnostic pop
             }
             CFRelease(policyRef);
             CFRelease(trustRef);
@@ -536,21 +539,12 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-            if (@available(iOS 12.0, *)) {
-                CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
-                }
-                err = SecTrustGetTrustResult(trustRef, &result);
-            } else {
-#if TARGET_OS_MACCATALYST
-                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12");
-                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12");
-#else
-                err = SecTrustEvaluate(trustRef, &result);
-#endif
+            CFErrorRef cferr;
+            if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
+                auto error = (__bridge NSError*)cferr;
+                LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
             }
+            err = SecTrustGetTrustResult(trustRef, &result);
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
 
@@ -569,7 +563,10 @@ namespace litecore { namespace crypto {
 #endif
             {
                 for (CFIndex i = 1; i < count; i++) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+#pragma clang diagnostic pop
                     NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
                     cert->append(new Cert(slice(data)));
                 }
@@ -639,7 +636,10 @@ namespace litecore { namespace crypto {
                 LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
                 error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
 #else
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                 err = SecTrustEvaluate(trustRef, &result);
+#pragma clang diagnostic pop
 #endif
             }
 
@@ -694,7 +694,10 @@ namespace litecore { namespace crypto {
 #endif
             {
                 for (CFIndex i = count - 1; i >= 0; i--) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+#pragma clang diagnostic pop
                     if (getChildCertCount(ref) < 2) {
                         NSDictionary* params = @{
                             (id)kSecClass:              (id)kSecClassCertificate,
@@ -755,21 +758,12 @@ namespace litecore { namespace crypto {
             SecTrustResultType result;
             OSStatus err;
 
-            if (@available(iOS 12.0, *)) {
-                CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trust, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
-                }
-                err = SecTrustGetTrustResult(trust, &result);
-            } else {
-#if TARGET_OS_MACCATALYST
-                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12.0");
-                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12.0");
-#else
-                err = SecTrustEvaluate(trust, &result);
-#endif
+            CFErrorRef cferr;
+            if (!SecTrustEvaluateWithError(trust, &cferr)) {
+                auto error = (__bridge NSError*)cferr;
+                LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
             }
+            err = SecTrustGetTrustResult(trust, &result);
             checkOSStatus(err, "SecTrustEvaluate", "Couldn't validate certificate");
             LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
             if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
@@ -796,7 +790,10 @@ namespace litecore { namespace crypto {
 #endif
             {
                 for (CFIndex i = 1; i < certCount; ++i) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                     auto certRef = SecTrustGetCertificateAtIndex(trust, i);
+#pragma clang diagnostic pop
                     LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
                     CFDataRef dataRef = SecCertificateCopyData(certRef);
                     CFAutorelease(dataRef);
