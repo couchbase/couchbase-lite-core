@@ -84,7 +84,7 @@ namespace litecore::repl {
         unsigned _numRevokedBeingHandled{0};     // # of revoked docs currently being processed
         bool     _announcedDeltaSupport{false};  // Did I send "deltas:true" yet?
         bool     _mustBeProposed{false};         // Do I handle only "proposedChanges"?
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
       public:
         bool _disableReplacementRevs{false};
 #endif

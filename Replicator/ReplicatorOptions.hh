@@ -45,7 +45,7 @@ namespace litecore::repl {
 
         bool isActive() const { return _mutables._isActive; }
 
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
         void setDelayChangesResponse(const bool delay) { _delayChangesResponse = delay; }
 
         bool delayChangesResponse() const { return _delayChangesResponse; }
@@ -87,7 +87,7 @@ namespace litecore::repl {
             , callbackContext(opt.callbackContext)
             , properties(slice(opt.properties.data()))  // copy data, bc dtor wipes it
             , progressLevel(opt.progressLevel.load())
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
             , _delayChangesResponse(opt._delayChangesResponse)
             , _disableReplacementRevs(opt._disableReplacementRevs)
 #endif

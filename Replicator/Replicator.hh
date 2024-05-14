@@ -257,7 +257,7 @@ namespace litecore::repl {
         alloc_slice           _remoteURL;
         bool                  _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
         // Used for testing purposes to delay the changes response to the remote
         bool _delayChangesResponse{false};
 

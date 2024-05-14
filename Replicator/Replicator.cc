@@ -92,7 +92,7 @@ namespace litecore::repl {
             });
             logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
 
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
             _delayChangesResponse   = _options->delayChangesResponse();
             _disableReplacementRevs = _options->disableReplacementRevs();
 #endif
@@ -1206,7 +1206,7 @@ namespace litecore::repl {
             }
         }
 
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
         if ( _delayChangesResponse && (profile == "changes"_sl || profile == "proposeChanges"_sl) ) {
             C4Log("Delaying changes response...");
             std::this_thread::sleep_for(std::chrono::seconds(5));

@@ -67,7 +67,7 @@ namespace litecore::repl {
         if ( sinceStr ) msg["since"_sl] = sinceStr;
         if ( _options->pull(collectionIndex()) == kC4Continuous ) msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
-#ifdef DEBUG
+#ifdef DEBUG // For testing only
         msg["sendReplacementRevs"] = !_revFinder->_disableReplacementRevs;
 #else
         msg["sendReplacementRevs"] = tuning::kChangesReplacementRevs;
