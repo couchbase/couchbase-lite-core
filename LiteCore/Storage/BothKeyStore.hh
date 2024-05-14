@@ -102,7 +102,9 @@ namespace litecore {
 
         [[nodiscard]] std::vector<IndexSpec> getIndexes() const override { return _liveStore->getIndexes(); }
 
-        [[nodiscard]] bool isIndexTrained(fleece::slice name) const override { return _liveStore->isIndexTrained(name); }
+        [[nodiscard]] bool isIndexTrained(fleece::slice name) const override {
+            return _liveStore->isIndexTrained(name);
+        }
 
 
       protected:

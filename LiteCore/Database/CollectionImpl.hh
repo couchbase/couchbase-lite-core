@@ -489,9 +489,7 @@ namespace litecore {
             return rows;
         }
 
-        bool isIndexTrained(slice indexName) const override {
-           return keyStore().isIndexTrained(indexName);
-        }
+        bool isIndexTrained(slice indexName) const override { return keyStore().isIndexTrained(indexName); }
 
 #pragma mark - OBSERVERS:
 

@@ -79,9 +79,7 @@ static LogDomain::Callback_t sPrevCallback;
 static atomic_uint           sWarningsLogged;
 
 static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
-    if ( level >= LogLevel::Warning ) {
-        ++sWarningsLogged;
-    }
+    if ( level >= LogLevel::Warning ) { ++sWarningsLogged; }
     sPrevCallback(domain, level, fmt, args);
 }
 
@@ -142,9 +140,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
 
 DataFile::Factory& DataFileTestFixture::factory() { return SQLiteDataFile::sqliteFactory(); }
 
-FilePath DataFileTestFixture::databasePath() {
-    return sTempDir[string("db") + factory().filenameExtension()];
-}
+FilePath DataFileTestFixture::databasePath() { return sTempDir[string("db") + factory().filenameExtension()]; }
 
 /*static*/ void DataFileTestFixture::deleteDatabase(const FilePath& dbPath) {
     auto factory = DataFile::factoryForFile(dbPath);
