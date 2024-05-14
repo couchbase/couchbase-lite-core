@@ -48,7 +48,7 @@ class QueryTest : public DataFileTestFixture {
         switch ( option ) {
             case 0:
                 jump           = alter3++ % 3;
-                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName : (jump == 1) ? "_" : "cbl_core_temp";
+                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName : (jump == 1) ? "_" : "db";
                 break;
             case 1:
                 collectionName = (alter2++ % 2 == 0) ? "Secondary" : "_default.Secondary";

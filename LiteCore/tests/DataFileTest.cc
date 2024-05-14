@@ -733,7 +733,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][E
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
     options.encryptionKey       = "12345678901234567890123456789012"_sl;
-    auto dbPath                 = databasePath("encrypted");
+    auto dbPath                 = databasePath();
     deleteDatabase(dbPath);
     try {
         {

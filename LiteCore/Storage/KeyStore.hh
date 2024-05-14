@@ -199,9 +199,10 @@ namespace litecore {
             return createIndex(name, expression, QueryLanguage::kJSON, type, options);
         }
 
-        virtual void                                 deleteIndex(slice name) = 0;
-        virtual std::optional<IndexSpec>             getIndex(slice name)    = 0;
-        [[nodiscard]] virtual std::vector<IndexSpec> getIndexes() const      = 0;
+        virtual void                                   deleteIndex(slice name)          = 0;
+        [[nodiscard]] virtual std::vector<IndexSpec>   getIndexes() const               = 0;
+        [[nodiscard]] virtual std::optional<IndexSpec> getIndex(slice name)             = 0;
+        [[nodiscard]] virtual bool                     isIndexTrained(slice name) const = 0;
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore() = default;
