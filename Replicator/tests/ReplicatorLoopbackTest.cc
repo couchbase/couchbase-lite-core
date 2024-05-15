@@ -175,10 +175,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
         REQUIRE(c4coll_purgeDoc(_collDB2, "meenie"_sl, nullptr));
     }
 
-    _expectedDocumentCount = 0;  // normal replication will not re-pull purged doc
+    _expectedDocumentCount = 0; // normal replication will not re-pull purged doc
     runPullReplication();
 
-    _expectedDocumentCount = 1;  // resetting checkpoint does re-pull purged doc
+    _expectedDocumentCount = 1; // resetting checkpoint does re-pull purged doc
     runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(kC4OneShot, _collSpec), true);
 
     c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "meenie"_sl, true, kDocGetAll, nullptr);
@@ -269,11 +269,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     for ( unsigned i = 1; i <= 100; i += 2 ) {
         char docID[bufSize];
         snprintf(docID, bufSize, "%07u", i);
-        createNewRev(_collDB1, slice(docID), nullslice, kRevDeleted);  // delete it
+        createNewRev(_collDB1, slice(docID), nullslice, kRevDeleted); // delete it
     }
     _expectedDocumentCount = 50;
 
-    optional<Options> pushOpt, pullOpt;
+    optional<Options> pushOpt,      pullOpt;
     bool              pull = false, skipDeleted = false;
 
     SECTION("Pull") {
@@ -298,8 +298,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     compareDatabases(false, false);
 
     if ( pull ) validateCheckpoints(db2, db, "{\"remote\":100}");
-    else
-        validateCheckpoints(db, db2, "{\"local\":100}");
+    else validateCheckpoints(db, db2, "{\"local\":100}");
 
     // If skipDeleted was used, ensure only 50 revisions got created (no tombstones):
     CHECK(c4coll_getLastSequence(_collDB2) == (skipDeleted ? 50 : 100));
@@ -441,7 +440,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     validateCheckpoints(db2, db, "{\"local\":100}");
 }
 
-static Replicator::Options pushOptionsWithProperty(const char* property, const vector<string>& array,
+static Replicator::Options pushOptionsWithProperty(const char*      property, const vector<string>& array,
                                                    C4CollectionSpec collSpec = kC4DefaultCollectionSpec) {
     fleece::Encoder enc;
     enc.beginDict();
@@ -465,7 +464,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":1}");
     alloc_slice chk1 = _checkpointIDs[0];
 
-    _expectedDocumentCount = 0;  // because db2 already has the doc
+    _expectedDocumentCount = 0; // because db2 already has the doc
     runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}, _collSpec),
                    Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"local\":1}");
@@ -574,7 +573,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
             bool ok = c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
             REQUIRE(ok);
         }
-        sleepFor(1s);  // give replicator a moment to detect the latest revs
+        sleepFor(1s); // give replicator a moment to detect the latest revs
         stopWhenIdle();
     }));
     // The purged document, namely "docA", should not be attempted by the push replicator.
@@ -598,7 +597,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
         createRev(_collDB2, "other1"_sl, kRev1ID, kFleeceBody);
     }
     addRevsInParallel(1000ms, alloc_slice("docko"), 1, 3);
-    _expectedDocumentCount = 3;  // only 1 doc, but we get notified about it 3 times...
+    _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
     runReplicators(Replicator::Options::pushing(kC4Continuous, _collSpec), serverOpts);
 }
 
@@ -701,7 +700,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
     {
         // Create 10 docs, each with 1000 blobs:
         TransactionHelper t(db);
-        constexpr size_t  docBufSize = 100, bodyBufSize = 100;
+        constexpr size_t  docBufSize = 100,  bodyBufSize = 100;
         char              docid[docBufSize], body[bodyBufSize];
         for ( int iDoc = 0; iDoc < kNumDocs; ++iDoc ) {
             //Log("Creating doc %3d ...", iDoc);
@@ -765,37 +764,37 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
     replace(json, '"', '\'');
     if ( isRevTrees() ) {
         CHECK(json
-              == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
-                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':"
-                 "true},"
-                 "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
-                 "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
-                 "vlWAYkK/"
-                 "YBwk=','length':0,'revpos':1,'stub':true}},"
-                 "'attached':[{'@type':'blob','content_type':'text/"
-                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
-                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=','length':10},"
-                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=','length':0}]}");
+                == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':"
+                "true},"
+                "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
+                "vlWAYkK/"
+                "YBwk=','length':0,'revpos':1,'stub':true}},"
+                "'attached':[{'@type':'blob','content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0}]}");
     } else {
         // (the only difference is that the 'revpos' properties are not present.)
         CHECK(json
-              == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
-                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'stub':"
-                 "true},"
-                 "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=','length':10,'stub':true},"
-                 "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
-                 "vlWAYkK/"
-                 "YBwk=','length':0,'stub':true}},"
-                 "'attached':[{'@type':'blob','content_type':'text/"
-                 "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
-                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=','length':10},"
-                 "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=','length':0}]}");
+                == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'stub':"
+                "true},"
+                "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10,'stub':true},"
+                "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/"
+                "vlWAYkK/"
+                "YBwk=','length':0,'stub':true}},"
+                "'attached':[{'@type':'blob','content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0}]}");
     }
 }
 
@@ -804,8 +803,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
     vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
-        blobKeys               = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments,
-                                                       "text/plain");  //legacy
+        blobKeys = addDocWithAttachments(db, _collSpec, "att1"_sl, attachments,
+                                         "text/plain"); //legacy
         _expectedDocumentCount = 1;
     }
 
@@ -874,8 +873,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     atomic<int> validationCount{0};
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
     pullOptions.collectionOpts[0].pullFilter      = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
-                                                  C4RevisionFlags flags, FLDict body, void* context) -> bool {
-        assert_always(flags == 0);  // can't use CHECK on a bg thread
+                                                       C4RevisionFlags  flags, FLDict            body,
+                                                       void*            context) -> bool {
+        assert_always(flags == 0); // can't use CHECK on a bg thread
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
     };
@@ -1163,7 +1163,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
         TransactionHelper t(db);
         C4Error           error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, kRevDeleted,
-                                    WITH_ERROR(&error)));
+            WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
 
@@ -1210,13 +1210,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         TransactionHelper t(db);
         C4Error           error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, kRevDeleted,
-                                    WITH_ERROR(&error)));
+            WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
 
     doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
     alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-    if ( isRevTrees() ) CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
+    if ( isRevTrees() )
+        CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
     else
         CHECK(mergedID == "2@*, 1@MajorMajorMajorMajorQQ, 1@NorbertHeisenbergVonQQ;"_sl);
 
@@ -1228,7 +1229,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
-    if ( !isRevTrees() ) return;  // this does not make sense with version vectors
+    if ( !isRevTrees() ) return; // this does not make sense with version vectors
 
     // For https://github.com/couchbase/sync_gateway/issues/3359
     C4Slice docID = C4STR("Khan");
@@ -1247,7 +1248,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     REQUIRE(doc);
     C4Slice revID = C4STR("3-33333333");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK((doc->flags & kDocConflicted) == 0);  // locally in db there is no conflict
+    CHECK((doc->flags & kDocConflicted) == 0); // locally in db there is no conflict
 
     {
         TransactionHelper t(db);
@@ -1295,7 +1296,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
             TransactionHelper t(db2);
             C4Error           error;
             CHECK(c4doc_resolveConflict(doc, C4STR("4-4444"), C4STR("2-ffffffff"), kC4SliceNull, 0,
-                                        WITH_ERROR(&error)));
+                WITH_ERROR(&error)));
             CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         }
 
@@ -1330,29 +1331,29 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     auto serverOpts        = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     installConflictHandler();
 
-    static const int intervalMs = -500;  // random interval
+    static const int intervalMs = -500; // random interval
     static const int iterations = 30;
 
     atomic_int         completed{0};
     unique_ptr<thread> thread1(runInParallel([&]() {
         addRevs(_collDB1, chrono::milliseconds(intervalMs), docID, 1, iterations, false, "db");
         if ( ++completed == 2 ) {
-            sleepFor(1s);  // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }
     }));
     unique_ptr<thread> thread2(runInParallel([&]() {
         addRevs(_collDB2, chrono::milliseconds(intervalMs), docID, 1, iterations, false, "db2");
         if ( ++completed == 2 ) {
-            sleepFor(1s);  // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }
     }));
 
     _expectedDocumentCount = -1;
-    _expectedDocPushErrors = {"doc"};  // there are likely to be conflicts
-    _ignoreLackOfDocErrors = true;     // ...but they may not occur
-    _ignoreTransientErrors = true;     // (retries will show up as transient errors)
+    _expectedDocPushErrors = {"doc"}; // there are likely to be conflicts
+    _ignoreLackOfDocErrors = true; // ...but they may not occur
+    _ignoreTransientErrors = true; // (retries will show up as transient errors)
     _checkDocsFinished     = false;
 
     runReplicators(clientOpts, serverOpts);
@@ -1415,11 +1416,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     REQUIRE(e);
 
     // verify only returns the conflicted documents, including the deleted ones.
-    vector<C4Slice> docIDs   = {"conflict"_sl, "db-deleted"_sl, "db2-deleted"_sl};
-    vector<C4Slice> revIDs   = {revOrVersID("2-12121212", "1@ZegpoldZegpoldZegpoldA"),
-                                revOrVersID("2-31313131", "1@ZegpoldZegpoldZegpoldA"),
-                                revOrVersID("2-41414141", "1@ZegpoldZegpoldZegpoldA")};
-    vector<bool>    deleteds = {false, true, false};
+    vector<C4Slice> docIDs = {"conflict"_sl, "db-deleted"_sl, "db2-deleted"_sl};
+    vector<C4Slice> revIDs = {revOrVersID("2-12121212", "1@ZegpoldZegpoldZegpoldA"),
+                              revOrVersID("2-31313131", "1@ZegpoldZegpoldZegpoldA"),
+                              revOrVersID("2-41414141", "1@ZegpoldZegpoldZegpoldA")};
+    vector<bool> deleteds = {false, true, false};
 
     C4Error err;
     for ( int count = 0; count < 3; ++count ) {
@@ -1506,7 +1507,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
         collOpts.callbackContext = &validationCount;
         collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
                                  FLDict body, void* context) -> bool {
-            assert_always(flags == 0);  // can't use CHECK on a bg thread
+            assert_always(flags == 0); // can't use CHECK on a bg thread
             ++(*(atomic<int>*)context);
             return true;
         };
@@ -1520,7 +1521,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta]") {
-    static constexpr int kNumDocs = 100, kNumProps = 1000;
+    static constexpr int kNumDocs   = 100, kNumProps = 1000;
     auto                 serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
@@ -1588,7 +1589,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
     auto before            = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
     compareDatabases();
-    if ( isRevTrees() )  // VV does not currently send deltas from a passive replicator
+    if ( isRevTrees() ) // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
 
@@ -1647,42 +1648,42 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
             expectedNumDeltas = 0;
         }
         expectedJson = "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
-                       "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                       "WXWZsCw48=\",\"length\":27,\"revpos\":2,\"stub\":true},"
-                       "\"blob_/attached/1\":{\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                       "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
-                       "\"blob_/attached/2\":{\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                       "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
-                       "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
-                       "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
-                       "{\"@type\":\"blob\",\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                       "WXWZsCw48=\",\"length\":10},"
-                       "{\"@type\":\"blob\",\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                       "YBwk=\",\"length\":0}]}";
+                "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":27,\"revpos\":2,\"stub\":true},"
+                "\"blob_/attached/1\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+                "\"blob_/attached/2\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
+                "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+                "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+                "{\"@type\":\"blob\",\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10},"
+                "{\"@type\":\"blob\",\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0}]}";
     } else {
         expectedJson = "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/"
-                       "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":"
-                       "2,\"stub\":true},"
-                       "\"blob_/attached/1\":{\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                       "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
-                       "\"blob_/attached/2\":{\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                       "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
-                       "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
-                       "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
-                       "{\"@type\":\"blob\",\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                       "WXWZsCw48=\",\"length\":10},"
-                       "{\"@type\":\"blob\",\"content_type\":\"text/"
-                       "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                       "YBwk=\",\"length\":0}]}";
+                "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":"
+                "2,\"stub\":true},"
+                "\"blob_/attached/1\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10,\"revpos\":2,\"stub\":true},"
+                "\"blob_/attached/2\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0,\"revpos\":2,\"stub\":true}},"
+                "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+                "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
+                "{\"@type\":\"blob\",\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10},"
+                "{\"@type\":\"blob\",\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0}]}";
     }
-    if ( !isRevTrees() ) replace(expectedJson, "\"revpos\":2,", "");  // With version vectors there's no revpos
+    if ( !isRevTrees() ) replace(expectedJson, "\"revpos\":2,", ""); // With version vectors there's no revpos
 
     CHECK(DBAccessTestWrapper::numDeltasApplied() - before == expectedNumDeltas);
     CHECK(string(json) == expectedJson);
@@ -1732,31 +1733,31 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     _expectedDocumentCount = 1;
     auto before            = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot, _collSpec));
-    if ( isRevTrees() )  // VV does not currently send deltas from a passive replicator
+    if ( isRevTrees() ) // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
     c4::ref<C4Document> doc2 = c4coll_getDoc(_collDB2, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice         json = c4doc_bodyAsJSON(doc2, true, nullptr);
     if ( modifiedDigest ) {
         CHECK(string(json)
-              == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
-                 "\"attachment2\":{\"content_type\":\"text/"
-                 "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10},"
-                 "\"attachment3\":{\"content_type\":\"text/"
-                 "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0}}}");
+                == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
+                "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+                "\"attachment2\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10},"
+                "\"attachment3\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0}}}");
     } else {
         CHECK(string(json)
-              == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
-                 "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
-                 "\"attachment2\":{\"content_type\":\"text/"
-                 "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-                 "WXWZsCw48=\",\"length\":10},"
-                 "\"attachment3\":{\"content_type\":\"text/"
-                 "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-                 "YBwk=\",\"length\":0}}}");
+                == "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/"
+                "jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
+                "\"attachment2\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=\",\"length\":10},"
+                "\"attachment3\":{\"content_type\":\"text/"
+                "plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=\",\"length\":0}}}");
     }
 }
 
@@ -1788,21 +1789,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     _expectedDocumentCount = 1;
     auto before            = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
-    if ( isRevTrees() )  // VV does not currently send deltas from a passive replicator
+    if ( isRevTrees() ) // VV does not currently send deltas from a passive replicator
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
     c4::ref<C4Document> doc  = c4coll_getDoc(_collDB1, "att1"_sl, true, kDocGetAll, nullptr);
     alloc_slice         json = c4doc_bodyAsJSON(doc, true, nullptr);
     CHECK(string(json)
-          == "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
-             "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-             "WXWZsCw48=\",\"length\":27},"
-             "{\"@type\":\"blob\",\"content_type\":\"text/"
-             "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
-             "WXWZsCw48=\",\"length\":10},"
-             "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/"
-             "vlWAYkK/"
-             "YBwk=\",\"length\":0}]}");
+            == "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/"
+            "jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+            "WXWZsCw48=\",\"length\":27},"
+            "{\"@type\":\"blob\",\"content_type\":\"text/"
+            "plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/"
+            "WXWZsCw48=\",\"length\":10},"
+            "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/"
+            "vlWAYkK/"
+            "YBwk=\",\"length\":0}]}");
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
@@ -1850,7 +1851,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"remote\":4}");
     if ( isRevTrees() )
-        REQUIRE(c4coll_getLastSequence(_collDB1) == 6);  // #5(doc1) and #6(doc2) seq, received from other side
+        REQUIRE(c4coll_getLastSequence(_collDB1) == 6); // #5(doc1) and #6(doc2) seq, received from other side
     REQUIRE(c4coll_getLastSequence(_collDB2) == 4);
 
     // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
@@ -1864,13 +1865,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
         TransactionHelper t(db);
         C4Error           error;
         CHECK(c4doc_resolveConflict(doc, kDoc1Rev2B, kDoc1Rev2A, json2fleece("{\"merged\":true}"), 0,
-                                    WITH_ERROR(&error)));
+            WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
     doc      = c4coll_getDoc(_collDB1, C4STR("doc1"), true, kDocGetAll, nullptr);
     auto seq = C4SequenceNumber(isRevTrees() ? 7 : 5);
     CHECK(doc->sequence == seq);
-    CHECK(c4coll_getLastSequence(_collDB1) == seq);  // db-sequence is greater than #6(doc2)
+    CHECK(c4coll_getLastSequence(_collDB1) == seq); // db-sequence is greater than #6(doc2)
 
     // resolve doc2; choose remote revision, so no need to create a new revision
     doc = c4coll_getDoc(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
@@ -1932,8 +1933,8 @@ static C4SliceResult testEncryptor(void* rawCtx, C4CollectionSpec collection, C4
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, 1));
 }
 
-static C4SliceResult testDecryptor(void* rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
-                                   C4String keyPath, C4Slice input, C4String algorithm, C4String keyID,
+static C4SliceResult testDecryptor(void*    rawCtx, C4CollectionSpec collection, C4String documentID, FLDict properties,
+                                   C4String keyPath, C4Slice         input, C4String      algorithm, C4String keyID,
                                    C4Error* outError) {
     auto context    = (TestEncryptorContext*)rawCtx;
     context->called = true;
@@ -1975,11 +1976,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
     REQUIRE(doc);
     Dict props = c4doc_getProperties(doc);
 
-    if ( TestDecryption ) {
-        CHECK(props.toJSON(false, true) == originalJSON);
-    } else {
+    if ( TestDecryption ) { CHECK(props.toJSON(false, true) == originalJSON); } else {
         CHECK(props.toJSON(false, true)
-              == R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
+                == R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
 
         // Decrypt the "ciphertext" property by hand. We disabled decryption on the destination,
         // so the property won't be converted back from the server schema.
@@ -1992,8 +1991,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
 #endif  // COUCHBASE_ENTERPRISE
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
-    Options opts       = GENERATE_COPY(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec),
-                                       Options::pushpull(kC4OneShot, _collSpec));
+    Options opts = GENERATE_COPY(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec),
+                                 Options::pushpull(kC4OneShot, _collSpec));
     Options serverOpts = Options::passive(_collSpec);
 
     Retained<C4Collection>     coll = createCollection(db, {"foo"_sl, "bar"_sl});
@@ -2065,7 +2064,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
     REQUIRE(revID_2 == string(docInDb1->revID));
 }
 
-#ifdef DEBUG
+#ifdef LITECORE_CPPTEST
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revisions", "[Push][Sync]") {
     enum class TestMode {
         ClientPush,
@@ -2172,19 +2171,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revis
             break;
     }
     waitForReplicators(*clientOpts, *serverOpts);
+
+    C4Collection* pullerColl;
+
     switch ( testMode ) {
         case TestMode::ClientPush:
+            pullerColl = _collDB2;
             validateCheckpoints(db, db2, "{\"local\":1}");
             break;
         case TestMode::ClientPull:
+            pullerColl = _collDB1;
             validateCheckpoints(db, db2, "{\"remote\":1}");
             break;
         case TestMode::ServerPush:
+            pullerColl = _collDB1;
             validateCheckpoints(db2, db, "{\"local\":1}");
             break;
         case TestMode::ServerPull:
+            pullerColl = _collDB2;
             validateCheckpoints(db2, db, "{\"remote\":1}");
             break;
+    }
+
+    if ( isRevTrees() && _expectedDocumentCount > 0 ) {
+        auto pullerDoc = c4coll_getDoc(pullerColl, "doc"_sl, true, kDocGetAll, ERROR_INFO());
+        CHECK(c4rev_getGeneration(slice(pullerDoc->revID)) == 2);
+        c4doc_release(pullerDoc);
     }
 }
 #endif
