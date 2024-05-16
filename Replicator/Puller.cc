@@ -37,21 +37,20 @@ namespace litecore::repl {
     Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
 #if __APPLE__
-          , _revMailbox(nullptr, "Puller revisions")
+        , _revMailbox(nullptr, "Puller revisions")
 #endif
-          , _inserter(new Inserter(replicator, coll))
-          , _revFinder(new RevFinder(replicator, this, coll))
-          , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-          , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
-          , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        , _inserter(new Inserter(replicator, coll))
+        , _revFinder(new RevFinder(replicator, this, coll))
+        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
+        , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
         setParentObjectRef(replicator->getObjectRef());
         replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
         replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
         if ( !passive() && _options->noIncomingConflicts() )
-            warn(
-                    "noIncomingConflicts mode is not compatible with active pull replications!");
+            warn("noIncomingConflicts mode is not compatible with active pull replications!");
     }
 
     // Starting an active pull.
@@ -75,7 +74,7 @@ namespace litecore::repl {
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
         if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
-            msg["revocations"] = "true"; // Enable revocation notification in "changes" (SG 3.0)
+            msg["revocations"] = "true";  // Enable revocation notification in "changes" (SG 3.0)
             logInfo(R"(msg["revocations"]="true" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0)",
                     _options->enableAutoPurge(), progressNotificationLevel());
         }
@@ -129,7 +128,8 @@ namespace litecore::repl {
                 // Add sequence to _missingSequences:
                 _missingSequences.add(change.sequence, change.bodySize);
                 if ( change.requested() ) addProgress({0, change.bodySize});
-                else completedSequence(change.sequence); // Not requesting, just update checkpoint
+                else
+                    completedSequence(change.sequence);  // Not requesting, just update checkpoint
             }
             if ( change.requested() ) {
                 increment(_pendingRevMessages);
@@ -146,7 +146,9 @@ namespace litecore::repl {
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
         for ( auto& rev : revs ) {
             if ( _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
-                 && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) { startRevoked(rev); } else {
+                 && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+                startRevoked(rev);
+            } else {
                 logDebug("Delaying handling revocation for '%.*s' [%zu waiting]", SPLAT(rev->docID),
                          _waitingRevoked.size() + 1);
                 if ( _waitingRevoked.empty() ) { logVerbose("Back pressure started for revocations"); }
@@ -158,7 +160,9 @@ namespace litecore::repl {
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
         if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-             && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) { startIncomingRev(msg); } else {
+             && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) {
+            startIncomingRev(msg);
+        } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]", SPLAT(msg->property("id"_sl)),
                      _waitingRevMessages.size() + 1);
             if ( _waitingRevMessages.empty() ) {
@@ -189,7 +193,7 @@ namespace litecore::repl {
         if ( inc ) {
             slice sequenceStr = msg->property(slice("sequence"));
             inc->handleRev(msg, _missingSequences.bodySizeOfSequence(RemoteSequence(
-                                   sequenceStr))); // ... will call _revWasHandled when it's finished
+                                        sequenceStr)));  // ... will call _revWasHandled when it's finished
         }
     }
 
@@ -216,7 +220,9 @@ namespace litecore::repl {
         }
 
         Retained<IncomingRev> inc;
-        if ( _spareIncomingRevs.empty() ) { inc = new IncomingRev(this); } else {
+        if ( _spareIncomingRevs.empty() ) {
+            inc = new IncomingRev(this);
+        } else {
             inc = _spareIncomingRevs.back();
             _spareIncomingRevs.pop_back();
         }
@@ -264,7 +270,7 @@ namespace litecore::repl {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the IncomingRev's thread, NOT the Puller's! Thus, it needs
         // to pay attention to thread-safety.
-        _returningRevs.push(inc); // this is thread-safe
+        _returningRevs.push(inc);  // this is thread-safe
     }
 
     void Puller::_revsFinished(int gen) {
@@ -276,12 +282,10 @@ namespace litecore::repl {
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
             auto rev = inc->rev();
             if ( rev->revocationMode == RevocationMode::kNone ) {
-                if ( !inc->wasProvisionallyInserted() )
-                    decrement(_activeIncomingRevs);
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
                 decrement(_unfinishedIncomingRevs);
             } else {
-                if ( !inc->wasProvisionallyInserted() )
-                    decrement(_activeIncomingRevoked);
+                if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevoked);
                 numRevoked++;
             }
             if ( !passive() ) completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
@@ -319,7 +323,7 @@ namespace litecore::repl {
 
     // Records that a sequence has been successfully pulled.
     void Puller::completedSequence(const RemoteSequence& sequence, bool withTransientError,
-                                   bool                  shouldUpdateLastSequence) {
+                                   bool shouldUpdateLastSequence) {
         uint64_t bodySize;
         if ( withTransientError ) {
             // If there's a transient error, don't mark this sequence as completed,
@@ -340,8 +344,7 @@ namespace litecore::repl {
             logVerbose("Checkpoint now at '%s' (collection: %u", _lastSequence.toJSONString().c_str(),
                        collectionIndex());
             if ( auto replicator = replicatorIfAny(); replicator )
-                replicator->checkpointer(collectionIndex()).
-                            setRemoteMinSequence(_lastSequence);
+                replicator->checkpointer(collectionIndex()).setRemoteMinSequence(_lastSequence);
         }
     }
 
@@ -362,13 +365,17 @@ namespace litecore::repl {
         if ( _unfinishedIncomingRevs + _unfinishedIncomingRevoked > 0 ) {
             // CBL-221: Crash when scheduling document ended events
             level = kC4Busy;
-        } else if ( _fatalError || !connected() ) { level = kC4Stopped; } else if (
-            Worker::computeActivityLevel() == kC4Busy || (!_caughtUp && !passive())
-            || _pendingRevMessages > 0 ) { level = kC4Busy; } else if (
-            _options->pull(collectionIndex()) == kC4Continuous || isOpenServer() ) {
+        } else if ( _fatalError || !connected() ) {
+            level = kC4Stopped;
+        } else if ( Worker::computeActivityLevel() == kC4Busy || (!_caughtUp && !passive())
+                    || _pendingRevMessages > 0 ) {
+            level = kC4Busy;
+        } else if ( _options->pull(collectionIndex()) == kC4Continuous || isOpenServer() ) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
-        } else { level = kC4Stopped; }
+        } else {
+            level = kC4Stopped;
+        }
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d,"
                     " _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingRevMessages=%zu,"
@@ -377,8 +384,8 @@ namespace litecore::repl {
                     _activeIncomingRevs, _waitingRevMessages.size(), _unfinishedIncomingRevs);
         }
 
-        if ( level == kC4Stopped ) _revFinder = nullptr; // break cycle
+        if ( level == kC4Stopped ) _revFinder = nullptr;  // break cycle
 
         return level;
     }
-} // namespace litecore::repl
+}  // namespace litecore::repl
