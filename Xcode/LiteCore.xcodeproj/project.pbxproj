@@ -247,8 +247,8 @@
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
-		278CE55C2B98E78D00245552 /* carray_bind.c in Sources */ = {isa = PBXBuildFile; fileRef = 278CE5592B98E78D00245552 /* carray_bind.c */; };
-		278CE55D2B98E78D00245552 /* carray.c in Sources */ = {isa = PBXBuildFile; fileRef = 278CE55A2B98E78D00245552 /* carray.c */; };
+		278CE55C2B98E78D00245552 /* carray_bind.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE5592B98E78D00245552 /* carray_bind.cc */; };
+		278CE55D2B98E78D00245552 /* carray.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE55A2B98E78D00245552 /* carray.cc */; };
 		278CE6EA2BA4C2C200245552 /* SequenceSet.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6E92BA4C2C200245552 /* SequenceSet.cc */; };
 		278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6F12BAA116300245552 /* SequenceSetTest.cc */; };
 		278F475924C9131000E1CA7A /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -1253,8 +1253,8 @@
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		278CE5582B98E78D00245552 /* carray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = carray.h; sourceTree = "<group>"; };
-		278CE5592B98E78D00245552 /* carray_bind.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = carray_bind.c; sourceTree = "<group>"; };
-		278CE55A2B98E78D00245552 /* carray.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = carray.c; sourceTree = "<group>"; };
+		278CE5592B98E78D00245552 /* carray_bind.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carray_bind.cc; sourceTree = "<group>"; };
+		278CE55A2B98E78D00245552 /* carray.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = carray.cc; sourceTree = "<group>"; };
 		278CE55B2B98E78D00245552 /* carray_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = carray_internal.h; sourceTree = "<group>"; };
 		278CE6E92BA4C2C200245552 /* SequenceSet.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSet.cc; sourceTree = "<group>"; };
 		278CE6F12BAA116300245552 /* SequenceSetTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceSetTest.cc; sourceTree = "<group>"; };
@@ -2806,8 +2806,8 @@
 			children = (
 				278CE5582B98E78D00245552 /* carray.h */,
 				278CE55B2B98E78D00245552 /* carray_internal.h */,
-				278CE55A2B98E78D00245552 /* carray.c */,
-				278CE5592B98E78D00245552 /* carray_bind.c */,
+				278CE55A2B98E78D00245552 /* carray.cc */,
+				278CE5592B98E78D00245552 /* carray_bind.cc */,
 			);
 			path = ext;
 			sourceTree = "<group>";
@@ -4375,7 +4375,7 @@
 				2744B358241854F2005A194D /* Channel.cc in Sources */,
 				2744B35D241854F2005A194D /* Message.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
-				278CE55D2B98E78D00245552 /* carray.c in Sources */,
+				278CE55D2B98E78D00245552 /* carray.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
 				27469D07233D719800A1EE1A /* PublicKey.cc in Sources */,
@@ -4445,7 +4445,7 @@
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
-				278CE55C2B98E78D00245552 /* carray_bind.c in Sources */,
+				278CE55C2B98E78D00245552 /* carray_bind.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
