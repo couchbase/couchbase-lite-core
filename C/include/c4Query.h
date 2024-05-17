@@ -122,7 +122,6 @@ NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4Query
         resources if the enumeration has not reached its end, but will not be freed for a while. */
 CBL_CORE_API void c4queryenum_close(C4QueryEnumerator*) C4API;
 
-
 /** @} */
 
 C4API_END_DECLS
