@@ -18,15 +18,13 @@ namespace litecore {
     template <class T>
     static T _increment(T& value, const char* name NONNULL, T by = 1) {
         Assert(value + by >= value, "overflow incrementing %s", name);
-        value += by;
-        return value;
+        return value += by;
     }
 
     template <class T>
     static T _decrement(T& value, const char* name NONNULL, T by = 1) {
         Assert(value >= by, "underflow decrementing %s", name);
-        value -= by;
-        return value;
+        return value -= by;
     }
 
     template <class T>

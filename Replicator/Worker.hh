@@ -293,7 +293,7 @@ namespace litecore::repl {
         uint8_t                   _importance{1};  // Higher values log more
       private:
         Retained<blip::Connection>             _connection;               // BLIP connection
-        int                                    _pendingResponseCount{0};  // # of responses I'm awaiting
+        std::atomic<int>                       _pendingResponseCount{0};  // # of responses I'm awaiting
         Status                                 _status{kC4Idle};          // My status
         bool                                   _statusChanged{false};     // Status changed during this event
         const CollectionIndex                  _collectionIndex;
