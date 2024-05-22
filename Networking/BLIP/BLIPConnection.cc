@@ -590,7 +590,7 @@ namespace litecore::blip {
                     _connection->delegateWeak()->invoke(&ConnectionDelegate::onRequestReceived, request);
             } catch ( ... ) {
                 logError("Caught exception thrown from BLIP request handler");
-                request->respondWithError({"BLIP"_sl, 501, "unexpected exception"_sl});
+                request->respondWithError(501, "unexpected exception");
             }
         }
 

@@ -330,7 +330,7 @@ namespace litecore::blip {
         }
     }
 
-    void MessageIn::notHandled() { respondWithError({"BLIP"_sl, 404, "no handler for message"_sl}); }
+    void MessageIn::notHandled() { respondWithError(404, "no handler for message"); }
 
 #pragma mark - PROPERTIES:
 
@@ -372,7 +372,7 @@ namespace litecore::blip {
 
     Error MessageIn::getError() const {
         if ( !isError() ) return {};
-        return {property("Error-Domain"_sl), (int)intProperty("Error-Code"_sl), body()};
+        return {property(kErrorDomainProperty), (int)intProperty(kErrorCodeProperty), body()};
     }
 
     string MessageIn::description() {

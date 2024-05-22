@@ -70,6 +70,9 @@ namespace litecore::blip {
 
         propertySetter operator[](slice name) { return {*this, name}; }
 
+        /** Sets the "Profile" property. */
+        void setProfile(slice profile);
+
         /** Makes a response an error. */
         void makeError(Error);
 

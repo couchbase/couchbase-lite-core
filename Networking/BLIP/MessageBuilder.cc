@@ -43,11 +43,16 @@ namespace litecore::blip {
         return *this;
     }
 
+    void MessageBuilder::setProfile(slice profile) {
+        Assert(type == kRequestType);
+        addProperty(kProfileProperty, profile);
+    }
+
     void MessageBuilder::makeError(Error err) {
         DebugAssert(err.domain && err.code);
         type = kErrorType;
-        addProperty("Error-Domain"_sl, err.domain);
-        addProperty("Error-Code"_sl, err.code);
+        addProperty(kErrorDomainProperty, err.domain);
+        addProperty(kErrorCodeProperty, err.code);
         write(err.message);
     }
 

@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "fleece/slice.hh"
 #include <cstdint>
 
 namespace litecore::blip {
@@ -41,4 +42,21 @@ namespace litecore::blip {
 
     // Implementation-imposed max encoded size of message properties (not part of protocol)
     constexpr uint64_t kMaxPropertiesSize = 100 * 1024;
+
+
+    static constexpr const char* kProfilePropertyStr = "Profile";
+    /// The "Profile" property contains the message's type
+    static constexpr fleece::slice kProfileProperty(kProfilePropertyStr);
+
+    /// Property in an error response giving a namespace for the error code.
+    /// If omitted the default value is `kBLIPErrorDomain`.
+    static constexpr fleece::slice kErrorDomainProperty = "Error-Domain";
+
+    /// Property in an error response giving a numeric error code.
+    static constexpr fleece::slice kErrorCodeProperty = "Error-Code";
+
+    /// The default error domain, for errors that are not app-specific.
+    /// By convention its error codes are based on HTTP's, i.e. 404 for "not found".
+    static constexpr fleece::slice kBLIPErrorDomain = "BLIP";
+
 }  // namespace litecore::blip
