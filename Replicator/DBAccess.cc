@@ -15,6 +15,7 @@
 #include "ReplicatedRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
+#include "LegacyAttachments.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
@@ -152,114 +153,22 @@ namespace litecore::repl {
         return doc.root().asDict()[C4Blob::kLegacyAttachmentsProperty].asDict() != nullptr;
     }
 
-    static inline bool isBlobOrAttachment(FLDeepIterator i, C4BlobKey* blobKey, bool noBlobs) {
-        auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
-        if ( !dict ) return false;
-
-        // Get the digest:
-        if ( auto key = C4Blob::keyFromDigestProperty(dict); key ) *blobKey = *key;
-        else
-            return false;
-
-        // Check if it's a blob:
-        if ( !noBlobs && C4Blob::isBlob(dict) ) {
-            return true;
-        } else {
-            // Check if it's an old-school attachment, i.e. in a top level "_attachments" dict:
-            FLPathComponent* path;
-            size_t           depth;
-            FLDeepIterator_GetPath(i, &path, &depth);
-            return depth == 2 && path[0].key == C4Blob::kLegacyAttachmentsProperty;
-        }
-    }
-
     void DBAccess::findBlobReferences(Dict root, bool unique, const FindBlobCallback& callback) const {
         // This method is non-static because it references _disableBlobSupport, but it's
         // thread-safe.
-        set<string>    found;
-        FLDeepIterator i = FLDeepIterator_New(root);
-        for ( ; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i) ) {
-            C4BlobKey blobKey;
-            if ( isBlobOrAttachment(i, &blobKey, _disableBlobSupport) ) {
-                if ( !unique || found.emplace((const char*)&blobKey, sizeof(blobKey)).second ) {
-                    auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
-                    callback(i, blob, blobKey);
-                }
-                FLDeepIterator_SkipChildren(i);
-            }
-        }
-        FLDeepIterator_Free(i);
+        return legacy_attachments::findBlobReferences(root, unique, _disableBlobSupport, callback);
     }
 
     bool DBAccess::hasBlobReferences(Dict root) const {
         // This method is non-static because it references _disableBlobSupport, but it's
         // thread-safe.
-        bool           found = false;
-        FLDeepIterator i     = FLDeepIterator_New(root);
-        for ( ; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i) ) {
-            C4BlobKey blobKey;
-            if ( isBlobOrAttachment(i, &blobKey, _disableBlobSupport) ) {
-                found = true;
-                break;
-            }
-        }
-        FLDeepIterator_Free(i);
-        return found;
+        return legacy_attachments::hasBlobReferences(root, _disableBlobSupport);
     }
 
     void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root, unsigned revpos) const {
-        enc.beginDict();
-
-        // Write existing properties except for _attachments:
-        Dict oldAttachments;
-        for ( Dict::iterator i(root); i; ++i ) {
-            slice key = i.keyString();
-            if ( key == C4Blob::kLegacyAttachmentsProperty ) {
-                oldAttachments = i.value().asDict();  // remember _attachments dict for later
-            } else {
-                enc.writeKey(key);
-                enc.writeValue(i.value());
-            }
-        }
-
-        // Now write _attachments:
-        enc.writeKey(C4Blob::kLegacyAttachmentsProperty);
-        enc.beginDict();
-        // First pre-existing legacy attachments, if any:
-        for ( Dict::iterator i(oldAttachments); i; ++i ) {
-            slice key = i.keyString();
-            if ( !key.hasPrefix("blob_"_sl) ) {
-                // TODO: Should skip this entry if a blob with the same digest exists
-                enc.writeKey(key);
-                enc.writeValue(i.value());
-            }
-        }
-
-        // Then entries for blobs found in the document:
-        findBlobReferences(root, false, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
-            alloc_slice path(FLDeepIterator_GetJSONPointer(di));
-            if ( path.hasPrefix("/_attachments/"_sl) ) return;
-            string attName = string("blob_") + string(path);
-            enc.writeKey(slice(attName));
-            enc.beginDict();
-            for ( Dict::iterator i(blob); i; ++i ) {
-                slice key = i.keyString();
-                if ( key != C4Document::kObjectTypeProperty && key != "stub"_sl ) {
-                    enc.writeKey(key);
-                    enc.writeValue(i.value());
-                }
-            }
-            enc.writeKey("stub"_sl);
-            enc.writeBool(true);
-            if ( revpos > 0 ) {
-                enc.writeKey("revpos"_sl);
-                enc.writeInt(revpos);
-            }
-            enc.endDict();
-        });
-        enc.endDict();
-
-        enc.endDict();
+        // This method is non-static because it references _disableBlobSupport, but it's
+        // thread-safe.
+        legacy_attachments::encodeRevWithLegacyAttachments(enc, root, revpos);
     }
 
     SharedKeys DBAccess::tempSharedKeys() {
