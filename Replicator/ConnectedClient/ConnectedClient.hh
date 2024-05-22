@@ -6,8 +6,8 @@
 
 #pragma once
 #include "Worker.hh"
-#include "Async.hh"
 #include "BLIPConnection.hh"
+#include "Result.hh"
 #include "c4ConnectedClientTypes.h"
 #include "c4Observer.hh"
 #include "c4ReplicatorTypes.h"
@@ -31,7 +31,8 @@ namespace litecore::client {
 
 
     /** A callback invoked when one or more documents change on the server. */
-    using CollectionObserver = std::function<void(std::vector<C4CollectionObserver::Change> const&)>;
+    using CollectionObserver =
+            std::function<void(std::vector<C4CollectionObserver::Change> const&, const C4Error* err)>;
 
 
     /** A callback invoked for every row of a query result.
@@ -45,14 +46,15 @@ namespace litecore::client {
         Its API is somewhat similar to `Replicator`. */
     class ConnectedClient
         : public repl::Worker
-        , private blip::ConnectionDelegate {
+        , public blip::ConnectionDelegate {
       public:
         class Delegate;
         using CloseStatus   = blip::Connection::CloseStatus;
         using ActivityLevel = C4ReplicatorActivityLevel;
         using Status        = C4ReplicatorStatus;
 
-        ConnectedClient(websocket::WebSocket* NONNULL, Delegate&, const C4ConnectedClientParameters&);
+        ConnectedClient(websocket::WebSocket* NONNULL, Delegate&, const C4ConnectedClientParameters&,
+                        repl::Options*        NONNULL);
 
         /** ConnectedClient delegate API. (Similar to `Replicator::Delegate`) */
         class Delegate {
@@ -89,7 +91,7 @@ namespace litecore::client {
 
         void terminate();
 
-        actor::Async<Status> status();
+        Status status();
 
         //---- CRUD!
 
@@ -101,16 +103,17 @@ namespace litecore::client {
         /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
         ///                     the server will return error {WebSocketDomain, 304}.
         /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
-        /// @return  An async value that, when resolved, contains either a `DocResponse` struct
+        /// @param callback  On completion will be called with either a `DocResponse` struct
         ///          or a C4Error.
-        actor::Async<DocResponse> getDoc(slice docID, slice collectionID, slice unlessRevID, bool asFleece = true);
+        void getDoc(slice docID, slice collectionID, slice unlessRevID, bool asFleece,
+                    std::function<void(Result<DocResponse>)> callback);
 
         /// Downloads the contents of a blob given its digest.
         /// @param blobKey  The binary digest of the blob.
         /// @param compress  If true, a request that the server compress the blob's data during
         ///                  transmission. (This does not affect the data you receive.)
-        /// @return  An async value that, when resolved, contains either the blob body or a C4Error.
-        actor::Async<alloc_slice> getBlob(C4BlobKey blobKey, bool compress);
+        /// @param callback  On completion will be called with either the blob body or a C4Error.
+        void getBlob(C4BlobKey blobKey, bool compress, std::function<void(Result<alloc_slice>)> callback);
 
         /// Pushes a new document revision to the server.
         /// @note  If the document body contains any blob references, your delegate must implement
@@ -123,9 +126,9 @@ namespace litecore::client {
         ///                     or `nullslice` if this is a new document.
         /// @param revisionFlags  Flags of this revision.
         /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
-        /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<void> putDoc(slice docID, slice collectionID, slice revID, slice parentRevID,
-                                  C4RevisionFlags revisionFlags, slice fleeceData);
+        /// @param callback  On completion will be called with the status as a C4Error.
+        void putDoc(slice docID, slice collectionID, slice revID, slice parentRevID, C4RevisionFlags revisionFlags,
+                    slice fleeceData, std::function<void(C4Error)> callback);
 
         //---- All Documents
 
@@ -145,8 +148,7 @@ namespace litecore::client {
         /// @note  To cancel, pass a null callback.
         /// @param collectionID  The ID of the collection to observe.
         /// @param callback  The function to call (on an arbitrary background thread!)
-        /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<void> observeCollection(slice collectionID, CollectionObserver callback);
+        void observeCollection(slice collectionID, CollectionObserver callback);
 
         //---- Query
 
@@ -176,6 +178,14 @@ namespace litecore::client {
         void handleGetAttachment(Retained<blip::MessageIn>);
 
       private:
+        void _start();
+        void _stop();
+        void _onHTTPResponse(int status, websocket::Headers headers);
+        void _onConnect();
+        void _onClose(blip::Connection::CloseStatus status, blip::Connection::State state);
+        void _onRequestReceived(Retained<blip::MessageIn> request);
+        void _observeCollection(alloc_slice collectionID, CollectionObserver callback);
+
         void        setStatus(ActivityLevel);
         C4Error     responseError(blip::MessageIn* response);
         void        _disconnect(websocket::CloseCode closeCode, slice message);
@@ -185,16 +195,17 @@ namespace litecore::client {
         bool        receiveAllDocs(blip::MessageIn*, const AllDocsReceiver&);
         bool        receiveQueryRows(blip::MessageIn*, const QueryReceiver&, bool asFleece);
 
-        Delegate*                   _delegate;  // Delegate whom I report progress/errors to
-        C4ConnectedClientParameters _params;
-        ActivityLevel               _activityLevel;
-        Retained<ConnectedClient>   _selfRetain;
-        CollectionObserver          _observer;
-        mutable std::mutex          _mutex;
-        bool                        _observing                    = false;
-        bool                        _registeredChangesHandler     = false;
-        bool                        _remoteUsesVersionVectors     = false;
-        bool                        _remoteNeedsLegacyAttachments = true;
+        Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+        Delegate*                                      _delegate;  // Delegate whom I report progress/errors to
+        C4ConnectedClientParameters                    _params;
+        ActivityLevel                                  _activityLevel;
+        Retained<ConnectedClient>                      _selfRetain;
+        CollectionObserver                             _observer;
+        mutable std::mutex                             _mutex;
+        bool                                           _observing                    = false;
+        bool                                           _registeredChangesHandler     = false;
+        bool                                           _remoteUsesVersionVectors     = false;
+        bool                                           _remoteNeedsLegacyAttachments = true;
     };
 
 }  // namespace litecore::client

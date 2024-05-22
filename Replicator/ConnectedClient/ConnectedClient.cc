@@ -47,9 +47,10 @@ namespace litecore::client {
     }
 
     ConnectedClient::ConnectedClient(websocket::WebSocket* webSocket, Delegate& delegate,
-                                     const C4ConnectedClientParameters& params)
-        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), *this), nullptr, nullptr, nullptr,
-                 "Client")
+                                     const C4ConnectedClientParameters& params, repl::Options* options)
+        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, nullptr,
+                 "Client", repl::kNotCollectionIndex)
+        , _weakConnectionDelegateThis(new WeakHolder<blip::ConnectionDelegate>(this))
         , _delegate(&delegate)
         , _params(params)
         , _activityLevel(kC4Stopped) {
@@ -69,24 +70,26 @@ namespace litecore::client {
         }
     }
 
-    Async<ConnectedClient::Status> ConnectedClient::status() {
-        return asCurrentActor([this]() { return C4ReplicatorStatus(Worker::status()); });
+    ConnectedClient::Status ConnectedClient::status() {
+        return C4ReplicatorStatus(Worker::status());  //TODO: Thread safety
     }
 
     void ConnectedClient::start() {
         Assert(_activityLevel == kC4Stopped);
         setStatus(kC4Connecting);
-        asCurrentActor([=] {
-            logInfo("Connecting...");
-            connection().start();
-            registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
-            _selfRetain = this;  // retain myself while the connection is open
-        });
+        enqueue("start", &ConnectedClient::_start);
     }
 
-    void ConnectedClient::stop() {
-        asCurrentActor([=] { _disconnect(websocket::kCodeNormal, {}); });
+    void ConnectedClient::_start() {
+        logInfo("Connecting...");
+        connection().start(_weakConnectionDelegateThis);
+        registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
+        _selfRetain = this;  // retain myself while the connection is open
     }
+
+    void ConnectedClient::stop() { enqueue("stop", &ConnectedClient::_stop); }
+
+    void ConnectedClient::_stop() { _disconnect(websocket::kCodeNormal, {}); }
 
     void ConnectedClient::_disconnect(websocket::CloseCode closeCode, slice message) {
         if ( connected() ) {
@@ -111,67 +114,70 @@ namespace litecore::client {
     }
 
     void ConnectedClient::onHTTPResponse(int status, const websocket::Headers& headers) {
-        asCurrentActor([=] {
-            logVerbose("Got HTTP response from server, status %d", status);
-            {
-                LOCK(_mutex);
-                if ( _delegate ) _delegate->clientGotHTTPResponse(this, status, headers);
-            }
-
-            if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
-                gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
-                                       "Incompatible replication protocol "
-                                       "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
-            }
-        });
+        enqueue("onHTTPResponse", &ConnectedClient::_onHTTPResponse, status, headers);
     }
 
-    void ConnectedClient::onConnect() {
-        asCurrentActor([=] {
-            logInfo("Connected!");
-            if ( _activityLevel != kC4Stopping )  // skip this if stop() already called
-                setStatus(kC4Idle);
-        });
+    void ConnectedClient::_onHTTPResponse(int status, websocket::Headers headers) {
+        logVerbose("Got HTTP response from server, status %d", status);
+        {
+            LOCK(_mutex);
+            if ( _delegate ) _delegate->clientGotHTTPResponse(this, status, headers);
+        }
+
+        if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
+            gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
+                                   "Incompatible replication protocol "
+                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
+        }
+    }
+
+    void ConnectedClient::onConnect() { enqueue("onConnect", &ConnectedClient::_onConnect); }
+
+    void ConnectedClient::_onConnect() {
+        logInfo("Connected!");
+        if ( _activityLevel != kC4Stopping )  // skip this if stop() already called
+            setStatus(kC4Idle);
     }
 
     void ConnectedClient::onClose(Connection::CloseStatus status, Connection::State state) {
-        asCurrentActor([=]() mutable {
-            logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)", status.reasonName(), status.code,
-                    FMTSLICE(status.message), state);
+        enqueue("onClose", &ConnectedClient::_onClose, status, state);
+    }
 
-            bool closedByPeer = (_activityLevel != kC4Stopping);
+    void ConnectedClient::_onClose(Connection::CloseStatus status, Connection::State state) {
+        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)", status.reasonName(), status.code,
+                FMTSLICE(status.message), state);
 
-            _connectionClosed();
+        bool closedByPeer = (_activityLevel != kC4Stopping);
 
-            if ( status.isNormal() && closedByPeer ) {
-                logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
-                status.code    = websocket::kCodeGoingAway;
-                status.message = alloc_slice("WebSocket connection closed by peer");
+        _connectionClosed();
+
+        if ( status.isNormal() && closedByPeer ) {
+            logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
+            status.code    = websocket::kCodeGoingAway;
+            status.message = alloc_slice("WebSocket connection closed by peer");
+        }
+
+        static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, NetworkDomain, LiteCoreDomain};
+
+        // If this was an unclean close, set my error property:
+        if ( status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal ) {
+            int           code = status.code;
+            C4ErrorDomain domain;
+            if ( status.reason < sizeof(kDomainForReason) / sizeof(C4ErrorDomain) ) {
+                domain = kDomainForReason[status.reason];
+            } else {
+                domain = LiteCoreDomain;
+                code   = kC4ErrorRemoteError;
             }
+            gotError(C4Error::make(domain, code, status.message));
+        }
+        setStatus(kC4Stopped);
+        {
+            LOCK(_mutex);
+            if ( _delegate ) _delegate->clientConnectionClosed(this, status);
+        }
 
-            static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, NetworkDomain,
-                                                             LiteCoreDomain};
-
-            // If this was an unclean close, set my error property:
-            if ( status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal ) {
-                int           code = status.code;
-                C4ErrorDomain domain;
-                if ( status.reason < sizeof(kDomainForReason) / sizeof(C4ErrorDomain) ) {
-                    domain = kDomainForReason[status.reason];
-                } else {
-                    domain = LiteCoreDomain;
-                    code   = kC4ErrorRemoteError;
-                }
-                gotError(C4Error::make(domain, code, status.message));
-            }
-            setStatus(kC4Stopped);
-            {
-                LOCK(_mutex);
-                if ( _delegate ) _delegate->clientConnectionClosed(this, status);
-            }
-
-            _selfRetain = nullptr;  // balances the self-retain in start()
-        });
+        _selfRetain = nullptr;  // balances the self-retain in start()
     }
 
     // This only gets called if none of the registered handlers were triggered.
@@ -212,7 +218,8 @@ namespace litecore::client {
         return error;
     }
 
-    Async<DocResponse> ConnectedClient::getDoc(slice docID_, slice collectionID_, slice unlessRevID_, bool asFleece) {
+    void ConnectedClient::getDoc(slice docID_, slice collectionID_, slice unlessRevID_, bool asFleece,
+                                 function<void(Result<DocResponse>)> callback) {
         // Not yet running on Actor thread...
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID_));
         alloc_slice    docID(docID_);
@@ -220,14 +227,17 @@ namespace litecore::client {
         req["id"]       = docID;
         req["ifNotRev"] = unlessRevID_;
 
-        return sendAsyncRequest(req).then([=](Retained<blip::MessageIn> response) -> Async<DocResponse> {
-            logInfo("...getDoc got response");
-
-            if ( C4Error err = responseError(response) ) return err;
-
-            return DocResponse{docID, alloc_slice(response->property("rev")),
-                               processIncomingDoc(docID, response->body(), asFleece),
-                               response->boolProperty("deleted")};
+        sendRequest(req, [=](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                logInfo("...getDoc got response");
+                if ( C4Error err = responseError(progress.reply) ) {
+                    callback(err);
+                } else {
+                    callback(DocResponse{docID, alloc_slice(progress.reply->property("rev")),
+                                         processIncomingDoc(docID, progress.reply->body(), asFleece),
+                                         progress.reply->boolProperty("deleted")});
+                }
+            }
         });
     }
 
@@ -274,7 +284,7 @@ namespace litecore::client {
         return asFleece ? fleeceData : jsonData;
     }
 
-    Async<alloc_slice> ConnectedClient::getBlob(C4BlobKey blobKey, bool compress) {
+    void ConnectedClient::getBlob(C4BlobKey blobKey, bool compress, function<void(Result<alloc_slice>)> callback) {
         // Not yet running on Actor thread...
         auto digest = blobKey.digestString();
         logInfo("getAttachment(<%s>)", digest.c_str());
@@ -282,15 +292,18 @@ namespace litecore::client {
         req["digest"] = digest;
         if ( compress ) req["compress"] = "true";
 
-        return sendAsyncRequest(req).then([=](Retained<blip::MessageIn> response) -> Async<alloc_slice> {
-            logInfo("...getAttachment got response");
-            if ( C4Error err = responseError(response) ) return err;
-            return response->body();
+        sendRequest(req, [=](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                logInfo("...getAttachment got response");
+                if ( C4Error err = responseError(progress.reply) ) callback(err);
+                else
+                    callback(progress.reply->body());
+            }
         });
     }
 
-    Async<void> ConnectedClient::putDoc(slice docID_, slice collectionID_, slice revID_, slice parentRevID_,
-                                        C4RevisionFlags revisionFlags, slice fleeceData_) {
+    void ConnectedClient::putDoc(slice docID_, slice collectionID_, slice revID_, slice parentRevID_,
+                                 C4RevisionFlags revisionFlags, slice fleeceData_, function<void(C4Error)> callback) {
         // Not yet running on Actor thread...
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID_), FMTSLICE(revID_));
         MessageBuilder req("putRev");
@@ -306,13 +319,15 @@ namespace litecore::client {
             req.write("{}");
         }
 
-        return sendAsyncRequest(req).then([=](Retained<blip::MessageIn> response) -> Async<void> {
-            logInfo("...putDoc got response");
-            return Async<void>(responseError(response));
+        sendRequest(req, [=](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                logInfo("...putDoc got response");
+                callback(responseError(progress.reply));
+            }
         });
     }
 
-    static inline bool MayContainBlobs(fleece::slice documentData) noexcept {
+    static bool mayContainBlobs(fleece::slice documentData) noexcept {
         return documentData.find(C4Document::kObjectTypeProperty) && documentData.find(C4Blob::kObjectType_Blob);
     }
 
@@ -335,7 +350,7 @@ namespace litecore::client {
                 c4err.raise();
         }
 
-        if ( _remoteNeedsLegacyAttachments && MayContainBlobs(fleeceData) ) {
+        if ( _remoteNeedsLegacyAttachments && mayContainBlobs(fleeceData) ) {
             // Create shadow copies of blobs, in `_attachments`:
             int revpos = C4Document::getRevIDGeneration(revID);
             legacy_attachments::encodeRevWithLegacyAttachments(enc, root, revpos);
@@ -369,21 +384,18 @@ namespace litecore::client {
     void ConnectedClient::getAllDocIDs(slice collectionID, slice globPattern, AllDocsReceiver receiver) {
         MessageBuilder req("allDocs");
         if ( !globPattern.empty() ) req["idPattern"] = globPattern;
-        sendAsyncRequest(req)
-                .then([=](Retained<blip::MessageIn> response) {
-                    logInfo("...allDocs got response");
-                    C4Error err = responseError(response);
-                    if ( !err ) {
-                        if ( !receiveAllDocs(response, receiver) )
-                            err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, "Invalid allDocs response");
-                    }
-                    // Final call to receiver:
-                    receiver({}, err ? &err : nullptr);
-                })
-                .onError([=](C4Error err) {
-                    logInfo("...allDocs got error");
-                    receiver({}, &err);
-                });
+        sendRequest(req, [this, receiver](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                logInfo("...allDocs got response");
+                C4Error err = responseError(progress.reply);
+                if ( !err ) {
+                    if ( !receiveAllDocs(progress.reply, receiver) )
+                        err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, "Invalid allDocs response");
+                }
+                // Final call to receiver:
+                receiver({}, err ? &err : nullptr);
+            }
+        });
         //OPT: If we stream the response we can call the receiver function on results as they arrive.
     }
 
@@ -402,32 +414,40 @@ namespace litecore::client {
         return true;
     }
 
-    Async<void> ConnectedClient::observeCollection(slice collectionID_, CollectionObserver callback_) {
-        return asCurrentActor([this, collectionID = alloc_slice(collectionID_), observe = !!callback_,
-                               callback = move(callback_)]() -> Async<void> {
-            logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
+    void ConnectedClient::observeCollection(slice collectionID, CollectionObserver callback) {
+        enqueue("observeCollection", &ConnectedClient::_observeCollection, alloc_slice(collectionID),
+                std::move(callback));
+    }
 
-            bool sameSubState = (observe == !!_observer);
-            _observer         = move(callback);
-            if ( sameSubState ) return C4Error{};
+    void ConnectedClient::_observeCollection(alloc_slice collectionID, CollectionObserver callback) {
+        logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
 
-            MessageBuilder req;
-            if ( observe ) {
-                if ( !_registeredChangesHandler ) {
-                    registerHandler("changes", &ConnectedClient::handleChanges);
-                    _registeredChangesHandler = true;
-                }
-                req.setProfile("subChanges");
-                req["future"]     = true;
-                req["continuous"] = true;
-            } else {
-                req.setProfile("unsubChanges");
+        bool observe      = !!callback;
+        bool sameSubState = (observe == !!_observer);
+        _observer         = std::move(callback);
+        if ( sameSubState ) return;
+
+        MessageBuilder req;
+        if ( observe ) {
+            if ( !_registeredChangesHandler ) {
+                registerHandler("changes", &ConnectedClient::handleChanges);
+                _registeredChangesHandler = true;
             }
+            req.setProfile("subChanges");
+            req["future"]     = true;
+            req["continuous"] = true;
+        } else {
+            req.setProfile("unsubChanges");
+        }
 
-            return sendAsyncRequest(req).then([=](Retained<blip::MessageIn> response) {
+        sendRequest(req, [this, callback](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
                 logInfo("...observeCollection got response");
-                return Async<void>(responseError(response));
-            });
+                if ( C4Error err = responseError(progress.reply) ) {
+                    _observer = nullptr;
+                    callback({}, &err);  // Request failed
+                }
+            }
         });
     }
 
@@ -478,7 +498,7 @@ namespace litecore::client {
 
             // Finally call the observer callback:
             try {
-                _observer(outChanges);
+                _observer(outChanges, nullptr);
             } catch ( ... ) {
                 logError("ConnectedClient observer threw exception: %s",
                          C4Error::fromCurrentException().description().c_str());
@@ -510,22 +530,18 @@ namespace litecore::client {
             req.jsonBody().beginDict();
             req.jsonBody().endDict();
         }
-        sendAsyncRequest(req)
-                .then([=](Retained<blip::MessageIn> response) {
-                    logInfo("...query got response");
-                    C4Error err = responseError(response);
-                    if ( !err ) {
-                        if ( !receiveQueryRows(response, receiver, asFleece) )
-                            err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
-                                                "Couldn't parse server's response");
-                    }
-                    // Final call to receiver:
-                    receiver(nullslice, nullptr, err ? &err : nullptr);
-                })
-                .onError([=](C4Error err) {
-                    logInfo("...query got error");
-                    receiver(nullslice, nullptr, &err);
-                });
+
+        sendRequest(req, [=](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                logInfo("...query got response");
+                C4Error err = responseError(progress.reply);
+                if ( !err ) {
+                    if ( !receiveQueryRows(progress.reply, receiver, asFleece) )
+                        err = C4Error::make(LiteCoreDomain, kC4ErrorRemoteError, "Couldn't parse server's response");
+                }
+                receiver(nullslice, nullptr, err ? &err : nullptr);
+            }
+        });
         //OPT: If we stream the response we can call the receiver function on results as they arrive.
     }
 

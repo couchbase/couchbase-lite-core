@@ -123,6 +123,7 @@
 		272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BDF1FB13B7400F56620 /* stopwordset.cc */; };
 		272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */ = {isa = PBXBuildFile; fileRef = 272B1BE01FB13B7400F56620 /* stopwordset.h */; };
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
+		272CD2F02BFE9A3F00A2D518 /* ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F62B97E3380049DD1D /* ConnectedClient.cc */; };
 		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
 		272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00F52273D45000E62F72 /* LiveQuerier.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
@@ -4475,6 +4476,7 @@
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
+				272CD2F02BFE9A3F00A2D518 /* ConnectedClient.cc in Sources */,
 				27469D06233D719800A1EE1A /* Certificate.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
