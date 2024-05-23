@@ -23,6 +23,8 @@
 
 #undef check
 
+struct C4Error;
+
 namespace fleece {
     class Backtrace;
 }
@@ -98,6 +100,8 @@ namespace litecore {
 
         explicit error(LiteCoreError e) : error(LiteCore, e) {}
 
+        explicit error(const C4Error&);  // This is implemented in c4Error.cc
+
         error& operator=(const error& e);
 
         void captureBacktrace(unsigned skipFrames = 0);
@@ -114,6 +118,7 @@ namespace litecore {
             exception types like SQLite::Exception. */
         static error convertRuntimeError(const std::runtime_error&);
         static error convertException(const std::exception&);
+        static error convertCurrentException();
 
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;
@@ -164,5 +169,10 @@ namespace litecore {
 #else
 #    define DebugAssert(e, ...) Assert(e, ##__VA_ARGS__)
 #endif
+
+// Checks the value of a function argument.
+// `e` is a predicate like `i > 0`. It will be included in the exception message.
+#define AssertArg(e)                                                                                                   \
+    (_usuallyFalse(!(e)) ? litecore::error::_throw(litecore::error::InvalidParameter, "Requires " #e) : (void)0)
 
 }  // namespace litecore

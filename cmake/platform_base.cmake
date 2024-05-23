@@ -21,6 +21,7 @@ function(set_litecore_source_base)
         C/c4DocEnumerator.cc
         C/c4Document.cc
         C/c4Error.cc
+        C/c4Index.cc
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
@@ -43,7 +44,9 @@ function(set_litecore_source_base)
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc
         LiteCore/Database/VectorDocument.cc
+        LiteCore/Query/DateFormat.cc
         LiteCore/Query/IndexSpec.cc
+        LiteCore/Query/LazyIndex.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
         LiteCore/Query/QueryParser+Prediction.cc
@@ -88,6 +91,8 @@ function(set_litecore_source_base)
         vendor/SQLiteCpp/src/Exception.cpp
         vendor/SQLiteCpp/src/Statement.cpp
         vendor/SQLiteCpp/src/Transaction.cpp
+        vendor/SQLiteCpp/sqlite3/ext/carray.cc
+        vendor/SQLiteCpp/sqlite3/ext/carray_bind.cc
         Replicator/c4Replicator.cc
         Replicator/c4Replicator_CAPI.cc
         Replicator/c4Socket.cc
@@ -118,6 +123,7 @@ function(set_litecore_source_base)
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
+        LiteCore/Support/SequenceSet.cc
         LiteCore/Support/StringUtil.cc
         LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc

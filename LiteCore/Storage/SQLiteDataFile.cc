@@ -22,6 +22,7 @@
 #include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "BothKeyStore.hh"
+#include "carray.h"
 #include "UnicodeCollator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -59,10 +60,6 @@ SQLITE_API int sqlite3_rekey_v2(sqlite3*    db,            /* Database to be rek
 
 #if __APPLE__
 #    include <TargetConditionals.h>
-#else
-#    if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#        include "SQLiteTempDirectory.h"
-#    endif
 #endif
 
 using namespace std;
@@ -160,9 +157,6 @@ namespace litecore {
         };
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
-#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-        setSqliteTempDirectory();
-#endif
     }
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
@@ -199,7 +193,12 @@ namespace litecore {
     // for more extensions.
     static void LoadVectorSearchExtension(sqlite3* sqlite) {
 #ifdef COUCHBASE_ENTERPRISE
+#    if defined(__ANDROID__)
+        static const char* extensionName = "libCouchbaseLiteVectorSearch";
+#    else
         static const char* extensionName = "CouchbaseLiteVectorSearch";
+#    endif
+
         if ( sExtensionPath.empty() ) return;
 
         // First enable extension loading (for security reasons it's off by default):
@@ -296,11 +295,14 @@ namespace litecore {
         auto sqlite = _sqlDb->getHandle();
         if ( thread::hardware_concurrency() > 2 ) sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, 2);
 
-        // Register collators, custom functions, and the FTS tokenizer:
+        // Register collators, custom functions, the FTS tokenizer, and the `carray` extension:
         RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
         RegisterSQLiteFunctions(sqlite, {delegate(), documentKeys()});
         int rc = register_unicodesn_tokenizer(sqlite);
         if ( rc != SQLITE_OK ) warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+        char* errMsg = nullptr;
+        rc           = sqlite3_carray_init(sqlite, &errMsg, nullptr);
+        if ( rc != SQLITE_OK ) throw SQLite::Exception(errMsg, rc);
 
         // Load vector search extension if present:
         LoadVectorSearchExtension(sqlite);

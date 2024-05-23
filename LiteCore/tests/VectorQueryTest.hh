@@ -7,6 +7,7 @@
 #pragma once
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
+#include "Base64.hh"
 #include <mutex>
 
 class VectorQueryTest : public QueryTest {
@@ -51,22 +52,49 @@ class VectorQueryTest : public QueryTest {
         REQUIRE(store->getIndexes().size() == 1);
     }
 
+    Query::Options optionsWithTargetVector(const float target[128], valueType asType) {
+        Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("target");
+        switch ( asType ) {
+            case kString:
+                enc.writeString(base64::encode(slice(target, 128 * sizeof(float))));
+                break;
+            case kData:
+                enc.writeData(slice(target, 128 * sizeof(float)));
+                break;
+            case kArray:
+                enc.beginArray();
+                for ( size_t i = 0; i < 128; ++i ) enc.writeFloat(target[i]);
+                enc.endArray();
+                break;
+            default:
+                FAIL("unsupported type for vector");
+        }
+        enc.endDictionary();
+        return Query::Options(enc.finish());
+    }
+
     void checkExpectedResults(Retained<QueryEnumerator> e, std::initializer_list<slice> expectedIDs,
                               std::initializer_list<float> expectedDistances) {
         auto expectedID   = expectedIDs.begin();
         auto expectedDist = expectedDistances.begin();
         for ( size_t i = 0; i < expectedIDs.size(); ++i, expectedID++, expectedDist++ ) {
+            INFO("i=" << i);
             REQUIRE(e->next());
             slice id       = e->columns()[0]->asString();
             float distance = e->columns()[1]->asFloat();
-            INFO("i=" << i);
             CHECK(id == *expectedID);
-            // Vector encoders are lossy, so using one in the index will result in approximate distances,
-            // which is why the distance check below is so loose.
-            CHECK_THAT(distance, Catch::Matchers::WithinRel(*expectedDist, 0.20f)
-                                         || Catch::Matchers::WithinAbs(*expectedDist, 400.0f));
+            CHECK_distances(distance, *expectedDist);
         }
         CHECK(!e->next());
+    }
+
+    // Vector encoders are lossy, so using one in the index will result in approximate distances,
+    // which is why the distance check below is so loose.
+    static void CHECK_distances(float distance, float expectedDist) {
+        CHECK_THAT(distance,
+                   Catch::Matchers::WithinRel(expectedDist, 0.20f) || Catch::Matchers::WithinAbs(expectedDist, 400.0f));
     }
 
     /// Increment this if the test is expected to generate a warning.

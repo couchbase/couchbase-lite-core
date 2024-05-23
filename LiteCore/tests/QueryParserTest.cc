@@ -142,6 +142,8 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Deleted And Live Docs", "[Query][
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Meta Without Deletion", "[Query][QueryParser]") {
     CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'sequence']], WHERE: ['_.', ['META()'], 'sequence']}]")
           == "SELECT fl_result(_doc.sequence) FROM kv_default AS _doc WHERE (_doc.sequence) AND (_doc.flags & 1 = 0)");
+    CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'rowid']], WHERE: ['_.', ['META()'], 'rowid']}]")
+          == "SELECT fl_result(_doc.rowid) FROM kv_default AS _doc WHERE (_doc.rowid) AND (_doc.flags & 1 = 0)");
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Expiration", "[Query][QueryParser]") {
@@ -670,7 +672,35 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried FTS", "[Query][QueryParser
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried VS", "[Query][QueryParser][VectorSearch]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryParser][VectorSearch]") {
+    tableNames.insert("kv_default:vector:vecIndex");
+    // Pure vector search (no other WHERE criteria):
+    CHECK(parse("['SELECT', {WHERE: ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],"
+                "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ],"
+                "LIMIT: 3}]")
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
+             "\"kv_default:vector:vecIndex\" WHERE vector LIKE encode_vector(array_of(12, 34)) LIMIT 3) AS vector1 ON "
+             "vector1.rowid = _doc.rowid WHERE (true) AND (_doc.flags & 1 = 0) ORDER BY vector1.distance LIMIT MAX(0, "
+             "3)");
+    // Pure vector search (explicit limit given):
+    CHECK(parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34], 10],"
+                "['>', ['._id'], 'x'] ],"
+                "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ]}]")
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
+             "\"kv_default:vector:vecIndex\" WHERE vector LIKE encode_vector(array_of(12, 34)) LIMIT 10) AS vector1 ON "
+             "vector1.rowid = _doc.rowid WHERE (true AND _doc.key > 'x') AND (_doc.flags & 1 = 0) ORDER BY "
+             "vector1.distance");
+    // Hybrid search:
+    CHECK(parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],"
+                "['>', ['._id'], 'x'] ],"
+                "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ]}]")
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:vector:vecIndex\" AS vector1 ON "
+             "vector1.rowid = _doc.rowid WHERE (vector1.vector LIKE encode_vector((array_of(12, 34))) AND _doc.key > "
+             "'x') AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
+}
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried Vector Search", "[Query][QueryParser][VectorSearch]") {
+    // Like FTS, vector_match can only be used at top level or within an AND.
     tableNames.insert("kv_default:vector:vecIndex");
     parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],\
                                       ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");

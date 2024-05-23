@@ -25,6 +25,7 @@
 #include "CaseListReporter.hh"
 #include <fstream>
 #include <iostream>
+#include <mutex>
 
 #ifdef _MSC_VER
 #    include <atlbase.h>
@@ -54,13 +55,22 @@ struct QuietReporter : public CaseListReporter {
     //---- Catch overrides
 
     void testCaseStarting(Catch::TestCaseInfo const& testInfo) override {
+        std::lock_guard lock(_mutex);
         c4log_setCallbackLevel(kC4LogWarning);
         c4log_warnOnErrors(true);
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::testCaseStarting(testInfo);
     }
 
+    void testCaseEnded(Catch::TestCaseStats const& testCaseStats) override {
+        std::lock_guard lock(_mutex);
+        // Locking/unlocking the mutex merely so we block if a background thread is in
+        // dumpBinaryLogs due to an exception...
+        CaseListReporter::testCaseEnded(testCaseStats);
+    }
+
     void sectionStarting(Catch::SectionInfo const& sectionInfo) override {
+        std::lock_guard lock(_mutex);
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::sectionStarting(sectionInfo);
     }
@@ -73,7 +83,8 @@ struct QuietReporter : public CaseListReporter {
 
   private:
     void dumpBinaryLogs() {
-        fleece::alloc_slice logPath = c4log_binaryFilePath();
+        std::lock_guard<std::mutex> lock(_mutex);
+        fleece::alloc_slice         logPath = c4log_binaryFilePath();
         if ( logPath && c4log_binaryFileLevel() < c4log_callbackLevel() ) {
             c4log_flushLogFiles();
 
@@ -94,6 +105,7 @@ struct QuietReporter : public CaseListReporter {
 
     static inline QuietReporter* sInstance{nullptr};
 
+    std::mutex                       _mutex;
     litecore::LogIterator::Timestamp _caseStartTime{};
 };
 

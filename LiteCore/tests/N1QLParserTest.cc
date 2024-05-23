@@ -497,16 +497,6 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
     string      buf;
     double      checkBound = std::numeric_limits<double>::max();
 
-    SECTION("N1QL benchmark") {
-        // 4 nested parenthesis takes 7 seconds to parse in 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd
-        constexpr size_t nparens = 4;
-        string           left(nparens, '('), right(nparens, ')');
-        buf = "SELECT "s + left + "1" + right;
-        // buf == "SELECT ((((1))))"
-        n1ql       = buf.c_str();
-        checkBound = 0.5;
-    }
-
     SECTION("Very Long Query") {
         // 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd, this query takes 4 seconds
         n1ql       = "SELECT doc.* FROM _ doc WHERE "

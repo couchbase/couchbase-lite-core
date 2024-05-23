@@ -466,33 +466,25 @@ namespace litecore {
         db().exec(sql);
     }
 
+    // Ensure `slice` has the same data layout as with `SQLite::Statement::text`:
+    static_assert(sizeof(SQLite::Statement::text) == sizeof(slice));
+    static_assert(offsetof(SQLite::Statement::text, base) == offsetof(slice, buf));
+    static_assert(offsetof(SQLite::Statement::text, len) == offsetof(slice, size));
+
     vector<alloc_slice> SQLiteKeyStore::withDocBodies(const vector<slice>& docIDs, WithDocBodyCallback callback) {
         if ( docIDs.empty() ) return {};
 
         unordered_map<slice, size_t> docIndices;  // maps docID -> index in docIDs[]
         docIndices.reserve(docIDs.size());
 
-        // Construct SQL query with a big "IN (...)" clause for all the docIDs:
-        stringstream sql;
-        sql << "SELECT key, fl_callback(key, version, body, extra, sequence, flags, ?) FROM " << quotedTableName()
-            << " WHERE key IN ('";
         unsigned n = 0;
-        for ( slice docID : docIDs ) {
-            docIndices.insert({docID, n});
-            if ( n++ > 0 ) sql << "','";
-            if ( docID.findByte('\'') ) {
-                string escaped(docID);
-                replace(escaped, "'", "''");
-                sql << escaped;
-            } else {
-                sql << docID;
-            }
-        }
-        sql << "')";
+        for ( slice docID : docIDs ) docIndices.insert({docID, n++});
 
-        SQLite::Statement stmt(db(), sql.str());
+        SQLite::Statement stmt(db(), "SELECT key, fl_callback(key, version, body, extra, sequence, flags, ?1) FROM "
+                                             + quotedTableName() + " WHERE key IN carray(?2)");
         LogStatement(stmt);
         stmt.bindPointer(1, &callback, kWithDocBodiesCallbackPointerType);
+        stmt.bindArray(2, (const SQLite::Statement::text*)docIDs.data(), docIDs.size());
 
         // Run the statement and put the results into an array in the same order as docIDs:
         alloc_slice         empty(size_t(0));

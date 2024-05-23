@@ -67,6 +67,13 @@ namespace litecore {
 
             Options(const Options& o) : paramBindings(o.paramBindings), afterSequence(o.afterSequence) {}
 
+            Options& operator=(const Options& o) {
+                const_cast<alloc_slice&>(paramBindings) = o.paramBindings;
+                const_cast<sequence_t&>(afterSequence)  = o.afterSequence;
+                const_cast<uint64_t&>(purgeCount)       = 0;
+                return *this;
+            }
+
             template <class T>
             explicit Options(T bindings, sequence_t afterSeq = 0_seq, uint64_t withPurgeCount = 0)
                 : paramBindings(std::move(bindings)), afterSequence(afterSeq), purgeCount(withPurgeCount) {}
@@ -122,6 +129,8 @@ namespace litecore {
 
         virtual fleece::impl::ArrayIterator columns() const noexcept        = 0;
         virtual uint64_t                    missingColumns() const noexcept = 0;
+
+        bool isColumnMissing(unsigned col) const { return (missingColumns() & (1 << col)) != 0; }
 
         /** Random access to rows. May not be supported by all implementations, but does work with
             the current SQLite query implementation. */
