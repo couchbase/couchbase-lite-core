@@ -474,7 +474,7 @@ static pair<string, string> splitCollectionName(const string& input) {
 }
 
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
-    bool expectedTrained;
+    bool expectedTrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
