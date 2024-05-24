@@ -36,8 +36,10 @@ typedef void (*C4ConnectedClientStatusChangedCallback)(C4ConnectedClient*, C4Con
 
 /** Parameters describing a connected client, used when creating a \ref C4ConnectedClient. */
 typedef struct C4ConnectedClientParameters {
-    C4Slice url;                ///<URL with database to connect
-    C4Slice optionsDictFleece;  ///< Fleece-encoded dictionary of optional parameters.
+    C4Slice                            url;                ///<URL with database to connect
+    C4Slice                            optionsDictFleece;  ///< Fleece-encoded dictionary of optional parameters.
+    size_t                             numCollections;     ///< Size of `collections` array
+    const C4CollectionSpec* C4NULLABLE collections;        ///< Array of remote collections to access
     C4ConnectedClientStatusChangedCallback C4NULLABLE onStatusChanged;    ///< Called when status changes
     C4ReplicatorPropertyEncryptionCallback C4NULLABLE propertyEncryptor;  ///< Encryption callback
     C4ReplicatorPropertyDecryptionCallback C4NULLABLE propertyDecryptor;  ///< Decryption callback

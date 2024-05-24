@@ -52,6 +52,9 @@ namespace litecore::repl {
         _skipDeleted = _options->skipDeleted();
         if ( !passive() && _options->noIncomingConflicts() )
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
+
+        if ( _options->properties[kC4ReplicatorOptionAllowConnectedClient] )
+            replicator->registerWorkerHandler(this, "putRev", &Puller::handlePutRev);
     }
 
     // Starting an active pull.
@@ -345,6 +348,14 @@ namespace litecore::repl {
     }
 
     void Puller::insertRevision(RevToInsert* rev) { _inserter->insertRevision(rev); }
+
+#pragma mark - CONNECTED CLIENT:
+
+    // Received a "putRev" message from a connected client (not part of replication)
+    void Puller::handlePutRev(Retained<MessageIn> msg) {
+        Retained<IncomingRev> inc = makeIncomingRev<false>();
+        if ( inc ) inc->handleRev(msg, msg->body().size);  // ... will call _revWasHandled when it's finished
+    }
 
 #pragma mark - STATUS / PROGRESS:
 

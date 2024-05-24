@@ -99,36 +99,38 @@ namespace litecore::client {
         /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
         /// revision you already have.
         /// @param docID  The document ID.
-        /// @param collectionID  The name of the document's collection, or `nullslice` for default.
+        /// @param collection  The document's collection.
         /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
         ///                     the server will return error {WebSocketDomain, 304}.
         /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
         /// @param callback  On completion will be called with either a `DocResponse` struct
         ///          or a C4Error.
-        void getDoc(slice docID, slice collectionID, slice unlessRevID, bool asFleece,
+        void getDoc(C4CollectionSpec const& collection, slice docID, slice unlessRevID, bool asFleece,
                     std::function<void(Result<DocResponse>)> callback);
 
         /// Downloads the contents of a blob given its digest.
+        /// @param collection  The collection containing the blob.
         /// @param blobKey  The binary digest of the blob.
         /// @param compress  If true, a request that the server compress the blob's data during
         ///                  transmission. (This does not affect the data you receive.)
         /// @param callback  On completion will be called with either the blob body or a C4Error.
-        void getBlob(C4BlobKey blobKey, bool compress, std::function<void(Result<alloc_slice>)> callback);
+        void getBlob(C4CollectionSpec const& collection, C4BlobKey blobKey, bool compress,
+                     std::function<void(Result<alloc_slice>)> callback);
 
         /// Pushes a new document revision to the server.
         /// @note  If the document body contains any blob references, your delegate must implement
         ///        the \ref getBlobContents method.
         ///
         /// @param docID  The document ID.
-        /// @param collectionID  The name of the document's collection, or `nullslice` for default.
+        /// @param collection  The document's collection.
         /// @param revID  The revision ID you're sending.
         /// @param parentRevID  The ID of the parent revision on the server,
         ///                     or `nullslice` if this is a new document.
         /// @param revisionFlags  Flags of this revision.
         /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
         /// @param callback  On completion will be called with the status as a C4Error.
-        void putDoc(slice docID, slice collectionID, slice revID, slice parentRevID, C4RevisionFlags revisionFlags,
-                    slice fleeceData, std::function<void(C4Error)> callback);
+        void putDoc(C4CollectionSpec const& collection, slice docID, slice revID, slice parentRevID,
+                    C4RevisionFlags revisionFlags, slice fleeceData, std::function<void(Result<void>)> callback);
 
         //---- All Documents
 
@@ -136,19 +138,19 @@ namespace litecore::client {
         /// The docIDs themselves are passed to a callback.
         /// The callback will be called zero or more times with a non-empty vector of docIDs,
         /// then once with an empty vector and an optional error.
-        /// @param collectionID  The ID of the collection to observe.
+        /// @param collection  The collection to observe.
         /// @param globPattern  Either `nullslice` or a glob-style pattern string (with `*` or
         ///                     `?` wildcards) for docIDs to match.
         /// @param callback  The callback to receive the docIDs.
-        void getAllDocIDs(slice collectionID, slice globPattern, AllDocsReceiver callback);
+        void getAllDocIDs(C4CollectionSpec const& collection, slice globPattern, AllDocsReceiver callback);
 
         //---- Observer
 
         /// Registers a listener function that will be called when any document is changed.
         /// @note  To cancel, pass a null callback.
-        /// @param collectionID  The ID of the collection to observe.
+        /// @param collection  The collection to observe.
         /// @param callback  The function to call (on an arbitrary background thread!)
-        void observeCollection(slice collectionID, CollectionObserver callback);
+        void observeCollection(C4CollectionSpec const& collection, CollectionObserver callback);
 
         //---- Query
 
@@ -178,26 +180,32 @@ namespace litecore::client {
         void handleGetAttachment(Retained<blip::MessageIn>);
 
       private:
+        enum class CollectionIndex : unsigned {};
+
         void _start();
         void _stop();
         void _onHTTPResponse(int status, websocket::Headers headers);
         void _onConnect();
         void _onClose(blip::Connection::CloseStatus status, blip::Connection::State state);
         void _onRequestReceived(Retained<blip::MessageIn> request);
-        void _observeCollection(alloc_slice collectionID, CollectionObserver callback);
+        void _observeCollection(CollectionIndex, CollectionObserver callback);
 
-        void        setStatus(ActivityLevel);
-        C4Error     responseError(blip::MessageIn* response);
-        void        _disconnect(websocket::CloseCode closeCode, slice message);
-        bool        validateDocAndRevID(slice docID, slice revID);
-        alloc_slice processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
-        void        processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder& enc);
-        bool        receiveAllDocs(blip::MessageIn*, const AllDocsReceiver&);
-        bool        receiveQueryRows(blip::MessageIn*, const QueryReceiver&, bool asFleece);
+        void            setStatus(ActivityLevel);
+        void            assertConnected();
+        CollectionIndex getCollectionID(C4CollectionSpec const&) const;
+        void            addCollectionProperty(blip::MessageBuilder&, C4CollectionSpec const&) const;
+        C4Error         responseError(blip::MessageIn* response);
+        void            _disconnect(websocket::CloseCode closeCode, slice message);
+        bool            validateDocAndRevID(slice docID, slice revID);
+        alloc_slice     processIncomingDoc(slice docID, alloc_slice body, bool asFleece);
+        void            processOutgoingDoc(slice docID, slice revID, slice fleeceData, fleece::JSONEncoder& enc);
+        bool            receiveAllDocs(blip::MessageIn*, const AllDocsReceiver&);
+        bool            receiveQueryRows(blip::MessageIn*, const QueryReceiver&, bool asFleece);
 
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
         Delegate*                                      _delegate;  // Delegate whom I report progress/errors to
         C4ConnectedClientParameters                    _params;
+        std::vector<std::string>                       _collections;
         ActivityLevel                                  _activityLevel;
         Retained<ConnectedClient>                      _selfRetain;
         CollectionObserver                             _observer;

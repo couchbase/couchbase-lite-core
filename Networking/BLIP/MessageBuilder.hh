@@ -50,6 +50,9 @@ namespace litecore::blip {
         /** Constructs a MessageBuilder for a response. */
         explicit MessageBuilder(MessageIn* inReplyTo);
 
+        /** True if this is building a response, not a request. */
+        bool isResponse() const { return type != kRequestType; }
+
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
 

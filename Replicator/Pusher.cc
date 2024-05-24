@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include "c4DocEnumerator.hh"
 #include "c4ExceptionUtils.hh"
 #include <algorithm>
 
@@ -45,6 +46,11 @@ namespace litecore::repl {
         replicator->registerWorkerHandler(this, "subChanges", &Pusher::handleSubChanges);
         replicator->registerWorkerHandler(this, "getAttachment", &Pusher::handleGetAttachment);
         replicator->registerWorkerHandler(this, "proveAttachment", &Pusher::handleProveAttachment);
+
+        if ( _options->properties[kC4ReplicatorOptionAllowConnectedClient] ) {
+            replicator->registerWorkerHandler(this, "allDocs", &Pusher::handleAllDocs);
+            replicator->registerWorkerHandler(this, "getRev", &Pusher::handleGetRev);
+        }
     }
 
     // Begins active push, starting from the next sequence after sinceSequence
@@ -496,6 +502,64 @@ namespace litecore::repl {
         addProgress({0, change->bodySize});
         RevToSendList changes = {change};
         sendChanges(changes);
+    }
+
+#pragma mark - CONNECTED CLIENT:
+
+    // Connected Client `allDocs` request handler:
+    void Pusher::handleAllDocs(Retained<blip::MessageIn> req) {
+        string pattern(req->property("idPattern"));
+        logInfo("Handling allDocs; pattern=`%s`", pattern.c_str());
+
+        MessageBuilder response(req);
+        response.compressed = true;
+        auto& enc           = response.jsonBody();
+        enc.beginArray();
+
+        _db->useLocked([&](C4Database* db) {
+            C4DocEnumerator docEnum(db, {kC4Unsorted | kC4IncludeNonConflicted});
+            while ( docEnum.next() ) {
+                C4DocumentInfo info = docEnum.documentInfo();
+                if ( pattern.empty() || matchGlobPattern(string(info.docID), pattern) ) enc.writeString(info.docID);
+            }
+        });
+
+        enc.endArray();
+        req->respond(response);
+    }
+
+    // Connected Client 'getRev' request handler:
+    void Pusher::handleGetRev(Retained<MessageIn> req) {
+        alloc_slice         docID(req->property("id"));
+        slice               ifNotRev = req->property("ifNotRev");
+        MessageBuilder      response(req);
+        Retained<RevToSend> rev;
+        C4Error             c4err;
+        bool                ok = false;
+
+        Retained<C4Document> doc = _db->getDoc(getCollection(), docID, kDocGetCurrentRev);
+        if ( !doc || (doc->flags() & kDocDeleted) ) {
+            c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, "Deleted"_sl);
+        } else if ( !ifNotRev.empty() && ifNotRev == _db->convertVersionToAbsolute(doc->revID()) ) {
+            c4err = C4Error::make(WebSocketDomain, 304, "Not Changed"_sl);
+        } else {
+            C4DocumentInfo info         = {};
+            info.docID                  = docID;
+            info.revID                  = doc->revID();
+            info.sequence               = doc->sequence();
+            info.flags                  = doc->flags();
+            C4CollectionSpec collection = kC4DefaultCollectionSpec;  //FIXME
+            rev                         = make_retained<RevToSend>(info, collection, nullptr);
+            ok                          = (buildRevisionMessage(rev, doc, response, &c4err) == BuildRevMsgResult::ok);
+        }
+
+        if ( ok ) {
+            logVerbose("Responding to getRev('%.*s') with rev #%.*s", SPLAT(docID), SPLAT(rev->revID));
+            req->respond(response);
+        } else {
+            logInfo("Responding to getRev('%.*s') with error %s", SPLAT(docID), c4err.description().c_str());
+            req->respondWithError(c4ToBLIPError(c4err));
+        }
     }
 
 #pragma mark - PROGRESS:

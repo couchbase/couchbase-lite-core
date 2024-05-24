@@ -40,6 +40,12 @@ namespace litecore::client {
     using namespace litecore::actor;
     using namespace blip;
 
+    static string encodeCollectionSpec(C4CollectionSpec const& spec) {
+        if ( spec.scope == kC4DefaultScopeID ) return string(spec.name);
+        else
+            return format("%.*s.%.*s", FMTSLICE(spec.scope), FMTSLICE(spec.name));
+    }
+
     alloc_slice ConnectedClient::Delegate::getBlobContents(const C4BlobKey&, C4Error* error) {
         Warn("ConnectedClient's delegate needs to override getBlobContents!");
         *error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
@@ -50,11 +56,19 @@ namespace litecore::client {
                                      const C4ConnectedClientParameters& params, repl::Options* options)
         : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, nullptr,
                  "Client", repl::kNotCollectionIndex)
-        , _weakConnectionDelegateThis(new WeakHolder<blip::ConnectionDelegate>(this))
         , _delegate(&delegate)
         , _params(params)
         , _activityLevel(kC4Stopped) {
         _importance = 2;
+
+        if ( _params.numCollections == 0 ) {
+            _collections.emplace_back(slice(kC4DefaultCollectionName));
+        } else {
+            // _params.collections points to the caller's slices, so I have to copy it.
+            for ( size_t i = 0; i < _params.numCollections; ++i )
+                _collections.push_back(encodeCollectionSpec(_params.collections[i]));
+        }
+        _params.collections = nullptr;
     }
 
     void ConnectedClient::setStatus(ActivityLevel level) {
@@ -82,6 +96,7 @@ namespace litecore::client {
 
     void ConnectedClient::_start() {
         logInfo("Connecting...");
+        _weakConnectionDelegateThis = new WeakHolder<blip::ConnectionDelegate>(this);
         connection().start(_weakConnectionDelegateThis);
         registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
         _selfRetain = this;  // retain myself while the connection is open
@@ -95,6 +110,7 @@ namespace litecore::client {
         if ( connected() ) {
             logInfo("Disconnecting...");
             connection().close(closeCode, message);
+            logInfo("...Disconnected");
             setStatus(kC4Stopping);
         }
     }
@@ -105,6 +121,11 @@ namespace litecore::client {
     }
 
     ConnectedClient::ActivityLevel ConnectedClient::computeActivityLevel() const { return _activityLevel; }
+
+    void ConnectedClient::assertConnected() {
+        if ( auto lv = computeActivityLevel(); lv != kC4Idle && lv != kC4Busy )
+            error::_throw(error::Network, websocket::kNetErrNotConnected);
+    }
 
 #pragma mark - BLIP DELEGATE:
 
@@ -134,9 +155,39 @@ namespace litecore::client {
     void ConnectedClient::onConnect() { enqueue("onConnect", &ConnectedClient::_onConnect); }
 
     void ConnectedClient::_onConnect() {
-        logInfo("Connected!");
-        if ( _activityLevel != kC4Stopping )  // skip this if stop() already called
-            setStatus(kC4Idle);
+        logInfo("BLIP connection is open");
+        if ( _activityLevel == kC4Stopping )  // skip this if stop() already called
+            return;
+
+        // We have to send the peer replicator a `getCollections` request before it will register
+        // any request handlers:
+        MessageBuilder req("getCollections");
+        auto&          enc = req.jsonBody();
+        enc.beginDict();
+        enc.writeKey("collections");
+        enc.beginArray();
+        for ( string& coll : _collections ) enc.writeString(coll);
+        enc.endArray();
+        enc.writeKey("checkpoint_ids");
+        enc.beginArray();
+        for ( size_t i = 0; i < _collections.size(); ++i ) enc.writeString("BOGUS");
+        enc.endArray();
+        enc.endDict();
+        sendRequest(req, [=](const MessageProgress& progress) {
+            if ( progress.state >= blip::MessageProgress::kComplete ) {
+                if ( C4Error err = responseError(progress.reply) ) {
+                    logError("getCollections request failed; closing connection");
+                    if ( progress.state != blip::MessageProgress::kDisconnected ) {
+                        connection().close(websocket::kCodeProtocolError, "getCollections failed");
+                        setStatus(kC4Stopping);
+                    }
+                } else {
+                    logInfo("Received getCollections response; now connected");
+                    //TODO: Check for `null` entry in response array & disconnect(?)
+                    setStatus(kC4Idle);
+                }
+            }
+        });
     }
 
     void ConnectedClient::onClose(Connection::CloseStatus status, Connection::State state) {
@@ -150,6 +201,7 @@ namespace litecore::client {
         bool closedByPeer = (_activityLevel != kC4Stopping);
 
         _connectionClosed();
+        _weakConnectionDelegateThis = nullptr;
 
         if ( status.isNormal() && closedByPeer ) {
             logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
@@ -189,6 +241,18 @@ namespace litecore::client {
 
 #pragma mark - REQUESTS:
 
+    ConnectedClient::CollectionIndex ConnectedClient::getCollectionID(C4CollectionSpec const& spec) const {
+        string encoded = encodeCollectionSpec(spec);
+        auto   i       = find(_collections.begin(), _collections.end(), encoded);
+        if ( i == _collections.end() )
+            error::_throw(error::NotFound, "collection was not registered with connected client");
+        return CollectionIndex(i - _collections.begin());
+    }
+
+    void ConnectedClient::addCollectionProperty(MessageBuilder& msg, C4CollectionSpec const& spec) const {
+        msg.addProperty("collection", int64_t(getCollectionID(spec)));
+    }
+
     // Returns the error status of a response (including a NULL response, i.e. disconnection)
     C4Error ConnectedClient::responseError(MessageIn* response) {
         C4Error error;
@@ -218,12 +282,14 @@ namespace litecore::client {
         return error;
     }
 
-    void ConnectedClient::getDoc(slice docID_, slice collectionID_, slice unlessRevID_, bool asFleece,
+    void ConnectedClient::getDoc(C4CollectionSpec const& collection, slice docID_, slice unlessRevID_, bool asFleece,
                                  function<void(Result<DocResponse>)> callback) {
         // Not yet running on Actor thread...
+        assertConnected();
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID_));
         alloc_slice    docID(docID_);
         MessageBuilder req("getRev");
+        addCollectionProperty(req, collection);
         req["id"]       = docID;
         req["ifNotRev"] = unlessRevID_;
 
@@ -284,11 +350,13 @@ namespace litecore::client {
         return asFleece ? fleeceData : jsonData;
     }
 
-    void ConnectedClient::getBlob(C4BlobKey blobKey, bool compress, function<void(Result<alloc_slice>)> callback) {
+    void ConnectedClient::getBlob(C4CollectionSpec const& collection, C4BlobKey blobKey, bool compress,
+                                  function<void(Result<alloc_slice>)> callback) {
         // Not yet running on Actor thread...
         auto digest = blobKey.digestString();
         logInfo("getAttachment(<%s>)", digest.c_str());
         MessageBuilder req("getAttachment");
+        addCollectionProperty(req, collection);
         req["digest"] = digest;
         if ( compress ) req["compress"] = "true";
 
@@ -302,15 +370,19 @@ namespace litecore::client {
         });
     }
 
-    void ConnectedClient::putDoc(slice docID_, slice collectionID_, slice revID_, slice parentRevID_,
-                                 C4RevisionFlags revisionFlags, slice fleeceData_, function<void(C4Error)> callback) {
+    void ConnectedClient::putDoc(C4CollectionSpec const& collection, slice docID_, slice revID_, slice parentRevID_,
+                                 C4RevisionFlags revisionFlags, slice fleeceData_,
+                                 function<void(Result<void>)> callback) {
         // Not yet running on Actor thread...
+        assertConnected();
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID_), FMTSLICE(revID_));
         MessageBuilder req("putRev");
         req.compressed = true;
-        req["id"]      = docID_;
-        req["rev"]     = revID_;
-        req["history"] = parentRevID_;
+        addCollectionProperty(req, collection);
+        req["id"]          = docID_;
+        req["rev"]         = revID_;
+        req["history"]     = parentRevID_;
+        req["noconflicts"] = true;
         if ( revisionFlags & kRevDeleted ) req["deleted"] = "1";
 
         if ( fleeceData_.size > 0 ) {
@@ -381,8 +453,11 @@ namespace litecore::client {
         req->respond(reply);
     }
 
-    void ConnectedClient::getAllDocIDs(slice collectionID, slice globPattern, AllDocsReceiver receiver) {
+    void ConnectedClient::getAllDocIDs(C4CollectionSpec const& collection, slice globPattern,
+                                       AllDocsReceiver receiver) {
+        assertConnected();
         MessageBuilder req("allDocs");
+        addCollectionProperty(req, collection);
         if ( !globPattern.empty() ) req["idPattern"] = globPattern;
         sendRequest(req, [this, receiver](const MessageProgress& progress) {
             if ( progress.state >= blip::MessageProgress::kComplete ) {
@@ -414,21 +489,22 @@ namespace litecore::client {
         return true;
     }
 
-    void ConnectedClient::observeCollection(slice collectionID, CollectionObserver callback) {
-        enqueue("observeCollection", &ConnectedClient::_observeCollection, alloc_slice(collectionID),
+    void ConnectedClient::observeCollection(C4CollectionSpec const& collection, CollectionObserver callback) {
+        enqueue("observeCollection", &ConnectedClient::_observeCollection, getCollectionID(collection),
                 std::move(callback));
     }
 
-    void ConnectedClient::_observeCollection(alloc_slice collectionID, CollectionObserver callback) {
-        logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
+    void ConnectedClient::_observeCollection(CollectionIndex collection, CollectionObserver callback) {
+        logInfo("observeCollection(%u)", collection);
 
-        bool observe      = !!callback;
-        bool sameSubState = (observe == !!_observer);
-        _observer         = std::move(callback);
+        bool sameSubState = (!!callback == !!_observer);
+        if ( !sameSubState ) assertConnected();
+        _observer = std::move(callback);
         if ( sameSubState ) return;
 
         MessageBuilder req;
-        if ( observe ) {
+        req.addProperty("collection", unsigned(collection));
+        if ( _observer ) {
             if ( !_registeredChangesHandler ) {
                 registerHandler("changes", &ConnectedClient::handleChanges);
                 _registeredChangesHandler = true;
@@ -440,12 +516,13 @@ namespace litecore::client {
             req.setProfile("unsubChanges");
         }
 
-        sendRequest(req, [this, callback](const MessageProgress& progress) {
+        sendRequest(req, [this](const MessageProgress& progress) {
             if ( progress.state >= blip::MessageProgress::kComplete ) {
                 logInfo("...observeCollection got response");
                 if ( C4Error err = responseError(progress.reply) ) {
+                    auto obs  = std::move(_observer);
                     _observer = nullptr;
-                    callback({}, &err);  // Request failed
+                    obs({}, &err);  // Request failed
                 }
             }
         });

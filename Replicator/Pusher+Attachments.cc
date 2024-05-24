@@ -77,8 +77,10 @@ namespace litecore::repl {
                 C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'");
             auto blobStore = _db->blobStore();
             if ( int64_t size = blobStore->getSize(progress.key); size >= 0 ) progress.bytesTotal = size;
-            else
-                C4Error::raise(LiteCoreDomain, kC4ErrorNotFound, "No such blob");
+            else {
+                req->respondWithError({"LiteCore", kC4ErrorNotFound, "No such blob"});
+                return nullptr;
+            }
             return make_unique<C4ReadStream>(*blobStore, progress.key);
         } catch ( ... ) {
             req->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));

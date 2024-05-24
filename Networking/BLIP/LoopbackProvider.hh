@@ -235,6 +235,7 @@ namespace litecore::websocket {
             // Cannot use const& because it breaks Actor::enqueue
             virtual void _close(int                 status,
                                 fleece::alloc_slice message) {  // NOLINT(performance-unnecessary-value-param)
+                if ( _state == State::closed ) return;
                 if ( _state != State::unconnected ) {
                     Assert(_state == State::connecting || _state == State::connected);
                     logInfo("CLOSE; status=%d", status);

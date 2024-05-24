@@ -65,7 +65,7 @@ namespace litecore::repl {
         bool                                      deltaOK{false};            // Can send a delta
         int8_t                                    retryCount{0};  // Number of times this revision has been retried
 
-        RevToSend(const C4DocumentInfo& info, C4CollectionSpec, void*);
+        RevToSend(const C4DocumentInfo& info, C4CollectionSpec, void* context);
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;

@@ -100,7 +100,8 @@ namespace litecore::repl {
             // it dispatches the message to appropriate workers.
             for ( auto profile : {
                           "subChanges", "getAttachment", "proveAttachment",  // passive pushers
-                          "changes", "proposeChanges", "rev", "norev"        // passive pullers
+                          "changes", "proposeChanges", "rev", "norev",       // passive pullers
+                          "allDocs", "getRev", "putRev", "query",            // connected client
                   } ) {
                 registerHandler(profile, &Replicator::delegateCollectionSpecificMessageToWorker);
             }

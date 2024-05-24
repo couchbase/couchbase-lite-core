@@ -73,6 +73,8 @@ namespace litecore::repl {
         bool handleChangeResponse(RevToSend* change, Value response);
         bool handleProposedChangeResponse(RevToSend* change, Value response);
         bool handlePushConflict(RevToSend* change);
+        void handleAllDocs(Retained<blip::MessageIn>);
+        void handleGetRev(Retained<blip::MessageIn>);
 
         void maybeGetMoreChanges() { enqueue(FUNCTION_TO_QUEUE(Pusher::_maybeGetMoreChanges)); }
 
@@ -101,6 +103,9 @@ namespace litecore::repl {
         alloc_slice createRevisionDelta(C4Document* doc NONNULL, RevToSend* request NONNULL, fleece::Dict root,
                                         size_t revSize, bool sendLegacyAttachments);
         void        revToSendIsObsolete(const RevToSend& request, C4Error* c4err = nullptr);
+
+        enum class BuildRevMsgResult { ok, revError, encryptError };
+        BuildRevMsgResult buildRevisionMessage(RevToSend*, C4Document*, blip::MessageBuilder&, C4Error*);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 

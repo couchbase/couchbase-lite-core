@@ -48,15 +48,69 @@ namespace litecore::repl {
                    (uint64_t)request->sequence, _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
+        MessageBuilder       msg;
         C4Error              c4err = {};
         Dict                 root;
         auto                 collection = getCollection();
         Retained<C4Document> doc = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetUpgraded);
+        switch ( auto result = buildRevisionMessage(request, doc, msg, &c4err) ) {
+            case BuildRevMsgResult::ok:
+                logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID),
+                           SPLAT(request->revID));
+                sendRequest(msg,
+                            [this, request](const MessageProgress& progress) { onRevProgress(request, progress); });
+                increment(_revisionsInFlight);
+                break;
+
+
+            case BuildRevMsgResult::encryptError:
+                if ( c4err.domain == WebSocketDomain && c4err.code == 503 ) {
+                    // This is treated as a transient network glitch, we lift it to the replicator
+                    // to handle. The replicator will be taken to offline and restarted after a certain
+                    // wait time.
+                    onError(c4err);
+                    return;
+                }
+                // else fall through...
+
+            case BuildRevMsgResult::revError:
+                {
+                    // Send an error if we couldn't get the revision:
+                    int blipError;
+                    if ( c4err.domain == WebSocketDomain ) blipError = c4err.code;
+                    else if ( c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound )
+                        blipError = 404;
+                    else {
+                        warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s", SPLAT(request->docID),
+                             SPLAT(request->revID), c4err.description().c_str());
+                        blipError = 500;
+                    }
+                    msg.setProfile("norev");
+                    msg["error"_sl] = blipError;
+                    msg.noreply     = true;
+                    sendRequest(msg);
+
+                    bool completed = (result == BuildRevMsgResult::encryptError);
+                    doneWithRev(request, completed, false);
+                    enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
+                    break;
+                }
+        }
+    }
+
+    // Creates a revision message from a RevToSend. Used by `sendRevision` and `handleGetRev`.
+    Pusher::BuildRevMsgResult Pusher::buildRevisionMessage(RevToSend* request, C4Document* doc, MessageBuilder& msg,
+                                                           C4Error* outError) {
+        // Select the revision and get its properties:
+        C4Error c4err = {};
+        Dict    root;
         if ( doc ) {
             if ( doc->selectRevision(request->revID, true) ) root = doc->getProperties();
             if ( root ) request->flags = doc->selectedRev().flags;
-            else
+            else {
                 revToSendIsObsolete(*request, &c4err);
+                doc = nullptr;
+            }
         } else {
             c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
@@ -66,11 +120,11 @@ namespace litecore::repl {
         // to the remote and call doneWithRev() with argument 'completed' set to false.
         // The one exception is when the Encyptor callback returns an error, when we will
         // mark the rev is "permanently" completed and set 'completed' to true.
-        bool completed = false;
+        bool encryptFailed = false;
 
         // Encrypt any encryptable properties
         MutableDict encryptedRoot;
-        if ( root && MayContainPropertiesToEncrypt(doc->getRevisionBody()) ) {
+        if ( doc && MayContainPropertiesToEncrypt(doc->getRevisionBody()) ) {
             logVerbose("Encrypting properties in doc '%.*s'", SPLAT(request->docID));
             encryptedRoot = EncryptDocumentProperties(request->collectionSpec, request->docID, root,
                                                       _options->propertyEncryptor, _options->callbackContext, &c4err);
@@ -82,32 +136,22 @@ namespace litecore::repl {
                 // the following error.
                 if ( !c4err ) { c4err = {LiteCoreDomain, kC4ErrorCrypto}; }
                 finishedDocumentWithError(request, c4err, false);
-
-                if ( c4err.domain == WebSocketDomain && c4err.code == 503 ) {
-                    // This is treated as a transient network glitch, we lift it to the replicator
-                    // to handle. The replicator will be taken to offline and restarted after a certain
-                    // wait time.
-                    onError(c4err);
-                    return;
-                }
-
                 root = nullptr;
                 // Encyptor error is permanent.
-                completed = true;
+                encryptFailed = true;
             }
         }
 
         auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
 
-        // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
-        // "norev" and include the error code:
-        MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
+        // Now populate the BLIP message fields, whether or not this is an error
         assignCollectionToMsg(msg, collectionIndex());
         msg.compressed     = true;
         msg["id"_sl]       = request->docID;
         msg["rev"_sl]      = fullRevID;
         msg["sequence"_sl] = narrow_cast<int64_t>((uint64_t)request->sequence);
-        if ( root ) {
+        if ( doc ) {
+            if ( !msg.isResponse() ) msg.setProfile("rev");
             if ( request->noConflicts ) msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev().flags;
             if ( revisionFlags & kRevDeleted ) msg["deleted"_sl] = "1"_sl;
@@ -140,27 +184,11 @@ namespace litecore::repl {
                     bodyEncoder.writeValue(root);
                 }
             }
-            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID), SPLAT(request->revID));
-            sendRequest(msg, [this, request](const MessageProgress& progress) { onRevProgress(request, progress); });
-            increment(_revisionsInFlight);
+            return BuildRevMsgResult::ok;
 
         } else {
-            // Send an error if we couldn't get the revision:
-            int blipError;
-            if ( c4err.domain == WebSocketDomain ) blipError = c4err.code;
-            else if ( c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound )
-                blipError = 404;
-            else {
-                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s", SPLAT(request->docID),
-                     SPLAT(request->revID), c4err.description().c_str());
-                blipError = 500;
-            }
-            msg["error"_sl] = blipError;
-            msg.noreply     = true;
-            sendRequest(msg);
-
-            doneWithRev(request, completed, false);
-            enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
+            if ( outError ) *outError = c4err;
+            return encryptFailed ? BuildRevMsgResult::encryptError : BuildRevMsgResult::revError;
         }
     }
 

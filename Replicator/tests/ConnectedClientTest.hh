@@ -29,33 +29,41 @@ class ConnectedClientLoopbackTest
         _serverOptions = make_retained<repl::Options>(kC4Passive, kC4Passive);
         _serverOptions->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
         _serverOptions->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
+
+        repl::Options::CollectionOptions coll(kC4DefaultCollectionSpec);
+        coll.push = coll.pull = kC4Passive;
+        _serverOptions->collectionOpts.push_back(std::move(coll));
     }
 
     ~ConnectedClientLoopbackTest() { stop(); }
 
     void start() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        Assert(!_serverRunning && !_clientRunning);
+        {
+            unique_lock lock(_mutex);
+            Assert(!_serverRunning && !_clientRunning);
 
-        c4::ref<C4Database> serverDB = c4db_openAgain(db, ERROR_INFO());
-        REQUIRE(serverDB);
-        _server = new repl::Replicator(serverDB, new LoopbackWebSocket(alloc_slice("ws://srv/"), Role::Server, {}),
-                                       *this, _serverOptions);
+            c4::ref<C4Database> serverDB = c4db_openAgain(db, ERROR_INFO());
+            REQUIRE(serverDB);
+            _server = new repl::Replicator(serverDB, new LoopbackWebSocket(alloc_slice("ws://srv/"), Role::Server, {}),
+                                           *this, _serverOptions);
+            auto clientOptions = make_retained<repl::Options>(kC4Passive, kC4Passive);
+            _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"), Role::Client, {}),
+                                                  *this, _params, clientOptions);
 
-        _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"), Role::Client, {}), *this,
-                                              _params);
+            Headers headers;
+            headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
+            LoopbackWebSocket::bind(_server->webSocket(), _client->webSocket(), headers);
+        }
 
-        Headers headers;
-        headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
-        LoopbackWebSocket::bind(_server->webSocket(), _client->webSocket(), headers);
-
-        _clientRunning = _serverRunning = true;
         _server->start();
         _client->start();
+
+        unique_lock lock(_mutex);
+        _cond.wait(lock, [this] { return _clientRunning && _serverRunning; });
     }
 
     void stop() {
-        std::unique_lock<std::mutex> lock(_mutex);
+        unique_lock lock(_mutex);
         if ( _server ) {
             _server->stop();
             _server = nullptr;
@@ -67,25 +75,6 @@ class ConnectedClientLoopbackTest
 
         Log("+++ Waiting for client & replicator to stop...");
         _cond.wait(lock, [&] { return !_clientRunning && !_serverRunning; });
-    }
-
-    template <class T>
-    auto waitForResponse(actor::Async<T>& asyncResult) {
-        asyncResult.blockUntilReady();
-
-        Log("++++ Async response available!");
-        if ( auto err = asyncResult.error() ) FAIL("Response returned an error " << err);
-        return asyncResult.result().value();
-    }
-
-    template <class T>
-    C4Error waitForErrorResponse(actor::Async<T>& asyncResult) {
-        asyncResult.blockUntilReady();
-
-        Log("++++ Async response available!");
-        auto err = asyncResult.error();
-        if ( !err ) FAIL("Response did not return an error");
-        return err;
     }
 
     //---- ConnectedClient delegate:
@@ -114,10 +103,12 @@ class ConnectedClientLoopbackTest
 
     void clientStatusChanged(client::ConnectedClient* NONNULL, client::ConnectedClient::Status const& status) override {
         Log("+++ Client status changed: %d", int(status.level));
-        if ( status.level == kC4Stopped ) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _clientRunning = false;
-            if ( !_clientRunning && !_serverRunning ) _cond.notify_all();
+
+        unique_lock lock(_mutex);
+        bool        running = (status.level == kC4Idle || status.level == kC4Busy);
+        if ( running != _clientRunning ) {
+            _clientRunning = running;
+            _cond.notify_all();
         }
     }
 
@@ -133,10 +124,12 @@ class ConnectedClientLoopbackTest
     void replicatorGotTLSCertificate(slice certData) override {}
 
     void replicatorStatusChanged(repl::Replicator* NONNULL, const repl::Replicator::Status& status) override {
-        if ( status.level == kC4Stopped ) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _serverRunning = false;
-            if ( !_clientRunning && !_serverRunning ) _cond.notify_all();
+        Log("+++ Server status changed: %d", int(status.level));
+        unique_lock lock(_mutex);
+        bool        running = (status.level == kC4Idle || status.level == kC4Busy);
+        if ( running != _serverRunning ) {
+            _serverRunning = running;
+            _cond.notify_all();
         }
     }
 
@@ -146,6 +139,38 @@ class ConnectedClientLoopbackTest
 
     void replicatorBlobProgress(repl::Replicator* NONNULL, const repl::Replicator::BlobProgress&) override {}
 
+    //---- Utilities:
+
+    alloc_slice actualRevID(slice docID) const {
+        c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetMetadata, ERROR_INFO());
+        REQUIRE(doc);
+        return alloc_slice(c4doc_getSelectedRevIDGlobalForm(doc));
+    }
+
+    /// Returns a function that when called will copy its Result to `result` and notify.
+    template <typename T>
+    function<void(Result<T>)> expect(Result<T>& result) {
+        ++_waitCount;
+        return [&](Result<T> gotResponse) {
+            result = std::move(gotResponse);
+            notify();
+        };
+    }
+
+    /// Each call decrements the count.
+    void notify() {
+        unique_lock lock(_mutex);
+        Assert(_waitCount > 0);
+        if ( --_waitCount == 0 ) _cond.notify_one();
+    }
+
+    /// Waits until the count reaches zero.
+    void wait() {
+        unique_lock lock(_mutex);
+        Assert(_waitCount > 0);
+        _cond.wait(lock, [&] { return _waitCount == 0; });
+    }
+
     C4ConnectedClientParameters        _params{};
     Retained<repl::Replicator>         _server;
     Retained<repl::Options>            _serverOptions;
@@ -153,6 +178,7 @@ class ConnectedClientLoopbackTest
     mutex                              _mutex;
     condition_variable                 _cond;
     unordered_map<string, alloc_slice> _blobs;
+    unsigned                           _waitCount     = 0;
     bool                               _clientRunning = false;
     bool                               _serverRunning = false;
 };

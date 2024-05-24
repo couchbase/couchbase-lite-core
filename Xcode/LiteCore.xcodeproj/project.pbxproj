@@ -124,6 +124,7 @@
 		272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */ = {isa = PBXBuildFile; fileRef = 272B1BE01FB13B7400F56620 /* stopwordset.h */; };
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		272CD2F02BFE9A3F00A2D518 /* ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F62B97E3380049DD1D /* ConnectedClient.cc */; };
+		272CD2F62BFEBF1E00A2D518 /* ConnectedClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */; };
 		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
 		272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00F52273D45000E62F72 /* LiveQuerier.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
@@ -4108,6 +4109,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
+				272CD2F62BFEBF1E00A2D518 /* ConnectedClientTest.cc in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */,
