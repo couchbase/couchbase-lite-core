@@ -142,10 +142,12 @@ namespace litecore {
         void deleteIndex(const SQLiteIndexSpec&);
         std::optional<SQLiteIndexSpec> getIndex(slice name);
         std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*);
+        void                           setIndexSequences(slice name, slice sequencesJSON);
 
       private:
         friend class SQLiteKeyStore;
         friend class SQLiteQuery;
+        friend class LazyIndex;
 
         // SQLite schema versioning (values of `pragma user_version`)
         enum class SchemaVersion {
@@ -180,6 +182,7 @@ namespace litecore {
         static SQLiteIndexSpec       specFromStatement(SQLite::Statement& stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr);
 
+
         unique_ptr<SQLite::Database>          _sqlDb;  // SQLite database object
         std::unique_ptr<SQLiteKeyStore>       _realDefaultKeyStore;
         mutable unique_ptr<SQLite::Statement> _getLastSeqStmt, _setLastSeqStmt;
@@ -195,8 +198,9 @@ namespace litecore {
             , keyStoreName(std::move(ksName))
             , indexTableName(std::move(itName)) {}
 
-        std::string const keyStoreName;
-        std::string const indexTableName;
+        std::string const keyStoreName;      ///< Name of KeyStore
+        std::string const indexTableName;    ///< Name of SQLite table containing index (if any)
+        alloc_slice       indexedSequences;  ///< Sequences that have been indexed; a JSON SequenceSet
     };
 
 

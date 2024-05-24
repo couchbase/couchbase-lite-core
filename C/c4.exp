@@ -319,6 +319,7 @@ _c4coll_getDocumentCount
 _c4coll_getLastSequence
 _c4coll_getDoc
 _c4coll_getDocBySequence
+_c4coll_getIndex
 _c4coll_isValid
 _c4coll_putDoc
 _c4coll_createDoc

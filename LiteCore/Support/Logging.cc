@@ -619,23 +619,36 @@ namespace litecore {
     }
 
     bool LogDomain::registerParentObject(unsigned object, unsigned parentObject) {
-        unique_lock<mutex> lock(sLogMutex);
-        auto               iter = sObjectMap.find(object);
-        if ( iter == sObjectMap.end() ) {
-            WarnError("LogDomain::registerParentObject, object is not registered");
-            return false;
+        enum { kNoWarning, kNotRegistered, kParentNotRegistered, kAlreadyRegistered } warningCode{kNoWarning};
+
+        {
+            unique_lock<mutex> lock(sLogMutex);
+            auto               iter = sObjectMap.find(object);
+            if ( iter == sObjectMap.end() ) {
+                warningCode = kNotRegistered;
+            } else if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
+                warningCode = kParentNotRegistered;
+            } else if ( iter->second.second != 0 ) {
+                warningCode = kAlreadyRegistered;
+            } else
+                iter->second.second = parentObject;
         }
-        if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
-            WarnError("LogDomain::registerParentObject, parentObject is not registered");
-            return false;
+
+        switch ( warningCode ) {
+            case kNotRegistered:
+                WarnError("LogDomain::registerParentObject, object is not registered");
+                break;
+            case kParentNotRegistered:
+                WarnError("LogDomain::registerParentObject, parentObject is not registered");
+                break;
+            case kAlreadyRegistered:
+                WarnError("LogDomain::registerParentObject, object is already assigned parent");
+                break;
+            default:
+                break;
         }
-        if ( iter->second.second != 0 ) {
-            // Already has assigned parent
-            WarnError("LogDomain::registerParentObject, object is already assigned parent");
-            return false;
-        }
-        iter->second.second = parentObject;
-        return true;
+
+        return warningCode == kNoWarning;
     }
 
 #pragma mark - LOGGING CLASS:
