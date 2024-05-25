@@ -60,35 +60,9 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
         return False
 
     if not expectChange and is_changed(git):
-        if "sub-comps" not in component:
-            print("! No manifest change to accompany change in source")
-            print(git)
-            return False
-        else:
-            submoduleBase = get_submodule_base(git)
-            if not submoduleBase:
-                # the parent compoent should be submodule. We should not hit here.
-                print("! No manifest change to accompany change in source beside submodule change")
-                print(git)
-                return False
-
-            cwd = os.getcwd()
-            os.chdir(srcPath)
-            git = subprocess.check_output(["git", "diff", submoduleBase]).decode("ascii")
-            os.chdir(cwd)
-
-            # collect the headers of every different files.
-            # ex: diff --git a/sqlite3/sqlite3.h b/sqlite3/sqlite3.h
-            diffs = [l for l in git.splitlines() if l.startswith("diff --git")]
-            for s in component["sub-comps"]:
-                subSrcPath = s["src-path"].replace(component["src-path"], "a")
-                # filter out changes in the sub-component
-                diffs = [l for l in diffs if not l.startswith("diff --git "+subSrcPath)]
-
-            if len(diffs) > 0:
-                print("! No manifest change to accompany change in source beside changes in the sub-components")
-                print(diffs)
-                return False
+        print("! No manifest change to accompany change in source")
+        print(git)
+        return False
 
     return True
 
@@ -109,19 +83,8 @@ def main(manifest_path: Path, branch: str) -> int:
     manifest_old = yaml.load(manifest_path.read_bytes(), Loader=yaml.CLoader)
     subprocess.check_call(["git", "restore", manifest_path.relative_to(os.getcwd())])
 
-    components = manifest["components"]
-    for _, component in components.items():
-        parentRepo = component.get("parent-repo", None)
-        if parentRepo:
-            parentCompKey = parentRepo.split("/")[-1].lower()
-            parentComp = components.get(parentCompKey, None)
-            if parentComp:
-                if "sub-comps" not in parentComp:
-                    parentComp["sub-comps"] = []
-                parentComp["sub-comps"].append(component)
-
     failCount = 0
-    for component in components:
+    for component in manifest["components"]:
         if component not in manifest_old["components"]:
             print(f"{component} is newly added, skipping check...")
             continue
