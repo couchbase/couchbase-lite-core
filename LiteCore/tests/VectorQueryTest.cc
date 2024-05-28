@@ -473,6 +473,23 @@ static pair<string, string> splitCollectionName(const string& input) {
     return {input.substr(0, dotPos), input.substr(dotPos + 1)};
 }
 
+// This is a test for the functionality of the c4index_isTrained API.  The overall flow
+// of the test is as follows:
+//
+// 1. Test that if there are not enough docs to perform the training, the index
+//    remains untrained.
+// 2. Test that creating an index, and then adding a sufficient number of docs
+//    causes the index to become trained
+// 3. Test that adding a sufficient number of docs, and then creating an index
+//    causes the index to become trained
+//
+// During execution a few other things are also checked, such as a nonexistent index,
+// and an index that is not a vector index, to make sure that exceptions are thrown as
+// they should be.
+//
+// As a note, the timing of the training differs between 2 and 3 above currently.  Scenario
+// 2 trains the index at doc write time, and scenario 3 trains at first query time.  This
+// may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained;
 
