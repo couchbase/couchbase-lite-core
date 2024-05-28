@@ -25,6 +25,7 @@ namespace litecore::repl {
 
     class Pusher;
     class Puller;
+    class QueryServer;
     class ReplicatedRev;
 
     static const array<string, 2> kCompatProtocols = {{string(blip::Connection::kWSProtocolName) + "+CBMobile_3",
@@ -257,6 +258,7 @@ namespace litecore::repl {
         alloc_slice           _remoteURL;
         bool                  _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+        Retained<QueryServer>                          _queryServer;  // Object that runs query requests (listener)
     };
 
 }  // namespace litecore::repl

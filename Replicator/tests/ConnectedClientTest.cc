@@ -492,8 +492,6 @@ TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "putDoc encrypted", "[Con
 
 #pragma mark - QUERIES:
 
-#if 0  //TEMP
-
 static constexpr slice kQueryStr =
         "SELECT name.first, name.last FROM _ WHERE gender='male' and contact.address.state=$STATE";
 
@@ -574,5 +572,3 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "n1ql query from connected client"
     CHECK(fleeceResults == expectedResults);
     CHECK(jsonResults == expectedResults);
 }
-
-#endif  //TEMP

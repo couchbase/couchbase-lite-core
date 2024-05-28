@@ -19,6 +19,7 @@
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "QueryServer.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
 #include "DatabaseImpl.hh"
@@ -101,7 +102,7 @@ namespace litecore::repl {
             for ( auto profile : {
                           "subChanges", "getAttachment", "proveAttachment",  // passive pushers
                           "changes", "proposeChanges", "rev", "norev",       // passive pullers
-                          "allDocs", "getRev", "putRev", "query",            // connected client
+                          "allDocs", "getRev", "putRev",                     // connected client
                   } ) {
                 registerHandler(profile, &Replicator::delegateCollectionSpecificMessageToWorker);
             }
@@ -109,6 +110,11 @@ namespace litecore::repl {
             registerHandler("getCheckpoint", &Replicator::handleGetCheckpoint);
             registerHandler("setCheckpoint", &Replicator::handleSetCheckpoint);
             registerHandler("getCollections", &Replicator::handleGetCollections);
+
+            if ( !_options->dictProperty(kC4ReplicatorOptionNamedQueries).empty()
+                 || _options->boolProperty(kC4ReplicatorOptionAllQueries) ) {
+                _queryServer = new QueryServer(this);
+            }
         } catch ( ... ) {
             // terminate to break the circular references: connection -> BLIPIO -> connection.
             terminate();
@@ -202,6 +208,7 @@ namespace litecore::repl {
                 sub.puller = nullptr;
             });
             _workerHandlers.clear();
+            _queryServer = nullptr;
         }
 
         // CBL-1061: This used to be inside the connected(), but static analysis shows
@@ -451,6 +458,7 @@ namespace litecore::repl {
                 sub.puller = nullptr;
             });
             _workerHandlers.clear();
+            _queryServer = nullptr;
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }

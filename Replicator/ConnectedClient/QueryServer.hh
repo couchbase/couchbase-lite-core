@@ -10,9 +10,10 @@
 
 namespace litecore::repl {
 
+    /** Handles Connected-Client `query` requests for a passive Replicator. */
     class QueryServer final : public Worker {
       public:
-        QueryServer(Replicator* replicator NONNULL);
+        explicit QueryServer(Replicator* replicator NONNULL);
 
         C4Query*          getNamedQuery(const std::string& name);
         Retained<C4Query> compileQuery(slice queryStr);

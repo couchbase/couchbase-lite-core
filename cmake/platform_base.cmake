@@ -116,8 +116,8 @@ function(set_litecore_source_base)
         Replicator/Worker.cc
     	Replicator/c4ConnectedClient_CAPI.cc
 #       Replicator/c4ConnectedClient.cc
-#       Replicator/ConnectedClient/ConnectedClient.cc
-#       Replicator/ConnectedClient/QueryServer.cc
+        Replicator/ConnectedClient/ConnectedClient.cc
+        Replicator/ConnectedClient/QueryServer.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc

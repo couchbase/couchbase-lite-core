@@ -240,7 +240,7 @@ namespace litecore::client {
         msg->notHandled();
     }
 
-#pragma mark - REQUESTS:
+#pragma mark - UTILITIES:
 
     ConnectedClient::CollectionIndex ConnectedClient::getCollectionID(C4CollectionSpec const& spec) const {
         string encoded = encodeCollectionSpec(spec);
@@ -282,6 +282,8 @@ namespace litecore::client {
         if ( error ) logError("Connected Client got error response %s", error.description().c_str());
         return error;
     }
+
+#pragma mark - CRUD REQUESTS:
 
     void ConnectedClient::getDoc(C4CollectionSpec const& collection, slice docID_, slice unlessRevID_, bool asFleece,
                                  function<void(Result<DocResponse>)> callback) {
@@ -491,6 +493,8 @@ namespace litecore::client {
         return true;
     }
 
+#pragma mark - OBSERVER:
+
     void ConnectedClient::observeCollection(C4CollectionSpec const& collection, CollectionObserver callback) {
         enqueue("observeCollection", &ConnectedClient::_observeCollection, getCollectionID(collection),
                 std::move(callback));
@@ -597,6 +601,8 @@ namespace litecore::client {
         }
         return valid;
     }
+
+#pragma mark - QUERY:
 
     void ConnectedClient::query(slice name, fleece::Dict parameters, bool asFleece, QueryReceiver receiver) {
         MessageBuilder req("query");

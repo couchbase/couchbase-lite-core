@@ -22,10 +22,11 @@
 #include "MessageBuilder.hh"
 #include "StringUtil.hh"
 #include "c4Query.hh"
+#include "fleece/Expert.hh"
 
 namespace litecore::repl {
 
-    QueryServer::QueryServer(Replicator* replicator) : Worker(replicator, "query") {
+    QueryServer::QueryServer(Replicator* replicator) : Worker(replicator, "query", kNotCollectionIndex) {
         registerHandler("query", &QueryServer::handleQuery);
     }
 
@@ -38,7 +39,7 @@ namespace litecore::repl {
 
     C4Query* QueryServer::getNamedQuery(const string& name) {
         if ( auto i = _queries.find(name); i != _queries.end() ) return i->second;
-        slice queryStr = _options->namedQueries()[name].asString();
+        slice queryStr = _options->dictProperty(kC4ReplicatorOptionNamedQueries)[name].asString();
         if ( !queryStr ) return nullptr;
         logInfo("Compiling query '%s' from %.*s", name.c_str(), FMTSLICE(queryStr));
         Retained<C4Query> query = compileQuery(queryStr);
@@ -64,7 +65,7 @@ namespace litecore::repl {
                 }
                 logInfo("Running named query '%.*s'", FMTSLICE(name));
             } else {
-                if ( !_options->allQueries() ) {
+                if ( !_options->boolProperty(kC4ReplicatorOptionAllQueries) ) {
                     request->respondWithError(blip::Error("HTTP", 403, "Arbitrary queries are not allowed"));
                     return;
                 }
@@ -97,7 +98,7 @@ namespace litecore::repl {
                         enc.writeValue(*i);
                     }
                     enc.endDict();
-                    enc.nextDocument();  // Writes a newline
+                    FLJSONEncoder_NextDocument(enc);  // Writes a newline
                 }
                 logInfo("...query took %.1f ms", st.elapsedMS());
             });

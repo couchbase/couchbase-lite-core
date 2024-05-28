@@ -125,6 +125,7 @@
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		272CD2F02BFE9A3F00A2D518 /* ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F62B97E3380049DD1D /* ConnectedClient.cc */; };
 		272CD2F62BFEBF1E00A2D518 /* ConnectedClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */; };
+		272CD2FA2C0670C500A2D518 /* QueryServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F82B97E3380049DD1D /* QueryServer.cc */; };
 		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
 		272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00F52273D45000E62F72 /* LiveQuerier.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
@@ -4413,6 +4414,7 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
+				272CD2FA2C0670C500A2D518 /* QueryServer.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				2744B352241854F2005A194D /* Codec.cc in Sources */,
 				27BEEE752A7834B8005AD4BF /* QueryParser+VectorSearch.cc in Sources */,
