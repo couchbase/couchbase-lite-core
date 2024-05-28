@@ -25,7 +25,9 @@ class ConnectedClientLoopbackTest
     , public repl::Replicator::Delegate
     , public client::ConnectedClient::Delegate {
   public:
-    ConnectedClientLoopbackTest() {
+    ConnectedClientLoopbackTest()
+        : kRev1ID(isRevTrees() ? "1-1111" : "123@ZegpoldZegpoldZegpoldA")
+        , kRev2ID(isRevTrees() ? "2-2222" : "99@ZegpoldZegpoldZegpoldA") {
         _serverOptions = make_retained<repl::Options>(kC4Passive, kC4Passive);
         _serverOptions->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
         _serverOptions->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
@@ -170,6 +172,8 @@ class ConnectedClientLoopbackTest
         Assert(_waitCount > 0);
         _cond.wait(lock, [&] { return _waitCount == 0; });
     }
+
+    slice kRev1ID, kRev2ID;
 
     C4ConnectedClientParameters        _params{};
     Retained<repl::Replicator>         _server;

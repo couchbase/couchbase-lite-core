@@ -17,17 +17,18 @@
 //
 
 #include "ConnectedClient.hh"
-#include "c4BlobStore.hh"
-#include "c4Document.hh"
-#include "c4SocketTypes.h"
+#include "DBAccess.hh"
 #include "Headers.hh"
 #include "LegacyAttachments.hh"
 #include "MessageBuilder.hh"
 #include "NumConversion.hh"
 #include "PropertyEncryption.hh"
-#include "slice_stream.hh"
 #include "WebSocketInterface.hh"
+#include "c4BlobStore.hh"
+#include "c4Document.hh"
 #include "c4Internal.hh"
+#include "c4SocketTypes.h"
+#include "slice_stream.hh"
 #include "fleece/Mutable.hh"
 #include <unordered_map>
 
@@ -424,7 +425,8 @@ namespace litecore::client {
 
         if ( _remoteNeedsLegacyAttachments && mayContainBlobs(fleeceData) ) {
             // Create shadow copies of blobs, in `_attachments`:
-            int revpos = C4Document::getRevIDGeneration(revID);
+            unsigned revpos = 0;
+            if ( C4Document::typeOfRevID(revID) == RevIDType::Tree ) revpos = C4Document::getRevIDGeneration(revID);
             legacy_attachments::encodeRevWithLegacyAttachments(enc, root, revpos);
         } else {
             enc.writeValue(root);

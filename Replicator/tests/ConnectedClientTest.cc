@@ -144,29 +144,26 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc", "[ConnectedClient]") {
 
     Result<void> result;
 
-    slice newRevID1 = isRevTrees() ? "2-2222" : "99@ZegpoldZegpoldZegpoldA";
-    _client->putDoc(kC4DefaultCollectionSpec, "0000001", newRevID1, actualRevID("0000001"), C4RevisionFlags{}, docBody,
+    _client->putDoc(kC4DefaultCollectionSpec, "0000001", kRev1ID, actualRevID("0000001"), C4RevisionFlags{}, docBody,
                     this->expect(result));
     wait();
     REQUIRE(result.error() == kC4NoError);
 
-    slice newRevID2 = isRevTrees() ? "1-1111" : "123@ZegpoldZegpoldZegpoldA";
-    _client->putDoc(kC4DefaultCollectionSpec, "frob", newRevID2, nullslice, C4RevisionFlags{}, docBody,
+    _client->putDoc(kC4DefaultCollectionSpec, "frob", kRev2ID, nullslice, C4RevisionFlags{}, docBody,
                     this->expect(result));
     wait();
     REQUIRE(result.error() == kC4NoError);
 
     c4::ref<C4Document> doc1 = c4db_getDoc(db, "0000001"_sl, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc1);
-    CHECK(doc1->revID == newRevID1);
+    CHECK(doc1->revID == kRev1ID);
 
     c4::ref<C4Document> doc2 = c4db_getDoc(db, "frob"_sl, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc2);
-    CHECK(doc2->revID == newRevID2);
+    CHECK(doc2->revID == kRev2ID);
 }
 
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClient]") {
-    if ( !isRevTrees() ) return;  //TEMP
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
@@ -177,9 +174,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClien
     auto docBody = enc.finish();
 
     Result<void> result;
-    slice        curRevID = isRevTrees() ? "1-d00d" : "17@AliceAliceAliceAliceAA";
-    slice        newRevID = isRevTrees() ? "2-2222" : "99@ZegpoldZegpoldZegpoldA";
-    _client->putDoc(kC4DefaultCollectionSpec, "0000001", newRevID, curRevID, C4RevisionFlags{}, docBody,
+    _client->putDoc(kC4DefaultCollectionSpec, "0000001", kRev2ID, kRev1ID, C4RevisionFlags{}, docBody,
                     this->expect(result));
     wait();
 
@@ -232,7 +227,9 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedCl
     }
 }
 
-#    pragma mark - LEGACY ATTACHMENTS:
+#endif  //TEMP
+
+#pragma mark - LEGACY ATTACHMENTS:
 
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Blobs Legacy Mode", "[ConnectedClient][blob]") {
     static constexpr slice kJSON5WithAttachments =
@@ -249,16 +246,18 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Blobs Legacy Mode", "[Conn
             "attached:[{'@type':'blob',content_type:'text/plain',digest:'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=',length:27},"
             "{'@type':'blob',content_type:'text/plain',digest:'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=',length:10}]}";
 
-    createFleeceRev(db, "att1"_sl, "1-1111"_sl, slice(json5(kJSON5WithAttachments)));
+    createFleeceRev(db, "att1"_sl, kRev1ID, slice(json5(kJSON5WithAttachments)));
 
     // Ensure the 'server' (LiteCore replicator) will not strip the `_attachments` property:
     _serverOptions->setProperty("disable_blob_support"_sl, true);
     start();
 
-    auto asyncResult = _client->getDoc("att1", nullslice, nullslice);
-    auto rev         = waitForResponse(asyncResult);
-    CHECK(rev.docID == "att1");
-    Doc    doc(rev.body);
+    Result<client::DocResponse> rev = placeholder;
+    _client->getDoc(kC4DefaultCollectionSpec, "att1", nullslice, true, this->expect(rev));
+    wait();
+    REQUIRE(rev.error() == kC4NoError);
+    CHECK(rev.value().docID == "att1");
+    Doc    doc(rev.value().body);
     Dict   props = doc.asDict();
     string json(props.toJSON5());
     replace(json, '"', '\'');
@@ -282,29 +281,55 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Blobs Legacy Mode", "[Conn
             "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
             "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}";
     replace(json, '\'', '"');
-    auto rq = _client->putDoc("att1", nullslice, "1-1111", nullslice, C4RevisionFlags{}, Doc::fromJSON(json).data());
-    rq.blockUntilReady();
+
+    Result<void> result;
+    _client->putDoc(kC4DefaultCollectionSpec, "att1", kRev1ID, nullslice, C4RevisionFlags{}, Doc::fromJSON(json).data(),
+                    this->expect(result));
+    wait();
+    REQUIRE(result.error() == kC4NoError);
 
     // All blobs should have been requested by the server and removed from the map:
     CHECK(_blobs.empty());
 
+    string_view expectedJson;
+    if ( isRevTrees() ) {
+        expectedJson =
+                "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
+                "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0,'revpos':1,'stub':true}},"
+                "'attached':[{'@type':'blob','content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0}]}";
+    } else {
+        // Version vectors: same JSON except no 'revpos' properties
+        expectedJson =
+                "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'stub':true},"
+                "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
+                "WXWZsCw48=','length':10,'stub':true},"
+                "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0,'stub':true}},"
+                "'attached':[{'@type':'blob','content_type':'text/"
+                "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
+                "YBwk=','length':0}]}";
+    }
+
     // Now read the doc from the server's database:
     json = getDocJSON(db, "att1"_sl);
     replace(json, '"', '\'');
-    CHECK(json
-          == "{'_attachments':{'blob_/attached/0':{'content_type':'text/"
-             "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
-             "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/"
-             "WXWZsCw48=','length':10,'revpos':1,'stub':true},"
-             "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/"
-             "YBwk=','length':0,'revpos':1,'stub':true}},"
-             "'attached':[{'@type':'blob','content_type':'text/"
-             "plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
-             "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
-             "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}");
+    CHECK(json == expectedJson);
 }
 
-#    pragma mark - ALL-DOCS:
+#pragma mark - ALL-DOCS:
+
+#if 0  //TEMP
 
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "allDocs from connected client", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
@@ -335,7 +360,9 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "allDocs from connected client", "
     CHECK(results.size() == 100);
 }
 
-#    pragma mark - ENCRYPTION:
+#endif  //TEMP
+
+#pragma mark - ENCRYPTION:
 
 
 C4UNUSED static constexpr slice
@@ -344,13 +371,15 @@ C4UNUSED static constexpr slice
 
 // Make sure there's no error if no decryption callback is given
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev encrypted no callback", "[ConnectedClient]") {
-    createFleeceRev(db, "seekrit"_sl, "1-1111"_sl, kEncryptedDocJSON);
+    createFleeceRev(db, "seekrit"_sl, kRev1ID, kEncryptedDocJSON);
     start();
 
     Log("++++ Calling ConnectedClient::getDoc()...");
-    auto asyncResult1 = _client->getDoc("seekrit", nullslice, nullslice);
-    auto rev          = waitForResponse(asyncResult1);
-    Doc  doc(rev.body);
+    Result<client::DocResponse> rev = placeholder;
+    _client->getDoc(kC4DefaultCollectionSpec, "seekrit", nullslice, true, this->expect(rev));
+    wait();
+    REQUIRE(rev.error() == kC4NoError);
+    Doc doc(rev.value().body);
     CHECK(doc.root().toJSONString() == string(kEncryptedDocJSON));
 }
 
@@ -363,13 +392,16 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc encrypted no callback", "[
     C4Error error = {};
     try {
         ExpectingExceptions x;
-        auto rq1 = _client->putDoc("seekrit", nullslice, "1-1111", nullslice, C4RevisionFlags{}, doc.data());
+        Result<void>        result;
+        _client->putDoc(kC4DefaultCollectionSpec, "seekrit", nullslice, kRev1ID, C4RevisionFlags{}, doc.data(),
+                        this->expect(result));
+        wait();
     } catch ( const exception& x ) { error = C4Error::fromCurrentException(); }
     CHECK(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
 }
 
 
-#    ifdef COUCHBASE_ENTERPRISE
+#ifdef COUCHBASE_ENTERPRISE
 
 class ConnectedClientEncryptedLoopbackTest : public ConnectedClientLoopbackTest {
   public:
@@ -416,17 +448,19 @@ class ConnectedClientEncryptedLoopbackTest : public ConnectedClientLoopbackTest 
 };
 
 TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "getRev encrypted", "[ConnectedClient]") {
-    createFleeceRev(db, "seekrit"_sl, "1-1111"_sl, kEncryptedDocJSON);
+    createFleeceRev(db, "seekrit"_sl, kRev1ID, kEncryptedDocJSON);
     start();
 
     _encryptorContext.docID   = "seekrit";
     _encryptorContext.keyPath = "SSN";
 
     Log("++++ Calling ConnectedClient::getDoc()...");
-    auto asyncResult1 = _client->getDoc("seekrit", nullslice, nullslice);
-    auto rev          = waitForResponse(asyncResult1);
+    Result<client::DocResponse> rev = placeholder;
+    _client->getDoc(kC4DefaultCollectionSpec, "seekrit", nullslice, true, this->expect(rev));
+    wait();
+    REQUIRE(rev.error() == kC4NoError);
     CHECK(_encryptorContext.called);
-    Doc doc(rev.body);
+    Doc doc(rev.value().body);
     CHECK(doc.root().toJSON() == kDecryptedDocJSON);
 }
 
@@ -438,8 +472,11 @@ TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "putDoc encrypted", "[Con
     Log("++++ Calling ConnectedClient::getDoc()...");
     _encryptorContext.docID   = "seekrit";
     _encryptorContext.keyPath = "SSN";
-    auto rq1 = _client->putDoc("seekrit", nullslice, "1-1111", nullslice, C4RevisionFlags{}, doc.data());
-    rq1.blockUntilReady();
+    Result<void> result;
+    _client->putDoc(kC4DefaultCollectionSpec, "seekrit", kRev1ID, nullslice, C4RevisionFlags{}, doc.data(),
+                    this->expect(result));
+    wait();
+    REQUIRE(result.error() == kC4NoError);
     CHECK(_encryptorContext.called);
 
     // Read the doc from the database to make sure it was encrypted.
@@ -450,11 +487,12 @@ TEST_CASE_METHOD(ConnectedClientEncryptedLoopbackTest, "putDoc encrypted", "[Con
     CHECK(json == kEncryptedDocJSON);
 }
 
-#    endif  // COUCHBASE_ENTERPRISE
+#endif  // COUCHBASE_ENTERPRISE
 
 
-#    pragma mark - QUERIES:
+#pragma mark - QUERIES:
 
+#if 0  //TEMP
 
 static constexpr slice kQueryStr =
         "SELECT name.first, name.last FROM _ WHERE gender='male' and contact.address.state=$STATE";
