@@ -408,7 +408,7 @@ namespace litecore {
                     break;
                 case kConflicting:
                     // Conflict, so update only the remote (if any):
-                    if ( remote == RemoteID::Local ) {
+                    if ( !rq.allowConflict || remote == RemoteID::Local ) {
                         c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
                         return -1;
                     }
