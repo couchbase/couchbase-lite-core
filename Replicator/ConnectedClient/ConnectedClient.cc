@@ -55,11 +55,10 @@ namespace litecore::client {
 
     ConnectedClient::ConnectedClient(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate,
                                      const C4ConnectedClientParameters& params, repl::Options* options)
-        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, make_shared<repl::DBAccess>(db, false),
-                 "Client", repl::kNotCollectionIndex)
+        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options,
+                 make_shared<repl::DBAccess>(db, false), "Client", repl::kNotCollectionIndex)
         , _delegate(&delegate)
-        , _params(params)
-        , _activityLevel(kC4Stopped) {
+        , _params(params) {
         _importance = 2;
 
         if ( _params.numCollections == 0 ) {
@@ -72,32 +71,18 @@ namespace litecore::client {
         _params.collections = nullptr;
     }
 
-    void ConnectedClient::setStatus(ActivityLevel level) {
-        if ( level != _activityLevel ) {
-            _activityLevel = level;
-
-            LOCK(_mutex);
-            if ( _delegate ) {
-                Status status = Worker::status();
-                status.level  = _activityLevel;
-                _delegate->clientStatusChanged(this, status);
-            }
-        }
-    }
-
-    ConnectedClient::Status ConnectedClient::status() {
-        return C4ReplicatorStatus(Worker::status());  //TODO: Thread safety
-    }
-
     void ConnectedClient::start() {
-        Assert(_activityLevel == kC4Stopped);
-        setStatus(kC4Connecting);
+        _curStatus.useLocked([&](Status& curStatus) {
+            Assert(curStatus.level == kC4Stopped);
+            curStatus       = Worker::status();
+            curStatus.level = kC4Connecting;
+        });
         enqueue("start", &ConnectedClient::_start);
     }
 
     void ConnectedClient::_start() {
         logInfo("Connecting...");
-        _weakConnectionDelegateThis = new WeakHolder<blip::ConnectionDelegate>(this);
+        _weakConnectionDelegateThis = new WeakConnDelegate(this);
         connection().start(_weakConnectionDelegateThis);
         registerHandler("getAttachment", &ConnectedClient::handleGetAttachment);
         _selfRetain = this;  // retain myself while the connection is open
@@ -110,29 +95,57 @@ namespace litecore::client {
     void ConnectedClient::_disconnect(websocket::CloseCode closeCode, slice message) {
         if ( connected() ) {
             logInfo("Disconnecting...");
+            setActivityLevel(kC4Stopping);
             connection().close(closeCode, message);
-            logInfo("...Disconnected");
-            setStatus(kC4Stopping);
         }
     }
 
     void ConnectedClient::terminate() {
-        LOCK(_mutex);
-        _delegate = nullptr;
+        _delegate.useLocked([&](Delegate*& d) { d = nullptr; });
     }
-
-    ConnectedClient::ActivityLevel ConnectedClient::computeActivityLevel() const { return _activityLevel; }
 
     void ConnectedClient::assertConnected() {
         if ( auto lv = computeActivityLevel(); lv != kC4Idle && lv != kC4Busy )
             error::_throw(error::Network, websocket::kNetErrNotConnected);
     }
 
+#pragma mark - STATUS:
+
+    ConnectedClient::Status ConnectedClient::status() { return _curStatus.useLocked(); }
+
+    void ConnectedClient::setActivityLevel(ActivityLevel level) {
+        optional<Status> newStatus;
+        _curStatus.useLocked([&](Status& curStatus) {
+            if ( level != curStatus.level ) {
+                curStatus.level = level;
+                newStatus       = curStatus;
+            }
+        });
+        if ( newStatus ) {
+            if ( auto delegate = _delegate.useLocked() ) (*delegate).clientStatusChanged(this, *newStatus);
+        }
+    }
+
+    // override of Worker method, communicates activity level to Worker
+    ConnectedClient::ActivityLevel ConnectedClient::computeActivityLevel() const {
+        return _curStatus.useLocked<ActivityLevel>([](Status const& curStatus) { return curStatus.level; });
+    }
+
+    // override of Worker method, called after status changes
+    void ConnectedClient::changedStatus() {
+        Status status = _curStatus.useLocked<Status>([&](Status& curStatus) {
+            auto level      = curStatus.level;
+            curStatus       = Worker::status();
+            curStatus.level = level;
+            return curStatus;
+        });
+        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientStatusChanged(this, status);
+    }
+
 #pragma mark - BLIP DELEGATE:
 
     void ConnectedClient::onTLSCertificate(slice certData) {
-        LOCK(_mutex);
-        if ( _delegate ) _delegate->clientGotTLSCertificate(this, certData);
+        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientGotTLSCertificate(this, certData);
     }
 
     void ConnectedClient::onHTTPResponse(int status, const websocket::Headers& headers) {
@@ -141,10 +154,7 @@ namespace litecore::client {
 
     void ConnectedClient::_onHTTPResponse(int status, websocket::Headers headers) {
         logVerbose("Got HTTP response from server, status %d", status);
-        {
-            LOCK(_mutex);
-            if ( _delegate ) _delegate->clientGotHTTPResponse(this, status, headers);
-        }
+        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientGotHTTPResponse(this, status, headers);
 
         if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
             gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
@@ -157,7 +167,7 @@ namespace litecore::client {
 
     void ConnectedClient::_onConnect() {
         logInfo("BLIP connection is open");
-        if ( _activityLevel == kC4Stopping )  // skip this if stop() already called
+        if ( status().level == kC4Stopping )  // skip this if stop() already called
             return;
 
         // We have to send the peer replicator a `getCollections` request before it will register
@@ -180,12 +190,12 @@ namespace litecore::client {
                     logError("getCollections request failed; closing connection");
                     if ( progress.state != blip::MessageProgress::kDisconnected ) {
                         connection().close(websocket::kCodeProtocolError, "getCollections failed");
-                        setStatus(kC4Stopping);
+                        setActivityLevel(kC4Stopping);
                     }
                 } else {
                     logInfo("Received getCollections response; now connected");
                     //TODO: Check for `null` entry in response array & disconnect(?)
-                    setStatus(kC4Idle);
+                    setActivityLevel(kC4Idle);
                 }
             }
         });
@@ -195,40 +205,37 @@ namespace litecore::client {
         enqueue("onClose", &ConnectedClient::_onClose, status, state);
     }
 
-    void ConnectedClient::_onClose(Connection::CloseStatus status, Connection::State state) {
-        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)", status.reasonName(), status.code,
-                FMTSLICE(status.message), state);
+    void ConnectedClient::_onClose(Connection::CloseStatus closeStatus, Connection::State state) {
+        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)", closeStatus.reasonName(), closeStatus.code,
+                FMTSLICE(closeStatus.message), state);
 
-        bool closedByPeer = (_activityLevel != kC4Stopping);
+        bool closedByPeer = (status().level != kC4Stopping);
 
         _connectionClosed();
         _weakConnectionDelegateThis = nullptr;
 
-        if ( status.isNormal() && closedByPeer ) {
+        if ( closeStatus.isNormal() && closedByPeer ) {
             logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
-            status.code    = websocket::kCodeGoingAway;
-            status.message = alloc_slice("WebSocket connection closed by peer");
+            closeStatus.code    = websocket::kCodeGoingAway;
+            closeStatus.message = alloc_slice("WebSocket connection closed by peer");
         }
 
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, NetworkDomain, LiteCoreDomain};
 
         // If this was an unclean close, set my error property:
-        if ( status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal ) {
-            int           code = status.code;
+        if ( closeStatus.reason != websocket::kWebSocketClose || closeStatus.code != websocket::kCodeNormal ) {
+            int           code = closeStatus.code;
             C4ErrorDomain domain;
-            if ( status.reason < sizeof(kDomainForReason) / sizeof(C4ErrorDomain) ) {
-                domain = kDomainForReason[status.reason];
+            if ( closeStatus.reason < sizeof(kDomainForReason) / sizeof(C4ErrorDomain) ) {
+                domain = kDomainForReason[closeStatus.reason];
             } else {
                 domain = LiteCoreDomain;
                 code   = kC4ErrorRemoteError;
             }
-            gotError(C4Error::make(domain, code, status.message));
+            gotError(C4Error::make(domain, code, closeStatus.message));
         }
-        setStatus(kC4Stopped);
-        {
-            LOCK(_mutex);
-            if ( _delegate ) _delegate->clientConnectionClosed(this, status);
-        }
+        setActivityLevel(kC4Stopped);
+        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientConnectionClosed(this, closeStatus);
 
         _selfRetain = nullptr;  // balances the self-retain in start()
     }
@@ -444,10 +451,13 @@ namespace litecore::client {
         alloc_slice contents;
         C4Error     error = {};
         try {
-            if ( auto blobKey = C4BlobKey::withDigestString(req->property("digest"_sl)) )
-                contents = _delegate->getBlobContents(*blobKey, &error);
-            else
+            if ( auto blobKey = C4BlobKey::withDigestString(req->property("digest"_sl)) ) {
+                if ( auto delegate = _delegate.useLocked() ) contents = (*delegate).getBlobContents(*blobKey, &error);
+                else
+                    error = C4Error::make(WebSocketDomain, websocket::kCodeGoingAway);
+            } else {
                 error = C4Error::make(WebSocketDomain, 400, "Invalid 'digest' property in request");
+            }
         } catch ( ... ) { error = C4Error::fromCurrentException(); }
         if ( !contents ) {
             if ( !error ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);

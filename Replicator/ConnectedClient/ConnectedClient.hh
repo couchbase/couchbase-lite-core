@@ -6,6 +6,7 @@
 
 #pragma once
 #include "Worker.hh"
+#include "access_lock.hh"
 #include "BLIPConnection.hh"
 #include "Result.hh"
 #include "c4ConnectedClientTypes.h"
@@ -32,7 +33,7 @@ namespace litecore::client {
 
     /** A callback invoked when one or more documents change on the server. */
     using CollectionObserver =
-    std::function<void(std::vector<C4CollectionObserver::Change> const&, const C4Error* err)>;
+            std::function<void(std::vector<C4CollectionObserver::Change> const&, const C4Error* err)>;
 
 
     /** A callback invoked for every row of a query result.
@@ -45,20 +46,20 @@ namespace litecore::client {
      No C4Database necessary!
      Its API is somewhat similar to `Replicator`. */
     class ConnectedClient
-    : public repl::Worker
-    , public blip::ConnectionDelegate {
-    public:
+        : public repl::Worker
+        , public blip::ConnectionDelegate {
+      public:
         class Delegate;
         using CloseStatus   = blip::Connection::CloseStatus;
         using ActivityLevel = C4ReplicatorActivityLevel;
         using Status        = C4ReplicatorStatus;
 
         ConnectedClient(C4Database*, websocket::WebSocket* NONNULL, Delegate&, const C4ConnectedClientParameters&,
-                        repl::Options*        NONNULL);
+                        repl::Options* NONNULL);
 
         /** ConnectedClient delegate API. (Similar to `Replicator::Delegate`) */
         class Delegate {
-        public:
+          public:
             virtual void clientGotHTTPResponse(ConnectedClient* NONNULL, int status,
                                                const websocket::Headers& headers) {}
 
@@ -166,10 +167,11 @@ namespace litecore::client {
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const { return connection().webSocket(); }
 
-    protected:
+      protected:
         std::string loggingClassName() const override { return "Client"; }
 
         ActivityLevel computeActivityLevel() const override;
+        void          changedStatus() override;
         void          onHTTPResponse(int status, const websocket::Headers& headers) override;
         void          onTLSCertificate(slice certData) override;
         void          onConnect() override;
@@ -179,7 +181,7 @@ namespace litecore::client {
         void handleChanges(Retained<blip::MessageIn>);
         void handleGetAttachment(Retained<blip::MessageIn>);
 
-    private:
+      private:
         enum class CollectionIndex : unsigned {};
 
         void _start();
@@ -190,7 +192,7 @@ namespace litecore::client {
         void _onRequestReceived(Retained<blip::MessageIn> request);
         void _observeCollection(CollectionIndex, CollectionObserver callback);
 
-        void            setStatus(ActivityLevel);
+        void            setActivityLevel(ActivityLevel);
         void            assertConnected();
         CollectionIndex getCollectionID(C4CollectionSpec const&) const;
         void            addCollectionProperty(blip::MessageBuilder&, C4CollectionSpec const&) const;
@@ -202,18 +204,19 @@ namespace litecore::client {
         bool            receiveAllDocs(blip::MessageIn*, const AllDocsReceiver&);
         bool            receiveQueryRows(blip::MessageIn*, const QueryReceiver&, bool asFleece);
 
-        Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
-        Delegate*                                      _delegate;  // Delegate whom I report progress/errors to
-        C4ConnectedClientParameters                    _params;
-        std::vector<std::string>                       _collections;
-        ActivityLevel                                  _activityLevel;
-        Retained<ConnectedClient>                      _selfRetain;
-        CollectionObserver                             _observer;
-        mutable std::mutex                             _mutex;
-        bool                                           _observing                    = false;
-        bool                                           _registeredChangesHandler     = false;
-        bool                                           _remoteUsesVersionVectors     = false;
-        bool                                           _remoteNeedsLegacyAttachments = true;
+        using WeakConnDelegate = WeakHolder<blip::ConnectionDelegate>;
+
+        C4ConnectedClientParameters _params;
+        std::vector<std::string>    _collections;
+        Retained<ConnectedClient>   _selfRetain;
+        Retained<WeakConnDelegate>  _weakConnectionDelegateThis;
+        access_lock<Delegate*>      _delegate;  // Delegate whom I report progress/errors to
+        access_lock<Status>         _curStatus;
+        CollectionObserver          _observer;
+        bool                        _observing                    = false;
+        bool                        _registeredChangesHandler     = false;
+        bool                        _remoteUsesVersionVectors     = false;
+        bool                        _remoteNeedsLegacyAttachments = true;
     };
 
 }  // namespace litecore::client
