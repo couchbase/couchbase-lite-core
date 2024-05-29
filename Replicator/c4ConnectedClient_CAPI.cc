@@ -20,65 +20,36 @@ using namespace litecore::repl;
 using namespace litecore;
 using namespace fleece;
 
-C4ConnectedClient* c4client_new(const C4ConnectedClientParameters* params, C4Error* outError) noexcept {
+C4ConnectedClient* c4client_new(C4Database* db, const C4ConnectedClientParameters* params, C4Error* outError) noexcept {
     try {
-#if ENABLE_CONNECTED_CLIENT
-        return C4ConnectedClient::newClient(*params).detach();
-#else
-        error::_throw(error::Unimplemented);
-#endif
+        return C4ConnectedClient::newClient(db, *params).detach();
     }
     catchError(outError);
     return nullptr;
 }
 
-bool c4client_getDoc(C4ConnectedClient* client, C4Slice docID, C4Slice collectionID, C4Slice unlessRevID, bool asFleece,
-                     C4ConnectedClientGetDocumentCallback callback, void* C4NULLABLE context,
-                     C4Error* C4NULLABLE outError) noexcept {
+bool c4client_getDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice collectionID,
+                     C4Slice unlessRevID, bool asFleece, C4ConnectedClientGetDocumentCallback callback,
+                     void* C4NULLABLE context, C4Error* C4NULLABLE outError) noexcept {
     try {
-#if ENABLE_CONNECTED_CLIENT
-
-        auto res = client->getDoc(docID, collectionID, unlessRevID, asFleece);
-        res.then([=](const C4ConnectedClient::DocResponse& r) {
-               C4DocResponse cResponse = {r.docID, r.revID, r.body, r.deleted};
-               return callback(client, &cResponse, nullptr, context);
-           }).onError([=](C4Error err) { return callback(client, nullptr, &err, context); });
+        client->getDoc(coll, docID, unlessRevID, asFleece, callback, context);
         return true;
-#else
-        error::_throw(error::Unimplemented);
-#endif
     }
     catchError(outError);
     return false;
 }
 
-void c4client_start(C4ConnectedClient* client) noexcept {
-#if ENABLE_CONNECTED_CLIENT
-    client->start();
-#endif
-}
+void c4client_start(C4ConnectedClient* client) noexcept { client->start(); }
 
-void c4client_stop(C4ConnectedClient* client) noexcept {
-#if ENABLE_CONNECTED_CLIENT
-    client->stop();
-#endif
-}
+void c4client_stop(C4ConnectedClient* client) noexcept { client->stop(); }
 
-bool c4client_putDoc(C4ConnectedClient* client, C4Slice docID, C4Slice collectionID, C4Slice revID,
+bool c4client_putDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice parentRevID,
                      C4RevisionFlags revisionFlags, C4Slice fleeceData,
                      C4ConnectedClientUpdateDocumentCallback callback, void* C4NULLABLE context,
                      C4Error* C4NULLABLE outError) noexcept {
     try {
-#if ENABLE_CONNECTED_CLIENT
-
-        auto res = client->putDoc(docID, collectionID, revID, revisionFlags, fleeceData);
-        res.then([=](string result) {
-               callback(client, alloc_slice(result), nullptr, context);
-           }).onError([=](C4Error err) { callback(client, FLHeapSlice(), &err, context); });
+        client->putDoc(coll, docID, parentRevID, revisionFlags, fleeceData, callback, context);
         return true;
-#else
-        error::_throw(error::Unimplemented);
-#endif
     }
     catchError(outError);
 

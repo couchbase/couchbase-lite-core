@@ -14,13 +14,14 @@
 
 #include "c4Base.h"
 #include "ConnectedClient.hh"
-#include "c4ConnectedClient.hh"
-#include "c4Socket+Internal.hh"
-#include "c4Internal.hh"
+#include "CollectionImpl.hh"
 #include "Headers.hh"
 #include "Replicator.hh"
 #include "RevTree.hh"
 #include "TreeDocument.hh"
+#include "c4ConnectedClient.hh"
+#include "c4Socket+Internal.hh"
+#include "c4Internal.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 #    include "c4Certificate.hh"
@@ -36,20 +37,31 @@ namespace litecore::client {
         : public C4ConnectedClient
         , public ConnectedClient::Delegate {
       public:
-        C4ConnectedClientImpl(const C4ConnectedClientParameters& params)
-            : _onStatusChanged(params.onStatusChanged), _callbackContext(params.callbackContext) {
+        C4ConnectedClientImpl(C4Database* db, const C4ConnectedClientParameters& params)
+            : _db(db), _onStatusChanged(params.onStatusChanged), _callbackContext(params.callbackContext) {
             if ( params.socketFactory ) {
                 // Keep a copy of the C4SocketFactory struct in case original is invalidated:
                 _socketFactory = *params.socketFactory;
             }
 
+            auto options   = make_retained<repl::Options>(kC4Passive, kC4Passive);
             auto webSocket = repl::CreateWebSocket(effectiveURL(params.url), socketOptions(params), nullptr,
                                                    (_socketFactory ? &*_socketFactory : nullptr));
-            _client        = new ConnectedClient(webSocket, *this, params);
+            _client        = new ConnectedClient(db, webSocket, *this, params, options);
             _client->start();
         }
 
-        Async<C4ConnectedClientStatus> getStatus() const override { return _client->status(); }
+        virtual void start() override {
+            LOCK(_mutex);
+            _client->start();
+        }
+
+        virtual void stop() override {
+            LOCK(_mutex);
+            _client->stop();
+        }
+
+        C4ConnectedClientStatus getStatus() const override { return _client->status(); }
 
         alloc_slice getResponseHeaders() const noexcept override { return _responseHeaders; }
 
@@ -91,44 +103,40 @@ namespace litecore::client {
 
 #pragma mark -
 
-        Async<DocResponse> getDoc(slice docID, slice collectionID, slice unlessRevID, bool asFleece) override {
-            return _client->getDoc(docID, collectionID, unlessRevID, asFleece).then([](auto a) -> DocResponse {
-                return {a.docID, a.revID, a.body, a.deleted};
+        void getDoc(C4CollectionSpec const& collection, slice docID, slice unlessRevID, bool asFleece,
+                    C4ConnectedClientGetDocumentCallback callback, void* context) override {
+            _client->getDoc(collection, docID, unlessRevID, asFleece, [=](Result<client::DocResponse> r) {
+                C4DocResponse doc = {};
+                if ( r.ok() ) {
+                    auto& v = r.value();
+                    doc     = {v.docID, v.revID, v.body, v.deleted};
+                    callback(this, &doc, nullptr, context);
+                } else {
+                    C4Error error = r.error();
+                    callback(this, nullptr, &error, context);
+                }
             });
         }
 
-        Async<std::string> putDoc(slice docID, slice collectionID, slice parentRevisionID, C4RevisionFlags flags,
-                                  slice fleeceData) override {
-            bool        deletion     = (flags & kRevDeleted) != 0;
-            revidBuffer generatedRev = TreeDocumentFactory::generateDocRevID(fleeceData, parentRevisionID, deletion);
-            auto        provider     = Async<std::string>::makeProvider();
-            _client->putDoc(docID, collectionID, revid(generatedRev).expanded(), parentRevisionID, flags, fleeceData)
-                    .then([=](Result<void> i) {
-                        if ( i.ok() ) {
-                            auto revID = revid(generatedRev).expanded();
-                            provider->setResult(revID.asString());
-                        } else
-                            provider->setError(i.error());
-                    });
-            return provider->asyncValue();
-        }
+        void putDoc(C4CollectionSpec const& collection, slice docID, slice parentRevID, C4RevisionFlags revisionFlags,
+                    slice fleeceData, C4ConnectedClientUpdateDocumentCallback callback, void* context) override {
+            // Ask the doc factory to generate a revID for this new revision.
+            C4Collection* coll = _db->getCollection(collection);
+            if ( !coll ) error::_throw(error::NotFound, "no such collection in local database");
+            DocumentFactory* fac = asInternal(coll)->documentFactory();
+            alloc_slice      generatedRev =
+                    fac->generateDocRevID(fleeceData, parentRevID, (revisionFlags & kRevDeleted) != 0);
 
-        void getAllDocIDs(slice collectionID, slice pattern, AllDocsReceiver callback) override {
-            _client->getAllDocIDs(collectionID, pattern, callback);
-        }
-
-        void query(slice name, FLDict params, bool asFleece, QueryReceiver rcvr) override {
-            _client->query(name, params, asFleece, rcvr);
-        }
-
-        virtual void start() override {
-            LOCK(_mutex);
-            _client->start();
-        }
-
-        virtual void stop() override {
-            LOCK(_mutex);
-            _client->stop();
+            _client->putDoc(collection, docID, revid(generatedRev).expanded(), parentRevID, revisionFlags, fleeceData,
+                            [=](Result<void> r) {
+                                if ( r.ok() ) {
+                                    auto revID = revid(generatedRev).expanded();
+                                    callback(this, revID, nullptr, context);
+                                } else {
+                                    C4Error error = r.error();
+                                    callback(this, {}, &error, context);
+                                }
+                            });
         }
 
       private:
@@ -149,11 +157,12 @@ namespace litecore::client {
             // Use a temporary repl::Options object,
             // because it has the handy ability to add properties to an existing Fleece dict.
             repl::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
-            opts.setProperty(kC4SocketOptionWSProtocols, repl::Replicator::protocolName().c_str());
+            opts.setProperty(kC4SocketOptionWSProtocols, repl::Replicator::ProtocolName().c_str());
             return opts.properties.data();
         }
 
         mutable std::mutex                     _mutex;
+        Retained<C4Database>                   _db;
         Retained<ConnectedClient>              _client;
         optional<C4SocketFactory>              _socketFactory;
         C4ConnectedClientStatusChangedCallback _onStatusChanged;

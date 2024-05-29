@@ -552,6 +552,12 @@ namespace litecore {
             return nullptr;
     }
 
+    alloc_slice VectorDocumentFactory::generateDocRevID(slice body, slice parentRevID, bool deleted) {
+        auto vers = VersionVector::fromBinary(parentRevID);
+        vers.addNewVersion(asInternal(collection()->getDatabase())->versionClock());
+        return vers.asBinary();
+    }
+
     vector<alloc_slice> VectorDocumentFactory::findAncestors(const vector<slice>& docIDs, const vector<slice>& revIDs,
                                                              unsigned maxAncestors, bool mustHaveBodies,
                                                              C4RemoteID remoteDBID) {

@@ -25,13 +25,13 @@ struct C4ConnectedClient
     , C4Base {
     /// Creates a new ConnectedClient
     /// \note It will automatically starts the client, no need to call `start()`.
-    ///
-    /// @param params  Connected Client parameters.
-    /// @result A new \ref C4ConnectedClient, or NULL on failure.
-    static Retained<C4ConnectedClient> newClient(const C4ConnectedClientParameters& params);
+    static Retained<C4ConnectedClient> newClient(C4Database* db, const C4ConnectedClientParameters& params);
 
-    /// The current connection status.
-    virtual litecore::actor::Async<C4ConnectedClientStatus> getStatus() const = 0;
+    /// Tells a connected client to start.
+    virtual void start() = 0;
+
+    /// Tells a replicator to stop.
+    virtual void stop() = 0;
 
     /// The HTTP response headers.
     virtual alloc_slice getResponseHeaders() const noexcept = 0;
@@ -41,36 +41,21 @@ struct C4ConnectedClient
     virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const = 0;
 #endif
 
-    /// Result of a successful `getDoc()` call.
-    struct DocResponse {
-        alloc_slice docID, revID, body;
-        bool        deleted;
-    };
+    /// The current connection status.
+    virtual C4ConnectedClientStatus getStatus() const = 0;
 
     /// Gets the current revision of a document from the server.
     /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
     /// revision you already have.
-    /// @param docID  The document ID.
-    /// @param collectionID  The name of the document's collection, or `nullslice` for default.
-    /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
-    ///                   the server will return error {WebSocketDomain, 304}.
-    /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
-    /// @result An async value that, when resolved, contains either a `DocResponse` struct
-    ///          or a C4Error.
-    virtual litecore::actor::Async<DocResponse> getDoc(slice docID, slice collectionID, slice unlessRevID,
-                                                       bool asFleece) = 0;
+    virtual void getDoc(C4CollectionSpec const& collection, slice docID, slice unlessRevID, bool asFleece,
+                        C4ConnectedClientGetDocumentCallback callback, void* C4NULLABLE context) = 0;
 
     /// Pushes a new document revision to the server.
-    /// @param docID  The document ID.
-    /// @param collectionID  The name of the document's collection, or `nullslice` for default.
-    /// @param parentRevID The ID of the parent revision on the server,
-    ///                      or `nullslice` if this is a new document.
-    /// @param revisionFlags  Flags of this revision.
-    /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
-    /// @return An async value that, when resolved, contains new revisionID or the status as a C4Error
-    virtual litecore::actor::Async<std::string> putDoc(slice docID, slice collectionID, slice parentRevID,
-                                                       C4RevisionFlags revisionFlags, slice fleeceData) = 0;
+    virtual void putDoc(C4CollectionSpec const&, slice docID, slice parentRevID, C4RevisionFlags revisionFlags,
+                        slice fleeceData, C4ConnectedClientUpdateDocumentCallback callback,
+                        void* C4NULLABLE context) = 0;
 
+#if 0
     /// Callback for \ref getAllDocIDs.
     /// @param ids  A vector of docIDs; empty on the final call.
     /// @param error  NULL or a pointer to an error.
@@ -102,12 +87,7 @@ struct C4ConnectedClient
     /// @param receiver  A callback that will be invoked for each row of the result,
     ///                  and/or if there's an error.
     virtual void query(slice name, FLDict C4NULLABLE parameters, bool rowsAsFleece, QueryReceiver receiver) = 0;
-
-    /// Tells a connected client to start.
-    virtual void start() = 0;
-
-    /// Tells a replicator to stop.
-    virtual void stop() = 0;
+#endif
 };
 
 C4_ASSUME_NONNULL_END

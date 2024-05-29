@@ -17,6 +17,7 @@
 using namespace litecore::client;
 using namespace fleece;
 
-/*static*/ Retained<C4ConnectedClient> C4ConnectedClient::newClient(const C4ConnectedClientParameters& params) {
-    return new C4ConnectedClientImpl(params);
+/*static*/ Retained<C4ConnectedClient> C4ConnectedClient::newClient(C4Database*                        db,
+                                                                    const C4ConnectedClientParameters& params) {
+    return new C4ConnectedClientImpl(db, params);
 }

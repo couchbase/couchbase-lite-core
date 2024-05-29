@@ -126,6 +126,7 @@
 		272CD2F02BFE9A3F00A2D518 /* ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F62B97E3380049DD1D /* ConnectedClient.cc */; };
 		272CD2F62BFEBF1E00A2D518 /* ConnectedClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */; };
 		272CD2FA2C0670C500A2D518 /* QueryServer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B516F82B97E3380049DD1D /* QueryServer.cc */; };
+		272CD2FB2C067A1F00A2D518 /* c4ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B517022B97E3D20049DD1D /* c4ConnectedClient.cc */; };
 		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
 		272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00F52273D45000E62F72 /* LiveQuerier.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
@@ -4516,6 +4517,7 @@
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
+				272CD2FB2C067A1F00A2D518 /* c4ConnectedClient.cc in Sources */,
 				2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,

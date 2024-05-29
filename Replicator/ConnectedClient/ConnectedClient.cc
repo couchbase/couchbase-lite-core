@@ -53,9 +53,9 @@ namespace litecore::client {
         return nullslice;
     }
 
-    ConnectedClient::ConnectedClient(websocket::WebSocket* webSocket, Delegate& delegate,
+    ConnectedClient::ConnectedClient(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate,
                                      const C4ConnectedClientParameters& params, repl::Options* options)
-        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, nullptr,
+        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, make_shared<repl::DBAccess>(db, false),
                  "Client", repl::kNotCollectionIndex)
         , _delegate(&delegate)
         , _params(params)
@@ -287,7 +287,7 @@ namespace litecore::client {
 
     void ConnectedClient::getDoc(C4CollectionSpec const& collection, slice docID_, slice unlessRevID_, bool asFleece,
                                  function<void(Result<DocResponse>)> callback) {
-        // Not yet running on Actor thread...
+        // Running on caller thread!
         assertConnected();
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID_));
         alloc_slice    docID(docID_);
@@ -355,7 +355,7 @@ namespace litecore::client {
 
     void ConnectedClient::getBlob(C4CollectionSpec const& collection, C4BlobKey blobKey, bool compress,
                                   function<void(Result<alloc_slice>)> callback) {
-        // Not yet running on Actor thread...
+        // Running on caller thread!
         auto digest = blobKey.digestString();
         logInfo("getAttachment(<%s>)", digest.c_str());
         MessageBuilder req("getAttachment");
@@ -373,23 +373,27 @@ namespace litecore::client {
         });
     }
 
-    void ConnectedClient::putDoc(C4CollectionSpec const& collection, slice docID_, slice revID_, slice parentRevID_,
-                                 C4RevisionFlags revisionFlags, slice fleeceData_,
+    void ConnectedClient::putDoc(C4CollectionSpec const& collection, slice docID, slice revID, slice parentRevID,
+                                 C4RevisionFlags revisionFlags, slice fleeceData,
                                  function<void(Result<void>)> callback) {
-        // Not yet running on Actor thread...
+        // Running on caller thread!
         assertConnected();
-        logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID_), FMTSLICE(revID_));
+        logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID), FMTSLICE(revID));
+
+        // Convert revID to global form (if VV)
+        alloc_slice actualRevID = _db->useLocked()->getRevIDGlobalForm(revID);
+
         MessageBuilder req("putRev");
         req.compressed = true;
         addCollectionProperty(req, collection);
-        req["id"]          = docID_;
-        req["rev"]         = revID_;
-        req["history"]     = parentRevID_;
+        req["id"]          = docID;
+        req["rev"]         = actualRevID;
+        req["history"]     = parentRevID;
         req["noconflicts"] = true;
         if ( revisionFlags & kRevDeleted ) req["deleted"] = "1";
 
-        if ( fleeceData_.size > 0 ) {
-            processOutgoingDoc(docID_, revID_, fleeceData_, req.jsonBody());
+        if ( fleeceData.size > 0 ) {
+            processOutgoingDoc(docID, revID, fleeceData, req.jsonBody());
         } else {
             req.write("{}");
         }

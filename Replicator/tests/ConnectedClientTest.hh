@@ -49,7 +49,7 @@ class ConnectedClientLoopbackTest
             _server = new repl::Replicator(serverDB, new LoopbackWebSocket(alloc_slice("ws://srv/"), Role::Server, {}),
                                            *this, _serverOptions);
             auto clientOptions = make_retained<repl::Options>(kC4Passive, kC4Passive);
-            _client = new client::ConnectedClient(new LoopbackWebSocket(alloc_slice("ws://cli/"), Role::Client, {}),
+            _client = new client::ConnectedClient(db, new LoopbackWebSocket(alloc_slice("ws://cli/"), Role::Client, {}),
                                                   *this, _params, clientOptions);
 
             Headers headers;

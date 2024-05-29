@@ -34,6 +34,8 @@ namespace litecore {
 
         [[nodiscard]] virtual bool isFirstGenRevID(slice revID) const { return false; }
 
+        [[nodiscard]] virtual alloc_slice generateDocRevID(slice body, slice parentRevID, bool deleted) = 0;
+
         virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
         virtual Retained<C4Document> newDocumentInstance(const Record&)              = 0;
 

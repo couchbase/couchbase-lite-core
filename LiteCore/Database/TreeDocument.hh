@@ -23,9 +23,10 @@ namespace litecore {
       public:
         explicit TreeDocumentFactory(C4Collection* coll) : DocumentFactory(coll) {}
 
-        Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
-        Retained<C4Document> newDocumentInstance(const Record&) override;
-        [[nodiscard]] bool   isFirstGenRevID(slice revID) const override;
+        Retained<C4Document>      newDocumentInstance(slice docID, ContentOption) override;
+        Retained<C4Document>      newDocumentInstance(const Record&) override;
+        [[nodiscard]] alloc_slice generateDocRevID(slice body, slice parentRevID, bool deleted) override;
+        [[nodiscard]] bool        isFirstGenRevID(slice revID) const override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,

@@ -25,6 +25,8 @@ namespace litecore {
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
 
+        alloc_slice generateDocRevID(slice body, slice parentRevID, bool deleted) override;
+
         std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;

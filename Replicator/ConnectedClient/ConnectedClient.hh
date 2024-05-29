@@ -25,40 +25,40 @@ namespace litecore::client {
     };
 
     /** A callback invoked when one or more document IDs are received from a getAllDocIDs call.
-        @param ids  A vector of document IDs. An empty vector indicates the result is complete.
-        @param err  Points to the error, if any, else NULL. */
+     @param ids  A vector of document IDs. An empty vector indicates the result is complete.
+     @param err  Points to the error, if any, else NULL. */
     using AllDocsReceiver = std::function<void(const std::vector<slice>& ids, const C4Error* err)>;
 
 
     /** A callback invoked when one or more documents change on the server. */
     using CollectionObserver =
-            std::function<void(std::vector<C4CollectionObserver::Change> const&, const C4Error* err)>;
+    std::function<void(std::vector<C4CollectionObserver::Change> const&, const C4Error* err)>;
 
 
     /** A callback invoked for every row of a query result.
-        @param rowJSON  The row as a JSON-encoded object, or `nullslice` on the final call.
-        @param rowDict  The row as a Fleece `Dict` object, if you requested it, or `nullptr`.
-        @param error  Points to the error, else NULL. */
+     @param rowJSON  The row as a JSON-encoded object, or `nullslice` on the final call.
+     @param rowDict  The row as a Fleece `Dict` object, if you requested it, or `nullptr`.
+     @param error  Points to the error, else NULL. */
     using QueryReceiver = std::function<void(slice rowJSON, fleece::Dict rowDict, const C4Error* error)>;
 
     /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
-        No C4Database necessary!
-        Its API is somewhat similar to `Replicator`. */
+     No C4Database necessary!
+     Its API is somewhat similar to `Replicator`. */
     class ConnectedClient
-        : public repl::Worker
-        , public blip::ConnectionDelegate {
-      public:
+    : public repl::Worker
+    , public blip::ConnectionDelegate {
+    public:
         class Delegate;
         using CloseStatus   = blip::Connection::CloseStatus;
         using ActivityLevel = C4ReplicatorActivityLevel;
         using Status        = C4ReplicatorStatus;
 
-        ConnectedClient(websocket::WebSocket* NONNULL, Delegate&, const C4ConnectedClientParameters&,
+        ConnectedClient(C4Database*, websocket::WebSocket* NONNULL, Delegate&, const C4ConnectedClientParameters&,
                         repl::Options*        NONNULL);
 
         /** ConnectedClient delegate API. (Similar to `Replicator::Delegate`) */
         class Delegate {
-          public:
+        public:
             virtual void clientGotHTTPResponse(ConnectedClient* NONNULL, int status,
                                                const websocket::Headers& headers) {}
 
@@ -68,18 +68,18 @@ namespace litecore::client {
             virtual void clientConnectionClosed(ConnectedClient* NONNULL, const CloseStatus&) {}
 
             /** Returns the contents of a blob given its key (SHA-1 digest) as found in a blob in
-                a document being uploaded to the server.
+             a document being uploaded to the server.
 
-                This method is called after the \ref putDoc method is called, but before its async
-                value resolves. It's not guaranteed to be called for every blob in the document,
-                only those that are not yet known to the server.
+             This method is called after the \ref putDoc method is called, but before its async
+             value resolves. It's not guaranteed to be called for every blob in the document,
+             only those that are not yet known to the server.
 
-                You must override this method if you upload documents containing blobs.
-                The default implementation always returns a Not Found error,
-                which will cause the upload to fail.
-                @param blobKey  The blob's binary digest.
-                @param error  If you can't return the contents, store an error here.
-                @return  The blob's contents, or `nullslice` if an error occurred. */
+             You must override this method if you upload documents containing blobs.
+             The default implementation always returns a Not Found error,
+             which will cause the upload to fail.
+             @param blobKey  The blob's binary digest.
+             @param error  If you can't return the contents, store an error here.
+             @return  The blob's contents, or `nullslice` if an error occurred. */
             virtual alloc_slice getBlobContents(const C4BlobKey& blobKey, C4Error* error);
 
             virtual ~Delegate() = default;
@@ -166,7 +166,7 @@ namespace litecore::client {
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const { return connection().webSocket(); }
 
-      protected:
+    protected:
         std::string loggingClassName() const override { return "Client"; }
 
         ActivityLevel computeActivityLevel() const override;
@@ -179,7 +179,7 @@ namespace litecore::client {
         void handleChanges(Retained<blip::MessageIn>);
         void handleGetAttachment(Retained<blip::MessageIn>);
 
-      private:
+    private:
         enum class CollectionIndex : unsigned {};
 
         void _start();
