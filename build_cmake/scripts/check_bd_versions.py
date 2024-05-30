@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import os, sys, yaml, subprocess, argparse
+from termcolor import colored
 
 def is_changed(git: str) -> bool:
     if len(git) == 0:
@@ -19,7 +20,7 @@ def is_changed(git: str) -> bool:
 def get_submodule_base(git: str):
     if len(git) == 0:
         return None
-        
+
     difflines = git.splitlines()[-2:]
     before = difflines[0].split(" ")[2]
     after = difflines[1].split(" ")[2].replace("-dirty", "")
@@ -43,39 +44,63 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
         submoduleBase = get_submodule_base(git)
         if not submoduleBase:
             if expectChange:
-                print("! No source change to accompany change in blackduck manifest")
+                print(colored("! No source change to accompany change in blackduck manifest", "red"))
                 return False
             else:
                 print("Parent repo unchanged, skipping check...")
                 return True
-
-        
-        os.chdir(component["parent-repo"])
-        srcPath = srcPath.replace(component["parent-repo"], "").lstrip("/")
+        else:
+            # there are changes in the parent repo. Change dir to the parent repo,
+            # and make sure the submodule commit of the parent repo still exists
+            os.chdir(component["parent-repo"])
+            # Adjust srcPath to be relative to the parent repo, turning "vendor/SQLiteCpp/sqlite3", for example, to "sqlite3"
+            srcPath = srcPath.replace(component["parent-repo"], "").lstrip("/")
+            try:
+                subprocess.run(["git", "cat-file", "-t", submoduleBase], check=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            except subprocess.CalledProcessError as exc:
+                print(colored("Warning: the submodule hash referenced by the parent repo no longer exists. ", "red"), end=None)
+                print(colored("It could have been garbage collected if it does not belong to any branch/tag", "red"))
+                print(colored(f"Please manully check the integrity of component, \"{title}\". The manifest shows it as unchanged.", "red"))
+                print(str(exc))
+                # restore current directory to cwd
+                os.chdir(cwd)
+                return False
 
     git = subprocess.check_output(["git", "diff", submoduleBase, srcPath]).decode("ascii")
+    # restore cwd
     os.chdir(cwd)
+
     if expectChange and not is_changed(git):
-        print("! No source change to accompany change in blackduck manifest")
+        print(colored("! No source change to accompany change in blackduck manifest", "red"))
         return False
 
     if not expectChange and is_changed(git):
         if "sub-comps" not in component:
-            print("! No manifest change to accompany change in source")
-            print(git)
+            print(colored("! No manifest change to accompany change in source", "red"))
             return False
         else:
+            # we don't have multi-level sub-components. Or, if it has sub-comp, it must be the first level component.
             submoduleBase = get_submodule_base(git)
             if not submoduleBase:
                 # the parent compoent should be submodule. We should not hit here.
-                print("! No manifest change to accompany change in source beside submodule change")
+                print(colored("! No manifest change to accompany change in source beside submodule change", "red"))
                 print(git)
                 return False
 
             cwd = os.getcwd()
             os.chdir(srcPath)
-            git = subprocess.check_output(["git", "diff", submoduleBase]).decode("ascii")
-            os.chdir(cwd)
+            try:
+                subprocess.run(["git", "cat-file", "-t", submoduleBase], check=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                git = subprocess.check_output(["git", "diff", submoduleBase]).decode("ascii")
+            except subprocess.CalledProcessError as exc:
+                print(colored("Warning: the submodule hash referenced by the parent repo no longer exists. ", "red"))
+                print(colored("It could have been garbage collected if it does not belong to any branch/tag", "red"))
+                print(colored(f"Please manully check the integrity of component, \"{title}\". The manifest shows it as unchanged.", "red"))
+                print(str(exc))
+                # restore current directory to cwd
+                return False
+            finally:
+                os.chdir(cwd)
 
             # collect the headers of every different files.
             # ex: diff --git a/sqlite3/sqlite3.h b/sqlite3/sqlite3.h
@@ -86,7 +111,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
                 diffs = [l for l in diffs if not l.startswith("diff --git "+subSrcPath)]
 
             if len(diffs) > 0:
-                print("! No manifest change to accompany change in source beside changes in the sub-components")
+                print(colored("! No manifest change to accompany change in source beside changes in the sub-components", "red"))
                 print(diffs)
                 return False
 
@@ -139,7 +164,6 @@ def main(manifest_path: Path, branch: str) -> int:
 
     return failCount
 
-    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Detect version changes in blackduck scanned deps')
