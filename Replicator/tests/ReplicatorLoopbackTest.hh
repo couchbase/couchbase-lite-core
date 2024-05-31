@@ -181,6 +181,103 @@ class ReplicatorLoopbackTest
             CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
     }
 
+    bool runReplicatorsAsync(const Replicator::Options& opts1, const Replicator::Options& opts2) {
+        _gotResponse              = false;
+        _statusChangedCalls       = 0;
+        _statusReceived           = Worker::Status();
+        _replicatorClientFinished = _replicatorServerFinished = false;
+
+        c4::ref<C4Database> dbClient = c4db_openAgain(db, nullptr);
+        c4::ref<C4Database> dbServer = c4db_openAgain(db2, nullptr);
+        REQUIRE(dbClient);
+        REQUIRE(dbServer);
+
+        auto optsRef1 = make_retained<Replicator::Options>(opts1);
+        auto optsRef2 = make_retained<Replicator::Options>(opts2);
+        if ( optsRef2->collectionCount() > 0 && (optsRef2->push(0) > kC4Passive || optsRef2->pull(0) > kC4Passive) ) {
+            // always make opts1 the active (client) side
+            std::swap(dbServer, dbClient);
+            std::swap(optsRef1, optsRef2);
+            std::swap(_clientProgressLevel, _serverProgressLevel);
+        }
+        optsRef1->setProgressLevel(_clientProgressLevel);
+        optsRef2->setProgressLevel(_serverProgressLevel);
+
+        bool createReplicatorSucceeded = true;
+        // Create client (active) and server (passive) replicators:
+        try {
+            if ( _updateClientOptions ) { optsRef1 = make_retained<repl::Options>(_updateClientOptions(*optsRef1)); }
+            _replClient =
+                    new Replicator(dbClient, new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
+                                   *this, optsRef1);
+
+            _replServer =
+                    new Replicator(dbServer, new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
+                                   *this, optsRef2);
+
+            Log("Client replicator is %s", _replClient->loggingName().c_str());
+
+            // Response headers:
+            Headers headers;
+            headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
+
+            // Bind the replicators' WebSockets and start them:
+            LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+            _replClient->start();
+            _replServer->start();
+        } catch ( const exception& exc ) {
+            // In this suite of tests, we don't use C4Replicator as the holder.
+            // The delegate of the respective Replicators is 'this'. With C4Replicator
+            // as the holder, the exception would have been caught by C4Replicator when it
+            // calls createReplicator(). We try to match that logic here.
+            createReplicatorSucceeded = false;
+            _statusReceived.error     = C4Error::fromException(exc);
+        }
+        return createReplicatorSucceeded;
+    }
+
+    void waitForReplicators(const Replicator::Options& opts1, const Replicator::Options& opts2) {
+        std::unique_lock lock(_mutex);
+        auto             optsRef1 = make_retained<Replicator::Options>(opts1);
+        auto             optsRef2 = make_retained<Replicator::Options>(opts2);
+        if ( optsRef2->collectionCount() > 0 && (optsRef2->push(0) > kC4Passive || optsRef2->pull(0) > kC4Passive) ) {
+            // always make opts1 the active (client) side
+            std::swap(optsRef1, optsRef2);
+        }
+        Stopwatch st;
+        Log("Waiting for replication to complete...");
+        static constexpr size_t timeoutMins = 5;  // Number of minutes to timeout after
+        _cond.wait_for(lock, std::chrono::minutes(timeoutMins),
+                       [&] { return _replicatorClientFinished && _replicatorServerFinished; });
+        if ( !(_replicatorClientFinished && _replicatorServerFinished) ) {
+            FAIL("Replication timed out after " << timeoutMins << " minutes...");
+        }
+
+        Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
+
+        _checkpointIDs.clear();
+        for ( int i = 0; i < optsRef1->collectionOpts.size(); ++i ) {
+            _checkpointIDs.push_back(_replClient->checkpointer(i).checkpointID());
+        }
+
+        _replClient = _replServer = nullptr;
+
+        CHECK(_gotResponse);
+        CHECK(_statusChangedCalls > 0);
+        CHECK(_statusReceived.level == kC4Stopped);
+        CHECK(_statusReceived.error.code == _expectedError.code);
+        if ( _expectedError.code ) CHECK(_statusReceived.error.domain == _expectedError.domain);
+        if ( !(_ignoreLackOfDocErrors && _docPullErrors.empty()) )
+            CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
+        if ( !(_ignoreLackOfDocErrors && _docPushErrors.empty()) )
+            CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
+        if ( _checkDocsFinished ) CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
+        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
+        if ( _expectedUnitsComplete >= 0 ) CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
+        if ( _expectedDocumentCount >= 0 )
+            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
+    }
+
     void runPushReplication(C4ReplicatorMode mode = kC4OneShot) {
         runReplicators(Replicator::Options::pushing(mode, _collSpec), Replicator::Options::passive(_collSpec));
     }

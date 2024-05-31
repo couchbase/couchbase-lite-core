@@ -86,6 +86,10 @@ namespace litecore::repl {
 
         _changesFeed.filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
 
+        _sendReplacementRevs = req->boolProperty("sendReplacementRevs");
+        logInfo("Peer subChanges message %s request the pusher to send replacementRevs",
+                _sendReplacementRevs ? "did" : "did not");
+
         req->respond();
         startSending(since);
     }
@@ -300,6 +304,14 @@ namespace litecore::repl {
         if ( !_deltasOK && reply->boolProperty("deltas"_sl)
              && !_options->properties[kC4ReplicatorOptionDisableDeltas].asBool() )
             _deltasOK = true;
+
+            // re; CBL-5680, CBL-5681. Currently replacementRevs only concerns the passive pusher (active puller).
+            // We can enable this code in future to enable the feature on the active pusher.
+#ifdef ACTIVE_PUSH_REPLACEMENTREVS
+        _sendReplacementRevs = reply->boolProperty("sendReplacementRevs"_sl);
+        logInfo("Peer changes response %s request the pusher to send replacementRevs",
+                _sendReplacementRevs ? "did" : "did not");
+#endif
 
         // The response body consists of an array that parallels the `changes` array I sent:
         Array::iterator iResponse(reply->JSONBody().asArray());
