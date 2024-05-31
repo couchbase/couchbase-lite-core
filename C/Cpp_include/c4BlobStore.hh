@@ -137,7 +137,7 @@ struct C4BlobStore : C4Base {
     /// The size of the blob in bytes. Returns -1 if there is no such blob.
     [[nodiscard]] int64_t getSize(C4BlobKey) const;
 
-    /// The blob's data. Returns nullslice if there is no such blob.
+    /// The blob's data. Throws an exception if there is no such blob.
     [[nodiscard]] alloc_slice getContents(C4BlobKey) const;
 
     /// The filesystem path of a blob, or nullslice if no blob with that key exists.

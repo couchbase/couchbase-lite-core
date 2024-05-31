@@ -45,7 +45,7 @@ static SHA1& digest(C4BlobKey& key) { return (SHA1&)key.bytes; }
 
 static const SHA1& digest(const C4BlobKey& key) { return (const SHA1&)key.bytes; }
 
-C4BlobKey C4BlobKey::computeDigestOfContent(slice content) {
+C4BlobKey C4BlobKey::computeDigestOfContent(slice content) noexcept {
     C4BlobKey key{};
     digest(key).computeFrom(content);
     return key;
@@ -53,7 +53,7 @@ C4BlobKey C4BlobKey::computeDigestOfContent(slice content) {
 
 string C4BlobKey::digestString() const { return string(kBlobDigestStringPrefix) + digest(*this).asBase64(); }
 
-static std::optional<C4BlobKey> BlobKeyFromBase64(slice data) {
+static std::optional<C4BlobKey> BlobKeyFromBase64(slice data) noexcept {
     if ( data.size != kBlobDigestStringLength ) return nullopt;
     // Decoder always writes a multiple of 3 bytes, so round up:
     uint8_t   buf[sizeof(C4BlobKey) + 2];
@@ -62,7 +62,7 @@ static std::optional<C4BlobKey> BlobKeyFromBase64(slice data) {
     return key;
 }
 
-std::optional<C4BlobKey> C4BlobKey::withDigestString(slice base64String) {
+std::optional<C4BlobKey> C4BlobKey::withDigestString(slice base64String) noexcept {
     if ( base64String.hasPrefix(kBlobDigestStringPrefix) ) base64String.moveStart(kBlobDigestStringPrefix.size);
     else
         return nullopt;
@@ -77,7 +77,7 @@ static string BlobKeyToFilename(const C4BlobKey& key) {
     return str;
 }
 
-static optional<C4BlobKey> BlobKeyFromFilename(slice filename) {
+static optional<C4BlobKey> BlobKeyFromFilename(slice filename) noexcept {
     if ( filename.size != kBlobFilenameLength || !filename.hasSuffix(kBlobFilenameSuffix) ) return nullopt;
     // Change '_' back into '/' for base64:
     char base64buf[kBlobDigestStringLength];

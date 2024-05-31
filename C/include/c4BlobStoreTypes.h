@@ -37,21 +37,21 @@ struct C4BlobKey {
     using slice = fleece::slice;
 
     /** Generates a SHA-1 digest of the content data and returns it as a C4BlobKey. */
-    static C4BlobKey computeDigestOfContent(slice content);
+    static C4BlobKey computeDigestOfContent(slice content) noexcept;
 
     /** Translates an ASCII blob key, as found in a blob's "digest" property, to a C4BlobKey.
         Returns `nullopt` if invalid. */
-    static std::optional<C4BlobKey> withDigestString(slice base64);
+    static std::optional<C4BlobKey> withDigestString(slice base64) noexcept;
 
     /** Returns the ASCII form, as used in a blob's "digest" property. */
     [[nodiscard]] std::string digestString() const;
 
     /** Returns a slice pointing to the digest bytes. */
-    explicit operator slice() const { return {bytes, sizeof(bytes)}; }
+    explicit operator slice() const noexcept { return {bytes, sizeof(bytes)}; }
 
-    bool operator==(const C4BlobKey& k) const { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
+    bool operator==(const C4BlobKey& k) const noexcept { return memcmp(bytes, k.bytes, sizeof(bytes)) == 0; }
 
-    bool operator!=(const C4BlobKey& k) const { return !(*this == k); }
+    bool operator!=(const C4BlobKey& k) const noexcept { return !(*this == k); }
 #endif
 };
 

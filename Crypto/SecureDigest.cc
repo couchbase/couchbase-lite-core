@@ -33,12 +33,12 @@
 
 namespace litecore {
 
-    void SHA1::computeFrom(fleece::slice s) { (SHA1Builder() << s).finish(&_bytes, size()); }
+    void SHA1::computeFrom(fleece::slice s) noexcept { (SHA1Builder() << s).finish(&_bytes, size()); }
 
-    void SHA256::computeFrom(fleece::slice s) { (SHA256Builder() << s).finish(&_bytes, size()); }
+    void SHA256::computeFrom(fleece::slice s) noexcept { (SHA256Builder() << s).finish(&_bytes, size()); }
 
     template <unsigned int N>
-    bool Hash<N>::setDigest(fleece::slice s) {
+    bool Hash<N>::setDigest(fleece::slice s) noexcept {
         if ( s.size != size() ) return false;
         memcpy(_bytes, s.buf, size());
         return true;
@@ -49,7 +49,7 @@ namespace litecore {
         return fleece::base64::encode(asSlice());
     }
 
-    SHA1Builder::SHA1Builder() {
+    SHA1Builder::SHA1Builder() noexcept {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha1_context));
 #ifdef USE_COMMON_CRYPTO
         static_assert(sizeof(_context) >= sizeof(CC_SHA1_CTX));
@@ -60,7 +60,7 @@ namespace litecore {
 #endif
     }
 
-    SHA1Builder& SHA1Builder::operator<<(fleece::slice s) {
+    SHA1Builder& SHA1Builder::operator<<(fleece::slice s) noexcept {
 #ifdef USE_COMMON_CRYPTO
         CC_SHA1_Update(CCONTEXT, s.buf, (CC_LONG)s.size);
 #else
@@ -69,7 +69,7 @@ namespace litecore {
         return *this;
     }
 
-    void SHA1Builder::finish(void* result, size_t resultSize) {
+    void SHA1Builder::finish(void* result, size_t resultSize) noexcept {
         DebugAssert(resultSize == sizeof(SHA1::_bytes));
 #ifdef USE_COMMON_CRYPTO
         CC_SHA1_Final((uint8_t*)result, CCONTEXT);
@@ -87,7 +87,7 @@ namespace litecore {
 #    define CCONTEXT ((mbedtls_sha256_context*)_context)
 #endif
 
-    SHA256Builder::SHA256Builder() {
+    SHA256Builder::SHA256Builder() noexcept {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha256_context));
 #ifdef USE_COMMON_CRYPTO
         static_assert(sizeof(_context) >= sizeof(CC_SHA256_CTX));
@@ -98,7 +98,7 @@ namespace litecore {
 #endif
     }
 
-    SHA256Builder& SHA256Builder::operator<<(fleece::slice s) {
+    SHA256Builder& SHA256Builder::operator<<(fleece::slice s) noexcept {
 #ifdef USE_COMMON_CRYPTO
         CC_SHA256_Update(CCONTEXT, s.buf, (CC_LONG)s.size);
 #else
@@ -107,7 +107,7 @@ namespace litecore {
         return *this;
     }
 
-    void SHA256Builder::finish(void* result, size_t resultSize) {
+    void SHA256Builder::finish(void* result, size_t resultSize) noexcept {
         DebugAssert(resultSize == sizeof(SHA256::_bytes));
 #ifdef USE_COMMON_CRYPTO
         CC_SHA256_Final((uint8_t*)result, CCONTEXT);
