@@ -405,9 +405,10 @@ namespace litecore { namespace websocket {
                 else
                     callRequestClose(504, "Timed out"_sl);
                 break;
-            case SOCKET_CLOSING:
-                CloseStatus status = {kNetworkError, kNetErrTimeout, nullslice};
-                onClose(status);
+            case SOCKET_CLOSING: {
+                    CloseStatus status = {kNetworkError, kNetErrTimeout, nullslice};
+                    onClose(status);
+                }
                 break;
             default:
                 break;
