@@ -1324,7 +1324,6 @@
 		27B516F92B97E3380049DD1D /* QueryServer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = QueryServer.hh; sourceTree = "<group>"; };
 		27B516FD2B97E38A0049DD1D /* ConnectedClientTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConnectedClientTest.cc; sourceTree = "<group>"; };
 		27B516FE2B97E38A0049DD1D /* ConnectedClientTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClientTest.hh; sourceTree = "<group>"; };
-		27B517002B97E3D20049DD1D /* c4ConnectedClientImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ConnectedClientImpl.hh; sourceTree = "<group>"; };
 		27B517012B97E3D20049DD1D /* c4ConnectedClient_CAPI.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient_CAPI.cc; sourceTree = "<group>"; };
 		27B517022B97E3D20049DD1D /* c4ConnectedClient.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ConnectedClient.cc; sourceTree = "<group>"; };
 		27B517052B97E40C0049DD1D /* ConnectedClientProtocol.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ConnectedClientProtocol.md; sourceTree = "<group>"; };
@@ -2746,7 +2745,6 @@
 				27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */,
 				27B517012B97E3D20049DD1D /* c4ConnectedClient_CAPI.cc */,
 				27B517022B97E3D20049DD1D /* c4ConnectedClient.cc */,
-				27B517002B97E3D20049DD1D /* c4ConnectedClientImpl.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 			);

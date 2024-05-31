@@ -94,38 +94,30 @@ class ConnectedClientLoopbackTest
         }
     }
 
-    void clientGotHTTPResponse(client::ConnectedClient* NONNULL, int status,
-                               const websocket::Headers& headers) override {
-        Log("+++ Client got HTTP response");
-    }
-
-    void clientGotTLSCertificate(client::ConnectedClient* NONNULL, slice certData) override {
-        Log("+++ Client got TLS certificate");
-    }
-
-    void clientStatusChanged(client::ConnectedClient* NONNULL, client::ConnectedClient::Status const& status) override {
+    void clientStatusChanged(client::ConnectedClient* client, client::ConnectedClient::Status const& status) override {
         Log("+++ Client status changed: %d", int(status.level));
 
         unique_lock lock(_mutex);
         bool        running = (status.level == kC4Idle || status.level == kC4Busy);
         if ( running != _clientRunning ) {
+            if ( running ) CHECK(client->responseHeaders() != nullslice);
             _clientRunning = running;
             _cond.notify_all();
         }
     }
 
-    void clientConnectionClosed(client::ConnectedClient* NONNULL, const CloseStatus& close) override {
+    void clientConnectionClosed(client::ConnectedClient*, const CloseStatus& close) override {
         Log("+++ Client connection closed: reason=%d, code=%d, message=%.*s", int(close.reason), close.code,
             FMTSLICE(close.message));
     }
 
     //---- Replicator delegate:
 
-    void replicatorGotHTTPResponse(repl::Replicator* NONNULL, int status, const websocket::Headers& headers) override {}
+    void replicatorGotHTTPResponse(repl::Replicator*, int status, const websocket::Headers& headers) override {}
 
     void replicatorGotTLSCertificate(slice certData) override {}
 
-    void replicatorStatusChanged(repl::Replicator* NONNULL, const repl::Replicator::Status& status) override {
+    void replicatorStatusChanged(repl::Replicator*, const repl::Replicator::Status& status) override {
         Log("+++ Server status changed: %d", int(status.level));
         unique_lock lock(_mutex);
         bool        running = (status.level == kC4Idle || status.level == kC4Busy);
@@ -135,11 +127,11 @@ class ConnectedClientLoopbackTest
         }
     }
 
-    void replicatorConnectionClosed(repl::Replicator* NONNULL, const CloseStatus&) override {}
+    void replicatorConnectionClosed(repl::Replicator*, const CloseStatus&) override {}
 
-    void replicatorDocumentsEnded(repl::Replicator* NONNULL, const repl::Replicator::DocumentsEnded&) override {}
+    void replicatorDocumentsEnded(repl::Replicator*, const repl::Replicator::DocumentsEnded&) override {}
 
-    void replicatorBlobProgress(repl::Replicator* NONNULL, const repl::Replicator::BlobProgress&) override {}
+    void replicatorBlobProgress(repl::Replicator*, const repl::Replicator::BlobProgress&) override {}
 
     //---- Utilities:
 

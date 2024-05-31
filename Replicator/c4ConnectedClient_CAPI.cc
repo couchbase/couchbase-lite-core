@@ -16,10 +16,6 @@
 #include "c4ExceptionUtils.hh"
 #include "Async.hh"
 
-using namespace litecore::repl;
-using namespace litecore;
-using namespace fleece;
-
 C4ConnectedClient* c4client_new(C4Database* db, const C4ConnectedClientParameters* params, C4Error* outError) noexcept {
     try {
         return C4ConnectedClient::newClient(db, *params).detach();
@@ -30,9 +26,9 @@ C4ConnectedClient* c4client_new(C4Database* db, const C4ConnectedClientParameter
 
 bool c4client_getDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice collectionID,
                      C4Slice unlessRevID, bool asFleece, C4ConnectedClientGetDocumentCallback callback,
-                     void* C4NULLABLE context, C4Error* C4NULLABLE outError) noexcept {
+                     C4Error* C4NULLABLE outError) noexcept {
     try {
-        client->getDoc(coll, docID, unlessRevID, asFleece, callback, context);
+        client->getDoc(coll, docID, unlessRevID, asFleece, callback);
         return true;
     }
     catchError(outError);
@@ -43,15 +39,13 @@ void c4client_start(C4ConnectedClient* client) noexcept { client->start(); }
 
 void c4client_stop(C4ConnectedClient* client) noexcept { client->stop(); }
 
-bool c4client_putDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice parentRevID,
+bool c4client_putDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice revID, C4Slice parentRevID,
                      C4RevisionFlags revisionFlags, C4Slice fleeceData,
-                     C4ConnectedClientUpdateDocumentCallback callback, void* C4NULLABLE context,
-                     C4Error* C4NULLABLE outError) noexcept {
+                     C4ConnectedClientUpdateDocumentCallback callback, C4Error* C4NULLABLE outError) noexcept {
     try {
-        client->putDoc(coll, docID, parentRevID, revisionFlags, fleeceData, callback, context);
+        client->putDoc(coll, docID, revID, parentRevID, revisionFlags, fleeceData, callback);
         return true;
     }
     catchError(outError);
-
     return false;
 }

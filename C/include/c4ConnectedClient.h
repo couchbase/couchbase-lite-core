@@ -49,25 +49,29 @@ void c4client_stop(C4ConnectedClient*) C4API;
                     the server will return error {WebSocketDomain, 304}.
     @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
     @param callback Callback for getting document.
-    @param context Client value passed to getDocument callback
     @param outError  On failure, the error info will be stored here. */
 bool c4client_getDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice collectionID,
                      C4Slice unlessRevID, bool asFleece, C4ConnectedClientGetDocumentCallback callback,
-                     void* C4NULLABLE context, C4Error* C4NULLABLE outError) C4API;
+                     C4Error* C4NULLABLE outError) C4API;
 
 /** Pushes a new document revision to the server.
     @param client  The ConnectedClient instance.
     @param coll  The scope and collection.
     @param docID  The document ID.
-    @param revID  The ID of the parent revision on the server, or `nullslice` if this is a new document.
+    @param revID  The ID of this revision, if it already exists; else `nullslice` to create a new revID.
+    @param parentRevID  The ID of the parent revision on the server, or `nullslice` if this is a new document.
     @param revisionFlags  Flags of this revision.
     @param fleeceData  The document body encoded as Fleece (without shared keys!)
     @param callback Callback once the document is updated.
-    @param context Client value passed to updateDocument callback
     @param outError  On failure, the error info will be stored here. */
-bool c4client_putDoc(C4ConnectedClient* client, C4CollectionSpec coll, C4Slice docID, C4Slice revID,
-                     C4RevisionFlags revisionFlags, C4Slice fleeceData,
-                     C4ConnectedClientUpdateDocumentCallback callback, void* C4NULLABLE context,
+bool c4client_putDoc(C4ConnectedClient* client,
+                     C4CollectionSpec coll,
+                     C4Slice docID,
+                     C4Slice revID,
+                     C4Slice parentRevID,
+                     C4RevisionFlags revisionFlags,
+                     C4Slice fleeceData,
+                     C4ConnectedClientUpdateDocumentCallback callback, 
                      C4Error* C4NULLABLE outError) C4API;
 
 /** @} */

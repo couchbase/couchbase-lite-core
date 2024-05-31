@@ -55,8 +55,8 @@ namespace litecore::client {
 
     ConnectedClient::ConnectedClient(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate,
                                      const C4ConnectedClientParameters& params, repl::Options* options)
-        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options,
-                 make_shared<repl::DBAccess>(db, false), "Client", repl::kNotCollectionIndex)
+        : Worker(new Connection(webSocket, AllocedDict(params.optionsDictFleece), {}), nullptr, options, make_shared<repl::DBAccess>(db, false),
+                 "Client", repl::kNotCollectionIndex)
         , _delegate(&delegate)
         , _params(params) {
         _importance = 2;
@@ -111,6 +111,16 @@ namespace litecore::client {
 
 #pragma mark - STATUS:
 
+    alloc_slice ConnectedClient::responseHeaders() const {
+        unique_lock lock(_mutex);
+        return _responseHeaders;
+    }
+
+    alloc_slice ConnectedClient::peerTLSCertificateData() const {
+        unique_lock lock(_mutex);
+        return _peerTLSCertificateData;
+    }
+
     ConnectedClient::Status ConnectedClient::status() { return _curStatus.useLocked(); }
 
     void ConnectedClient::setActivityLevel(ActivityLevel level) {
@@ -133,6 +143,7 @@ namespace litecore::client {
 
     // override of Worker method, called after status changes
     void ConnectedClient::changedStatus() {
+        // Update _curStatus:
         Status status = _curStatus.useLocked<Status>([&](Status& curStatus) {
             auto level      = curStatus.level;
             curStatus       = Worker::status();
@@ -145,7 +156,8 @@ namespace litecore::client {
 #pragma mark - BLIP DELEGATE:
 
     void ConnectedClient::onTLSCertificate(slice certData) {
-        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientGotTLSCertificate(this, certData);
+        unique_lock lock(_mutex);
+        _peerTLSCertificateData = certData;
     }
 
     void ConnectedClient::onHTTPResponse(int status, const websocket::Headers& headers) {
@@ -154,7 +166,10 @@ namespace litecore::client {
 
     void ConnectedClient::_onHTTPResponse(int status, websocket::Headers headers) {
         logVerbose("Got HTTP response from server, status %d", status);
-        if ( auto delegate = _delegate.useLocked() ) (*delegate).clientGotHTTPResponse(this, status, headers);
+        {
+            unique_lock lock(_mutex);
+            _responseHeaders = headers.encode();
+        }
 
         if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
             gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
@@ -387,14 +402,11 @@ namespace litecore::client {
         assertConnected();
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID), FMTSLICE(revID));
 
-        // Convert revID to global form (if VV)
-        alloc_slice actualRevID = _db->useLocked()->getRevIDGlobalForm(revID);
-
         MessageBuilder req("putRev");
         req.compressed = true;
         addCollectionProperty(req, collection);
         req["id"]          = docID;
-        req["rev"]         = actualRevID;
+        req["rev"]         = revID;
         req["history"]     = parentRevID;
         req["noconflicts"] = true;
         if ( revisionFlags & kRevDeleted ) req["deleted"] = "1";
@@ -447,28 +459,40 @@ namespace litecore::client {
     }
 
     void ConnectedClient::handleGetAttachment(Retained<MessageIn> req) {
+        if ( auto contents = getBlob(req->property("digest")); contents.ok() ) {
+            MessageBuilder reply(req);
+            reply.compressed = req->boolProperty("compress");
+            reply.write(contents.value());
+            req->respond(reply);
+        } else {
+            req->respondWithError(c4ToBLIPError(contents.error()));
+        }
+    }
+
+    Result<alloc_slice> ConnectedClient::getBlob(slice digestProperty) noexcept {
+        optional<C4BlobKey> blobKey = C4BlobKey::withDigestString(digestProperty);
+        if ( !blobKey ) return C4Error::make(LiteCoreDomain, kC4ErrorCorruptData, "Invalid 'digest' property in request"_sl);
+
+        // First check the db's blob store:
+        try {
+            if (auto blobStore = _db->blobStore(); blobStore->getSize(*blobKey) >= 0)
+                return blobStore->getContents(*blobKey);
+        } catch ( ... ) { return C4Error::fromCurrentException(); }
+
         // Pass the buck to the delegate:
         alloc_slice contents;
-        C4Error     error = {};
-        try {
-            if ( auto blobKey = C4BlobKey::withDigestString(req->property("digest"_sl)) ) {
-                if ( auto delegate = _delegate.useLocked() ) contents = (*delegate).getBlobContents(*blobKey, &error);
-                else
-                    error = C4Error::make(WebSocketDomain, websocket::kCodeGoingAway);
-            } else {
-                error = C4Error::make(WebSocketDomain, 400, "Invalid 'digest' property in request");
-            }
-        } catch ( ... ) { error = C4Error::fromCurrentException(); }
+        C4Error error{};
+        _delegate.useLocked([&](Delegate* delegate) {
+            if ( delegate ) contents = (*delegate).getBlobContents(*blobKey, &error);
+            else  // race condition; I was just terminated
+                error = {WebSocketDomain, websocket::kCodeGoingAway};
+        });
         if ( !contents ) {
+            // Default error if the callback didn't set one:
             if ( !error ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
-            req->respondWithError(c4ToBLIPError(error));
-            return;
+            return error;
         }
-
-        MessageBuilder reply(req);
-        reply.compressed = req->boolProperty("compress"_sl);
-        reply.write(contents);
-        req->respond(reply);
+        return contents;
     }
 
     void ConnectedClient::getAllDocIDs(C4CollectionSpec const& collection, slice globPattern,

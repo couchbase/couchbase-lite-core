@@ -48,12 +48,11 @@ struct C4ConnectedClient
     /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
     /// revision you already have.
     virtual void getDoc(C4CollectionSpec const& collection, slice docID, slice unlessRevID, bool asFleece,
-                        C4ConnectedClientGetDocumentCallback callback, void* C4NULLABLE context) = 0;
+                        C4ConnectedClientGetDocumentCallback callback) = 0;
 
     /// Pushes a new document revision to the server.
-    virtual void putDoc(C4CollectionSpec const&, slice docID, slice parentRevID, C4RevisionFlags revisionFlags,
-                        slice fleeceData, C4ConnectedClientUpdateDocumentCallback callback,
-                        void* C4NULLABLE context) = 0;
+    virtual void putDoc(C4CollectionSpec const&, slice docID, slice revID, slice parentRevID, C4RevisionFlags revisionFlags,
+                        slice fleeceData, C4ConnectedClientUpdateDocumentCallback callback) = 0;
 
 #if 0
     /// Callback for \ref getAllDocIDs.
