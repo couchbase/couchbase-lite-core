@@ -352,7 +352,9 @@ namespace litecore::websocket {
         _timedOut = true;
         switch ( _socketLCState.load() ) {
             case SOCKET_OPENING:
-                if ( _framing ) callCloseSocket();
+            case SOCKET_OPENED:
+                if (_framing)
+                    callCloseSocket();
                 else
                     callRequestClose(504, "Timed out"_sl);
                 break;
