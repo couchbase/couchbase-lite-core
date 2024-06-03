@@ -63,7 +63,11 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
-    static void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
+    static void logSection(const string& name, int level = 0) {
+        size_t      numSpaces = 8 + level * 4;
+        std::string spaces(numSpaces, ' ');
+        fprintf(stderr, "%s--- %s\n", spaces.c_str(), name.c_str());
+    }
 
     static string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two",   "three", "four",
