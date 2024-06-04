@@ -14,6 +14,7 @@
 #include "Base64.hh"
 #include "c4Collection.hh"
 #include "c4Database.hh"
+#include "Defer.hh"
 #include "fleece/Mutable.hh"
 
 static constexpr slice            GuitarsName = "guitars"_sl;
@@ -310,6 +311,16 @@ struct CheckDBEntries {
 };
 
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
+#ifdef LITECORE_CPPTEST
+    bool collectionAwareActive  = GENERATE(false, true);
+    bool collectionAwareOnEntry = repl::Options::sActiveIsCollectionAware;
+    if ( collectionAwareActive ) {
+        repl::Options::sActiveIsCollectionAware = true;
+        std::cerr << "        Active Replicator is collection-aware" << std::endl;
+    }
+    DEFER { repl::Options::sActiveIsCollectionAware = collectionAwareOnEntry; };
+#endif
+
     addDocs(db, Default, 10);
     addDocs(db2, Default, 10);
 
