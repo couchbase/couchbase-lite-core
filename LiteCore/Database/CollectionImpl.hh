@@ -432,6 +432,8 @@ namespace litecore {
                         vecOpt.minTrainingSize = c4Opt.minTrainingSize;
                         vecOpt.maxTrainingSize = c4Opt.maxTrainingSize;
                         vecOpt.numProbes       = c4Opt.numProbes;
+
+                        vecOpt.lazy = c4Opt.lazy;
                     } else {
                         error::_throw(error::InvalidParameter, "Vector index requires options");
                     }
