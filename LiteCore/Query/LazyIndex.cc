@@ -258,8 +258,8 @@ namespace litecore {
 
     /// Returns true if no vector has been updated or skipped in this updater.
     bool LazyIndexUpdate::noVectorsUpdatedOrSkipped() const {
-        return std::all_of(_items.begin(), _items.end(),
-                           [](const Item& item) { return item.vector != nullptr || item.skipped; });
+        return !std::any_of(_items.begin(), _items.end(),
+                            [](const Item& item) { return item.vector != nullptr || item.skipped; });
     }
 
 
