@@ -509,8 +509,8 @@ namespace litecore {
         if ( !_hasExpirationColumn ) {
             string sql;
             string tableName = this->tableName();
-            db().getSchema(tableName, "table", tableName, sql);
-            if ( sql.find("expiration") != string::npos ) _hasExpirationColumn = true;
+            if ( db().getSchema(tableName, "table", tableName, sql) && sql.find("expiration") != string::npos )
+                _hasExpirationColumn = true;
         }
         return _hasExpirationColumn;
     }

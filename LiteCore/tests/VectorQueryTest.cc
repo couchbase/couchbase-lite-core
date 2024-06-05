@@ -29,11 +29,15 @@ class SIFTVectorQueryTest : public VectorQueryTest {
 
     SIFTVectorQueryTest() : VectorQueryTest(0) {}
 
-    void createVectorIndex() {
+    IndexSpec::VectorOptions vectorIndexOptions() const {
         IndexSpec::VectorOptions options(128);
         options.clustering.type           = IndexSpec::VectorOptions::Flat;
         options.clustering.flat_centroids = 256;
-        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", options);
+        return options;
+    }
+
+    void createVectorIndex() {
+        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", vectorIndexOptions());
     }
 
     void readVectorDocs(size_t maxLines = 1000000) {
@@ -80,6 +84,19 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
     auto allKeyStores = db->allKeyStoreNames();
     readVectorDocs(1);
     createVectorIndex();
+
+    // Recover the IndexSpec:
+    std::optional<IndexSpec> spec = store->getIndex("vecIndex");
+    REQUIRE(spec);
+    CHECK(spec->name == "vecIndex");
+    CHECK(spec->type == IndexSpec::kVector);
+    auto vecOptions = spec->vectorOptions();
+    REQUIRE(vecOptions);
+    auto trueOptions = vectorIndexOptions();
+    CHECK(vecOptions->dimensions == trueOptions.dimensions);
+    CHECK(vecOptions->clustering.type == trueOptions.clustering.type);
+    CHECK(vecOptions->encoding.type == trueOptions.encoding.type);
+
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     // Delete a doc too:
     {

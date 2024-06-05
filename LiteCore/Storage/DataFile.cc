@@ -414,7 +414,8 @@ namespace litecore {
 
     ExclusiveTransaction::~ExclusiveTransaction() {
         if ( _active ) {
-            _db._logInfo("Transaction exiting scope without explicit commit; aborting");
+            if ( !std::uncaught_exception() )
+                _db._logInfo("Transaction exiting scope without explicit commit; aborting");
             abort();
         }
         _db.endTransactionScope(this);
