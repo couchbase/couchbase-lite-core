@@ -165,6 +165,61 @@ namespace litecore {
         return "";  // no index found
     }
 
+    static inline unsigned asUInt(string_view sv) {
+        string str(sv);
+        return unsigned(strtoul(str.c_str(), nullptr, 10));
+    }
+
+    // The opposite of createVectorSearchTableSQL
+    optional<IndexSpec::VectorOptions> SQLiteKeyStore::parseVectorSearchTableSQL(string_view sql) {
+        optional<IndexSpec::VectorOptions> opts;
+        // Find the virtual-table arguments in the CREATE TABLE statement:
+        auto start = sql.find("vectorsearch(");
+        if ( start == string::npos ) return opts;
+        start += strlen("vectorsearch(");
+        auto end = sql.find(')', start);
+        if ( end == string::npos ) return opts;
+
+        // Parse each comma-delimited key-value pair:
+        string_view args(&sql[start], end - start);
+        opts.emplace(0);
+        split(args, ",", [&](string_view key) {
+            string_view value;
+            if ( auto eq = key.find('='); eq != string::npos ) {
+                value = key.substr(eq + 1);
+                key   = key.substr(0, eq);
+                if ( value.empty() || key.empty() ) return;
+            }
+            if ( key == "dimensions" ) {
+                opts->dimensions = asUInt(value);
+            } else if ( key == "metric" ) {
+                if ( value == "euclidean2" ) opts->metric = IndexSpec::VectorOptions::Euclidean;
+                else if ( value == "cosine" )
+                    opts->metric = IndexSpec::VectorOptions::Cosine;
+            } else if ( key == "minToTrain" ) {
+                opts->minTrainingSize = asUInt(value);
+            } else if ( key == "maxToTrain" ) {
+                opts->maxTrainingSize = asUInt(value);
+            } else if ( key == "probes" ) {
+                opts->numProbes = asUInt(value);
+            } else if ( key == "lazyindex" ) {
+                opts->lazy = (value != "false" && value != "0");
+            } else if ( key == "clustering" ) {
+                if ( hasPrefix(value, "multi") ) opts->clustering = {IndexSpec::VectorOptions::Multi};
+                //TODO: Parse centroid count & other params; see vectorsearch::IndexSpec::setParam()
+            } else if ( key == "encoding" ) {
+                if ( value == "none" ) opts->encoding = {IndexSpec::VectorOptions::NoEncoding};
+                else if ( hasPrefix(value, "PQ") ) {
+                    opts->encoding = {IndexSpec::VectorOptions::PQ};
+                } else if ( hasPrefix(value, "SQ") ) {
+                    opts->encoding = {IndexSpec::VectorOptions::SQ};
+                }
+                //TODO: Parse encoding params; see vectorsearch::IndexSpec::setParam()
+            }
+        });
+        return opts;
+    }
+
 }  // namespace litecore
 
 #endif

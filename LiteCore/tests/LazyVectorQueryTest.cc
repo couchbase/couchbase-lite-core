@@ -95,6 +95,7 @@ class LazyVectorQueryTest : public VectorQueryTest {
             return 0;
         }
         Log("---- Updating %zu vectors...", update->count());
+        CHECK(update->dimensions() == kDimension);
 
         size_t count = update->count();
         CHECK(count > 0);
@@ -186,6 +187,20 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
     checkQueryReturns({"rec-291", "rec-171", "rec-039", "rec-081", "rec-249"});
 }
 
-#endif
+TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Update Wrong Dimensions", "[.VectorSearch]") {
+    Retained<LazyIndexUpdate> update = _lazyIndex->beginUpdate(1);
+    REQUIRE(update);
+    CHECK(update->count() == 1);
+    CHECK(update->dimensions() == kDimension);
 
-// Guard against multiple updater objects, where 2nd one finishes first!!
+    fleece::Value val(update->valueAt(0));
+    REQUIRE(val.type() == kFLNumber);
+    float vec[kDimension];
+    computeVector(0, vec);
+
+    ExpectingExceptions x;
+    Log("---- Calling setVectorAt with wrong dimension...");
+    CHECK_THROWS_AS(update->setVectorAt(0, vec, kDimension - 1), error);
+}
+
+#endif

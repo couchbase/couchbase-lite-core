@@ -66,10 +66,10 @@ namespace litecore {
         static bool tableNameIsCollection(slice tableName);
         static bool keyStoreNameIsCollection(slice ksName);
 
-        bool getSchema(const std::string& name, const std::string& type, const std::string& tableName,
-                       std::string& outSQL) const;
-        bool schemaExistsWithSQL(const std::string& name, const std::string& type, const std::string& tableName,
-                                 const std::string& sql) const;
+        [[nodiscard]] bool getSchema(const std::string& name, const std::string& type, const std::string& tableName,
+                                     std::string& outSQL) const;
+        [[nodiscard]] bool schemaExistsWithSQL(const std::string& name, const std::string& type,
+                                               const std::string& tableName, const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
 
@@ -179,7 +179,7 @@ namespace litecore {
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
         void                         garbageCollectIndexTable(const std::string& tableName);
-        static SQLiteIndexSpec       specFromStatement(SQLite::Statement& stmt);
+        SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr);
 
 
@@ -193,8 +193,8 @@ namespace litecore {
 
     struct SQLiteIndexSpec : public IndexSpec {
         SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON,
-                        QueryLanguage language, std::string ksName, std::string itName)
-            : IndexSpec(name, type, std::move(expressionJSON), language)
+                        QueryLanguage language, Options options, std::string ksName, std::string itName)
+            : IndexSpec(name, type, std::move(expressionJSON), language, std::move(options))
             , keyStoreName(std::move(ksName))
             , indexTableName(std::move(itName)) {}
 
