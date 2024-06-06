@@ -260,6 +260,8 @@ namespace litecore {
 
         auto spec = getIndex(name);
         if ( !spec ) error::_throw(error::NoSuchIndex);
+        else if ( spec->type == IndexSpec::kVector )
+            return inspectVectorIndex(*spec, outRowCount, outRows);
         else if ( spec->type != IndexSpec::kValue )
             error::_throw(error::UnsupportedOperation, "Only supported for value indexes");
 
@@ -336,6 +338,37 @@ namespace litecore {
             *outRows = enc.finish();
         } else {
             outRowCount = this->intQuery(("SELECT count(*) FROM " + tableName).c_str());
+        }
+    }
+
+    void SQLiteDataFile::inspectVectorIndex(SQLiteIndexSpec const& spec, int64_t& outRowCount, alloc_slice* outRows) {
+        if ( outRows ) {
+            string            ksTable = SQLiteKeyStore::tableName(spec.keyStoreName);
+            SQLite::Statement st(*_sqlDb, "SELECT kv.key, idx.vector, idx.bucket, idx.docid"
+                                          " FROM \""
+                                                  + spec.indexTableName
+                                                  + "\" as idx"
+                                                    " LEFT JOIN \""
+                                                  + ksTable
+                                                  + "\" as kv ON idx.docid = kv.rowid"
+                                                    " ORDER BY kv.key");
+            LogStatement(st);
+            Encoder enc;
+            enc.beginArray();
+            outRowCount = 0;
+            while ( st.executeStep() ) {
+                ++outRowCount;
+                enc.beginArray();
+                enc.writeString(st.getColumn(0).getText());
+                enc.writeData(slice(st.getColumn(1).getBlob(), st.getColumn(1).size()));
+                enc.writeInt(st.getColumn(2));
+                enc.writeInt(st.getColumn(3));
+                enc.endArray();
+            }
+            enc.endArray();
+            *outRows = enc.finish();
+        } else {
+            outRowCount = this->intQuery(("SELECT count(*) FROM " + spec.indexTableName).c_str());
         }
     }
 
