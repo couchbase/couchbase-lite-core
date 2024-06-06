@@ -144,6 +144,12 @@ typedef struct C4DocumentObserver C4DocumentObserver;
 /** Opaque handle to a document enumerator. */
 typedef struct C4DocEnumerator C4DocEnumerator;
 
+/** Represents an existing index. */
+typedef struct C4Index C4Index;
+
+/** Describes a set of index values that need to be computed by the application. */
+typedef struct C4IndexUpdater C4IndexUpdater;
+
 /** An asymmetric key or key-pair (RSA, etc.) The private key may or may not be present. */
 typedef struct C4KeyPair C4KeyPair;
 
@@ -196,6 +202,12 @@ static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API
     return (C4Database*)c4base_retain(r);
 }
 
+static inline C4Index* C4NULLABLE c4index_retain(C4Index* C4NULLABLE r) C4API { return (C4Index*)c4base_retain(r); }
+
+static inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLABLE r) C4API {
+    return (C4IndexUpdater*)c4base_retain(r);
+}
+
 static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {
     return (C4KeyPair*)c4base_retain(r);
 }
@@ -211,6 +223,10 @@ static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r
 static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
 
 static inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
+
+static inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
+
+static inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
 
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
 

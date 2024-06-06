@@ -17,6 +17,9 @@
 //
 
 #include "VectorQueryTest.hh"
+#include "Base64.hh"
+#include "c4Database.hh"
+#include "c4Collection.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -24,11 +27,17 @@ class SIFTVectorQueryTest : public VectorQueryTest {
   public:
     SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
 
-    void createVectorIndex() {
+    SIFTVectorQueryTest() : VectorQueryTest(0) {}
+
+    IndexSpec::VectorOptions vectorIndexOptions() const {
         IndexSpec::VectorOptions options(128);
         options.clustering.type           = IndexSpec::VectorOptions::Flat;
         options.clustering.flat_centroids = 256;
-        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", options);
+        return options;
+    }
+
+    void createVectorIndex() {
+        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", vectorIndexOptions());
     }
 
     void readVectorDocs(size_t maxLines = 1000000) {
@@ -75,6 +84,19 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
     auto allKeyStores = db->allKeyStoreNames();
     readVectorDocs(1);
     createVectorIndex();
+
+    // Recover the IndexSpec:
+    std::optional<IndexSpec> spec = store->getIndex("vecIndex");
+    REQUIRE(spec);
+    CHECK(spec->name == "vecIndex");
+    CHECK(spec->type == IndexSpec::kVector);
+    auto vecOptions = spec->vectorOptions();
+    REQUIRE(vecOptions);
+    auto trueOptions = vectorIndexOptions();
+    CHECK(vecOptions->dimensions == trueOptions.dimensions);
+    CHECK(vecOptions->clustering.type == trueOptions.clustering.type);
+    CHECK(vecOptions->encoding.type == trueOptions.encoding.type);
+
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     // Delete a doc too:
     {
@@ -97,47 +119,90 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
 
     createVectorIndex();
 
-    string queryStr = R"(
-        ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+    {
+        // Number of results = 10
+        string          queryStr = R"(
+         ['SELECT', {
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
          }] )";
+        Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
-    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
-    REQUIRE(query != nullptr);
-
-    // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
-
-    // Run the query:
-    Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 5);  // the call to VECTOR_MATCH requested only 5 results
-
-    // The `expectedDistances` array contains the exact distances.
-    // Vector encoders are lossy, so using one in the index will result in approximate distances,
-    // which is why the distance check below is so loose.
-    static constexpr slice expectedIDs[5]       = {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"};
-    static constexpr float expectedDistances[5] = {0, 4172, 10549, 29275, 32025};
-
-    for ( size_t i = 0; i < 5; ++i ) {
-        REQUIRE(e->next());
-        slice id       = e->columns()[0]->asString();
-        float distance = e->columns()[1]->asFloat();
-        INFO("i=" << i);
-        CHECK(id == expectedIDs[i]);
-        CHECK_THAT(distance, Catch::Matchers::WithinRel(expectedDistances[i], 0.20f)
-                                     || Catch::Matchers::WithinAbs(expectedDistances[i], 400.0f));
+        Log("---- Querying with $target = data");
+        Query::Options options = optionsWithTargetVector(kTargetVector, kData);
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020", "rec-0076", "rec-0087",
+                              "rec-3327", "rec-1915", "rec-8265"},
+                             {0, 4172, 10549, 29275, 32025, 65417, 67313, 68009, 70231, 70673});
     }
-    CHECK(!e->next());
-    Log("done");
+
+    // Number of Results = 5
+    string          queryStr = R"(
+     ['SELECT', {
+       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+       ORDER_BY: [ ['.distance'] ],
+     }] )";
+    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+
+    static constexpr valueType kParamTypes[] = {kData, kString, kArray};
+    for ( valueType asType : kParamTypes ) {
+        Log("---- Querying with $target of Fleece type %d", int(asType));
+        Query::Options options = optionsWithTargetVector(kTargetVector, asType);
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"},
+                             {0, 4172, 10549, 29275, 32025});
+    }
+
+    {
+        // Update a document with an invalid vector property:
+        {
+            Log("---- Updating rec-0031 to remove its vector");
+            ExclusiveTransaction t(db);
+            writeDoc("rec-0031", DocumentFlags::kNone, t, [=](Encoder& enc) {
+                enc.writeKey("vector");
+                enc.writeString("nope");
+            });
+            t.commit();
+            ++expectedWarningsLogged;
+        }
+        // Verify the updated document is missing from the results:
+        Query::Options options = optionsWithTargetVector(kTargetVector, kData);
+        checkExpectedResults(query->createEnumerator(&options),
+                             {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"},
+                             {0, 10549, 29275, 32025, 65417});
+    }
 
     reopenDatabase();
+}
+
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.VectorSearch]") {
+    readVectorDocs();
+    {
+        // Add some docs without vector data, to ensure that doesn't break indexing:
+        ExclusiveTransaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+    createVectorIndex();
+
+    string          queryStr = R"(
+     ['SELECT', {
+        WHERE:    ['AND', ['VECTOR_MATCH()', 'vecIndex', ['$target']],
+                          ['=', 0, ['%', ['._sequence'], 100]] ],
+        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+        ORDER_BY: [ ['.distance'] ],
+        LIMIT:    10
+     }] )";
+    Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+
+    Log("---- Querying with $target = data");
+    Query::Options options = optionsWithTargetVector(kTargetVector, kData);
+    checkExpectedResults(query->createEnumerator(&options),
+                         {"rec-5300", "rec-4900", "rec-7100", "rec-3600", "rec-8700", "rec-8500", "rec-2400",
+                          "rec-4700", "rec-4300", "rec-2600"},
+                         {85776, 90431, 92142, 92629, 94598, 94989, 104787, 106750, 113260, 116129});
 }
 
 // Test joining the result of VECTOR_MATCH with a property of another collection. In particular, it joins
@@ -240,7 +305,6 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
         });
         writeDoc(*otherStore, "doc02", DocumentFlags::kNone, t, [=](Encoder& enc) {
             enc.writeKey("refID");
-            // "rec-0011" is not in the result of VECTOR_MATCH
             enc.writeString("rec-0011");
             enc.writeKey("sentence");
             enc.writeString(kFTSSentences[1]);
@@ -269,9 +333,12 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
     otherStore->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText,
                             IndexSpec::FTSOptions{"english", true});
 
-    string queryStr = R"(SELECT META(a).id, META(other).id FROM )"s + collectionName;
-    queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) AND MATCH(other.sentence, "search") )";
+    string queryStr = R"(SELECT META(a).id, META(other).id, VECTOR_DISTANCE(a.vecIndex) )"
+                      R"( FROM )"s
+                      + collectionName
+                      + R"( AS a JOIN other ON META(a).id = other.refID )"
+                        R"( WHERE VECTOR_MATCH(a.vecIndex, $target) AND MATCH(other.sentence, "search") )"
+                        R"( ORDER BY VECTOR_DISTANCE(a.vecIndex) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -287,22 +354,29 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
-    REQUIRE(e->getRowCount() == 3);
+    REQUIRE(e->getRowCount() == 4);
 
-    // VECTOR_MATCH will fecth these docs: {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}
+    // VECTOR_MATCH will fetch these docs: {"rec-0010", "rec-0031", "rec-0022", "rec-0012", "rec-0020"}
     // FTS MATCH will fetch {"doc02", "doc03", "doc01", "doc05"}
     // "doc03" does not refer to any in result of VECTOR_MATCH.
-    static constexpr slice expectedID1s[] = {"rec-0031", "rec-0022", "rec-0012"};
-    static constexpr slice expectedID2s[] = {"doc01", "doc05", "doc03"};
+    static constexpr slice expectedID1s[] = {"rec-0031", "rec-0022", "rec-0012", "rec-0011"};
+    static constexpr slice expectedID2s[] = {"doc01", "doc05", "doc03", "doc02"};
+    static constexpr float expectedDist[] = {4172, 10549, 29275, 121566};
 
-    size_t i = 0;
-    while ( e->next() ) {
-        slice id1 = e->columns()[0]->asString();
-        slice id2 = e->columns()[1]->asString();
+    size_t i;
+    for ( i = 0; e->next(); ++i ) {
+        slice id1  = e->columns()[0]->asString();
+        slice id2  = e->columns()[1]->asString();
+        float dist = e->columns()[2]->asFloat();
+#    if 0
+        Log("id1 = %.*s, id2 = %.*s", FMTSLICE(id1), FMTSLICE(id2));
+#    else
         CHECK(id1 == expectedID1s[i]);
-        CHECK(id2 == expectedID2s[i++]);
+        CHECK(id2 == expectedID2s[i]);
+        CHECK_distances(dist, expectedDist[i]);
+#    endif
     }
-    CHECK(i == 3);
+    CHECK(i == 4);
 }
 
 // Test intersection of vector-search and FTS
@@ -404,6 +478,141 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
         checks.erase(iter);
     }
     CHECK(checks.size() == 0);
+}
+
+static pair<string, string> splitCollectionName(const string& input) {
+    // This system of randomizing REALLY messes with this test...
+    if ( input == "_" ) { return {"_default", "_default"}; }
+
+    auto dotPos = input.find('.');
+    if ( dotPos == string::npos ) { return {"_default", input}; }
+
+    return {input.substr(0, dotPos), input.substr(dotPos + 1)};
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
+    bool expectedTrained{false};
+
+    // Undo this silliness, I'm not spending the effort to find out the name it really wants
+    // which is LiteCore_Tests_<random number> or something
+    if ( collectionName == "db" ) collectionName = "_";
+
+    // N_WAY_TEST_CASE_METHOD is not compatible with section, so redo all the
+    // extra collections here
+
+    SECTION("Insufficient docs") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = false;
+        createVectorIndex();
+        readVectorDocs(100);
+    }
+
+    SECTION("Sufficient docs, index first") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = true;
+        createVectorIndex();
+        readVectorDocs(256 * 30);
+    }
+
+    SECTION("Sufficient docs, load first") {
+        SECTION("As-is") {}
+        SECTION("Default scope") {
+            collectionName = "Secondary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+        SECTION("Custom scope / collection") {
+            collectionName = "scopey.subsidiary";
+            store          = &db->getKeyStore(string(".") + collectionName);
+        }
+
+        expectedTrained = true;
+        readVectorDocs(256 * 30);
+        createVectorIndex();
+    }
+
+    store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, IndexSpec::FTSOptions{"english", true});
+
+    auto              dbPath = db->filePath().dir();
+    auto              parts  = FilePath::splitPath(dbPath.path().substr(0, dbPath.path().size() - 1));
+    C4DatabaseConfig2 dbConfig{slice(parts.first), kC4DB_Create};
+
+    auto                       fileNameParts = FilePath::splitExtension(parts.second);
+    auto                       database  = C4Database::openNamed(FilePath(fileNameParts.first).fileName(), dbConfig);
+    auto                       collParts = splitCollectionName(collectionName);
+    C4Database::CollectionSpec collSpec(collParts.second, collParts.first);
+    auto                       collection = database->createCollection(collSpec);
+    REQUIRE(collection);
+
+    {
+        ExpectingExceptions e;
+        try {
+            collection->isIndexTrained("nonexistent"_sl);
+            FAIL("No exception throw for non-existent collection");
+        } catch ( error& e ) { CHECK(e == error::NoSuchIndex); }
+
+        try {
+            collection->isIndexTrained("sentence"_sl);
+            FAIL("No exception throw for invalid collection type");
+        } catch ( error& e ) { CHECK(e == error::InvalidParameter); }
+    }
+
+    // Need to run an arbitrary query to actually train the index
+    string queryStr =
+            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target, 5) )";
+
+    Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
+
+    Encoder enc;
+    enc.beginDictionary();
+    enc.writeKey("target");
+    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
+    enc.endDictionary();
+    Query::Options            options(enc.finish());
+    Retained<QueryEnumerator> e(query->createEnumerator(&options));
+
+    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    CHECK(isTrained == expectedTrained);
+}
+
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {
+    auto allKeyStores = db->allKeyStoreNames();
+    readVectorDocs(100);
+    createVectorIndex();
+
+    std::vector<float> vec(128);
+    auto               doc = inspectVectorIndex("vecIndex");
+    for ( ArrayIterator iter(doc->asArray()); iter; ++iter ) {
+        auto    row    = iter.value()->asArray();
+        slice   key    = row->get(0)->asString();
+        slice   rawVec = row->get(1)->asData();
+        int64_t bucket = row->get(2)->asInt();
+        REQUIRE(rawVec.size == 128 * sizeof(float));
+#    if 1
+        memcpy(vec.data(), rawVec.buf, rawVec.size);
+        std::cerr << key << " (" << bucket << ") = [";
+        for ( size_t i = 0; i < 128; ++i ) std::cerr << vec[i] << ' ';
+        std::cerr << ']' << std::endl;
+#    endif
+    }
+    CHECK(doc->asArray()->count() == 100);
 }
 
 #endif

@@ -84,7 +84,7 @@ namespace litecore {
     static mutex                 sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
-    static const char*       kLevels[]     = {"***", "", "", "WARNING", "ERROR"};
+    static const char*       kLevels[]     = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
 
     static string createLogPath(LogLevel level) {
         int64_t millisSinceEpoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -203,8 +203,15 @@ namespace litecore {
             }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
-            *sFileOut[(int)level] << "---- " << fileLogHeader(level) << " ----" << endl;
-            if ( !sInitialMessage.empty() ) { *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl; }
+            auto fout = sFileOut[(int)level];
+            LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+            LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+            *fout << "---- " << fileLogHeader(level) << " ----" << endl;
+            if ( !sInitialMessage.empty() ) {
+                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
+            }
         }
     }
 
@@ -264,8 +271,15 @@ namespace litecore {
                 }
             } else {
                 for ( auto& fout : sFileOut ) {
-                    *fout << "---- " << fileLogHeader(LogLevel{level++}) << " ----" << endl;
-                    if ( !sInitialMessage.empty() ) { *fout << "---- " << sInitialMessage << " ----" << endl; }
+                    LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                    LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                    *fout << "---- " << fileLogHeader(LogLevel{level}) << " ----" << endl;
+                    if ( !sInitialMessage.empty() ) {
+                        LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                        LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
+                        *fout << "---- " << sInitialMessage << " ----" << endl;
+                    }
+                    ++level;
                 }
             }
 
@@ -277,6 +291,13 @@ namespace litecore {
                         if ( sLogEncoder[0] ) {
                             for ( auto& encoder : sLogEncoder ) {
                                 encoder->log("", {}, LogEncoder::None, "---- END ----");
+                            }
+                        } else if ( sFileOut[0] ) {
+                            int8_t level = 0;
+                            for ( auto& fout : sFileOut ) {
+                                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
+                                LogDecoder::writeHeader(kLevels[(int)level++], "", *fout);
+                                *fout << "---- END ----" << endl;
                             }
                         }
 
@@ -343,7 +364,6 @@ namespace litecore {
 
     // Returns the LogLevel override set by an environment variable, or Uninitialized if none
     LogLevel LogDomain::levelFromEnvironment() const noexcept {
-#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         char* val = getenv((string("LiteCoreLog") + _name).c_str());
         if ( val ) {
             static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", "none", nullptr};
@@ -352,7 +372,7 @@ namespace litecore {
             }
             return LogLevel::Info;
         }
-#endif
+
         return LogLevel::Uninitialized;
     }
 
@@ -389,6 +409,11 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
+    /*static*/ inline size_t LogDomain::addObjectPath(char* destBuf, size_t bufSize, unsigned obj) {
+        auto objPath = getObjectPath(obj);
+        return snprintf(destBuf, bufSize, "Obj=%s ", objPath.c_str());
+    }
+
     void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char* fmt, va_list args) {
         if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
         if ( !willLog(level) ) return;
@@ -397,27 +422,22 @@ namespace litecore {
 
         // Invoke the client callback:
         if ( doCallback && sCallback && level >= _callbackLogLevel() ) {
-            auto objPath = getObjectPath(objRef);
-
             va_list args2;
             va_copy(args2, args);
+            va_list noArgs{};
+
+            size_t      n      = 0;
+            const char* useFmt = fmt;
+            if ( objRef ) n = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), objRef);
             if ( sCallbackPreformatted ) {
-                // Preformatted: Do the formatting myself and pass the resulting string:
-                size_t n = 0;
-                if ( objRef ) n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s ", objPath.c_str());
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
-                va_list noArgs{};
-                sCallback(*this, level, sFormatBuffer, noArgs);
-            } else {
-                // Not preformatted: pass the format string and va_list to the callback
-                // (prefixing the object ref # if any):
-                if ( objRef ) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "Obj=%s %s", objPath.c_str(), fmt);
-                    sCallback(*this, level, sFormatBuffer, args2);
-                } else {
-                    sCallback(*this, level, fmt, args2);
-                }
+                useFmt = sFormatBuffer;
+            } else if ( n > 0 ) {
+                snprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, "%s ", fmt);
+                useFmt = sFormatBuffer;
             }
+            sCallback(*this, level, useFmt, sCallbackPreformatted ? noArgs : args2);
+
             va_end(args2);
         }
 
@@ -464,9 +484,9 @@ namespace litecore {
         } else if ( file ) {
             static char formatBuffer[2048];
             size_t      n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level], true);
-            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
-            if ( objRef ) n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
+            LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *file);
+            if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *file << formatBuffer << endl;
             pos = file->tellp();
@@ -528,17 +548,21 @@ namespace litecore {
         // pre-conditions: iter != objMap.end()
         if ( iter->second.second != 0 ) {
             auto parentIter = objMap.find(iter->second.second);
-            Assert(parentIter != objMap.end());
-            getObjectPathRecur(objMap, parentIter, ss);
+            if ( parentIter == objMap.end() ) {
+                // the parent object is deleted. We omit the loggingClassName
+                ss << "/#" << iter->second.second;
+            } else {
+                getObjectPathRecur(objMap, parentIter, ss);
+            }
         }
         ss << "/" << iter->second.first << "#" << iter->first;
     }
 
-    std::string LogDomain::getObjectPath(unsigned obj) {
-        auto iter = sObjectMap.find(obj);
-        if ( iter == sObjectMap.end() ) { return ""; }
+    std::string LogDomain::getObjectPath(unsigned obj, const ObjectMap& objMap) {
+        auto iter = objMap.find(obj);
+        if ( iter == objMap.end() ) { return ""; }
         std::stringstream ss;
-        getObjectPathRecur(sObjectMap, iter, ss);
+        getObjectPathRecur(objMap, iter, ss);
         return ss.str() + "/";
     }
 
@@ -601,7 +625,7 @@ namespace litecore {
 #endif
     }
 
-    std::string Logging::loggingName() const { return format("{%s#%u}", loggingClassName().c_str(), getObjectRef()); }
+    std::string Logging::loggingName() const { return format("%s#%u", loggingClassName().c_str(), getObjectRef()); }
 
     std::string Logging::loggingClassName() const {
         string name  = classNameOf(this);

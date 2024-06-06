@@ -25,15 +25,6 @@ pipeline {
                         sh 'jenkins/jenkins_ios.sh'
                     }
                 }
-                stage("UWP") {
-                    agent { label 'couchbase-lite-net-validation' }
-                    environment {
-                        BRANCH = "${BRANCH_NAME}"
-                    }
-                    steps {
-                        powershell 'jenkins\\jenkins_uwp.ps1'
-                    }
-                }
             }
         }
 

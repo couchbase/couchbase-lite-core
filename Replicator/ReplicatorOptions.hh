@@ -45,6 +45,16 @@ namespace litecore::repl {
 
         bool isActive() const { return _mutables._isActive; }
 
+#ifdef LITECORE_CPPTEST
+        void setDelayChangesResponse(const bool delay) { _delayChangesResponse = delay; }
+
+        bool delayChangesResponse() const { return _delayChangesResponse; }
+
+        void setDisableReplacementRevs(const bool disable) { _disableReplacementRevs = disable; }
+
+        bool disableReplacementRevs() const { return _disableReplacementRevs; }
+#endif
+
         const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
             return _mutables._collectionSpecToIndex;
         }
@@ -76,7 +86,12 @@ namespace litecore::repl {
             , propertyDecryptor(opt.propertyDecryptor)
             , callbackContext(opt.callbackContext)
             , properties(slice(opt.properties.data()))  // copy data, bc dtor wipes it
-            , progressLevel(opt.progressLevel.load()) {
+            , progressLevel(opt.progressLevel.load())
+#ifdef LITECORE_CPPTEST
+            , _delayChangesResponse(opt._delayChangesResponse)
+            , _disableReplacementRevs(opt._disableReplacementRevs)
+#endif
+        {
             setCollectionOptions(opt);
             constructorCheck();
         }
@@ -348,6 +363,10 @@ namespace litecore::repl {
         };
 
         Mutables _mutables;
+#ifdef LITECORE_CPPTEST
+        bool _delayChangesResponse{false};
+        bool _disableReplacementRevs{false};
+#endif
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {

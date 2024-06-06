@@ -76,7 +76,7 @@ namespace litecore {
         if ( created ) {
             t.commit();
             double time = st.elapsed();
-            QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning), "Created index '%s' in %.3f sec",
+            QueryLog.log((time < 10.0 ? LogLevel::Info : LogLevel::Warning), "Created index '%s' in %.3f sec",
                          spec.name.c_str(), time);
         }
         return created;
@@ -131,6 +131,12 @@ namespace litecore {
 
     void SQLiteKeyStore::createBlobsIndex() {
         _createFlagsIndex("blobs", DocumentFlags::kHasAttachments, _createdBlobsIndex);
+    }
+
+    optional<IndexSpec> SQLiteKeyStore::getIndex(slice indexName) {
+        optional<SQLiteIndexSpec> spec = db().getIndex(indexName);
+        if ( spec && spec->keyStoreName != name() ) spec = nullopt;
+        return spec;
     }
 
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {

@@ -83,12 +83,7 @@ namespace litecore {
     }
 
     /*static*/ void LogIterator::writeHeader(const string& levelName, const string& domainName, ostream& out) {
-        if ( !levelName.empty() ) {
-            if ( !domainName.empty() ) out << domainName << " ";
-            out << levelName << ": ";
-        } else {
-            if ( !domainName.empty() ) out << domainName << " ";
-        }
+        out << domainName << " " << levelName << " ";
     }
 
     void LogIterator::decodeTo(ostream& out, const std::vector<std::string>& levelNames, optional<Timestamp> start) {
@@ -183,11 +178,7 @@ namespace litecore {
             _readMessage = true;
 
             // Write the object ID, unless the caller's already accessed it through the API:
-            if ( _putCurObjectInMessage && _curObject > 0 ) {
-                out << '{' << _curObject;
-                if ( _curObjectIsNew ) out << "|" << *objectDescription();
-                out << "} ";
-            }
+            if ( _putCurObjectInMessage && _curObject > 0 ) { out << "Obj=" << *objectDescription() << " "; }
 
             // Read the format string, then the parameters:
             std::string format = readStringToken();

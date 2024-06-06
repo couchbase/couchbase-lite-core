@@ -21,6 +21,7 @@
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "DatabaseImpl.hh"
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
@@ -38,8 +39,8 @@ using namespace fleece;
 using namespace litecore::blip;
 
 namespace litecore::repl {
-
-    struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
+    struct StoppingErrorEntry {
+        // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool    isFatal;
         slice   msg;
@@ -72,6 +73,8 @@ namespace litecore::repl {
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
             connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
+
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
@@ -83,7 +86,16 @@ namespace litecore::repl {
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            logInfo("%s", string(*options).c_str());
+            string logName = db->useLocked<std::string>([](const C4Database* db) {
+                DatabaseImpl* impl = asInternal(db);
+                return impl->dataFile()->loggingName();
+            });
+            logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
+
+#ifdef LITECORE_CPPTEST
+            _delayChangesResponse   = _options->delayChangesResponse();
+            _disableReplacementRevs = _options->disableReplacementRevs();
+#endif
 
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }
@@ -515,7 +527,8 @@ namespace litecore::repl {
     void Replicator::_onConnect() {
         logInfo("Connected!");
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
-        if ( _connectionState != Connection::kClosing ) {  // skip this if stop() already called
+        if ( _connectionState != Connection::kClosing ) {
+            // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if ( _options->isActive() ) {
                 if ( _options->collectionAware() ) {
@@ -667,8 +680,8 @@ namespace litecore::repl {
                 }
             }
 
-            if ( sub.checkpointJSONToSave )
-                saveCheckpointNow(coll);  // _saveCheckpoint() was waiting for _remoteCheckpointRevID
+            if ( sub.checkpointJSONToSave ) saveCheckpointNow(coll);
+            // _saveCheckpoint() was waiting for _remoteCheckpointRevID
         });
 
         sub.remoteCheckpointRequested = true;
@@ -685,8 +698,8 @@ namespace litecore::repl {
     void Replicator::getCollections() {
         if ( _getCollectionsRequested ) return;  // already in progress
 
-        if ( _connectionState != Connection::kConnected )
-            return;  // Not ready yet; Will be called again from _onConnect.
+        if ( _connectionState != Connection::kConnected ) return;
+        // Not ready yet; Will be called again from _onConnect.
 
         for ( auto& _subRepl : _subRepls ) {
             if ( !_subRepl.remoteCheckpointDocID )
@@ -792,8 +805,8 @@ namespace litecore::repl {
                     // Now we have the checkpoints! Time to start replicating:
                     startReplicating(i);
 
-                    if ( _subRepls[i].checkpointJSONToSave )
-                        saveCheckpointNow(i);  // _saveCheckpoint() was waiting for _remoteCheckpointRevID
+                    if ( _subRepls[i].checkpointJSONToSave ) saveCheckpointNow(i);
+                    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
                 }
             }
         });
@@ -1194,6 +1207,13 @@ namespace litecore::repl {
             }
         }
 
+#ifdef LITECORE_CPPTEST
+        if ( _delayChangesResponse && (profile == "changes"_sl || profile == "proposeChanges"_sl) ) {
+            C4Log("Delaying changes response...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+#endif
+
         auto it = _workerHandlers.find({profile.asString(), i});
         if ( it != _workerHandlers.end() ) {
             it->second(request);
@@ -1241,5 +1261,4 @@ namespace litecore::repl {
             prepareWorkers();
         }
     }
-
 }  // namespace litecore::repl

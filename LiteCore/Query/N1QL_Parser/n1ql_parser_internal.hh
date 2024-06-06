@@ -306,7 +306,8 @@ namespace litecore::n1ql {
             // Conditional (unknowns):
             "ifmissing", "ifnull", "ifmissingornull", "missingif", "nullif",
             // Dates/times:
-            "millis_to_str", "millis_to_utc", "str_to_millis", "str_to_utc",
+            "millis_to_str", "millis_to_utc", "millis_to_tz", "str_to_millis", "str_to_utc", "date_diff_str",
+            "date_diff_millis", "date_add_str", "date_add_millis", "str_to_tz",
             // Math:
             "abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "degrees", "e", "exp", "floor", "ln", "log", "pi",
             "power", "radians", "round", "round_even", "sign", "sin", "sqrt", "tan", "trunc", "div", "idiv",
@@ -322,7 +323,7 @@ namespace litecore::n1ql {
             // Aggregate functions:
             "avg", "count", "max", "min", "sum",
             // Predictive query:
-            "prediction", "euclidean_distance", "cosine_distance", nullptr};
+            "euclidean_distance", "cosine_distance", nullptr};
 
     static bool findIdentifier(const char* ident, const char* list[]) {
         for ( int i = 0; list[i]; ++i )

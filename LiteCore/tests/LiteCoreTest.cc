@@ -52,7 +52,7 @@ string stringWithFormat(const char* format, ...) {
     return str;
 }
 
-void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+void ExpectException(litecore::error::Domain domain, int code, const char* what, const std::function<void()>& lambda) {
     try {
         ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
@@ -62,9 +62,14 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
         error err = error::convertRuntimeError(x).standardized();
         CHECK(err.domain == domain);
         CHECK(err.code == code);
+        if ( what ) CHECK(string_view(err.what()) == string_view(what));
         return;
     }
     FAIL("Should have thrown an exception");
+}
+
+void ExpectException(litecore::error::Domain domain, int code, const std::function<void()>& lambda) {
+    ExpectException(domain, code, nullptr, lambda);
 }
 
 #pragma mark - TESTFIXTURE:
@@ -74,8 +79,8 @@ static LogDomain::Callback_t sPrevCallback;
 static atomic_uint           sWarningsLogged;
 
 static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
+    if ( level >= LogLevel::Warning ) { ++sWarningsLogged; }
     sPrevCallback(domain, level, fmt, args);
-    if ( level >= LogLevel::Warning ) ++sWarningsLogged;
 }
 
 TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCount(c4_getObjectCount()) {
@@ -135,9 +140,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
 
 DataFile::Factory& DataFileTestFixture::factory() { return SQLiteDataFile::sqliteFactory(); }
 
-FilePath DataFileTestFixture::databasePath(const string& baseName) {
-    return GetPath(baseName, factory().filenameExtension());
-}
+FilePath DataFileTestFixture::databasePath() { return sTempDir[string("db") + factory().filenameExtension()]; }
 
 /*static*/ void DataFileTestFixture::deleteDatabase(const FilePath& dbPath) {
     auto factory = DataFile::factoryForFile(dbPath);
@@ -161,7 +164,7 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options* newOptions) {
 }
 
 DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options* options) {
-    auto dbPath = databasePath(databaseName());
+    auto dbPath = databasePath();
     deleteDatabase(dbPath);
     db.reset(newDatabase(dbPath, options));
     store = &db->defaultKeyStore();
@@ -195,7 +198,10 @@ sequence_t DataFileTestFixture::writeDoc(KeyStore& toStore, slice docID, Documen
     alloc_slice body = enc.finish();
 
     if ( toStore.capabilities().sequences ) {
-        RecordUpdate rec(docID, body, flags);
+        Record       existing = toStore.get(docID);
+        RecordUpdate rec(existing);
+        rec.body  = body;
+        rec.flags = flags;
         return toStore.set(rec, KeyStore::kUpdateSequence, t);
     } else {
         toStore.setKV(docID, body, t);

@@ -81,12 +81,19 @@ class PredictiveVectorQueryTest : public VectorQueryTest {
         }
     }
 
-    void createVectorIndex() {
+    void createVectorIndex(QueryLanguage lang) {
         IndexSpec::VectorOptions options(5);
         options.clustering.type           = IndexSpec::VectorOptions::Flat;
         options.clustering.flat_centroids = 16;
-        VectorQueryTest::createVectorIndex("factorsindex",
-                                           "[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]", options);
+        if ( lang == QueryLanguage::kJSON ) {
+            VectorQueryTest::createVectorIndex(
+                    "factorsindex", "[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]", options, lang);
+        } else if ( lang == QueryLanguage::kN1QL ) {
+            VectorQueryTest::createVectorIndex("factorsindex", "PREDICTION(factors, {\"number\": num}, \".vec\")",
+                                               options, lang);
+        } else {
+            REQUIRE(false);
+        }
     }
 
     void testResults(Query* query) {
@@ -104,14 +111,27 @@ class PredictiveVectorQueryTest : public VectorQueryTest {
 
 N_WAY_TEST_CASE_METHOD(PredictiveVectorQueryTest, "Predictive Query of Factors", "[Query][Predict][.VectorSearch]") {
     makeDocs();
-    Retained<Query> query{store->compileQuery(
-            json5("{'WHAT': [['._id'], ['PREDICTION()', 'factors', {number: ['.num']}, '.vec']]}"))};
+    bool n1ql = GENERATE(false, true);
+    Log("--- with %s Query", n1ql ? "N1QL" : "JSON");
+    Retained<Query> query;
+    if ( n1ql ) {
+        query = store->compileQuery(R"(SELECT META().id, PREDICTION(factors, {"numbers" : num}, vec) FROM )"s
+                                            + collectionName,
+                                    QueryLanguage::kN1QL);
+    } else {
+        query = store->compileQuery(
+                json5("{'WHAT': [['._id'], ['PREDICTION()', 'factors', {number: ['.num']}, '.vec']]}"));
+    }
     testResults(query);
 }
 
 N_WAY_TEST_CASE_METHOD(PredictiveVectorQueryTest, "Vector Index Of Prediction", "[Query][Predict][.VectorSearch]") {
     makeDocs();
-    createVectorIndex();
+    if ( collectionName == "_default" ) {
+        createVectorIndex(QueryLanguage::kJSON);
+    } else {
+        createVectorIndex(QueryLanguage::kN1QL);
+    }
     string          queryStr = R"(
          ['SELECT', {
             WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],

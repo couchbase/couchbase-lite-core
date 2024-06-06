@@ -128,7 +128,8 @@ indexName       = IDENTIFIER
 
 
 expression =
-    expr9
+    '(' _ '(' _ x:expression _ ')' _ ')' { $$ = (x) }
+    | expr9
 
 
 caseExpression =
@@ -350,6 +351,12 @@ function =
     ')' _                              { $$ = f;}
   | "vector_match"i _ '(' _            { f = op("VECTOR_MATCH()");}
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
+    t:expression _                     { appendAny(f, t);}
+    ( ',' _ t:expression               { appendAny(f, t);}
+     _ )?
+    ')' _                              { $$ = f;}
+  | "prediction"i _ '(' _              { f = op("PREDICTION()");}
+    tbl:IDENTIFIER _ ',' _             { appendAny(f, tbl.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ( ',' _ t:expression               { appendAny(f, t);}
      _ )?

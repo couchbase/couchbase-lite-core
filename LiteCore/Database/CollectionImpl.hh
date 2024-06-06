@@ -15,6 +15,7 @@
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Index.hh"
 #include "c4Internal.hh"
 #include "c4Observer.hh"
 #include "DatabaseImpl.hh"
@@ -47,18 +48,20 @@ namespace litecore {
             if ( !(_database->getConfiguration().flags & kC4DB_NonObservable) )
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(SequenceTracker(store.name()));
 
-            logInfo("Instantiated");
+            DatabaseImpl* dbImpl = asInternal(db);
+            logInfo("DB=%s Instantiated", dbImpl->dataFile()->loggingName().c_str());
         }
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
         void close() {
-            logInfo("Closed");
+            logInfo("Closing");
             stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore        = nullptr;
             _database        = nullptr;
+            logInfo("Closed");
         }
 
         std::string fullName() const {
@@ -68,6 +71,8 @@ namespace litecore {
             name += std::string_view(slice(spec.name));
             return name;
         }
+
+        std::string loggingClassName() const override { return "Collection"; }
 
         std::string loggingIdentifier() const override {  // Logging API
             if ( _usuallyFalse(!isValid()) ) { return format("Closed collection %.*s", SPLAT(_name)); }
@@ -375,6 +380,7 @@ namespace litecore {
             if ( !_housekeeper && isValid() ) {
                 if ( (getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0 ) {
                     _housekeeper = new Housekeeper(this);
+                    _housekeeper->setParentObjectRef(getObjectRef());
                     _housekeeper->start();
                 }
             }
@@ -393,6 +399,9 @@ namespace litecore {
                          const C4IndexOptions* indexOptions = nullptr) override {
             IndexSpec::Options options;
             switch ( indexType ) {
+                case kC4ValueIndex:
+                case kC4ArrayIndex:
+                    break;
                 case kC4FullTextIndex:
                     if ( indexOptions ) {
                         auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
@@ -401,6 +410,9 @@ namespace litecore {
                         ftsOpt.disableStemming  = indexOptions->disableStemming;
                         ftsOpt.stopWords        = indexOptions->stopWords;
                     }
+                    break;
+#ifdef COUCHBASE_ENTERPRISE
+                case kC4PredictiveIndex:
                     break;
                 case kC4VectorIndex:
                     if ( indexOptions ) {
@@ -424,12 +436,16 @@ namespace litecore {
                         error::_throw(error::InvalidParameter, "Vector index requires options");
                     }
                     break;
+#endif
                 default:
+                    error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
             keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
                                    options);
         }
+
+        Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }
 
         void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }
 
@@ -472,6 +488,8 @@ namespace litecore {
             dataFile->inspectIndex(indexName, rowCount, &rows);
             return rows;
         }
+
+        bool isIndexTrained(slice indexName) const override { return keyStore().isIndexTrained(indexName); }
 
 #pragma mark - OBSERVERS:
 

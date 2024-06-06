@@ -66,10 +66,10 @@ namespace litecore {
         static bool tableNameIsCollection(slice tableName);
         static bool keyStoreNameIsCollection(slice ksName);
 
-        bool getSchema(const std::string& name, const std::string& type, const std::string& tableName,
-                       std::string& outSQL) const;
-        bool schemaExistsWithSQL(const std::string& name, const std::string& type, const std::string& tableName,
-                                 const std::string& sql) const;
+        [[nodiscard]] bool getSchema(const std::string& name, const std::string& type, const std::string& tableName,
+                                     std::string& outSQL) const;
+        [[nodiscard]] bool schemaExistsWithSQL(const std::string& name, const std::string& type,
+                                               const std::string& tableName, const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
 
@@ -92,7 +92,12 @@ namespace litecore {
 
         Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); };
 
-        // Get an index's row count, and/or all its rows. For debugging/troubleshooting only!
+        /// Get an index's row count, and/or all its rows. Supports value and vector indexes.
+        /// @warning For debugging/troubleshooting only!
+        /// @param name  The name of the index
+        /// @param outRowCount  On return, the number of rows will be stored here.
+        /// @param outRows  If non-NULL, an encoded Fleece array of arrays will be stored here.
+        ///                 Each array item is an index row; its items are its column values.
         void inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows = nullptr);
 
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
@@ -142,10 +147,13 @@ namespace litecore {
         void deleteIndex(const SQLiteIndexSpec&);
         std::optional<SQLiteIndexSpec> getIndex(slice name);
         std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*);
+        void                           setIndexSequences(slice name, slice sequencesJSON);
+        void inspectVectorIndex(SQLiteIndexSpec const&, int64_t& outRowCount, alloc_slice* outRows);
 
       private:
         friend class SQLiteKeyStore;
         friend class SQLiteQuery;
+        friend class LazyIndex;
 
         // SQLite schema versioning (values of `pragma user_version`)
         enum class SchemaVersion {
@@ -177,8 +185,9 @@ namespace litecore {
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
         void                         garbageCollectIndexTable(const std::string& tableName);
-        static SQLiteIndexSpec       specFromStatement(SQLite::Statement& stmt);
+        SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr);
+
 
         unique_ptr<SQLite::Database>          _sqlDb;  // SQLite database object
         std::unique_ptr<SQLiteKeyStore>       _realDefaultKeyStore;
@@ -190,13 +199,14 @@ namespace litecore {
 
     struct SQLiteIndexSpec : public IndexSpec {
         SQLiteIndexSpec(const std::string& name, IndexSpec::Type type, alloc_slice expressionJSON,
-                        QueryLanguage language, std::string ksName, std::string itName)
-            : IndexSpec(name, type, std::move(expressionJSON), language)
+                        QueryLanguage language, Options options, std::string ksName, std::string itName)
+            : IndexSpec(name, type, std::move(expressionJSON), language, std::move(options))
             , keyStoreName(std::move(ksName))
             , indexTableName(std::move(itName)) {}
 
-        std::string const keyStoreName;
-        std::string const indexTableName;
+        std::string const keyStoreName;      ///< Name of KeyStore
+        std::string const indexTableName;    ///< Name of SQLite table containing index (if any)
+        alloc_slice       indexedSequences;  ///< Sequences that have been indexed; a JSON SequenceSet
     };
 
 

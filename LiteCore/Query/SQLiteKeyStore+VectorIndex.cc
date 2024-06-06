@@ -18,6 +18,7 @@
 #    include "SQLiteDataFile.hh"
 #    include "QueryTranslator.hh"
 #    include "SQLUtil.hh"
+#    include "SQLite_Internal.hh"
 #    include "StringUtil.hh"
 #    include "Array.hh"
 #    include "Error.hh"
@@ -74,6 +75,8 @@ namespace litecore {
         if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
         if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
         stmt << "minToTrain=" << options.minTrainingSize;
+        if ( QueryLog.effectiveLevel() <= LogLevel::Verbose )
+            stmt << ",verbose";  // Enable vectorsearch verbose logging (via printf, for now)
         stmt << ")";
         return stmt.str();
     }
@@ -86,8 +89,8 @@ namespace litecore {
         QueryTranslator qp(db(), collectionName(), tableName());
         qp.setBodyColumnName("new.body");
         string vectorExpr;
-        if ( auto what = (const Array*)spec.what(); what && what->count() == 1 )
-            vectorExpr = qp.vectorExpressionSQL((FLValue)what->get(0));
+        if ( auto what = spec.what(); what && what->count() == 1 )
+            vectorExpr = qp.vectorToIndexExpressionSQL(what->get(0), spec.vectorOptions()->dimensions);
         else
             error::_throw(error::Unimplemented, "Vector index doesn't support multiple properties");
 
@@ -109,38 +112,47 @@ namespace litecore {
             }
         }
 
+        // Create an AFTER DELETE trigger to remove any vector from the index:
         auto where = spec.where();
         qp.setBodyColumnName("body");
         string whereNewSQL = qp.whereClauseSQL((FLValue)where, "new");
         string whereOldSQL = qp.whereClauseSQL((FLValue)where, "old");
-
-        // Index the existing records:
-        db().exec(CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName) << " (docid, vector)"
-                                        << " SELECT new.rowid, " << vectorExpr << " AS vec FROM " << quotedTableName()
-                                        << " AS new " << whereNewSQL << (whereNewSQL.empty() ? "WHERE" : " AND")
-                                        << " vec NOT NULL"));
-
-        // Update the `where` condition to skip docs that don't have a vector:
-        if ( whereNewSQL.empty() ) whereNewSQL = "WHERE";
-        else
-            whereNewSQL += " AND";
-        whereNewSQL += " (" + vectorExpr + ") NOT NULL";
-
-        // Set up triggers to keep the virtual table up to date
-        // ...on insertion:
-        string insertNewSQL = CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName)
-                                                    << " (docid, vector) "
-                                                       "VALUES (new.rowid, "
-                                                    << vectorExpr << ")");
-        createTrigger(vectorTableName, "ins", "AFTER INSERT", whereNewSQL, insertNewSQL);
-
-        // ...on delete:
         string deleteOldSQL = CONCAT("DELETE FROM " << sqlIdentifier(vectorTableName) << " WHERE docid = old.rowid");
+
+        // Always delete obsolete vectors when a doc is updated or deleted:
+        createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
         createTrigger(vectorTableName, "del", "AFTER DELETE", whereOldSQL, deleteOldSQL);
 
-        // ...on update:
-        createTrigger(vectorTableName, "preupdate", "BEFORE UPDATE OF body", whereOldSQL, deleteOldSQL);
-        createTrigger(vectorTableName, "postupdate", "AFTER UPDATE OF body", whereNewSQL, insertNewSQL);
+        bool lazy = spec.vectorOptions()->lazy;
+        if ( lazy ) {
+            // Lazy index: Mark as lazy by initializing lastSeq. Vectors will not be computed
+            // automatically; app updates them via the LazyIndex class.
+            db().setIndexSequences(spec.name, "[]");
+        } else {
+            // Index the existing records:
+            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName) << " (docid, vector)"
+                                            << " SELECT new.rowid, " << vectorExpr << " AS vec FROM "
+                                            << quotedTableName() << " AS new " << whereNewSQL
+                                            << (whereNewSQL.empty() ? "WHERE" : " AND") << " vec NOT NULL"));
+
+            // Update the `where` condition to skip docs that don't have a vector:
+            if ( whereNewSQL.empty() ) whereNewSQL = "WHERE";
+            else
+                whereNewSQL += " AND";
+            whereNewSQL += " (" + vectorExpr + ") NOT NULL";
+
+            // Set up triggers to keep the virtual table up to date
+            // ...on insertion:
+            string insertNewSQL = CONCAT("INSERT INTO " << sqlIdentifier(vectorTableName)
+                                                        << " (docid, vector) "
+                                                           "VALUES (new.rowid, "
+                                                        << vectorExpr << ")");
+            createTrigger(vectorTableName, "ins", "AFTER INSERT", whereNewSQL, insertNewSQL);
+
+            // ...on update:
+            createTrigger(vectorTableName, "postupdate", "AFTER UPDATE OF body", whereNewSQL, insertNewSQL);
+        }
+
         return true;
     }
 
@@ -151,6 +163,61 @@ namespace litecore {
             }
         }
         return "";  // no index found
+    }
+
+    static inline unsigned asUInt(string_view sv) {
+        string str(sv);
+        return unsigned(strtoul(str.c_str(), nullptr, 10));
+    }
+
+    // The opposite of createVectorSearchTableSQL
+    optional<IndexSpec::VectorOptions> SQLiteKeyStore::parseVectorSearchTableSQL(string_view sql) {
+        optional<IndexSpec::VectorOptions> opts;
+        // Find the virtual-table arguments in the CREATE TABLE statement:
+        auto start = sql.find("vectorsearch(");
+        if ( start == string::npos ) return opts;
+        start += strlen("vectorsearch(");
+        auto end = sql.find(')', start);
+        if ( end == string::npos ) return opts;
+
+        // Parse each comma-delimited key-value pair:
+        string_view args(&sql[start], end - start);
+        opts.emplace(0);
+        split(args, ",", [&](string_view key) {
+            string_view value;
+            if ( auto eq = key.find('='); eq != string::npos ) {
+                value = key.substr(eq + 1);
+                key   = key.substr(0, eq);
+                if ( value.empty() || key.empty() ) return;
+            }
+            if ( key == "dimensions" ) {
+                opts->dimensions = asUInt(value);
+            } else if ( key == "metric" ) {
+                if ( value == "euclidean2" ) opts->metric = IndexSpec::VectorOptions::Euclidean;
+                else if ( value == "cosine" )
+                    opts->metric = IndexSpec::VectorOptions::Cosine;
+            } else if ( key == "minToTrain" ) {
+                opts->minTrainingSize = asUInt(value);
+            } else if ( key == "maxToTrain" ) {
+                opts->maxTrainingSize = asUInt(value);
+            } else if ( key == "probes" ) {
+                opts->numProbes = asUInt(value);
+            } else if ( key == "lazyindex" ) {
+                opts->lazy = (value != "false" && value != "0");
+            } else if ( key == "clustering" ) {
+                if ( hasPrefix(value, "multi") ) opts->clustering = {IndexSpec::VectorOptions::Multi};
+                //TODO: Parse centroid count & other params; see vectorsearch::IndexSpec::setParam()
+            } else if ( key == "encoding" ) {
+                if ( value == "none" ) opts->encoding = {IndexSpec::VectorOptions::NoEncoding};
+                else if ( hasPrefix(value, "PQ") ) {
+                    opts->encoding = {IndexSpec::VectorOptions::PQ};
+                } else if ( hasPrefix(value, "SQ") ) {
+                    opts->encoding = {IndexSpec::VectorOptions::SQ};
+                }
+                //TODO: Parse encoding params; see vectorsearch::IndexSpec::setParam()
+            }
+        });
+        return opts;
     }
 
 }  // namespace litecore

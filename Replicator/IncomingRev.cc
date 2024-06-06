@@ -75,8 +75,13 @@ namespace litecore::repl {
         }
 
         // Validate the docID, revID, and sequence:
-        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
-                   SPLAT(sequenceStr));
+        if ( const auto replacedRev = _revMessage->property("replacedRev"); replacedRev ) {
+            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s') (replaced rev #%.*s)", SPLAT(_rev->docID),
+                       SPLAT(_rev->revID), SPLAT(sequenceStr), SPLAT(replacedRev));
+        } else {
+            logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')", SPLAT(_rev->docID), SPLAT(_rev->revID),
+                       SPLAT(sequenceStr));
+        }
         if ( _rev->docID.size == 0 ) {
             failWithError(WebSocketDomain, 400, "received invalid docID ''"_sl);
             return;
@@ -166,6 +171,9 @@ namespace litecore::repl {
         _mayContainEncryptedProperties =
                 !_options->disablePropertyDecryption() && MayContainPropertiesToDecrypt(jsonBody);
 
+        logVerbose("_mayContainBlobChanges=%d", _mayContainBlobChanges);
+        logVerbose("_mayContainEncryptedProperties=%d", _mayContainEncryptedProperties);
+
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties )
@@ -199,7 +207,8 @@ namespace litecore::repl {
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
         // First create a Fleece document:
         Doc     fleeceDoc;
-        C4Error err = {};
+        C4Error err           = {};
+        bool    didApplyDelta = false;
         if ( _rev->deltaSrcRevID == nullslice ) {
             // It's not a delta. Convert body to Fleece and process:
             FLError encodeErr;
@@ -224,7 +233,9 @@ namespace litecore::repl {
                                               SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
                 }
             } catch ( ... ) { err = C4Error::fromCurrentException(); }
+
             _rev->deltaSrcRevID = nullslice;
+            didApplyDelta       = true;
 
         } else {
             // It's a delta, but it can be applied later while inserting.
@@ -310,6 +321,9 @@ namespace litecore::repl {
                                          blob["length"_sl].asUnsigned(), C4Blob::isLikelyCompressible(blob)});
                 _blob = _pendingBlobs.begin();
             });
+        } else if ( didApplyDelta ) {
+            if ( _db->hasBlobReferences(root) && !(_rev->flags & kRevHasAttachments) )
+                _rev->flags |= kRevHasAttachments;
         }
 
         // Call the custom validation function if any:

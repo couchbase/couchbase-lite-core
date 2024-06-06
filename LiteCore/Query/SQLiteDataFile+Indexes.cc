@@ -37,7 +37,14 @@ namespace litecore {
     }
 
     void SQLiteDataFile::ensureIndexTableExists() {
-        if ( indexTableExists() ) return;
+        {
+            string sql;
+            if ( getSchema("indexes", "table", "indexes", sql) ) {
+                // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+                if ( sql.find("lastSeq") == string::npos ) _exec("ALTER TABLE indexes ADD COLUMN lastSeq INTEGER");
+                return;
+            }
+        }
 
         if ( !options().upgradeable && _schemaVersion < SchemaVersion::WithIndexTable )
             error::_throw(error::CantUpgradeDatabase, "Accessing indexes requires upgrading the database schema");
@@ -49,8 +56,13 @@ namespace litecore {
             error::_throw(error::CantUpgradeDatabase, "Database needs upgrade of index metadata");
 
         LogTo(DBLog, "Upgrading database to use 'indexes' table...");
-        _exec("CREATE TABLE indexes (name TEXT PRIMARY KEY, type INTEGER NOT NULL,"
-              " keyStore TEXT NOT NULL, expression TEXT, indexTableName TEXT)");
+        _exec("CREATE TABLE indexes ("
+              "name TEXT PRIMARY KEY, "   // Name of index
+              "type INTEGER NOT NULL, "   // C4IndexType
+              "keyStore TEXT NOT NULL, "  // Name of the KeyStore it indexes
+              "expression TEXT, "         // Indexed property expression (JSON or N1QL)
+              "indexTableName TEXT, "     // Index's SQLite name
+              "lastSeq INTEGER)");        // Last indexed sequence, for lazy indexes, else null
         ensureSchemaVersionAtLeast(SchemaVersion::WithIndexTable);  // Backward-incompatible with version 2.0/2.1
 
         for ( auto& spec : getIndexesOldStyle() ) registerIndex(spec, spec.keyStoreName, spec.indexTableName);
@@ -139,7 +151,8 @@ namespace litecore {
     vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) {
         if ( indexTableExists() ) {
             vector<SQLiteIndexSpec> indexes;
-            SQLite::Statement       stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
+            SQLite::Statement       stmt(*this, "SELECT name, type, expression, keyStore, "
+                                                      "indexTableName, lastSeq "
                                                       "FROM indexes ORDER BY name");
             while ( stmt.executeStep() ) {
                 string keyStoreName = stmt.getColumn(3);
@@ -167,8 +180,8 @@ namespace litecore {
             string indexName    = getIndex.getColumn(0);
             string keyStoreName = getIndex.getColumn(1).getString().substr(3);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
-                                     "");
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON,
+                                     IndexSpec::Options{}, keyStoreName, "");
         }
 
         // FTS indexes:
@@ -181,8 +194,8 @@ namespace litecore {
             string keyStoreName = tableName.substr(delim);
             string indexName    = tableName.substr(delim + 2);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
-                                     tableName);
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON,
+                                     IndexSpec::Options{}, keyStoreName, tableName);
         }
         return indexes;
     }
@@ -190,7 +203,8 @@ namespace litecore {
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
         if ( !indexTableExists() ) return nullopt;
-        SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
+        SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, "
+                                      "indexTableName, lastSeq "
                                       "FROM indexes WHERE name=?");
         stmt.bindNoCopy(1, (char*)name.buf, (int)name.size);
         if ( stmt.executeStep() ) return specFromStatement(stmt);
@@ -198,20 +212,44 @@ namespace litecore {
             return nullopt;
     }
 
+    void SQLiteDataFile::setIndexSequences(slice name, slice sequencesJSON) {
+        SQLite::Statement stmt(*this, "UPDATE indexes SET lastSeq=?1 WHERE name=?2");
+        stmt.bindNoCopy(1, (char*)sequencesJSON.buf, int(sequencesJSON.size));
+        stmt.bindNoCopy(2, (char*)name.buf, (int)name.size);
+        stmt.exec();
+    }
+
+    // Recover an IndexSpec from a row of the `indexes` table
     SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
+        string             name = stmt.getColumn(0).getString();
+        auto               type = IndexSpec::Type(stmt.getColumn(1).getInt());
+        IndexSpec::Options options;
+        string             keyStoreName   = stmt.getColumn(3).getString();
+        string             indexTableName = stmt.getColumn(4).getString();
+
         QueryLanguage queryLanguage = QueryLanguage::kJSON;
         alloc_slice   expression;
         if ( string col = stmt.getColumn(2).getString(); !col.empty() ) {
             expression = col;
             if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
         }
-        return {stmt.getColumn(0).getString(),
-                (IndexSpec::Type)stmt.getColumn(1).getInt(),
-                expression,
-                queryLanguage,
-                stmt.getColumn(3).getString(),
-                stmt.getColumn(4).getString()};
+
+#ifdef COUCHBASE_ENTERPRISE
+        if ( type == IndexSpec::kVector ) {
+            // Recover the vector options from the index schema itself:
+            string sql;
+            if ( getSchema(indexTableName, "table", indexTableName, sql) ) {
+                if ( auto opts = SQLiteKeyStore::parseVectorSearchTableSQL(sql) ) options = std::move(*opts);
+            }
+        }
+#endif
+
+        SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
+        if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
+        return spec;
     }
+
+#pragma mark - FOR DEBUGGING / INSPECTION:
 
     void SQLiteDataFile::inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows) {
         /* See  https://sqlite.org/imposter.html
@@ -222,6 +260,8 @@ namespace litecore {
 
         auto spec = getIndex(name);
         if ( !spec ) error::_throw(error::NoSuchIndex);
+        else if ( spec->type == IndexSpec::kVector )
+            return inspectVectorIndex(*spec, outRowCount, outRows);
         else if ( spec->type != IndexSpec::kValue )
             error::_throw(error::UnsupportedOperation, "Only supported for value indexes");
 
@@ -299,6 +339,65 @@ namespace litecore {
         } else {
             outRowCount = this->intQuery(("SELECT count(*) FROM " + tableName).c_str());
         }
+    }
+
+    void SQLiteDataFile::inspectVectorIndex(SQLiteIndexSpec const& spec, int64_t& outRowCount, alloc_slice* outRows) {
+        if ( outRows ) {
+            string            ksTable = SQLiteKeyStore::tableName(spec.keyStoreName);
+            SQLite::Statement st(*_sqlDb, "SELECT kv.key, idx.vector, idx.bucket, idx.docid"
+                                          " FROM \""
+                                                  + spec.indexTableName
+                                                  + "\" as idx"
+                                                    " LEFT JOIN \""
+                                                  + ksTable
+                                                  + "\" as kv ON idx.docid = kv.rowid"
+                                                    " ORDER BY kv.key");
+            LogStatement(st);
+            Encoder enc;
+            enc.beginArray();
+            outRowCount = 0;
+            while ( st.executeStep() ) {
+                ++outRowCount;
+                enc.beginArray();
+                enc.writeString(st.getColumn(0).getText());
+                enc.writeData(slice(st.getColumn(1).getBlob(), st.getColumn(1).size()));
+                enc.writeInt(st.getColumn(2));
+                enc.writeInt(st.getColumn(3));
+                enc.endArray();
+            }
+            enc.endArray();
+            *outRows = enc.finish();
+        } else {
+            outRowCount = this->intQuery(("SELECT count(*) FROM " + spec.indexTableName).c_str());
+        }
+    }
+
+    bool SQLiteKeyStore::isIndexTrained(fleece::slice name) const {
+        auto specs = getIndexes();
+        for ( const auto& spec : specs ) {
+            if ( name == spec.name ) {
+                if ( spec.type != IndexSpec::kVector ) {
+                    error::_throw(error::InvalidParameter, "Index '%.*s' is not a vector index", SPLAT(name));
+                }
+
+                // IMPORTANT: These are implementation details that will break this functionality if changed
+                // in the mobile-vector-search repo!
+                static const char* vectorTableNameSuffix = "_vectorsearchImpl";
+                static const char* vectorDataTableName   = "vectorSearchIndexData";
+                // END
+
+                string sql;
+                if ( !db().getSchema(vectorDataTableName, "table", vectorDataTableName, sql) ) { return false; }
+                auto vectorTableName = db().auxiliaryTableName(tableName(), KeyStore::kVectorSeparator, (string)name)
+                                       + vectorTableNameSuffix;
+                auto rawResult = db().rawQuery(format("SELECT tableName FROM %s WHERE tableName = '%s'",
+                                                      vectorDataTableName, vectorTableName.c_str()));
+                auto result    = Value::fromTrustedData(rawResult)->asArray();
+                return result->count() == 1;
+            }
+        }
+
+        error::_throw(error::NoSuchIndex);
     }
 
 }  // namespace litecore

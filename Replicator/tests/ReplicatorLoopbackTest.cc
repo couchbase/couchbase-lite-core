@@ -421,6 +421,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]")
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
+
     SECTION("Default") {}
     SECTION("No-conflicts") { serverOpts.setNoIncomingConflicts(); }
 
@@ -1497,6 +1498,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     Log("-------- Second Push --------");
     atomic<int> validationCount{0};
+
     SECTION("No filter") {}
     SECTION("With filter") {
         Options::CollectionOptions& collOpts = serverOpts.collectionOpts[0];
@@ -1606,6 +1608,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Mutate Doc In db --------");
     bool modifiedDigest = false;
+
     SECTION("Not Modifying Digest") {
         // Modify attachment metadata (other than the digest):
         mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
@@ -1702,6 +1705,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
 
     Log("-------- Mutate Doc In db --------");
     bool modifiedDigest = false;
+
     SECTION("Not Modifying Digest") {
         // Modify attachment metadata (other than the digest):
         mutateDoc(_collDB1, "att1"_sl, [](MutableDict rev) {
@@ -2060,3 +2064,140 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
     CHECK(revInDb1 == revInDb2);
     REQUIRE(revID_2 == string(docInDb1->revID));
 }
+
+#ifdef LITECORE_CPPTEST
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revisions", "[Push][Sync]") {
+    enum class TestMode {
+        ClientPush,
+        ClientPull,
+        ServerPush,
+        ServerPull,
+    };
+
+    std::shared_ptr<Replicator::Options> clientOpts;
+    std::shared_ptr<Replicator::Options> serverOpts;
+    auto                                 testMode = TestMode::ClientPush;
+
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
+    SECTION("Client Push") {
+        testMode = TestMode::ClientPush;
+        createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::pushing(kC4OneShot, _collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        // Delay changes response from the puller so we can modify the document between 'changes' and 'rev', to make
+        // the requested rev obsolete.
+        serverOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 1;
+    }
+#    endif
+    SECTION("Client Pull") {
+        testMode = TestMode::ClientPull;
+        createRev(_collDB2, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::pulling(kC4OneShot, _collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        clientOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 1;
+    }
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
+    SECTION("Server Push") {
+        testMode = TestMode::ServerPush;
+        createRev(_collDB2, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::pushing(kC4OneShot, _collSpec));
+        clientOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 1;
+    }
+#    endif
+    SECTION("Server Pull") {
+        testMode = TestMode::ServerPull;
+        createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::pulling(kC4OneShot, _collSpec));
+        serverOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 1;
+    }
+#    ifdef ACTIVE_PUSH_REPLACEMENTREVS
+    SECTION("ClientPush Do not send Replacement Rev") {
+        testMode = TestMode::ClientPush;
+        createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::pushing(kC4OneShot, _collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        serverOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 0;
+        // Disable the Puller from requesting replacementRev
+        serverOpts->setDisableReplacementRevs(true);
+    }
+#    endif
+    SECTION("ServerPull Do not send Replacement Rev") {
+        testMode = TestMode::ServerPull;
+        createRev(_collDB1, "doc"_sl, kRevID, kFleeceBody);
+        clientOpts = std::make_shared<Replicator::Options>(Replicator::Options::passive(_collSpec));
+        serverOpts = std::make_shared<Replicator::Options>(Replicator::Options::pulling(kC4OneShot, _collSpec));
+        serverOpts->setDelayChangesResponse(true);
+        _expectedDocumentCount = 0;
+        serverOpts->setDisableReplacementRevs(true);
+    }
+
+    string testModeStr;
+    switch ( testMode ) {
+        case TestMode::ClientPush:
+            testModeStr = "ClientPush";
+            break;
+        case TestMode::ClientPull:
+            testModeStr = "ClientPull";
+            break;
+        case TestMode::ServerPush:
+            testModeStr = "ServerPush";
+            break;
+        case TestMode::ServerPull:
+            testModeStr = "ServerPull";
+            break;
+    }
+
+    REQUIRE(runReplicatorsAsync(*clientOpts, *serverOpts));
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    switch ( testMode ) {
+        case TestMode::ClientPush:
+            mutateDoc(_collDB1, "doc"_sl, [](MutableDict props) { props["birthday"_sl] = "1964-11-28"_sl; });
+            break;
+        case TestMode::ClientPull:
+            mutateDoc(_collDB2, "doc"_sl, [](MutableDict props) { props["birthday"_sl] = "1964-11-28"_sl; });
+            break;
+        case TestMode::ServerPush:
+            mutateDoc(_collDB2, "doc"_sl, [](MutableDict props) { props["birthday"_sl] = "1964-11-28"_sl; });
+            break;
+        case TestMode::ServerPull:
+            mutateDoc(_collDB1, "doc"_sl, [](MutableDict props) { props["birthday"_sl] = "1964-11-28"_sl; });
+            break;
+    }
+    waitForReplicators(*clientOpts, *serverOpts);
+
+    C4Collection* pullerColl;
+
+    switch ( testMode ) {
+        case TestMode::ClientPush:
+            pullerColl = _collDB2;
+            validateCheckpoints(db, db2, "{\"local\":1}");
+            break;
+        case TestMode::ClientPull:
+            pullerColl = _collDB1;
+            validateCheckpoints(db, db2, "{\"remote\":1}");
+            break;
+        case TestMode::ServerPush:
+            pullerColl = _collDB1;
+            validateCheckpoints(db2, db, "{\"local\":1}");
+            break;
+        case TestMode::ServerPull:
+            pullerColl = _collDB2;
+            validateCheckpoints(db2, db, "{\"remote\":1}");
+            break;
+    }
+
+    if ( isRevTrees() && _expectedDocumentCount > 0 ) {
+        auto pullerDoc = c4coll_getDoc(pullerColl, "doc"_sl, true, kDocGetAll, ERROR_INFO());
+        CHECK(c4rev_getGeneration(slice(pullerDoc->revID)) == 2);
+        c4doc_release(pullerDoc);
+    }
+}
+#endif
