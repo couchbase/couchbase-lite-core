@@ -66,6 +66,9 @@ namespace litecore {
         /// The number of vectors to compute.
         size_t count() const { return _count; }
 
+        /// The dimensions of the vectors.
+        size_t dimensions() const { return _dimension; }
+
         /// Returns the i'th value to compute a vector from.
         /// This is the value of the expression in the index spec.
         FLValue valueAt(size_t i) const;
@@ -84,7 +87,7 @@ namespace litecore {
 
       private:
         friend class LazyIndex;
-        LazyIndexUpdate(LazyIndex*, sequence_t firstSeq, sequence_t curSeq, SequenceSet indexedSeqs,
+        LazyIndexUpdate(LazyIndex*, unsigned dimension, sequence_t firstSeq, sequence_t curSeq, SequenceSet indexedSeqs,
                         Retained<QueryEnumerator>, size_t limit);
 
         using VectorPtr = std::unique_ptr<float[]>;
@@ -105,7 +108,7 @@ namespace litecore {
         Retained<QueryEnumerator> _enum;              // Results of Query for updated docs
         size_t                    _count = 0;         // Number of vectors to update
         std::vector<Item>         _items;             // Vectors to update exposed in the public API
-        size_t                    _dimension = 0;     // Dimensions of the vectors in _vectors
+        size_t                    _dimension;         // Dimensions of the vectors in _vectors
         bool                      _incomplete;        // True if query did not get all update docs
     };
 
