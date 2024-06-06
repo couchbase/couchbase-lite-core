@@ -40,12 +40,27 @@ CBL_CORE_API extern atomic_int gC4ExpectExceptions;
     and each result is an array of columns. */
 C4SliceResult c4db_rawQuery(C4Database* database, C4String query, C4Error* C4NULLABLE outError) C4API;
 
-///** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
+/** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
 
 
 /** Returns the contents of the index as a Fleece-encoded array of arrays.
-    (The last column of each row is the internal SQLite rowid of the document.) */
+    Each array item is an index row; its items are its column values.
+    Currently supports only value and vector indexes.
+    - In a value index, the columns are the ones defined when its was created,
+      and the ordering is the sort order defined by the index.
+    - In a vector index, the columns are the `docID` (string), `vector` (data), `bucket` (int),
+      and the ordering is undefined.
+      The `bucket` is the internal centroid number the vector is mapped to; if it's -1 the vector
+      has not yet been indexed. In an untrained index all buckets are -1.
+    - In all types there is an extra column: the doc's internal integer primary key (`rowid`).
+
+    @warning This is for testing/debugging/troubleshooting only!
+
+    @param database  The index's database.
+    @param indexName  The name of the index.
+    @param error  On failure, an error will be stored here.
+    @returns  On success, an encoded Fleece array of arrays. */
 C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* C4NULLABLE error) C4API;
 
 C4StringResult c4db_getSourceID(C4Database* database) C4API;

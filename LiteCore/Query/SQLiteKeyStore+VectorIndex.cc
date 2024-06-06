@@ -75,7 +75,7 @@ namespace litecore {
         if ( options.numProbes > 0 ) stmt << "probes=" << options.numProbes << ',';
         if ( options.maxTrainingSize > 0 ) stmt << "maxToTrain=" << options.maxTrainingSize << ',';
         stmt << "minToTrain=" << options.minTrainingSize;
-        if ( QueryLog.willLog(LogLevel::Verbose) )
+        if ( QueryLog.effectiveLevel() <= LogLevel::Verbose )
             stmt << ",verbose";  // Enable vectorsearch verbose logging (via printf, for now)
         stmt << ")";
         return stmt.str();
