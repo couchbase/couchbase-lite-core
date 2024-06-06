@@ -175,6 +175,7 @@ namespace litecore::qt {
     constexpr slice kUnnestedValueFnName = "fl_unnested_value";
     constexpr slice kFTSValueFnName      = "fl_fts_value";
     constexpr slice kVectorValueFnName   = "fl_vector_value";
+    constexpr slice kVectorToIndexFnName = "fl_vector_to_index";
     constexpr slice kEncodeVectorFnName  = "encode_vector";
     constexpr slice kBlobFnName          = "fl_blob";
     constexpr slice kRootFnName          = "fl_root";
@@ -246,12 +247,12 @@ namespace litecore::qt {
         {"millis_to_utc",       1, 2, {},           kOpStringResult},
         {"millis_to_tz",        2, 3, {},           kOpStringResult},
         {"str_to_millis",       1, 1, {},           kOpNumberResult},
-        {"str_to_utc",          1, 1, {},           kOpStringResult},
+        {"str_to_utc",          1, 2, {},           kOpStringResult},
         {"date_diff_str",       3, 3, {},           kOpNumberResult},
         {"date_diff_millis",    3, 3, {},           kOpNumberResult},
-        {"date_add_str",        3, 3, {},           kOpStringResult},
+        {"date_add_str",        3, 4, {},           kOpStringResult},
         {"date_add_millis",     3, 3, {},           kOpStringResult},
-        {"str_to_tz",           2, 2, {},           kOpStringResult},
+        {"str_to_tz",           2, 3, {},           kOpStringResult},
 
         // Math:
         {"abs",                 1, 1, {},           kOpNumberResult},
@@ -338,6 +339,10 @@ namespace litecore::qt {
         {"prediction",          2, 3},
         {"euclidean_distance",  2, 3, {},           kOpNumberResult},
         {"cosine_distance",     2, 2, {},           kOpNumberResult},
+
+        // Vector search:
+        {"vector_match",        2, 3},
+        {"vector_distance",     1, 1, {},           kOpNumberResult},
 #endif
     };
 

@@ -30,7 +30,7 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 6;
+    static const int numberOfOptions = 5;
 
     string collectionName;
     int    option{0};
@@ -38,26 +38,16 @@ class QueryTest : public DataFileTestFixture {
   protected:
     QueryTest() : QueryTest(0) {}
 
-    static constexpr slice kCollectionNameOptions[numberOfOptions] = {KeyStore::kDefaultCollectionName,
-                                                                      "_",
-                                                                      "cbl_core_temp",
-                                                                      "Secondary",
-                                                                      "_default.Secondary",
-                                                                      "scopey.subsidiary"};
+    static constexpr slice kCollectionNameOptions[numberOfOptions] = {
+            KeyStore::kDefaultCollectionName, "_", "Secondary", "_default.Secondary", "scopey.subsidiary"};
+    static constexpr slice kKeyStoreNameOptions[numberOfOptions] = {nullslice, nullslice, ".Secondary", ".Secondary",
+                                                                    ".scopey.subsidiary"};
 
     explicit QueryTest(int option) : option(option) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
         logSection(format("Collection `%s`", collectionName.c_str()));
-        switch ( option ) {
-            case 3:
-            case 4:
-                store = &db->getKeyStore(".Secondary");
-                break;
-            case 5:
-                store = &db->getKeyStore(".scopey.subsidiary");
-                break;
-        }
+        if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 
     static void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }

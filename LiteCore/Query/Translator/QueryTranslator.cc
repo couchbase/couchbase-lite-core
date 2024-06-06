@@ -49,6 +49,8 @@ namespace litecore {
             //FIXME: Support kDeletedDocs
 
             string tableName = _delegate.collectionTableName(name, delStatus);
+            if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
+                fail("no such collection \"%s\"", name.c_str());
 
             if ( source->indexType() == IndexType::FTS ) {
                 tableName = _delegate.FTSTableName(tableName, string(source->indexedProperty()));
@@ -148,10 +150,12 @@ namespace litecore {
         return writeSQL([&](SQLWriter& writer) { writer << "WHERE " << *expr; });
     }
 
-    string QueryTranslator::functionCallSQL(slice fnName, FLValue args) {
-        ParseContext ctx;
-        auto         expr = ExprNode::parse(args, ctx);
-        return writeSQL([&](SQLWriter& writer) { writeFnGetter(fnName, *expr, nullptr, writer); });
+    string QueryTranslator::functionCallSQL(slice fnName, FLValue arg, FLValue param) {
+        ParseContext         ctx;
+        auto                 argExpr = ExprNode::parse(arg, ctx);
+        unique_ptr<ExprNode> paramExpr;
+        if ( param ) paramExpr = ExprNode::parse(param, ctx);
+        return writeSQL([&](SQLWriter& writer) { writeFnGetter(fnName, *argExpr, paramExpr.get(), writer); });
     }
 
     string QueryTranslator::FTSExpressionSQL(FLValue exprFleece) {
@@ -168,8 +172,11 @@ namespace litecore {
         return string(path);
     }
 
-    string QueryTranslator::vectorExpressionSQL(FLValue exprToIndex) {
-        return functionCallSQL(kVectorValueFnName, exprToIndex);
+    string QueryTranslator::vectorToIndexExpressionSQL(FLValue exprToIndex, unsigned dimensions) {
+        auto a = MutableArray::newArray();
+        a.append(dimensions);
+        Value dimAsFleece = a[0];
+        return functionCallSQL(kVectorToIndexFnName, exprToIndex, dimAsFleece);
     }
 
     string QueryTranslator::eachExpressionSQL(FLValue) { error::_throw(error::Unimplemented); }

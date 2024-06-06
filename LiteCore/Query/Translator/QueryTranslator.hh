@@ -97,8 +97,9 @@ namespace litecore {
         /// Returns the column name of an FTS table to use for a MATCH expression.
         static string FTSColumnName(FLValue expression);
 
-        /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
-        string vectorExpressionSQL(FLValue);
+        /// Translates the JSON-parsed expression into a SQL string that evaluates to the vector
+        /// value of that expression, or NULL. Used by SQLiteKeyStore::createVectorIndex.
+        string vectorToIndexExpressionSQL(FLValue exprToIndex, unsigned dimensions);
 
         string eachExpressionSQL(FLValue);
         string unnestedTableName(FLValue key) const;
@@ -108,7 +109,7 @@ namespace litecore {
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
-        string           functionCallSQL(slice fnName, FLValue args);
+        string           functionCallSQL(slice fnName, FLValue arg, FLValue param = nullptr);
 
         const Delegate&     _delegate;                 // delegate object (SQLiteKeyStore)
         string              _defaultTableName;         // Name of the default table to use

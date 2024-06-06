@@ -2868,6 +2868,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
     }
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query nonexistent collection", "[Query][N1QL]") {
+    ExpectException(error::LiteCore, error::InvalidQuery, [&] {
+        store->compileQuery("SELECT num, num*num AS square FROM bogus WHERE num > 10", QueryLanguage::kN1QL);
+    });
+}
+
 TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
     string      tooLong(252, 'x');
     string      tooLong2 = "a." + tooLong, tooLong3 = tooLong + ".z";

@@ -73,6 +73,7 @@ namespace litecore::qt {
     /// Writes a SQLite function call, passing the given expression.
     /// - If `expr` is a PropertyNode, it writes the node but substitutes the given function name
     ///   for the default `fl_value`.
-    /// - Otherwise it writes the function call, passing the value of `expr` as the first arg.
+    /// - Otherwise it writes the function call, passing the value of `expr` as the first arg;
+    ///   if `param` is non-null it also passes a NULL arg (for historical reasons) and then `param`
     void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter&);
 }  // namespace litecore::qt
