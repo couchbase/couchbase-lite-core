@@ -10,6 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
+#include "c4Base.h"
 #include "c4BlobStore.hh"
 #include "c4BlobStore.h"
 #include "c4Certificate.hh"
@@ -1057,6 +1058,14 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver* obs, bool forget, C
 
 C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit, C4Error* outError) noexcept {
     return tryCatch<C4IndexUpdater*>(outError, [&] { return index->beginUpdate(limit).detach(); });
+}
+
+C4SliceResult c4index_getName(C4Index* index) noexcept {
+    return C4SliceResult(index->getName());
+}
+
+C4Collection* c4index_getCollection(C4Index* index) noexcept {
+    return index->getCollection();
 }
 
 size_t c4indexupdater_count(C4IndexUpdater* update) noexcept { return update->count(); }
