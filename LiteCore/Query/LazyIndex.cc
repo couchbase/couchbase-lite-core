@@ -203,7 +203,7 @@ namespace litecore {
 
     bool LazyIndexUpdate::finish(ExclusiveTransaction& txn) {
         // Finishing an update without either updating or skipping at least one vector is unsupported.
-        if ( noVectorsUpdatedOrSkipped() ) { throw C4Error{LiteCoreDomain, kC4ErrorUnsupported}; }
+        if ( noVectorsUpdatedOrSkipped() ) { litecore::error::_throw(litecore::error::UnsupportedOperation, "Cannot finish an update with no vectors updated or skipped."); }
 
         sequence_t curSeq = _manager->_sqlKeyStore.lastSequence();
 
