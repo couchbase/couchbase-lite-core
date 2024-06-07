@@ -53,6 +53,8 @@ namespace litecore::repl {
         void setDisableReplacementRevs(const bool disable) { _disableReplacementRevs = disable; }
 
         bool disableReplacementRevs() const { return _disableReplacementRevs; }
+
+        static bool inline sActiveIsCollectionAware = false;
 #endif
 
         const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
@@ -462,9 +464,20 @@ namespace litecore::repl {
             }
         }
 
-        if ( collectionOpts.size() == 1 ) {
+        // For the passive replicator, rearrangeCollectionsFor3_0_Client() will set
+        // collectionAware to false
+        if ( _mutables._isActive && collectionOpts.size() == 1 ) {
             auto spec = collectionOpts[0].collectionSpec;
-            if ( spec == kC4DefaultCollectionSpec ) { _mutables._collectionAware = false; }
+            if ( spec == kC4DefaultCollectionSpec ) {
+#ifndef LITECORE_CPPTEST
+                _mutables._collectionAware = false;
+#else
+                // For the purpose to test clients not derived from Replicator
+                // that use 3.1 collection aware protocol even if the only collection
+                // is the default collection.
+                if ( !sActiveIsCollectionAware ) _mutables._collectionAware = false;
+#endif
+            }
         }
     }
 
