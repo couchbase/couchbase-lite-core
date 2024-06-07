@@ -89,7 +89,7 @@ namespace litecore {
 
         using VectorPtr = std::unique_ptr<float[]>;
 
-        bool noVectorsUpdatedOrSkipped() const;
+        bool anyVectorNotUpdatedOrSkipped() const;
 
         struct Item {
             int64_t   queryRow;  ///< Row# in QueryEnumerator
