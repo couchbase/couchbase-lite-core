@@ -477,7 +477,7 @@ namespace litecore {
             FLEncoder_BeginArray(enc, 2);
             for ( const auto& spec : keyStore().getIndexes() ) {
                 if ( fullInfo ) {
-                    FLEncoder_BeginDict(enc, 3);
+                    FLEncoder_BeginDict(enc, 5);
                     FLEncoder_WriteKey(enc, slice("name"));
                     FLEncoder_WriteString(enc, slice(spec.name));
                     FLEncoder_WriteKey(enc, slice("type"));
@@ -492,6 +492,10 @@ namespace litecore {
                         case QueryLanguage::kN1QL:
                             FLEncoder_WriteString(enc, slice("n1ql"));
                             break;
+                    }
+                    if ( auto vecOpts = spec.vectorOptions() ) {
+                        FLEncoder_WriteKey(enc, "vector_options"_sl);
+                        FLEncoder_WriteString(enc, slice(vecOpts->createArgs()));
                     }
                     FLEncoder_EndDict(enc);
                 } else {
