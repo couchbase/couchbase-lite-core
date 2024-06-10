@@ -87,7 +87,7 @@ namespace litecore::actor {
         if ( !_closed ) { _queue.push(t); }
         lock.unlock();
 
-        if ( wasEmpty ) _cond.notify_one();
+        _cond.notify_one();
         return wasEmpty;
     }
 
