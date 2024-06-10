@@ -244,6 +244,22 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.Vec
                          {"rec-5300", "rec-4900", "rec-7100", "rec-3600", "rec-8700", "rec-8500", "rec-2400",
                           "rec-4700", "rec-4300", "rec-2600"},
                          {85776, 90431, 92142, 92629, 94598, 94989, 104787, 106750, 113260, 116129});
+
+    queryStr = R"(
+     ['SELECT', {
+        WHERE:    ['AND', ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
+                          ['=', 0, ['%', ['._sequence'], 100]] ],
+        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+        ORDER_BY: [ ['.distance'] ],
+        LIMIT:    10
+     }] )";
+    query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+
+    Log("---- Querying with $target = data and max_results = 10");
+    // With explicit max_results, it becomes a pure vector query.
+    options                     = optionsWithTargetVector(kTargetVector, kData);
+    Retained<QueryEnumerator> e = query->createEnumerator(&options);
+    CHECK(e->getRowCount() == 0);
 }
 
 // Test joining the result of VECTOR_MATCH with a property of another collection. In particular, it joins
@@ -534,7 +550,7 @@ static pair<string, string> splitCollectionName(const string& input) {
 // 2 trains the index at doc write time, and scenario 3 trains at first query time.  This
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
-    bool expectedTrained;
+    bool expectedTrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
