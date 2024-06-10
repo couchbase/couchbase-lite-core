@@ -98,7 +98,7 @@ namespace litecore {
 
         void deleteIndex(slice name) override { _liveStore->deleteIndex(name); }
 
-        std::optional<IndexSpec> getIndex(slice name) override { return _liveStore->getIndex(name); }
+        std::optional<IndexSpec> getIndex(slice name) const override { return _liveStore->getIndex(name); }
 
         [[nodiscard]] std::vector<IndexSpec> getIndexes() const override { return _liveStore->getIndexes(); }
 

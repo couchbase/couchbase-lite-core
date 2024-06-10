@@ -138,6 +138,19 @@ namespace litecore {
         return opts;
     }
 
+    bool SQLiteKeyStore::isIndexTrained(fleece::slice name) const {
+        if ( auto spec = db().getIndex(name); spec && spec->keyStoreName == this->name() ) {
+            if ( spec->type != IndexSpec::kVector ) {
+                error::_throw(error::InvalidParameter, "Index '%.*s' is not a vector index", SPLAT(name));
+            }
+            auto q = db().compile(
+                    ("SELECT 1 FROM \""s + spec->indexTableName + "\" WHERE bucket != -1 LIMIT 1").c_str());
+            return q->executeStep();
+        }
+
+        error::_throw(error::NoSuchIndex);
+    }
+
 }  // namespace litecore
 
 #endif
