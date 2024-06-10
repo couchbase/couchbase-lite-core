@@ -2,19 +2,17 @@
 // Created by Callum Birks on 28/05/2024.
 //
 
-#include <c4Base.hh>
-#include <Array.hh>
-#include <DatabaseImpl.hh>
-#include <LazyIndex.hh>
-#include <c4Collection.h>
-#include <c4Collection.hh>
-#include <c4Index.h>
-#include <c4Index.hh>
-#include <c4Query.h>
-#include <c4Test.hh>
-#include <LiteCoreTest.hh>
-#include <Query.hh>
-#include <SQLiteDataFile.hh>
+#include "c4Base.hh"
+#include "DatabaseImpl.hh"
+#include "LazyIndex.hh"
+#include "c4Collection.h"
+#include "c4Collection.hh"
+#include "c4Index.h"
+#include "c4Index.hh"
+#include "c4Query.h"
+#include "c4Test.hh"  // IWYU pragma: keep
+#include "LiteCoreTest.hh"
+#include "SQLiteDataFile.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
