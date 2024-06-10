@@ -231,6 +231,10 @@ namespace litecore {
         return ss.str();
     }
 
+    string SQLiteKeyStore::tableName(const string& keyStoreName) {
+        return "kv_" + transformCollectionName(keyStoreName, true);
+    }
+
     bool SQLiteKeyStore::read(Record& rec, ReadBy by, ContentOption content) const {
         //  This statement does nothing if the sequence index has already been created.
         if ( by == ReadBy::Sequence ) const_cast<SQLiteKeyStore*>(this)->createSequenceIndex();

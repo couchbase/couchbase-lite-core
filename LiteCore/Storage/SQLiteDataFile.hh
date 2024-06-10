@@ -92,7 +92,12 @@ namespace litecore {
 
         Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); };
 
-        // Get an index's row count, and/or all its rows. For debugging/troubleshooting only!
+        /// Get an index's row count, and/or all its rows. Supports value and vector indexes.
+        /// @warning For debugging/troubleshooting only!
+        /// @param name  The name of the index
+        /// @param outRowCount  On return, the number of rows will be stored here.
+        /// @param outRows  If non-NULL, an encoded Fleece array of arrays will be stored here.
+        ///                 Each array item is an index row; its items are its column values.
         void inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows = nullptr);
 
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
@@ -143,6 +148,7 @@ namespace litecore {
         std::optional<SQLiteIndexSpec> getIndex(slice name);
         std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*);
         void                           setIndexSequences(slice name, slice sequencesJSON);
+        void inspectVectorIndex(SQLiteIndexSpec const&, int64_t& outRowCount, alloc_slice* outRows);
 
       private:
         friend class SQLiteKeyStore;

@@ -635,4 +635,27 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     CHECK(isTrained == expectedTrained);
 }
 
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {
+    auto allKeyStores = db->allKeyStoreNames();
+    readVectorDocs(100);
+    createVectorIndex();
+
+    std::vector<float> vec(128);
+    auto               doc = inspectVectorIndex("vecIndex");
+    for ( ArrayIterator iter(doc->asArray()); iter; ++iter ) {
+        auto    row    = iter.value()->asArray();
+        slice   key    = row->get(0)->asString();
+        slice   rawVec = row->get(1)->asData();
+        int64_t bucket = row->get(2)->asInt();
+        REQUIRE(rawVec.size == 128 * sizeof(float));
+#    if 1
+        memcpy(vec.data(), rawVec.buf, rawVec.size);
+        std::cerr << key << " (" << bucket << ") = [";
+        for ( size_t i = 0; i < 128; ++i ) std::cerr << vec[i] << ' ';
+        std::cerr << ']' << std::endl;
+#    endif
+    }
+    CHECK(doc->asArray()->count() == 100);
+}
+
 #endif
