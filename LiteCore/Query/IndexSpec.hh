@@ -30,7 +30,7 @@ namespace litecore {
     };
 
     struct IndexSpec {
-        /// The types of indexes.
+        /// The types of indexes. (Values MUST match C4IndexType)
         enum Type {
             kValue,       ///< Regular index of property value
             kFullText,    ///< Full-text index, for MATCH queries. Uses IndexSpec::FTSOptions.
