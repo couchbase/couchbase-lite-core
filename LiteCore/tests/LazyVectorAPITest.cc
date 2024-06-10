@@ -147,18 +147,14 @@ class LazyVectorAPITest : public C4Test {
     void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
         auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
         REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
-        for ( size_t i = 0; i < expectedWords.size(); ++i ) {
-            INFO("i=" << i);
+        for ( const auto& expectedWord : expectedWords ) {
             REQUIRE(c4queryenum_next(e, ERROR_INFO()));
             FLArrayIterator columns  = e->columns;
             slice           word     = Value(FLArrayIterator_GetValueAt(&columns, 0)).asString();
             float           distance = Value(FLArrayIterator_GetValueAt(&columns, 1)).asFloat();
-            Log("%.*s: %.3f", FMTSLICE(word), distance);
-            CHECK(word == slice(expectedWords[i]));
-            // CHECK(fabs(distance - expectedDistances[i]) < 0.01);
+            CHECK(word == slice(expectedWord));
         }
         CHECK(!c4queryenum_next(e, ERROR_INFO()));
-        Log("done");
         c4queryenum_release(e);
     }
 
@@ -167,17 +163,15 @@ class LazyVectorAPITest : public C4Test {
         auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
         REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedRowCount);
         for ( size_t i = 0; i < expectedRowCount; ++i ) {
-            INFO("i=" << i);
             REQUIRE(c4queryenum_next(e, ERROR_INFO()));
             FLArrayIterator columns     = e->columns;
             auto            vectorArray = Value(FLArrayIterator_GetValueAt(&columns, 0)).asArray();
             for ( size_t j = 0; j < expectedVectors.size(); j++ ) {
-                float vector = vectorArray[j].asFloat();
+                float vector = vectorArray.get(j).asFloat();
                 CHECK(vector == expectedVectors[j]);
             }
         }
         CHECK(!c4queryenum_next(e, ERROR_INFO()));
-        Log("done");
         c4queryenum_release(e);
     }
 
@@ -240,7 +234,7 @@ class LazyVectorAPITest : public C4Test {
         createVectorDoc(i, doc.root());
     }
 
-    std::vector<float> vectorsForWord(slice word) const {
+    [[nodiscard]] std::vector<float> vectorsForWord(slice word) const {
         const auto  query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
                 WHERE: ['=', ['$word'], ['.word']],
                 WHAT:  [ ['.vector'] ],

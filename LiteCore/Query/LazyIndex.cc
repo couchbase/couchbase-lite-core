@@ -203,7 +203,10 @@ namespace litecore {
 
     bool LazyIndexUpdate::finish(ExclusiveTransaction& txn) {
         // Finishing an update without either updating or skipping at least one vector is unsupported.
-        if ( anyVectorNotUpdatedOrSkipped() ) { litecore::error::_throw(litecore::error::UnsupportedOperation, "Cannot finish an update without all vectors updated or skipped."); }
+        if ( anyVectorNotUpdatedOrSkipped() ) {
+            litecore::error::_throw(litecore::error::UnsupportedOperation,
+                                    "Cannot finish an update without all vectors updated or skipped.");
+        }
 
         sequence_t curSeq = _manager->_sqlKeyStore.lastSequence();
 
@@ -259,7 +262,7 @@ namespace litecore {
     /// Returns true if any vector has NOT been updated or skipped in this updater.
     bool LazyIndexUpdate::anyVectorNotUpdatedOrSkipped() const {
         return std::any_of(_items.begin(), _items.end(),
-                            [](const Item& item) { return item.vector == nullptr || !item.skipped; });
+                           [](const Item& item) { return item.vector == nullptr && !item.skipped; });
     }
 
 
