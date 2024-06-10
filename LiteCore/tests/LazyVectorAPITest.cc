@@ -16,6 +16,9 @@
 #include <Query.hh>
 #include <SQLiteDataFile.hh>
 
+#ifdef COUCHBASE_ENTERPRISE
+
+
 using namespace litecore;
 
 static constexpr float kWordsTargetVector[300] = {
@@ -346,3 +349,5 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Finish Incomplete Update", "[A
     c4indexupdater_release(updater);
     c4index_release(index);
 }
+
+#endif
