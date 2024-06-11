@@ -31,7 +31,7 @@ struct C4Index
     , C4Base {
     C4Collection* getCollection() const noexcept { return _collection; }
 
-    slice getName() const { return _name; }
+    slice getName() const noexcept { return _name; }
 
 #ifdef COUCHBASE_ENTERPRISE
     /// Finds new or updated documents for which vectors need to be recomputed by the application.
