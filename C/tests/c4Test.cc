@@ -129,12 +129,9 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
     constexpr static TestOptions numToTestOption[] = {
 #if SkipVersionVectorTest
-        RevTreeOption,
-        EncryptedRevTreeOption
+            RevTreeOption, EncryptedRevTreeOption
 #else
-        RevTreeOption,
-        VersionVectorOption,
-        EncryptedRevTreeOption
+            RevTreeOption, VersionVectorOption, EncryptedRevTreeOption
 #endif
     };
     static_assert(sizeof(numToTestOption) / sizeof(TestOptions) >= numberOfOptions);

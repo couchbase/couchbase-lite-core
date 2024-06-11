@@ -24,6 +24,8 @@
 #include <chrono>
 #include "TempArray.hh"
 
+#include <DatabaseImpl.hh>
+
 #if TARGET_OS_IPHONE
 #    include <CoreFoundation/CFBundle.h>
 #endif
@@ -148,7 +150,6 @@ FilePath DataFileTestFixture::databasePath() { return sTempDir[string("db") + fa
 }
 
 DataFile* DataFileTestFixture::newDatabase(const FilePath& path, const DataFile::Options* options) {
-    //TODO: Set up options
     return factory().openFile(path, this, options);
 }
 

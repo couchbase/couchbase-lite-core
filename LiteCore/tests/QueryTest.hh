@@ -81,8 +81,14 @@ class QueryTest : public DataFileTestFixture {
         return str;
     }
 
+    static alloc_slice numberedDocID(int i) { return alloc_slice(stringWithFormat("rec-%03d", i)); }
+
+    Record getNumberedDoc(int i, ContentOption opt = ContentOption::kEntireBody) const {
+        return store->get(numberedDocID(i), opt);
+    }
+
     sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction& t, DocumentFlags flags = DocumentFlags::kNone) {
-        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder& enc) {
+        return writeDoc(numberedDocID(i), flags, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(i);
             enc.writeKey("type");

@@ -90,8 +90,8 @@ using namespace litecore;
 
 class TestFixture {
   public:
-    TestFixture();
-    ~TestFixture();
+             TestFixture();
+    virtual ~TestFixture();
 
     unsigned                  warningsLogged() const noexcept;
     static litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
@@ -113,6 +113,7 @@ class DataFileTestFixture
     DataFileTestFixture() : DataFileTestFixture(0) {}  // defaults to SQLite, rev-trees
 
     explicit DataFileTestFixture(int testOption, const DataFile::Options* options = nullptr);
+
     ~DataFileTestFixture() override;
 
     static DataFile::Factory& factory();
