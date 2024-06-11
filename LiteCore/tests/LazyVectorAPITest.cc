@@ -180,8 +180,8 @@ class LazyVectorAPITest : public C4Test {
     }
 
     bool createVectorIndex(bool lazy, slice expression = R"(['.word'])"_sl, slice name = "words_index"_sl,
-                           C4Error* err = ERROR_INFO()) const {
-        auto options = vectorOptions(300, 8);
+                           IndexSpec::VectorOptions options = vectorOptions(300, 8),
+                           C4Error*                 err     = ERROR_INFO()) const {
         options.lazy = lazy;
         return createIndex(name, json5(expression), kC4VectorIndex, indexOptions(options), err);
     }
@@ -335,16 +335,19 @@ class LazyVectorAPITest : public C4Test {
     Retained<C4Collection> _wordsColl;
 };
 
+// 1, 2
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector isLazy Default False", "[API][.VectorSearch]") {
     auto vectorOpt = vectorOptions(300, 20);
     CHECK(vectorOpt.lazy == false);
 }
 
+// 3
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Existing Index", "[API][.VectorSearch]") {
     auto index = getIndex("nonexistingindex"_sl, ERROR_INFO());
     CHECK(index == nullptr);
 }
 
+// 4
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Vector Index", "[API][.VectorSearch]") {
     REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), C4IndexType::kC4ValueIndex, C4IndexOptions{},
                         ERROR_INFO()));
@@ -355,6 +358,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Vector Index", "[API][.
     c4index_release(index);
 }
 
+// 5
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Vector Index", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
     auto index = REQUIRED(getIndex());
@@ -363,6 +367,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Vector Index", "[API][.Vect
     c4index_release(index);
 }
 
+// 6
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Closed Database", "[API][.VectorSearch]") {
     closeDB();
     C4Error err{};
@@ -371,6 +376,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Closed Database", "[A
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
+// 7
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Deleted Collection", "[API][.VectorSearch]") {
     C4CollectionSpec collSpec{"collA"_sl, "_default"_sl};
     auto             coll = c4db_createCollection(db, collSpec, ERROR_INFO());
@@ -381,6 +387,9 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Deleted Collection", 
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
+// 8, 9, 10 in LazyVectorQueryTest
+
+// 11
 TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorSearch]") {
     REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), C4IndexType::kC4ValueIndex, C4IndexOptions{},
                         ERROR_INFO()));
@@ -393,6 +402,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorS
     c4index_release(index);
 }
 
+// 12
 TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(false, R"(['.vector'])", "nonlazyindex"_sl));
 
@@ -405,15 +415,19 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
     c4index_release(index);
 }
 
+// 13
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector BeginUpdate Zero Limit", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
-    auto index   = REQUIRED(getIndex());
-    auto updater = c4index_beginUpdate(index, 0, ERROR_INFO());
+    auto    index = REQUIRED(getIndex());
+    C4Error err{};
+    auto    updater = c4index_beginUpdate(index, 0, &err);
     CHECK(updater == nullptr);
+    CHECK(err.code == kC4ErrorInvalidParameter);
     c4base_release(updater);
     c4index_release(index);
 }
 
+// 14
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector BeginUpdate", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
     auto index   = REQUIRED(getIndex());
@@ -423,6 +437,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector BeginUpdate", "[API][.VectorSea
     c4index_release(index);
 }
 
+// 15
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector IndexUpdater Getting Values", "[API][.VectorSearch]") {
     createVectorDoc(0, "a string");
     createVectorDoc(1, 100);
@@ -466,6 +481,9 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector IndexUpdater Getting Values", "
     c4base_release(updater);
 }
 
+// 16 is skipped, I don't think it applies to Core
+
+// 17
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Float Array", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true, R"(['.vector'])"));
     auto index   = REQUIRED(getIndex());
@@ -495,6 +513,9 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Float Array", "[API][.Vect
     c4index_release(index);
 }
 
+// 18, 19 are removed (base64)
+
+// 20
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Invalid Dimensions", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true, R"(['.word'])"));
     auto index = REQUIRED(getIndex());
@@ -502,25 +523,18 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Invalid Dimensions", "[API
     auto updater = c4index_beginUpdate(index, 1, ERROR_INFO());
     auto vectors = std::vector<float>(128);
     std::fill_n(vectors.begin(), 128, 1.0);
-    REQUIRE(c4indexupdater_setVectorAt(updater, 0, vectors.data(), 128, ERROR_INFO()));
-    REQUIRE(c4indexupdater_finish(updater, ERROR_INFO()));
+    C4Error    err{};
+    const bool success = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 128, &err);
+    CHECK(!success);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 
-    auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target'], 300],
-            WHAT:  [ ['.word'] ],
-            FROM:  [{'COLLECTION':'words'}],
-        })")),
-                                       nullptr, ERROR_INFO()));
-
-    auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
-    CHECK(c4queryenum_getRowCount(e, ERROR_INFO()) == 0);
-
-    c4queryenum_release(e);
-    c4query_release(query);
     c4indexupdater_release(updater);
     c4index_release(index);
 }
 
+// 21 is in LazyVectorQueryTest.cc
+
+// 22
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Finish Incomplete Update", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
     auto    index   = REQUIRED(getIndex());
@@ -533,6 +547,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Finish Incomplete Update", "[A
     c4index_release(index);
 }
 
+// 23
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater null when caught up", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
     auto index = REQUIRED(getIndex());
@@ -554,6 +569,85 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater null when caught up", "[API][.
     doUpdate();
 
     CHECK(c4index_beginUpdate(index, 100, ERROR_INFO()) == nullptr);
+    c4index_release(index);
+}
+
+// 24
+TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater not update when released without finish", "[API][.VectorSearch]") {
+    REQUIRE(createVectorIndex(true));
+    auto index   = REQUIRED(getIndex());
+    auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
+
+    for ( int i = 0; i < 10; i++ ) {
+        auto  wordValue = Value(c4indexupdater_valueAt(updater, i));
+        slice word      = wordValue.asString();
+        auto  vectors   = vectorsForWord(word);
+        CHECK(c4indexupdater_setVectorAt(updater, i, vectors.data(), 300, ERROR_INFO()));
+    }
+    c4indexupdater_release(updater);
+
+    const auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
+            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target'], 300],
+            WHAT:  [ ['.word'] ],
+            FROM:  [{'COLLECTION':'words'}],
+        })")),
+                                             nullptr, ERROR_INFO()));
+
+    const auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
+    REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == 0);
+
+    c4queryenum_release(e);
+    c4query_release(query);
+    c4index_release(index);
+}
+
+// 25
+TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.VectorSearch]") {
+    createVectorDoc(0, "a string");
+    const auto options = vectorOptions(3, 8);
+    REQUIRE(createVectorIndex(true, R"(['.value'])", "value_index"_sl, options));
+    auto index   = REQUIRED(getIndex("value_index"));
+    auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
+
+    CHECK(c4indexupdater_count(updater) == 1);
+    auto negativeBoundsValue = c4indexupdater_valueAt(updater, -1);
+    auto pastBoundsValue     = c4indexupdater_valueAt(updater, 1);
+    CHECK(negativeBoundsValue == kFLNullValue);
+    CHECK(pastBoundsValue == kFLNullValue);
+
+    C4Error            err{};
+    std::vector<float> vectors{1.0, 2.0, 3.0};
+    CHECK(!c4indexupdater_setVectorAt(updater, -1, vectors.data(), 3, &err));
+    CHECK(err.code == kC4ErrorInvalidParameter);
+
+    CHECK(!c4indexupdater_setVectorAt(updater, 1, vectors.data(), 3, &err));
+    CHECK(err.code == kC4ErrorInvalidParameter);
+
+    CHECK(!c4indexupdater_skipVectorAt(updater, -1));
+    CHECK(!c4indexupdater_skipVectorAt(updater, 1));
+
+    c4indexupdater_release(updater);
+    c4index_release(index);
+}
+
+// 26
+TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call Finish Twice", "[API][.VectorSearch]") {
+    REQUIRE(createVectorIndex(true));
+    auto index   = REQUIRED(getIndex());
+    auto updater = REQUIRED(c4index_beginUpdate(index, 1, ERROR_INFO()));
+
+    auto wordValue = Value(c4indexupdater_valueAt(updater, 0));
+    auto word      = wordValue.asString();
+    auto vectors   = vectorsForWord(word);
+    REQUIRE(!vectors.empty());
+    REQUIRE(c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, ERROR_INFO()));
+
+    CHECK(c4indexupdater_finish(updater, ERROR_INFO()));
+    C4Error err{};
+    // CHECK(!c4indexupdater_finish(updater, &err));
+    // CHECK(err.code == kC4ErrorUnsupported);
+
+    c4indexupdater_release(updater);
     c4index_release(index);
 }
 

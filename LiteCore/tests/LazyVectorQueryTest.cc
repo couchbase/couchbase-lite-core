@@ -170,6 +170,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index", "[Query][.VectorSearc
     REQUIRE(updateVectorIndex(200, alwaysUpdate) == 0);
 }
 
+// 21
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.VectorSearch]") {
     initWithIndex();
     unsigned nSkipped = 0;
@@ -218,6 +219,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Update Wrong Dimensions", "[.
     CHECK_THROWS_AS(update->setVectorAt(0, vec, kDimension - 1), error);
 }
 
+// 8
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Modify Docs not Auto-Updated", "[Query][.VectorSearch]") {
     initWithIndex();
     checkQueryReturns({});
@@ -234,6 +236,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Modify Docs not Auto-Updated"
     checkQueryReturns({});
 }
 
+// 9, 10
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Delete Docs Auto-Updated", "[Query][.VectorSearch]") {
     initWithIndex();
     REQUIRE(updateVectorIndex(1, alwaysUpdate) == 1);
