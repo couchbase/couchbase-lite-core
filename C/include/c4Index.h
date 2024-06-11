@@ -141,7 +141,7 @@ CBL_CORE_API C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size
 /**
  * Return the name of this index.
  **/
-CBL_CORE_API C4SliceResult c4index_getName(C4Index* index) C4API;
+CBL_CORE_API C4Slice c4index_getName(C4Index* index) C4API;
 
 /**
  * Return the collection this index belongs to.
