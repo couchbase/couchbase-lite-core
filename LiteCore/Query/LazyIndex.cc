@@ -25,6 +25,7 @@
 #    include "QueryParser.hh"
 #    include "SequenceSet.hh"
 #    include "SQLiteDataFile.hh"
+#    include "SQLite_Internal.hh"
 #    include "SQLiteKeyStore.hh"
 #    include "SQLUtil.hh"
 #    include "SQLite_Internal.hh"
@@ -77,15 +78,20 @@ namespace litecore {
         AssertArg(limit > 0);
         Retained<LazyIndexUpdate> update;
         do {
+            unsigned    dimension = 0;
             SequenceSet indexedSequences;
             sequence_t  curSeq;
             {
                 // Open a RO transaction so the code sees a consistent snapshot of the database:
                 ReadOnlyTransaction txn(_db);
 
-                alloc_slice json = getSpec().indexedSequences;
-                if ( !indexedSequences.read_json(json) )
-                    LogError(QueryLog, "Couldn't parse index's indexedSequences: %.*s", FMTSLICE(json));
+                {
+                    SQLiteIndexSpec spec = getSpec();
+                    if ( auto vecOpts = spec.vectorOptions() ) dimension = vecOpts->dimensions;
+                    if ( !indexedSequences.read_json(spec.indexedSequences) )
+                        LogError(QueryLog, "Couldn't parse index's indexedSequences: %.*s",
+                                 FMTSLICE(spec.indexedSequences));
+                }
                 curSeq = _sqlKeyStore.lastSequence();
                 LogTo(QueryLog, "LazyIndex: Indexed sequences of %s are %s ; latest seq is %llu", _indexName.c_str(),
                       indexedSequences.to_string().c_str(), (long long)curSeq);
@@ -104,7 +110,7 @@ namespace litecore {
                 Query::Options            options(enc.finish());
                 Retained<QueryEnumerator> e = _query->createEnumerator(&options);
                 if ( e->getRowCount() > 0 )
-                    update = new LazyIndexUpdate(this, startSeq, curSeq, indexedSequences, e, limit);
+                    update = new LazyIndexUpdate(this, dimension, startSeq, curSeq, indexedSequences, e, limit);
             }
 
             if ( !update ) {
@@ -130,6 +136,7 @@ namespace litecore {
                                                               << sqlIdentifier(_vectorTableName)
                                                               << " (docid, vector) VALUES (?1, ?2)"));
         }
+        UsingStatement u(_ins);
         _ins->bind(1, (long long)rowid);
         _ins->bindNoCopy(2, (const void*)vec, int(dimension * sizeof(float)));
         _ins->exec();
@@ -141,6 +148,7 @@ namespace litecore {
             _del = make_unique<SQLite::Statement>(
                     _db, CONCAT("DELETE FROM " << sqlIdentifier(_vectorTableName) << " WHERE docid=?1"));
         }
+        UsingStatement u(_del);
         _del->bind(1, (long long)rowid);
         _del->exec();
         _del->reset();
@@ -153,13 +161,14 @@ namespace litecore {
 
 #    pragma mark - LAZY INDEX UPDATE:
 
-    LazyIndexUpdate::LazyIndexUpdate(LazyIndex* manager, sequence_t firstSeq, sequence_t atSeq, SequenceSet indexedSeqs,
-                                     Retained<QueryEnumerator> e, size_t limit)
+    LazyIndexUpdate::LazyIndexUpdate(LazyIndex* manager, unsigned dimension, sequence_t firstSeq, sequence_t atSeq,
+                                     SequenceSet indexedSeqs, Retained<QueryEnumerator> e, size_t limit)
         : _manager(manager)
         , _firstSeq(firstSeq)
         , _atSeq(atSeq)
         , _indexedSequences(std::move(indexedSeqs))
-        , _enum(std::move(e)) {
+        , _enum(std::move(e))
+        , _dimension(dimension) {
         // Find the rows which are not yet indexed:
         int64_t row = 0;
         for ( ; _enum->next(); ++row ) {

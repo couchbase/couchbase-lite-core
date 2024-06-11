@@ -180,8 +180,8 @@ namespace litecore {
             string indexName    = getIndex.getColumn(0);
             string keyStoreName = getIndex.getColumn(1).getString().substr(3);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
-                                     "");
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON,
+                                     IndexSpec::Options{}, keyStoreName, "");
         }
 
         // FTS indexes:
@@ -194,8 +194,8 @@ namespace litecore {
             string keyStoreName = tableName.substr(delim);
             string indexName    = tableName.substr(delim + 2);
             if ( !store || keyStoreName == store->name() )
-                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON, keyStoreName,
-                                     tableName);
+                indexes.emplace_back(indexName, IndexSpec::kValue, alloc_slice(), QueryLanguage::kJSON,
+                                     IndexSpec::Options{}, keyStoreName, tableName);
         }
         return indexes;
     }
@@ -219,19 +219,32 @@ namespace litecore {
         stmt.exec();
     }
 
+    // Recover an IndexSpec from a row of the `indexes` table
     SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
+        string             name = stmt.getColumn(0).getString();
+        auto               type = IndexSpec::Type(stmt.getColumn(1).getInt());
+        IndexSpec::Options options;
+        string             keyStoreName   = stmt.getColumn(3).getString();
+        string             indexTableName = stmt.getColumn(4).getString();
+
         QueryLanguage queryLanguage = QueryLanguage::kJSON;
         alloc_slice   expression;
         if ( string col = stmt.getColumn(2).getString(); !col.empty() ) {
             expression = col;
             if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
         }
-        SQLiteIndexSpec spec{stmt.getColumn(0).getString(),
-                             (IndexSpec::Type)stmt.getColumn(1).getInt(),
-                             expression,
-                             queryLanguage,
-                             stmt.getColumn(3).getString(),
-                             stmt.getColumn(4).getString()};
+
+#ifdef COUCHBASE_ENTERPRISE
+        if ( type == IndexSpec::kVector ) {
+            // Recover the vector options from the index schema itself:
+            string sql;
+            if ( getSchema(indexTableName, "table", indexTableName, sql) ) {
+                if ( auto opts = SQLiteKeyStore::parseVectorSearchTableSQL(sql) ) options = std::move(*opts);
+            }
+        }
+#endif
+
+        SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
         if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
         return spec;
     }
