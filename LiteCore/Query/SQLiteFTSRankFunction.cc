@@ -52,7 +52,8 @@ namespace litecore {
      **     ORDER BY rank(matchinfo(documents), 1.0, 0.5) DESC
      */
     static void rankfunc(sqlite3_context* pCtx, int nVal, sqlite3_value** apVal) {
-        int32_t* aMatchinfo;  /* Return value of matchinfo() */
+        int32_t* aMatchinfo; /* Return value of matchinfo() */
+        int      aMatchCount;
         int32_t  nCol;        /* Number of columns in the table */
         int32_t  nPhrase;     /* Number of phrases in the query */
         int32_t  iPhrase;     /* Current phrase */
@@ -70,10 +71,17 @@ namespace litecore {
             sqlite3_result_error(pCtx, "nothing for rank() to match", -1);
             return;
         }
+        aMatchCount = sqlite3_value_bytes(apVal[0]);
+        if ( aMatchCount < 2 * sizeof(int32_t) ) {
+            sqlite3_result_error(pCtx, "invalid match count in rank()", -1);
+            return;
+        }
         nPhrase = aMatchinfo[0];
         nCol    = aMatchinfo[1];
-        //        if( nVal!=(1+nCol) ) goto wrong_number_args;
-
+        if ( aMatchCount != (2 + int64_t(nPhrase) * nCol * 3) * sizeof(int32_t) ) {
+            sqlite3_result_error(pCtx, "invalid match count in rank()", -1);
+            return;
+        }
         /* Iterate through each phrase in the users query. */
         for ( iPhrase = 0; iPhrase < nPhrase; iPhrase++ ) {
             int iCol; /* Current column */
