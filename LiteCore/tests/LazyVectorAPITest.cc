@@ -612,8 +612,8 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.
     CHECK(c4indexupdater_count(updater) == 1);
     auto negativeBoundsValue = c4indexupdater_valueAt(updater, -1);
     auto pastBoundsValue     = c4indexupdater_valueAt(updater, 1);
-    CHECK(negativeBoundsValue == kFLNullValue);
-    CHECK(pastBoundsValue == kFLNullValue);
+    CHECK(negativeBoundsValue == nullptr);
+    CHECK(pastBoundsValue == nullptr);
 
     C4Error            err{};
     std::vector<float> vectors{1.0, 2.0, 3.0};
@@ -644,8 +644,8 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call Finish Twice", "[API][.Ve
 
     CHECK(c4indexupdater_finish(updater, ERROR_INFO()));
     C4Error err{};
-    // CHECK(!c4indexupdater_finish(updater, &err));
-    // CHECK(err.code == kC4ErrorUnsupported);
+    CHECK(!c4indexupdater_finish(updater, &err));
+    CHECK(err.code == kC4ErrorUnsupported);
 
     c4indexupdater_release(updater);
     c4index_release(index);
