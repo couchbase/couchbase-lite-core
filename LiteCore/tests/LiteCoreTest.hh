@@ -90,8 +90,8 @@ using namespace litecore;
 
 class TestFixture {
   public:
-             TestFixture();
-    virtual ~TestFixture();
+    TestFixture();
+    ~TestFixture();
 
     unsigned                  warningsLogged() const noexcept;
     static litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
