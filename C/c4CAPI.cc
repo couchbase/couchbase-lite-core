@@ -911,9 +911,11 @@ C4String c4index_getExpression(C4Index* index) C4API { return index->getExpressi
 
 bool c4index_getOptions(C4Index* index, C4IndexOptions* outOpts) C4API { return index->getOptions(*outOpts); }
 
+#ifdef COUCHBASE_ENTERPRISE
 bool c4index_isTrained(C4Index* index, C4Error* C4NULLABLE outError) C4API {
     return c4coll_isIndexTrained(index->getCollection(), index->getName(), outError);
 }
+#endif
 
 #pragma mark - OBSERVERS:
 

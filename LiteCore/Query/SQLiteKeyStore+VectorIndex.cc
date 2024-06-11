@@ -10,27 +10,27 @@
 // the file licenses/APL2.txt.
 //
 
-#ifdef COUCHBASE_ENTERPRISE
+#include <cstdio>
 
-#    include <cstdio>
-
-#    include "SQLiteKeyStore.hh"
-#    include "SQLiteDataFile.hh"
-#    include "QueryParser.hh"
-#    include "SQLUtil.hh"
-#    include "SQLite_Internal.hh"
-#    include "StringUtil.hh"
-#    include "Array.hh"
-#    include "Error.hh"
-#    include "SQLiteCpp/Statement.h"
-#    include "SQLiteCpp/Exception.h"
-#    include <sstream>
+#include "SQLiteKeyStore.hh"
+#include "SQLiteDataFile.hh"
+#include "QueryParser.hh"
+#include "SQLUtil.hh"
+#include "SQLite_Internal.hh"
+#include "StringUtil.hh"
+#include "Array.hh"
+#include "Error.hh"
+#include "SQLiteCpp/Statement.h"
+#include "SQLiteCpp/Exception.h"
+#include <sstream>
 
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
 
 namespace litecore {
+
+#ifdef COUCHBASE_ENTERPRISE
 
     // Vector search index for ML / predictive query, using the vectorsearch extension.
     // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
@@ -138,6 +138,8 @@ namespace litecore {
         return opts;
     }
 
+#endif  // COUCHBASE_ENTERPRISE
+
     bool SQLiteKeyStore::isIndexTrained(fleece::slice name) const {
         if ( auto spec = db().getIndex(name); spec && spec->keyStoreName == this->name() ) {
             if ( spec->type != IndexSpec::kVector ) {
@@ -152,5 +154,3 @@ namespace litecore {
     }
 
 }  // namespace litecore
-
-#endif

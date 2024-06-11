@@ -45,6 +45,7 @@ struct C4IndexImpl final : public C4Index {
             opts.stopWords        = ftsOpts->stopWords;
             return true;
 
+#ifdef COUCHBASE_ENTERPRISE
         } else if ( auto vecOpts = _spec.vectorOptions() ) {
             opts.vector.dimensions      = vecOpts->dimensions;
             opts.vector.metric          = C4VectorMetricType(int(vecOpts->metric) + 1);
@@ -87,7 +88,7 @@ struct C4IndexImpl final : public C4Index {
             if ( vecOpts->maxTrainingCount ) opts.vector.maxTrainingSize = unsigned(*vecOpts->maxTrainingCount);
             opts.vector.lazy = vecOpts->lazyEmbedding;
             return true;
-
+#endif
         } else {
             return false;
         }
