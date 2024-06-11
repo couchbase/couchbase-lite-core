@@ -30,8 +30,7 @@
                   continueAfterRunningActions = "No"
                   symbolName = "__cxa_throw"
                   moduleName = "libc++abi.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  offsetFromSymbolStart = "0">
+                  usesParentBreakpointCondition = "Yes">
                </Location>
             </Locations>
          </BreakpointContent>
