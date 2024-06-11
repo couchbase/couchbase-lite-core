@@ -1060,13 +1060,9 @@ C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit, C4E
     return tryCatch<C4IndexUpdater*>(outError, [&] { return index->beginUpdate(limit).detach(); });
 }
 
-C4SliceResult c4index_getName(C4Index* index) noexcept {
-    return tryCatch<C4SliceResult>(nullptr, [&]{ return C4SliceResult(index->getName()); });
-}
+C4Slice c4index_getName(C4Index* index) noexcept { return C4Slice(index->getName()); }
 
-C4Collection* c4index_getCollection(C4Index* index) noexcept {
-    return tryCatch<C4Collection*>(nullptr, [&]{ return index->getCollection(); });
-}
+C4Collection* c4index_getCollection(C4Index* index) noexcept { return index->getCollection(); }
 
 size_t c4indexupdater_count(C4IndexUpdater* update) noexcept { return update->count(); }
 

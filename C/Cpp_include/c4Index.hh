@@ -29,7 +29,7 @@ struct C4Index
     : public fleece::RefCounted
     , public fleece::InstanceCountedIn<C4Index>
     , C4Base {
-    C4Collection* getCollection() const { return _collection; }
+    C4Collection* getCollection() const noexcept { return _collection; }
 
     slice getName() const { return _name; }
 
