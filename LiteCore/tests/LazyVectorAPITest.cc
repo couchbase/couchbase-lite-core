@@ -338,14 +338,39 @@ class LazyVectorAPITest : public C4Test {
 
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Finish Incomplete Update", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
-    auto    index   = REQUIRED(getIndex());
-    auto    updater = REQUIRED(c4index_beginUpdate(index, 2, ERROR_INFO()));
-    C4Error err{};
-    c4indexupdater_finish(updater, &err);
-    CHECK(err.code == kC4ErrorUnsupported);
+    auto index   = REQUIRED(getIndex());
+    auto updater = REQUIRED(c4index_beginUpdate(index, 2, ERROR_INFO()));
+    {
+        ExpectingExceptions e;
+        C4Error             err{};
+        c4indexupdater_finish(updater, &err);
+        CHECK(err.code == kC4ErrorUnsupported);
+    }
 
     c4indexupdater_release(updater);
     c4index_release(index);
+}
+
+TEST_CASE_METHOD(LazyVectorAPITest, "Finish Already Finished Updater", "[API][.VectorSearch]") {
+    REQUIRE(createVectorIndex(true));
+    c4::ref<C4Index>        index   = REQUIRED(getIndex());
+    c4::ref<C4IndexUpdater> updater = REQUIRED(c4index_beginUpdate(index, 2, ERROR_INFO()));
+
+    size_t count = c4indexupdater_count(updater);
+    REQUIRE(count == 2);
+    for ( unsigned i = 0; i < count; ++i ) { c4indexupdater_skipVectorAt(updater, i); }
+
+    REQUIRE(c4indexupdater_finish(updater, ERROR_INFO()));
+
+    {
+        // Calling finish on a finished updater causes NotOpen error.
+        ExpectingExceptions e;
+        C4Error             err{};
+        c4indexupdater_finish(updater, &err);
+        CHECK(err.code == kC4ErrorNotOpen);
+        alloc_slice emsg = c4error_getMessage(err);
+        CHECK(emsg.asString() == "The updater may have already been finished.");
+    }
 }
 
 #endif

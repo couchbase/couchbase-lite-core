@@ -59,6 +59,10 @@ namespace c4 {
 
     static inline void releaseRef(C4WriteStream* c) noexcept { c4stream_closeWriter(c); }
 
+    static inline void releaseRef(C4Index* c) noexcept { c4index_release(c); }
+
+    static inline void releaseRef(C4IndexUpdater* c) noexcept { c4indexupdater_release(c); }
+
     // The functions the ref<> template calls to retain a reference. (Not all types can be retained)
     static inline C4Cert* retainRef(C4Cert* c) noexcept { return c4cert_retain(c); }
 
