@@ -73,14 +73,14 @@ static int copyfile(const char* from, const char* to) {
         return write_fd;
     }
 
-     #ifdef __EMSCRIPTEN__
+#    ifdef __EMSCRIPTEN__
     static const size_t kBufSize = 1024;
-    uint8_t buf[kBufSize];
-    while (offset < stat_buf.st_size) {
-        auto bytes_left_to_read = (size_t)(stat_buf.st_size - offset);
-        auto max_bytes_to_read = std::min(bytes_left_to_read, kBufSize);
+    uint8_t             buf[kBufSize];
+    while ( offset < stat_buf.st_size ) {
+        auto    bytes_left_to_read = (size_t)(stat_buf.st_size - offset);
+        auto    max_bytes_to_read  = std::min(bytes_left_to_read, kBufSize);
         ssize_t bytes_read;
-        if ((bytes_read = read(read_fd, &buf, max_bytes_to_read)) < 0) {
+        if ( (bytes_read = read(read_fd, &buf, max_bytes_to_read)) < 0 ) {
             int e = errno;
             close(read_fd);
             close(write_fd);
@@ -88,7 +88,7 @@ static int copyfile(const char* from, const char* to) {
             return -1;
         }
         offset = offset + bytes_read;
-        if (write(write_fd, &buf, bytes_read) < 0) {
+        if ( write(write_fd, &buf, bytes_read) < 0 ) {
             int e = errno;
             close(read_fd);
             close(write_fd);
@@ -96,8 +96,8 @@ static int copyfile(const char* from, const char* to) {
             return -1;
         }
     }
-    #else
-   size_t  expected = stat_buf.st_size;
+#    else
+    size_t  expected = stat_buf.st_size;
     ssize_t bytes    = 0;
     while ( bytes < expected ) {
         expected -= bytes;
@@ -122,7 +122,7 @@ static int copyfile(const char* from, const char* to) {
             return -1;
         }
     }
-#endif
+#    endif
 
     if ( close(read_fd) < 0 ) {
         int e = errno;

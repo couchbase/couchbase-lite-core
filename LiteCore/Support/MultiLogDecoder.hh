@@ -29,9 +29,8 @@ namespace litecore {
       public:
         MultiLogDecoder() {
             auto max_time_t = std::numeric_limits<time_t>::max();
-            _startTime = {max_time_t, 0};
-            for (unsigned i = 0; i <= kMaxLevel; i++)
-                _startTimeByLevel[i] = {max_time_t, 0};
+            _startTime      = {max_time_t, 0};
+            for ( unsigned i = 0; i <= kMaxLevel; i++ ) _startTimeByLevel[i] = {max_time_t, 0};
         }
 
         /// Adds a log iterator. Must be called before calling \ref next().

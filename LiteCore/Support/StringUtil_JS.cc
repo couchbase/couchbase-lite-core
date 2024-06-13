@@ -17,13 +17,13 @@ namespace litecore {
     using namespace fleece;
 
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
-        auto strVal = emscripten::val(str.asString());
+        auto        strVal = emscripten::val(str.asString());
         std::string resultStr;
-        if (toUppercase){
+        if ( toUppercase ) {
             resultStr = strVal.call<std::string>("toUpperCase");
         } else {
             resultStr = strVal.call<std::string>("toLowerCase");
         }
         return alloc_slice(resultStr);
     }
-}
+}  // namespace litecore

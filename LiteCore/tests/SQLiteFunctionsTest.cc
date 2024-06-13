@@ -338,7 +338,7 @@ TEST_CASE("Unicode string functions", "[Query]") {
     CHECK(UTF8ChangeCase("e"_sl, false) == "e"_sl);
     CHECK(UTF8ChangeCase("-"_sl, false) == "-"_sl);
     CHECK(UTF8ChangeCase("Z•rGMai2"_sl, false) == "z•rgmai2"_sl);
-#if __APPLE__ || defined(_MSC_VER)|| LITECORE_USES_ICU || defined(__EMSCRIPTEN__)
+#if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU || defined(__EMSCRIPTEN__)
     CHECK(UTF8ChangeCase("zÉRGMÅĪ2"_sl, false) == "zérgmåī2"_sl);
 #endif
     CHECK(UTF8ChangeCase("😀"_sl, false) == "😀"_sl);
@@ -362,7 +362,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL string functions", "[Query]") 
 
     CHECK(query("SELECT N1QL_lower('cAFES17•')") == (vector<string>{"cafes17•"}));
     CHECK(query("SELECT N1QL_upper('cafes17')") == (vector<string>{"CAFES17"}));
-#if __APPLE__ || defined(_MSC_VER)|| LITECORE_USES_ICU || defined(__EMSCRIPTEN__)
+#if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU || defined(__EMSCRIPTEN__)
     CHECK(query("SELECT N1QL_lower('cAFÉS17•')") == (vector<string>{"cafés17•"}));
     CHECK(query("SELECT N1QL_upper('cafés17')") == (vector<string>{"CAFÉS17"}));
 #endif

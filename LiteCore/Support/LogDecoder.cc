@@ -46,7 +46,7 @@ namespace litecore {
 
         auto     now       = time_point_cast<microseconds>(system_clock::now());
         auto     count     = now.time_since_epoch().count();
-        time_t secs = (time_t)(count / 1000000);
+        time_t   secs      = (time_t)(count / 1000000);
         unsigned microsecs = count % 1000000;
         return {secs, microsecs};
     }
