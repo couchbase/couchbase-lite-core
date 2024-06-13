@@ -144,19 +144,18 @@ class LazyVectorAPITest : public C4Test {
         } catch ( [[maybe_unused]] std::exception& e ) { return nullptr; }
     }
 
-    //    void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
-    //        auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
-    //        REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
-    //        for ( const auto& expectedWord : expectedWords ) {
-    //            REQUIRE(c4queryenum_next(e, ERROR_INFO()));
-    //            FLArrayIterator columns  = e->columns;
-    //            slice           word     = Value(FLArrayIterator_GetValueAt(&columns, 0)).asString();
-    //            float           distance = Value(FLArrayIterator_GetValueAt(&columns, 1)).asFloat();
-    //            CHECK(word == slice(expectedWord));
-    //        }
-    //        CHECK(!c4queryenum_next(e, ERROR_INFO()));
-    //        c4queryenum_release(e);
-    //    }
+    void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
+        auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
+        REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
+        for ( const auto& expectedWord : expectedWords ) {
+            REQUIRE(c4queryenum_next(e, ERROR_INFO()));
+            FLArrayIterator columns = e->columns;
+            slice           word    = Value(FLArrayIterator_GetValueAt(&columns, 0)).asString();
+            CHECK(word == slice(expectedWord));
+        }
+        CHECK(!c4queryenum_next(e, ERROR_INFO()));
+        c4queryenum_release(e);
+    }
 
     void checkQueryReturnsVectors(C4Query* query, int64_t expectedRowCount,
                                   const std::vector<float>& expectedVectors) const {
@@ -418,9 +417,13 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
 // 13
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector BeginUpdate Zero Limit", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
-    auto    index = REQUIRED(getIndex());
-    C4Error err{};
-    auto    updater = c4index_beginUpdate(index, 0, &err);
+    auto            index = REQUIRED(getIndex());
+    C4Error         err{};
+    C4IndexUpdater* updater = nullptr;
+    {
+        ExpectingExceptions e;
+        updater = c4index_beginUpdate(index, 0, &err);
+    }
     CHECK(updater == nullptr);
     CHECK(err.code == kC4ErrorInvalidParameter);
     c4base_release(updater);
@@ -523,8 +526,12 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Invalid Dimensions", "[API
     auto updater = c4index_beginUpdate(index, 1, ERROR_INFO());
     auto vectors = std::vector<float>(128);
     std::fill_n(vectors.begin(), 128, 1.0);
-    C4Error    err{};
-    const bool success = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 128, &err);
+    C4Error err{};
+    bool    success = false;
+    {
+        ExpectingExceptions e;
+        success = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 128, &err);
+    }
     CHECK(!success);
     CHECK(err.code == kC4ErrorInvalidParameter);
 

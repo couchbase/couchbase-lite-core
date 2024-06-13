@@ -20,8 +20,8 @@
 #include "LazyIndex.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/function_ref.hh"
+#include "c4Collection.h"
 
-#include <c4Collection.h>
 #include <cmath>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -204,6 +204,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
 }
 
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Update Wrong Dimensions", "[.VectorSearch]") {
+    initWithIndex();
     Retained<LazyIndexUpdate> update = _lazyIndex->beginUpdate(1);
     REQUIRE(update);
     CHECK(update->count() == 1);
