@@ -144,19 +144,19 @@ class LazyVectorAPITest : public C4Test {
         } catch ( [[maybe_unused]] std::exception& e ) { return nullptr; }
     }
 
-    void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
-        auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
-        REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
-        for ( const auto& expectedWord : expectedWords ) {
-            REQUIRE(c4queryenum_next(e, ERROR_INFO()));
-            FLArrayIterator columns  = e->columns;
-            slice           word     = Value(FLArrayIterator_GetValueAt(&columns, 0)).asString();
-            float           distance = Value(FLArrayIterator_GetValueAt(&columns, 1)).asFloat();
-            CHECK(word == slice(expectedWord));
-        }
-        CHECK(!c4queryenum_next(e, ERROR_INFO()));
-        c4queryenum_release(e);
-    }
+    //    void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
+    //        auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
+    //        REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
+    //        for ( const auto& expectedWord : expectedWords ) {
+    //            REQUIRE(c4queryenum_next(e, ERROR_INFO()));
+    //            FLArrayIterator columns  = e->columns;
+    //            slice           word     = Value(FLArrayIterator_GetValueAt(&columns, 0)).asString();
+    //            float           distance = Value(FLArrayIterator_GetValueAt(&columns, 1)).asFloat();
+    //            CHECK(word == slice(expectedWord));
+    //        }
+    //        CHECK(!c4queryenum_next(e, ERROR_INFO()));
+    //        c4queryenum_release(e);
+    //    }
 
     void checkQueryReturnsVectors(C4Query* query, int64_t expectedRowCount,
                                   const std::vector<float>& expectedVectors) const {
@@ -167,7 +167,7 @@ class LazyVectorAPITest : public C4Test {
             FLArrayIterator columns     = e->columns;
             auto            vectorArray = Value(FLArrayIterator_GetValueAt(&columns, 0)).asArray();
             for ( size_t j = 0; j < expectedVectors.size(); j++ ) {
-                float vector = vectorArray.get(j).asFloat();
+                float vector = vectorArray.get((uint32_t)j).asFloat();
                 CHECK(vector == expectedVectors[j]);
             }
         }
