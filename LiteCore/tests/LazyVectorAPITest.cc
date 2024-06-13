@@ -348,8 +348,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Existing Index", "[API]
 
 // 4
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Vector Index", "[API][.VectorSearch]") {
-    REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), kC4ValueIndex, C4IndexOptions{},
-                        ERROR_INFO()));
+    REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), kC4ValueIndex, C4IndexOptions{}, ERROR_INFO()));
 
     auto index = REQUIRED(getIndex("value_index"_sl, ERROR_INFO()));
     CHECK(index->getName() == "value_index"_sl);
@@ -390,8 +389,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Deleted Collection", 
 
 // 11
 TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorSearch]") {
-    REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), kC4ValueIndex, C4IndexOptions{},
-                        ERROR_INFO()));
+    REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), kC4ValueIndex, C4IndexOptions{}, ERROR_INFO()));
     auto index = REQUIRED(getIndex("value_index"_sl, ERROR_INFO()));
 
     C4Error err{};
