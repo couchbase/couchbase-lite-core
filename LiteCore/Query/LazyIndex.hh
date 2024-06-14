@@ -73,8 +73,6 @@ namespace litecore {
         /// This is the value of the expression in the index spec.
         FLValue valueAt(size_t i) const;
 
-        std::vector<float> getVectorAt(size_t i, size_t dimension);
-
         /// Sets the vector for the i'th value, or removes it if NULL.
         void setVectorAt(size_t i, const float* vector, size_t dimension);
 
