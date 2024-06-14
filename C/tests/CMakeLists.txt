@@ -60,10 +60,24 @@ add_executable(
     c4CertificateTest.cc
 
     ${TOP}LiteCore/tests/main.cpp
-    ${TOP}Crypto/SecureRandomize.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/ObjC/slice+CoreFoundation.cc
 )
+
+if (NOT EMSCRIPTEN)
+    # These files contain internal functionality that isn't exported from the LiteCore shared lib.
+    # But C4Tests use these, so we have to compile them into its binary.
+    # This doesn't apply to Emscripten, bc WASM doesn't have shared libs; all linking is static.
+    target_sources(
+        C4Tests PRIVATE
+        ${TOP}Crypto/SecureRandomize.cc
+        ${TOP}LiteCore/Support/Error.cc
+        ${TOP}LiteCore/Support/FilePath.cc
+        ${TOP}LiteCore/Support/LogDecoder.cc
+        ${TOP}LiteCore/Support/Logging_Stub.cc
+        ${TOP}LiteCore/Support/StringUtil.cc
+    )
+endif()
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)

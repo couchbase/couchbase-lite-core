@@ -71,9 +71,6 @@ add_executable(
     UpgraderTest.cc
     VectorQueryTest.cc
     VersionVectorTest.cc
-    ${TOP}REST/tests/RESTListenerTest.cc
-    ${TOP}REST/tests/RESTClientTest.cc
-    ${TOP}REST/tests/SyncListenerTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
@@ -89,13 +86,8 @@ add_executable(
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
-    ${TOP}Replicator/tests/ReplicatorAPITest.cc
-    ${TOP}Replicator/tests/ReplicatorSGTest.cc
     ${TOP}Replicator/tests/ReplicatorCollectionTest.cc
-    ${TOP}Replicator/tests/ReplicatorCollectionSGTest.cc
-    ${TOP}Replicator/tests/ReplicatorSG30Test.cc
     ${TOP}Replicator/tests/ReplicatorVVUpgradeTest.cc
-    ${TOP}Replicator/tests/SG.cc
     ${TOP}Replicator/tests/SGTestUser.cc
     ${TOP}Replicator/tests/ReplParams.cc
     ${TOP}C/tests/c4Test.cc
@@ -104,6 +96,20 @@ add_executable(
     ${TOP}LiteCore/Support/TestsCommon.cc
     main.cpp
 )
+
+if (NOT EMSCRIPTEN)
+    target_sources(
+        CppTests PRIVATE
+        ${TOP}REST/tests/RESTListenerTest.cc
+        ${TOP}REST/tests/RESTClientTest.cc
+        ${TOP}REST/tests/SyncListenerTest.cc
+        ${TOP}Replicator/tests/ReplicatorAPITest.cc
+        ${TOP}Replicator/tests/ReplicatorSGTest.cc
+        ${TOP}Replicator/tests/ReplicatorCollectionSGTest.cc
+        ${TOP}Replicator/tests/ReplicatorSG30Test.cc
+        ${TOP}Replicator/tests/SG.cc
+    )
+endif()
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
@@ -159,6 +165,12 @@ target_link_libraries(
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
-    LiteCoreREST_Static
-    LiteCoreWebSocket
 )
+
+if (NOT EMSCRIPTEN)
+    target_link_libraries(
+        CppTests PRIVATE
+        LiteCoreREST_Static
+        LiteCoreWebSocket
+    )
+endif()

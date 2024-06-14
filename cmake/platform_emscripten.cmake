@@ -8,9 +8,6 @@ function(setup_globals)
     setup_globals_unix()
 
     set(EMSCRIPTEN_COMPILE_FLAGS "-pthread -fwasm-exceptions")
-
-    set(LITECORE_C_FLAGS ${EMSCRIPTEN_COMPILE_FLAGS} CACHE INTERNAL "")
-    set(LITECORE_CXX_FLAGS ${EMSCRIPTEN_COMPILE_FLAGS} CACHE INTERNAL "")
 endfunction()
 
 function(set_litecore_source)
@@ -37,6 +34,15 @@ function(setup_litecore_build)
         LiteCoreStatic PRIVATE
         LiteCore/Unix
     )
+
+    foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects CouchbaseSqlite3 SQLite3_UnicodeSN)
+        target_compile_options(
+            ${platform} PRIVATE
+            #${EMSCRIPTEN_COMPILE_FLAGS}
+            "-pthread"
+            "-fwasm-exceptions"
+        )
+    endforeach()
 
     target_link_libraries(
         LiteCoreStatic INTERFACE

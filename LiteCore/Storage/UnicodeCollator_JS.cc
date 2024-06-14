@@ -23,6 +23,7 @@ namespace litecore {
 
     using namespace std;
     using namespace emscripten;
+    using namespace fleece;
 
     class JSCollationContext : public CollationContext {
       public:

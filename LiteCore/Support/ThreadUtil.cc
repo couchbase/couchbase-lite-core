@@ -33,11 +33,10 @@
 #    ifndef HAVE_PTHREAD_THREADID_NP
 #        include <sys/syscall.h>
 #    endif
-#    ifndef HAVE_PTHREAD_GETNAME_NP
-#        include <sys/prctl.h>
-#    endif
 #    ifdef __EMSCRIPTEN__
 #        include <emscripten/threading.h>
+#    elif !defined(HAVE_PTHREAD_GETNAME_NP)
+#        include <sys/prctl.h>
 #    endif
 
 namespace litecore {
@@ -55,10 +54,11 @@ namespace litecore {
     std::string GetThreadName() {
         std::string       retVal;
         std::stringstream s;
-        char              name[256];
 #    if defined(HAVE_PTHREAD_GETNAME_NP)
+        char name[256];
         if ( pthread_getname_np(pthread_self(), name, 255) == 0 && name[0] != 0 ) { s << name << " "; }
 #    elif defined(HAVE_PRCTL)
+        char name[256];
         if ( prctl(PR_GET_NAME, name, 0, 0, 0) == 0 ) { s << name << " "; }
 #    else
         s << "<unknown thread name> ";

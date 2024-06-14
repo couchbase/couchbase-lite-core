@@ -649,11 +649,13 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 
 TEST_CASE("CanonicalPath") {
 #ifdef __EMSCRIPTEN__
+    // clang-format off
     auto isMacOs = (bool)EM_ASM_INT({
-        if ( typeof require == = 'undefined' ) return false;
+        if ( typeof require === 'undefined' ) return false;
         const process              = require('process');
-        return process.platform == = 'darwin';
+        return process.platform === 'darwin';
     });
+    // clang-format on
 #endif
 
 #ifdef _MSC_VER
