@@ -130,6 +130,12 @@ CBL_CORE_API bool c4coll_isIndexTrained(C4Collection* collection, C4String name,
     2. Call `finish` to apply the updates to the index.
     3. Release the `C4IndexUpdater`, of course.
 
+    @note The updater is not guaranteed to find all of the unindexed documents at once! It may
+        return less than the limit, even if more exist. It _is_ guaranteed to make progress,
+        by returning _some_ unindexed documents if there are any. The intention is that the app
+        will continue updating the index periodically until this call returns NULL, signaling
+        that the index is now up-to-date.
+
     @param index  The index to update; must be a vector index with the lazy attribute.
     @param limit  The maximum number of out-of-date documents to include.
     @param outError  On failure, will be set to the error status.
