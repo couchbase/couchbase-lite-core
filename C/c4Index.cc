@@ -76,6 +76,10 @@ void C4IndexUpdater::setVectorAt(size_t i, const float* vector, size_t dimension
 void C4IndexUpdater::skipVectorAt(size_t i) { return _update->skipVectorAt(i); }
 
 bool C4IndexUpdater::finish() {
+    // Invariants: _update != nullptr || (finish() has been called)
+    if ( !_update ) {
+        litecore::error::_throw(litecore::error::NotOpen, "finish() has been already been called on this updater.");
+    }
     auto                    db = _collection->getDatabase();
     C4Database::Transaction txn(db);
     bool                    done = _update->finish(asInternal(db)->transaction());
