@@ -15,5 +15,5 @@ cd $SCRIPT_DIR/..
 mkdir -p wasm_EE
 cd wasm_EE
 
-emcmake cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
+emcmake cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=Release ../..
 emmake make -j

@@ -4,10 +4,16 @@ macro(check_threading)
     message(STATUS "No threading checks needed for Emscripten")
 endmacro()
 
+set(EMSCRIPTEN_COMPILE_FLAGS "-pthread" "-fwasm-exceptions" "-Os")
+set(EMSCRIPTEN_LINK_FLAGS    "-pthread" "-fwasm-exceptions" "-lembind")
+
 function(setup_globals)
     setup_globals_unix()
 
-    set(EMSCRIPTEN_COMPILE_FLAGS "-pthread -fwasm-exceptions")
+    #if(NOT DISABLE_LTO_BUILD)
+        set(EMSCRIPTEN_COMPILE_FLAGS ${EMSCRIPTEN_COMPILE_FLAGS} "-flto" PARENT_SCOPE)
+        set(EMSCRIPTEN_LINK_FLAGS    ${EMSCRIPTEN_LINK_FLAGS}    "-flto" PARENT_SCOPE)
+    #endif()
 endfunction()
 
 function(set_litecore_source)
@@ -35,12 +41,11 @@ function(setup_litecore_build)
         LiteCore/Unix
     )
 
+    message(STATUS "Emscripten flags are ${EMSCRIPTEN_COMPILE_FLAGS}")
     foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects CouchbaseSqlite3 SQLite3_UnicodeSN)
         target_compile_options(
             ${platform} PRIVATE
-            #${EMSCRIPTEN_COMPILE_FLAGS}
-            "-pthread"
-            "-fwasm-exceptions"
+            ${EMSCRIPTEN_COMPILE_FLAGS}
         )
     endforeach()
 

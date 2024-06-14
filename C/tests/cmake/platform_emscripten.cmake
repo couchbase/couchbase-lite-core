@@ -10,15 +10,12 @@ function(setup_build)
 
     target_compile_options(
         C4Tests PRIVATE
-        "-pthread"
-        "-fwasm-exceptions"
+        ${EMSCRIPTEN_COMPILE_FLAGS}
     )
 
     target_link_options(
         C4Tests PRIVATE
-        "-pthread"
-        "-fwasm-exceptions"
-        "-lembind"
+        ${EMSCRIPTEN_LINK_FLAGS}
         "SHELL:-s EXIT_RUNTIME=1"
         "SHELL:-s PTHREAD_POOL_SIZE=24"
         "SHELL:-s ALLOW_MEMORY_GROWTH=1"

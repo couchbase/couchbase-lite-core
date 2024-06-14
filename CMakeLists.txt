@@ -150,7 +150,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     include("${PROJECT_SOURCE_DIR}/cmake/platform_linux_desktop.cmake")
 else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
-endif(MSVC)
+endif()
 
 check_threading()
 setup_globals()
