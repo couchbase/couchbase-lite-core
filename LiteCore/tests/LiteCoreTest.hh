@@ -113,6 +113,7 @@ class DataFileTestFixture
     DataFileTestFixture() : DataFileTestFixture(0) {}  // defaults to SQLite, rev-trees
 
     explicit DataFileTestFixture(int testOption, const DataFile::Options* options = nullptr);
+
     ~DataFileTestFixture() override;
 
     static DataFile::Factory& factory();
