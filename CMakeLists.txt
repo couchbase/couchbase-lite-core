@@ -250,6 +250,7 @@ set(
     vendor/mbedtls/include
     vendor/mbedtls/crypto/include
     vendor/sockpp/include
+    vendor/vector_search
 )
 
 target_include_directories(

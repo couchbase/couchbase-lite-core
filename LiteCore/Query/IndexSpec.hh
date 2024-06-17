@@ -12,6 +12,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "VectorIndexSpec.hh"
 #include <optional>
 #include <string>
 #include <variant>
@@ -29,7 +30,7 @@ namespace litecore {
     };
 
     struct IndexSpec {
-        /// The types of indexes.
+        /// The types of indexes. (Values MUST match C4IndexType)
         enum Type {
             kValue,       ///< Regular index of property value
             kFullText,    ///< Full-text index, for MATCH queries. Uses IndexSpec::FTSOptions.
@@ -47,52 +48,9 @@ namespace litecore {
         };
 
         /// Options for a vector index.
-        struct VectorOptions {
-            enum MetricType {
-                DefaultMetric,  ///< Use default metric, Euclidean
-                Euclidean,      ///< Euclidean distance (squared)
-                Cosine,         ///< Cosine distance (1.0 - cosine similarity)
-            };                  // Note: values must match C4VectorMetricType in c4IndexTypes.h
+        using VectorOptions = vectorsearch::IndexSpec;
 
-            enum ClusteringType {
-                Flat,
-                Multi,
-            };  // Note: values must match C4VectorClusteringType in c4IndexTypes.h
-
-            enum EncodingType {
-                DefaultEncoding,  ///< Use default encoding, which is currently SQ8Bit
-                NoEncoding,       ///< No encoding; 4 bytes per dimension, no data loss
-                PQ,               ///< Product Quantizer
-                SQ,               ///< Scalar Quantizer
-            };                    // Note: values must match C4VectorEncodingType in c4IndexTypes.h
-
-            struct Clustering {
-                ClusteringType type;
-                unsigned       flat_centroids;
-                unsigned       multi_subquantizers;  ///< Number of pieces to split vectors into (for multi)
-                unsigned       multi_bits;           ///< log2 of # of centroids per subquantizer (for multi)
-            };
-
-            struct Encoding {
-                EncodingType type;              ///< Encoding type: none, PQ, SQ
-                unsigned     pq_subquantizers;  ///< Number of subquantizers (for PQ)
-                unsigned     bits;              ///< Number of bits (for PQ and SQ)
-            };
-
-            unsigned   dimensions;                 ///< Number of dimensions
-            MetricType metric{DefaultMetric};      ///< Distance metric
-            Clustering clustering{Flat};           ///< Clustering type & parameters
-            Encoding   encoding{DefaultEncoding};  ///< Vector compression type & parameters
-
-            unsigned minTrainingSize{0};  ///< Minimum # of vectors to train index (>= 25*numCentroids)
-            unsigned maxTrainingSize{0};  ///< Maximum # of vectors to train index on (<= 256*numCentroids)
-            unsigned numProbes{0};        ///< Default # of probes when querying
-
-            bool lazy{false};
-
-            /// Constructor. Number of dimensions is a required parameter.
-            explicit VectorOptions(unsigned d) : dimensions(d) {}
-        };
+        static constexpr vectorsearch::SQEncoding DefaultEncoding{8};
 
         /// Index options. If not empty (the first state), must match the index type.
         using Options = std::variant<std::monostate, FTSOptions, VectorOptions>;

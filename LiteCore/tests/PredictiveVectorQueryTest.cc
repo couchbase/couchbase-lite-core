@@ -82,9 +82,7 @@ class PredictiveVectorQueryTest : public VectorQueryTest {
     }
 
     void createVectorIndex(QueryLanguage lang) {
-        IndexSpec::VectorOptions options(5);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 16;
+        IndexSpec::VectorOptions options(5, vectorsearch::FlatClustering{16}, IndexSpec::DefaultEncoding);
         if ( lang == QueryLanguage::kJSON ) {
             VectorQueryTest::createVectorIndex(
                     "factorsindex", "[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]", options, lang);
