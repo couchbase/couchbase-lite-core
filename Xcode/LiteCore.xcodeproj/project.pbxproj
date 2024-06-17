@@ -66,6 +66,7 @@
 		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
 		270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		270D5B8A2C110ED800AA91E7 /* VectorIndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270D5B892C110ED800AA91E7 /* VectorIndexSpec.cc */; };
 		270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */; };
 		2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2712F5AE25D5A9AB0082D526 /* c4Error.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
@@ -900,6 +901,9 @@
 		270C6B891EBA2CD600E73415 /* LogEncoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoder.cc; sourceTree = "<group>"; };
 		270C6B8A1EBA2CD600E73415 /* LogEncoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogEncoder.hh; sourceTree = "<group>"; };
 		270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoderTest.cc; sourceTree = "<group>"; };
+		270D5B852C110ED800AA91E7 /* VectorIndexSpec.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VectorIndexSpec.hh; sourceTree = "<group>"; };
+		270D5B892C110ED800AA91E7 /* VectorIndexSpec.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorIndexSpec.cc; sourceTree = "<group>"; };
+		270D5B8C2C122B9500AA91E7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPSocket.hh; sourceTree = "<group>"; };
 		270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TCPSocket.cc; sourceTree = "<group>"; };
 		2712F5AE25D5A9AB0082D526 /* c4Error.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Error.cc; sourceTree = "<group>"; };
@@ -1884,6 +1888,16 @@
 				270BEE29206483C0005E8BE8 /* Listener */,
 			);
 			path = EE;
+			sourceTree = "<group>";
+		};
+		270D5B8B2C122B5200AA91E7 /* vector_search */ = {
+			isa = PBXGroup;
+			children = (
+				270D5B892C110ED800AA91E7 /* VectorIndexSpec.cc */,
+				270D5B852C110ED800AA91E7 /* VectorIndexSpec.hh */,
+				270D5B8C2C122B9500AA91E7 /* README.md */,
+			);
+			path = vector_search;
 			sourceTree = "<group>";
 		};
 		271057C21D3997230018247B /* C++ Tests */ = {
@@ -2970,6 +2984,7 @@
 				27AFF38F23036A7100B4D6C4 /* socketpp */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
+				270D5B8B2C122B5200AA91E7 /* vector_search */,
 				2744B3602418566F005A194D /* zlib */,
 			);
 			name = vendor;
@@ -4075,7 +4090,6 @@
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
-				27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */,
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
@@ -4091,6 +4105,7 @@
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */,
 				27F602FE2A968503006FA1D0 /* PredictiveVectorQueryTest.cc in Sources */,
+				27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */,
 				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
@@ -4386,6 +4401,7 @@
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
 				274B36D225B271F7001FC28D /* Version.cc in Sources */,
+				270D5B8A2C110ED800AA91E7 /* VectorIndexSpec.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				2744B354241854F2005A194D /* Actor.cc in Sources */,

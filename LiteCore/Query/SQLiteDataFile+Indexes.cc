@@ -372,32 +372,4 @@ namespace litecore {
         }
     }
 
-    bool SQLiteKeyStore::isIndexTrained(fleece::slice name) const {
-        auto specs = getIndexes();
-        for ( const auto& spec : specs ) {
-            if ( name == spec.name ) {
-                if ( spec.type != IndexSpec::kVector ) {
-                    error::_throw(error::InvalidParameter, "Index '%.*s' is not a vector index", SPLAT(name));
-                }
-
-                // IMPORTANT: These are implementation details that will break this functionality if changed
-                // in the mobile-vector-search repo!
-                static const char* vectorTableNameSuffix = "_vectorsearchImpl";
-                static const char* vectorDataTableName   = "vectorSearchIndexData";
-                // END
-
-                string sql;
-                if ( !db().getSchema(vectorDataTableName, "table", vectorDataTableName, sql) ) { return false; }
-                auto vectorTableName = db().auxiliaryTableName(tableName(), KeyStore::kVectorSeparator, (string)name)
-                                       + vectorTableNameSuffix;
-                auto rawResult = db().rawQuery(format("SELECT tableName FROM %s WHERE tableName = '%s'",
-                                                      vectorDataTableName, vectorTableName.c_str()));
-                auto result    = Value::fromTrustedData(rawResult)->asArray();
-                return result->count() == 1;
-            }
-        }
-
-        error::_throw(error::NoSuchIndex);
-    }
-
 }  // namespace litecore

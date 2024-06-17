@@ -31,21 +31,32 @@ struct C4Index
     , C4Base {
     C4Collection* getCollection() const { return _collection; }
 
-    slice getName() const { return _name; }
+    slice getName() const noexcept { return _name; }
+
+    C4IndexType     getType() const noexcept;
+    C4QueryLanguage getQueryLanguage() const noexcept;
+    slice           getExpression() const noexcept;
+
+    /// Writes the index options to `opts` and returns true. If there are none, returns false.
+    [[nodiscard]] bool getOptions(C4IndexOptions& opts) const noexcept;
 
 #ifdef COUCHBASE_ENTERPRISE
+    bool isTrained() const;
+
     /// Finds new or updated documents for which vectors need to be recomputed by the application.
     /// If there are none, returns NULL.
     /// @param limit  The maximum number of documents/vectors to return. If this is less than
     ///               the total number, the rest will be returned on the next call to `beginUpdate`.
     /// @warning  Do not call `beginUpdate` again until you're done with the returned updater;
     ///           it's not valid to have more than one update in progress at a time.
-    Retained<struct C4IndexUpdater> beginUpdate(size_t limit);
+    Retained<C4IndexUpdater> beginUpdate(size_t limit);
 #endif
 
   protected:
     friend class litecore::CollectionImpl;
     static Retained<C4Index> getIndex(C4Collection*, slice name);
+
+    C4Index(C4Collection* coll, std::string name) : _collection(coll), _name(std::move(name)) {}
 
     Retained<C4Collection> _collection;
     std::string            _name;

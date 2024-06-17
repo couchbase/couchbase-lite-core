@@ -416,22 +416,45 @@ namespace litecore {
                     break;
                 case kC4VectorIndex:
                     if ( indexOptions ) {
-                        auto& c4Opt   = indexOptions->vector;
-                        auto& vecOpt  = options.emplace<IndexSpec::VectorOptions>(c4Opt.dimensions);
-                        vecOpt.metric = IndexSpec::VectorOptions::MetricType(c4Opt.metric);
-
-                        vecOpt.clustering.type = IndexSpec::VectorOptions::ClusteringType(c4Opt.clustering.type);
-                        vecOpt.clustering.flat_centroids      = c4Opt.clustering.flat_centroids;
-                        vecOpt.clustering.multi_subquantizers = c4Opt.clustering.multi_subquantizers;
-                        vecOpt.clustering.multi_bits          = c4Opt.clustering.multi_bits;
-
-                        vecOpt.encoding.type             = IndexSpec::VectorOptions::EncodingType(c4Opt.encoding.type);
-                        vecOpt.encoding.pq_subquantizers = c4Opt.encoding.pq_subquantizers;
-                        vecOpt.encoding.bits             = c4Opt.encoding.bits;
-
-                        vecOpt.minTrainingSize = c4Opt.minTrainingSize;
-                        vecOpt.maxTrainingSize = c4Opt.maxTrainingSize;
-                        vecOpt.numProbes       = c4Opt.numProbes;
+                        auto& c4Opt       = indexOptions->vector;
+                        auto& vecOpt      = options.emplace<IndexSpec::VectorOptions>();
+                        vecOpt.dimensions = c4Opt.dimensions;
+                        switch ( c4Opt.metric ) {
+                            case kC4VectorMetricEuclidean:
+                                vecOpt.metric = vectorsearch::Metric::Euclidean2;
+                            case kC4VectorMetricCosine:
+                                vecOpt.metric = vectorsearch::Metric::Cosine;
+                                break;
+                            case kC4VectorMetricDefault:
+                                break;
+                        }
+                        switch ( c4Opt.clustering.type ) {
+                            case kC4VectorClusteringFlat:
+                                vecOpt.clustering = vectorsearch::FlatClustering{c4Opt.clustering.flat_centroids};
+                                break;
+                            case kC4VectorClusteringMulti:
+                                vecOpt.clustering = vectorsearch::MultiIndexClustering{
+                                        c4Opt.clustering.multi_subquantizers, c4Opt.clustering.multi_bits};
+                                break;
+                        }
+                        switch ( c4Opt.encoding.type ) {
+                            case kC4VectorEncodingNone:
+                                vecOpt.encoding = vectorsearch::NoEncoding{};
+                                break;
+                            case kC4VectorEncodingPQ:
+                                vecOpt.encoding =
+                                        vectorsearch::PQEncoding{c4Opt.encoding.pq_subquantizers, c4Opt.encoding.bits};
+                                break;
+                            case kC4VectorEncodingSQ:
+                                vecOpt.encoding = vectorsearch::SQEncoding{c4Opt.encoding.bits};
+                                break;
+                            case kC4VectorEncodingDefault:
+                                break;
+                        }
+                        vecOpt.minTrainingCount = c4Opt.minTrainingSize;
+                        vecOpt.maxTrainingCount = c4Opt.maxTrainingSize;
+                        vecOpt.probeCount       = c4Opt.numProbes;
+                        vecOpt.validate();
                     } else {
                         error::_throw(error::InvalidParameter, "Vector index requires options");
                     }
@@ -454,7 +477,7 @@ namespace litecore {
             FLEncoder_BeginArray(enc, 2);
             for ( const auto& spec : keyStore().getIndexes() ) {
                 if ( fullInfo ) {
-                    FLEncoder_BeginDict(enc, 3);
+                    FLEncoder_BeginDict(enc, 5);
                     FLEncoder_WriteKey(enc, slice("name"));
                     FLEncoder_WriteString(enc, slice(spec.name));
                     FLEncoder_WriteKey(enc, slice("type"));
@@ -469,6 +492,10 @@ namespace litecore {
                         case QueryLanguage::kN1QL:
                             FLEncoder_WriteString(enc, slice("n1ql"));
                             break;
+                    }
+                    if ( auto vecOpts = spec.vectorOptions() ) {
+                        FLEncoder_WriteKey(enc, "vector_options"_sl);
+                        FLEncoder_WriteString(enc, slice(vecOpts->createArgs()));
                     }
                     FLEncoder_EndDict(enc);
                 } else {
