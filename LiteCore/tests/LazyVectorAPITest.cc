@@ -636,7 +636,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.
 }
 
 // 26
-TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call Finish Twice", "[API][.VectorSearch]") {
+TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call After Already Finished", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
     auto index   = REQUIRED(getIndex());
     auto updater = REQUIRED(c4index_beginUpdate(index, 1, ERROR_INFO()));
@@ -647,10 +647,30 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call Finish Twice", "[API][.Ve
     REQUIRE(!vectors.empty());
     REQUIRE(c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, ERROR_INFO()));
 
+    // c4indexupdater_finish is called
     CHECK(c4indexupdater_finish(updater, ERROR_INFO()));
+
+    // c4indexupdater_finish is called twice
     C4Error err{};
     CHECK(!c4indexupdater_finish(updater, &err));
-    CHECK(err.code == kC4ErrorUnsupported);
+    CHECK(err.code == kC4ErrorNotOpen);
+
+    // c4indexupdater_count after finished
+    CHECK(0 == c4indexupdater_count(updater));
+
+    // c4indexupdater_valueAt after finished
+    auto value = c4indexupdater_valueAt(updater, 0);
+    CHECK(value == nullptr);
+
+    // c4indexupdater_setVectorAt after finished
+    err.code  = 0;
+    auto succ = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, &err);
+    CHECK(!succ);
+    CHECK(err.code == kC4ErrorNotOpen);
+
+    // c4indexupdater_skipVectorAt after finished
+    succ = c4indexupdater_skipVectorAt(updater, 0);
+    CHECK(!succ);
 
     c4indexupdater_release(updater);
     c4index_release(index);

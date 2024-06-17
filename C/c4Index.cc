@@ -65,20 +65,39 @@ C4IndexUpdater::C4IndexUpdater(Retained<litecore::LazyIndexUpdate> u, C4Collecti
 
 C4IndexUpdater::~C4IndexUpdater() = default;
 
-size_t C4IndexUpdater::count() const { return _update->count(); }
+size_t C4IndexUpdater::count() const {
+    if ( hasFinished() ) {
+        WarnError("C4IndexUpdater::count() called on finished updater.");
+        return 0;
+    }
+    return _update->count();
+}
 
-FLValue C4IndexUpdater::valueAt(size_t i) const { return _update->valueAt(i); }
+FLValue C4IndexUpdater::valueAt(size_t i) const {
+    if ( hasFinished() ) {
+        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::valueAt() called on finished updater.");
+    }
+    return _update->valueAt(i);
+}
 
 void C4IndexUpdater::setVectorAt(size_t i, const float* vector, size_t dimension) {
+    if ( hasFinished() ) {
+        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::setVectorAt() called on finished updater.");
+    }
     _update->setVectorAt(i, vector, dimension);
 }
 
-void C4IndexUpdater::skipVectorAt(size_t i) { return _update->skipVectorAt(i); }
+void C4IndexUpdater::skipVectorAt(size_t i) {
+    if ( hasFinished() ) {
+        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::SkipVectorAt() called on finished updater.");
+    }
+    return _update->skipVectorAt(i);
+}
 
 bool C4IndexUpdater::finish() {
-    // Invariants: _update != nullptr || (finish() has been called)
-    if ( !_update ) {
-        litecore::error::_throw(litecore::error::NotOpen, "finish() has been already been called on this updater.");
+    // Invariant: _update != nullptr || (finish() has been called)
+    if ( hasFinished() ) {
+        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::finish() called on finished updater.");
     }
     auto                    db = _collection->getDatabase();
     C4Database::Transaction txn(db);
