@@ -404,6 +404,11 @@ _gC4ExpectExceptions
 _c4_setExtensionPath
 _c4_enableExtension
 
+_c4index_getType
+_c4index_getQueryLanguage
+_c4index_getExpression
+_c4index_getOptions
+
 _FLDoc_FromJSON
 _FLDoc_Retain
 _FLDoc_GetAllocedData

@@ -31,10 +31,9 @@ namespace litecore {
         , expression(std::move(expression_))
         , queryLanguage(queryLanguage_)
         , options(std::move(opt)) {
-        if ( auto whichOpts = options.index() ) {
-            if ( (type == kFullText && whichOpts != 1) || (type == kVector && whichOpts != 2) )
-                error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
-        }
+        auto whichOpts = options.index();
+        if ( (type == kFullText && whichOpts != 1 && whichOpts != 0) || (type == kVector && whichOpts != 2) )
+            error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
     }
 
     IndexSpec::IndexSpec(IndexSpec&&) = default;
