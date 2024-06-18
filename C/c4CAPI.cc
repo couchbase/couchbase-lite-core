@@ -10,7 +10,6 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4Base.h"
 #include "c4BlobStore.hh"
 #include "c4BlobStore.h"
 #include "c4Certificate.hh"
