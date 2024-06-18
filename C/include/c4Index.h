@@ -11,8 +11,6 @@
 //
 
 #pragma once
-#include "c4Base.h"
-#include "c4Compat.h"
 #include "c4IndexTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN

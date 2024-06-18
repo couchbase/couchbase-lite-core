@@ -534,7 +534,7 @@ static pair<string, string> splitCollectionName(const string& input) {
 // 2 trains the index at doc write time, and scenario 3 trains at first query time.  This
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
-    bool expectedTrained;
+    bool expectedTrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
