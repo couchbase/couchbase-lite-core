@@ -155,7 +155,8 @@ class LazyVectorQueryTest : public VectorQueryTest {
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index", "[Query][.VectorSearch]") {
     initWithIndex();
     Retained<QueryEnumerator> e;
-    e = (_query->createEnumerator(&_options));
+    expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
+    e                      = (_query->createEnumerator(&_options));
     REQUIRE(e->getRowCount() == 0);  // index is empty so far
 
     REQUIRE(updateVectorIndex(200, alwaysUpdate) == 200);
@@ -186,6 +187,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
     CHECK(n == 400);
 
     // rec-291, rec-171 and rec-081 are missing because unindexed
+    expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     checkQueryReturns({"rec-039", "rec-249", "rec-345", "rec-159", "rec-369"});
 
     // Update the index again; only the skipped docs will appear this time.
@@ -223,6 +225,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Update Wrong Dimensions", "[.
 // 8
 TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Modify Docs not Auto-Updated", "[Query][.VectorSearch]") {
     initWithIndex();
+    expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     checkQueryReturns({});
 
     {
@@ -233,7 +236,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Modify Docs not Auto-Updated"
         writeNumberedDoc(301, doc1.body(), t);
         writeNumberedDoc(1, doc3.body(), t);
     }
-
+    ++expectedWarningsLogged;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     checkQueryReturns({});
 }
 

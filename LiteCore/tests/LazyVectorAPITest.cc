@@ -615,22 +615,24 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.
     auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
 
     CHECK(c4indexupdater_count(updater) == 1);
-    auto negativeBoundsValue = c4indexupdater_valueAt(updater, -1);
-    auto pastBoundsValue     = c4indexupdater_valueAt(updater, 1);
-    CHECK(negativeBoundsValue == nullptr);
-    CHECK(pastBoundsValue == nullptr);
+    {
+        ExpectingExceptions e;
+        auto                negativeBoundsValue = c4indexupdater_valueAt(updater, -1);
+        auto                pastBoundsValue     = c4indexupdater_valueAt(updater, 1);
+        CHECK(negativeBoundsValue == nullptr);
+        CHECK(pastBoundsValue == nullptr);
 
-    C4Error            err{};
-    std::vector<float> vectors{1.0, 2.0, 3.0};
-    CHECK(!c4indexupdater_setVectorAt(updater, -1, vectors.data(), 3, &err));
-    CHECK(err.code == kC4ErrorInvalidParameter);
+        C4Error            err{};
+        std::vector<float> vectors{1.0, 2.0, 3.0};
+        CHECK(!c4indexupdater_setVectorAt(updater, -1, vectors.data(), 3, &err));
+        CHECK(err.code == kC4ErrorInvalidParameter);
 
-    CHECK(!c4indexupdater_setVectorAt(updater, 1, vectors.data(), 3, &err));
-    CHECK(err.code == kC4ErrorInvalidParameter);
+        CHECK(!c4indexupdater_setVectorAt(updater, 1, vectors.data(), 3, &err));
+        CHECK(err.code == kC4ErrorInvalidParameter);
 
-    CHECK(!c4indexupdater_skipVectorAt(updater, -1));
-    CHECK(!c4indexupdater_skipVectorAt(updater, 1));
-
+        CHECK(!c4indexupdater_skipVectorAt(updater, -1));
+        CHECK(!c4indexupdater_skipVectorAt(updater, 1));
+    }
     c4indexupdater_release(updater);
     c4index_release(index);
 }
