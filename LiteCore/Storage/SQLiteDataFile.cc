@@ -80,11 +80,11 @@ namespace litecore {
     // Maximum size WAL journal will be left at after a commit
     static const int64_t kJournalSize = 5 * MB;
 
+    static map<string, int> kValidExtensionVersions = {
 #ifdef COUCHBASE_ENTERPRISE
-    static constexpr int kVectorSearchCompatibleVersion = 1;
-
-    static map<string, int> kValidExtensionVersions = {{"CouchbaseLiteVectorSearch", kVectorSearchCompatibleVersion}};
+            {"CouchbaseLiteVectorSearch", 1}
 #endif
+    };
 
     // Amount of file to memory-map
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
