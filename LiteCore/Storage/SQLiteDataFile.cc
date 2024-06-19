@@ -82,6 +82,8 @@ namespace litecore {
 
 #ifdef COUCHBASE_ENTERPRISE
     static constexpr int kVectorSearchCompatibleVersion = 1;
+
+    static map<string, int> kValidExtensionVersions = {{"CouchbaseLiteVectorSearch", kVectorSearchCompatibleVersion}};
 #endif
 
     // Amount of file to memory-map
@@ -185,6 +187,34 @@ namespace litecore {
 
     void SQLiteDataFile::setExtensionPath(string path) { sExtensionPath = std::move(path); }
 
+    void SQLiteDataFile::enableExtension(const string& name, string path) {
+        auto extensionEntry = kValidExtensionVersions.find(name);
+        if ( extensionEntry == kValidExtensionVersions.end() ) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "'%s' is not a known extension", name.c_str());
+        }
+
+        // NOTE: This logic will need to be changed later if we have more than one extension
+        // and they reside in different directories
+        if ( !sExtensionPath.empty() && sExtensionPath != path ) {
+            WarnError("Extension path previously set to '%s' but being reset to '%s'.  This is not advisable!",
+                      sExtensionPath.c_str(), path.c_str());
+        }
+
+        sExtensionPath = std::move(path);
+
+#if defined(__ANDROID__)
+        string pluginPath = sExtensionPath + FilePath::kSeparator + "lib" + name;
+#else
+        string pluginPath = sExtensionPath + FilePath::kSeparator + name;
+#endif
+
+        if ( !extension::check_extension_version(pluginPath, extensionEntry->second) ) {
+            error::_throw(error::UnsupportedOperation,
+                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
+                          name.c_str());
+        }
+    }
+
     SQLiteDataFile::SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options* options)
         : DataFile(path, delegate, options) {
         reopen();
@@ -217,12 +247,6 @@ namespace litecore {
         };
 
         string pluginPath = sExtensionPath + FilePath::kSeparator + extensionName;
-        if ( !litecore::extension::check_extension_version(pluginPath, kVectorSearchCompatibleVersion) ) {
-            // This function logs the reason for the version match failure, no need to log here.
-            error::_throw(error::UnsupportedOperation,
-                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
-                          extensionName);
-        }
 
 #    if defined(_WIN32) && defined(_M_X64)
         // Flimsy hack to get around the fact that we need to load this dep from a non-standard

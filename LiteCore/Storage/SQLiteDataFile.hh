@@ -102,8 +102,10 @@ namespace litecore {
 
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
-        /// Sets the directory where SQLite extensions can be found (i.e. VectorSearch)
+        // Deprecated in favor of enableExtension!
         static void setExtensionPath(string);
+
+        static void enableExtension(const string& name, string path);
 
         // QueryParser::delegate:
         bool        tableExists(const std::string& tableName) const override;

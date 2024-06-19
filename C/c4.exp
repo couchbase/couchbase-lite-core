@@ -402,6 +402,7 @@ _c4_dumpInstances
 _gC4ExpectExceptions
 
 _c4_setExtensionPath
+_c4_enableExtension
 
 _FLDoc_FromJSON
 _FLDoc_Retain

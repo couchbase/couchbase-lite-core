@@ -125,7 +125,7 @@ bool litecore::extension::check_extension_version(const string& extensionPath, i
     int         majorVersion = version_number_f() / 1000000;
     const char* versionStr   = version_f();
     if ( majorVersion == expectedVersion ) {
-        LogToAt(DBLog, Info, "Loaded extension '%s' version %s", extensionName.c_str(), versionStr);
+        LogToAt(DBLog, Info, "Found extension '%s' version %s", extensionName.c_str(), versionStr);
         return true;
     }
 
