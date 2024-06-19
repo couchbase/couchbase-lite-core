@@ -20,6 +20,7 @@
 #include "Base64.hh"
 #include "c4Database.hh"
 #include "c4Collection.hh"
+#include "c4Database.h"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -666,6 +667,14 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
 
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "enableExtension API", "[.VectorSearch]") {
+    ExpectingExceptions e;
+    C4Error             err;
+    auto                result = c4_enableExtension("BadName"_sl, FLStr(sExtensionPath.c_str()), &err);
+    CHECK(!result);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {

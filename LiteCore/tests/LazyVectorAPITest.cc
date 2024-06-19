@@ -104,7 +104,7 @@ class LazyVectorAPITest : public C4Test {
         std::call_once(sOnce, [] {
             if ( const char* path = getenv("LiteCoreExtensionPath") ) {
                 sExtensionPath = path;
-                litecore::SQLiteDataFile::setExtensionPath(sExtensionPath);
+                litecore::SQLiteDataFile::enableExtension("CouchbaseLiteVectorSearch", sExtensionPath);
                 Log("Registered LiteCore extension path %s", path);
             }
         });
