@@ -667,12 +667,11 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call After Already Finished", 
     // c4indexupdater_setVectorAt after finished
     err.code  = 0;
     auto succ = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, &err);
-    CHECK(!succ);
-    CHECK(err.code == kC4ErrorNotOpen);
+    CHECK(succ);
 
     // c4indexupdater_skipVectorAt after finished
     succ = c4indexupdater_skipVectorAt(updater, 0);
-    CHECK(!succ);
+    CHECK(succ);
 
     c4indexupdater_release(updater);
     c4index_release(index);

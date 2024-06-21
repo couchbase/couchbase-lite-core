@@ -67,7 +67,7 @@ C4IndexUpdater::~C4IndexUpdater() = default;
 
 size_t C4IndexUpdater::count() const {
     if ( hasFinished() ) {
-        WarnError("C4IndexUpdater::count() called on finished updater.");
+        Warn("C4IndexUpdater::count() called on finished updater.");
         return 0;
     }
     return _update->count();
@@ -75,21 +75,24 @@ size_t C4IndexUpdater::count() const {
 
 FLValue C4IndexUpdater::valueAt(size_t i) const {
     if ( hasFinished() ) {
-        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::valueAt() called on finished updater.");
+        Warn("C4IndexUpdater::valueAt() called on finished updater.");
+        return FLValue{};
     }
     return _update->valueAt(i);
 }
 
 void C4IndexUpdater::setVectorAt(size_t i, const float* vector, size_t dimension) {
     if ( hasFinished() ) {
-        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::setVectorAt() called on finished updater.");
+        Warn("C4IndexUpdater::setVectorAt() called on finished updater.");
+        return;
     }
     _update->setVectorAt(i, vector, dimension);
 }
 
 void C4IndexUpdater::skipVectorAt(size_t i) {
     if ( hasFinished() ) {
-        litecore::error::_throw(litecore::error::NotOpen, "C4IndexUpdater::SkipVectorAt() called on finished updater.");
+        Warn("C4IndexUpdater::SkipVectorAt() called on finished updater.");
+        return;
     }
     return _update->skipVectorAt(i);
 }
