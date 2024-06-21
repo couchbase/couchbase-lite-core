@@ -20,6 +20,7 @@
 #include "Base64.hh"
 #include "c4Database.hh"
 #include "c4Collection.hh"
+#include "c4Database.h"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -30,10 +31,7 @@ class SIFTVectorQueryTest : public VectorQueryTest {
     SIFTVectorQueryTest() : VectorQueryTest(0) {}
 
     IndexSpec::VectorOptions vectorIndexOptions() const {
-        IndexSpec::VectorOptions options(128);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 256;
-        return options;
+        return IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
     }
 
     void createVectorIndex() {
@@ -146,8 +144,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
     REQUIRE(vecOptions);
     auto trueOptions = vectorIndexOptions();
     CHECK(vecOptions->dimensions == trueOptions.dimensions);
-    CHECK(vecOptions->clustering.type == trueOptions.clustering.type);
-    CHECK(vecOptions->encoding.type == trueOptions.encoding.type);
+    CHECK(vecOptions->clusteringType() == trueOptions.clusteringType());
+    CHECK(vecOptions->encodingType() == trueOptions.encodingType());
 
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     // Delete a doc too:
@@ -668,6 +666,14 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
 
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "enableExtension API", "[.VectorSearch]") {
+    ExpectingExceptions e;
+    C4Error             err;
+    auto                result = c4_enableExtension("BadName"_sl, FLStr(sExtensionPath.c_str()), &err);
+    CHECK(!result);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {

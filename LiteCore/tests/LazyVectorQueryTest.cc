@@ -80,10 +80,8 @@ class LazyVectorQueryTest : public VectorQueryTest {
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options(kDimension);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 16;
-        options.lazy                      = true;
+        IndexSpec::VectorOptions options(kDimension, vectorsearch::FlatClustering{16}, IndexSpec::DefaultEncoding);
+        options.lazyEmbedding = true;
         VectorQueryTest::createVectorIndex("factorsindex", "[  ['.num'] ]", options);
 
         _lazyIndex = make_retained<LazyIndex>(*store, "factorsindex");

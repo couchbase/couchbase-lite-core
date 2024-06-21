@@ -374,6 +374,10 @@ C4SliceResult c4coll_getIndexesInfo(C4Collection* coll, C4Error* C4NULLABLE outE
 
 void c4_setExtensionPath(C4String path) noexcept { C4Database::setExtensionPath(path); }
 
+bool c4_enableExtension(C4String name, C4String extensionPath, C4Error* outError) noexcept {
+    return tryCatch(outError, [=] { C4Database::enableExtension(name, extensionPath); });
+}
+
 bool c4db_exists(C4String name, C4String inDirectory) noexcept { return C4Database::exists(name, inDirectory); }
 
 bool c4key_setPassword(C4EncryptionKey* outKey, C4String password, C4EncryptionAlgorithm alg) noexcept {
@@ -553,7 +557,7 @@ bool c4db_createIndex2(C4Database* database, C4Slice name, C4Slice indexSpec, C4
 }
 
 bool c4coll_isIndexTrained(C4Collection* collection, C4Slice name, C4Error* outError) noexcept {
-    memset(outError, 0, sizeof(C4Error));
+    if ( outError ) *outError = kC4NoError;
     return tryCatch(outError, [=] { return collection->isIndexTrained(name); });
 }
 
@@ -900,6 +904,22 @@ C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
         return std::move(doc).detach();
     });
 }
+
+#pragma mark - INDEXES:
+
+C4IndexType c4index_getType(C4Index* index) C4API { return index->getType(); }
+
+C4QueryLanguage c4index_getQueryLanguage(C4Index* index) C4API { return index->getQueryLanguage(); }
+
+C4String c4index_getExpression(C4Index* index) C4API { return index->getExpression(); }
+
+bool c4index_getOptions(C4Index* index, C4IndexOptions* outOpts) C4API { return index->getOptions(*outOpts); }
+
+#ifdef COUCHBASE_ENTERPRISE
+bool c4index_isTrained(C4Index* index, C4Error* C4NULLABLE outError) C4API {
+    return c4coll_isIndexTrained(index->getCollection(), index->getName(), outError);
+}
+#endif
 
 #pragma mark - OBSERVERS:
 

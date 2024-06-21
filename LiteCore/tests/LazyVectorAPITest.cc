@@ -2,6 +2,7 @@
 // Created by Callum Birks on 28/05/2024.
 //
 
+#include "VectorIndexSpec.hh"
 #include "c4Base.hh"
 #include "DatabaseImpl.hh"
 #include "LazyIndex.hh"
@@ -9,6 +10,7 @@
 #include "c4Collection.hh"
 #include "c4Index.h"
 #include "c4Index.hh"
+#include "c4IndexTypes.h"
 #include "c4Query.h"
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "LiteCoreTest.hh"
@@ -104,7 +106,7 @@ class LazyVectorAPITest : public C4Test {
         std::call_once(sOnce, [] {
             if ( const char* path = getenv("LiteCoreExtensionPath") ) {
                 sExtensionPath = path;
-                litecore::SQLiteDataFile::setExtensionPath(sExtensionPath);
+                litecore::SQLiteDataFile::enableExtension("CouchbaseLiteVectorSearch", sExtensionPath);
                 Log("Registered LiteCore extension path %s", path);
             }
         });
@@ -181,7 +183,7 @@ class LazyVectorAPITest : public C4Test {
     bool createVectorIndex(bool lazy, slice expression = R"(['.word'])"_sl, slice name = "words_index"_sl,
                            IndexSpec::VectorOptions options = vectorOptions(300, 8),
                            C4Error*                 err     = ERROR_INFO()) const {
-        options.lazy = lazy;
+        options.lazyEmbedding = lazy;
         return createIndex(name, json5(expression), kC4VectorIndex, indexOptions(options), err);
     }
 
@@ -267,60 +269,71 @@ class LazyVectorAPITest : public C4Test {
     static C4VectorIndexOptions c4VectorOptions(const IndexSpec::VectorOptions& options) {
         C4VectorMetricType metric{};
         switch ( options.metric ) {
-            case IndexSpec::VectorOptions::DefaultMetric:
-                metric = kC4VectorMetricDefault;
-                break;
-            case IndexSpec::VectorOptions::Euclidean:
+            case vectorsearch::Metric::Euclidean2:
                 metric = kC4VectorMetricEuclidean;
                 break;
-            case IndexSpec::VectorOptions::Cosine:
+            case vectorsearch::Metric::Cosine:
                 metric = kC4VectorMetricCosine;
                 break;
         }
 
-        C4VectorClusteringType clusteringType{};
-        switch ( options.clustering.type ) {
-            case IndexSpec::VectorOptions::Flat:
-                clusteringType = kC4VectorClusteringFlat;
-                break;
-            case IndexSpec::VectorOptions::Multi:
-                clusteringType = kC4VectorClusteringMulti;
-                break;
+        C4VectorClustering clustering{};
+        switch ( options.clustering.index() ) {
+            case 0:
+                {
+                    clustering.type           = kC4VectorClusteringFlat;
+                    auto _clustering          = std::get<vectorsearch::FlatClustering>(options.clustering);
+                    clustering.flat_centroids = _clustering.numCentroids;
+                    break;
+                }
+            case 1:
+                {
+                    clustering.type                = kC4VectorClusteringMulti;
+                    auto _clustering               = std::get<vectorsearch::MultiIndexClustering>(options.clustering);
+                    clustering.multi_bits          = _clustering.bitsPerSub;
+                    clustering.multi_subquantizers = _clustering.subquantizers;
+                    break;
+                }
         }
 
-        C4VectorEncodingType encodingType{};
-        switch ( options.encoding.type ) {
-            case IndexSpec::VectorOptions::DefaultEncoding:
-                encodingType = kC4VectorEncodingDefault;
-                break;
-            case IndexSpec::VectorOptions::NoEncoding:
-                encodingType = kC4VectorEncodingNone;
-                break;
-            case IndexSpec::VectorOptions::PQ:
-                encodingType = kC4VectorEncodingPQ;
-                break;
-            case IndexSpec::VectorOptions::SQ:
-                encodingType = kC4VectorEncodingSQ;
-                break;
+        C4VectorEncoding encoding{};
+        switch ( options.encoding.index() ) {
+            case 0:
+                {
+                    encoding.type = kC4VectorEncodingNone;
+                    break;
+                }
+            case 1:
+                {
+                    encoding.type             = kC4VectorEncodingPQ;
+                    auto _encoding            = std::get<vectorsearch::PQEncoding>(options.encoding);
+                    encoding.bits             = _encoding.bitsPerSub;
+                    encoding.pq_subquantizers = _encoding.subquantizers;
+                    break;
+                }
+            case 2:
+                {
+                    encoding.type  = kC4VectorEncodingSQ;
+                    auto _encoding = std::get<vectorsearch::SQEncoding>(options.encoding);
+                    encoding.bits  = _encoding.bitsPerDimension;
+                    break;
+                }
         }
 
         return C4VectorIndexOptions{
                 options.dimensions,
                 metric,
-                C4VectorClustering{clusteringType, options.clustering.flat_centroids,
-                                   options.clustering.multi_subquantizers, options.clustering.multi_bits},
-                C4VectorEncoding{encodingType, options.encoding.pq_subquantizers, options.encoding.bits},
-                options.minTrainingSize,
-                options.maxTrainingSize,
-                options.numProbes,
-                options.lazy,
+                clustering,
+                encoding,
+                static_cast<unsigned int>(options.minTrainingCount.value_or(0)),
+                static_cast<unsigned int>(options.maxTrainingCount.value_or(0)),
+                options.probeCount.value_or(0),
+                options.lazyEmbedding,
         };
     }
 
     static IndexSpec::VectorOptions vectorOptions(unsigned dimensions, unsigned centroids) {
-        IndexSpec::VectorOptions options(dimensions);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = centroids;
+        IndexSpec::VectorOptions options(dimensions, vectorsearch::FlatClustering{centroids});
         return options;
     }
 
@@ -337,7 +350,7 @@ class LazyVectorAPITest : public C4Test {
 // 1, 2
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector isLazy Default False", "[API][.VectorSearch]") {
     auto vectorOpt = vectorOptions(300, 20);
-    CHECK(vectorOpt.lazy == false);
+    CHECK(vectorOpt.lazyEmbedding == false);
 }
 
 // 3
@@ -393,7 +406,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorS
     auto index = REQUIRED(getIndex("value_index"_sl, ERROR_INFO()));
 
     C4Error err{};
-    c4index_beginUpdate(index, 10, &err);
+    auto    _ = c4index_beginUpdate(index, 10, &err);
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
@@ -406,7 +419,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
     auto index = REQUIRED(getIndex("nonlazyindex"_sl));
 
     C4Error err{};
-    c4index_beginUpdate(index, 10, &err);
+    auto    _ = c4index_beginUpdate(index, 10, &err);
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
