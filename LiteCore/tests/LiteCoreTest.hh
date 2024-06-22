@@ -100,7 +100,6 @@ class TestFixture {
     static FilePath    sTempDir;
 
   private:
-    unsigned const _warningsAlreadyLogged;
     int            _objectCount;
 };
 

@@ -20,6 +20,7 @@
 #include "Base64.hh"
 #include "c4Database.hh"
 #include "c4Collection.hh"
+#include "c4Index.h"
 #include "c4Database.h"
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -221,7 +222,6 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
                 enc.writeString("nope");
             });
             t.commit();
-            ++expectedWarningsLogged;
         }
         // Verify the updated document is missing from the results:
         Query::Options options = optionsWithTargetVector(kTargetVector, kData);
@@ -566,6 +566,7 @@ static pair<string, string> splitCollectionName(const string& input) {
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained{false};
+    bool expectedPretrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
@@ -586,6 +587,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         }
 
         expectedTrained = false;
+        expectedPretrained = false;
         createVectorIndex();
         readVectorDocs(100);
     }
@@ -602,6 +604,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         }
 
         expectedTrained = true;
+        expectedPretrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
     }
@@ -618,6 +621,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         }
 
         expectedTrained = true;
+        expectedPretrained = false;
         readVectorDocs(256 * 30);
         createVectorIndex();
     }
@@ -648,6 +652,15 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         } catch ( error& e ) { CHECK(e == error::InvalidParameter); }
     }
 
+    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    CHECK(isTrained == expectedPretrained);
+
+    C4Error err;
+    isTrained = c4coll_isIndexTrained(collection, "vecIndex"_sl, &err);
+    CHECK(err.code == 0);
+    CHECK(err.domain == 0);
+    CHECK(isTrained == expectedPretrained);
+
     // Need to run an arbitrary query to actually train the index
     string queryStr =
             R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target, 5) )";
@@ -662,7 +675,12 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     Query::Options            options(enc.finish());
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
 
-    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    isTrained = collection->isIndexTrained("vecIndex"_sl);
+    CHECK(isTrained == expectedTrained);
+
+    isTrained = c4coll_isIndexTrained(collection, "vecIndex"_sl, &err);
+    CHECK(err.code == 0);
+    CHECK(err.domain == 0);
     CHECK(isTrained == expectedTrained);
 }
 
