@@ -587,6 +587,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
 
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
+    if ( !isTrained ) ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {
