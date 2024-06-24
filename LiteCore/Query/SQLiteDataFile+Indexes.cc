@@ -202,7 +202,7 @@ namespace litecore {
 
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
-        if ( !indexTableExists() ) return nullopt;
+        ensureIndexTableExists();
         SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, "
                                       "indexTableName, lastSeq "
                                       "FROM indexes WHERE name=?");
