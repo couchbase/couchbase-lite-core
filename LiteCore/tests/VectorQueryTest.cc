@@ -659,9 +659,9 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     enc.writeKey("target");
     enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
     enc.endDictionary();
-    Query::Options            options(enc.finish());
+    Query::Options options(enc.finish());
     if ( !expectedTrained )
-        ++expectedWarningsLogged; // WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
+        ++expectedWarningsLogged;  // WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
 
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
