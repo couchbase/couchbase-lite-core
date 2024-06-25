@@ -586,7 +586,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = false;
+        expectedTrained    = false;
         expectedPretrained = false;
         createVectorIndex();
         readVectorDocs(100);
@@ -603,7 +603,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
         expectedPretrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
@@ -620,7 +620,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
         expectedPretrained = false;
         readVectorDocs(256 * 30);
         createVectorIndex();

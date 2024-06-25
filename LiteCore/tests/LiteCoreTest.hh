@@ -99,7 +99,7 @@ class TestFixture {
     static FilePath    sTempDir;
 
   private:
-    int            _objectCount;
+    int _objectCount;
 };
 
 class DataFileTestFixture
