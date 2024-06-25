@@ -422,6 +422,7 @@ namespace litecore {
                         switch ( c4Opt.metric ) {
                             case kC4VectorMetricEuclidean:
                                 vecOpt.metric = vectorsearch::Metric::Euclidean2;
+                                break;
                             case kC4VectorMetricCosine:
                                 vecOpt.metric = vectorsearch::Metric::Cosine;
                                 break;
@@ -453,8 +454,8 @@ namespace litecore {
                         }
                         vecOpt.minTrainingCount = c4Opt.minTrainingSize;
                         vecOpt.maxTrainingCount = c4Opt.maxTrainingSize;
-                        vecOpt.probeCount       = c4Opt.numProbes;
-                        vecOpt.lazyEmbedding    = c4Opt.lazy;
+                        if ( c4Opt.numProbes > 0 ) vecOpt.probeCount = c4Opt.numProbes;
+                        vecOpt.lazyEmbedding = c4Opt.lazy;
                         vecOpt.validate();
                     } else {
                         error::_throw(error::InvalidParameter, "Vector index requires options");

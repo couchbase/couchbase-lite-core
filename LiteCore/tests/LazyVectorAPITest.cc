@@ -407,6 +407,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorS
 
     C4Error err{};
     auto    _ = c4index_beginUpdate(index, 10, &err);
+    (void)_;
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
@@ -420,6 +421,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
 
     C4Error err{};
     auto    _ = c4index_beginUpdate(index, 10, &err);
+    (void)_;
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
@@ -663,7 +665,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call Finish Twice", "[API][.Ve
     CHECK(c4indexupdater_finish(updater, ERROR_INFO()));
     C4Error err{};
     CHECK(!c4indexupdater_finish(updater, &err));
-    CHECK(err.code == kC4ErrorUnsupported);
+    CHECK(err.code == kC4ErrorNotOpen);
 
     c4indexupdater_release(updater);
     c4index_release(index);
