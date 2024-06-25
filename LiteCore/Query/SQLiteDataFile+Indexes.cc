@@ -41,7 +41,7 @@ namespace litecore {
         if ( is_current ) return;
 
         string sql;
-        if ( indexTableExists() ) {
+        if ( getSchema("indexes", "table", "indexes", sql) ) {
             // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
             if ( sql.find("lastSeq") == string::npos ) _exec("ALTER TABLE indexes ADD COLUMN lastSeq INTEGER");
             is_current = true;
@@ -49,12 +49,9 @@ namespace litecore {
     }
 
     void SQLiteDataFile::ensureIndexTableExists() {
-        {
-            string sql;
-            if ( indexTableExists() ) {
-                upgradeIndexTable();
-                return;
-            }
+        if ( indexTableExists() ) {
+            upgradeIndexTable();
+            return;
         }
 
         if ( !options().upgradeable && _schemaVersion < SchemaVersion::WithIndexTable )
