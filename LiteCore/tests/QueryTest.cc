@@ -2150,6 +2150,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]")
     // Now free the query enum, which will free the sqlite_stmt, triggering a SQLite warning
     // callback about the database file being unlinked:
     e = nullptr;
+
+    // Assert that the callback did not log a warning:
+    CHECK(warningsLogged() == 0);
 }
 #endif
 
