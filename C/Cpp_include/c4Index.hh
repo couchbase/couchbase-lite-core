@@ -105,6 +105,9 @@ struct C4IndexUpdater final
     C4IndexUpdater(Retained<litecore::LazyIndexUpdate>, C4Collection*);
     ~C4IndexUpdater();
 
+    // Invariants: _update != nullptr || (finish() has been called)
+    bool hasFinished() const { return !_update; }
+
     Retained<litecore::LazyIndexUpdate> _update;
     Retained<C4Collection>              _collection;
 };
