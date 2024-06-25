@@ -93,13 +93,15 @@ class TestFixture {
     TestFixture();
     ~TestFixture();
 
+    unsigned                  warningsLogged() const noexcept;
     static litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
 
     static std::string sFixturesDir;
     static FilePath    sTempDir;
 
   private:
-    int _objectCount;
+    unsigned const _warningsAlreadyLogged;
+    int            _objectCount;
 };
 
 class DataFileTestFixture

@@ -76,10 +76,22 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
 
 #pragma mark - TESTFIXTURE:
 
-TestFixture::TestFixture() : _objectCount(c4_getObjectCount()) {
+
+static LogDomain::Callback_t sPrevCallback;
+static atomic_uint           sWarningsLogged;
+
+static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
+    if ( level >= LogLevel::Warning ) { ++sWarningsLogged; }
+    sPrevCallback(domain, level, fmt, args);
+}
+
+TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCount(c4_getObjectCount()) {
     static once_flag once;
     call_once(once, [] {
         InitTestLogging();
+
+        sPrevCallback = LogDomain::currentCallback();
+        LogDomain::setCallback(&logCallback, false);
 
 #if TARGET_OS_IPHONE
         // iOS tests copy the fixture files into the test bundle.
@@ -106,6 +118,8 @@ TestFixture::~TestFixture() {
         }
     }
 }
+
+unsigned TestFixture::warningsLogged() const noexcept { return sWarningsLogged - _warningsAlreadyLogged; }
 
 FilePath TestFixture::GetPath(const string& name, const string& extension) noexcept {
     static chrono::milliseconds unique;

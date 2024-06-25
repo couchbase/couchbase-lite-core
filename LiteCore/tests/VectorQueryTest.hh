@@ -29,6 +29,11 @@ class VectorQueryTest : public QueryTest {
 
     VectorQueryTest(int which) : QueryTest(which + initialize()) {}
 
+    ~VectorQueryTest() {
+        // Assert that the callback did not log unexpected warnings:
+        CHECK(warningsLogged() == expectedWarningsLogged);
+    }
+
     void requireExtensionAvailable() {
         if ( sExtensionPath.empty() )
             FAIL("You must setenv LiteCoreExtensionPath, to the directory containing the "
@@ -100,6 +105,9 @@ class VectorQueryTest : public QueryTest {
         CHECK_THAT(distance,
                    Catch::Matchers::WithinRel(expectedDist, 0.20f) || Catch::Matchers::WithinAbs(expectedDist, 400.0f));
     }
+
+    /// Increment this if the test is expected to generate a warning.
+    unsigned expectedWarningsLogged = 0;
 
     static inline string sExtensionPath;
 };

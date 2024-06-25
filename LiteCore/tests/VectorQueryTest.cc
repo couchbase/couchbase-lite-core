@@ -222,6 +222,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
                 enc.writeString("nope");
             });
             t.commit();
+            ++expectedWarningsLogged;
         }
         // Verify the updated document is missing from the results:
         Query::Options options = optionsWithTargetVector(kTargetVector, kData);
@@ -576,6 +577,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     // extra collections here
 
     SECTION("Insufficient docs") {
+        ++expectedWarningsLogged;
         SECTION("As-is") {}
         SECTION("Default scope") {
             collectionName = "Secondary";
