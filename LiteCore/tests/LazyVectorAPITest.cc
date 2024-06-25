@@ -406,7 +406,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorS
     auto index = REQUIRED(getIndex("value_index"_sl, ERROR_INFO()));
 
     C4Error err{};
-    auto    _ = c4index_beginUpdate(index, 10, &err);
+    CHECK(!c4index_beginUpdate(index, 10, &err));
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
@@ -419,7 +419,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
     auto index = REQUIRED(getIndex("nonlazyindex"_sl));
 
     C4Error err{};
-    auto    _ = c4index_beginUpdate(index, 10, &err);
+    CHECK(!c4index_beginUpdate(index, 10, &err));
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4index_release(index);
