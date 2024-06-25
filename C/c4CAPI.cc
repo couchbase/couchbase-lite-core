@@ -558,7 +558,7 @@ bool c4db_createIndex2(C4Database* database, C4Slice name, C4Slice indexSpec, C4
 
 bool c4coll_isIndexTrained(C4Collection* collection, C4Slice name, C4Error* outError) noexcept {
     if ( outError ) *outError = kC4NoError;
-    return tryCatch(outError, [=] { return collection->isIndexTrained(name); });
+    return tryCatch<bool>(outError, [=] { return collection->isIndexTrained(name); });
 }
 
 // semi-deprecated
