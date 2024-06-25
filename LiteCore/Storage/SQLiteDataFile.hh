@@ -182,6 +182,7 @@ namespace litecore {
         int  _exec(const std::string& sql);
 
         bool                         indexTableExists() const;
+        void                         upgradeIndexTable();
         void                         ensureIndexTableExists();
         void                         registerIndex(const litecore::IndexSpec&, const std::string& keyStoreName,
                                                    const std::string& indexTableName);

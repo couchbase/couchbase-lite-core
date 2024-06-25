@@ -36,12 +36,23 @@ namespace litecore {
         return getSchema("indexes", "table", "indexes", sql);
     }
 
+    void SQLiteDataFile::upgradeIndexTable() {
+        static bool is_current = false;
+        if ( is_current ) return;
+
+        string sql;
+        if ( indexTableExists() ) {
+            // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+            if ( sql.find("lastSeq") == string::npos ) _exec("ALTER TABLE indexes ADD COLUMN lastSeq INTEGER");
+            is_current = true;
+        }
+    }
+
     void SQLiteDataFile::ensureIndexTableExists() {
         {
             string sql;
-            if ( getSchema("indexes", "table", "indexes", sql) ) {
-                // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
-                if ( sql.find("lastSeq") == string::npos ) _exec("ALTER TABLE indexes ADD COLUMN lastSeq INTEGER");
+            if ( indexTableExists() ) {
+                upgradeIndexTable();
                 return;
             }
         }
@@ -150,6 +161,7 @@ namespace litecore {
 
     vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) {
         if ( indexTableExists() ) {
+            upgradeIndexTable();
             vector<SQLiteIndexSpec> indexes;
             SQLite::Statement       stmt(*this, "SELECT name, type, expression, keyStore, "
                                                       "indexTableName, lastSeq "
@@ -202,7 +214,9 @@ namespace litecore {
 
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
-        ensureIndexTableExists();
+        if ( !indexTableExists() ) return nullopt;
+        upgradeIndexTable();
+
         SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, "
                                       "indexTableName, lastSeq "
                                       "FROM indexes WHERE name=?");
