@@ -36,23 +36,8 @@ namespace litecore {
         return getSchema("indexes", "table", "indexes", sql);
     }
 
-    void SQLiteDataFile::upgradeIndexTable() {
-        static bool is_current = false;
-        if ( is_current ) return;
-
-        string sql;
-        if ( getSchema("indexes", "table", "indexes", sql) ) {
-            // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
-            if ( sql.find("lastSeq") == string::npos ) _exec("ALTER TABLE indexes ADD COLUMN lastSeq INTEGER");
-            is_current = true;
-        }
-    }
-
     void SQLiteDataFile::ensureIndexTableExists() {
-        if ( indexTableExists() ) {
-            upgradeIndexTable();
-            return;
-        }
+        if ( indexTableExists() ) return;
 
         if ( !options().upgradeable && _schemaVersion < SchemaVersion::WithIndexTable )
             error::_throw(error::CantUpgradeDatabase, "Accessing indexes requires upgrading the database schema");
@@ -70,8 +55,8 @@ namespace litecore {
               "keyStore TEXT NOT NULL, "  // Name of the KeyStore it indexes
               "expression TEXT, "         // Indexed property expression (JSON or N1QL)
               "indexTableName TEXT, "     // Index's SQLite name
-              "lastSeq INTEGER)");        // Last indexed sequence, for lazy indexes, else null
-        ensureSchemaVersionAtLeast(SchemaVersion::WithIndexTable);  // Backward-incompatible with version 2.0/2.1
+              "lastSeq TEXT)");           // indexed sequences, for lazy indexes, else null
+        ensureSchemaVersionAtLeast(SchemaVersion::WithIndexTable);
 
         for ( auto& spec : getIndexesOldStyle() ) registerIndex(spec, spec.keyStoreName, spec.indexTableName);
     }
@@ -158,11 +143,14 @@ namespace litecore {
 
     vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) {
         if ( indexTableExists() ) {
-            upgradeIndexTable();
+            string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq "
+                         "FROM indexes ORDER BY name";
+            if ( _schemaVersion < SchemaVersion::WithIndexesLastSeq ) {
+                // If schema doesn't have the `lastSeq` column, don't query it:
+                replace(sql, "lastSeq", "NULL");
+            }
             vector<SQLiteIndexSpec> indexes;
-            SQLite::Statement       stmt(*this, "SELECT name, type, expression, keyStore, "
-                                                      "indexTableName, lastSeq "
-                                                      "FROM indexes ORDER BY name");
+            SQLite::Statement       stmt(*this, sql);
             while ( stmt.executeStep() ) {
                 string keyStoreName = stmt.getColumn(3);
                 if ( !store || keyStoreName == store->name() ) indexes.emplace_back(specFromStatement(stmt));
@@ -211,12 +199,14 @@ namespace litecore {
 
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
-        if ( !indexTableExists() ) return nullopt;
-        upgradeIndexTable();
-
-        SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, "
-                                      "indexTableName, lastSeq "
-                                      "FROM indexes WHERE name=?");
+        ensureIndexTableExists();
+        string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq "
+                     "FROM indexes WHERE name=?";
+        if ( _schemaVersion < SchemaVersion::WithIndexesLastSeq ) {
+            // If schema doesn't have the `lastSeq` column, don't query it:
+            replace(sql, "lastSeq", "NULL");
+        }
+        SQLite::Statement stmt(*this, sql);
         stmt.bindNoCopy(1, (char*)name.buf, (int)name.size);
         if ( stmt.executeStep() ) return specFromStatement(stmt);
         else
@@ -224,6 +214,8 @@ namespace litecore {
     }
 
     void SQLiteDataFile::setIndexSequences(slice name, slice sequencesJSON) {
+        if ( _schemaVersion < SchemaVersion::WithIndexesLastSeq )
+            error::_throw(error::CantUpgradeDatabase, "Saving lazy index-state requires updating database schema");
         SQLite::Statement stmt(*this, "UPDATE indexes SET lastSeq=?1 WHERE name=?2");
         stmt.bindNoCopy(1, (char*)sequencesJSON.buf, int(sequencesJSON.size));
         stmt.bindNoCopy(2, (char*)name.buf, (int)name.size);
