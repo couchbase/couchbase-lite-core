@@ -140,7 +140,6 @@ namespace litecore {
         _ins->bind(1, (long long)rowid);
         _ins->bindNoCopy(2, (const void*)vec, int(dimension * sizeof(float)));
         _ins->exec();
-        _ins->reset();
     }
 
     void LazyIndex::del(int64_t rowid) {
@@ -151,7 +150,6 @@ namespace litecore {
         UsingStatement u(_del);
         _del->bind(1, (long long)rowid);
         _del->exec();
-        _del->reset();
     }
 
     void LazyIndex::updateIndexedSequences(SequenceSet const& seq) {

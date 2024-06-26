@@ -138,9 +138,10 @@ namespace litecore {
 
     UsingStatement::UsingStatement(SQLite::Statement& stmt) noexcept : _stmt(stmt) { LogStatement(stmt); }
 
-    UsingStatement::~UsingStatement() {
+    UsingStatement::~UsingStatement() noexcept {
         try {
             _stmt.reset();
+            _stmt.clearBindings();
         } catch ( ... ) {}
     }
 
