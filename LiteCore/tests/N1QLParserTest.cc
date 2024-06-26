@@ -588,10 +588,10 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
              "'WHERE':['VECTOR_MATCH()','a.vecIndex',['$target']]}");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
-                    "WHERE VECTOR_MATCH(vecIndex, $target, 5) ORDER BY distance")
-          == "{'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
+                    "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance LIMIT 5")
+          == "{'LIMIT':5,'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
              "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
-             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target'],5]}");
+             "'WHERE':['VECTOR_MATCH()','vecIndex',['$target']]}");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(coll.vecIndex) AS distance "
                     "FROM coll "

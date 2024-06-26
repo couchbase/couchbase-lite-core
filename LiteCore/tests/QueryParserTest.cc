@@ -679,29 +679,21 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
                 "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ],"
                 "LIMIT: 5}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
-             "\"kv_default:vector:vecIndex\" WHERE vector LIKE encode_vector(array_of(12, 34)) LIMIT 5) AS vector1 ON "
+             "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS vector1 ON "
              "vector1.rowid = _doc.rowid WHERE (true) AND (_doc.flags & 1 = 0) ORDER BY vector1.distance LIMIT MAX(0, "
              "5)");
     // Pure vector search with default max_results (3)
     CHECK(parse("['SELECT', {WHERE: ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],"
                 "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ]}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
-             "\"kv_default:vector:vecIndex\" WHERE vector LIKE encode_vector(array_of(12, 34)) LIMIT 3) AS vector1 ON "
+             "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 3) AS vector1 ON "
              "vector1.rowid = _doc.rowid WHERE (true) AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
-    // Pure vector search (explicit limit given):
-    CHECK(parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34], 10],"
-                "['>', ['._id'], 'x'] ],"
-                "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ]}]")
-          == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
-             "\"kv_default:vector:vecIndex\" WHERE vector LIKE encode_vector(array_of(12, 34)) LIMIT 10) AS vector1 ON "
-             "vector1.rowid = _doc.rowid WHERE (true AND _doc.key > 'x') AND (_doc.flags & 1 = 0) ORDER BY "
-             "vector1.distance");
     // Hybrid search:
     CHECK(parse("['SELECT', {WHERE: ['AND', ['VECTOR_MATCH()', 'vecIndex', ['[]', 12, 34]],"
                 "['>', ['._id'], 'x'] ],"
                 "ORDER_BY: [ ['VECTOR_DISTANCE()', 'vecIndex'] ]}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:vector:vecIndex\" AS vector1 ON "
-             "vector1.rowid = _doc.rowid WHERE (vector1.vector LIKE encode_vector((array_of(12, 34))) AND _doc.key > "
+             "vector1.rowid = _doc.rowid WHERE (vector1.vector MATCH encode_vector((array_of(12, 34))) AND _doc.key > "
              "'x') AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
 }
 

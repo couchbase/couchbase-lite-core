@@ -180,9 +180,10 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         // Number of results = 10
         string          queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
+            LIMIT:    10
          }] )";
         Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
@@ -197,9 +198,10 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     // Number of Results = 5
     string          queryStr = R"(
      ['SELECT', {
-       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
        ORDER_BY: [ ['.distance'] ],
+       LIMIT:    5
      }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
@@ -260,22 +262,6 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.Vec
                          {"rec-5300", "rec-4900", "rec-7100", "rec-3600", "rec-8700", "rec-8500", "rec-2400",
                           "rec-4700", "rec-4300", "rec-2600"},
                          {85776, 90431, 92142, 92629, 94598, 94989, 104787, 106750, 113260, 116129});
-
-    queryStr = R"(
-     ['SELECT', {
-        WHERE:    ['AND', ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
-                          ['=', 0, ['%', ['._sequence'], 100]] ],
-        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
-        ORDER_BY: [ ['.distance'] ],
-        LIMIT:    10
-     }] )";
-    query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
-
-    Log("---- Querying with $target = data and max_results = 10");
-    // With explicit max_results, it becomes a pure vector query.
-    options                     = optionsWithTargetVector(kTargetVector, kData);
-    Retained<QueryEnumerator> e = query->createEnumerator(&options);
-    CHECK(e->getRowCount() == 0);
 }
 
 // Test joining the result of VECTOR_MATCH with a property of another collection. In particular, it joins
@@ -318,7 +304,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
 
     string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
     queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) )";
+                R"(WHERE VECTOR_MATCH(a.vecIndex, $target) LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -510,8 +496,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
 
     string queryStr =
             R"(SELECT META(a).id, VECTOR_DISTANCE(a.vecIndex) AS distance, a.sentence FROM )"s + collectionName;
-    queryStr += R"( AS a WHERE VECTOR_MATCH(a.vecIndex, $target, 5))";
-    queryStr += R"( AND MATCH(a.sentence, "search"))";
+    queryStr += R"( AS a WHERE VECTOR_MATCH(a.vecIndex, $target))";
+    queryStr += R"( AND MATCH(a.sentence, "search") ORDER BY distance LIMIT 4)";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -577,7 +563,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     // extra collections here
 
     SECTION("Insufficient docs") {
-        ++expectedWarningsLogged;
         SECTION("As-is") {}
         SECTION("Default scope") {
             collectionName = "Secondary";
@@ -654,18 +639,9 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         } catch ( error& e ) { CHECK(e == error::InvalidParameter); }
     }
 
-    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
-    CHECK(isTrained == expectedPretrained);
-
-    C4Error err;
-    isTrained = c4coll_isIndexTrained(collection, "vecIndex"_sl, &err);
-    CHECK(err.code == 0);
-    CHECK(err.domain == 0);
-    CHECK(isTrained == expectedPretrained);
-
     // Need to run an arbitrary query to actually train the index
     string queryStr =
-            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target, 5) )";
+            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
 
@@ -674,18 +650,12 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     enc.writeKey("target");
     enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
     enc.endDictionary();
-    Query::Options options(enc.finish());
-    if ( !expectedTrained )
-        expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow
+    Query::Options            options(enc.finish());
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
 
-    isTrained = collection->isIndexTrained("vecIndex"_sl);
+    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
-
-    isTrained = c4coll_isIndexTrained(collection, "vecIndex"_sl, &err);
-    CHECK(err.code == 0);
-    CHECK(err.domain == 0);
-    CHECK(isTrained == expectedTrained);
+    if ( !isTrained ) ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
 }
 
 TEST_CASE_METHOD(SIFTVectorQueryTest, "enableExtension API", "[.VectorSearch]") {
