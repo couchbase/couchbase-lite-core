@@ -324,6 +324,14 @@ namespace litecore {
                  }) ) {
                 error::_throw(error::CantUpgradeDatabase);
             }
+
+            (void)upgradeSchema(SchemaVersion::WithIndexesLastSeq, "Adding indexes.lastSeq column", [&] {
+                string sql;
+                if ( getSchema("indexes", "table", "indexes", sql) ) {
+                    // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+                    if ( sql.find("lastSeq") == string::npos ) { _exec("ALTER TABLE indexes ADD COLUMN lastSeq TEXT"); }
+                }
+            });
         });
 
         // Configure number of extra threads to be used by SQLite:
