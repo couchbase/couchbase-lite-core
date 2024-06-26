@@ -46,20 +46,6 @@ class LazyVectorQueryTest : public VectorQueryTest {
     LazyVectorQueryTest() : LazyVectorQueryTest(0) {}
 
     LazyVectorQueryTest(int which) : VectorQueryTest(which) {
-        addNumberedDocs(1, 400);
-        addNonVectorDoc(401);
-        createVectorIndex();
-
-        string queryStr = R"(
-         ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target']],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
-            ORDER_BY: [ ['.distance'] ],
-            LIMIT:    5
-         }] )";
-        _query          = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
-        REQUIRE(_query != nullptr);
-
         // Create the $target query param:
         float           targetVector[5] = {0.0f, 1.0f, 1.0f, 0.0f, 0.0f};
         fleece::Encoder enc;
@@ -84,9 +70,10 @@ class LazyVectorQueryTest : public VectorQueryTest {
 
         string queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
+            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target']],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
+            LIMIT: 5
          }] )";
         _query          = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
         REQUIRE(_query != nullptr);
@@ -169,7 +156,6 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index", "[Query][.VectorSearc
     expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     e                      = (_query->createEnumerator(&_options));
     REQUIRE(e->getRowCount() == 0);  // index is empty so far
-    ++expectedWarningsLogged;        // "Untrained index; queries may be slow."
 
     REQUIRE(updateVectorIndex(200, alwaysUpdate) == 200);
     REQUIRE(updateVectorIndex(999, alwaysUpdate) == 200);
@@ -201,7 +187,6 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
     // rec-291, rec-171 and rec-081 are missing because unindexed
     expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
     checkQueryReturns({"rec-039", "rec-249", "rec-345", "rec-159", "rec-369"});
-    ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
 
     // Update the index again; only the skipped docs will appear this time.
     size_t nIndexed = 0;
