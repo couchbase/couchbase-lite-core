@@ -334,6 +334,8 @@ namespace litecore::repl {
             rearrangeCollections(activeCollections);
         }
 
+        static const std::unordered_set<slice> kWhiteListOfKeysToLog;
+
       private:
         inline void setCollectionOptions(Mode push, Mode pull);
         inline void setCollectionOptions(C4ReplicatorParameters params);
