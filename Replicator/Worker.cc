@@ -381,7 +381,7 @@ namespace litecore::repl {
             kC4ReplicatorAuthEnableChallengeAuth,
             kC4ReplicatorAuthClientCert,
             kC4ReplicatorAuthClientCertKey,
-            kC4ReplicatorAuthToken,
+            // kC4ReplicatorAuthToken,
 
             // [3]: Proxy dictionary keys:
             kC4ReplicatorProxyType,
