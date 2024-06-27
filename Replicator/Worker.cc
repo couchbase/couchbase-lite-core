@@ -46,10 +46,9 @@ namespace litecore::repl {
         for ( Dict::iterator i(dict); i; ++i ) {
             if ( n++ > 0 ) s << ", ";
             slice key = i.keyString();
+            if ( Options::kWhiteListOfKeysToLog.find(key) == Options::kWhiteListOfKeysToLog.end() ) continue;
             s << key << ":";
-            if ( key == slice(C4STR(kC4ReplicatorAuthPassword)) ) {
-                s << "\"********\"";
-            } else if ( i.value().asDict() ) {
+            if ( i.value().asDict() ) {
                 writeRedacted(i.value().asDict(), s);
             } else {
                 alloc_slice json(i.value().toJSON5());
@@ -336,4 +335,71 @@ namespace litecore::repl {
             output << "Coll=" << collIdx;
         }
     }
+
+    const std::unordered_set<slice> Options::kWhiteListOfKeysToLog{
+            // That is, they are supposed to be assigned to c4ReplicatorParameters.collections[i].optionsDictFleece
+            kC4ReplicatorOptionDocIDs,
+            kC4ReplicatorOptionChannels,
+            kC4ReplicatorOptionFilter,
+            kC4ReplicatorOptionFilterParams,
+            kC4ReplicatorOptionSkipDeleted,
+            kC4ReplicatorOptionNoIncomingConflicts,
+            // end of collection specific properties.
+
+            kC4ReplicatorCheckpointInterval,
+            kC4ReplicatorOptionRemoteDBUniqueID,
+            kC4ReplicatorOptionDisableDeltas,
+            kC4ReplicatorOptionDisablePropertyDecryption,
+            kC4ReplicatorOptionMaxRetries,
+            kC4ReplicatorOptionMaxRetryInterval,
+            kC4ReplicatorOptionAutoPurge,
+            kC4ReplicatorOptionAcceptParentDomainCookies,
+
+            // TLS options:
+            kC4ReplicatorOptionRootCerts,
+            kC4ReplicatorOptionPinnedServerCert,
+            kC4ReplicatorOptionOnlySelfSignedServerCert,
+
+            // HTTP options:
+            kC4ReplicatorOptionExtraHeaders,
+            kC4ReplicatorOptionCookies,
+            kC4ReplicatorOptionAuthentication,
+            kC4ReplicatorOptionProxyServer,
+
+            // WebSocket options:
+            kC4ReplicatorHeartbeatInterval,
+            kC4SocketOptionWSProtocols,
+            kC4SocketOptionNetworkInterface,
+
+            // BLIP options:
+            kC4ReplicatorCompressionLevel,
+
+            // [1]: Auth dictionary keys:
+            kC4ReplicatorAuthType,
+            kC4ReplicatorAuthUserName,
+            // kC4ReplicatorAuthPassword,
+            kC4ReplicatorAuthEnableChallengeAuth,
+            kC4ReplicatorAuthClientCert,
+            kC4ReplicatorAuthClientCertKey,
+            kC4ReplicatorAuthToken,
+
+            // [2]: auth.type values:
+            kC4AuthTypeBasic,
+            kC4AuthTypeSession,
+            kC4AuthTypeOpenIDConnect,
+            kC4AuthTypeFacebook,
+            kC4AuthTypeClientCert,
+
+            // [3]: Proxy dictionary keys:
+            kC4ReplicatorProxyType,
+            kC4ReplicatorProxyHost,
+            kC4ReplicatorProxyPort,
+            kC4ReplicatorProxyAuth,
+
+            // [4]: proxy.type values:
+            kC4ProxyTypeNone,
+            kC4ProxyTypeHTTP,
+            kC4ProxyTypeHTTPS,
+            kC4ProxyTypeSOCKS,
+    };
 }  // namespace litecore::repl
