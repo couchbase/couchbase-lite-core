@@ -383,23 +383,10 @@ namespace litecore::repl {
             kC4ReplicatorAuthClientCertKey,
             kC4ReplicatorAuthToken,
 
-            // [2]: auth.type values:
-            kC4AuthTypeBasic,
-            kC4AuthTypeSession,
-            kC4AuthTypeOpenIDConnect,
-            kC4AuthTypeFacebook,
-            kC4AuthTypeClientCert,
-
             // [3]: Proxy dictionary keys:
             kC4ReplicatorProxyType,
             kC4ReplicatorProxyHost,
             kC4ReplicatorProxyPort,
             kC4ReplicatorProxyAuth,
-
-            // [4]: proxy.type values:
-            kC4ProxyTypeNone,
-            kC4ProxyTypeHTTP,
-            kC4ProxyTypeHTTPS,
-            kC4ProxyTypeSOCKS,
     };
 }  // namespace litecore::repl
