@@ -29,17 +29,26 @@ using namespace litecore::qp;
 
 namespace litecore {
 
-    static constexpr unsigned kDefaultMaxResults = 3;
-    static constexpr unsigned kMaxMaxResults     = 10000;
+    static constexpr unsigned kMaxMaxResults = 10000;
+
+    // Writes the vector MATCH expression itself.
+    void QueryParser::writeVectorMatchFn(const ArrayIterator& params, string_view alias, string_view tableName) {
+        if ( !alias.empty() ) _sql << alias << '.';
+        auto targetVectorParam = params[1];
+        _sql << "vector MATCH encode_vector(";
+        _context.push_back(&kArgListOperation);  // suppress unnecessary parens
+        parseNode(targetVectorParam);
+        _context.pop_back();
+        _sql << ")";
+    }
 
     // Scans the entire query for vector_match() calls, and adds join tables for ones that are
     // indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
         findNodes(select, kVectorMatchFnNameWithParens, 1, [&](const Array* matchExpr) {
             // Arguments to vector_match are index name and target vector.
-            string         tableName         = FTSTableName(matchExpr->get(1), true).first;
-            auto           targetVectorParam = matchExpr->get(2);
-            indexJoinInfo* info              = indexJoinTable(tableName, "vector");
+            string         tableName = FTSTableName(matchExpr->get(1), true).first;
+            indexJoinInfo* info      = indexJoinTable(tableName, "vector");
             if ( matchExpr == getCaseInsensitive(select, "WHERE") ) {
                 // If vector_match is the entire WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
@@ -50,21 +59,21 @@ namespace litecore {
 
                 // Figure out the limit to use in the vector query:
                 int64_t maxResults;
-                if ( auto limitVal = getCaseInsensitive(select, "LIMIT") ) {
-                    maxResults = limitVal->asInt();
-                    require(limitVal->isInteger() && maxResults > 0,
-                            "LIMIT must be a positive integer when using vector_match()");
-                    require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using vector_match()",
-                            kMaxMaxResults);
-                } else {
-                    maxResults = kDefaultMaxResults;
-                }
+                auto    limitVal = getCaseInsensitive(select, "LIMIT");
+                require(limitVal, "a LIMIT must be given when using vector_distance()");
+                maxResults = limitVal->asInt();
+                require(limitVal->isInteger() && maxResults > 0,
+                        "LIMIT must be a positive integer when using vector_distance()");
+                require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using vector_distance()",
+                        kMaxMaxResults);
 
                 // Register a callback to write the nested SELECT in place of a table name:
                 info->writeTableSQL = [=] {
-                    _sql << "(SELECT rowid, distance FROM \"" << tableName << "\" WHERE vector MATCH encode_vector(";
-                    parseNode(targetVectorParam);
-                    _sql << ") LIMIT " << maxResults << ")";
+                    ArrayIterator matchIter(matchExpr);
+                    ++matchIter;  // skip fn name
+                    _sql << "(SELECT rowid, distance FROM " << sqlIdentifier(tableName) << " WHERE ";
+                    writeVectorMatchFn(matchIter, "", tableName);
+                    _sql << " LIMIT " << maxResults << ")";
                 };
             }
         });
@@ -85,10 +94,9 @@ namespace litecore {
             string        tableName = FTSTableName(params[0], true).first;
             const string& alias     = indexJoinTableAlias(tableName, "vector");
             Assert(!alias.empty());
-            auto targetVectorParam = params[1];
-            _sql << sqlIdentifier(alias) << ".vector MATCH encode_vector(";
-            parseNode(targetVectorParam);
-            _sql << ")";
+            _sql << '(';
+            writeVectorMatchFn(params, alias, tableName);
+            _sql << ')';
         }
     }
 
