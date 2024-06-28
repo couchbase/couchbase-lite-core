@@ -94,7 +94,7 @@ namespace litecore {
 
         bool anyVectorNotModified() const;
 
-        enum class ItemStatus {
+        enum class ItemStatus : uint8_t {
             Unset,
             Set,
             Skipped,
