@@ -42,22 +42,24 @@ namespace litecore {
         _sql << ")";
         if ( const Value* numProbesVal = params[2] ) {
             auto numProbes = numProbesVal->asInt();
-            require(numProbes > 0, "numProbes (3rd argument to vector_match) must be a positive integer");
+            require(numProbes > 0, "numProbes (3rd argument to vector_distance) must be a positive integer");
             _sql << " AND vectorsearch_probes(";
             if ( !alias.empty() ) _sql << alias << '.';
             _sql << "vector, " << numProbes << ")";
         }
     }
 
-    // Scans the entire query for vector_match() calls, and adds join tables for ones that are
+    // Scans the entire query for vector_distance() calls, and adds join tables for ones that are
     // indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
-        findNodes(select, kVectorMatchFnNameWithParens, 1, [&](const Array* matchExpr) {
-            // Arguments to vector_match are index name and target vector.
-            string         tableName = FTSTableName(matchExpr->get(1), true).first;
+        findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* matchExpr) {
+            // Arguments to vector_distance are index name and target vector.
+            ArrayIterator params(matchExpr);
+            ++params;  // skip fn name
+            string         tableName = FTSTableName(params[0], true).first;
             indexJoinInfo* info      = indexJoinTable(tableName, "vector");
-            if ( matchExpr == getCaseInsensitive(select, "WHERE") ) {
-                // If vector_match is the entire WHERE clause, this is a simple non-hybrid query.
+            if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
+                // If there is no WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
                 // the entire collection. Isolating this in a nested SELECT ensures SQLite doesn't
                 // see the outer JOIN against the collection; if it did, the vectorsearch extension's
@@ -76,17 +78,21 @@ namespace litecore {
 
                 // Register a callback to write the nested SELECT in place of a table name:
                 info->writeTableSQL = [=] {
-                    ArrayIterator matchIter(matchExpr);
-                    ++matchIter;  // skip fn name
                     _sql << "(SELECT rowid, distance FROM " << sqlIdentifier(tableName) << " WHERE ";
-                    writeVectorMatchFn(matchIter, "", tableName);
+                    writeVectorMatchFn(params, "", tableName);
                     _sql << " LIMIT " << maxResults << ")";
+                };
+            } else {
+                // In a hybrid query, add the MATCH condition to the JOIN's ON clause:
+                info->writeExtraOnSQL = [=] {
+                    _sql << " AND ";
+                    writeVectorMatchFn(params, info->alias, tableName);
                 };
             }
         });
     }
 
-    // Writes a `vector_match()` expression.
+#    if 0
     void QueryParser::writeVectorMatchFn(ArrayIterator& params) {
         requireTopLevelConjunction("VECTOR_MATCH");
         auto parentCtx = _context.rbegin() + 1;
@@ -106,11 +112,14 @@ namespace litecore {
             _sql << ')';
         }
     }
+#    endif
 
     // Writes the SQL translation of the `vector_distance(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
-        string tableName = FTSTableName(params[0], true).first;
-        _sql << indexJoinTableAlias(tableName, "vector") << ".distance";
+        requireTopLevelConjunction("VECTOR_DISTANCE");
+        string         tableName = FTSTableName(params[0], true).first;
+        indexJoinInfo* join      = indexJoinTable(tableName, "vector");
+        _sql << join->alias << ".distance";
     }
 
     // Given the expression to index from a vector index spec, returns the SQL of a

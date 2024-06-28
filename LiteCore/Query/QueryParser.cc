@@ -619,6 +619,7 @@ namespace litecore {
                 _sql << sqlIdentifier(table);
             _sql << " AS " << info.alias << " ON " << info.alias << "." << docidCol << " = " << sqlIdentifier(coAlias)
                  << ".rowid";
+            if ( info.writeExtraOnSQL ) info.writeExtraOnSQL();
         }
     }
 
@@ -1488,10 +1489,6 @@ namespace litecore {
         if ( op.caseEquivalent(kPredictionFnName) ) {
             // Special case: "prediction()" may be indexed:
             if ( writeIndexedPrediction((const Array*)_curNode) ) return;
-        } else if ( op.caseEquivalent(kVectorMatchFnName) ) {
-            // Special case: "vector_match()":
-            writeVectorMatchFn(operands);
-            return;
         } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
             // Special case: "vector_distance()":
             writeVectorDistanceFn(operands);
@@ -1955,10 +1952,11 @@ namespace litecore {
 
     // Fail if the current op is not at the top level of a SELECT nor within AND expressions.
     void QueryParser::requireTopLevelConjunction(const char* fnName) {
-        auto parentCtx = _context.rbegin() + 1;
-        auto parentOp  = (*parentCtx)->op;
-        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
-        require(parentOp == "SELECT"_sl || parentOp == nullslice,
+        auto i = _context.rbegin() + 1;
+        while ( (*i)->op == "AND" || (*i)->op == "," || *i == &kExpressionListOperation
+                || *i == &kHighPrecedenceOperation )
+            ++i;
+        require((*i)->op == "SELECT"_sl || *i == &kOuterOperation,
                 "%s can only appear at top-level, or in a top-level AND", fnName);
     }
 

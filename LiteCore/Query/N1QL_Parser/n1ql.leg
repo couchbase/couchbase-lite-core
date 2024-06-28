@@ -11,7 +11,7 @@
 #
 
 # Grammar file for N1QL parser
-# To be compiled by the 'leg' tool with Jens's modifications -- <http://github.com/snej/peg/>:
+# To be compiled by the 'leg' tool with Jens's modifications -- <https://github.com/snej/peg/>:
 #     leg -o n1ql.cc n1ql.leg
 # The output file must be compiled as C++!
 
@@ -349,7 +349,7 @@ function =
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
-  | "vector_match"i _ '(' _            { f = op("VECTOR_MATCH()");}
+  | "vector_distance"i _ '(' _            { f = op("VECTOR_DISTANCE()");}
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ( ',' _ t:expression               { appendAny(f, t);}
@@ -360,9 +360,6 @@ function =
     t:expression _                     { appendAny(f, t);}
     ( ',' _ t:expression               { appendAny(f, t);}
      _ )?
-    ')' _                              { $$ = f;}
-  | "vector_distance"i _ '(' _         { f = op("VECTOR_DISTANCE()");}
-    ind:indexTable _                   { appendAny(f, ind.as<string>());}
     ')' _                              { $$ = f;}
   | "rank"i _ '(' _                    { f = op("RANK()");}
     ind:indexTable _                   { appendAny(f, ind.as<string>());}
