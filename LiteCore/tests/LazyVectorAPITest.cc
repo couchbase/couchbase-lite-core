@@ -704,7 +704,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater finish doesn't error with null
         auto  wordValue = Value(c4indexupdater_valueAt(updater, i));
         slice word      = wordValue.asString();
         auto  vectors   = vectorsForWord(word);
-        if (i % 2 == 0) {
+        if ( i % 2 == 0 ) {
             REQUIRE(c4indexupdater_setVectorAt(updater, i, vectors.data(), 300, ERROR_INFO()));
         } else {
             REQUIRE(c4indexupdater_setVectorAt(updater, i, nullptr, 300, ERROR_INFO()));
@@ -712,7 +712,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater finish doesn't error with null
     }
 
     // Call finish and check succeeded
-    C4Error err {};
+    C4Error err{};
     CHECK(c4indexupdater_finish(updater, &err));
     CHECK(err.code == 0);
 
