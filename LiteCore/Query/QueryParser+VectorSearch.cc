@@ -40,6 +40,13 @@ namespace litecore {
         parseNode(targetVectorParam);
         _context.pop_back();
         _sql << ")";
+        if ( const Value* numProbesVal = params[2] ) {
+            auto numProbes = numProbesVal->asInt();
+            require(numProbes > 0, "numProbes (3rd argument to vector_match) must be a positive integer");
+            _sql << " AND vectorsearch_probes(";
+            if ( !alias.empty() ) _sql << alias << '.';
+            _sql << "vector, " << numProbes << ")";
+        }
     }
 
     // Scans the entire query for vector_match() calls, and adds join tables for ones that are
