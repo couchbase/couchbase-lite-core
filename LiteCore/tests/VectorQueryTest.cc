@@ -553,7 +553,6 @@ static pair<string, string> splitCollectionName(const string& input) {
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained{false};
-    bool expectedPretrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
@@ -573,8 +572,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = false;
-        expectedPretrained = false;
+        expectedTrained = false;
         createVectorIndex();
         readVectorDocs(100);
     }
@@ -590,8 +588,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = true;
-        expectedPretrained = true;
+        expectedTrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
     }
@@ -607,8 +604,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = true;
-        expectedPretrained = false;
+        expectedTrained = true;
         readVectorDocs(256 * 30);
         createVectorIndex();
     }
@@ -640,8 +636,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     // Need to run an arbitrary query to actually train the index
-    string queryStr =
-            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target) )";
+    string queryStr = R"(SELECT META().id, publisher FROM )"s + collectionName
+                      + R"( WHERE VECTOR_MATCH(vecIndex, $target) LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
 

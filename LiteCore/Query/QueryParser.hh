@@ -243,6 +243,7 @@ namespace litecore {
         unsigned             findFTSProperties(const Value* root);
         void                 findPredictionCalls(const Value* root);
         void                 addVectorSearchJoins(const Dict* select);
+        void                 writeVectorMatchFn(const ArrayIterator& params, string_view alias, string_view tableName);
         indexJoinInfo*       indexJoinTable(const string& tableName, const char* aliasPrefix = nullptr);
         const string&        indexJoinTableAlias(const string& key, const char* aliasPrefix = nullptr);
         const string&        FTSJoinTableAlias(const Value* matchLHS, bool canAdd = false);

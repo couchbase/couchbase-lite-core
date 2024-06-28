@@ -580,9 +580,10 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
 
     CHECK(translate("SELECT VECTOR_DISTANCE(a.vecIndex) AS distance "
                     "FROM _default AS a JOIN other ON META(a).id = other.refID "
-                    "WHERE VECTOR_MATCH(a.vecIndex, $target) ORDER BY distance")
+                    "WHERE VECTOR_MATCH(a.vecIndex, $target) ORDER BY distance LIMIT 100")
           == "{'FROM':[{'AS':'a','COLLECTION':'_default'},"
              "{'COLLECTION':'other','JOIN':'INNER','ON':['=',['_.',['meta()','a'],'.id'],['.other.refID']]}],"
+             "'LIMIT':100,"
              "'ORDER_BY':[['.distance']],"
              "'WHAT':[['AS',['VECTOR_DISTANCE()','a.vecIndex'],'distance']],"
              "'WHERE':['VECTOR_MATCH()','a.vecIndex',['$target']]}");
@@ -595,24 +596,24 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(coll.vecIndex) AS distance "
                     "FROM coll "
-                    "WHERE VECTOR_MATCH(coll.vecIndex, $target) ORDER BY distance")
-          == "{'FROM':[{'COLLECTION':'coll'}],"
+                    "WHERE VECTOR_MATCH(coll.vecIndex, $target) ORDER BY distance LIMIT 5")
+          == "{'FROM':[{'COLLECTION':'coll'}],'LIMIT':5,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
              "['AS',['VECTOR_DISTANCE()','coll.vecIndex'],'distance']],"
              "'WHERE':['VECTOR_MATCH()','coll.vecIndex',['$target']]}");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(C.vecIndex) AS distance "
                     "FROM scope.coll C "
-                    "WHERE VECTOR_MATCH(C.vecIndex, $target) ORDER BY distance")
-          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+                    "WHERE VECTOR_MATCH(C.vecIndex, $target) ORDER BY distance LIMIT 99")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],'LIMIT':99,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
              "['AS',['VECTOR_DISTANCE()','C.vecIndex'],'distance']],"
              "'WHERE':['VECTOR_MATCH()','C.vecIndex',['$target']]}");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
                     "FROM scope.coll C "
-                    "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance")
-          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],"
+                    "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance LIMIT 456")
+          == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],'LIMIT':456,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
              "['AS',['VECTOR_DISTANCE()','vecIndex'],'distance']],"
              "'WHERE':['VECTOR_MATCH()','vecIndex',['$target']]}");
