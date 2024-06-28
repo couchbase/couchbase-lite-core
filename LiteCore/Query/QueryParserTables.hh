@@ -241,7 +241,7 @@ namespace litecore {
             {"cosine_distance", 2, 2},
 
             // Vector search:
-            {"vector_match", 2, 2},
+            {"vector_match", 2, 3},
             {"vector_distance", 1, 1},
 #endif
 
