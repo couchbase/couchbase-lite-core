@@ -98,8 +98,8 @@ namespace litecore {
     inline constexpr QueryParser::Operation QueryParser::kResultListOperation{",", 0, 9, -2, &QueryParser::resultOp};
     inline constexpr QueryParser::Operation QueryParser::kExpressionListOperation{nullslice, 1, 9, -3,
                                                                                   &QueryParser::infixOp};
-    inline constexpr QueryParser::Operation QueryParser::kOuterOperation{nullslice, 1, 1, -1};
-    inline constexpr QueryParser::Operation QueryParser::kHighPrecedenceOperation{nullslice, 1, 1, 10};
+    inline constexpr QueryParser::Operation QueryParser::kOuterOperation{"outer", 1, 1, -1};
+    inline constexpr QueryParser::Operation QueryParser::kHighPrecedenceOperation{"high prec", 1, 1, 10};
 
     // Table of functions. Used when the 1st item of the array ends with "()".
     // https://developer.couchbase.com/documentation/server/current/n1ql/n1ql-language-reference/functions.html
@@ -241,8 +241,7 @@ namespace litecore {
             {"cosine_distance", 2, 2},
 
             // Vector search:
-            {"vector_match", 2, 3},
-            {"vector_distance", 1, 1},
+            {"vector_distance", 2, 3},
 #endif
 
             {nullslice}  // End of data
