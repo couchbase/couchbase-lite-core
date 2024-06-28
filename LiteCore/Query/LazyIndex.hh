@@ -94,11 +94,16 @@ namespace litecore {
 
         bool anyVectorNotModified() const;
 
+        enum class ItemStatus {
+            Unset,
+            Set,
+            Skipped,
+        };
+
         struct Item {
-            int64_t   queryRow;  ///< Row# in QueryEnumerator
-            VectorPtr vector;    ///< The vector set by the client
-            bool      skipped;   ///< True if client is skipping this vector for now
-            bool      modified;  ///< True if vector has been either updated or skipped
+            int64_t    queryRow;  ///< Row# in QueryEnumerator
+            VectorPtr  vector;    ///< The vector set by the client
+            ItemStatus status;    ///< True if client is skipping this vector for now
         };
 
         Retained<LazyIndex>       _manager;  // Owning LazyIndex
