@@ -200,17 +200,19 @@ namespace litecore {
         }
         _items[i].vector  = std::move(heapVec);
         _items[i].skipped = false;
+        _items[i].modified = true;
     }
 
     void LazyIndexUpdate::skipVectorAt(size_t i) {
         AssertArg(i < _count);
         _items[i].vector  = nullptr;
         _items[i].skipped = true;
+        _items[i].modified = true;
     }
 
     bool LazyIndexUpdate::finish(ExclusiveTransaction& txn) {
         // Finishing an update without either updating or skipping at least one vector is unsupported.
-        if ( anyVectorNotUpdatedOrSkipped() ) {
+        if ( anyVectorNotModified() ) {
             litecore::error::_throw(litecore::error::UnsupportedOperation,
                                     "Cannot finish an update without all vectors updated or skipped.");
         }
@@ -267,9 +269,9 @@ namespace litecore {
     }
 
     /// Returns true if any vector has NOT been updated or skipped in this updater.
-    bool LazyIndexUpdate::anyVectorNotUpdatedOrSkipped() const {
+    bool LazyIndexUpdate::anyVectorNotModified() const {
         return std::any_of(_items.begin(), _items.end(),
-                           [](const Item& item) { return item.vector == nullptr && !item.skipped; });
+                           [](const Item& item) { return !item.modified; });
     }
 
 
