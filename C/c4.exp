@@ -404,6 +404,8 @@ _gC4ExpectExceptions
 _c4_enableExtension
 _c4_setExtensionPath
 
+_c4index_getCollection
+_c4index_getName
 _c4index_getType
 _c4index_getQueryLanguage
 _c4index_getExpression

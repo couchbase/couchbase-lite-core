@@ -102,6 +102,12 @@ CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* C4
 
 //======== C4Index Methods:
 
+/** Returns the name of this index. */
+CBL_CORE_API C4Slice c4index_getName(C4Index* index) C4API;
+
+/** Returns the collection this index belongs to. */
+CBL_CORE_API C4Collection* c4index_getCollection(C4Index* index) C4API;
+
 /** Returns the index's type. */
 CBL_CORE_API C4IndexType c4index_getType(C4Index*) C4API;
 
@@ -152,16 +158,6 @@ CBL_CORE_API bool c4index_isTrained(C4Index*, C4Error* C4NULLABLE outError) C4AP
 NODISCARD CBL_CORE_API C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit,
                                                                       C4Error* outError) C4API;
 
-/**
- * Return the name of this index.
- **/
-CBL_CORE_API C4Slice c4index_getName(C4Index* index) C4API;
-
-/**
- * Return the collection this index belongs to.
- **/
-CBL_CORE_API C4Collection* c4index_getCollection(C4Index* index) C4API;
-
 /** Returns the number of vectors to compute. */
 CBL_CORE_API size_t c4indexupdater_count(C4IndexUpdater* updater) C4API;
 
@@ -169,10 +165,11 @@ CBL_CORE_API size_t c4indexupdater_count(C4IndexUpdater* updater) C4API;
     This is _not_ the entire document, just the value of the expression in the index spec.
     @param updater  The index updater.
     @param i  The zero-based index of the document.
-    @returns  A Fleece value: the value of the index's query expression evaluated on the i'th document.
+    @returns  A Fleece value: the value of the index's query expression evaluated on the i'th document,
+              or NULL if the index `i` is out of range.
               Internally this value is part of a query result. It remains valid until the index
               updater is released. If you want to keep it longer, retain it with `FLRetain`. */
-NODISCARD CBL_CORE_API FLValue c4indexupdater_valueAt(C4IndexUpdater* updater, size_t i) C4API;
+NODISCARD CBL_CORE_API FLValue C4NULLABLE c4indexupdater_valueAt(C4IndexUpdater* updater, size_t i) C4API;
 
 /** Sets the vector for the i'th value. If you don't call this, it's assumed there is no
     vector, and any existing vector will be removed upon `finish`.
@@ -195,8 +192,12 @@ NODISCARD CBL_CORE_API bool c4indexupdater_setVectorAt(C4IndexUpdater* updater, 
     @return  True on success, false if `i` is out of range. */
 CBL_CORE_API bool c4indexupdater_skipVectorAt(C4IndexUpdater* updater, size_t i) C4API;
 
-/** Updates the index with the computed vectors, removes any index rows for which no vector
-    was given, and updates the index's latest sequence.
+/** Completes the index update:
+    - Updates the index with the computed vectors
+    - Removes any index rows for which no vector was given
+    - Records that these sequences/revisions have been indexed.
+
+    @warning The C4IndexUpdater must not be used after this call, only released!
 
     @note The `C4IndexUpdater` still needs to be released afterwards to prevent a memory leak.
         It's OK to release it without calling this function; the update will effectively be canceled
@@ -204,7 +205,7 @@ CBL_CORE_API bool c4indexupdater_skipVectorAt(C4IndexUpdater* updater, size_t i)
 
     @param updater  The index updater.
     @param outError  On failure, will be set to the error status.
-    @returns  True if the index is now completely up-to-date; false if there are more vectors
+    @returns  True if the index is now completely up-to-date; false on error, or if there are more vectors
               that need to be updated. */
 CBL_CORE_API bool c4indexupdater_finish(C4IndexUpdater* updater, C4Error* outError) C4API;
 

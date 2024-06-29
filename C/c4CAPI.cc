@@ -909,6 +909,10 @@ C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
 
 C4IndexType c4index_getType(C4Index* index) C4API { return index->getType(); }
 
+C4Slice c4index_getName(C4Index* index) noexcept { return C4Slice(index->getName()); }
+
+C4Collection* c4index_getCollection(C4Index* index) noexcept { return index->getCollection(); }
+
 C4QueryLanguage c4index_getQueryLanguage(C4Index* index) C4API { return index->getQueryLanguage(); }
 
 C4String c4index_getExpression(C4Index* index) C4API { return index->getExpression(); }
@@ -1079,13 +1083,9 @@ C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit, C4E
     return tryCatch<C4IndexUpdater*>(outError, [&] { return index->beginUpdate(limit).detach(); });
 }
 
-C4Slice c4index_getName(C4Index* index) noexcept { return C4Slice(index->getName()); }
-
-C4Collection* c4index_getCollection(C4Index* index) noexcept { return index->getCollection(); }
-
 size_t c4indexupdater_count(C4IndexUpdater* update) noexcept { return update->count(); }
 
-FLValue c4indexupdater_valueAt(C4IndexUpdater* update, size_t i) noexcept {
+FLValue C4NULLABLE c4indexupdater_valueAt(C4IndexUpdater* update, size_t i) noexcept {
     return tryCatch<FLValue>(nullptr, [&] { return update->valueAt(i); });
 }
 
