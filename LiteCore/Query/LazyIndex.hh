@@ -92,12 +92,18 @@ namespace litecore {
 
         using VectorPtr = std::unique_ptr<float[]>;
 
-        bool anyVectorNotUpdatedOrSkipped() const;
+        bool anyVectorNotModified() const;
+
+        enum class ItemStatus : uint8_t {
+            Unset,
+            Set,
+            Skipped,
+        };
 
         struct Item {
-            int64_t   queryRow;  ///< Row# in QueryEnumerator
-            VectorPtr vector;    ///< The vector set by the client
-            bool      skipped;   ///< True if client is skipping this vector for now
+            int64_t    queryRow;  ///< Row# in QueryEnumerator
+            VectorPtr  vector;    ///< The vector set by the client
+            ItemStatus status;    ///< True if client is skipping this vector for now
         };
 
         Retained<LazyIndex>       _manager;  // Owning LazyIndex

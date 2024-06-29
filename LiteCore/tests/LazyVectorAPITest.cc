@@ -692,4 +692,46 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call After Already Finished", 
     c4index_release(index);
 }
 
+TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater finish doesn't error with null vectors", "[API][.VectorSearch]") {
+    // Create index
+    REQUIRE(createVectorIndex(true));
+    auto index = REQUIRED(getIndex());
+    // update with limit 10
+    auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
+
+    // Set even vectors to vector, odd vectors to null.
+    for ( int i = 0; i < 10; i++ ) {
+        auto  wordValue = Value(c4indexupdater_valueAt(updater, i));
+        slice word      = wordValue.asString();
+        auto  vectors   = vectorsForWord(word);
+        if ( i % 2 == 0 ) {
+            REQUIRE(c4indexupdater_setVectorAt(updater, i, vectors.data(), 300, ERROR_INFO()));
+        } else {
+            REQUIRE(c4indexupdater_setVectorAt(updater, i, nullptr, 300, ERROR_INFO()));
+        }
+    }
+
+    // Call finish and check succeeded
+    C4Error err{};
+    CHECK(c4indexupdater_finish(updater, &err));
+    CHECK(err.code == 0);
+
+    // Query to check there are 5 vectors indexed.
+    const auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
+            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
+            WHAT:  [ ['.word'] ],
+            FROM:  [{'COLLECTION':'words'}],
+            LIMIT: 10
+        })")),
+                                             nullptr, ERROR_INFO()));
+
+    const auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
+    REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == 5);
+
+    c4queryenum_release(e);
+    c4query_release(query);
+    c4indexupdater_release(updater);
+    c4index_release(index);
+}
+
 #endif
