@@ -507,11 +507,9 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     C4Collection* roses2  = getCollection(db2, Roses);
     C4Collection* tulips2 = getCollection(db2, Tulips);
     Jthread       jthread;
-    _expectedDocumentCount = -1;
-    std::vector<std::pair<C4Collection*, slice>> docsWithIncrementalRevisions = {
-        {roses2, "roses-docko"_sl},
-        {tulips2, "tulips-docko"_sl}
-    };
+    _expectedDocumentCount                                                    = -1;
+    std::vector<std::pair<C4Collection*, slice>> docsWithIncrementalRevisions = {{roses2, "roses-docko"_sl},
+                                                                                 {tulips2, "tulips-docko"_sl}};
 
     SECTION("PUSH") {
         _callbackWhenIdle = [=, &jthread]() {
@@ -534,7 +532,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
             jthread.thread    = std::thread(std::thread{[=]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
-                
+
                 addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
                 addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
                 sleepFor(1s);
@@ -552,7 +550,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         docsWithIncrementalRevisions.emplace_back(tulips, "tulips2-docko"_sl);
 
         _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread = thread(std::thread{[=]() {
+            jthread.thread    = thread(std::thread{[=]() {
                 // When first time it turns to Idle, we assume 2 documents from db are pushed to db2,
                 // and 2 documents from db2 are pulled to db.
                 CHECK(c4coll_getDocumentCount(roses) == 4);
@@ -578,7 +576,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     }
 
     // Check docs that have incremental revisions got across the latest revision, 3.
-    for (const auto& coll_doc : docsWithIncrementalRevisions) {
+    for ( const auto& coll_doc : docsWithIncrementalRevisions ) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll_doc.first, coll_doc.second, true, kDocGetMetadata, ERROR_INFO());
         CHECK(doc);
         alloc_slice hist = c4doc_getRevisionHistory(doc, 1, nullptr, 0);
