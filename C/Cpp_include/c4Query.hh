@@ -98,7 +98,7 @@ struct C4Query final
 
     using ObserverCallback = std::function<void(C4QueryObserver*)>;
 
-    std::unique_ptr<C4QueryObserver> observe(const ObserverCallback&);
+    Retained<C4QueryObserver> observe(ObserverCallback);
 
   protected:
     friend class litecore::C4QueryObserverImpl;
@@ -110,31 +110,55 @@ struct C4Query final
   private:
     class LiveQuerierDelegate;
 
+    struct KeyCmp {
+        using is_transparent = void;
+
+        bool operator()(const Retained<litecore::C4QueryObserverImpl>& r1,
+                        const Retained<litecore::C4QueryObserverImpl>& r2) const {
+            return r1.get() < r2.get();
+        }
+
+        bool operator()(const Retained<litecore::C4QueryObserverImpl>& r1,
+                        const litecore::C4QueryObserverImpl*           p2) const {
+            return r1.get() < p2;
+        }
+
+        bool operator()(const litecore::C4QueryObserverImpl*           p1,
+                        const Retained<litecore::C4QueryObserverImpl>& r2) const {
+            return p1 < r2.get();
+        }
+    };
+
+    using ObserverSet = std::set<Retained<litecore::C4QueryObserverImpl>, KeyCmp>;
+
     Retained<litecore::QueryEnumerator>       _createEnumerator(slice params);
     Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator* C4NULLABLE);
     void                                      liveQuerierUpdated(litecore::QueryEnumerator* C4NULLABLE, C4Error err);
     void                                      liveQuerierStopped();
-    void                                      notifyObservers(const std::set<litecore::C4QueryObserverImpl*>& observers,
-                                                              litecore::QueryEnumerator* C4NULLABLE, C4Error err);
+    void notifyObservers(const ObserverSet& observers, litecore::QueryEnumerator* C4NULLABLE, C4Error err);
 
-    Retained<litecore::DatabaseImpl>         _database;
-    Retained<litecore::Query>                _query;
-    alloc_slice                              _parameters;
-    Retained<litecore::LiveQuerier>          _bgQuerier;
-    std::unique_ptr<LiveQuerierDelegate>     _bgQuerierDelegate;
-    std::set<litecore::C4QueryObserverImpl*> _observers;
-    std::set<litecore::C4QueryObserverImpl*> _pendingObservers;
-    mutable std::mutex                       _mutex;
+    Retained<litecore::DatabaseImpl>     _database;
+    Retained<litecore::Query>            _query;
+    alloc_slice                          _parameters;
+    Retained<litecore::LiveQuerier>      _bgQuerier;
+    std::unique_ptr<LiveQuerierDelegate> _bgQuerierDelegate;
+    ObserverSet                          _observers;
+    ObserverSet                          _pendingObservers;
+    mutable std::mutex                   _mutex;
 };
 
 /** A registration for callbacks whenever a query's result set changes.
     The registration lasts until this object is destructed.
     Created by calling \ref C4Query::observe. */
 struct C4QueryObserver
-    : public fleece::InstanceCounted
+    : public fleece::RefCounted
+    , public fleece::InstanceCounted
     , C4Base {
   public:
-    ~C4QueryObserver() override = default;
+    /// Creates a new query on a database.
+    static Retained<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback cb, void* ctx);
+
+    virtual ~C4QueryObserver() = default;
 
     [[nodiscard]] C4Query* query() const { return _query; }
 

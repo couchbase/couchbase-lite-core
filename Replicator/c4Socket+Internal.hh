@@ -59,6 +59,8 @@ namespace litecore::repl {
         void received(slice data) override;
 
       protected:
+        std::string loggingClassName() const override { return "C4Socket"; }
+
         // WebSocket protected API:
         void requestClose(int status, fleece::slice message) override;
         void closeSocket() override;

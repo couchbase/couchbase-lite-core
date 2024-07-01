@@ -29,7 +29,7 @@ struct C4Index
     : public fleece::RefCounted
     , public fleece::InstanceCountedIn<C4Index>
     , C4Base {
-    C4Collection* getCollection() const { return _collection; }
+    C4Collection* getCollection() const noexcept { return _collection; }
 
     slice getName() const noexcept { return _name; }
 
@@ -104,6 +104,9 @@ struct C4IndexUpdater final
     friend struct C4IndexImpl;
     C4IndexUpdater(Retained<litecore::LazyIndexUpdate>, C4Collection*);
     ~C4IndexUpdater();
+
+    // Invariants: _update != nullptr || (finish() has been called)
+    bool hasFinished() const { return !_update; }
 
     Retained<litecore::LazyIndexUpdate> _update;
     Retained<C4Collection>              _collection;

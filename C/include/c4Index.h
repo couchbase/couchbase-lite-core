@@ -152,6 +152,16 @@ CBL_CORE_API bool c4index_isTrained(C4Index*, C4Error* C4NULLABLE outError) C4AP
 NODISCARD CBL_CORE_API C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit,
                                                                       C4Error* outError) C4API;
 
+/**
+ * Return the name of this index.
+ **/
+CBL_CORE_API C4Slice c4index_getName(C4Index* index) C4API;
+
+/**
+ * Return the collection this index belongs to.
+ **/
+CBL_CORE_API C4Collection* c4index_getCollection(C4Index* index) C4API;
+
 /** Returns the number of vectors to compute. */
 CBL_CORE_API size_t c4indexupdater_count(C4IndexUpdater* updater) C4API;
 

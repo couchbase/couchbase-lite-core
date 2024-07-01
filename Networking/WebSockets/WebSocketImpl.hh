@@ -70,6 +70,8 @@ namespace litecore::websocket {
         // Timeout for WebSocket connection (until HTTP response received)
         static constexpr long kConnectTimeoutSecs = 15;
 
+        std::string loggingClassName() const override { return "WebSocket"; }
+
         ~WebSocketImpl() override;
         std::string loggingIdentifier() const override;
         void        protocolError(slice message = nullslice);
