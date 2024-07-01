@@ -184,7 +184,7 @@ CBL_CORE_API C4LogDomain const kC4WebSocketLog = (C4LogDomain)&websocket::WSLogD
 C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
-    if ( !domain && create ) domain = new LogDomain(name);
+    if ( !domain && create ) domain = new LogDomain(name, LogLevel::Info, true);
     return (C4LogDomain)domain;
 }
 
