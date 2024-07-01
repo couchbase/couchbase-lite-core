@@ -409,8 +409,11 @@ c4error_return
 c4_dumpInstances
 gC4ExpectExceptions
 
+c4_enableExtension
 c4_setExtensionPath
 
+c4index_getCollection
+c4index_getName
 c4index_getType
 c4index_getQueryLanguage
 c4index_getExpression

@@ -237,6 +237,7 @@
 		27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27727C53230F279D0082BCC9 /* HTTPLogic.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
+		277D40062C2F3DE700DBDC97 /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
 		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
@@ -546,7 +547,7 @@
 		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
 		EA8E8AE3291D597C002106A3 /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
-		EADC3D532C1346E400933269 /* LazyVectorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* LazyVectorAPITest.cc */; };
+		EADC3D532C1346E400933269 /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
 		FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
 /* End PBXBuildFile section */
 
@@ -1714,7 +1715,7 @@
 		EAA0126F29687CBD001B04E0 /* SG.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SG.hh; sourceTree = "<group>"; };
 		EAA0127029687CBD001B04E0 /* SGTestUser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SGTestUser.hh; sourceTree = "<group>"; };
 		EAA0127129687CBD001B04E0 /* ReplicatorCollectionSGTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorCollectionSGTest.hh; sourceTree = "<group>"; };
-		EADC3D4F2C1346DA00933269 /* LazyVectorAPITest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LazyVectorAPITest.cc; sourceTree = "<group>"; };
+		EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4IndexUpdaterTest.cc; sourceTree = "<group>"; };
 		EAE4736729BA0AC500C28D49 /* run-clang-format.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "run-clang-format.sh"; sourceTree = "<group>"; };
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1904,7 +1905,6 @@
 		271057C21D3997230018247B /* C++ Tests */ = {
 			isa = PBXGroup;
 			children = (
-				EADC3D4F2C1346DA00933269 /* LazyVectorAPITest.cc */,
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
 				274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
@@ -2241,6 +2241,7 @@
 				274D163C26124A030018D39C /* c4CollectionTest.cc */,
 				275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */,
 				27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */,
+				EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */,
 				2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */,
 				272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */,
 				27416E291E0494DF00F10F65 /* c4QueryTest.cc */,
@@ -4081,7 +4082,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EADC3D532C1346E400933269 /* LazyVectorAPITest.cc in Sources */,
+				EADC3D532C1346E400933269 /* c4IndexUpdaterTest.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
@@ -4186,6 +4187,7 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
+				277D40062C2F3DE700DBDC97 /* c4IndexUpdaterTest.cc in Sources */,
 				2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */,
 				42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */,
 				27431BC8258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
