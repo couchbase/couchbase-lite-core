@@ -175,6 +175,8 @@ class PerfTest : public C4Test {
         input += "_helium_macos";
 #elif defined(__linux__)
         input += "_helium_linux";
+#elif defined(__EMSCRIPTEN__)
+        input += "_helium_emscripten";
 #else
 #    error "Unknown platform"
 #endif

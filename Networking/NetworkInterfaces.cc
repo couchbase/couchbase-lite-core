@@ -100,6 +100,8 @@ namespace litecore::net {
             const auto firstBytePair = addr6().__u6_addr.__u6_addr16[0];
 #elif defined(__ANDROID__)
             const auto firstBytePair = addr6().in6_u.u6_addr16[0];
+#elif defined(__EMSCRIPTEN__)
+            const auto firstBytePair = addr6().__in6_union.__s6_addr16[0];
 #else
             const auto firstBytePair = addr6().__in6_u.__u6_addr16[0];
 #endif

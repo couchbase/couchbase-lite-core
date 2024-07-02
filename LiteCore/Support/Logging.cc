@@ -29,7 +29,7 @@
 #    include <android/log.h>
 #endif
 
-#if ( defined(__linux__) || defined(__APPLE__) ) && !defined(__ANDROID__)
+#if ( defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__) ) && !defined(__ANDROID__)
 #    include <cxxabi.h>
 #endif
 
@@ -625,7 +625,7 @@ namespace litecore {
 
     static std::string classNameOf(const Logging* obj) {
         const char* name = typeid(*obj).name();
-#if ( defined(__linux__) || defined(__APPLE__) ) && !defined(__ANDROID__)
+#if ( defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__) ) && !defined(__ANDROID__)
         // Get the name of my class, unmangle it, and remove namespaces:
         size_t unmangledLen;
         int    status;

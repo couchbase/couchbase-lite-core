@@ -1183,6 +1183,10 @@
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
 		2760FBC826210AA0000F34C5 /* CollectionImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CollectionImpl.hh; sourceTree = "<group>"; };
+		27614AA12C1CDCCB0065FBB5 /* cmake */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cmake; path = ../cmake; sourceTree = "<group>"; };
+		27614AA52C1CDCEA0065FBB5 /* cmake */ = {isa = PBXFileReference; lastKnownFileType = folder; path = cmake; sourceTree = "<group>"; };
+		27614AA62C1CDD110065FBB5 /* cmake */ = {isa = PBXFileReference; lastKnownFileType = folder; path = cmake; sourceTree = "<group>"; };
+		27614AA72C1CDDB00065FBB5 /* cmake */ = {isa = PBXFileReference; lastKnownFileType = folder; path = cmake; sourceTree = "<group>"; };
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
 		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
@@ -1929,6 +1933,7 @@
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
 				2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */,
+				27614AA72C1CDDB00065FBB5 /* cmake */,
 				2719253B23970F4E0053DDA6 /* replacedb */,
 			);
 			name = "C++ Tests";
@@ -2115,6 +2120,7 @@
 			children = (
 				2744B329241854F2005A194D /* README.md */,
 				2744B30C241854F2005A194D /* CMakeLists.txt */,
+				27614AA62C1CDD110065FBB5 /* cmake */,
 				2744B317241854F2005A194D /* BLIPConnection.hh */,
 				2744B319241854F2005A194D /* BLIP.hh */,
 				2744B31C241854F2005A194D /* MessageBuilder.hh */,
@@ -2248,6 +2254,7 @@
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
 				2700BB612170117F00797537 /* EE */,
 				275073591F4B5E66003D2CCE /* CMakeLists.txt */,
+				27614AA52C1CDCEA0065FBB5 /* cmake */,
 				2719253323970C7F0053DDA6 /* data */,
 			);
 			path = tests;
@@ -2274,6 +2281,7 @@
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
+				27614AA12C1CDCCB0065FBB5 /* cmake */,
 				2757DE551B9FC34E002EE261 /* API */,
 				2745B7CA26825F970012A17A /* docs */,
 				27E4871019217187007D8940 /* LiteCore */,

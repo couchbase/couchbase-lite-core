@@ -127,7 +127,14 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-if(MSVC)
+if(EMSCRIPTEN)
+    # Emscripten does not actually support shared libraries and instead
+    # just builds a static library for compatibility with existing
+    # build setups. We just set this property to suppress a CMake warning.
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+
+    include("${PROJECT_SOURCE_DIR}/cmake/platform_emscripten.cmake")
+elseif(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)
         message(FATAL_ERROR "UWP no longer supported")
@@ -143,7 +150,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     include("${PROJECT_SOURCE_DIR}/cmake/platform_linux_desktop.cmake")
 else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
-endif(MSVC)
+endif()
 
 check_threading()
 setup_globals()
@@ -334,60 +341,62 @@ install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
 ### Support Libraries (Add functionality, but add nothing to official API)
 
-add_subdirectory(REST EXCLUDE_FROM_ALL)
+if (NOT EMSCRIPTEN)
+    add_subdirectory(REST EXCLUDE_FROM_ALL)
 
-set(
-    LC_WEBSOCKET_SRC
-    Networking/HTTP/HTTPTypes.cc
-    Networking/HTTP/HTTPLogic.cc
-    Networking/NetworkInterfaces.cc
-    Networking/Poller.cc
-    Networking/TCPSocket.cc
-    Networking/TLSContext.cc
-    Networking/WebSockets/BuiltInWebSocket.cc
-    vendor/sockpp/src/acceptor.cpp
-    vendor/sockpp/src/connector.cpp
-    vendor/sockpp/src/datagram_socket.cpp
-    vendor/sockpp/src/exception.cpp
-    vendor/sockpp/src/inet_address.cpp
-    vendor/sockpp/src/inet6_address.cpp
-    vendor/sockpp/src/mbedtls_context.cpp
-    vendor/sockpp/src/socket.cpp
-    vendor/sockpp/src/stream_socket.cpp
-)
-
-add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
-target_include_directories(
-    LiteCoreWebSocket PRIVATE
-    C
-    C/include
-    C/Cpp_include
-    Crypto
-    LiteCore/Support
-    Networking
-    Networking/BLIP/
-    Networking/HTTP
-    Networking/WebSockets
-    Replicator
-    REST
-    vendor/fleece/Fleece/Support
-    vendor/fleece/API
-    vendor/sockpp/include
-    vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
-)
-
-target_link_libraries(
-    LiteCoreWebSocket PUBLIC
-    LiteCoreObjects
-)
-
-if(LITECORE_PERF_TESTING_MODE)
-    target_compile_definitions(
-        LiteCoreWebSocket PUBLIC
-        LITECORE_PERF_TESTING_MODE
+    set(
+        LC_WEBSOCKET_SRC
+        Networking/HTTP/HTTPTypes.cc
+        Networking/HTTP/HTTPLogic.cc
+        Networking/NetworkInterfaces.cc
+        Networking/Poller.cc
+        Networking/TCPSocket.cc
+        Networking/TLSContext.cc
+        Networking/WebSockets/BuiltInWebSocket.cc
+        vendor/sockpp/src/acceptor.cpp
+        vendor/sockpp/src/connector.cpp
+        vendor/sockpp/src/datagram_socket.cpp
+        vendor/sockpp/src/exception.cpp
+        vendor/sockpp/src/inet_address.cpp
+        vendor/sockpp/src/inet6_address.cpp
+        vendor/sockpp/src/mbedtls_context.cpp
+        vendor/sockpp/src/socket.cpp
+        vendor/sockpp/src/stream_socket.cpp
     )
-endif()
+
+    add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
+    target_include_directories(
+        LiteCoreWebSocket PRIVATE
+        C
+        C/include
+        C/Cpp_include
+        Crypto
+        LiteCore/Support
+        Networking
+        Networking/BLIP/
+        Networking/HTTP
+        Networking/WebSockets
+        Replicator
+        REST
+        vendor/fleece/Fleece/Support
+        vendor/fleece/API
+        vendor/sockpp/include
+        vendor/mbedtls/include
+        vendor/mbedtls/crypto/include
+    )
+
+    target_link_libraries(
+        LiteCoreWebSocket PUBLIC
+        LiteCoreObjects
+    )
+
+    if(LITECORE_PERF_TESTING_MODE)
+        target_compile_definitions(
+            LiteCoreWebSocket PUBLIC
+            LITECORE_PERF_TESTING_MODE
+        )
+    endif()
+endif() # NOT EMSCRIPTEN
 
 ### TESTS:
 

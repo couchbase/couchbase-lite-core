@@ -14,6 +14,7 @@
 #include "LogDecoder.hh"
 #include <algorithm>
 #include <climits>
+#include <limits>
 #include <fstream>
 #include <queue>
 #include <string>
@@ -27,8 +28,9 @@ namespace litecore {
     class MultiLogDecoder : public LogIterator {
       public:
         MultiLogDecoder() {
-            _startTime = {UINT_MAX, 0};
-            for ( unsigned i = 0; i <= kMaxLevel; i++ ) _startTimeByLevel[i] = {UINT_MAX, 0};
+            auto max_time_t = std::numeric_limits<time_t>::max();
+            _startTime      = {max_time_t, 0};
+            for ( unsigned i = 0; i <= kMaxLevel; i++ ) _startTimeByLevel[i] = {max_time_t, 0};
         }
 
         /// Adds a log iterator. Must be called before calling \ref next().

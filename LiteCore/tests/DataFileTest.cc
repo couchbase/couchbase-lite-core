@@ -20,6 +20,9 @@
 #ifndef _MSC_VER
 #    include <sys/stat.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#    include <emscripten.h>
+#endif
 
 #include "LiteCoreTest.hh"
 #include <sstream>
@@ -645,18 +648,31 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 }
 
 TEST_CASE("CanonicalPath") {
+#ifdef __EMSCRIPTEN__
+    // clang-format off
+    auto isMacOs = (bool)EM_ASM_INT({
+        if ( typeof require === 'undefined' ) return false;
+        const process              = require('process');
+        return process.platform === 'darwin';
+    });
+    // clang-format on
+#endif
+
 #ifdef _MSC_VER
     const char* startPath = "C:\\folder\\..\\subfolder\\";
     string      endPath   = "C:\\subfolder\\";
 #else
     auto tmpPath   = TestFixture::sTempDir.path();
     auto startPath = tmpPath + "folder/";
-    ::mkdir(startPath.c_str(), 777);
+    ::mkdir(startPath.c_str(), 0777);
     startPath += "../subfolder/";
     auto endPath = tmpPath + "subfolder";
-    ::mkdir(endPath.c_str(), 777);
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath   = "/private" + endPath;
+    ::mkdir(endPath.c_str(), 0777);
+#    if __APPLE__ && !TARGET_OS_IPHONE || defined(__EMSCRIPTEN__)
+#        ifdef __EMSCRIPTEN__
+    if ( isMacOs )
+#        endif
+        endPath = "/private" + endPath;
 #    endif
 #endif
 
@@ -668,10 +684,13 @@ TEST_CASE("CanonicalPath") {
     endPath   = startPath;
 #else
     startPath = tmpPath + u8"日本語";
-    ::mkdir(startPath.c_str(), 777);
+    ::mkdir(startPath.c_str(), 0777);
     endPath = startPath;
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath = "/private" + endPath;
+#    if __APPLE__ && !TARGET_OS_IPHONE || defined(__EMSCRIPTEN__)
+#        ifdef __EMSCRIPTEN__
+    if ( isMacOs )
+#        endif
+        endPath = "/private" + endPath;
 #    endif
 #endif
 

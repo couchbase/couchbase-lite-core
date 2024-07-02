@@ -30,10 +30,13 @@ using namespace litecore::REST;
 using namespace std;
 
 
-#if !defined(_WIN32) || defined(_WIN64)
+#if ( !defined(_WIN32) || defined(_WIN64) ) && !defined(__EMSCRIPTEN__)
 // These tests often hang in 32-bit Windows but let's cheekily ignore it since
 // this not part of Couchbase Lite directly anyway, but used in the cblite CLI
 // which is 64-bit only on Windows.
+
+// TODO: Port RESTListener to emscripten
+
 
 static string to_str(FLSlice s) { return {(char*)s.buf, s.size}; }
 
@@ -864,4 +867,4 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listen
 
 #    endif  // COUCHBASE_ENTERPRISE
 
-#endif
+#endif  // _WIN32, _Win64, __EMSCRIPTEN__

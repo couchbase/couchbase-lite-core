@@ -80,7 +80,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][Err
     assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "SQLite error 3338", "disk I/O error (3338)");
     assertMessage(SQLiteDomain, SQLITE_IOERR, "SQLite error 10", "disk I/O error");
     assertMessage(LiteCoreDomain, 15, "LiteCore CorruptData", "data is corrupted");
+#ifdef __EMSCRIPTEN__
+    assertMessage(POSIXDomain, ENOENT, "POSIX error 44", "No such file or directory");
+#else
     assertMessage(POSIXDomain, ENOENT, "POSIX error 2", "No such file or directory");
+#endif
     assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "LiteCore TransactionNotClosed",
                   "transaction not closed");
     assertMessage(SQLiteDomain, -1234, "SQLite error -1234", "unknown error (-1234)");

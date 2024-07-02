@@ -79,23 +79,33 @@ function(setup_litecore_build_unix)
         target_compile_options(${liteCoreVariant} PRIVATE 
             ${LITECORE_WARNINGS} 
             -Wformat=2
-            -fstack-protector
             -D_FORTIFY_SOURCE=2
             $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
             $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
             $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
         )
+        if (NOT EMSCRIPTEN)
+            target_compile_options(${liteCoreVariant} PRIVATE
+                -fstack-protector
+            )
+        endif()
     endforeach()
 
     target_compile_options(BLIPObjects PRIVATE 
         ${LITECORE_WARNINGS} 
         -Wformat=2
-        -fstack-protector
         -D_FORTIFY_SOURCE=2
         $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
         $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
         $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
+
+    if (NOT EMSCRIPTEN)
+        target_compile_options(BLIPObjects PRIVATE
+            -fstack-protector
+        )
+    endif()
+
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
     check_type_size(socklen_t SOCKLEN_T)
