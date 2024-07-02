@@ -52,8 +52,8 @@ CBL_CORE_API void c4_setExtensionPath(C4String path) C4API;
  * of the extension and the path in which it is supposed to reside.  It makes an attempt
  * to only check things that have the possibility of being corrected by the user (i.e.
  * if there is a bug in the extension and it cannot load functionally that won't be caught)
- * @param name The name of the extension (corresponds to the lower case of the filename
- *             without the extension)
+ * @param name The name of the extension (corresponds to the filename
+ *             without the extension or "lib" prefix)
  * @param extensionPath The path in which the extension should be found
  * @param outError On failure, will store the error.
  * @return True on success, false on failure
