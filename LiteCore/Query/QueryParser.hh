@@ -124,6 +124,8 @@ namespace litecore {
         /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
         string vectorToIndexExpressionSQL(const Value*, unsigned dimensions);
 
+        string expressionCanonicalJSON(const Value* expression) const;
+
       private:
         template <class T, class U>
         using map          = std::map<T, U>;
@@ -244,7 +246,7 @@ namespace litecore {
         unsigned findFTSProperties(const Value* root);
         void     findPredictionCalls(const Value* root);
         void     addVectorSearchJoins(const Dict* select);
-        void     writeVectorMatchFn(const ArrayIterator& params, string_view alias, string_view tableName);
+        void     writeVectorMatchExpression(const ArrayIterator& params, string_view alias, string_view tableName);
         void     writeVectorDistanceFn(ArrayIterator&);
 
         indexJoinInfo*       indexJoinTable(const string& tableName, const char* aliasPrefix = nullptr);

@@ -132,7 +132,7 @@ N_WAY_TEST_CASE_METHOD(PredictiveVectorQueryTest, "Vector Index Of Prediction", 
     }
     string          queryStr = R"(
          ['SELECT', {
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex', ['$target']], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
             LIMIT:    5
          }] )";

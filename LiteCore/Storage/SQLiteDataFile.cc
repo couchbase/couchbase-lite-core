@@ -880,8 +880,8 @@ namespace litecore {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
     }
 
-    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& property) const {
-        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, property);
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expression) const {
+        return findIndexOnExpression(expression, IndexSpec::kVector, onTable);
     }
 #endif
 

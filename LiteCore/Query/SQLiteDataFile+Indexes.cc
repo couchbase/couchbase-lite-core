@@ -141,7 +141,7 @@ namespace litecore {
 
 #pragma mark - GETTING INDEX INFO:
 
-    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) {
+    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) const {
         if ( indexTableExists() ) {
             string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq "
                          "FROM indexes ORDER BY name";
@@ -162,7 +162,7 @@ namespace litecore {
     }
 
     // Finds the indexes the old 2.0/2.1 way, without using the 'indexes' table.
-    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexesOldStyle(const KeyStore* store) {
+    vector<SQLiteIndexSpec> SQLiteDataFile::getIndexesOldStyle(const KeyStore* store) const {
         vector<SQLiteIndexSpec> indexes;
         // value indexes:
         SQLite::Statement getIndex(*this, "SELECT name, tbl_name FROM sqlite_master "
@@ -223,7 +223,7 @@ namespace litecore {
     }
 
     // Recover an IndexSpec from a row of the `indexes` table
-    SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) {
+    SQLiteIndexSpec SQLiteDataFile::specFromStatement(SQLite::Statement& stmt) const {
         string             name = stmt.getColumn(0).getString();
         auto               type = IndexSpec::Type(stmt.getColumn(1).getInt());
         IndexSpec::Options options;
@@ -250,6 +250,21 @@ namespace litecore {
         SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
         if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
         return spec;
+    }
+
+    string SQLiteDataFile::findIndexOnExpression(const string& jsonWhat, IndexSpec::Type type, const string& onTable) const {
+        for (SQLiteIndexSpec const& spec : getIndexes(nullptr)) {
+            if (spec.type == type && SQLiteKeyStore::tableName(spec.keyStoreName) == onTable) {
+                auto what = spec.what();
+                // `what()` is defined as an array of 1+ exprs to index; for a vector index there can be only one.
+                // In some cases just that term is passed in, not wrapped in an array.
+                if (what->count() > 1 || what->get(0)->type() == kArray)
+                    what = (const Array*)what->get(0);
+                if (what->toJSON(true) == jsonWhat)
+                    return spec.indexTableName;
+            }
+        }
+        return "";
     }
 
 #pragma mark - FOR DEBUGGING / INSPECTION:

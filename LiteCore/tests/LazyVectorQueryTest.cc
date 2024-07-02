@@ -70,7 +70,7 @@ class LazyVectorQueryTest : public VectorQueryTest {
 
         string queryStr = R"(
          ['SELECT', {
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex', ['$target']], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['.num'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
             LIMIT: 5
          }] )";

@@ -2047,21 +2047,23 @@ namespace litecore {
 #pragma mark - UNNEST QUERY:
 
     // Constructs a unique identifier of an expression, from a digest of its JSON.
-    string QueryParser::expressionIdentifier(const Array* expression, unsigned maxItems) const {
+    string QueryParser::expressionCanonicalJSON(const Value* expression) const {
         require(expression, "Invalid expression to index");
+        auto json = string(expression->toJSON(true));
+        if ( _propertiesUseSourcePrefix ) {
+            // Strip ".doc" from property paths if necessary:
+            replace(json, "[\"." + _dbAlias + ".", "[\".");
+        }
+        return json;
+    }
+
+    // Constructs a unique identifier of an expression, from a digest of its JSON.
+    string QueryParser::expressionIdentifier(const Array* expression, unsigned maxItems) const {
         SHA1Builder sha;
         unsigned    item = 0;
         for ( Array::iterator i(expression); i; ++i ) {
             if ( maxItems > 0 && ++item > maxItems ) break;
-            alloc_slice json = i.value()->toJSON(true);
-            if ( _propertiesUseSourcePrefix ) {
-                // Strip ".doc" from property paths if necessary:
-                string s = json.asString();
-                replace(s, "[\"." + _dbAlias + ".", "[\".");
-                sha << slice(s);
-            } else {
-                sha << json;
-            }
+            sha << expressionCanonicalJSON(i.value());
         }
         return sha.finish().asBase64();
     }
