@@ -19,6 +19,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cinttypes>  //for stdint.h fmt specifiers
+#include <vector>
 
 /*
     This is a configurable console-logging facility that lets logging be turned on and off independently for various subsystems or areas of the code. It's used similarly to printf:
@@ -62,9 +63,13 @@ namespace litecore {
         // objectRef -> (loggingName, parentObectRef)
         using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
 
-        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false)
             : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
+            if ( internName ) {
+                sInternedNames.push_back(_name);
+                _name = sInternedNames.back().c_str();
+            }
         }
 
         static LogDomain* named(const char* name);
@@ -145,14 +150,15 @@ namespace litecore {
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
-        const char* const     _name;
+        const char*           _name;
         LogDomain* const      _next;
 
-        static unsigned   slastObjRef;
-        static ObjectMap  sObjectMap;
-        static LogDomain* sFirstDomain;
-        static LogLevel   sCallbackMinLevel;
-        static LogLevel   sFileMinLevel;
+        static unsigned                 slastObjRef;
+        static ObjectMap                sObjectMap;
+        static LogDomain*               sFirstDomain;
+        static LogLevel                 sCallbackMinLevel;
+        static LogLevel                 sFileMinLevel;
+        static std::vector<std::string> sInternedNames;
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
