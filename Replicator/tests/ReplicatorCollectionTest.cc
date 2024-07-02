@@ -507,6 +507,9 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     C4Collection* roses2  = getCollection(db2, Roses);
     C4Collection* tulips2 = getCollection(db2, Tulips);
     Jthread       jthread;
+    _expectedDocumentCount                                                    = -1;
+    std::vector<std::pair<C4Collection*, slice>> docsWithIncrementalRevisions = {{roses2, "roses-docko"_sl},
+                                                                                 {tulips2, "tulips-docko"_sl}};
 
     SECTION("PUSH") {
         _callbackWhenIdle = [=, &jthread]() {
@@ -522,14 +525,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
             _callbackWhenIdle = nullptr;
         };
 
-        // 4 docs plus 6 revs
-        _expectedDocumentCount = 10;
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-
-        CHECK(c4coll_getDocumentCount(roses2) == 3);
-        CHECK(c4coll_getDocumentCount(tulips2) == 3);
     }
-
     SECTION("PULL") {
         _callbackWhenIdle = [=, &jthread]() {
             jthread.thread    = std::thread(std::thread{[=]() {
@@ -544,65 +541,46 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
             _callbackWhenIdle = nullptr;
         };
 
-        _expectedDocumentCount = 10;
         runPullReplication({Tulips, Lavenders, Roses}, {Roses, Tulips}, kC4Continuous);
-        CHECK(c4coll_getDocumentCount(roses2) == 3);
-        CHECK(c4coll_getDocumentCount(tulips2) == 3);
     }
-
     SECTION("PUSH and PULL") {
         addDocs(db2, Roses, 2, "db2-Roses-");
         addDocs(db2, Tulips, 2, "db2-Tulips-");
+        docsWithIncrementalRevisions.emplace_back(roses, "roses2-docko"_sl);
+        docsWithIncrementalRevisions.emplace_back(tulips, "tulips2-docko"_sl);
 
-        std::mutex              mutex;
-        int                     stopped{0};
-        std::condition_variable cv;
+        _callbackWhenIdle = [=, &jthread]() {
+            jthread.thread    = thread(std::thread{[=]() {
+                // When first time it turns to Idle, we assume 2 documents from db are pushed to db2,
+                // and 2 documents from db2 are pulled to db.
+                CHECK(c4coll_getDocumentCount(roses) == 4);
+                CHECK(c4coll_getDocumentCount(tulips) == 4);
+                CHECK(c4coll_getDocumentCount(roses2) == 4);
+                CHECK(c4coll_getDocumentCount(tulips2) == 4);
 
-        _callbackWhenIdle = [=, &jthread, &mutex, &cv, &stopped]() {
-            if ( jthread.thread.get_id() == std::thread::id() ) {
-                jthread.thread = thread(std::thread{[=, &mutex, &cv, &stopped]() {
-                    addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
-                    addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
-                    addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
-                    addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
-                    std::unique_lock<std::mutex> lk(mutex);
-                    if ( !cv.wait_for(lk, 10s, [&stopped]() { return stopped == 1; }) ) {
-                        // timed out. Stop the replicator to avoid hanging.
-                        stopped = 2;
-                        _replClient->stop();
-                    }
-                }});
-            }
-            if ( _statusReceived.progress.documentCount < _expectedDocumentCount ) { return; }
-            // It seems that windows will delete the lambda object  after
-            // _callbackWhenIdle = nullptr. Therefore, capture it beforehand.
-            auto self               = this;
-            self->_callbackWhenIdle = nullptr;
-            self->_stopOnIdle       = true;
-            self->_checkStopWhenIdle();
+                // We now add 3 revisions of respective docs to db and db2. The are supposed to be
+                // pushed and pulled to db2 and db, respectively.
+                // In 5 seconds, we assume that latest revision, 3, will be replicated to the
+                // destinations.
+                addRevs(roses, 500ms, alloc_slice("roses-docko"), 1, 3, true, "db-roses");
+                addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
+                addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
+                addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
+                sleepFor(5s);
+                stopWhenIdle();
+            }});
+            _callbackWhenIdle = nullptr;
         };
 
-        // 3 revs from roses to roses2, 3 from roses2 to roses,     total 6
-        // 3 revs from tulips to tulips2, 3 from tulips2 to tulips, total 6
-        // 4 docs for push, 4docs for pull,                         total 8
-        _expectedDocumentCount         = -1;  // disable checking document count in runReplicators.
-        unsigned expectedDocumentCount = 20;
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            if ( stopped == 0 ) {
-                stopped = 1;
-                cv.notify_all();
-            } else if ( stopped == 2 ) {
-                UNSCOPED_INFO("The replicator is forced to stop after timeout");
-            }
-        }
+    }
 
-        CHECK(_statusReceived.progress.documentCount == expectedDocumentCount);
-        CHECK(c4coll_getDocumentCount(roses) == 6);
-        CHECK(c4coll_getDocumentCount(tulips) == 6);
-        CHECK(c4coll_getDocumentCount(roses2) == 6);
-        CHECK(c4coll_getDocumentCount(tulips2) == 6);
+    // Check docs that have incremental revisions got across the latest revision, 3.
+    for ( const auto& coll_doc : docsWithIncrementalRevisions ) {
+        c4::ref<C4Document> doc = c4coll_getDoc(coll_doc.first, coll_doc.second, true, kDocGetMetadata, ERROR_INFO());
+        CHECK(doc);
+        alloc_slice hist = c4doc_getRevisionHistory(doc, 1, nullptr, 0);
+        if ( isRevTrees() ) CHECK(3 == c4rev_getGeneration(hist));
     }
 }
 
