@@ -349,12 +349,6 @@ function =
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
-  | "vector_distance"i _ '(' _            { f = op("VECTOR_DISTANCE()");}
-    ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
-    t:expression _                     { appendAny(f, t);}
-    ( ',' _ t:expression               { appendAny(f, t);}
-     _ )?
-    ')' _                              { $$ = f;}
   | "prediction"i _ '(' _              { f = op("PREDICTION()");}
     tbl:IDENTIFIER _ ',' _             { appendAny(f, tbl.as<string>());}
     t:expression _                     { appendAny(f, t);}

@@ -180,7 +180,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         // Number of results = 10
         string          queryStr = R"(
          ['SELECT', {
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex', ['$target']], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
             LIMIT:    10
          }] )";
@@ -197,7 +197,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     // Number of Results = 5
     string          queryStr = R"(
      ['SELECT', {
-       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex', ['$target']], 'distance'] ],
+       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
        ORDER_BY: [ ['.distance'] ],
        LIMIT:    5
      }] )";
@@ -247,7 +247,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.Vec
     string          queryStr = R"(
      ['SELECT', {
         WHERE:    ['=', 0, ['%', ['._sequence'], 100]],
-        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex', ['$target']], 'distance'] ],
+        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
         ORDER_BY: [ ['.distance'] ],
         LIMIT:    10
      }] )";
@@ -301,7 +301,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
 
     string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
     queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(ORDER BY VECTOR_DISTANCE(a.vecIndex, $target) LIMIT 5 )";
+                R"(ORDER BY VECTOR_DISTANCE(a.vector, $target) LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -384,12 +384,12 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
     otherStore->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText,
                             IndexSpec::FTSOptions{"english", true});
 
-    string queryStr = R"(SELECT META(a).id, META(other).id, VECTOR_DISTANCE(a.vecIndex, $target) )"
+    string queryStr = R"(SELECT META(a).id, META(other).id, VECTOR_DISTANCE(a.vector, $target) )"
                       R"( FROM )"s
                       + collectionName
                       + R"( AS a JOIN other ON META(a).id = other.refID )"
                         R"( WHERE MATCH(other.sentence, "search") )"
-                        R"( ORDER BY VECTOR_DISTANCE(a.vecIndex, $target) )";
+                        R"( ORDER BY VECTOR_DISTANCE(a.vector, $target) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -491,7 +491,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
     createVectorIndex();
     store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, IndexSpec::FTSOptions{"english", true});
 
-    string queryStr = R"(SELECT META(a).id, VECTOR_DISTANCE(a.vecIndex, $target) AS distance, a.sentence FROM )"s
+    string queryStr = R"(SELECT META(a).id, VECTOR_DISTANCE(a.vector, $target) AS distance, a.sentence FROM )"s
                       + collectionName;
     queryStr += R"( AS a WHERE MATCH(a.sentence, "search") ORDER BY distance LIMIT 4)";
 
@@ -632,7 +632,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     // Need to run an arbitrary query to actually train the index
-    string queryStr = R"(SELECT VECTOR_DISTANCE(vecIndex, $target) FROM )"s + collectionName + R"( LIMIT 5 )";
+    string queryStr = R"(SELECT VECTOR_DISTANCE(vector, $target) FROM )"s + collectionName + R"( LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
 

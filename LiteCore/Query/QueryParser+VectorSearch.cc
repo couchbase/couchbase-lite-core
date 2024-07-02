@@ -31,8 +31,9 @@ namespace litecore {
 
     static constexpr unsigned kMaxMaxResults = 10000;
 
-    // Writes the vector MATCH expression itself.
-    void QueryParser::writeVectorMatchFn(const ArrayIterator& params, string_view alias, string_view tableName) {
+    // Writes the SQL vector MATCH expression itself.
+    void QueryParser::writeVectorMatchExpression(const ArrayIterator& params, string_view alias,
+                                                 string_view tableName) {
         if ( !alias.empty() ) _sql << alias << '.';
         auto targetVectorParam = params[1];
         _sql << "vector MATCH encode_vector(";
@@ -49,15 +50,20 @@ namespace litecore {
         }
     }
 
-    // Scans the entire query for vector_distance() calls, and adds join tables for ones that are
-    // indexed.
+    // Scans the entire query for vector_distance() calls, and adds join tables for ones that are indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
-        findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* matchExpr) {
-            // Arguments to vector_distance are index name and target vector.
-            ArrayIterator params(matchExpr);
+        findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* distExpr) {
+            ArrayIterator params(distExpr);
             ++params;  // skip fn name
-            string         tableName = FTSTableName(params[0], true).first;
+
+            // Use the vector expression to identify the index:
+            auto expr = params[0];
+            auto exprJSON = expressionCanonicalJSON(expr);
+            require (expr->type() == kArray, "first arg to vector_distance must evaluate to a vector; did you pass the index name %s instead?", exprJSON.c_str());
+            string         tableName = _delegate.vectorTableName(_defaultTableName, exprJSON);
+            require(!tableName.empty(), "searching by vector distance requires a vector index on %s", exprJSON.c_str());
             indexJoinInfo* info      = indexJoinTable(tableName, "vector");
+
             if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
                 // If there is no WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
@@ -79,14 +85,14 @@ namespace litecore {
                 // Register a callback to write the nested SELECT in place of a table name:
                 info->writeTableSQL = [=] {
                     _sql << "(SELECT rowid, distance FROM " << sqlIdentifier(tableName) << " WHERE ";
-                    writeVectorMatchFn(params, "", tableName);
+                    writeVectorMatchExpression(params, "", tableName);
                     _sql << " LIMIT " << maxResults << ")";
                 };
             } else {
                 // In a hybrid query, add the MATCH condition to the JOIN's ON clause:
                 info->writeExtraOnSQL = [=] {
                     _sql << " AND ";
-                    writeVectorMatchFn(params, info->alias, tableName);
+                    writeVectorMatchExpression(params, info->alias, tableName);
                 };
             }
         });
@@ -117,7 +123,7 @@ namespace litecore {
     // Writes the SQL translation of the `vector_distance(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
         requireTopLevelConjunction("VECTOR_DISTANCE");
-        string         tableName = FTSTableName(params[0], true).first;
+        string         tableName = _delegate.vectorTableName(_defaultTableName, expressionCanonicalJSON(params[0]));
         indexJoinInfo* join      = indexJoinTable(tableName, "vector");
         _sql << join->alias << ".distance";
     }
