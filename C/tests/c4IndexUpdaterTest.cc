@@ -1,5 +1,5 @@
 //
-// c4ThreadingTest.cc
+// c4IndexUpdaterTest.cc
 //
 // Copyright 2024-Present Couchbase, Inc.
 //
