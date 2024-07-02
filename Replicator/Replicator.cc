@@ -39,8 +39,19 @@ using namespace fleece;
 using namespace litecore::blip;
 
 namespace litecore::repl {
-    struct StoppingErrorEntry {
-        // NOLINT(cppcoreguidelines-pro-type-member-init)
+
+// Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
+// pass the collectionIndex manually for log calls
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#if DEBUG
+#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#else
+#    define cLogDebug(IDX, FMT, ...)
+#endif
+
+    struct StoppingErrorEntry {  // NOLINT(cppcoreguidelines-pro-type-member-init)
         C4Error err;
         bool    isFatal;
         slice   msg;
@@ -72,25 +83,28 @@ namespace litecore::repl {
         , _connectionState(connection().state())
         , _docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100) {
         try {
-            connection().setParentObjectRef(getObjectRef());
-            db->setParentObjectRef(getObjectRef());
-
+            _options->verify();
             // Post-conditions:
             //   collectionOpts.size() > 0
             //   collectionAware == false if and only if collectionOpts.size() == 1 &&
             //                                           collectionOpts[0].collectionPath == defaultCollectionPath
             //   isActive == true ? all collections are active
             //                    : all collections are passive.
-            _options->verify();
+
+            if ( Logging* parentObj = dynamic_cast<Logging*>(&delegate); parentObj != nullptr ) {
+                setParentObjectRef(parentObj->getObjectRef());
+            }
+            connection().setParentObjectRef(getObjectRef());
+            db->setParentObjectRef(getObjectRef());
 
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            string logName = db->useLocked<std::string>([](const C4Database* db) {
+            string dbLogName = db->useLocked<std::string>([](const C4Database* db) {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
-            logInfo("DB=%s Instantiated %s", logName.c_str(), string(*options).c_str());
+            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
 #ifdef LITECORE_CPPTEST
             _delayChangesResponse   = _options->delayChangesResponse();
@@ -370,30 +384,70 @@ namespace litecore::repl {
         }
     }
 
-    Worker::ActivityLevel Replicator::computeActivityLevel() const {
+    namespace {
+        enum ReasonCode : uint8_t {
+            rcConnecting,
+            rcUnsavedCheckpointer,
+            rcParentLevel,
+            rcPushOrPull,
+            rcOneShotBeforeStop,
+            rcClosing,
+            rcClosedParentLevel,
+            rcClosedPushOrPull,
+            rcClosed,
+            rcClosedBusyWhenConnecting,
+
+            rcEnd
+        };
+
+        const char* const reasonTable[rcEnd]{"connecting",
+                                             "unsavedCheckpointer",
+                                             nullptr,  // dynamically available in parentReason
+                                             "pushOrPull",
+                                             "oneShotBeforeStop",
+                                             "closing",
+                                             nullptr,  // dynamically available in parentReason
+                                             "closed:pushOrPull",
+                                             "closed",
+                                             "closed:busyWhenConnecting"};
+    }  // namespace
+
+    Worker::ActivityLevel Replicator::computeActivityLevel(std::string* reason) const {
         // Once I've announced I've stopped, don't return any other status again:
         auto currentLevel = status().level;
         if ( currentLevel == kC4Stopped ) return kC4Stopped;
 
-        ActivityLevel level      = kC4Busy;
+        ActivityLevel level = kC4Busy;
+        ReasonCode    rc{rcEnd};
         bool          hasUnsaved = false;
+        std::string   parentReason;
         switch ( _connectionState ) {
             case Connection::kConnecting:
                 level = kC4Connecting;
+                rc    = rcConnecting;
                 break;
             case Connection::kConnected:
                 {
                     hasUnsaved = std::any_of(_subRepls.begin(), _subRepls.end(),
                                              [](const SubReplicator& sub) { return sub.checkpointer->isUnsaved(); });
-                    if ( hasUnsaved ) level = kC4Busy;
-                    else
-                        level = Worker::computeActivityLevel();
-                    level = max(level, max(_pushStatus.level, _pullStatus.level));
+                    if ( hasUnsaved ) {
+                        level = kC4Busy;
+                        rc    = rcUnsavedCheckpointer;
+                    } else {
+                        level = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                        rc    = rcParentLevel;
+                    }
+                    auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                    if ( level < childLevel ) {
+                        level = childLevel;
+                        rc    = rcPushOrPull;
+                    }
                     if ( level == kC4Idle && !isContinuous() && !isOpenServer() ) {
                         // Detect that a non-continuous active push or pull replication is done:
                         logInfo("Replication complete! Closing connection");
                         const_cast<Replicator*>(this)->_stop();
                         level = kC4Busy;
+                        rc    = rcOneShotBeforeStop;
                     }
                     DebugAssert(level > kC4Stopped);
                     break;
@@ -402,22 +456,37 @@ namespace litecore::repl {
                 // Remain active while I wait for the connection to finish closing:
                 logDebug("Connection closing... (activityLevel=busy)waiting to finish");
                 level = kC4Busy;
+                rc    = rcClosing;
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
                 // After connection closes, remain Busy (or Connecting) while I wait for db to
                 // finish writes and for myself to process any pending messages; then go to Stopped.
-                level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, _pullStatus.level));
-                if ( level < kC4Busy ) level = kC4Stopped;
-                else if ( currentLevel == kC4Connecting )
+                level           = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
+                rc              = rcClosedParentLevel;
+                parentReason    = "closed:"s + parentReason;
+                auto childLevel = max(_pushStatus.level, _pullStatus.level);
+                if ( level < childLevel ) {
+                    level = childLevel;
+                    rc    = rcClosedPushOrPull;
+                }
+                if ( level < kC4Busy ) {
+                    level = kC4Stopped;
+                    rc    = rcClosed;
+                } else if ( currentLevel == kC4Connecting ) {
                     level = kC4Connecting;
+                    rc    = rcClosedBusyWhenConnecting;
+                }
                 break;
         }
+
+        if ( reason ) *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
+
         if ( SyncBusyLog.willLog(LogLevel::Info) ) {
             logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d", kC4ReplicatorActivityLevelNames[level],
                     _connectionState, hasUnsaved);
         }
+
         return level;
     }
 
@@ -522,6 +591,10 @@ namespace litecore::repl {
                                    "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
         if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+            _correlationID = x_corr;
+            logInfo("Received X-Correlation-Id");
+        }
     }
 
     void Replicator::_onConnect() {
@@ -588,8 +661,12 @@ namespace litecore::repl {
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         auto collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
-        warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
-             msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        if ( collection == kNotCollectionIndex )
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: none) with Profile '%.*s', %zu bytes",
+                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
+        else
+            warn("Received unrecognized BLIP request #%" PRIu64 "(collection: %u) with Profile '%.*s', %zu bytes",
+                 msg->number(), collection, SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
     }
 
@@ -857,7 +934,7 @@ namespace litecore::repl {
                     getRemoteCheckpoint(true, coll);
                 } else {
                     gotError(response);
-                    warn("Failed to save remote checkpoint (collection: %u)!", coll);
+                    cWarn(coll, "Failed to save remote checkpoint!");
                     // If the checkpoint didn't save, something's wrong; but if we don't mark it as
                     // saved, the replicator will stay busy (see computeActivityLevel, line 169).
                     sub.checkpointer->saveCompleted();
@@ -1261,4 +1338,13 @@ namespace litecore::repl {
             prepareWorkers();
         }
     }
+
+    void Replicator::addLoggingKeyValuePairs(std::stringstream& output) const {
+        Worker::addLoggingKeyValuePairs(output);
+        if ( _correlationID ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "CorrID=" << _correlationID.asString();
+        }
+    }
+
 }  // namespace litecore::repl

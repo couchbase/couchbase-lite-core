@@ -289,10 +289,12 @@ void C4Test::deleteAndRecreateDB(C4Database*& db) {
     REQUIRE(db);
 }
 
-/*static*/ alloc_slice C4Test::copyFixtureDB(const string& name) {
-    auto               srcPath = litecore::FilePath(sFixturesDir + name, "");
-    litecore::FilePath parentDir(TempDir(), "");
-    auto               dbPath = parentDir[srcPath.fileOrDirName() + "/"];
+/*static*/ alloc_slice C4Test::copyFixtureDB(const string& name) { return copyFixtureDB(sFixturesDir, name); }
+
+alloc_slice C4Test::copyFixtureDB(const string& parentDir, const string& name) {
+    auto               srcPath = litecore::FilePath(parentDir + name, "");
+    litecore::FilePath destDir(TempDir(), "");
+    auto               dbPath = destDir[srcPath.fileOrDirName() + "/"];
     dbPath.delRecursive();
     srcPath.copyTo(dbPath);
     return alloc_slice(dbPath.unextendedName());

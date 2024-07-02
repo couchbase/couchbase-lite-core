@@ -245,6 +245,7 @@ class C4Test {
 
     static void        deleteAndRecreateDB(C4Database*&);
     static alloc_slice copyFixtureDB(const std::string& name);
+    static alloc_slice copyFixtureDB(const std::string& parentDir, const std::string& name);
 
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist = true);

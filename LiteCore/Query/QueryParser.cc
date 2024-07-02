@@ -1729,18 +1729,46 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path&& property, const Value* param) {
         size_t propertySizeIn = property.size();
-        // We send "property" to verifyDbAlias(). This function ensure that, after return,
-        // property is a path to the property in the doc. If the original property starts
-        // with database alias, such as db.name.firstname, the function will strip
-        // the leading database alias, db, and hence, property as a path will have its size
-        // reduced by 1.
-        auto&&        iType                           = verifyDbAlias(property);
-        bool          propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
-        const string& alias                           = iType->first;
-        aliasType     type                            = iType->second.type;
-        string        tablePrefix                     = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
 
-        if ( type >= kUnnestVirtualTableAlias ) {
+        string                                verifyDbAliasError;
+        QueryParser::AliasMap::const_iterator iType = verifyDbAlias(property, &verifyDbAliasError);
+
+        bool      propertyStartsWithExplicitAlias = false;
+        string    alias;
+        aliasType type = kDBAlias;
+        string    tablePrefix;
+
+        if ( verifyDbAliasError.empty() ) {
+            // We found DB alias iType
+            // Assertion: iType != _aliases.end();
+
+            // We send "property" to verifyDbAlias(). This function ensure that, after return,
+            // property is a path to the property in the doc. If the original property starts
+            // with database alias, such as db.name.firstname, the function will strip
+            // the leading database alias, db, and hence, property as a path will have its size
+            // reduced by 1.
+            propertyStartsWithExplicitAlias = (property.size() + 1 == propertySizeIn);
+
+            alias       = iType->first;
+            type        = iType->second.type;
+            tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
+        } else {
+            bool isInColumnList = false;
+            for ( auto iter = _context.crbegin(); iter != _context.crend(); ++iter ) {
+                if ( *iter == &kColumnListOperation ) {
+                    // In the column list, column names, or aliased by result aliases, do not need
+                    // to be preceded by db names or db aliases even if there are multiple data
+                    // sourxes, because result aliases are unique and passed to the SQLite engine.
+                    isInColumnList = true;
+                    break;
+                }
+            }
+            // This case is legit only if it appears in the ORDER BY clause, or when it
+            // appears in a column list.
+            if ( !isInColumnList ) { fail("%s", verifyDbAliasError.c_str()); }
+        }
+
+        if ( verifyDbAliasError.empty() && type >= kUnnestVirtualTableAlias ) {
             // The alias is to an UNNEST. This needs to be written specially:
             writeUnnestPropertyGetter(fn, property, alias, type);
             return;
@@ -1806,6 +1834,11 @@ namespace litecore {
                 writeMetaProperty(fn, tablePrefix, "rowid");
                 return;
             }
+        }
+
+        if ( !verifyDbAliasError.empty() ) {
+            // We cannot resolve properties without db aliases if there are multiple data sources.
+            fail("%s", verifyDbAliasError.c_str());
         }
 
         // It's more efficent to get the doc root with fl_root than with fl_value:

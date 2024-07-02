@@ -1356,6 +1356,56 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
     CHECK(count == 8);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observers lifetime", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    const int sw = GENERATE(0, 1, 2, 3);
+
+    struct State {
+        C4Query*         query;
+        int              sw;
+        C4QueryObserver* obs;
+        atomic<int>      count = 0;
+    } state{query, sw};
+
+    auto callback = [](C4QueryObserver* obs, C4Query* query, void* context) {
+        C4Log("---- Query observer called!");
+        auto state = (State*)context;
+        CHECK(query == state->query);
+        CHECK(obs == state->obs);
+        CHECK(state->count == 0);
+        ++state->count;
+        if ( state->sw == 1 ) {
+            c4queryobs_setEnabled(state->obs, false);
+            c4queryobs_free(state->obs);
+        } else if ( state->sw == 3 ) {
+            c4queryobs_free(state->obs);
+        }
+    };
+
+    state.obs = c4queryobs_create(query, callback, &state);
+    REQUIRE(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observers...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    switch ( sw ) {
+        case 0:  // disable before free
+            c4queryobs_setEnabled(state.obs, false);
+            c4queryobs_free(state.obs);
+            break;
+        case 1:  // disable before free in callback
+            break;
+        case 2:  // free without disable
+            c4queryobs_free(state.obs);
+            break;
+        case 3:  // free without disable in callback
+            break;
+        default:
+            break;
+    }
+}
+
 #pragma mark - BIGGER DATABASE:
 
 class BigDBQueryTest : public C4QueryTest {

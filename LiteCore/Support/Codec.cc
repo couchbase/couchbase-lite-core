@@ -80,14 +80,15 @@ namespace litecore::blip {
                            size_t maxInput) {
         _z.next_in  = (Bytef*)input.buf;
         auto inSize = _z.avail_in = (unsigned)std::min(input.size, maxInput);
-        _z.next_out               = (Bytef*)output.next();
+        (void)inSize;  // used in logDebug which is empty in release buid.
+        _z.next_out  = (Bytef*)output.next();
         auto outSize = _z.avail_out = (unsigned)output.capacity();
         Assert(outSize > 0);
         Assert(mode > Mode::Raw);
         int result = _flate(&_z, (int)mode);
-        logInfo("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes", operation, inSize, outSize,
-                (int)mode, result, (long)(_z.next_in - (uint8_t*)input.buf),
-                (long)(_z.next_out - (uint8_t*)output.next()));
+        logDebug("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes", operation, inSize, outSize,
+                 (int)mode, result, (long)(_z.next_in - (uint8_t*)input.buf),
+                 (long)(_z.next_out - (uint8_t*)output.next()));
         if ( !kZlibRawDeflate ) _checksum = (uint32_t)_z.adler;
         input.setStart(_z.next_in);
         output.advanceTo(_z.next_out);
@@ -125,7 +126,7 @@ namespace litecore::blip {
 
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed", (origInput.size - input.size),
                 (origOutputSize - output.capacity()),
-                (origOutputSize - output.capacity()) * 100 / (origInput.size - input.size), unflushedBytes());
+                (origOutputSize - output.capacity()) * 100.0 / (origInput.size - input.size), unflushedBytes());
     }
 
     void Deflater::_writeAndFlush(slice_istream& input, slice_ostream& output) {
@@ -174,7 +175,7 @@ namespace litecore::blip {
     void Inflater::write(slice_istream& input, slice_ostream& output, Mode mode) {
         if ( mode == Mode::Raw ) return _writeRaw(input, output);
 
-        logInfo("Decompressing %zu bytes into %zu-byte buf", input.size, output.capacity());
+        logDebug("Decompressing %zu bytes into %zu-byte buf", input.size, output.capacity());
         auto outStart = (uint8_t*)output.next();
         _write("inflate", input, output, mode);
         if ( kZlibRawDeflate ) addToChecksum({outStart, output.next()});

@@ -87,7 +87,8 @@ namespace litecore::repl {
         [[nodiscard]] virtual bool shouldPushRev(RevToSend* NONNULL) const;
 
       protected:
-        std::string  loggingClassName() const override;
+        std::string loggingClassName() const override { return "ChangesFeed"; }
+
         virtual bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const;
 
       private:

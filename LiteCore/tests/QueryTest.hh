@@ -63,7 +63,11 @@ class QueryTest : public DataFileTestFixture {
         }
     }
 
-    static void logSection(const string& name) { fprintf(stderr, "        --- %s\n", name.c_str()); }
+    static void logSection(const string& name, int level = 0) {
+        size_t      numSpaces = 8 + level * 4;
+        std::string spaces(numSpaces, ' ');
+        fprintf(stderr, "%s--- %s\n", spaces.c_str(), name.c_str());
+    }
 
     static string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two",   "three", "four",
@@ -77,8 +81,14 @@ class QueryTest : public DataFileTestFixture {
         return str;
     }
 
+    static alloc_slice numberedDocID(int i) { return alloc_slice(stringWithFormat("rec-%03d", i)); }
+
+    Record getNumberedDoc(int i, ContentOption opt = ContentOption::kEntireBody) const {
+        return store->get(numberedDocID(i), opt);
+    }
+
     sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction& t, DocumentFlags flags = DocumentFlags::kNone) {
-        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder& enc) {
+        return writeDoc(numberedDocID(i), flags, t, [=](Encoder& enc) {
             enc.writeKey("num");
             enc.writeInt(i);
             enc.writeKey("type");

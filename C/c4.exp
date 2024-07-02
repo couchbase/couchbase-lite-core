@@ -402,6 +402,12 @@ _c4_dumpInstances
 _gC4ExpectExceptions
 
 _c4_setExtensionPath
+_c4_enableExtension
+
+_c4index_getType
+_c4index_getQueryLanguage
+_c4index_getExpression
+_c4index_getOptions
 
 _c4index_getType
 _c4index_getQueryLanguage

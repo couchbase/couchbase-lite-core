@@ -27,6 +27,9 @@ namespace litecore::repl {
 
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
+      protected:
+        std::string loggingClassName() const override { return "Inserter"; }
+
       private:
         C4Collection* insertionCollection();  // Get the collection from the insertionDB
 

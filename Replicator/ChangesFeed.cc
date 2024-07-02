@@ -51,12 +51,6 @@ namespace litecore::repl {
 
     ChangesFeed::~ChangesFeed() = default;
 
-    string ChangesFeed::loggingClassName() const {
-        string className = Logging::loggingClassName();
-        if ( !_options->isActive() ) toLowercase(className);
-        return className;
-    }
-
     void ChangesFeed::filterByDocIDs(Array docIDs) {
         if ( !docIDs ) return;
         DocIDSet combined(new unordered_set<string>);

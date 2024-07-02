@@ -247,7 +247,7 @@ namespace litecore::repl {
                 db->getRawDocument(C4Database::kInfoStore, constants::kPreviousPrivateUUIDKey, [&](C4RawDocument* doc) {
                     if ( doc ) {
                         // If there is one, derive a doc ID from that and look for a checkpoint there
-                        for ( URLTransformStrategy strategy = URLTransformStrategy::AddPort;
+                        for ( URLTransformStrategy strategy = URLTransformStrategy::AsIs;
                               strategy <= URLTransformStrategy::RemovePort; ++strategy ) {
                             // CBL-1515: Make sure to account for platform inconsistencies in the format
                             // (some have been forcing the port for standard ports and others were omitting it)

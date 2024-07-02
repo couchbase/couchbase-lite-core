@@ -50,6 +50,16 @@ namespace litecore {
             return true;
         }
 
+      protected:
+        std::string loggingClassName() const override {
+            static std::string logName{};
+            if ( logName.empty() ) {
+                logName = "C4IncomingRepl";
+                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
+            }
+            return logName;
+        }
+
       private:
         WebSocket* _openSocket;
     };

@@ -62,6 +62,10 @@ C4EncryptionKey C4EncryptionKeyFromPasswordSHA1(slice password, C4EncryptionAlgo
 
 void C4Database::setExtensionPath(slice path) { SQLiteDataFile::setExtensionPath(string(path)); }
 
+void C4Database::enableExtension(slice name, slice path) {
+    SQLiteDataFile::enableExtension(string(name), string(path));
+}
+
 #pragma mark - STATIC LIFECYCLE METHODS:
 
 static FilePath dbPath(slice name, slice parentDir) {

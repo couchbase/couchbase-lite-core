@@ -50,8 +50,6 @@ namespace litecore {
     /** Like sprintf(), but returns a std::string */
     std::string format(const char* fmt NONNULL, ...) __printflike(1, 2);
 
-    std::string format(std::string fmt, ...);
-
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char* fmt NONNULL, va_list) __printflike(1, 0);
 

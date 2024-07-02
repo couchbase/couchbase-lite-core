@@ -18,6 +18,7 @@
 
 #include "VectorQueryTest.hh"
 #include "Base64.hh"
+#include "c4Database.h"
 #include "c4Database.hh"
 #include "c4Collection.hh"
 
@@ -37,23 +38,72 @@ class SIFTVectorQueryTest : public VectorQueryTest {
         VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", vectorIndexOptions());
     }
 
-    void readVectorDocs(size_t maxLines = 1000000) {
-        ExclusiveTransaction t(db);
-        size_t               docNo = 0;
-        ReadFileByLines(
-                TestFixture::sFixturesDir + "vectors_128x10000.json",
-                [&](FLSlice line) {
+    enum struct VectorType : uint8_t {
+        Array,   // array of floats
+        String,  // Base64 encoded of the float array. Must be little-endian
+        Mixed    // Mixed of above
+    };
+
+    void readVectorDocs(size_t maxLines = 1000000, VectorType type = VectorType::Array) {
+        ExclusiveTransaction  t(db);
+        size_t                docNo = 0;
+        constexpr const char* kVectorJSON[]{"vectors_128x10000.json", "vectors_base64_128x10000.json"};
+        if ( type < VectorType::Mixed ) {
+            ReadFileByLines(
+                    TestFixture::sFixturesDir + kVectorJSON[(int)type],
+                    [&](FLSlice line) {
+                        writeDoc(
+                                stringWithFormat("rec-%04zu", ++docNo), {}, t,
+                                [&](Encoder& enc) {
+                                    JSONConverter conv(enc);
+                                    REQUIRE(conv.encodeJSON(line));
+                                },
+                                false);
+                        return true;
+                    },
+                    maxLines);
+            t.commit();
+        } else if ( type == VectorType::Mixed ) {
+            std::vector<alloc_slice> arrayVec;
+            std::vector<alloc_slice> stringVec;
+            ReadFileByLines(
+                    TestFixture::sFixturesDir + kVectorJSON[(int)VectorType::Array],
+                    [&](FLSlice line) {
+                        arrayVec.emplace_back(line);
+                        return true;
+                    },
+                    maxLines);
+            ReadFileByLines(
+                    TestFixture::sFixturesDir + kVectorJSON[(int)VectorType::String],
+                    [&](FLSlice line) {
+                        stringVec.emplace_back(line);
+                        return true;
+                    },
+                    maxLines);
+            REQUIRE(arrayVec.size() == stringVec.size());
+
+            for ( docNo = 0; docNo < arrayVec.size(); ++docNo ) {
+                if ( docNo % 2 == 0 ) {
                     writeDoc(
-                            stringWithFormat("rec-%04zu", ++docNo), {}, t,
+                            stringWithFormat("rec-%04zu", docNo + 1), {}, t,
                             [&](Encoder& enc) {
                                 JSONConverter conv(enc);
-                                REQUIRE(conv.encodeJSON(line));
+                                REQUIRE(conv.encodeJSON(arrayVec[docNo]));
                             },
                             false);
-                    return true;
-                },
-                maxLines);
-        t.commit();
+                } else {
+                    writeDoc(
+                            stringWithFormat("rec-%04zu", docNo + 1), {}, t,
+                            [&](Encoder& enc) {
+                                JSONConverter conv(enc);
+                                REQUIRE(conv.encodeJSON(stringVec[docNo]));
+                            },
+                            false);
+                }
+            }
+
+            t.commit();
+        }
     }
 
     // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
@@ -78,8 +128,11 @@ class SIFTVectorQueryTest : public VectorQueryTest {
 };
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Query][.VectorSearch]") {
+    const VectorType type = GENERATE(VectorType::Array, VectorType::String);
+    logSection(type == VectorType::Array ? "Vector Type: array" : "Vector Type: string", 1);
+
     auto allKeyStores = db->allKeyStoreNames();
-    readVectorDocs(1);
+    readVectorDocs(1, type);
     createVectorIndex();
 
     // Recover the IndexSpec:
@@ -106,7 +159,13 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.VectorSearch]") {
-    readVectorDocs();
+    const VectorType type = GENERATE(VectorType::Array, VectorType::String, VectorType::Mixed);
+    logSection(type == VectorType::Array    ? "Vector Type: array"
+               : type == VectorType::String ? "Vector Type: string"
+                                            : "Vector Type: mixed",
+               1);
+
+    readVectorDocs(1000000, type);
     {
         // Add some docs without vector data, to ensure that doesn't break indexing:
         ExclusiveTransaction t(db);
@@ -208,7 +267,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.Vec
 // the result of the previous test, "Query Vector Index", with "other" collection that refers to the doc IDs
 // from VECTOR_MATCH.
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Query][.VectorSearch]") {
-    readVectorDocs();
+    readVectorDocs(1000000, VectorType::String);
     {
         // Add some docs without vector data, to ensure that doesn't break indexing:
         ExclusiveTransaction t(db);
@@ -251,12 +310,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
 
     // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
     // Same target as used by test "Query Vector Index"
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
+    Query::Options options = optionsWithTargetVector(kTargetVector, kString);
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
@@ -344,12 +398,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
 
     // Create the $target query param. (This happens to be equal to the vector in rec-0010.)
     // Same target as used by test "Query Vector Index"
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
+    Query::Options options = optionsWithTargetVector(kTargetVector, kData);
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
@@ -452,12 +501,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
 
-    Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("target");
-    enc.writeData(slice(kTargetVector, sizeof(kTargetVector)));
-    enc.endDictionary();
-    Query::Options options(enc.finish());
+    Query::Options options = optionsWithTargetVector(kTargetVector, kString);
 
     // Run the query:
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
@@ -489,8 +533,26 @@ static pair<string, string> splitCollectionName(const string& input) {
     return {input.substr(0, dotPos), input.substr(dotPos + 1)};
 }
 
+// This is a test for the functionality of the c4index_isTrained API.  The overall flow
+// of the test is as follows:
+//
+// 1. Test that if there are not enough docs to perform the training, the index
+//    remains untrained.
+// 2. Test that creating an index, and then adding a sufficient number of docs
+//    causes the index to become trained
+// 3. Test that adding a sufficient number of docs, and then creating an index
+//    causes the index to become trained
+//
+// During execution a few other things are also checked, such as a nonexistent index,
+// and an index that is not a vector index, to make sure that exceptions are thrown as
+// they should be.
+//
+// As a note, the timing of the training differs between 2 and 3 above currently.  Scenario
+// 2 trains the index at doc write time, and scenario 3 trains at first query time.  This
+// may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained{false};
+    bool expectedPretrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
@@ -510,7 +572,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = false;
+        expectedTrained    = false;
+        expectedPretrained = false;
         createVectorIndex();
         readVectorDocs(100);
     }
@@ -526,7 +589,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
+        expectedPretrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
     }
@@ -542,7 +606,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
+        expectedPretrained = false;
         readVectorDocs(256 * 30);
         createVectorIndex();
     }
@@ -590,6 +655,14 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
     if ( !isTrained ) ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "enableExtension API", "[.VectorSearch]") {
+    ExpectingExceptions e;
+    C4Error             err;
+    auto                result = c4_enableExtension("BadName"_sl, FLStr(sExtensionPath.c_str()), &err);
+    CHECK(!result);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
 N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {
