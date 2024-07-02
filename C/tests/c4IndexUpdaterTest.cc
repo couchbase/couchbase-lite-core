@@ -16,6 +16,7 @@
 #include "c4Index.hh"
 #include "c4Query.h"
 #include "c4Test.hh"  // IWYU pragma: keep
+#include <mutex>
 
 #ifdef COUCHBASE_ENTERPRISE
 
