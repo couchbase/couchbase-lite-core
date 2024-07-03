@@ -424,7 +424,7 @@ namespace litecore {
                                 vecOpt.metric = vectorsearch::Metric::Euclidean2;
                                 break;
                             case kC4VectorMetricCosine:
-                                vecOpt.metric = vectorsearch::Metric::Cosine;
+                                vecOpt.metric = vectorsearch::Metric::CosineDistance;
                                 break;
                             case kC4VectorMetricDefault:
                                 break;

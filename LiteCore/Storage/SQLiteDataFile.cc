@@ -880,8 +880,32 @@ namespace litecore {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
     }
 
-    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expression) const {
-        return findIndexOnExpression(expression, IndexSpec::kVector, onTable);
+    static vectorsearch::Metric actual(vectorsearch::Metric m) {
+        return (m == vectorsearch::Metric::Default) ? vectorsearch::Metric::Euclidean2 : m;
+    }
+
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expression,
+                                           string_view metricName) const {
+        if ( auto specp = findIndexOnExpression(expression, IndexSpec::kVector, onTable) ) {
+            if ( !metricName.empty() ) {
+                // If a metric name is given, verify that it matches the index:
+                auto metricp = vectorsearch::MetricNamed(metricName);
+                if ( !metricp )
+                    error::_throw(error::InvalidQuery,
+                                  "in 3rd argument to APPROX_VECTOR_DIST, '%.*s' is not a valid metric name",
+                                  int(metricName.size()), metricName.data());
+                auto realMetric = actual(specp->vectorOptions()->metric);
+                if ( actual(*metricp) != realMetric ) {
+                    string_view realName = vectorsearch::NameOfMetric(*metricp);
+                    error::_throw(error::InvalidQuery,
+                                  "in 3rd argument to APPROX_VECTOR_DIST, %.*s does not match the index's metric, %.*s",
+                                  int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
+                }
+            }
+            return specp->indexTableName;
+        } else {
+            return "";
+        }
     }
 #endif
 

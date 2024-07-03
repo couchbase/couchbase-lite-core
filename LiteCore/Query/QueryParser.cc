@@ -1969,8 +1969,8 @@ namespace litecore {
     }
 
     // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
-    pair<string, string> QueryParser::FTSTableName(const Value* key, bool vector) const {
-        Path keyPath(requiredString(key, vector ? "first arg of VECTOR_MATCH" : "left-hand side of MATCH expression"));
+    pair<string, string> QueryParser::FTSTableName(const Value* key) const {
+        Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
         require((0 < compCount && compCount <= 2),
@@ -2009,19 +2009,7 @@ namespace litecore {
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS or vector index name may not contain double-quotes nor be empty");
-        string tableName;
-        if ( vector ) {
-#ifdef COUCHBASE_ENTERPRISE
-            tableName = _delegate.vectorTableName(iAlias->second.tableName, indexName);
-            if ( !_delegate.tableExists(tableName) )
-                error::_throw(error::NoSuchIndex, "'%s' does not name a vector index", indexName.c_str());
-#else
-            // should be unreachable, but just in case:
-            error::_throw(error::AssertionFailed, "Consumer Edition doesn't support vector indexes");
-#endif
-        } else {
-            tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
-        }
+        string tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
         return {tableName, string(prefix)};
     }
 

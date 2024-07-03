@@ -115,7 +115,8 @@ namespace litecore {
         std::string unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
-        std::string vectorTableName(const string& collection, const std::string& property) const override;
+        std::string vectorTableName(const string& collection, const std::string& property,
+                                    string_view metricName) const override;
 #endif
 
       protected:
@@ -149,7 +150,8 @@ namespace litecore {
         void deleteIndex(const SQLiteIndexSpec&);
         std::optional<SQLiteIndexSpec> getIndex(slice name);
         std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*) const;
-        string findIndexOnExpression(const string& jsonWhat, IndexSpec::Type, const string& onTable) const;
+        std::optional<SQLiteIndexSpec> findIndexOnExpression(const string& jsonWhat, IndexSpec::Type,
+                                                             const string& onTable) const;
         void                           setIndexSequences(slice name, slice sequencesJSON);
         void inspectVectorIndex(SQLiteIndexSpec const&, int64_t& outRowCount, alloc_slice* outRows);
 

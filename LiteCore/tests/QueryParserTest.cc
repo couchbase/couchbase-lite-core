@@ -675,6 +675,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried FTS", "[Query][QueryParser
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryParser][VectorSearch]") {
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
+    vectorIndexMetric = "cosine";
     // Pure vector search (no other WHERE criteria):
     CHECK(parse("['SELECT', {"
                 "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]] ],"

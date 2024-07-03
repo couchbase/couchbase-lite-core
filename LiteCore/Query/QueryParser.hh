@@ -67,8 +67,9 @@ namespace litecore {
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const   = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE
-            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const   = 0;
-            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson) const = 0;
+            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson,
+                                                         string_view metricName) const                            = 0;
 #endif
         };
 
@@ -246,6 +247,7 @@ namespace litecore {
         unsigned findFTSProperties(const Value* root);
         void     findPredictionCalls(const Value* root);
         void     addVectorSearchJoins(const Dict* select);
+        string   tableFromVectorDistanceCall(const ArrayIterator& params);
         void     writeVectorMatchExpression(const ArrayIterator& params, string_view alias, string_view tableName);
         void     writeVectorDistanceFn(ArrayIterator&);
 
@@ -253,7 +255,7 @@ namespace litecore {
         const string&        indexJoinTableAlias(const string& key, const char* aliasPrefix = nullptr);
         const string&        FTSJoinTableAlias(const Value* matchLHS, bool canAdd = false);
         const string&        predictiveJoinTableAlias(const Value* expr, bool canAdd = false);
-        pair<string, string> FTSTableName(const Value* key, bool vector = false) const;
+        pair<string, string> FTSTableName(const Value* key) const;
         string               expressionIdentifier(const Array* expression, unsigned maxItems = 0) const;
         void                 findPredictiveJoins(const Value* node, vector<string>& joins);
         bool                 writeIndexedPrediction(const Array* node);

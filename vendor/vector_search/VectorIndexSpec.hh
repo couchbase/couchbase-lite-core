@@ -24,10 +24,27 @@ namespace vectorsearch {
 
     /// Distance metric; defines the distance between vectors.
     enum class Metric {
-        Euclidean2,                 ///< Euclidean distance, squared
-        Cosine,                     ///< Cosine similarity subtracted from 1, so smaller is closer
-        Default = Euclidean2
+        Euclidean2          = 0,    ///< Euclidean (L2) distance, squared
+        CosineDistance      = 1,    ///< 1 - CosineSimilarity: (-1..+1), lower is closer
+        Euclidean           = 2,    ///< True Euclidean distance, AKA L2
+        CosineSimilarity    = 3,    ///< Cosine similarity: (-1..+1), _higher is closer_
+        DotProductDistance  = 4,    ///< Negative of inner/dot product: _lower_ is closer.
+        DotProductSimilarity= 5,    ///< Inner/dot product (like CosineSimilarity but not normalized)
+
+        MaxValue = DotProductSimilarity,
+        Default = Euclidean2,
     };
+
+    /// The standard name of a Metric.
+    std::string_view NameOfMetric(Metric);
+
+    /// The Metric with the given name. Case-insensitive. Accepts several synonyms.
+    std::optional<Metric> MetricNamed(std::string_view name);
+
+    /// Returns true if results of this metric should be ranked in descending order (i.e. bigger is better.)
+    inline bool MetricIsDescending(Metric m) {
+        return m == Metric::CosineSimilarity || m == Metric::DotProductSimilarity;
+    }
 
     struct FlatClustering {
         unsigned numCentroids;      ///< Number of buckets to assign the vectors to
@@ -103,6 +120,10 @@ namespace vectorsearch {
         /// Same as the other `readArg` but takes a single string of the form `key=value` or `key`.
         [[nodiscard]] bool readArg(std::string_view arg);
 
+        /// Reads a comma-delimited list of args.
+        /// @throws std::invalid_argument if any arg is unknown or invalid.
+        void readArgs(std::string_view args);
+
         //---- VALIDATION:
 
         /// Throws a std::invalid_argument exception if the parameters are invalid.
@@ -149,6 +170,14 @@ namespace vectorsearch {
                 return std::get<FlatClustering>(clustering).numCentroids;
         }
 
+        /// Given the number of available vectors, returns the number of vectors to use to train
+        /// the index, or 0 if there are insufficient vectors for training.
+        /// This takes into account `minTrainingCount` and `maxTrainingCount`, as well as
+        /// `kMinTrainingVectorsPerCentroid` and `kMaxTrainingVectorsPerCentroid` (based on the
+        /// `numCentroidsToTrain`.)
+        int64_t effectiveTrainingCount(int64_t numVectors) const;
+
+
         //---- ENCODING:
 
         /// Writes a series of comma-separated "key=value" pairs describing this spec.
@@ -177,12 +206,12 @@ namespace vectorsearch {
         static constexpr SQEncoding             kMinSQEncoding {4};
         static constexpr SQEncoding             kMaxSQEncoding {8};
 
-        /// Absolute minimum number of training vectors needed per centroid.
-        /// The `train` method will return false instead of training if given fewer.
-        static constexpr int64_t kMinTrainingVectorsPerCentroid = 25;
+        /// Absolute minimum/maximum number of training vectors needed per centroid.
+        static constexpr int64_t kMinTrainingVectorsPerCentroid =  25;
+        static constexpr int64_t kMaxTrainingVectorsPerCentroid = 256;
 
         /// Minimum recommended (by FAISS) number of training vectors per centroid for good results.
-        static constexpr int64_t kRecommendedMinTrainingVectorsPerCentroid = 39;
+        static constexpr int64_t kRecommendedMinTrainingVectorsPerCentroid =  39;
         static constexpr int64_t kRecommendedMaxTrainingVectorsPerCentroid = 100;
 
     };

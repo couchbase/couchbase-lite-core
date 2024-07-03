@@ -31,7 +31,22 @@ namespace litecore {
 
     static constexpr unsigned kMaxMaxResults = 10000;
 
-    // Writes the SQL vector MATCH expression itself.
+    string QueryParser::tableFromVectorDistanceCall(const ArrayIterator& params) {
+        auto  expr     = params[0];
+        auto  exprJSON = expressionCanonicalJSON(expr);
+        slice metricName;
+        if ( auto metricVal = params[2] )
+            metricName = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DIST");
+        require(expr->type() == kArray,
+                "first argument to APPROX_VECTOR_DIST must evaluate to a vector; did you pass the index name %s "
+                "instead?",
+                exprJSON.c_str());
+        string tableName = _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
+        require(!tableName.empty(), "searching by vector distance requires a vector index on %s", exprJSON.c_str());
+        return tableName;
+    }
+
+    // Writes the SQL vector MATCH expression itself, based on the args of APPROX_VECTOR_DIST()
     void QueryParser::writeVectorMatchExpression(const ArrayIterator& params, string_view alias,
                                                  string_view tableName) {
         if ( !alias.empty() ) _sql << alias << '.';
@@ -41,9 +56,9 @@ namespace litecore {
         parseNode(targetVectorParam);
         _context.pop_back();
         _sql << ")";
-        if ( const Value* numProbesVal = params[2] ) {
+        if ( const Value* numProbesVal = params[3] ) {
             auto numProbes = numProbesVal->asInt();
-            require(numProbes > 0, "numProbes (3rd argument to vector_distance) must be a positive integer");
+            require(numProbes > 0, "4th argument (numProbes) to APPROX_VECTOR_DIST must be a positive integer");
             _sql << " AND vectorsearch_probes(";
             if ( !alias.empty() ) _sql << alias << '.';
             _sql << "vector, " << numProbes << ")";
@@ -57,11 +72,7 @@ namespace litecore {
             ++params;  // skip fn name
 
             // Use the vector expression to identify the index:
-            auto expr = params[0];
-            auto exprJSON = expressionCanonicalJSON(expr);
-            require (expr->type() == kArray, "first arg to vector_distance must evaluate to a vector; did you pass the index name %s instead?", exprJSON.c_str());
-            string         tableName = _delegate.vectorTableName(_defaultTableName, exprJSON);
-            require(!tableName.empty(), "searching by vector distance requires a vector index on %s", exprJSON.c_str());
+            string         tableName = tableFromVectorDistanceCall(params);
             indexJoinInfo* info      = indexJoinTable(tableName, "vector");
 
             if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
@@ -100,8 +111,8 @@ namespace litecore {
 
     // Writes the SQL translation of the `APPROX_VECTOR_DIST(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
-        string         tableName = _delegate.vectorTableName(_defaultTableName, expressionCanonicalJSON(params[0]));
         requireTopLevelConjunction("APPROX_VECTOR_DIST");
+        string         tableName = tableFromVectorDistanceCall(params);
         indexJoinInfo* join      = indexJoinTable(tableName, "vector");
         _sql << join->alias << ".distance";
     }
