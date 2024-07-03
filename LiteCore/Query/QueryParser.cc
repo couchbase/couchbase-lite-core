@@ -224,7 +224,7 @@ namespace litecore {
         }
 
 #ifdef COUCHBASE_ENTERPRISE
-        // Process VECTOR_DISTANCE() calls using an index if available.
+        // Process APPROX_VECTOR_DIST() calls using an index if available.
         // This may write a "WITH ..." (CTS) expression to _sql.
         addVectorSearchJoins(operands);
 #endif
@@ -1490,7 +1490,7 @@ namespace litecore {
             // Special case: "prediction()" may be indexed:
             if ( writeIndexedPrediction((const Array*)_curNode) ) return;
         } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
-            // Special case: "vector_distance()":
+            // Special case: "APPROX_VECTOR_DIST()":
             writeVectorDistanceFn(operands);
             return;
         }

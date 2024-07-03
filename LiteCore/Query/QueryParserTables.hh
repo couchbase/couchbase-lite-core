@@ -241,7 +241,7 @@ namespace litecore {
             {"cosine_distance", 2, 2},
 
             // Vector search:
-            {"vector_distance", 2, 3},
+            {"approx_vector_dist", 2, 4},
 #endif
 
             {nullslice}  // End of data

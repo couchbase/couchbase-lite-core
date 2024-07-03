@@ -677,14 +677,14 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
     // Pure vector search (no other WHERE criteria):
     CHECK(parse("['SELECT', {"
-                "ORDER_BY: [ ['VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
+                "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]] ],"
                 "LIMIT: 5}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
              "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS vector1 ON "
              "vector1.rowid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY vector1.distance LIMIT MAX(0, "
              "5)");
-    // Pure vector search, specifying numProbes:
-    CHECK(parse("['SELECT', {ORDER_BY: [ ['VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 50] ],"
+    // Pure vector search, specifying metric and numProbes:
+    CHECK(parse("['SELECT', {ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34], 'cosine', 50] ],"
                 "LIMIT: 5}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
              "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
@@ -693,7 +693,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
              "5)");
     // Hybrid search:
     CHECK(parse("['SELECT', {WHERE: ['>', ['._id'], 'x'],"
-                "ORDER_BY: [ ['VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ]}]")
+                "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]] ]}]")
           == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:vector:vecIndex\" AS vector1 ON "
              "vector1.rowid = _doc.rowid AND vector1.vector MATCH encode_vector(array_of(12, 34)) WHERE (_doc.key > "
              "'x') AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
@@ -706,7 +706,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search Non-Default Collect
     vectorIndexedProperties.insert({{"kv_.coll", R"([".vector"])"}, "kv_.coll:vector:vecIndex"});
     CHECK(parse("['SELECT', {"
                 "FROM: [{'COLLECTION':'coll'}],"
-                "ORDER_BY: [ ['VECTOR_DISTANCE()', ['.coll.vector'], ['[]', 12, 34]] ],"
+                "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.coll.vector'], ['[]', 12, 34]] ],"
                 "LIMIT: 5}]")
           == "SELECT coll.key, coll.sequence FROM \"kv_.coll\" AS coll JOIN (SELECT rowid, distance FROM "
              "\"kv_.coll:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS vector1 ON "
@@ -717,11 +717,11 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried Vector Search", "[Query][Q
     // Like FTS, vector_match can only be used at top level or within an AND.
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
-    parse("['SELECT', {WHERE: ['AND', ['VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]],\
+    parse("['SELECT', {WHERE: ['AND', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]],\
                                       ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
     ExpectException(error::LiteCore, error::InvalidQuery,
-                    "VECTOR_DISTANCE can only appear at top-level, or in a top-level AND", [this] {
-                        parse("['SELECT', {WHERE: ['OR', ['VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]],\
+                    "APPROX_VECTOR_DIST can only appear at top-level, or in a top-level AND", [this] {
+                        parse("['SELECT', {WHERE: ['OR', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]],\
                                          ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
                     });
 }
