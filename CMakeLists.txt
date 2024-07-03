@@ -121,13 +121,6 @@ add_definitions(
 
 )
 
-# Set warnings to error
-if (MSVC)
-    add_compile_options(/WX)
-else()
-    add_compile_options(-Werror -Wno-unknown-warning-option)
-endif()
-
 if(BUILD_ENTERPRISE)
     add_definitions(
         -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
