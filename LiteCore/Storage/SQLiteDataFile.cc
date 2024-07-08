@@ -904,7 +904,8 @@ namespace litecore {
             }
             return specp->indexTableName;
         } else {
-            return "";
+            error::_throw(error::NoSuchIndex, "vector search with APPROX_VECTOR_DIST requires a vector index on %s",
+                          expression.c_str());
         }
     }
 #endif

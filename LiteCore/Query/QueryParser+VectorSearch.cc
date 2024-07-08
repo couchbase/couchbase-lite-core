@@ -41,9 +41,7 @@ namespace litecore {
                 "first argument to APPROX_VECTOR_DIST must evaluate to a vector; did you pass the index name %s "
                 "instead?",
                 exprJSON.c_str());
-        string tableName = _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
-        require(!tableName.empty(), "searching by vector distance requires a vector index on %s", exprJSON.c_str());
-        return tableName;
+        return _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
     }
 
     // Writes the SQL vector MATCH expression itself, based on the args of APPROX_VECTOR_DIST()
