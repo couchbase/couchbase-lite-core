@@ -63,6 +63,21 @@ namespace litecore {
         }
     }
 
+    // Returns true if the WHERE clause does _not_ require a hybrid query,
+    // i.e. if it's nonexistent or consists only of a test that APPROX_VECTOR_DIST() is less than something.
+    static bool nonHybridWhereClause(const Value* where) {
+        if ( !where ) return true;
+        const Array* expr = requiredArray(where, "WHERE clause");
+        if ( expr->count() != 3 ) return false;
+        slice op = requiredString(expr->get(0), "WHERE clause op");
+        if ( op == "<" || op == "<=" ) expr = expr->get(1)->asArray();
+        else if ( op == ">" || op == ">=" )
+            expr = expr->get(2)->asArray();
+        else
+            return false;
+        return expr && expr->get(0) && expr->get(0)->asString().caseEquivalent(kVectorDistanceFnNameWithParens);
+    }
+
     // Scans the entire query for APPROX_VECTOR_DIST() calls, and adds join tables for ones that are indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
         findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* distExpr) {
@@ -73,7 +88,7 @@ namespace litecore {
             string         tableName = tableFromVectorDistanceCall(params);
             indexJoinInfo* info      = indexJoinTable(tableName, "vector");
 
-            if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
+            if ( nonHybridWhereClause(getCaseInsensitive(select, "WHERE")) ) {
                 // If there is no WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
                 // the entire collection. Isolating this in a nested SELECT ensures SQLite doesn't
@@ -109,7 +124,18 @@ namespace litecore {
 
     // Writes the SQL translation of the `APPROX_VECTOR_DIST(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
-        requireTopLevelConjunction("APPROX_VECTOR_DIST");
+        // APPROX_VECTOR_DIST can only be used in a WHERE if it's not within an OR.
+        auto validate = [&]() -> bool {
+            bool foundOR = false;
+            for ( auto i = _context.rbegin() + 1; i != _context.rend(); ++i ) {
+                if ( (*i)->op == "OR" ) foundOR = true;
+                else if ( *i == &kWhereOperation )
+                    return !foundOR;
+            }
+            return true;  // not in a WHERE clause
+        };
+        require(validate(), "APPROX_VECTOR_DIST can't be used within an OR in a WHERE clause");
+
         string         tableName = tableFromVectorDistanceCall(params);
         indexJoinInfo* join      = indexJoinTable(tableName, "vector");
         _sql << join->alias << ".distance";

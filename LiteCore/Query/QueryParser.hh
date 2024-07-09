@@ -168,7 +168,7 @@ namespace litecore {
         struct Operation;
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kResultListOperation,
-                kExpressionListOperation, kHighPrecedenceOperation;
+                kExpressionListOperation, kHighPrecedenceOperation, kWhereOperation;
 
         //        struct JoinedOperations;
         //        static const JoinedOperations kJoinedOperationsList[];

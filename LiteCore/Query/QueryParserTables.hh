@@ -100,6 +100,7 @@ namespace litecore {
                                                                                   &QueryParser::infixOp};
     inline constexpr QueryParser::Operation QueryParser::kOuterOperation{"outer", 1, 1, -1};
     inline constexpr QueryParser::Operation QueryParser::kHighPrecedenceOperation{"high prec", 1, 1, 10};
+    inline constexpr QueryParser::Operation QueryParser::kWhereOperation{"WHERE", 1, 1, -1};
 
     // Table of functions. Used when the 1st item of the array ends with "()".
     // https://developer.couchbase.com/documentation/server/current/n1ql/n1ql-language-reference/functions.html

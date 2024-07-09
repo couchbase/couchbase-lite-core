@@ -356,7 +356,9 @@ namespace litecore {
             } else {
                 _sql << " WHERE ";
             }
+            _context.push_back(&kWhereOperation);  // as a marker, so ops can detect they're in the WHERE clause
             parseNode(where);
+            _context.pop_back();
             if ( patchDeleteFlag ) { _sql << ")"; }
         }
         if ( !_checkedDeleted && patchDeleteFlag ) {
@@ -1956,7 +1958,7 @@ namespace litecore {
         while ( (*i)->op == "AND" || (*i)->op == "," || *i == &kExpressionListOperation
                 || *i == &kHighPrecedenceOperation )
             ++i;
-        require((*i)->op == "SELECT"_sl || *i == &kOuterOperation,
+        require((*i)->op == "SELECT"_sl || *i == &kWhereOperation || *i == &kOuterOperation,
                 "%s can only appear at top-level, or in a top-level AND", fnName);
     }
 

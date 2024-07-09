@@ -175,12 +175,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query][QueryParser]") {
 
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}],\
                                  WHERE: ['ANY', 'X', ['.', 'person', 'names'], ['=', ['?', 'X'], 'Smith']]}]")
-          == "SELECT person.key, person.sequence FROM kv_default AS person WHERE ((fl_contains(person.body, 'names', "
-             "'Smith'))) AND (person.flags & 1 = 0)");
+          == "SELECT person.key, person.sequence FROM kv_default AS person WHERE (fl_contains(person.body, 'names', "
+             "'Smith')) AND (person.flags & 1 = 0)");
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
                                  WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]")
           == "SELECT person.key, person.sequence FROM kv_default AS person INNER JOIN kv_default AS book ON (1) AND "
-             "(book.flags & 1 = 0) WHERE ((fl_contains(book.body, 'keywords', 'horror'))) AND (person.flags & 1 = 0)");
+             "(book.flags & 1 = 0) WHERE (fl_contains(book.body, 'keywords', 'horror')) AND (person.flags & 1 = 0)");
 
     // Non-property calls:
     CHECK(parseWhere("['ANY', 'X', ['pi()'], ['=', ['?X'], 'Smith']]") == "fl_contains(pi(), null, 'Smith')");
@@ -188,7 +188,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query][QueryParser]") {
           == "NOT EXISTS (SELECT 1 FROM fl_each(pi()) AS _X WHERE NOT (_X.value = 'Smith'))");
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}],\
                      WHERE: ['ANY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]}]")
-          == "SELECT person.key, person.sequence FROM kv_default AS person WHERE ((fl_contains(pi(), null, 'Smith'))) "
+          == "SELECT person.key, person.sequence FROM kv_default AS person WHERE (fl_contains(pi(), null, 'Smith')) "
              "AND (person.flags & 1 = 0)");
 }
 
@@ -692,6 +692,16 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
              "vectorsearch_probes(vector, 50) LIMIT 5) AS vector1 ON "
              "vector1.rowid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY vector1.distance LIMIT MAX(0, "
              "5)");
+    // Pure vector search, testing distance in the WHERE:
+    CHECK(parse("['SELECT', {"
+                "WHERE: ['<', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]], 1234],"
+                "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]] ],"
+                "LIMIT: 5}]")
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
+             "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS vector1 ON "
+             "vector1.rowid = _doc.rowid WHERE (vector1.distance < 1234) AND (_doc.flags & 1 = 0) ORDER BY "
+             "vector1.distance LIMIT MAX(0, "
+             "5)");
     // Hybrid search:
     CHECK(parse("['SELECT', {WHERE: ['>', ['._id'], 'x'],"
                 "ORDER_BY: [ ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]] ]}]")
@@ -718,12 +728,13 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Buried Vector Search", "[Query][Q
     // Like FTS, vector_match can only be used at top level or within an AND.
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
-    parse("['SELECT', {WHERE: ['AND', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]],\
+    parse("['SELECT', {WHERE: ['AND', ['<', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]], 1234],\
                                       ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
-    ExpectException(error::LiteCore, error::InvalidQuery,
-                    "APPROX_VECTOR_DIST can only appear at top-level, or in a top-level AND", [this] {
-                        parse("['SELECT', {WHERE: ['OR', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]],\
-                                         ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
-                    });
+    ExpectException(
+            error::LiteCore, error::InvalidQuery, "APPROX_VECTOR_DIST can't be used within an OR in a WHERE clause",
+            [this] {
+                parse("['SELECT', {WHERE: ['OR', ['<', ['APPROX_VECTOR_DIST()', ['.vector'], ['[]', 12, 34]], 1234],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+            });
 }
 #endif
