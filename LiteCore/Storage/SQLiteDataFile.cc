@@ -892,19 +892,19 @@ namespace litecore {
                 auto metricp = vectorsearch::MetricNamed(metricName);
                 if ( !metricp )
                     error::_throw(error::InvalidQuery,
-                                  "in 3rd argument to APPROX_VECTOR_DIST, '%.*s' is not a valid metric name",
+                                  "in 3rd argument to APPROX_VECTOR_DISTANCE, '%.*s' is not a valid metric name",
                                   int(metricName.size()), metricName.data());
                 auto realMetric = actual(specp->vectorOptions()->metric);
                 if ( actual(*metricp) != realMetric ) {
                     string_view realName = vectorsearch::NameOfMetric(*metricp);
                     error::_throw(error::InvalidQuery,
-                                  "in 3rd argument to APPROX_VECTOR_DIST, %.*s does not match the index's metric, %.*s",
+                                  "in 3rd argument to APPROX_VECTOR_DISTANCE, %.*s does not match the index's metric, %.*s",
                                   int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
                 }
             }
             return specp->indexTableName;
         } else {
-            error::_throw(error::NoSuchIndex, "vector search with APPROX_VECTOR_DIST requires a vector index on %s",
+            error::_throw(error::NoSuchIndex, "vector search with APPROX_VECTOR_DISTANCE requires a vector index on %s",
                           expression.c_str());
         }
     }

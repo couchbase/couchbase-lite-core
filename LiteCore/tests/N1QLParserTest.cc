@@ -582,37 +582,37 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
     vectorIndexedProperties.insert({{"kv_.coll", R"([".vektor"])"}, "kv_.coll:vector:vekIndex"});
     vectorIndexedProperties.insert({{"kv_.scope.coll", R"([".vektorz"])"}, "kv_.scope.coll:vector:vekzIndex"});
 
-    CHECK(translate("SELECT APPROX_VECTOR_DIST(a.vector, $target) AS distance "
+    CHECK(translate("SELECT APPROX_VECTOR_DISTANCE(a.vector, $target) AS distance "
                     "FROM _default AS a JOIN other ON META(a).id = other.refID "
                     "ORDER BY distance LIMIT 100")
           == "{'FROM':[{'AS':'a','COLLECTION':'_default'},"
              "{'COLLECTION':'other','JOIN':'INNER','ON':['=',['_.',['meta()','a'],'.id'],['.other.refID']]}],"
              "'LIMIT':100,"
              "'ORDER_BY':[['.distance']],"
-             "'WHAT':[['AS',['APPROX_VECTOR_DIST()',['.a.vector'],['$target']],'distance']]}");
+             "'WHAT':[['AS',['APPROX_VECTOR_DISTANCE()',['.a.vector'],['$target']],'distance']]}");
 
-    CHECK(translate("SELECT META().id, APPROX_VECTOR_DIST(vector, $target) AS distance ORDER BY distance LIMIT 5")
+    CHECK(translate("SELECT META().id, APPROX_VECTOR_DISTANCE(vector, $target) AS distance ORDER BY distance LIMIT 5")
           == "{'LIMIT':5,'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
-             "['AS',['APPROX_VECTOR_DIST()',['.vector'],['$target']],'distance']]}");
+             "['AS',['APPROX_VECTOR_DISTANCE()',['.vector'],['$target']],'distance']]}");
 
-    CHECK(translate("SELECT META().id, APPROX_VECTOR_DIST(coll.vektor, $target) AS distance FROM coll "
+    CHECK(translate("SELECT META().id, APPROX_VECTOR_DISTANCE(coll.vektor, $target) AS distance FROM coll "
                     "ORDER BY distance LIMIT 5")
           == "{'FROM':[{'COLLECTION':'coll'}],'LIMIT':5,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
-             "['AS',['APPROX_VECTOR_DIST()',['.coll.vektor'],['$target']],'distance']]}");
+             "['AS',['APPROX_VECTOR_DISTANCE()',['.coll.vektor'],['$target']],'distance']]}");
 
-    CHECK(translate("SELECT META().id, APPROX_VECTOR_DIST(C.vektorz, $target) AS distance "
+    CHECK(translate("SELECT META().id, APPROX_VECTOR_DISTANCE(C.vektorz, $target) AS distance "
                     "FROM scope.coll C "
                     "ORDER BY distance LIMIT 99")
           == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],'LIMIT':99,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
-             "['AS',['APPROX_VECTOR_DIST()',['.C.vektorz'],['$target']],'distance']]}");
+             "['AS',['APPROX_VECTOR_DISTANCE()',['.C.vektorz'],['$target']],'distance']]}");
 
-    CHECK(translate("SELECT META().id, APPROX_VECTOR_DIST(C.vektorz, $target) AS distance "
+    CHECK(translate("SELECT META().id, APPROX_VECTOR_DISTANCE(C.vektorz, $target) AS distance "
                     "FROM scope.coll C "
                     "ORDER BY distance LIMIT 456")
           == "{'FROM':[{'AS':'C','COLLECTION':'coll','SCOPE':'scope'}],'LIMIT':456,"
              "'ORDER_BY':[['.distance']],'WHAT':[['_.',['meta()'],'.id'],"
-             "['AS',['APPROX_VECTOR_DIST()',['.C.vektorz'],['$target']],'distance']]}");
+             "['AS',['APPROX_VECTOR_DISTANCE()',['.C.vektorz'],['$target']],'distance']]}");
 }
 #endif

@@ -325,7 +325,7 @@ namespace litecore::n1ql {
             // Predictive query:
             "euclidean_distance", "cosine_distance",
             // Vector query:
-            "approx_vector_dist", nullptr};
+            "approx_vector_distance", nullptr};
 
     static bool findIdentifier(const char* ident, const char* list[]) {
         for ( int i = 0; list[i]; ++i )
