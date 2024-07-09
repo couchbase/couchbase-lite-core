@@ -63,9 +63,8 @@ namespace litecore::qp {
     constexpr slice kPredictionFnName           = "prediction"_sl;
     constexpr slice kPredictionFnNameWithParens = "prediction()"_sl;
 
-    constexpr slice kVectorMatchFnName           = "vector_match"_sl;
-    constexpr slice kVectorMatchFnNameWithParens = "vector_match()"_sl;
-    constexpr slice kVectorDistanceFnName        = "vector_distance"_sl;
+    constexpr slice kVectorDistanceFnName           = "approx_vector_dist"_sl;
+    constexpr slice kVectorDistanceFnNameWithParens = "approx_vector_dist()"_sl;
 
     const char* const kDefaultTableAlias = "_doc";
 

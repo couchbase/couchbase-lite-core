@@ -180,8 +180,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         // Number of results = 10
         string          queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DIST()', ['.vector'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
             LIMIT:    10
          }] )";
@@ -198,8 +197,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     // Number of Results = 5
     string          queryStr = R"(
      ['SELECT', {
-       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
-       WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+       WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DIST()', ['.vector'], ['$target']], 'distance'] ],
        ORDER_BY: [ ['.distance'] ],
        LIMIT:    5
      }] )";
@@ -248,9 +246,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Hybrid Vector Query", "[Query][.Vec
 
     string          queryStr = R"(
      ['SELECT', {
-        WHERE:    ['AND', ['VECTOR_MATCH()', 'vecIndex', ['$target']],
-                          ['=', 0, ['%', ['._sequence'], 100]] ],
-        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
+        WHERE:    ['=', 0, ['%', ['._sequence'], 100]],
+        WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DIST()', ['.vector'], ['$target']], 'distance'] ],
         ORDER_BY: [ ['.distance'] ],
         LIMIT:    10
      }] )";
@@ -304,7 +301,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
 
     string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
     queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(WHERE VECTOR_MATCH(a.vecIndex, $target) LIMIT 5 )";
+                R"(ORDER BY APPROX_VECTOR_DIST(a.vector, $target) LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -387,12 +384,12 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and Join with FT
     otherStore->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText,
                             IndexSpec::FTSOptions{"english", true});
 
-    string queryStr = R"(SELECT META(a).id, META(other).id, VECTOR_DISTANCE(a.vecIndex) )"
+    string queryStr = R"(SELECT META(a).id, META(other).id, APPROX_VECTOR_DIST(a.vector, $target) )"
                       R"( FROM )"s
                       + collectionName
                       + R"( AS a JOIN other ON META(a).id = other.refID )"
-                        R"( WHERE VECTOR_MATCH(a.vecIndex, $target) AND MATCH(other.sentence, "search") )"
-                        R"( ORDER BY VECTOR_DISTANCE(a.vecIndex) )";
+                        R"( WHERE MATCH(other.sentence, "search") )"
+                        R"( ORDER BY APPROX_VECTOR_DIST(a.vector, $target) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -494,10 +491,9 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
     createVectorIndex();
     store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, IndexSpec::FTSOptions{"english", true});
 
-    string queryStr =
-            R"(SELECT META(a).id, VECTOR_DISTANCE(a.vecIndex) AS distance, a.sentence FROM )"s + collectionName;
-    queryStr += R"( AS a WHERE VECTOR_MATCH(a.vecIndex, $target))";
-    queryStr += R"( AND MATCH(a.sentence, "search") ORDER BY distance LIMIT 4)";
+    string queryStr = R"(SELECT META(a).id, APPROX_VECTOR_DIST(a.vector, $target) AS distance, a.sentence FROM )"s
+                      + collectionName;
+    queryStr += R"( AS a WHERE MATCH(a.sentence, "search") ORDER BY distance LIMIT 4)";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -553,7 +549,6 @@ static pair<string, string> splitCollectionName(const string& input) {
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained{false};
-    bool expectedPretrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
@@ -573,8 +568,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = false;
-        expectedPretrained = false;
+        expectedTrained = false;
         createVectorIndex();
         readVectorDocs(100);
     }
@@ -590,8 +584,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = true;
-        expectedPretrained = true;
+        expectedTrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
     }
@@ -607,8 +600,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained    = true;
-        expectedPretrained = false;
+        expectedTrained = true;
         readVectorDocs(256 * 30);
         createVectorIndex();
     }
@@ -640,8 +632,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     // Need to run an arbitrary query to actually train the index
-    string queryStr =
-            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target) )";
+    string queryStr = R"(SELECT APPROX_VECTOR_DIST(vector, $target) FROM )"s + collectionName + R"( LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
 

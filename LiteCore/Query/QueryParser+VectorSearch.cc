@@ -29,19 +29,52 @@ using namespace litecore::qp;
 
 namespace litecore {
 
-    static constexpr unsigned kDefaultMaxResults = 3;
-    static constexpr unsigned kMaxMaxResults     = 10000;
+    static constexpr unsigned kMaxMaxResults = 10000;
 
-    // Scans the entire query for vector_match() calls, and adds join tables for ones that are
-    // indexed.
+    string QueryParser::tableFromVectorDistanceCall(const ArrayIterator& params) {
+        auto  expr     = params[0];
+        auto  exprJSON = expressionCanonicalJSON(expr);
+        slice metricName;
+        if ( auto metricVal = params[2] )
+            metricName = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DIST");
+        require(expr->type() == kArray,
+                "first argument to APPROX_VECTOR_DIST must evaluate to a vector; did you pass the index name %s "
+                "instead?",
+                exprJSON.c_str());
+        return _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
+    }
+
+    // Writes the SQL vector MATCH expression itself, based on the args of APPROX_VECTOR_DIST()
+    void QueryParser::writeVectorMatchExpression(const ArrayIterator& params, string_view alias,
+                                                 string_view tableName) {
+        if ( !alias.empty() ) _sql << alias << '.';
+        auto targetVectorParam = params[1];
+        _sql << "vector MATCH encode_vector(";
+        _context.push_back(&kArgListOperation);  // suppress unnecessary parens
+        parseNode(targetVectorParam);
+        _context.pop_back();
+        _sql << ")";
+        if ( const Value* numProbesVal = params[3] ) {
+            auto numProbes = numProbesVal->asInt();
+            require(numProbes > 0, "4th argument (numProbes) to APPROX_VECTOR_DIST must be a positive integer");
+            _sql << " AND vectorsearch_probes(";
+            if ( !alias.empty() ) _sql << alias << '.';
+            _sql << "vector, " << numProbes << ")";
+        }
+    }
+
+    // Scans the entire query for APPROX_VECTOR_DIST() calls, and adds join tables for ones that are indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
-        findNodes(select, kVectorMatchFnNameWithParens, 1, [&](const Array* matchExpr) {
-            // Arguments to vector_match are index name and target vector.
-            string         tableName         = FTSTableName(matchExpr->get(1), true).first;
-            auto           targetVectorParam = matchExpr->get(2);
-            indexJoinInfo* info              = indexJoinTable(tableName, "vector");
-            if ( matchExpr == getCaseInsensitive(select, "WHERE") ) {
-                // If vector_match is the entire WHERE clause, this is a simple non-hybrid query.
+        findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* distExpr) {
+            ArrayIterator params(distExpr);
+            ++params;  // skip fn name
+
+            // Use the vector expression to identify the index:
+            string         tableName = tableFromVectorDistanceCall(params);
+            indexJoinInfo* info      = indexJoinTable(tableName, "vector");
+
+            if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
+                // If there is no WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
                 // the entire collection. Isolating this in a nested SELECT ensures SQLite doesn't
                 // see the outer JOIN against the collection; if it did, the vectorsearch extension's
@@ -50,52 +83,36 @@ namespace litecore {
 
                 // Figure out the limit to use in the vector query:
                 int64_t maxResults;
-                if ( auto limitVal = getCaseInsensitive(select, "LIMIT") ) {
-                    maxResults = limitVal->asInt();
-                    require(limitVal->isInteger() && maxResults > 0,
-                            "LIMIT must be a positive integer when using vector_match()");
-                    require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using vector_match()",
-                            kMaxMaxResults);
-                } else {
-                    maxResults = kDefaultMaxResults;
-                }
+                auto    limitVal = getCaseInsensitive(select, "LIMIT");
+                require(limitVal, "a LIMIT must be given when using APPROX_VECTOR_DIST()");
+                maxResults = limitVal->asInt();
+                require(limitVal->isInteger() && maxResults > 0,
+                        "LIMIT must be a positive integer when using APPROX_VECTOR_DIST()");
+                require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using APPROX_VECTOR_DIST()",
+                        kMaxMaxResults);
 
                 // Register a callback to write the nested SELECT in place of a table name:
                 info->writeTableSQL = [=] {
-                    _sql << "(SELECT rowid, distance FROM \"" << tableName << "\" WHERE vector MATCH encode_vector(";
-                    parseNode(targetVectorParam);
-                    _sql << ") LIMIT " << maxResults << ")";
+                    _sql << "(SELECT rowid, distance FROM " << sqlIdentifier(tableName) << " WHERE ";
+                    writeVectorMatchExpression(params, "", tableName);
+                    _sql << " LIMIT " << maxResults << ")";
+                };
+            } else {
+                // In a hybrid query, add the MATCH condition to the JOIN's ON clause:
+                info->writeExtraOnSQL = [=] {
+                    _sql << " AND ";
+                    writeVectorMatchExpression(params, info->alias, tableName);
                 };
             }
         });
     }
 
-    // Writes a `vector_match()` expression.
-    void QueryParser::writeVectorMatchFn(ArrayIterator& params) {
-        requireTopLevelConjunction("VECTOR_MATCH");
-        auto parentCtx = _context.rbegin() + 1;
-        auto parentOp  = (*parentCtx)->op;
-        if ( parentOp == "SELECT"_sl || parentOp == nullslice ) {
-            // In a simple query the work of `vector_match` is done by the JOIN, which limits the results to the
-            // rowids produced by the nested query of the vector table.
-            // Since there's nothing to do here, replace the call with a `true`.
-            _sql << "true";
-        } else {
-            // In a hybrid query we do write the LIKE test at the point of the match call:
-            string        tableName = FTSTableName(params[0], true).first;
-            const string& alias     = indexJoinTableAlias(tableName, "vector");
-            Assert(!alias.empty());
-            auto targetVectorParam = params[1];
-            _sql << sqlIdentifier(alias) << ".vector MATCH encode_vector(";
-            parseNode(targetVectorParam);
-            _sql << ")";
-        }
-    }
-
-    // Writes the SQL translation of the `vector_distance(...)` call.
+    // Writes the SQL translation of the `APPROX_VECTOR_DIST(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
-        string tableName = FTSTableName(params[0], true).first;
-        _sql << indexJoinTableAlias(tableName, "vector") << ".distance";
+        requireTopLevelConjunction("APPROX_VECTOR_DIST");
+        string         tableName = tableFromVectorDistanceCall(params);
+        indexJoinInfo* join      = indexJoinTable(tableName, "vector");
+        _sql << join->alias << ".distance";
     }
 
     // Given the expression to index from a vector index spec, returns the SQL of a

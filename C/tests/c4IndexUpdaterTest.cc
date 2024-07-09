@@ -423,7 +423,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Float Array", "[API][.Vect
     REQUIRE(c4indexupdater_finish(updater, ERROR_INFO()));
 
     auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
+            ORDER_BY: ['APPROX_VECTOR_DIST()', ['.vector'], ['$target']],
             WHAT:  [ ['.word'] ],
             FROM:  [{'COLLECTION':'words'}],
             LIMIT: 300
@@ -518,7 +518,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater not update when released witho
     c4indexupdater_release(updater);
 
     const auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
+            ORDER_BY: ['APPROX_VECTOR_DIST()', ['.word'], ['$target']],
             WHAT:  [ ['.word'] ],
             FROM:  [{'COLLECTION':'words'}],
             LIMIT: 300
