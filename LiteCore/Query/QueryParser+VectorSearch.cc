@@ -83,6 +83,10 @@ namespace litecore {
         findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* distExpr) {
             ArrayIterator params(distExpr);
             ++params;  // skip fn name
+            if ( auto accurate = params[4] ) {
+                require(accurate->type() == kBoolean, "APPROX_VECTOR_DISTANCE 'accurate' arg must be boolean");
+                require(accurate->asBool() == false, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true");
+            }
 
             // Use the vector expression to identify the index:
             string         tableName = tableFromVectorDistanceCall(params);
