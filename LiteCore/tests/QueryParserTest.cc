@@ -708,6 +708,22 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search", "[Query][QueryPar
           == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:vector:vecIndex\" AS vector1 ON "
              "vector1.rowid = _doc.rowid AND vector1.vector MATCH encode_vector(array_of(12, 34)) WHERE (_doc.key > "
              "'x') AND (_doc.flags & 1 = 0) ORDER BY vector1.distance");
+
+    // The optional 'accurate' parameter is ignored, but if given must be false:
+    CHECK(parse("['SELECT', {"
+                "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50, false] ],"
+                "LIMIT: 5}]")
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN (SELECT rowid, distance FROM "
+             "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
+             "vectorsearch_probes(vector, 50) LIMIT 5) AS vector1 ON "
+             "vector1.rowid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY vector1.distance LIMIT MAX(0, "
+             "5)");
+    ExpectException(
+            error::LiteCore, error::InvalidQuery, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true", [this] {
+                parse("['SELECT', {"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 50, 'cosine', true] ],"
+                      "LIMIT: 5}]");
+            });
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Vector Search Non-Default Collection",
