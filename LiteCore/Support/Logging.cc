@@ -82,6 +82,7 @@ namespace litecore {
     static string                sInitialMessage;   // For rotation, goes at top of each log
     static unsigned              sWarningCount, sErrorCount;
     static mutex                 sLogMutex;
+    std::vector<alloc_slice>     LogDomain::sInternedNames;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
     static const char*       kLevels[]     = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
