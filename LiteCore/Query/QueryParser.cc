@@ -224,7 +224,7 @@ namespace litecore {
         }
 
 #ifdef COUCHBASE_ENTERPRISE
-        // Process APPROX_VECTOR_DIST() calls using an index if available.
+        // Process APPROX_VECTOR_DISTANCE() calls using an index if available.
         // This may write a "WITH ..." (CTS) expression to _sql.
         addVectorSearchJoins(operands);
 #endif
@@ -356,7 +356,9 @@ namespace litecore {
             } else {
                 _sql << " WHERE ";
             }
+            _context.push_back(&kWhereOperation);  // as a marker, so ops can detect they're in the WHERE clause
             parseNode(where);
+            _context.pop_back();
             if ( patchDeleteFlag ) { _sql << ")"; }
         }
         if ( !_checkedDeleted && patchDeleteFlag ) {
@@ -1490,7 +1492,7 @@ namespace litecore {
             // Special case: "prediction()" may be indexed:
             if ( writeIndexedPrediction((const Array*)_curNode) ) return;
         } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
-            // Special case: "APPROX_VECTOR_DIST()":
+            // Special case: "APPROX_VECTOR_DISTANCE()":
             writeVectorDistanceFn(operands);
             return;
         }
@@ -1956,7 +1958,7 @@ namespace litecore {
         while ( (*i)->op == "AND" || (*i)->op == "," || *i == &kExpressionListOperation
                 || *i == &kHighPrecedenceOperation )
             ++i;
-        require((*i)->op == "SELECT"_sl || *i == &kOuterOperation,
+        require((*i)->op == "SELECT"_sl || *i == &kWhereOperation || *i == &kOuterOperation,
                 "%s can only appear at top-level, or in a top-level AND", fnName);
     }
 

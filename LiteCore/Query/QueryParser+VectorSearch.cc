@@ -36,15 +36,15 @@ namespace litecore {
         auto  exprJSON = expressionCanonicalJSON(expr);
         slice metricName;
         if ( auto metricVal = params[2] )
-            metricName = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DIST");
+            metricName = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
         require(expr->type() == kArray,
-                "first argument to APPROX_VECTOR_DIST must evaluate to a vector; did you pass the index name %s "
+                "first argument to APPROX_VECTOR_DISTANCE must evaluate to a vector; did you pass the index name %s "
                 "instead?",
                 exprJSON.c_str());
         return _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
     }
 
-    // Writes the SQL vector MATCH expression itself, based on the args of APPROX_VECTOR_DIST()
+    // Writes the SQL vector MATCH expression itself, based on the args of APPROX_VECTOR_DISTANCE()
     void QueryParser::writeVectorMatchExpression(const ArrayIterator& params, string_view alias,
                                                  string_view tableName) {
         if ( !alias.empty() ) _sql << alias << '.';
@@ -56,14 +56,29 @@ namespace litecore {
         _sql << ")";
         if ( const Value* numProbesVal = params[3] ) {
             auto numProbes = numProbesVal->asInt();
-            require(numProbes > 0, "4th argument (numProbes) to APPROX_VECTOR_DIST must be a positive integer");
+            require(numProbes > 0, "4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be a positive integer");
             _sql << " AND vectorsearch_probes(";
             if ( !alias.empty() ) _sql << alias << '.';
             _sql << "vector, " << numProbes << ")";
         }
     }
 
-    // Scans the entire query for APPROX_VECTOR_DIST() calls, and adds join tables for ones that are indexed.
+    // Returns true if the WHERE clause does _not_ require a hybrid query,
+    // i.e. if it's nonexistent or consists only of a test that APPROX_VECTOR_DISTANCE() is less than something.
+    static bool nonHybridWhereClause(const Value* where) {
+        if ( !where ) return true;
+        const Array* expr = requiredArray(where, "WHERE clause");
+        if ( expr->count() != 3 ) return false;
+        slice op = requiredString(expr->get(0), "WHERE clause op");
+        if ( op == "<" || op == "<=" ) expr = expr->get(1)->asArray();
+        else if ( op == ">" || op == ">=" )
+            expr = expr->get(2)->asArray();
+        else
+            return false;
+        return expr && expr->get(0) && expr->get(0)->asString().caseEquivalent(kVectorDistanceFnNameWithParens);
+    }
+
+    // Scans the entire query for APPROX_VECTOR_DISTANCE() calls, and adds join tables for ones that are indexed.
     void QueryParser::addVectorSearchJoins(const Dict* select) {
         findNodes(select, kVectorDistanceFnNameWithParens, 1, [&](const Array* distExpr) {
             ArrayIterator params(distExpr);
@@ -73,7 +88,7 @@ namespace litecore {
             string         tableName = tableFromVectorDistanceCall(params);
             indexJoinInfo* info      = indexJoinTable(tableName, "vector");
 
-            if ( getCaseInsensitive(select, "WHERE") == nullptr ) {
+            if ( nonHybridWhereClause(getCaseInsensitive(select, "WHERE")) ) {
                 // If there is no WHERE clause, this is a simple non-hybrid query.
                 // This is implemented by a nested SELECT that finds the nearest vectors in
                 // the entire collection. Isolating this in a nested SELECT ensures SQLite doesn't
@@ -84,11 +99,11 @@ namespace litecore {
                 // Figure out the limit to use in the vector query:
                 int64_t maxResults;
                 auto    limitVal = getCaseInsensitive(select, "LIMIT");
-                require(limitVal, "a LIMIT must be given when using APPROX_VECTOR_DIST()");
+                require(limitVal, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
                 maxResults = limitVal->asInt();
                 require(limitVal->isInteger() && maxResults > 0,
-                        "LIMIT must be a positive integer when using APPROX_VECTOR_DIST()");
-                require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using APPROX_VECTOR_DIST()",
+                        "LIMIT must be a positive integer when using APPROX_VECTOR_DISTANCE()");
+                require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using APPROX_VECTOR_DISTANCE()",
                         kMaxMaxResults);
 
                 // Register a callback to write the nested SELECT in place of a table name:
@@ -107,9 +122,20 @@ namespace litecore {
         });
     }
 
-    // Writes the SQL translation of the `APPROX_VECTOR_DIST(...)` call.
+    // Writes the SQL translation of the `APPROX_VECTOR_DISTANCE(...)` call.
     void QueryParser::writeVectorDistanceFn(ArrayIterator& params) {
-        requireTopLevelConjunction("APPROX_VECTOR_DIST");
+        // APPROX_VECTOR_DISTANCE can only be used in a WHERE if it's not within an OR.
+        auto validate = [&]() -> bool {
+            bool foundOR = false;
+            for ( auto i = _context.rbegin() + 1; i != _context.rend(); ++i ) {
+                if ( (*i)->op == "OR" ) foundOR = true;
+                else if ( *i == &kWhereOperation )
+                    return !foundOR;
+            }
+            return true;  // not in a WHERE clause
+        };
+        require(validate(), "APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause");
+
         string         tableName = tableFromVectorDistanceCall(params);
         indexJoinInfo* join      = indexJoinTable(tableName, "vector");
         _sql << join->alias << ".distance";
