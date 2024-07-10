@@ -897,9 +897,10 @@ namespace litecore {
                 auto realMetric = actual(specp->vectorOptions()->metric);
                 if ( actual(*metricp) != realMetric ) {
                     string_view realName = vectorsearch::NameOfMetric(*metricp);
-                    error::_throw(error::InvalidQuery,
-                                  "in 3rd argument to APPROX_VECTOR_DISTANCE, %.*s does not match the index's metric, %.*s",
-                                  int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
+                    error::_throw(
+                            error::InvalidQuery,
+                            "in 3rd argument to APPROX_VECTOR_DISTANCE, %.*s does not match the index's metric, %.*s",
+                            int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
                 }
             }
             return specp->indexTableName;
