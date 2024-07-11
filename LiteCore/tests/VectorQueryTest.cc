@@ -549,6 +549,7 @@ static pair<string, string> splitCollectionName(const string& input) {
 // may change based on usability concerns.
 TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSearch]") {
     bool expectedTrained{false};
+    bool expectedPretrained{false};
 
     // Undo this silliness, I'm not spending the effort to find out the name it really wants
     // which is LiteCore_Tests_<random number> or something
@@ -568,7 +569,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = false;
+        expectedTrained    = false;
+        expectedPretrained = false;
         createVectorIndex();
         readVectorDocs(100);
     }
@@ -584,7 +586,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
+        expectedPretrained = true;
         createVectorIndex();
         readVectorDocs(256 * 30);
     }
@@ -600,7 +603,8 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
             store          = &db->getKeyStore(string(".") + collectionName);
         }
 
-        expectedTrained = true;
+        expectedTrained    = true;
+        expectedPretrained = false;
         readVectorDocs(256 * 30);
         createVectorIndex();
     }
@@ -631,6 +635,9 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
         } catch ( error& e ) { CHECK(e == error::InvalidParameter); }
     }
 
+    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    CHECK(isTrained == expectedPretrained);
+
     // Need to run an arbitrary query to actually train the index
     string queryStr = R"(SELECT APPROX_VECTOR_DISTANCE(vector, $target) FROM )"s + collectionName + R"( LIMIT 5 )";
 
@@ -644,7 +651,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     Query::Options            options(enc.finish());
     Retained<QueryEnumerator> e(query->createEnumerator(&options));
 
-    bool isTrained = collection->isIndexTrained("vecIndex"_sl);
+    isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
     if ( !isTrained ) ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
 }
