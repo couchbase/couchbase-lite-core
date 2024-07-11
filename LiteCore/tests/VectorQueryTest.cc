@@ -687,4 +687,305 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.Ve
     CHECK(doc->asArray()->count() == 100);
 }
 
+TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Bad Metric)", "[.VectorSearch]") {
+    IndexSpec::VectorOptions opts =
+            IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
+    string pre = R"(SELECT META(a).id FROM )"s + collectionName
+                 + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target)";
+    string          post = R"() LIMIT 5)";
+    Retained<Query> query;
+
+    // c.f. kMetricNames in VectorIndexSpec.cc
+    const char*        kMetrics[]   = {"euclidean",
+                                       "L2",
+                                       "euclidean2",
+                                       "L2_squared",
+                                       "euclidean_squared",
+                                       "cosine",  //5
+                                       "dot",
+                                       "cosine_distance",
+                                       "cosine_similarity",
+                                       "dot_product_distance",
+                                       "dot_product_similarity",  //10
+                                       "default"};
+    constexpr unsigned kMetricCount = (unsigned)sizeof(kMetrics) / sizeof(char*);
+
+    SECTION("Default Metric") {
+        // Metric is not specified in the following index.
+        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", opts);
+        for ( unsigned i = 0; i < kMetricCount; ++i ) {
+            string queryStr = pre + ", '" + kMetrics[i] + "'" + post;
+            switch ( i ) {
+                case 2:
+                case 3:
+                case 4:
+                case 11:
+                    // These metrics match the index with the default metric.
+                    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                    CHECK(query != nullptr);
+                    break;
+                default:
+                    {
+                        ExpectingExceptions e;
+                        try {
+                            query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                        } catch ( error& err ) {
+                            CHECK(err.domain == error::LiteCore);
+                            CHECK(err.code == error::InvalidQuery);
+                            CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + kMetrics[i]
+                                          + " does not match the index's metric, euclidean2"s
+                                  == err.what());
+                        }
+                        CHECK(query == nullptr);
+                    }
+                    break;
+            }
+            query = nullptr;
+        }
+    }
+
+    SECTION("Non-default Metric") {
+        // vectorsearch::Metric -> compatible metric names in kMetrics
+        const std::vector<unsigned> kCompatibles[] = {
+                {2, 3, 4, 11},  // Euclidean2 ->  "euclidean2", "L2_squared", "euclidean_squared", "default"
+                {5, 7},         // CosineDistance -> "cosine", "cosine_distance"
+                {0, 1},         // Euclidean -> "euclidean", "L2"
+                {8},            // CosineSimilarity -> "cosine_similarity"
+                {6, 9},         // DotProductDistance -> "dot", "dot_product_distance"
+                {10}            // DotProductSimilarity -> "dot_product_similarity"
+        };
+
+        for ( unsigned m = 0; m <= (unsigned)vectorsearch::Metric::MaxValue; ++m ) {
+            opts.metric = (vectorsearch::Metric)m;
+            // Explicitly assign metric to the index
+            VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", opts);
+            for ( unsigned i = 0; i < kMetricCount; ++i ) {
+                string queryStr   = pre + ", '" + kMetrics[i] + "'" + post;
+                bool   compatible = false;
+                for ( auto c : kCompatibles[m] ) {
+                    if ( c == i ) {
+                        compatible = true;
+                        break;
+                    }
+                }
+                if ( compatible ) {
+                    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                    CHECK(query != nullptr);
+                } else {
+                    ExpectingExceptions e;
+                    try {
+                        query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                    } catch ( error& err ) {
+                        CHECK(err.domain == error::LiteCore);
+                        CHECK(err.code == error::InvalidQuery);
+                        CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + kMetrics[i]
+                                      + " does not match the index's metric, "
+                                      + string(vectorsearch::NameOfMetric(opts.metric))
+                              == err.what());
+                    }
+                    CHECK(query == nullptr);
+                }
+                query = nullptr;
+            }
+        }
+    }
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Misc)", "[.VectorSearch]") {
+    IndexSpec::VectorOptions opts =
+            IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
+    VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", opts);
+    Retained<Query> query;
+
+    SECTION("Not Indexed") {
+        // "book" is not indexed
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.book, $target) LIMIT 5)";
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::NoSuchIndex);
+                CHECK("vector search with APPROX_VECTOR_DISTANCE requires a vector index on [\".book\"]"s
+                      == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+    }
+
+    SECTION("Unsupported accurate") {
+        // accurate is the 5th argument to APPROX_VECTOR_DISTNCE
+        // only false is supported.
+        string queryStr =
+                R"(SELECT META(a).id FROM )"s + collectionName
+                + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target, 'euclidean2', 1, false) LIMIT 5)";
+        query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                       + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target, 'euclidean2', 1, true) LIMIT 5)";
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("APPROX_VECTOR_DISTANCE does not support 'accurate'=true"s == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+        // WARNING Invalid LiteCore query: APPROX_VECTOR_DISTANCE does not support 'accurate'=true
+        expectedWarningsLogged = 1;
+    }
+
+    SECTION("Invalid nprobes") {
+        // nprobes, the 4th argument to APPROX_VECTOR_DISTANCE must be greater than 0
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target, 'euclidean2', 1) LIMIT 5)";
+        query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            for ( int count = 0; count < 2; ++count ) {
+                if ( count == 0 )
+                    queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                               + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target, 'euclidean2', 0) LIMIT 5)";
+                else
+                    queryStr =
+                            R"(SELECT META(a).id FROM )"s + collectionName
+                            + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target, 'euclidean2', -6) LIMIT 5)";
+                ExpectingExceptions e;
+                try {
+                    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+                } catch ( error& err ) {
+                    CHECK(err.domain == error::LiteCore);
+                    CHECK(err.code == error::InvalidQuery);
+                    CHECK("4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be a positive integer"s
+                          == err.what());
+                }
+                CHECK(query == nullptr);
+                // Default WARNING Invalid LiteCore query: 4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be a positive integer
+                ++expectedWarningsLogged;
+            }
+        }
+    }
+
+    SECTION("APPROX_VECTOR_DISTANCE with OR") {
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a WHERE APPROX_VECTOR_DISTANCE(a.vector, $target))";
+        // This is a hybrid query and we don't need LIMIT clause.
+        query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                       + R"( AS a WHERE APPROX_VECTOR_DISTANCE(a.vector, $target) OR a.title = 'couchbase')";
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause"s == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+        // WARNING Invalid LiteCore query: APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause
+        expectedWarningsLogged = 1;
+
+        {
+            // This is non-hybrid
+            queryStr =
+                    R"(SELECT META(a).id FROM )"s + collectionName
+                    + R"( AS a WHERE APPROX_VECTOR_DISTANCE(a.vector, $target) < 0.5 OR a.title = 'couchbase' LIMIT 5)";
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause"s == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+        expectedWarningsLogged++;
+    }
+}
+
+TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid without Limit)", "[.VectorSearch]") {
+    IndexSpec::VectorOptions opts =
+            IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
+    VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", opts);
+    Retained<Query> query;
+
+    // WARNING Invalid LiteCore query: a LIMIT must be given when using APPROX_VECTOR_DIST()
+    expectedWarningsLogged = 1;
+
+    SECTION("APPROX_VECTOR_DIST in ORDER BY") {
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target))";
+        // working with LIMIT
+        query = store->compileQuery(queryStr + " LIMIT 5", QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+    }
+
+    SECTION("APPROX_VECTOR_DIST in WHERE") {
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a WHERE APPROX_VECTOR_DISTANCE(a.vector, $target) < 0.5)";
+        // This is non-hybrid, requires LIMIT
+        query = store->compileQuery(queryStr + " LIMIT 5", QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+        }
+    }
+
+    SECTION("APPROX_VECTOR_DIST in SELECT") {
+        string queryStr = R"(SELECT META(a).id, APPROX_VECTOR_DISTANCE(a.vector, $target) AS distant FROM )"s
+                          + collectionName + " AS a";
+        query = store->compileQuery(queryStr + " LIMIT 5", QueryLanguage::kN1QL);
+        CHECK(query != nullptr);
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+    }
+}
 #endif
