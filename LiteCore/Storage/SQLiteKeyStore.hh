@@ -56,6 +56,7 @@ namespace litecore {
         /// Modifies a collection name to either add or remove mangling necessary for
         /// case sensitive collection names in a case insensitive environment
         [[nodiscard]] static std::string transformCollectionName(const std::string& name, bool mangle);
+        [[nodiscard]] static std::string tableName(const string& keyStoreName);
 
         bool read(Record& rec, ReadBy, ContentOption) const override;
 
@@ -80,7 +81,7 @@ namespace litecore {
 
         void                     deleteIndex(slice name) override;
         std::vector<IndexSpec>   getIndexes() const override;
-        std::optional<IndexSpec> getIndex(slice name) override;
+        std::optional<IndexSpec> getIndex(slice name) const override;
         bool                     isIndexTrained(slice name) const override;
 
         std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback) override;
@@ -137,7 +138,8 @@ namespace litecore {
         bool   createArrayIndex(const IndexSpec&);
         bool   createVectorIndex(const IndexSpec&);
         string findVectorIndexNameFor(const string& property);
-        std::string createUnnestedTable(const fleece::impl::Value* arrayPath);
+        static std::optional<IndexSpec::VectorOptions> parseVectorSearchTableSQL(string_view sql);
+        std::string                                    createUnnestedTable(const fleece::impl::Value* arrayPath);
 
 #ifdef COUCHBASE_ENTERPRISE
         bool        createPredictiveIndex(const IndexSpec&);

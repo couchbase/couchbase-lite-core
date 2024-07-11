@@ -50,9 +50,10 @@ class LazyVectorQueryTest : public VectorQueryTest {
 
         string queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
+            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target']],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
+            LIMIT:    5
          }] )";
         _query          = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
         REQUIRE(_query != nullptr);
@@ -74,10 +75,8 @@ class LazyVectorQueryTest : public VectorQueryTest {
     }
 
     void createVectorIndex() {
-        IndexSpec::VectorOptions options(kDimension);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 16;
-        options.lazy                      = true;
+        IndexSpec::VectorOptions options(kDimension, vectorsearch::FlatClustering{16}, IndexSpec::DefaultEncoding);
+        options.lazyEmbedding = true;
         VectorQueryTest::createVectorIndex("factorsindex", "[  ['.num'] ]", options);
 
         _lazyIndex = make_retained<LazyIndex>(*store, "factorsindex");
@@ -95,6 +94,7 @@ class LazyVectorQueryTest : public VectorQueryTest {
             return 0;
         }
         Log("---- Updating %zu vectors...", update->count());
+        CHECK(update->dimensions() == kDimension);
 
         size_t count = update->count();
         CHECK(count > 0);
@@ -142,6 +142,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index", "[Query][.VectorSearc
     Retained<QueryEnumerator> e;
     e = (_query->createEnumerator(&_options));
     REQUIRE(e->getRowCount() == 0);  // index is empty so far
+    ++expectedWarningsLogged;        // "Untrained index; queries may be slow."
 
     REQUIRE(updateVectorIndex(200, alwaysUpdate) == 200);
     REQUIRE(updateVectorIndex(999, alwaysUpdate) == 200);
@@ -170,6 +171,7 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
 
     // rec-291, rec-171 and rec-081 are missing because unindexed
     checkQueryReturns({"rec-039", "rec-249", "rec-345", "rec-159", "rec-369"});
+    ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
 
     // Update the index again; only the skipped docs will appear this time.
     size_t nIndexed = 0;
@@ -186,6 +188,20 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index Skipping", "[Query][.Ve
     checkQueryReturns({"rec-291", "rec-171", "rec-039", "rec-081", "rec-249"});
 }
 
-#endif
+TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Update Wrong Dimensions", "[.VectorSearch]") {
+    Retained<LazyIndexUpdate> update = _lazyIndex->beginUpdate(1);
+    REQUIRE(update);
+    CHECK(update->count() == 1);
+    CHECK(update->dimensions() == kDimension);
 
-// Guard against multiple updater objects, where 2nd one finishes first!!
+    fleece::Value val(update->valueAt(0));
+    REQUIRE(val.type() == kFLNumber);
+    float vec[kDimension];
+    computeVector(0, vec);
+
+    ExpectingExceptions x;
+    Log("---- Calling setVectorAt with wrong dimension...");
+    CHECK_THROWS_AS(update->setVectorAt(0, vec, kDimension - 1), error);
+}
+
+#endif

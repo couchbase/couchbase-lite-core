@@ -50,13 +50,22 @@ namespace litecore::repl {
         // Get the document & revision:
         C4Error              c4err = {};
         Dict                 root;
-        auto                 collection = getCollection();
+        auto                 collection       = getCollection();
+        slice                replacementRevID = nullslice;
         Retained<C4Document> doc = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetUpgraded);
         if ( doc ) {
             if ( doc->selectRevision(request->revID, true) ) root = doc->getProperties();
             if ( root ) request->flags = doc->selectedRev().flags;
-            else
+            else if ( _sendReplacementRevs && doc->selectCurrentRevision() && doc->loadRevisionBody() ) {
+                root = doc->getProperties();
+                if ( root ) {
+                    request->flags   = doc->selectedRev().flags;
+                    replacementRevID = doc->selectedRev().revID;
+                } else
+                    revToSendIsObsolete(*request, &c4err);
+            } else {
                 revToSendIsObsolete(*request, &c4err);
+            }
         } else {
             c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
@@ -98,14 +107,20 @@ namespace litecore::repl {
         }
 
         auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
+        auto fullReplacementRevID =
+                replacementRevID ? alloc_slice(_db->convertVersionToAbsolute(replacementRevID)) : nullslice;
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         assignCollectionToMsg(msg, collectionIndex());
-        msg.compressed     = true;
-        msg["id"_sl]       = request->docID;
-        msg["rev"_sl]      = fullRevID;
+        msg.compressed = true;
+        msg["id"_sl]   = request->docID;
+        if ( fullReplacementRevID ) {
+            msg["rev"_sl]      = fullReplacementRevID;
+            msg["replacedRev"] = fullRevID;
+        } else
+            msg["rev"_sl] = fullRevID;
         msg["sequence"_sl] = narrow_cast<int64_t>((uint64_t)request->sequence);
         if ( root ) {
             if ( request->noConflicts ) msg["noconflicts"_sl] = true;
@@ -113,9 +128,10 @@ namespace litecore::repl {
             if ( revisionFlags & kRevDeleted ) msg["deleted"_sl] = "1"_sl;
 
             // Include the document history, but skip the current revision 'cause it's redundant
-            alloc_slice history = request->historyString(doc);
-            if ( history.hasPrefix(fullRevID) && history.size > fullRevID.size )
-                msg["history"_sl] = history.from(fullRevID.size + 1);
+            alloc_slice history        = request->historyString(doc);
+            alloc_slice effectiveRevID = fullReplacementRevID ? fullReplacementRevID : fullRevID;
+            if ( history.hasPrefix(effectiveRevID) && history.size > effectiveRevID.size )
+                msg["history"_sl] = history.from(effectiveRevID.size + 1);
 
             bool sendLegacyAttachments =
                     (request->legacyAttachments && (revisionFlags & kRevHasAttachments) && !_db->disableBlobSupport());

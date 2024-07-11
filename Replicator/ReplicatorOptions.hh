@@ -45,6 +45,18 @@ namespace litecore::repl {
 
         bool isActive() const { return _mutables._isActive; }
 
+#ifdef LITECORE_CPPTEST
+        void setDelayChangesResponse(const bool delay) { _delayChangesResponse = delay; }
+
+        bool delayChangesResponse() const { return _delayChangesResponse; }
+
+        void setDisableReplacementRevs(const bool disable) { _disableReplacementRevs = disable; }
+
+        bool disableReplacementRevs() const { return _disableReplacementRevs; }
+
+        static bool inline sActiveIsCollectionAware = false;
+#endif
+
         const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
             return _mutables._collectionSpecToIndex;
         }
@@ -76,7 +88,12 @@ namespace litecore::repl {
             , propertyDecryptor(opt.propertyDecryptor)
             , callbackContext(opt.callbackContext)
             , properties(slice(opt.properties.data()))  // copy data, bc dtor wipes it
-            , progressLevel(opt.progressLevel.load()) {
+            , progressLevel(opt.progressLevel.load())
+#ifdef LITECORE_CPPTEST
+            , _delayChangesResponse(opt._delayChangesResponse)
+            , _disableReplacementRevs(opt._disableReplacementRevs)
+#endif
+        {
             setCollectionOptions(opt);
             constructorCheck();
         }
@@ -348,6 +365,10 @@ namespace litecore::repl {
         };
 
         Mutables _mutables;
+#ifdef LITECORE_CPPTEST
+        bool _delayChangesResponse{false};
+        bool _disableReplacementRevs{false};
+#endif
     };
 
     inline void Options::setCollectionOptions(Mode push, Mode pull) {
@@ -443,9 +464,20 @@ namespace litecore::repl {
             }
         }
 
-        if ( collectionOpts.size() == 1 ) {
+        // For the passive replicator, rearrangeCollectionsFor3_0_Client() will set
+        // collectionAware to false
+        if ( _mutables._isActive && collectionOpts.size() == 1 ) {
             auto spec = collectionOpts[0].collectionSpec;
-            if ( spec == kC4DefaultCollectionSpec ) { _mutables._collectionAware = false; }
+            if ( spec == kC4DefaultCollectionSpec ) {
+#ifndef LITECORE_CPPTEST
+                _mutables._collectionAware = false;
+#else
+                // For the purpose to test clients not derived from Replicator
+                // that use 3.1 collection aware protocol even if the only collection
+                // is the default collection.
+                if ( !sActiveIsCollectionAware ) _mutables._collectionAware = false;
+#endif
+            }
         }
     }
 

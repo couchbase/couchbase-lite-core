@@ -256,11 +256,11 @@ namespace cbl {
 #pragma mark - INPUT FEATURE CONVERSION:
 
 
-    static const char* kMLFeatureTypeName[8] = {
-        "(invalid)", "int64", "double", "string", "image", "multi-array", "dictionary", "sequence"
+    static const char* kMLFeatureTypeName[9] = {
+        "(invalid)", "int64", "double", "string", "image", "multi-array", "dictionary", "sequence", "state"
     };
-    static const char* kCompatibleMLFeatureTypeName[8] = {
-        "(invalid)", "numeric", "numeric", "string", "blob", "numeric array", "dictionary", "sequence"
+    static const char* kCompatibleMLFeatureTypeName[9] = {
+        "(invalid)", "numeric", "numeric", "string", "blob", "numeric array", "dictionary", "sequence", "state"
     };
 
 
@@ -306,12 +306,7 @@ namespace cbl {
                     feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
                 break;
             }
-            case MLFeatureTypeImage:        // image features are handled by predictViaVision
-            case MLFeatureTypeMultiArray:
-#ifdef SDK_HAS_SEQUENCES
-            case MLFeatureTypeSequence:
-#endif
-            case MLFeatureTypeInvalid:
+            default:
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);
                 return nil;
@@ -474,6 +469,7 @@ namespace cbl {
                 enc.writeNull();
                 break;
             case MLFeatureTypeInvalid:
+            default:
                 enc.writeNull();
                 break;
         }

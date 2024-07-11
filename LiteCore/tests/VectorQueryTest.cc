@@ -29,11 +29,12 @@ class SIFTVectorQueryTest : public VectorQueryTest {
 
     SIFTVectorQueryTest() : VectorQueryTest(0) {}
 
+    IndexSpec::VectorOptions vectorIndexOptions() const {
+        return IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
+    }
+
     void createVectorIndex() {
-        IndexSpec::VectorOptions options(128);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 256;
-        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", options);
+        VectorQueryTest::createVectorIndex("vecIndex", "[ ['.vector'] ]", vectorIndexOptions());
     }
 
     void readVectorDocs(size_t maxLines = 1000000) {
@@ -80,6 +81,19 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Create/Delete Vector Index", "[Quer
     auto allKeyStores = db->allKeyStoreNames();
     readVectorDocs(1);
     createVectorIndex();
+
+    // Recover the IndexSpec:
+    std::optional<IndexSpec> spec = store->getIndex("vecIndex");
+    REQUIRE(spec);
+    CHECK(spec->name == "vecIndex");
+    CHECK(spec->type == IndexSpec::kVector);
+    auto vecOptions = spec->vectorOptions();
+    REQUIRE(vecOptions);
+    auto trueOptions = vectorIndexOptions();
+    CHECK(vecOptions->dimensions == trueOptions.dimensions);
+    CHECK(vecOptions->clusteringType() == trueOptions.clusteringType());
+    CHECK(vecOptions->encodingType() == trueOptions.encodingType());
+
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
     // Delete a doc too:
     {
@@ -106,9 +120,10 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         // Number of results = 10
         string          queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 10],
+            WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
             WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
+            LIMIT:    10
          }] )";
         Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
@@ -123,9 +138,10 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
     // Number of Results = 5
     string          queryStr = R"(
      ['SELECT', {
-       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target'], 5],
+       WHERE:    ['VECTOR_MATCH()', 'vecIndex', ['$target']],
        WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'vecIndex'], 'distance'] ],
        ORDER_BY: [ ['.distance'] ],
+       LIMIT:    5
      }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
 
@@ -228,7 +244,7 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index with Join", "[Qu
 
     string queryStr = R"(SELECT META(a).id, other.publisher FROM )"s + collectionName;
     queryStr += R"( AS a JOIN other ON META(a).id = other.refID )"
-                R"(WHERE VECTOR_MATCH(a.vecIndex, $target, 5) )";
+                R"(WHERE VECTOR_MATCH(a.vecIndex, $target) LIMIT 5 )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -430,8 +446,8 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index and AND with FTS
 
     string queryStr =
             R"(SELECT META(a).id, VECTOR_DISTANCE(a.vecIndex) AS distance, a.sentence FROM )"s + collectionName;
-    queryStr += R"( AS a WHERE VECTOR_MATCH(a.vecIndex, $target, 5))";
-    queryStr += R"( AND MATCH(a.sentence, "search"))";
+    queryStr += R"( AS a WHERE VECTOR_MATCH(a.vecIndex, $target))";
+    queryStr += R"( AND MATCH(a.sentence, "search") ORDER BY distance LIMIT 4)";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
     REQUIRE(query != nullptr);
@@ -559,7 +575,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
 
     // Need to run an arbitrary query to actually train the index
     string queryStr =
-            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target, 5) )";
+            R"(SELECT META().id, publisher FROM )"s + collectionName + R"( WHERE VECTOR_MATCH(vecIndex, $target) )";
 
     Retained<Query> query{store->compileQuery(queryStr, QueryLanguage::kN1QL)};
 
@@ -573,6 +589,30 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
 
     bool isTrained = collection->isIndexTrained("vecIndex"_sl);
     CHECK(isTrained == expectedTrained);
+    if ( !isTrained ) ++expectedWarningsLogged;  // "Untrained index; queries may be slow."
+}
+
+N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Inspect Vector Index", "[Query][.VectorSearch]") {
+    auto allKeyStores = db->allKeyStoreNames();
+    readVectorDocs(100);
+    createVectorIndex();
+
+    std::vector<float> vec(128);
+    auto               doc = inspectVectorIndex("vecIndex");
+    for ( ArrayIterator iter(doc->asArray()); iter; ++iter ) {
+        auto    row    = iter.value()->asArray();
+        slice   key    = row->get(0)->asString();
+        slice   rawVec = row->get(1)->asData();
+        int64_t bucket = row->get(2)->asInt();
+        REQUIRE(rawVec.size == 128 * sizeof(float));
+#    if 1
+        memcpy(vec.data(), rawVec.buf, rawVec.size);
+        std::cerr << key << " (" << bucket << ") = [";
+        for ( size_t i = 0; i < 128; ++i ) std::cerr << vec[i] << ' ';
+        std::cerr << ']' << std::endl;
+#    endif
+    }
+    CHECK(doc->asArray()->count() == 100);
 }
 
 #endif

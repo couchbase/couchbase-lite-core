@@ -8,6 +8,7 @@
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
 #include "Base64.hh"
+#include <map>
 #include <mutex>
 
 class VectorQueryTest : public QueryTest {
@@ -50,6 +51,14 @@ class VectorQueryTest : public QueryTest {
             store->createIndex(spec);
         }
         REQUIRE(store->getIndexes().size() == 1);
+    }
+
+    Retained<Doc> inspectVectorIndex(string const& name) {
+        int64_t     rowCount;
+        alloc_slice rowData;
+        dynamic_cast<SQLiteDataFile&>(store->dataFile()).inspectIndex(name, rowCount, &rowData);
+        Log("Index has %" PRIi64 " rows", rowCount);
+        return make_retained<Doc>(rowData);
     }
 
     Query::Options optionsWithTargetVector(const float target[128], valueType asType) {

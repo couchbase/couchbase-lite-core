@@ -231,6 +231,10 @@ namespace litecore {
         return ss.str();
     }
 
+    string SQLiteKeyStore::tableName(const string& keyStoreName) {
+        return "kv_" + transformCollectionName(keyStoreName, true);
+    }
+
     bool SQLiteKeyStore::read(Record& rec, ReadBy by, ContentOption content) const {
         //  This statement does nothing if the sequence index has already been created.
         if ( by == ReadBy::Sequence ) const_cast<SQLiteKeyStore*>(this)->createSequenceIndex();
@@ -509,8 +513,8 @@ namespace litecore {
         if ( !_hasExpirationColumn ) {
             string sql;
             string tableName = this->tableName();
-            db().getSchema(tableName, "table", tableName, sql);
-            if ( sql.find("expiration") != string::npos ) _hasExpirationColumn = true;
+            if ( db().getSchema(tableName, "table", tableName, sql) && sql.find("expiration") != string::npos )
+                _hasExpirationColumn = true;
         }
         return _hasExpirationColumn;
     }

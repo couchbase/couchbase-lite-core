@@ -19,6 +19,7 @@
 #include "Batcher.hh"
 #include "Codec.hh"
 #include "Error.hh"
+#include "Headers.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
@@ -170,7 +171,7 @@ namespace litecore::blip {
         }
 
         void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {
-            _connection->gotHTTPResponse(status, headers);
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
         void onWebSocketGotTLSCertificate(slice certData) override { _connection->gotTLSCertificate(certData); }
@@ -178,8 +179,7 @@ namespace litecore::blip {
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
             _timeOpen.reset();
-            _connection->connected();
-            onWebSocketWriteable();
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_onWebSocketConnect));
         }
 
         void onWebSocketClose(websocket::CloseStatus status) override {
@@ -199,6 +199,19 @@ namespace litecore::blip {
             Assert(!_connectedWebSocket.test_and_set());
             retain(this);  // keep myself from being freed while I'm the webSocket's delegate
             _webSocket->connect(_weakThis);
+        }
+
+        void _gotHTTPResponse(int status, websocket::Headers headers) {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) _connection->gotHTTPResponse(status, headers);
+        }
+
+        void _onWebSocketConnect() {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) {
+                _connection->connected();
+                _onWebSocketWriteable();
+            }
         }
 
         /** Implementation of public close() method. Closes the WebSocket. */
