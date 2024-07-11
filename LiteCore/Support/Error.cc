@@ -16,6 +16,7 @@
 #include "FleeceException.hh"
 #include "StringUtil.hh"
 #include "betterassert.hh"
+#include <exception>
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include "WebSocketInterface.hh"  // for Network error codes
@@ -427,11 +428,13 @@ namespace litecore {
 
     __cold error::error(error::Domain d, int c, const std::string& what)
         : runtime_error(what), domain(d), code(getPrimaryCode(d, c)) {
+        DebugAssert(code != 0);
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
 
     __cold error::error(error::Domain d, int c, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace)
         : runtime_error(what), domain(d), code(getPrimaryCode(d, c)), backtrace(std::move(btrace)) {
+        DebugAssert(code != 0);
         // Will only capture if `btrace` was nullptr.
         if ( sCaptureBacktraces ) captureBacktrace(3);
     }
@@ -532,6 +535,19 @@ namespace litecore {
         }
 
         return unexpectedException(x);
+    }
+
+    __cold error error::convertCurrentException() {
+        auto xp = std::current_exception();
+        if ( xp ) {
+            try {
+                std::rethrow_exception(xp);
+            } catch ( const std::exception& x ) { return convertException(x); } catch ( ... ) {
+            }
+        }
+        auto e = error(error::LiteCore, error::UnexpectedError, "Unknown C++ exception");
+        e.captureBacktrace(1);
+        return e;
     }
 
     __cold bool error::isUnremarkable() const {

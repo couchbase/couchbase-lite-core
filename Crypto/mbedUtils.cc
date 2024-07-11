@@ -26,11 +26,6 @@
 
 #include <mutex>
 
-#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#    include <Windows.h>
-#    include <bcrypt.h>
-#endif
-
 namespace litecore::crypto {
     using namespace std;
     using namespace fleece;
@@ -58,18 +53,6 @@ namespace litecore::crypto {
             // One-time initializations:
             Log("Seeding the mbedTLS random number generator...");
             mbedtls_entropy_init(&sEntropyContext);
-
-#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-            auto uwp_entropy_poll = [](void* data, unsigned char* output, size_t len, size_t* olen) -> int {
-                NTSTATUS status = BCryptGenRandom(NULL, output, (ULONG)len, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-                if ( status < 0 ) { return MBEDTLS_ERR_ENTROPY_SOURCE_FAILED; }
-
-                *olen = len;
-                return 0;
-            };
-            mbedtls_entropy_add_source(&sEntropyContext, uwp_entropy_poll, NULL, 32, MBEDTLS_ENTROPY_SOURCE_STRONG);
-#endif
-
             mbedtls_ctr_drbg_init(&sRandomNumberContext);
             TRY(mbedtls_ctr_drbg_seed(&sRandomNumberContext, mbedtls_entropy_func, &sEntropyContext,
                                       (const unsigned char*)kPersonalization, strlen(kPersonalization)));

@@ -115,13 +115,18 @@ namespace litecore::net {
                     if ( expires == 0 ) { return; }
                 }
             } else if ( key == "max-age" ) {
-                char* valEnd = &val[val.size()];
-                long  maxAge = strtol(&val[0], &valEnd, 10);
-                if ( valEnd != &val[val.size()] || val.empty() ) {
+                size_t pos{};
+                try {
+                    long maxAge = stol(val, &pos);
+                    if ( pos != val.length() || val.empty() ) {
+                        Warn("Couldn't parse Max-Age in cookie");
+                        return;
+                    }
+                    expires = created + maxAge;
+                } catch ( std::exception& e ) {
                     Warn("Couldn't parse Max-Age in cookie");
                     return;
                 }
-                expires = created + maxAge;
             }
         }
 

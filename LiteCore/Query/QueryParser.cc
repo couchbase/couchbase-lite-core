@@ -226,7 +226,7 @@ namespace litecore {
 #ifdef COUCHBASE_ENTERPRISE
         // Process VECTOR_DISTANCE() calls using an index if available.
         // This may write a "WITH ..." (CTS) expression to _sql.
-        addVectorSearchCTEs(operands);
+        addVectorSearchJoins(operands);
 #endif
 
         // Add the indexed prediction() calls to _indexJoinTables now
@@ -284,7 +284,7 @@ namespace litecore {
 
             // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
             for ( string& ftsTable : _ftsTables ) {
-                const string& alias = _indexJoinTables[ftsTable];
+                const string& alias = _indexJoinTables[ftsTable].alias;
                 extra << ", offsets(" << alias << "." << sqlIdentifier(ftsTable) << ")";
             }
             extra << ", ";
@@ -577,13 +577,12 @@ namespace litecore {
             _sql << " FROM " << sqlIdentifier(_defaultTableName) << " AS " << sqlIdentifier(_dbAlias);
         }
 
-        // Add joins to index tables (FTS, predictive):
+        // Add joins to index tables (FTS, predictive, vector):
         for ( auto& ftsTable : _indexJoinTables ) {
-            auto&       table          = ftsTable.first;
-            auto&       alias          = ftsTable.second;
-            string_view docidCol       = "docid";
-            auto        idxAt          = table.find(KeyStore::kIndexSeparator);
-            bool        writeTableName = true;
+            auto&       table    = ftsTable.first;
+            auto&       info     = ftsTable.second;
+            string_view docidCol = "docid";
+            auto        idxAt    = table.find(KeyStore::kIndexSeparator);
             // Encoded in the name of the index table is collection against which the index
             // is created. "docID" of this table is to match the "rowid" of the collection table.
             // The left-side of the separator is the original collection.
@@ -591,10 +590,7 @@ namespace litecore {
             if ( idxAt == string::npos ) { idxAt = table.find(KeyStore::kPredictSeparator); }
             if ( idxAt == string::npos ) {
                 idxAt = table.find(KeyStore::kVectorSeparator);
-                if ( idxAt != string::npos ) {
-                    docidCol       = "rowid";
-                    writeTableName = false;  // vector index is already given an alias in a WITH stmt
-                }
+                if ( idxAt != string::npos ) docidCol = "rowid";
             }
             string coAlias;
             auto [prefixBegin, prefixEnd] = _ftsTableAliases.equal_range(table);
@@ -618,8 +614,11 @@ namespace litecore {
                 coAlias = _dbAlias;
             }
             _sql << " JOIN ";
-            if ( writeTableName ) _sql << sqlIdentifier(table) << " AS ";
-            _sql << alias << " ON " << alias << "." << docidCol << " = " << sqlIdentifier(coAlias) << ".rowid";
+            if ( info.writeTableSQL ) info.writeTableSQL();
+            else
+                _sql << sqlIdentifier(table);
+            _sql << " AS " << info.alias << " ON " << info.alias << "." << docidCol << " = " << sqlIdentifier(coAlias)
+                 << ".rowid";
         }
     }
 
@@ -1383,6 +1382,13 @@ namespace litecore {
         string tablePrefix;
         if ( !dbAlias.empty() ) { tablePrefix = quotedIdentifierString(dbAlias) + "."; }
 
+        if ( metaKey == "rowid" ) {
+            // `rowid` is an unlisted meta key, not included in the `meta()` dict but can be
+            // accessed explicitly. It's used by LazyIndexUpdate.
+            writeMetaProperty(kValueFnName, tablePrefix, "rowid");
+            return;
+        }
+
         auto b  = &kMetaKeys[0];
         auto it = find_if(b, b + mkCount, [metaKey](auto& p) { return p == metaKey; });
         require(it != b + mkCount, "'%s' is not a valid Meta key", metaKey.asString().c_str());
@@ -1474,7 +1480,7 @@ namespace litecore {
             string fts = FTSTableName(operands[0]).first;
             auto   i   = _indexJoinTables.find(fts);
             if ( i == _indexJoinTables.end() ) fail("rank() can only be called on FTS indexes");
-            _sql << "rank(matchinfo(" << i->second << "." << sqlIdentifier(i->first) << "))";
+            _sql << "rank(matchinfo(" << i->second.alias << "." << sqlIdentifier(i->first) << "))";
             return;
         }
 
@@ -1796,6 +1802,9 @@ namespace litecore {
                 _sql << kVersionFnName << "(" << tablePrefix << "version"
                      << ")";
                 return;
+            } else if ( meta == kRowIDProperty ) {
+                writeMetaProperty(fn, tablePrefix, "rowid");
+                return;
             }
         }
 
@@ -1888,19 +1897,25 @@ namespace litecore {
         return functionCallSQL(kFTSValueFnName, ftsExpr);
     }
 
+    QueryParser::indexJoinInfo* QueryParser::indexJoinTable(const string& tableName, const char* aliasPrefix) {
+        auto i = _indexJoinTables.find(tableName);
+        if ( i == _indexJoinTables.end() ) {
+            if ( !aliasPrefix ) return nullptr;
+            string alias = aliasPrefix + to_string(_indexJoinTables.size() + 1);
+            i            = _indexJoinTables.insert({tableName, {alias, nullptr}}).first;
+        }
+        return &i->second;
+    }
+
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
     // a new alias if necessary, which will begin with that prefix.
     const string& QueryParser::indexJoinTableAlias(const string& tableName, const char* aliasPrefix) {
-        auto i = _indexJoinTables.find(tableName);
-        if ( i == _indexJoinTables.end() ) {
-            if ( !aliasPrefix ) {
-                static string kEmptyString;
-                return kEmptyString;
-            }
-            string alias = aliasPrefix + to_string(_indexJoinTables.size() + 1);
-            i            = _indexJoinTables.insert({tableName, alias}).first;
+        if ( indexJoinInfo* info = indexJoinTable(tableName, aliasPrefix) ) {
+            return info->alias;
+        } else {
+            static const string kEmptyString;
+            return kEmptyString;
         }
-        return i->second;
     }
 
 #pragma mark - FULL-TEXT-SEARCH:
@@ -1967,9 +1982,11 @@ namespace litecore {
         if ( vector ) {
 #ifdef COUCHBASE_ENTERPRISE
             tableName = _delegate.vectorTableName(iAlias->second.tableName, indexName);
+            if ( !_delegate.tableExists(tableName) )
+                error::_throw(error::NoSuchIndex, "'%s' does not name a vector index", indexName.c_str());
 #else
             // should be unreachable, but just in case:
-            error::_throw(error::AssertionFailed, "CE doesn't support vector indexes");
+            error::_throw(error::AssertionFailed, "Consumer Edition doesn't support vector indexes");
 #endif
         } else {
             tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
@@ -2048,7 +2065,7 @@ namespace litecore {
 #ifndef COUCHBASE_ENTERPRISE
     void QueryParser::findPredictionCalls(const Value* root) {}
 
-    void QueryParser::addVectorSearchCTEs(const Value* root) {}
+    void QueryParser::addVectorSearchJoins(const Dict* root) {}
 #endif
 
 }  // namespace litecore

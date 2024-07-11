@@ -97,11 +97,15 @@ struct C4Collection
     virtual void createIndex(slice name, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                              const C4IndexOptions* C4NULLABLE indexOptions = nullptr) = 0;
 
+    virtual Retained<C4Index> getIndex(slice name) = 0;
+
     virtual void deleteIndex(slice name) = 0;
 
     virtual alloc_slice getIndexesInfo(bool fullInfo = true) const = 0;
 
     virtual alloc_slice getIndexRows(slice name) const = 0;
+
+    virtual bool isIndexTrained(slice name) const = 0;
 
     // Observers:
 

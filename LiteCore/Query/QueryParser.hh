@@ -13,6 +13,7 @@
 #pragma once
 #include "Base.hh"
 #include "UnicodeCollator.hh"
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -122,7 +123,6 @@ namespace litecore {
 
         /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
         string vectorToIndexExpressionSQL(const Value*, unsigned dimensions);
-        string vectorIndexTableName(const Value* matchExpr, const char* forFn);
 
       private:
         template <class T, class U>
@@ -152,6 +152,11 @@ namespace litecore {
             const Value*   unnest = nullptr;      // The 'UNNEST' clause of `dict`, if any
         };
 
+        struct indexJoinInfo {
+            string                alias;          // its alias
+            std::function<void()> writeTableSQL;  // optional fn to write SQL instead of table name
+        };
+
         // Maps alias names -> info
         using AliasMap = map<string, aliasInfo>;
 
@@ -160,8 +165,9 @@ namespace litecore {
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kResultListOperation,
                 kExpressionListOperation, kHighPrecedenceOperation;
-        struct JoinedOperations;
-        static const JoinedOperations kJoinedOperationsList[];
+
+        //        struct JoinedOperations;
+        //        static const JoinedOperations kJoinedOperationsList[];
 
         explicit QueryParser(const QueryParser* qp)
             : QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName) {
@@ -236,7 +242,8 @@ namespace litecore {
         void                 requireTopLevelConjunction(const char* fnName);
         unsigned             findFTSProperties(const Value* root);
         void                 findPredictionCalls(const Value* root);
-        void                 addVectorSearchCTEs(const Value* root);
+        void                 addVectorSearchJoins(const Dict* select);
+        indexJoinInfo*       indexJoinTable(const string& tableName, const char* aliasPrefix = nullptr);
         const string&        indexJoinTableAlias(const string& key, const char* aliasPrefix = nullptr);
         const string&        FTSJoinTableAlias(const Value* matchLHS, bool canAdd = false);
         const string&        predictiveJoinTableAlias(const Value* expr, bool canAdd = false);
@@ -252,22 +259,22 @@ namespace litecore {
         void writeVectorMatchFn(ArrayIterator&);
         void writeVectorDistanceFn(ArrayIterator&);
 
-        const Delegate&          _delegate;                          // delegate object (SQLiteKeyStore)
-        string                   _defaultTableName;                  // Name of the default table to use
-        string                   _defaultCollectionName;             // Name of the default collection to use
-        string                   _bodyColumnName = kBodyColumnName;  // Column holding doc bodies
-        AliasMap                 _aliases;                           // "AS..." aliases for db/joins/unnests
-        string                   _dbAlias;                           // Alias of the main collection, "_doc" by default
-        bool                     _propertiesUseSourcePrefix{false};  // Must properties include alias as prefix?
-        vector<string>           _columnTitles;                      // Pretty names of result columns
-        stringstream             _sql;                               // The SQL being generated
-        const Value*             _curNode{nullptr};                  // Current node being parsed
-        vector<const Operation*> _context;                           // Parser stack
-        set<string>              _parameters;                        // Plug-in "$" parameters found in parsing
-        set<string>              _variables;                         // Active variables, inside ANY/EVERY exprs
-        map<string, string>      _indexJoinTables;                   // index table name --> alias
-        set<string>              _kvTables;                          // Collection tables referenced in this query
-        vector<string>           _ftsTables;                         // FTS virtual tables being used
+        const Delegate&            _delegate;                          // delegate object (SQLiteKeyStore)
+        string                     _defaultTableName;                  // Name of the default table to use
+        string                     _defaultCollectionName;             // Name of the default collection to use
+        string                     _bodyColumnName = kBodyColumnName;  // Column holding doc bodies
+        AliasMap                   _aliases;                           // "AS..." aliases for db/joins/unnests
+        string                     _dbAlias;  // Alias of the main collection, "_doc" by default
+        bool                       _propertiesUseSourcePrefix{false};  // Must properties include alias as prefix?
+        vector<string>             _columnTitles;                      // Pretty names of result columns
+        stringstream               _sql;                               // The SQL being generated
+        const Value*               _curNode{nullptr};                  // Current node being parsed
+        vector<const Operation*>   _context;                           // Parser stack
+        set<string>                _parameters;                        // Plug-in "$" parameters found in parsing
+        set<string>                _variables;                         // Active variables, inside ANY/EVERY exprs
+        map<string, indexJoinInfo> _indexJoinTables;                   // index table name --> alias etc.
+        set<string>                _kvTables;                          // Collection tables referenced in this query
+        vector<string>             _ftsTables;                         // FTS virtual tables being used
         std::multimap<string, string>
                 _ftsTableAliases;  // multimap from the FTS table to aliases that prefix the table in the query expression
         unsigned  _1stCustomResultCol{0};    // Index of 1st result after _baseResultColumns

@@ -25,7 +25,7 @@ using namespace std;
 
 // These formats are used in the decoded log files. They are UTC times.
 #define DATESTAMP "\\w+ \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"
-#define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\\| "
+#define TIMESTAMP "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z"
 
 constexpr size_t kFolderBufSize = 64;
 
@@ -56,7 +56,7 @@ static string dumpLog(const string& encoded, const vector<string>& levelNames) {
     return result;
 }
 
-TEST_CASE("LogEncoder formatting", "[.loggingDisabled][Log]") {
+TEST_CASE("LogEncoder formatting", "[Log]") {
     // For checking the timestamp in the path to the binary log file.
 #ifdef LITECORE_CPPTEST
     string logPath = litecore::createLogPath_forUnitTest(LogLevel::Info);
@@ -83,12 +83,12 @@ TEST_CASE("LogEncoder formatting", "[.loggingDisabled][Log]") {
 
     regex expected(
             TIMESTAMP
-            "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
-            "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
-            "0x7fff5fbc\\n" TIMESTAMP
-            "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n" TIMESTAMP
-            "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
-            "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
+            " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+            "   Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer "
+            "0x7fff5fbc\\n" TIMESTAMP "   Int -1234567890, Long -234567890, LongLong -123456789123456789, Size "
+            "-1234567890, Char @\\n" TIMESTAMP
+            "   Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n" TIMESTAMP
+            "   String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
 
 #ifdef LITECORE_CPPTEST
@@ -96,7 +96,7 @@ TEST_CASE("LogEncoder formatting", "[.loggingDisabled][Log]") {
     // We also add the timestamp inside the log. When decoded to string, it is
     // represented as UTC time, like, "Monday 2023-07-03T19:25:01Z"
     // We want to ensure they are consistent.
-    regex  catchUTCTimeTag{"^" TIMESTAMP "---- Logging begins on (" DATESTAMP ")"};
+    regex  catchUTCTimeTag{"^" TIMESTAMP " ---- Logging begins on (" DATESTAMP ")"};
     smatch m;
     REQUIRE(regex_search(result, m, catchUTCTimeTag));
     CHECK(m.size() == 2);
@@ -158,11 +158,11 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
     }
 }
 
-TEST_CASE("LogEncoder tokens", "[.loggingDisabled][Log]") {
+TEST_CASE("LogEncoder tokens", "[Log]") {
     LogDomain::ObjectMap objects;
     objects.emplace(1, make_pair("Tweedledum", 0));
-    objects.emplace(2, make_pair("rattle", 0));
-    objects.emplace(3, make_pair("Tweedledee", 0));
+    objects.emplace(2, make_pair("rattle", 1));
+    objects.emplace(3, make_pair("Tweedledee", 2));
 
     stringstream out;
     stringstream out2;
@@ -176,18 +176,18 @@ TEST_CASE("LogEncoder tokens", "[.loggingDisabled][Log]") {
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
-    regex  expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
-                              "\\{1\\|Tweedledum\\} I'm Tweedledum\\n" TIMESTAMP
-                              "\\{3\\|Tweedledee\\} I'm Tweedledee\\n" TIMESTAMP
-                              "\\{2\\|rattle\\} and I'm the rattle\\n");
+    regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/ I'm Tweedledum\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/Tweedledee#3/ I'm Tweedledee\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/ and I'm the rattle\\n");
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
     result  = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
-                               "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
+    expected = regex(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                               "   Obj=/Tweedledum#1/rattle#2/ Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
 
@@ -441,7 +441,7 @@ TEST_CASE("Logging throw in c4", "[Log]") {
     LogDomain::writeEncodedLogsTo(prevOptions);
 }
 
-TEST_CASE("Logging plaintext", "[.loggingDisabled][Log]") {
+TEST_CASE("Logging plaintext", "[Log]") {
     char folderName[kFolderBufSize];
     snprintf(folderName, kFolderBufSize, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
@@ -473,18 +473,19 @@ TEST_CASE("Logging plaintext", "[.loggingDisabled][Log]") {
 
     int n = 0;
 #ifdef LITECORE_CPPTEST
-    regex  checkHeader{R"(---- serialNo=1,logDirectory=[^,]*,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=5 ----)"};
+    regex checkHeader{
+            TIMESTAMP
+            R"(  Info ---- serialNo=1,logDirectory=[^,]*,fileLogLevel=2,fileMaxSize=1024,fileMaxCount=5 ----)"};
     smatch m;
     CHECK(regex_match(lines[n++], m, checkHeader));
 #else
     n++;
 #endif
-    CHECK(lines[n++] == "---- Hello ----");
-    regex utctimeRe{"^" TIMESTAMP};
-    CHECK(regex_search(lines[n], utctimeRe));
-    CHECK(lines[n].find("[DB]") != string::npos);
-    CHECK(lines[n].find("{dummy#") != string::npos);
-    CHECK(lines[n].find("This will be in plaintext") != string::npos);
+    smatch m2;
+    regex  checkLine1{TIMESTAMP "  Info ---- Hello ----"};
+    CHECK(regex_match(lines[n++], m2, checkLine1));
+    regex checkLine2{TIMESTAMP " DB Info Obj=/dummy#[0-9]+/ This will be in plaintext"};
+    CHECK(regex_match(lines[n], m2, checkLine2));
 
     LogDomain::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
