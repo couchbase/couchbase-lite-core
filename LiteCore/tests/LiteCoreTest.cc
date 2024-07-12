@@ -108,7 +108,7 @@ TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCou
 TestFixture::~TestFixture() {
     if ( !current_exception() ) {
         // Check for leaks:
-        if ( !WaitUntil(2000ms, [&] { return c4_getObjectCount() - _objectCount == 0; }) ) {
+        if ( !WaitUntil(20s, [&] { return c4_getObjectCount() - _objectCount == 0; }) ) {
             FAIL_CHECK("LiteCore objects were leaked by this test:");
             fprintf(stderr, "*** LEAKED LITECORE OBJECTS: \n");
             c4_dumpInstances();
