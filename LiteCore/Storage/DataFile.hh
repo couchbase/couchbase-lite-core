@@ -170,15 +170,15 @@ namespace litecore {
         virtual void deleteKeyStore(const std::string& name) = 0;
 
         // Redeclare logging methods as public, so Database can use them
-        bool willLog(LogLevel level = LogLevel::Info) const override { return Logging::willLog(level); }
+        bool willLog(LogLevel level = LogLevel::Info) const { return Logging::willLog(level); }
 
         void _logWarning(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
 
-        void _logInfo(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Info) }
+        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        void _logVerbose(const char* format, ...) const override __printflike(2, 3) { LOGBODY(Verbose) }
+        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char* format, ...) const override __printflike(2, 3){LOGBODY(Debug)}
+        void _logDebug(const char* format, ...) const __printflike(2, 3){LOGBODY(Debug)}
 
         //////// SHARED OBJECTS:
 
