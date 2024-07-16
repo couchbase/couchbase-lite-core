@@ -21,6 +21,7 @@
 #include "NetworkInterfaces.hh"
 #include "fleece/Mutable.hh"
 #include "ReplicatorAPITest.hh"
+#include "WebSocketInterface.hh"
 #include <optional>
 #include <utility>
 
@@ -107,14 +108,32 @@ class C4RESTTest
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string               scheme = config.tlsConfig ? "https" : "http";
         auto                 port   = c4listener_getPort(listener());
-        unique_ptr<Response> r(new Response(scheme, method, requestHostname, port, uri));
-        r->setHeaders(headers).setBody(body);
-        if ( pinnedCert ) r->allowOnlyCert(pinnedCert);
+        unique_ptr<Response> r;
+        unsigned             totalAttempt = 5;
+        double               timeout      = 5;
+        for ( unsigned attemptCount = 0; attemptCount < totalAttempt; ++attemptCount ) {
+            r.reset(new Response(scheme, method, requestHostname, port, uri));
+            r->setHeaders(headers).setBody(body);
+            if ( pinnedCert ) r->allowOnlyCert(pinnedCert);
 #    ifdef COUCHBASE_ENTERPRISE
-        if ( rootCerts ) r->setRootCerts(rootCerts);
-        if ( clientIdentity.cert ) r->setIdentity(clientIdentity.cert, clientIdentity.key);
+            if ( rootCerts ) r->setRootCerts(rootCerts);
+            if ( clientIdentity.cert ) r->setIdentity(clientIdentity.cert, clientIdentity.key);
 #    endif
-        if ( !r->run() ) C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
+            r->setTimeout(timeout);
+            if ( !r->run() ) {
+                if ( r->error().code != websocket::kNetErrTimeout || attemptCount + 1 == totalAttempt ) {
+                    if ( attemptCount > 0 )
+                        C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s after %d timeouts",
+                                  c4error_descriptionStr(r->error()), attemptCount);
+                    else
+                        C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
+                }
+            } else {
+                if ( attemptCount > 0 )
+                    C4LogToAt(kC4DefaultLog, kC4LogInfo, "Request has been timed out %d times", attemptCount);
+                break;
+            }
+        }
         C4Log("Status: %d %s", static_cast<int>(r->status()), r->statusMessage().c_str());
         string responseBody = r->body().asString();
         C4Log("Body: %s", responseBody.c_str());
