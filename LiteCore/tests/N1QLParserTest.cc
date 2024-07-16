@@ -576,6 +576,16 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Vector Search", "[Query][N1QL][VectorSear
     tableNames.emplace("kv_.coll:vector:vecIndex");
     tableNames.emplace("kv_.scope.coll");
     tableNames.emplace("kv_.scope.coll:vector:vecIndex");
+    tableNames.emplace("kv_.other");
+
+    CHECK(translate("SELECT VECTOR_DISTANCE(a.vecIndex) AS distance "
+                    "FROM _default AS a JOIN other ON META(a).id = other.refID "
+                    "WHERE VECTOR_MATCH(a.vecIndex, $target) ORDER BY distance")
+          == "{'FROM':[{'AS':'a','COLLECTION':'_default'},"
+             "{'COLLECTION':'other','JOIN':'INNER','ON':['=',['_.',['meta()','a'],'.id'],['.other.refID']]}],"
+             "'ORDER_BY':[['.distance']],"
+             "'WHAT':[['AS',['VECTOR_DISTANCE()','a.vecIndex'],'distance']],"
+             "'WHERE':['VECTOR_MATCH()','a.vecIndex',['$target']]}");
 
     CHECK(translate("SELECT META().id, VECTOR_DISTANCE(vecIndex) AS distance "
                     "WHERE VECTOR_MATCH(vecIndex, $target) ORDER BY distance LIMIT 5")

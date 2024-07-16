@@ -229,9 +229,12 @@ namespace litecore {
         }
 
         std::string loggingClassName() const override {
-            std::string repl{"C4Repl"};
-            if ( !_logPrefix.empty() ) { repl = _logPrefix.asString() + "/" + repl; }
-            return repl;
+            static std::string logName{};
+            if ( logName.empty() ) {
+                logName = "C4Repl";
+                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
+            }
+            return logName;
         }
 
         bool continuous(unsigned collectionIndex = 0) const noexcept {
@@ -285,7 +288,6 @@ namespace litecore {
             if ( !_replicator ) {
                 try {
                     createReplicator();
-                    if ( _replicator ) _replicator->setParentObjectRef(getObjectRef());
                 } catch ( exception& x ) {
                     _status.error = C4Error::fromException(x);
                     _replicator   = nullptr;

@@ -71,14 +71,14 @@ namespace litecore {
                          const char* format, ...) {
         va_list args;
         va_start(args, format);
-        vlog(domain, objectMap, object, format, args);
+        vlog(domain, objectMap, object, "", format, args);
         va_end(args);
     }
 
     int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
     void LogEncoder::vlog(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
-                          const char* format, va_list args) {
+                          const std::string& prefix, const char* format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -106,7 +106,7 @@ namespace litecore {
         }
 
         // Write format string:
-        _writeStringToken(format);
+        _writeStringToken(format, prefix);
 
         // Parse the format string looking for substitutions:
         for ( const char* c = format; *c != '\0'; ++c ) {
@@ -248,15 +248,18 @@ namespace litecore {
         _writer.write(buf, PutUVarInt(buf, n));
     }
 
-    void LogEncoder::_writeStringToken(const char* token) {
-        const auto name = _formats.find((size_t)token);
+    void LogEncoder::_writeStringToken(const char* token, const std::string& prefix) {
+        unsigned name = _formats.find(prefix, (size_t)token);
         if ( name == _formats.end() ) {
-            const auto n = (unsigned)_formats.size();
-            _formats.insert({(size_t)token, n});
+            unsigned n = _formats.insert(prefix, (size_t)token);
             _writeUVarInt(n);
+            if ( !prefix.empty() ) {
+                std::string prefixAndSpace = prefix + " ";
+                _writer.write(prefixAndSpace.c_str(), prefixAndSpace.length());
+            }
             _writer.write(token, strlen(token) + 1);  // add the actual string the first time
         } else {
-            _writeUVarInt(name->second);
+            _writeUVarInt(name);
         }
     }
 

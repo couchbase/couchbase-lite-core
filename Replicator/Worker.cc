@@ -46,10 +46,9 @@ namespace litecore::repl {
         for ( Dict::iterator i(dict); i; ++i ) {
             if ( n++ > 0 ) s << ", ";
             slice key = i.keyString();
+            if ( Options::kWhiteListOfKeysToLog.find(key) == Options::kWhiteListOfKeysToLog.end() ) continue;
             s << key << ":";
-            if ( key == slice(C4STR(kC4ReplicatorAuthPassword)) ) {
-                s << "\"********\"";
-            } else if ( i.value().asDict() ) {
+            if ( i.value().asDict() ) {
                 writeRedacted(i.value().asDict(), s);
             } else {
                 alloc_slice json(i.value().toJSON5());
@@ -71,7 +70,8 @@ namespace litecore::repl {
             } else {
                 firstline = false;
             }
-            s << format(string(kCollectionLogFormat), i++) << " "
+            s << "{Coll#" << i++ << "}"
+              << " "
               << "\"" << collectionSpecToPath(c.collectionSpec).asString() << "\": {"
               << "\"Push\": " << kModeNames[c.push] << ", "
               << "\"Pull\": " << kModeNames[c.pull] << ", "
@@ -110,12 +110,6 @@ namespace litecore::repl {
     Worker::~Worker() {
         if ( _importance ) logStats();
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
-    }
-
-    string Worker::loggingClassName() const {
-        string className = Logging::loggingClassName();
-        if ( passive() ) toLowercase(className);
-        return className;
     }
 
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
@@ -243,10 +237,23 @@ namespace litecore::repl {
         }
     }
 
-    Worker::ActivityLevel Worker::computeActivityLevel() const {
-        if ( eventCount() > 1 || _pendingResponseCount > 0 ) return kC4Busy;
+    Worker::ActivityLevel Worker::computeActivityLevel(std::string* reason) const {
+        Worker::ActivityLevel level{kC4Idle};
+        if ( eventCount() > 1 || _pendingResponseCount > 0 ) level = kC4Busy;
         else
-            return kC4Idle;
+            level = kC4Idle;
+
+        if ( reason ) {
+            if ( level == kC4Busy ) {
+                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                else
+                    *reason = format("pendingResponse/%d", _pendingResponseCount);
+            } else {
+                *reason = "noPendingEventOrResponse";
+            }
+        }
+
+        return level;
     }
 
     // Called after every event; updates busy status & detects when I'm done
@@ -256,22 +263,31 @@ namespace litecore::repl {
         bool changed   = _statusChanged;
         _statusChanged = false;
         if ( changed && _importance ) {
-            logVerbose("(collection: %u) progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64
-                       " / %" PRIu64 ", %" PRIu64 " docs",
-                       collectionIndex(), _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
+            logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64
+                       " docs",
+                       _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount, _status.progress.unitsCompleted,
                        _status.progress.unitsTotal, _status.progress.documentCount);
         }
 
-        auto newLevel = computeActivityLevel();
+        std::string reason;
+        auto        newLevel = computeActivityLevel(willLog(LogLevel::Info) ? &reason : nullptr);
         if ( newLevel != _status.level ) {
+            auto oldLevel = _status.level;
             _status.level = newLevel;
             changed       = true;
             if ( _importance ) {
-                auto name = kC4ReplicatorActivityLevelNames[newLevel];
-                if ( _importance > 1 ) logInfo("now %-s", name);
-                else
-                    logVerbose("now %-s", name);
+                auto oldName = kC4ReplicatorActivityLevelNames[oldLevel];
+                auto name    = kC4ReplicatorActivityLevelNames[newLevel];
+                if ( _importance > 1 ) {
+                    if ( reason.empty() ) logInfo("status=%s from=%s", name, oldName);
+                    else
+                        logInfo("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                } else {
+                    if ( reason.empty() ) logVerbose("status=%s from=%s", name, oldName);
+                    else
+                        logVerbose("status=%s from=%s reason=%s", name, oldName, reason.c_str());
+                }
             }
         }
         if ( changed ) changedStatus();
@@ -311,4 +327,66 @@ namespace litecore::repl {
         auto* nonConstThis = const_cast<Worker*>(this);
         return nonConstThis->replicator()->collection(collectionIndex());
     }
+
+    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
+        actor::Actor::addLoggingKeyValuePairs(output);
+        if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
+            if ( output.tellp() > 0 ) output << " ";
+            output << "Coll=" << collIdx;
+        }
+    }
+
+    const std::unordered_set<slice> Options::kWhiteListOfKeysToLog{
+            // That is, they are supposed to be assigned to c4ReplicatorParameters.collections[i].optionsDictFleece
+            kC4ReplicatorOptionDocIDs,
+            kC4ReplicatorOptionChannels,
+            kC4ReplicatorOptionFilter,
+            kC4ReplicatorOptionFilterParams,
+            kC4ReplicatorOptionSkipDeleted,
+            kC4ReplicatorOptionNoIncomingConflicts,
+            // end of collection specific properties.
+
+            kC4ReplicatorCheckpointInterval,
+            kC4ReplicatorOptionRemoteDBUniqueID,
+            kC4ReplicatorOptionDisableDeltas,
+            kC4ReplicatorOptionDisablePropertyDecryption,
+            kC4ReplicatorOptionMaxRetries,
+            kC4ReplicatorOptionMaxRetryInterval,
+            kC4ReplicatorOptionAutoPurge,
+            kC4ReplicatorOptionAcceptParentDomainCookies,
+
+            // TLS options:
+            kC4ReplicatorOptionRootCerts,
+            kC4ReplicatorOptionPinnedServerCert,
+            kC4ReplicatorOptionOnlySelfSignedServerCert,
+
+            // HTTP options:
+            kC4ReplicatorOptionExtraHeaders,
+            kC4ReplicatorOptionCookies,
+            kC4ReplicatorOptionAuthentication,
+            kC4ReplicatorOptionProxyServer,
+
+            // WebSocket options:
+            kC4ReplicatorHeartbeatInterval,
+            kC4SocketOptionWSProtocols,
+            kC4SocketOptionNetworkInterface,
+
+            // BLIP options:
+            kC4ReplicatorCompressionLevel,
+
+            // [1]: Auth dictionary keys:
+            kC4ReplicatorAuthType,
+            kC4ReplicatorAuthUserName,
+            // kC4ReplicatorAuthPassword,
+            kC4ReplicatorAuthEnableChallengeAuth,
+            kC4ReplicatorAuthClientCert,
+            // kC4ReplicatorAuthClientCertKey,
+            // kC4ReplicatorAuthToken,
+
+            // [3]: Proxy dictionary keys:
+            kC4ReplicatorProxyType,
+            kC4ReplicatorProxyHost,
+            kC4ReplicatorProxyPort,
+            kC4ReplicatorProxyAuth,
+    };
 }  // namespace litecore::repl

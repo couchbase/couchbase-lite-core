@@ -55,6 +55,8 @@ namespace litecore::repl {
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
       protected:
+        std::string loggingClassName() const override { return "Puller"; }
+
         void caughtUp() override { enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp)); }
 
         void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
@@ -66,7 +68,7 @@ namespace litecore::repl {
         }
 
         void          _childChangedStatus(Retained<Worker>, Status) override;
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
         void          activityLevelChanged(ActivityLevel level);
 
       private:
