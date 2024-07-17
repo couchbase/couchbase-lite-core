@@ -106,17 +106,23 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
     stringstream out[4];
+    C4LogDomain                 domainDraw;
+    {
+        // CBL-5978. LogDomain stores a copy of name string when created by c4log_domain.
+        std::string draw{"Draw"};
+        domainDraw = c4log_getDomain(draw.c_str(), true);
+    }
     {
         map<unsigned, string> dummy;
         LogEncoder verbose(out[0], LogLevel::Verbose);
         LogEncoder info(out[1], LogLevel::Info);
         LogEncoder warning(out[2], LogLevel::Warning);
         LogEncoder error(out[3], LogLevel::Error);
-        info.log("Draw", dummy, LogEncoder::None, "drawing %d pictures", 2);
+        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "drawing %d pictures", 2);
         verbose.log("Paint", dummy, LogEncoder::None, "Waiting for drawings");
-        warning.log("Draw", dummy, LogEncoder::None, "made a mistake!");
-        info.log("Draw", dummy, LogEncoder::None, "redrawing %d picture(s)", 1);
-        info.log("Draw", dummy, LogEncoder::None, "Handing off to painter");
+        warning.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "made a mistake!");
+        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "redrawing %d picture(s)", 1);
+        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "Handing off to painter");
         info.log("Paint", dummy, LogEncoder::None, "Painting");
         error.log("Customer", dummy, LogEncoder::None, "This isn't what I asked for!");
     }
@@ -138,7 +144,7 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         while (decoder.next()) {
             CHECK(decoder.level() == i+1);
             CHECK(string(decoder.domain()) == expectedDomains[i][j]);
-            ++i;
+            ++j;
         }
     }
 }

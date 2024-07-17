@@ -83,6 +83,7 @@ namespace litecore {
     static int64_t sMaxSize = 1024; // For rotation
     static string sInitialMessage;  // For rotation, goes at top of each log
     static mutex sLogMutex;
+    std::vector<alloc_slice> LogDomain::sInternedNames;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info",
                 "warning", "error", nullptr};

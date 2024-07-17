@@ -201,7 +201,7 @@ C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {
         return kC4DefaultLog;
     auto domain = LogDomain::named(name);
     if (!domain && create)
-        domain = new LogDomain(name);
+        domain = new LogDomain(name, LogLevel::Info, true);
     return (C4LogDomain)domain;
 }
 
