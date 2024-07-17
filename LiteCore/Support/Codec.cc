@@ -98,12 +98,10 @@ namespace litecore { namespace blip {
         Assert(outSize > 0);
         Assert(mode > Mode::Raw);
         int result = _flate(&_z, (int)mode);
-        logInfo("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
-            operation, inSize, outSize, (int)mode, result,
-            (long)(_z.next_in - (uint8_t*)input.buf),
-            (long)(_z.next_out - (uint8_t*)output.next()));
-        if (!kZlibRawDeflate)
-            _checksum = (uint32_t)_z.adler;
+        logDebug("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes", operation, inSize, outSize,
+                 (int)mode, result, (long)(_z.next_in - (uint8_t*)input.buf),
+                 (long)(_z.next_out - (uint8_t*)output.next()));
+        if ( !kZlibRawDeflate ) _checksum = (uint32_t)_z.adler;
         input.setStart(_z.next_in);
         output.advanceTo(_z.next_out);
         check(result);
@@ -211,7 +209,7 @@ namespace litecore { namespace blip {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
-        logInfo("Decompressing %zu bytes into %zu-byte buf", input.size, output.capacity());
+        logDebug("Decompressing %zu bytes into %zu-byte buf", input.size, output.capacity());
         auto outStart = (uint8_t*)output.next();
         _write("inflate", input, output, mode);
         if (kZlibRawDeflate)
