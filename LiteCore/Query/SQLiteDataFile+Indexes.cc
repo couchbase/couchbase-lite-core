@@ -65,10 +65,15 @@ namespace litecore {
                                        const string& indexTableName) {
         SQLite::Statement stmt(*this, "INSERT INTO indexes (name, type, keyStore, expression, indexTableName) "
                                       "VALUES (?, ?, ?, ?, ?)");
+        // CBL-6000 adding prefix to distinguish between JSON and N1QL expression
+        string prefixedExpression{spec.queryLanguage == QueryLanguage::kJSON   ? "=j"
+                                  : spec.queryLanguage == QueryLanguage::kN1QL ? "=n"
+                                                                               : ""};
+        prefixedExpression += spec.expression.asString();
         stmt.bindNoCopy(1, spec.name);
         stmt.bind(2, spec.type);
         stmt.bindNoCopy(3, keyStoreName);
-        stmt.bindNoCopy(4, (char*)spec.expression.buf, (int)spec.expression.size);
+        stmt.bindNoCopy(4, prefixedExpression.c_str(), (int)prefixedExpression.length());
         if ( spec.type != IndexSpec::kValue ) stmt.bindNoCopy(5, indexTableName);
         LogStatement(stmt);
         stmt.exec();
@@ -233,8 +238,19 @@ namespace litecore {
         QueryLanguage queryLanguage = QueryLanguage::kJSON;
         alloc_slice   expression;
         if ( string col = stmt.getColumn(2).getString(); !col.empty() ) {
-            expression = col;
-            if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
+            if ( col[0] == '=' ) {
+                // This is new after cbl-6000. c.f. SQLiteDataFile::registerIndex
+                if ( col[1] == 'j' ) queryLanguage = QueryLanguage::kJSON;
+                else if ( col[1] == 'n' )
+                    queryLanguage = QueryLanguage::kN1QL;
+                else
+                    error::_throw(error::UnexpectedError, "Expression in the index table has unexpected prefix.");
+                expression = col.substr(2);
+            } else {
+                // Old style, without prefix.
+                expression = col;
+                if ( col[0] != '[' && col[0] != '{' ) queryLanguage = QueryLanguage::kN1QL;
+            }
         }
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -259,7 +275,10 @@ namespace litecore {
                 auto what = spec.what();
                 // `what()` is defined as an array of 1+ exprs to index; for a vector index there can be only one.
                 // In some cases just that term is passed in, not wrapped in an array.
-                if ( what->count() > 1 || what->get(0)->type() == kArray ) what = (const Array*)what->get(0);
+                if ( what->count() > 1
+                     || (spec.queryLanguage == QueryLanguage::kN1QL || what->get(0)->type() == kArray) ) {
+                    what = (const Array*)what->get(0);
+                }
                 if ( what->toJSON(true) == jsonWhat ) return std::move(spec);
             }
         }
