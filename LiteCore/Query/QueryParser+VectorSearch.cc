@@ -37,10 +37,7 @@ namespace litecore {
         slice metricName;
         if ( auto metricVal = params[2] )
             metricName = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
-        require(expr->type() == kArray,
-                "first argument to APPROX_VECTOR_DISTANCE must evaluate to a vector; did you pass the index name %s "
-                "instead?",
-                exprJSON.c_str());
+
         return _delegate.vectorTableName(_defaultTableName, exprJSON, metricName);
     }
 

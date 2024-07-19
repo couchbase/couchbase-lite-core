@@ -916,6 +916,25 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Misc)", "[
         }
         expectedWarningsLogged++;
     }
+
+    SECTION("Invalid First Argument") {
+        // First argument must be an expression evaluate to a property in the databas instead of
+        // the name of the index.
+        string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
+                          + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE('vecIndex', $target) LIMIT 5)";
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::NoSuchIndex);
+                CHECK("vector search with APPROX_VECTOR_DISTANCE requires a vector index on \"vecIndex\""s
+                      == err.what());
+            }
+            CHECK(query == nullptr);
+        }
+    }
 }
 
 TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid without Limit)", "[.VectorSearch]") {
