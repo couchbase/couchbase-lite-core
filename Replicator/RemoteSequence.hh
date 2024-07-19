@@ -68,7 +68,7 @@ namespace litecore::repl {
             if (isInt())
                 return format("%" PRIu64, intValue());
             else
-                return string(sliceValue());
+                return std::string(sliceValue());
         }
 
         bool operator== (const RemoteSequence &other) const noexcept FLPURE {

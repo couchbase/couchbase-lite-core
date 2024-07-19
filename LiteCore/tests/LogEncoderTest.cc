@@ -79,7 +79,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     {
         LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        map<unsigned, string> dummy;
+        LogDomain::ObjectMap dummy {};
         logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
                    1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
@@ -113,7 +113,7 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         domainDraw = c4log_getDomain(draw.c_str(), true);
     }
     {
-        map<unsigned, string> dummy;
+        LogDomain::ObjectMap dummy {};
         LogEncoder verbose(out[0], LogLevel::Verbose);
         LogEncoder info(out[1], LogLevel::Info);
         LogEncoder warning(out[2], LogLevel::Warning);
@@ -151,10 +151,10 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 
 
 TEST_CASE("LogEncoder tokens", "[Log]") {
-    map<unsigned, string> objects;
-    objects.emplace(make_pair(1, "Tweedledum"));
-    objects.emplace(make_pair(2, "rattle"));
-    objects.emplace(make_pair(3, "Tweedledee"));
+    LogDomain::ObjectMap objects {};
+    objects.emplace(1, make_pair("Tweedledum", 0));
+    objects.emplace(2, make_pair("rattle", 1));
+    objects.emplace(3, make_pair("Tweedledee", 2));
 
     stringstream out;
     stringstream out2;
@@ -168,18 +168,18 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
-    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{1\\|Tweedledum\\} I'm Tweedledum\\n"
-                   TIMESTAMP "\\{3\\|Tweedledee\\} I'm Tweedledee\\n"
-                   TIMESTAMP "\\{2\\|rattle\\} and I'm the rattle\\n");
+    regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/ I'm Tweedledum\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/Tweedledee#3/ I'm Tweedledee\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/ and I'm the rattle\\n");
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
     result = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
+    expected = regex(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                               "   Obj=/Tweedledum#1/rattle#2/ Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
 
@@ -187,7 +187,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
     LogEncoder logger(out, LogLevel::Info);
-    logger.log(nullptr, map<unsigned, string>(), LogEncoder::None, "Hi there");
+    logger.log(nullptr, LogDomain::ObjectMap(), LogEncoder::None, "Hi there");
 
     logger.withStream([&](ostream &s) {
         CHECK(out.str().empty());

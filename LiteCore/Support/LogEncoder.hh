@@ -40,7 +40,7 @@ namespace litecore {
         void vlog(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const std::string& prefix,
                   const char* format, va_list args) __printflike(6, 0);
 
-        void log(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, ...) __printflike(5, 6);
+        void log(const char *domain, const LogDomain::ObjectMap&, ObjectRef, const char *format, ...) __printflike(5, 6);
 
         void flush();
 

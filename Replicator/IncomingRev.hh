@@ -45,7 +45,7 @@ namespace litecore { namespace repl {
         }
 
     protected:
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
 
     private:
         void reinitialize();

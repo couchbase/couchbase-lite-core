@@ -532,7 +532,7 @@ namespace litecore { namespace websocket {
         } else {
             // Peer is initiating a close. Save its message and echo it:
             if ( willLog() ) {
-                auto close = ClientProtocol::parseClosePayload((std::byte*)message.buf, message.size);
+                auto close = ClientProtocol::parseClosePayload((char*)message.buf, message.size);
                 logInfo("Client is requesting close (%d '%.*s'); echoing it", close.code, (int)close.length,
                         (char*)close.message);
             }

@@ -74,6 +74,7 @@ namespace litecore {
     static bool sCallbackPreformatted = false;
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
     unsigned LogDomain::slastObjRef {0};
+    LogDomain::ObjectMap LogDomain::sObjectMap;
     map<unsigned, string> LogDomain::sObjNames;
     static ofstream* sFileOut[5] = {}; // File per log level
     static LogEncoder* sLogEncoder[5] = {};
@@ -599,6 +600,32 @@ namespace litecore {
         return "?";
     }
 
+    static void getObjectPathRecur(
+        const LogDomain::ObjectMap& objMap,
+        LogDomain::ObjectMap::const_iterator iter,
+        std::stringstream& ss
+        )
+    {
+        // pre-conditions: iter != objMap.end()
+        if ( iter->second.second != 0 ) {
+            auto parentIter = objMap.find(iter->second.second);
+            if ( parentIter == objMap.end() ) {
+                // the parent object is deleted. We omit the loggingClassName
+                ss << "/#" << iter->second.second;
+            } else {
+                getObjectPathRecur(objMap, parentIter, ss);
+            }
+        }
+        ss << "/" << iter->second.first << "#" << iter->first;
+    }
+
+    std::string LogDomain::getObjectPath(unsigned obj, const ObjectMap& objMap) {
+        auto iter = objMap.find(obj);
+        if ( iter == objMap.end() ) { return ""; }
+        std::stringstream ss;
+        getObjectPathRecur(objMap, iter, ss);
+        return ss.str() + "/";
+    }
 
     unsigned LogDomain::registerObject(const void *object, const unsigned* val,
                                        const string &description,
@@ -621,6 +648,39 @@ namespace litecore {
     void LogDomain::unregisterObject(unsigned objectRef) {
         unique_lock<mutex> lock(sLogMutex);
         sObjNames.erase(objectRef);
+    }
+
+    bool LogDomain::registerParentObject(unsigned object, unsigned parentObject) {
+        enum { kNoWarning, kNotRegistered, kParentNotRegistered, kAlreadyRegistered } warningCode{kNoWarning};
+
+        {
+            unique_lock<mutex> lock(sLogMutex);
+            auto               iter = sObjectMap.find(object);
+            if ( iter == sObjectMap.end() ) {
+                warningCode = kNotRegistered;
+            } else if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
+                warningCode = kParentNotRegistered;
+            } else if ( iter->second.second != 0 ) {
+                warningCode = kAlreadyRegistered;
+            } else
+                iter->second.second = parentObject;
+        }
+
+        switch ( warningCode ) {
+        case kNotRegistered:
+            WarnError("LogDomain::registerParentObject, object is not registered");
+            break;
+        case kParentNotRegistered:
+            WarnError("LogDomain::registerParentObject, parentObject is not registered");
+            break;
+        case kAlreadyRegistered:
+            WarnError("LogDomain::registerParentObject, object is already assigned parent");
+            break;
+        default:
+            break;
+        }
+
+        return warningCode == kNoWarning;
     }
 
 
@@ -676,6 +736,11 @@ namespace litecore {
         }
         return _objectRef;
     }
+
+    void Logging::setParentObjectRef(unsigned parentObjRef) const {
+        Assert(_domain.registerParentObject(getObjectRef(), parentObjRef));
+    }
+
 
 
     void Logging::_log(LogLevel level, const char *format, ...) const {

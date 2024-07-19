@@ -55,7 +55,7 @@ namespace litecore { namespace repl {
         }
         virtual void afterEvent() override;
         virtual void _connectionClosed() override;
-        virtual ActivityLevel computeActivityLevel() const override;
+        virtual ActivityLevel computeActivityLevel(std::string* reason) const override;
 
     private:
         void _start();

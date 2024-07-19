@@ -73,7 +73,7 @@ namespace litecore {
 #pragma mark - LOGGING:
 
 
-    void LogEncoder::log(const char *domain, const std::map<unsigned, std::string>& objectMap,
+    void LogEncoder::log(const char *domain, const LogDomain::ObjectMap& objectMap,
                          ObjectRef object, const char *format, ...) {
         va_list args;
         va_start(args, format);
@@ -103,12 +103,12 @@ namespace litecore {
         _writeUVarInt(objRef);
         if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
             _seenObjects.insert(objRef);
-            const auto i = objectMap.find(objRef);
-            if(i == objectMap.end()) {
-                _writer.write({"?\0", 2});
+            auto objPath = LogDomain::getObjectPath(objRef, objectMap);
+            if ( objPath.empty() ) {
+                _writer.write({(void*)"?\0", 2});
             } else {
-                _writer.write(slice(i->second.c_str()));
-                _writer.write("\0", 1);
+                _writer.write(slice(objPath.c_str()));
+                _writer.write((void*)"\0", 1);
             }
         }
 

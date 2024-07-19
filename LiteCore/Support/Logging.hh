@@ -77,9 +77,14 @@ struct LogFileOptions
         // objectRef -> (loggingName, parentObectRef)
         using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
 
-        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false)
             : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
+            if ( internName ) {
+                slice nslice{_name};
+                sInternedNames.push_back(alloc_slice::nullPaddedString(nslice));
+                _name = (const char*)sInternedNames.back().buf;
+            }
         }
 
     static LogDomain* named(const char *name);
@@ -162,6 +167,7 @@ private:
     LogDomain* const _next;
 
     static unsigned slastObjRef;
+    static ObjectMap sObjectMap;
     static std::map<unsigned,std::string> sObjNames;
     static LogDomain* sFirstDomain;
     static LogLevel sCallbackMinLevel;
@@ -226,6 +232,9 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
     public:
         std::string loggingName() const;
 
+        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
+        void     setParentObjectRef(unsigned parentObjRef) const;
+
     protected:
         Logging(LogDomain &domain)
         :_domain(domain)
@@ -260,8 +269,6 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         // upon entry, add a space to start new key=value pairs.
         // Warning: the string must not include printf format specifier, '%'.
         virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
-
-        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
         LogDomain &_domain;
 private:

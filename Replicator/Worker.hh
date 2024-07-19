@@ -185,7 +185,7 @@ namespace litecore { namespace repl {
         /// Sends a BLIP request. Increments `_pendingResponseCount` until the response is
         /// complete, keeping this Worker in the busy state.
         void sendRequest(blip::MessageBuilder& builder,
-                         blip::MessageProgressCallback onProgress = nullptr);
+                         const blip::MessageProgressCallback& onProgress = nullptr);
 
         /// The number of BLIP responses I'm waiting for.
         int pendingResponseCount() const        {return _pendingResponseCount;}

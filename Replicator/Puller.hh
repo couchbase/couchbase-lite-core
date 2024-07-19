@@ -62,7 +62,7 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), std::move(revs));
         }
         virtual void _childChangedStatus(Retained<Worker>, Status) override;
-        virtual ActivityLevel computeActivityLevel() const override;
+        virtual ActivityLevel computeActivityLevel(std::string* reason) const override;
         void activityLevelChanged(ActivityLevel level);
 
     private:

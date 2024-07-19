@@ -586,21 +586,57 @@ namespace litecore { namespace repl {
             || _revisionBytesAwaitingReply > 0;
     }
 
+namespace {
+    enum ReasonCode : uint8_t {
+        rcNotConnected,
+        rcIsBusy,
+        rcContinuous,
+        rcOpenServer,
+        rcConflictsMightRetry,
+        rcOneShotFinished,
 
-    Worker::ActivityLevel Pusher::computeActivityLevel() const {
+        rcEnd
+    };
+
+    const char* const reasonTable[rcEnd]{"notConnected",
+                                         nullptr,  // dynamically available in delegateReason.
+                                         "continuous",   "openServer", "conflictsMightRetry", "oneShotFinished"};
+    }  // namespace
+
+
+    Worker::ActivityLevel Pusher::computeActivityLevel(std::string * reason) const {
         ActivityLevel level;
+        ReasonCode                                 rc = rcEnd;
+        std::string                                delegateReason;
+        std::vector<std::pair<ReasonCode, size_t>> counters;
         if (!connected()) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
             level = kC4Stopped;
+            rc = rcNotConnected;
         } else if (isBusy()) {
             level = kC4Busy;
+            rc = rcIsBusy;
         } else if (_continuous || isOpenServer() || !_conflictsIMightRetry.empty()) {
             level = kC4Idle;
+            rc = (_continuous ? rcContinuous : (isOpenServer() ? rcOpenServer : rcConflictsMightRetry));
+            if (rc == rcConflictsMightRetry) counters.emplace_back(rc, _conflictsIMightRetry.size());
         } else {
             level = kC4Stopped;
+            rc = rcOneShotFinished;
         }
+
+        if ( reason ) {
+            *reason = reasonTable[rc] ? reasonTable[rc] : delegateReason;
+            for (const auto& counter : counters) {
+                if (counter.first == rc) {
+                    *reason = format("%s/%zu", reason->c_str(), counter.second);
+                    break;
+                }
+            }
+        }
+
         if (SyncBusyLog.willLog(LogLevel::Info)) {
             size_t pendingSequences = _parent ? _checkpointer.pendingSequenceCount() : 0;
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",

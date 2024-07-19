@@ -144,7 +144,7 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error error) override;
 
         // Worker method overrides:
-        virtual ActivityLevel computeActivityLevel() const override;
+        virtual ActivityLevel computeActivityLevel(std::string* reason) const override;
         virtual void _childChangedStatus(Retained<Worker>, Status taskStatus) override;
 
     private:

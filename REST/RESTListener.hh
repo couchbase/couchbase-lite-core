@@ -86,7 +86,7 @@ namespace litecore { namespace REST {
         
         Server* server() const              {return _server.get();}
 
-        Retained<C4Database> getDatabase(RequestResponse &rq, const string &dbName);
+        Retained<C4Database> getDatabase(RequestResponse &rq, const std::string &dbName);
 
         /** Returns the collection for this request, or null on error */
         std::pair<Retained<C4Database>,C4Collection*> collectionFor(RequestResponse&);
@@ -110,7 +110,7 @@ namespace litecore { namespace REST {
         static std::string kServerName;
 
     private:
-        pair<string,C4CollectionSpec> parseKeySpace(slice keySpace);
+        std::pair<std::string,C4CollectionSpec> parseKeySpace(slice keySpace);
         bool collectionGiven(RequestResponse&);
 
         void handleGetRoot(RequestResponse&);
