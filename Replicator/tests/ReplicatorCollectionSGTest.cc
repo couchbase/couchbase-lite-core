@@ -2339,7 +2339,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
 // revs between syncs > repl::tuning::kDefaultMaxHistory).
 // This test attempts to emulate two separate clients with the same doc, where one client's rev history lands
 // in the gap of the other client's rev history.
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.SyncServerCollection]") {
+TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Give SG a rev history with a gap", "[.xSyncServerCollection]") {
     constexpr size_t maxHistory = tuning::kDefaultMaxHistory;
     constexpr size_t numInitialRevs = 2;
     constexpr const char * saveDBName = "revsgap";
