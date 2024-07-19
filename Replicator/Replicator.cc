@@ -38,6 +38,17 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
+// Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
+// pass the collectionIndex manually for log calls
+#define cWarn(IDX, FMT, ...) Logging::warn("Coll=%i CorrID=%.*s " FMT, (IDX), SPLAT(_correlationID), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...) Logging::_logInfo("Coll=%i CorrID=%.*s " FMT, (IDX), SPLAT(_correlationID), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) Logging::_logVerbose("Coll=%i CorrID=%.*s " FMT, (IDX), SPLAT(_correlationID), ##__VA_ARGS__)
+#if DEBUG
+#   define cLogDebug(IDX, FMT, ...) Logging::_logDebug("Coll=%i CorrID=%.*s " FMT, (IDX), SPLAT(_correlationID), ##__VA_ARGS__)
+#else
+#   define cLogDebug(IDX, FMT, ...)
+#endif
+
     struct StoppingErrorEntry {
         C4Error err;
         bool isFatal;
@@ -578,6 +589,10 @@ namespace litecore { namespace repl {
         }
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr) {
+            _correlationID = x_corr;
+            logInfo("Received X-Correlation-Id");
+        }
     }
 
 
