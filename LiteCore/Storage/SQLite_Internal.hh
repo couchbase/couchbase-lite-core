@@ -30,29 +30,37 @@ namespace fleece::impl {
 
 namespace litecore {
 
+    /// Logger for SQL related activity.
     extern LogDomain SQL;
 
+    /// Logs the statement to the `SQL` logger at Info level.
     void LogStatement(const SQLite::Statement& st);
 
+    /** Little helper class that resets a long-lived Statement and unbinds its parameters on exit.
+        Otherwise, if the statement hasn't reached its last row it remains active,
+        and using it again would cause an error. Clearing parameters may free up memory,
+        and eliminates dangling pointers if `bindNoCopy` was used.
 
-    constexpr const char* kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
+        This class is not needed with temporary Statement objects.
 
-    // Little helper class that makes sure Statement objects get reset on exit
+        As a bonus, the constructor calls `LogStatement()`. */
     class UsingStatement {
       public:
         explicit UsingStatement(SQLite::Statement& stmt) noexcept;
 
         explicit UsingStatement(const std::unique_ptr<SQLite::Statement>& stmt) noexcept : UsingStatement(*stmt) {}
 
-        ~UsingStatement();
+        /// Destructor calls reset() and clearBindings(), catching any exceptions.
+        ~UsingStatement() noexcept;
 
       private:
         SQLite::Statement& _stmt;
     };
 
+    /// Returns the (uncopied) value of a text or blob column as a slice.
     slice getColumnAsSlice(SQLite::Statement&, int col);
 
-    // What the user_data of a registered function points to
+    /** What the user_data of a registered SQL function points to. */
     struct fleeceFuncContext {
         fleeceFuncContext(DataFile::Delegate* d, fleece::impl::SharedKeys* sk) : delegate(d), sharedKeys(sk) {}
 
@@ -60,5 +68,9 @@ namespace litecore {
         fleece::impl::SharedKeys* const sharedKeys;
     };
 
+    /// Registers all our SQL functions. Called when opening a database.
     void RegisterSQLiteFunctions(sqlite3* db, fleeceFuncContext);
+
+    // used by `SQLiteKeyStore::withDocBodies` and the `fl_callback` SQL function.
+    constexpr const char* kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
 }  // namespace litecore

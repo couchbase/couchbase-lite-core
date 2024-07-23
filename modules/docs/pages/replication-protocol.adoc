@@ -167,7 +167,8 @@ _(optional)_ +
 `versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
-Body: JSON dictionary _(optional)_
+Body: JSON dictionary _(optional)_ +
+`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_
 
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
@@ -247,8 +248,8 @@ by returning a BLIP/409 error. This informs the sender that it should
 use `proposeChanges` instead.
 
 LiteCore always uses the `proposeChanges` endpoint rather than `changes`;
-If LiteCore pushed a conflict via the `changes` endpoint, it would end up 
-pulling in the other branch of the conflict soon thereafter, and CBL 
+If LiteCore pushed a conflict via the `changes` endpoint, it would end up
+pulling in the other branch of the conflict soon thereafter, and CBL
 would resolve it and push the merge.
 
 Response:
@@ -311,10 +312,10 @@ Body: JSON array
 The response message indicates which of the proposed changes are allowed
 and which are out of date. It consists of an array of numbers, generally
 with the same meanings as HTTP status codes, with the following specific
-meanings: 
+meanings:
 
-* 0: The change is allowed and the peer should send the revision 
-* 304: The server already has this revision, so the peer doesn't need to send it 
+* 0: The change is allowed and the peer should send the revision
+* 304: The server already has this revision, so the peer doesn't need to send it
 * 409: This change would cause a conflict, so the server needs to resolve it and retry later
 
 As with `changes`, trailing zeros can be omitted, but the interpretation
@@ -328,12 +329,14 @@ rev
 `collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `id`: Document ID _(optional)_ +
 `rev`: Revision ID _(optional)_ -- see the <<revIDs>> section. +
+`replacedRev`: If the revision sent is not the revision originally requested, but is a
+replacementRev, this is the originally requested Revision ID. _(optional)_ +
 `deleted`: true if the revision is a tombstone _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
-q.v.)_ +
+q.v.)_. If this is a replacementRev, this will be the sequence of the original requested rev. +
 `history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
 Body: Document JSON
-`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_  
+`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_
 
 Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
@@ -383,8 +386,8 @@ norev
 `reason`: A more detailed description of the cause of the error _(optional)_
 Body: None
 
-In the case a rev is requested from a peer via a `changes` response,
-but that revision is not available, the `norev` message should be sent 
+In the case a rev is requested from a peer via a `changes` or `subChanges` response,
+but that revision is not available, and the peer's message did not include the `sendReplacementRevs` property (set to true), the `norev` message should be sent
 as a placeholder to inform the `peer` that there will be no corresponding 
 `rev` message sent for the requested revision.  This prevents the peer 
 from waiting for a `rev` message that will never come, which could cause 

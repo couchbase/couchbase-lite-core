@@ -16,6 +16,7 @@
 #include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
+#include "c4Index.h"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"

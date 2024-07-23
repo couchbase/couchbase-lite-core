@@ -444,6 +444,11 @@ _gC4ExpectExceptions
 
 _c4_setExtensionPath
 
+_c4index_getType
+_c4index_getQueryLanguage
+_c4index_getExpression
+_c4index_getOptions
+
 _FLDoc_FromJSON
 _FLDoc_Retain
 _FLDoc_GetAllocedData
@@ -480,7 +485,9 @@ _c4keypair_privateKeyData
 _c4keypair_publicKeyData
 _c4keypair_publicKeyDigest
 
+_c4index_isTrained
 _c4index_beginUpdate
+
 _c4indexupdater_count
 _c4indexupdater_valueAt
 _c4indexupdater_setVectorAt

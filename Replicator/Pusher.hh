@@ -114,9 +114,10 @@ namespace litecore::repl {
         C4SequenceNumber      _lastSequenceLogged{0};  // Checkpointed last-sequence
         Checkpointer&         _checkpointer;           // Tracks checkpoints & pending sequences
         bool                  _started{false};
-        bool                  _caughtUp{false};                // Received backlog of pre-existing changes?
-        bool                  _continuousCaughtUp{true};       // Caught up with change notifications?
-        bool                  _deltasOK{false};                // OK to send revs in delta form?
+        bool                  _caughtUp{false};           // Received backlog of pre-existing changes?
+        bool                  _continuousCaughtUp{true};  // Caught up with change notifications?
+        bool                  _deltasOK{false};           // OK to send revs in delta form?
+        bool                  _sendReplacementRevs{false};
         unsigned              _changeListsInFlight{0};         // # change lists being requested from db or sent to peer
         unsigned              _revisionsInFlight{0};           // # 'rev' messages being sent
         blip::MessageSize     _revisionBytesAwaitingReply{0};  // # 'rev' message bytes sent but not replied

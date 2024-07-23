@@ -61,6 +61,7 @@ target_include_directories(
     ${FLEECE_LOCATION}/API
     ${FLEECE_LOCATION}/Fleece/Support
     ${LITECORE_LOCATION}/Crypto
+    ${LITECORE_LOCATION}/Networking/HTTP
     ${LITECORE_LOCATION}/C/include
     ${LITECORE_LOCATION}/C/Cpp_include
 )

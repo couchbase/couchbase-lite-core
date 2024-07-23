@@ -34,7 +34,6 @@ using namespace fleece;
 using namespace litecore::blip;
 
 namespace litecore::repl {
-
     Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
 #if __APPLE__
@@ -66,7 +65,12 @@ namespace litecore::repl {
         assignCollectionToMsg(msg, collectionIndex());
         if ( sinceStr ) msg["since"_sl] = sinceStr;
         if ( _options->pull(collectionIndex()) == kC4Continuous ) msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl]   = tuning::kChangesBatchSize;
+        msg["batch"_sl] = tuning::kChangesBatchSize;
+#ifdef LITECORE_CPPTEST
+        msg["sendReplacementRevs"] = !_revFinder->_disableReplacementRevs;
+#else
+        msg["sendReplacementRevs"] = tuning::kChangesReplacementRevs;
+#endif
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if ( _skipDeleted ) msg["activeOnly"_sl] = "true"_sl;
         if ( _options->enableAutoPurge() || progressNotificationLevel() > 0 ) {
@@ -384,6 +388,4 @@ namespace litecore::repl {
 
         return level;
     }
-
-
 }  // namespace litecore::repl

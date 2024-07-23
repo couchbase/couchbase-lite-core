@@ -93,6 +93,7 @@ function(set_litecore_source_base)
         vendor/SQLiteCpp/src/Transaction.cpp
         vendor/SQLiteCpp/sqlite3/ext/carray.cc
         vendor/SQLiteCpp/sqlite3/ext/carray_bind.cc
+        vendor/vector_search/VectorIndexSpec.cc
         Replicator/c4Replicator.cc
         Replicator/c4Replicator_CAPI.cc
         Replicator/c4Socket.cc

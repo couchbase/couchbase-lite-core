@@ -16,7 +16,7 @@
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
-#include "c4IndexTypes.h"
+#include "c4Index.h"
 #include "c4Query.h"
 #include "c4Collection.h"
 #include "Error.hh"
@@ -27,6 +27,7 @@
 #include "Stopwatch.hh"
 #include <cmath>
 #include <cerrno>
+#include <future>
 #include <iostream>
 #include <thread>
 
@@ -649,6 +650,68 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
     } while ( c4_now() < stopAt );
 
     c4log_setLevel(kC4DatabaseLog, oldLevel);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Database][C][Expiration]") {
+    // c.f. CBL-5259 null pointer dereference
+    // Reason: Housekeeper::_bgdb is assigned in the actor's thread. With rapid calls of
+    // setDocumentExpiration, _doExpiration fired by the timer runs in the Timer's thread, and may not
+    // see the assignment of _bgdb.
+    // Fix: make the callback async and run in the actor's thread to be synchronized with
+    // Housekeeper::_scheduleExpiration.
+
+    auto collection = c4db_getDefaultCollection(db, nullptr);
+    int  total      = 500;
+    REQUIRE(total == addDocs(collection, total, "doc-"));
+    REQUIRE(total == c4coll_getDocumentCount(collection));
+
+    // c.f. C4Test::addDocs for how doc IDs are generated.
+    char docIDBuf[20];
+    auto docID = [&docIDBuf](int i) {
+        snprintf((char*)docIDBuf, 20, "doc-%d", i);
+        return docIDBuf;
+    };
+
+    C4Timestamp expire = c4_now() - secs;
+
+    SECTION("Check Document Count by Same DB") {
+        std::mutex mutex;
+        auto       fut = std::async(std::launch::async, [collection, &mutex]() {
+            int64_t n;
+            do {
+                std::scoped_lock<std::mutex> lock(mutex);
+                n = c4coll_getDocumentCount(collection);
+            } while ( n > 0 );
+        });
+
+        for ( int i = 1; i <= total; ++i ) {
+            std::scoped_lock<std::mutex> lock(mutex);
+            REQUIRE(c4coll_setDocExpiration(collection, c4str(docID(i)), expire, WITH_ERROR()));
+        }
+        fut.wait();
+    }
+
+    SECTION("Check Document Count by Different DB") {
+        auto otherDb = c4db_openAgain(db, ERROR_INFO());
+        REQUIRE(otherDb);
+        auto otherCollection = c4db_getDefaultCollection(otherDb, ERROR_INFO());
+        REQUIRE(otherCollection);
+
+        auto fut = std::async(std::launch::async, [otherCollection]() {
+            int64_t n;
+            do { n = c4coll_getDocumentCount(otherCollection); } while ( n > 0 );
+        });
+
+        for ( int i = 1; i <= total; ++i ) {
+            REQUIRE(c4coll_setDocExpiration(collection, c4str(docID(i)), expire, WITH_ERROR()));
+        }
+
+        fut.wait();
+
+        bool closedOtherDb = c4db_close(otherDb, ERROR_INFO());
+        REQUIRE(closedOtherDb);
+        c4db_release(otherDb);
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while in batch", "[Database][C][Expiration][CBL-3626]") {

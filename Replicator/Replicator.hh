@@ -22,7 +22,6 @@
 #include <utility>
 
 namespace litecore::repl {
-
     class Pusher;
     class Puller;
     class ReplicatedRev;
@@ -257,6 +256,12 @@ namespace litecore::repl {
         alloc_slice           _remoteURL;
         bool                  _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
-    };
+#ifdef LITECORE_CPPTEST
+        // Used for testing purposes to delay the changes response to the remote
+        bool _delayChangesResponse{false};
 
+      public:
+        bool _disableReplacementRevs{false};
+#endif
+    };
 }  // namespace litecore::repl

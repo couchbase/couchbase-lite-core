@@ -411,6 +411,11 @@ gC4ExpectExceptions
 
 c4_setExtensionPath
 
+c4index_getType
+c4index_getQueryLanguage
+c4index_getExpression
+c4index_getOptions
+
 FLDoc_FromJSON
 FLDoc_Retain
 FLDoc_GetAllocedData
