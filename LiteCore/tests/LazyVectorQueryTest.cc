@@ -64,8 +64,7 @@ class LazyVectorQueryTest : public VectorQueryTest {
 
         string queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target']],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['.num'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
             LIMIT: 5
          }] )";
@@ -121,8 +120,8 @@ class LazyVectorQueryTest : public VectorQueryTest {
         CHECK(count > 0);
         for ( size_t i = 0; i < count; ++i ) {
             fleece::Value val(update->valueAt(i));
-            REQUIRE(val.type() == kFLNumber);
             if ( fn(update, i, val) ) {
+                REQUIRE(val.type() == kFLNumber);
                 int64_t n = val.asInt();
                 float   vec[kDimension];
                 computeVector(n, vec);
@@ -258,4 +257,72 @@ TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Delete Docs Auto-Updated", "[
     CHECK(updateVectorIndex(1, alwaysUpdate) == 1);
 }
 
+TEST_CASE_METHOD(LazyVectorQueryTest, "Lazy Vector Index N1QL", "[Query][.VectorSearch]") {
+    addNumberedDocs(1, 400);
+    addNonVectorDoc(401);
+    // setting up the lazy index options
+    IndexSpec::VectorOptions options(kDimension, vectorsearch::FlatClustering{16}, IndexSpec::DefaultEncoding);
+    options.lazyEmbedding = true;
+
+    std::string indexExpr;
+    UpdaterFn   updateFn = alwaysUpdate;
+    std::string queryStr;
+    SECTION("Complex Expression") {
+        indexExpr = "{'key': num}";
+        updateFn  = [](LazyIndexUpdate* update, size_t i, fleece::Value val) {
+            REQUIRE(val.type() == kFLDict);
+            auto v = val.asDict().get("key");
+            if ( !v ) {
+                update->setVectorAt(i, nullptr, kDimension);
+            } else {
+                int64_t n = v.asInt();
+                float   vec[kDimension];
+                computeVector(n, vec);
+                update->setVectorAt(i, vec, kDimension);
+            }
+            return false;
+        };
+    }
+
+    SECTION("Simple Expression") {
+        indexExpr = "num";
+        updateFn  = [](LazyIndexUpdate* update, size_t i, fleece::Value val) {
+            REQUIRE(val.type() == kFLNumber);
+            REQUIRE(val);
+
+            int64_t n = val.asInt();
+            float   vec[kDimension];
+            computeVector(n, vec);
+            update->setVectorAt(i, vec, kDimension);
+
+            return false;
+        };
+    }
+
+    VectorQueryTest::createVectorIndex("factorsindex", indexExpr, options, QueryLanguage::kN1QL);
+    _lazyIndex = make_retained<LazyIndex>(*store, "factorsindex");
+
+    queryStr = "SELECT META().id, APPROX_VECTOR_DISTANCE("s + indexExpr
+               + ", $target) AS distance FROM _default ORDER BY distance LIMIT 5";
+
+    _query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    REQUIRE(_query != nullptr);
+
+    Retained<QueryEnumerator> e;
+    expectedWarningsLogged = 1;  //DB WARNING SQLite warning: vectorsearch: Untrained index; queries may be slow.
+    e                      = (_query->createEnumerator(&_options));
+    REQUIRE(e->getRowCount() == 0);  // index is empty so far
+
+
+    REQUIRE(updateVectorIndex(200, updateFn) == 200);
+    REQUIRE(updateVectorIndex(999, updateFn) == (indexExpr == "num" ? 200 : 201));
+
+    checkQueryReturns({"rec-291", "rec-171", "rec-039", "rec-081", "rec-249"});
+
+    // Nothing more to update
+    REQUIRE(updateVectorIndex(200, updateFn) == 0);
+
+    addNonVectorDoc(402);  // Add a row that has no 'num' property
+    REQUIRE(updateVectorIndex(200, updateFn) == (indexExpr == "num" ? 0 : 1));
+}
 #endif

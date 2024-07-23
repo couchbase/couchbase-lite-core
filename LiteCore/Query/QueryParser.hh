@@ -67,8 +67,9 @@ namespace litecore {
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const   = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE
-            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const   = 0;
-            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson) const = 0;
+            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson,
+                                                         string_view metricName) const                            = 0;
 #endif
         };
 
@@ -124,6 +125,8 @@ namespace litecore {
         /// Translates the JSON-parsed Value to blob-format vector for use by vectorsearch.
         string vectorToIndexExpressionSQL(const Value*, unsigned dimensions);
 
+        string expressionCanonicalJSON(const Value* expression) const;
+
       private:
         template <class T, class U>
         using map          = std::map<T, U>;
@@ -153,8 +156,9 @@ namespace litecore {
         };
 
         struct indexJoinInfo {
-            string                alias;          // its alias
-            std::function<void()> writeTableSQL;  // optional fn to write SQL instead of table name
+            string                alias;            // its alias
+            std::function<void()> writeTableSQL;    // optional fn to write SQL instead of table name
+            std::function<void()> writeExtraOnSQL;  // optional fn to add conditions to the "ON..." clause
         };
 
         // Maps alias names -> info
@@ -164,7 +168,7 @@ namespace litecore {
         struct Operation;
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation, kResultListOperation,
-                kExpressionListOperation, kHighPrecedenceOperation;
+                kExpressionListOperation, kHighPrecedenceOperation, kWhereOperation;
 
         //        struct JoinedOperations;
         //        static const JoinedOperations kJoinedOperationsList[];
@@ -239,15 +243,19 @@ namespace litecore {
 
         void parseJoin(const Dict*);
 
-        void                 requireTopLevelConjunction(const char* fnName);
-        unsigned             findFTSProperties(const Value* root);
-        void                 findPredictionCalls(const Value* root);
-        void                 addVectorSearchJoins(const Dict* select);
+        void     requireTopLevelConjunction(const char* fnName);
+        unsigned findFTSProperties(const Value* root);
+        void     findPredictionCalls(const Value* root);
+        void     addVectorSearchJoins(const Dict* select);
+        string   tableFromVectorDistanceCall(const ArrayIterator& params);
+        void     writeVectorMatchExpression(const ArrayIterator& params, string_view alias, string_view tableName);
+        void     writeVectorDistanceFn(ArrayIterator&);
+
         indexJoinInfo*       indexJoinTable(const string& tableName, const char* aliasPrefix = nullptr);
         const string&        indexJoinTableAlias(const string& key, const char* aliasPrefix = nullptr);
         const string&        FTSJoinTableAlias(const Value* matchLHS, bool canAdd = false);
         const string&        predictiveJoinTableAlias(const Value* expr, bool canAdd = false);
-        pair<string, string> FTSTableName(const Value* key, bool vector = false) const;
+        pair<string, string> FTSTableName(const Value* key) const;
         string               expressionIdentifier(const Array* expression, unsigned maxItems = 0) const;
         void                 findPredictiveJoins(const Value* node, vector<string>& joins);
         bool                 writeIndexedPrediction(const Array* node);
@@ -256,8 +264,6 @@ namespace litecore {
         AliasMap::const_iterator verifyDbAlias(Path& property, string* error = nullptr) const;
         bool                     optimizeMetaKeyExtraction(ArrayIterator&);
 
-        void writeVectorMatchFn(ArrayIterator&);
-        void writeVectorDistanceFn(ArrayIterator&);
 
         const Delegate&            _delegate;                          // delegate object (SQLiteKeyStore)
         string                     _defaultTableName;                  // Name of the default table to use

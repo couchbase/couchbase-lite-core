@@ -880,8 +880,34 @@ namespace litecore {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
     }
 
-    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& property) const {
-        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, property);
+    static vectorsearch::Metric actual(vectorsearch::Metric m) {
+        return (m == vectorsearch::Metric::Default) ? vectorsearch::Metric::Euclidean2 : m;
+    }
+
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expression,
+                                           string_view metricName) const {
+        if ( auto specp = findIndexOnExpression(expression, IndexSpec::kVector, onTable) ) {
+            if ( !metricName.empty() ) {
+                // If a metric name is given, verify that it matches the index:
+                auto metricp = vectorsearch::MetricNamed(metricName);
+                if ( !metricp )
+                    error::_throw(error::InvalidQuery,
+                                  "in 3rd argument to APPROX_VECTOR_DISTANCE, '%.*s' is not a valid metric name",
+                                  int(metricName.size()), metricName.data());
+                auto realMetric = actual(specp->vectorOptions()->metric);
+                if ( actual(*metricp) != realMetric ) {
+                    string_view realName = vectorsearch::NameOfMetric(realMetric);
+                    error::_throw(
+                            error::InvalidQuery,
+                            "in 3rd argument to APPROX_VECTOR_DISTANCE, %.*s does not match the index's metric, %.*s",
+                            int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
+                }
+            }
+            return specp->indexTableName;
+        } else {
+            error::_throw(error::NoSuchIndex, "vector search with APPROX_VECTOR_DISTANCE requires a vector index on %s",
+                          expression.c_str());
+        }
     }
 #endif
 

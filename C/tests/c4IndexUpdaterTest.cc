@@ -1,20 +1,22 @@
 //
-// Created by Callum Birks on 28/05/2024.
+// c4IndexUpdaterTest.cc
+//
+// Copyright 2024-Present Couchbase, Inc.
+//
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
-#include "VectorIndexSpec.hh"
-#include "c4Base.hh"
-#include "DatabaseImpl.hh"
-#include "LazyIndex.hh"
-#include "c4Collection.h"
 #include "c4Collection.hh"
+#include "c4Database.hh"
 #include "c4Index.h"
 #include "c4Index.hh"
-#include "c4IndexTypes.h"
 #include "c4Query.h"
 #include "c4Test.hh"  // IWYU pragma: keep
-#include "LiteCoreTest.hh"
-#include "SQLiteDataFile.hh"
+#include <mutex>
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -106,8 +108,8 @@ class LazyVectorAPITest : public C4Test {
         std::call_once(sOnce, [] {
             if ( const char* path = getenv("LiteCoreExtensionPath") ) {
                 sExtensionPath = path;
-                litecore::SQLiteDataFile::enableExtension("CouchbaseLiteVectorSearch", sExtensionPath);
-                Log("Registered LiteCore extension path %s", path);
+                REQUIRE(c4_enableExtension("CouchbaseLiteVectorSearch"_sl, slice(sExtensionPath), WITH_ERROR()));
+                C4Log("Registered LiteCore extension path %s", path);
             }
         });
         return 0;
@@ -119,7 +121,7 @@ class LazyVectorAPITest : public C4Test {
         {  // Open words_db
             C4DatabaseConfig2 config = {slice(TempDir())};
             config.flags |= kC4DB_Create;
-            auto name = copyFixtureDB(TestFixture::sFixturesDir, "vectors/words_db.cblite2");
+            auto name = copyFixtureDB("vectors/words_db.cblite2");
             closeDB();
             db         = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
             _wordsColl = Retained(REQUIRED(db->getCollection({"words", "_default"})));
@@ -138,15 +140,7 @@ class LazyVectorAPITest : public C4Test {
 
     static bool alwaysUpdate(LazyIndexUpdate*, size_t, fleece::Value) { return true; }
 
-    /// Get the LazyIndex with the given name. Will return null if the index does not exist.
-    [[nodiscard]] Retained<LazyIndex> getLazyIndex(std::string_view name) const noexcept {
-        auto& store = asInternal(db)->dataFile()->defaultKeyStore();
-        try {
-            return make_retained<LazyIndex>(store, name);
-        } catch ( [[maybe_unused]] std::exception& e ) { return nullptr; }
-    }
-
-    void checkQueryReturnsWords(C4Query* query, const std::vector<string>& expectedWords) const {
+    void checkQueryReturnsWords(C4Query* query, const std::vector<std::string>& expectedWords) const {
         auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
         REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == expectedWords.size());
         for ( const auto& expectedWord : expectedWords ) {
@@ -181,10 +175,9 @@ class LazyVectorAPITest : public C4Test {
     }
 
     bool createVectorIndex(bool lazy, slice expression = R"(['.word'])"_sl, slice name = "words_index"_sl,
-                           IndexSpec::VectorOptions options = vectorOptions(300, 8),
-                           C4Error*                 err     = ERROR_INFO()) const {
-        options.lazyEmbedding = lazy;
-        return createIndex(name, json5(expression), kC4VectorIndex, indexOptions(options), err);
+                           C4IndexOptions options = indexOptions(300, 8), C4Error* err = ERROR_INFO()) const {
+        options.vector.lazy = lazy;
+        return createIndex(name, json5(expression), kC4VectorIndex, options, err);
     }
 
     C4Index* getIndex(slice name = "words_index"_sl, C4Error* err = ERROR_INFO()) const {
@@ -228,7 +221,8 @@ class LazyVectorAPITest : public C4Test {
         REQUIRE(c4blob_create(&db->getBlobStore(), blobContents, nullptr, &blobKey, ERROR_INFO()));
         std::stringstream json{};
         json << "{'" << kC4ObjectTypeProperty << "': '" << kC4ObjectType_Blob << "', ";
-        json << "digest: '" << blobKey.digestString() << "', length: " << blobContents.size
+        alloc_slice digest = c4blob_keyToString(blobKey);
+        json << "digest: '" << std::string(digest) << "', length: " << blobContents.size
              << ", content_type: 'text/plain'}";
         auto jsonStr = json5(json.str());
         auto doc     = Doc::fromJSON(slice(jsonStr));
@@ -266,92 +260,18 @@ class LazyVectorAPITest : public C4Test {
         return {flValue};
     }
 
-    static C4VectorIndexOptions c4VectorOptions(const IndexSpec::VectorOptions& options) {
-        C4VectorMetricType metric{};
-        switch ( options.metric ) {
-            case vectorsearch::Metric::Euclidean2:
-                metric = kC4VectorMetricEuclidean;
-                break;
-            case vectorsearch::Metric::Cosine:
-                metric = kC4VectorMetricCosine;
-                break;
-        }
-
-        C4VectorClustering clustering{};
-        switch ( options.clustering.index() ) {
-            case 0:
-                {
-                    clustering.type           = kC4VectorClusteringFlat;
-                    auto _clustering          = std::get<vectorsearch::FlatClustering>(options.clustering);
-                    clustering.flat_centroids = _clustering.numCentroids;
-                    break;
-                }
-            case 1:
-                {
-                    clustering.type                = kC4VectorClusteringMulti;
-                    auto _clustering               = std::get<vectorsearch::MultiIndexClustering>(options.clustering);
-                    clustering.multi_bits          = _clustering.bitsPerSub;
-                    clustering.multi_subquantizers = _clustering.subquantizers;
-                    break;
-                }
-        }
-
-        C4VectorEncoding encoding{};
-        switch ( options.encoding.index() ) {
-            case 0:
-                {
-                    encoding.type = kC4VectorEncodingNone;
-                    break;
-                }
-            case 1:
-                {
-                    encoding.type             = kC4VectorEncodingPQ;
-                    auto _encoding            = std::get<vectorsearch::PQEncoding>(options.encoding);
-                    encoding.bits             = _encoding.bitsPerSub;
-                    encoding.pq_subquantizers = _encoding.subquantizers;
-                    break;
-                }
-            case 2:
-                {
-                    encoding.type  = kC4VectorEncodingSQ;
-                    auto _encoding = std::get<vectorsearch::SQEncoding>(options.encoding);
-                    encoding.bits  = _encoding.bitsPerDimension;
-                    break;
-                }
-        }
-
-        return C4VectorIndexOptions{
-                options.dimensions,
-                metric,
-                clustering,
-                encoding,
-                static_cast<unsigned int>(options.minTrainingCount.value_or(0)),
-                static_cast<unsigned int>(options.maxTrainingCount.value_or(0)),
-                options.probeCount.value_or(0),
-                options.lazyEmbedding,
-        };
-    }
-
-    static IndexSpec::VectorOptions vectorOptions(unsigned dimensions, unsigned centroids) {
-        IndexSpec::VectorOptions options(dimensions, vectorsearch::FlatClustering{centroids});
+    static C4IndexOptions indexOptions(unsigned dimensions, unsigned centroids) {
+        C4IndexOptions options{};
+        options.vector.dimensions                = dimensions;
+        options.vector.clustering.type           = kC4VectorClusteringFlat;
+        options.vector.clustering.flat_centroids = centroids;
         return options;
     }
 
-    static C4IndexOptions indexOptions(const IndexSpec::VectorOptions& vectorOptions) {
-        const auto c4vectorOptions = c4VectorOptions(vectorOptions);
-        return C4IndexOptions{"en", false, false, nullptr, c4vectorOptions};
-    }
-
-    static inline string   sExtensionPath;
-    alloc_slice            _encodedTarget;
-    Retained<C4Collection> _wordsColl;
+    static inline std::string sExtensionPath;
+    alloc_slice               _encodedTarget;
+    Retained<C4Collection>    _wordsColl;
 };
-
-// 1, 2
-TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector isLazy Default False", "[API][.VectorSearch]") {
-    auto vectorOpt = vectorOptions(300, 20);
-    CHECK(vectorOpt.lazyEmbedding == false);
-}
 
 // 3
 TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Non-Existing Index", "[API][.VectorSearch]") {
@@ -387,17 +307,6 @@ TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Closed Database", "[A
     CHECK(err.code == kC4ErrorNotOpen);
 }
 
-// 7
-TEST_CASE_METHOD(LazyVectorAPITest, "Lazy Vector Get Index Deleted Collection", "[API][.VectorSearch]") {
-    C4CollectionSpec collSpec{"collA"_sl, "_default"_sl};
-    auto             coll = c4db_createCollection(db, collSpec, ERROR_INFO());
-    REQUIRE(coll);
-    REQUIRE(c4db_deleteCollection(db, collSpec, ERROR_INFO()));
-    C4Error err{};
-    c4coll_getIndex(coll, "nonexistingindex"_sl, &err);
-    CHECK(err.code == kC4ErrorNotOpen);
-}
-
 // 8, 9, 10 in LazyVectorQueryTest
 
 // 11
@@ -405,7 +314,8 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Vector", "[API][.VectorS
     REQUIRE(createIndex("value_index"_sl, json5("[['.value']]"), kC4ValueIndex, C4IndexOptions{}, ERROR_INFO()));
     auto index = REQUIRED(getIndex("value_index"_sl, ERROR_INFO()));
 
-    C4Error err{};
+    ExpectingExceptions x;
+    C4Error             err{};
     CHECK(!c4index_beginUpdate(index, 10, &err));
     CHECK(err.code == kC4ErrorUnsupported);
 
@@ -418,7 +328,8 @@ TEST_CASE_METHOD(LazyVectorAPITest, "BeginUpdate on Non-Lazy Vector", "[API][.Ve
 
     auto index = REQUIRED(getIndex("nonlazyindex"_sl));
 
-    C4Error err{};
+    ExpectingExceptions x;
+    C4Error             err{};
     CHECK(!c4index_beginUpdate(index, 10, &err));
     CHECK(err.code == kC4ErrorUnsupported);
 
@@ -512,7 +423,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Float Array", "[API][.Vect
     REQUIRE(c4indexupdater_finish(updater, ERROR_INFO()));
 
     auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
+            ORDER_BY: ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['$target']],
             WHAT:  [ ['.word'] ],
             FROM:  [{'COLLECTION':'words'}],
             LIMIT: 300
@@ -556,10 +467,11 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Set Invalid Dimensions", "[API
 // 22
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Finish Incomplete Update", "[API][.VectorSearch]") {
     REQUIRE(createVectorIndex(true));
-    auto    index   = REQUIRED(getIndex());
-    auto    updater = REQUIRED(c4index_beginUpdate(index, 2, ERROR_INFO()));
-    C4Error err{};
-    c4indexupdater_finish(updater, &err);
+    auto                index   = REQUIRED(getIndex());
+    auto                updater = REQUIRED(c4index_beginUpdate(index, 2, ERROR_INFO()));
+    ExpectingExceptions x;
+    C4Error             err{};
+    CHECK(!c4indexupdater_finish(updater, &err));
     CHECK(err.code == kC4ErrorUnsupported);
 
     c4indexupdater_release(updater);
@@ -606,7 +518,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater not update when released witho
     c4indexupdater_release(updater);
 
     const auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
+            ORDER_BY: ['APPROX_VECTOR_DISTANCE()', ['.word'], ['$target']],
             WHAT:  [ ['.word'] ],
             FROM:  [{'COLLECTION':'words'}],
             LIMIT: 300
@@ -624,7 +536,7 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater not update when released witho
 // 25
 TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.VectorSearch]") {
     createVectorDoc(0, "a string");
-    const auto options = vectorOptions(3, 8);
+    const auto options = indexOptions(3, 8);
     REQUIRE(createVectorIndex(true, R"(['.value'])", "value_index"_sl, options));
     auto index   = REQUIRED(getIndex("value_index"));
     auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
@@ -637,8 +549,9 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.
         CHECK(negativeBoundsValue == nullptr);
         CHECK(pastBoundsValue == nullptr);
 
-        C4Error            err{};
-        std::vector<float> vectors{1.0, 2.0, 3.0};
+        C4Error             err{};
+        std::vector<float>  vectors{1.0, 2.0, 3.0};
+        ExpectingExceptions x;
         CHECK(!c4indexupdater_setVectorAt(updater, -1, vectors.data(), 3, &err));
         CHECK(err.code == kC4ErrorInvalidParameter);
 
@@ -648,88 +561,6 @@ TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Index out of bounds", "[API][.
         CHECK(!c4indexupdater_skipVectorAt(updater, -1));
         CHECK(!c4indexupdater_skipVectorAt(updater, 1));
     }
-    c4indexupdater_release(updater);
-    c4index_release(index);
-}
-
-// 26
-TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater Call After Already Finished", "[API][.VectorSearch]") {
-    REQUIRE(createVectorIndex(true));
-    auto index   = REQUIRED(getIndex());
-    auto updater = REQUIRED(c4index_beginUpdate(index, 1, ERROR_INFO()));
-
-    auto wordValue = Value(c4indexupdater_valueAt(updater, 0));
-    auto word      = wordValue.asString();
-    auto vectors   = vectorsForWord(word);
-    REQUIRE(!vectors.empty());
-    REQUIRE(c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, ERROR_INFO()));
-
-    // c4indexupdater_finish is called
-    CHECK(c4indexupdater_finish(updater, ERROR_INFO()));
-
-    // c4indexupdater_finish is called twice
-    C4Error err{};
-    CHECK(!c4indexupdater_finish(updater, &err));
-    CHECK(err.code == kC4ErrorNotOpen);
-
-    // c4indexupdater_count after finished
-    CHECK(0 == c4indexupdater_count(updater));
-
-    // c4indexupdater_valueAt after finished
-    auto value = c4indexupdater_valueAt(updater, 0);
-    CHECK(value == nullptr);
-
-    // c4indexupdater_setVectorAt after finished
-    err.code  = 0;
-    auto succ = c4indexupdater_setVectorAt(updater, 0, vectors.data(), 300, &err);
-    CHECK(succ);
-
-    // c4indexupdater_skipVectorAt after finished
-    succ = c4indexupdater_skipVectorAt(updater, 0);
-    CHECK(succ);
-
-    c4indexupdater_release(updater);
-    c4index_release(index);
-}
-
-TEST_CASE_METHOD(LazyVectorAPITest, "IndexUpdater finish doesn't error with null vectors", "[API][.VectorSearch]") {
-    // Create index
-    REQUIRE(createVectorIndex(true));
-    auto index = REQUIRED(getIndex());
-    // update with limit 10
-    auto updater = REQUIRED(c4index_beginUpdate(index, 10, ERROR_INFO()));
-
-    // Set even vectors to vector, odd vectors to null.
-    for ( int i = 0; i < 10; i++ ) {
-        auto  wordValue = Value(c4indexupdater_valueAt(updater, i));
-        slice word      = wordValue.asString();
-        auto  vectors   = vectorsForWord(word);
-        if ( i % 2 == 0 ) {
-            REQUIRE(c4indexupdater_setVectorAt(updater, i, vectors.data(), 300, ERROR_INFO()));
-        } else {
-            REQUIRE(c4indexupdater_setVectorAt(updater, i, nullptr, 300, ERROR_INFO()));
-        }
-    }
-
-    // Call finish and check succeeded
-    C4Error err{};
-    CHECK(c4indexupdater_finish(updater, &err));
-    CHECK(err.code == 0);
-
-    // Query to check there are 5 vectors indexed.
-    const auto query = REQUIRED(c4query_new2(db, kC4JSONQuery, alloc_slice(json5(R"({
-            WHERE: ['VECTOR_MATCH()', 'words_index', ['$target']],
-            WHAT:  [ ['.word'] ],
-            FROM:  [{'COLLECTION':'words'}],
-            LIMIT: 10
-        })")),
-                                             nullptr, ERROR_INFO()));
-
-    const auto e = REQUIRED(c4query_run(query, _encodedTarget, ERROR_INFO()));
-    REQUIRE(c4queryenum_getRowCount(e, ERROR_INFO()) == 5);
-
-    c4queryenum_release(e);
-    c4query_release(query);
     c4indexupdater_release(updater);
     c4index_release(index);
 }

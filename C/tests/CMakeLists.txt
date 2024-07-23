@@ -48,6 +48,7 @@ add_executable(
     c4DatabaseInternalTest.cc
     c4DatabaseTest.cc
     c4DocumentTest.cc
+    c4IndexUpdaterTest.cc
     c4ObserverTest.cc
     c4PerfTest.cc
     c4QueryTest.cc
