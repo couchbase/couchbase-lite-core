@@ -224,7 +224,7 @@ namespace litecore {
         }
 
 #ifdef COUCHBASE_ENTERPRISE
-        // Process VECTOR_DISTANCE() calls using an index if available.
+        // Process APPROX_VECTOR_DISTANCE() calls using an index if available.
         // This may write a "WITH ..." (CTS) expression to _sql.
         addVectorSearchJoins(operands);
 #endif
@@ -356,7 +356,9 @@ namespace litecore {
             } else {
                 _sql << " WHERE ";
             }
+            _context.push_back(&kWhereOperation);  // as a marker, so ops can detect they're in the WHERE clause
             parseNode(where);
+            _context.pop_back();
             if ( patchDeleteFlag ) { _sql << ")"; }
         }
         if ( !_checkedDeleted && patchDeleteFlag ) {
@@ -619,6 +621,7 @@ namespace litecore {
                 _sql << sqlIdentifier(table);
             _sql << " AS " << info.alias << " ON " << info.alias << "." << docidCol << " = " << sqlIdentifier(coAlias)
                  << ".rowid";
+            if ( info.writeExtraOnSQL ) info.writeExtraOnSQL();
         }
     }
 
@@ -1488,12 +1491,8 @@ namespace litecore {
         if ( op.caseEquivalent(kPredictionFnName) ) {
             // Special case: "prediction()" may be indexed:
             if ( writeIndexedPrediction((const Array*)_curNode) ) return;
-        } else if ( op.caseEquivalent(kVectorMatchFnName) ) {
-            // Special case: "vector_match()":
-            writeVectorMatchFn(operands);
-            return;
         } else if ( op.caseEquivalent(kVectorDistanceFnName) ) {
-            // Special case: "vector_distance()":
+            // Special case: "APPROX_VECTOR_DISTANCE()":
             writeVectorDistanceFn(operands);
             return;
         }
@@ -1955,10 +1954,11 @@ namespace litecore {
 
     // Fail if the current op is not at the top level of a SELECT nor within AND expressions.
     void QueryParser::requireTopLevelConjunction(const char* fnName) {
-        auto parentCtx = _context.rbegin() + 1;
-        auto parentOp  = (*parentCtx)->op;
-        while ( parentOp == "AND"_sl ) parentOp = (*++parentCtx)->op;
-        require(parentOp == "SELECT"_sl || parentOp == nullslice,
+        auto i = _context.rbegin() + 1;
+        while ( (*i)->op == "AND" || (*i)->op == "," || *i == &kExpressionListOperation
+                || *i == &kHighPrecedenceOperation )
+            ++i;
+        require((*i)->op == "SELECT"_sl || *i == &kWhereOperation || *i == &kOuterOperation,
                 "%s can only appear at top-level, or in a top-level AND", fnName);
     }
 
@@ -1971,8 +1971,8 @@ namespace litecore {
     }
 
     // Returns the pair of the FTS table name and database alias given the LHS of a MATCH expression.
-    pair<string, string> QueryParser::FTSTableName(const Value* key, bool vector) const {
-        Path keyPath(requiredString(key, vector ? "first arg of VECTOR_MATCH" : "left-hand side of MATCH expression"));
+    pair<string, string> QueryParser::FTSTableName(const Value* key) const {
+        Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
         // Path to FTS table has at most two components: [collectionAlias .] IndexName
         size_t compCount = keyPath.size();
         require((0 < compCount && compCount <= 2),
@@ -2011,19 +2011,7 @@ namespace litecore {
         string indexName = string(keyPath);
         require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS or vector index name may not contain double-quotes nor be empty");
-        string tableName;
-        if ( vector ) {
-#ifdef COUCHBASE_ENTERPRISE
-            tableName = _delegate.vectorTableName(iAlias->second.tableName, indexName);
-            if ( !_delegate.tableExists(tableName) )
-                error::_throw(error::NoSuchIndex, "'%s' does not name a vector index", indexName.c_str());
-#else
-            // should be unreachable, but just in case:
-            error::_throw(error::AssertionFailed, "Consumer Edition doesn't support vector indexes");
-#endif
-        } else {
-            tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
-        }
+        string tableName = _delegate.FTSTableName(iAlias->second.tableName, indexName);
         return {tableName, string(prefix)};
     }
 
@@ -2049,21 +2037,23 @@ namespace litecore {
 #pragma mark - UNNEST QUERY:
 
     // Constructs a unique identifier of an expression, from a digest of its JSON.
-    string QueryParser::expressionIdentifier(const Array* expression, unsigned maxItems) const {
+    string QueryParser::expressionCanonicalJSON(const Value* expression) const {
         require(expression, "Invalid expression to index");
+        auto json = string(expression->toJSON(true));
+        if ( _propertiesUseSourcePrefix ) {
+            // Strip ".doc" from property paths if necessary:
+            replace(json, "[\"." + _dbAlias + ".", "[\".");
+        }
+        return json;
+    }
+
+    // Constructs a unique identifier of an expression, from a digest of its JSON.
+    string QueryParser::expressionIdentifier(const Array* expression, unsigned maxItems) const {
         SHA1Builder sha;
         unsigned    item = 0;
         for ( Array::iterator i(expression); i; ++i ) {
             if ( maxItems > 0 && ++item > maxItems ) break;
-            alloc_slice json = i.value()->toJSON(true);
-            if ( _propertiesUseSourcePrefix ) {
-                // Strip ".doc" from property paths if necessary:
-                string s = json.asString();
-                replace(s, "[\"." + _dbAlias + ".", "[\".");
-                sha << slice(s);
-            } else {
-                sha << json;
-            }
+            sha << expressionCanonicalJSON(i.value());
         }
         return sha.finish().asBase64();
     }
