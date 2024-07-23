@@ -128,7 +128,7 @@ struct C4Collection
     virtual void findBlobReferences(const fleece::function_ref<bool(FLDict)>&) = 0;
 
   protected:
-                      C4Collection(C4Database*, C4CollectionSpec);
+    C4Collection(C4Database*, C4CollectionSpec);
     [[noreturn]] void failClosed() const;
 
     C4Database* C4NULLABLE _database;
