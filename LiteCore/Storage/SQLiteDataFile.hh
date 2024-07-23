@@ -53,7 +53,7 @@ namespace litecore {
 
         static void shutdown() {}
 
-        operator SQLite::Database&() { return *_sqlDb; }
+        operator SQLite::Database&() const { return *_sqlDb; }
 
         std::vector<std::string> allKeyStoreNames() const override;
         bool                     keyStoreExists(const std::string& name) const override;
@@ -102,8 +102,10 @@ namespace litecore {
 
         Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
-        /// Sets the directory where SQLite extensions can be found (i.e. VectorSearch)
+        // Deprecated in favor of enableExtension!
         static void setExtensionPath(string);
+
+        static void enableExtension(const string& name, string path);
 
         // QueryParser::delegate:
         bool        tableExists(const std::string& tableName) const override;
@@ -113,7 +115,8 @@ namespace litecore {
         std::string unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
-        std::string vectorTableName(const string& collection, const std::string& property) const override;
+        std::string vectorTableName(const string& collection, const std::string& property,
+                                    string_view metricName) const override;
 #endif
 
       protected:
@@ -146,7 +149,9 @@ namespace litecore {
                          const std::string& indexSQL);
         void deleteIndex(const SQLiteIndexSpec&);
         std::optional<SQLiteIndexSpec> getIndex(slice name);
-        std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*);
+        std::vector<SQLiteIndexSpec>   getIndexes(const KeyStore*) const;
+        std::optional<SQLiteIndexSpec> findIndexOnExpression(const string& jsonWhat, IndexSpec::Type,
+                                                             const string& onTable) const;
         void                           setIndexSequences(slice name, slice sequencesJSON);
         void inspectVectorIndex(SQLiteIndexSpec const&, int64_t& outRowCount, alloc_slice* outRows);
 
@@ -165,8 +170,9 @@ namespace litecore {
 
             WithNewDocs = 400,  // New document/revision storage (CBL 3.0)
 
-            WithDeletedTable = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
-            MaxReadable      = 599,  // Cannot open versions newer than this
+            WithDeletedTable   = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
+            WithIndexesLastSeq = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
+            MaxReadable        = 599,  // Cannot open versions newer than this
 
             Current = WithDeletedTable
         };
@@ -185,8 +191,8 @@ namespace litecore {
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
         void                         garbageCollectIndexTable(const std::string& tableName);
-        SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt);
-        std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr);
+        SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt) const;
+        std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr) const;
 
 
         unique_ptr<SQLite::Database>          _sqlDb;  // SQLite database object

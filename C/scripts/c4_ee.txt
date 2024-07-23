@@ -63,4 +63,5 @@ c4index_beginUpdate
 c4indexupdater_count
 c4indexupdater_valueAt
 c4indexupdater_setVectorAt
+c4indexupdater_skipVectorAt
 c4indexupdater_finish

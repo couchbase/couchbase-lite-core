@@ -21,6 +21,7 @@
 
 #include "VectorIndexSpec.hh"
 #include <cinttypes>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -31,6 +32,10 @@ SQLITE_EXTENSION_INIT3
 #include <sqlite3.h>  // for sqlite3_log
 #endif
 
+#ifdef _MSC_VER
+#define strncasecmp(x,y,z) _strnicmp(x,y,z) // https://stackoverflow.com/questions/7299119
+#endif
+
 namespace vectorsearch {
     using namespace std;
 
@@ -38,11 +43,12 @@ namespace vectorsearch {
 #pragma mark - VALIDATION:
 
 
-    static void check(bool condition, const char* what, const char* problem) {
+    static void check(bool condition, const char* what, const char* problem =nullptr) {
         if (!condition) {
             string message = "invalid vector index spec: ";
             message += what;
-            message += problem;
+            if (problem)
+                message += problem;
             throw std::invalid_argument(message);
         }
     }
@@ -56,6 +62,7 @@ namespace vectorsearch {
 
     void IndexSpec::validate() const {
         check(dimensions, kMinDimensions, kMaxDimensions, "dimension");
+        check(metric, Metric::Euclidean2, Metric::MaxValue, "metric");
         switch (clusteringType()) {
             case ClusteringType::Flat: {
                 auto &c = std::get<FlatClustering>(clustering);
@@ -76,8 +83,7 @@ namespace vectorsearch {
                       kMaxMultiIndexClustering.bitsPerSub,
                       "clustering bits");
                 check(dimensions % c.subquantizers == 0,
-                      "clustering subquantizers",
-                      " must evenly divide the number of dimensions");
+                      "clustering subquantizers must evenly divide the number of dimensions");
                 break;
             }
         }
@@ -99,14 +105,13 @@ namespace vectorsearch {
                       kMaxPQEncoding.bitsPerSub,
                       "encoding bits");
                 check(dimensions % e.subquantizers == 0,
-                      "encoding subquantizers",
-                      " must evenly divide the number of dimensions");
+                      "encoding subquantizers must evenly divide the number of dimensions");
                 break;
             }
             case EncodingType::SQ: {
                 auto& e = std::get<SQEncoding>(encoding);
                 check(e.bitsPerDimension == 4 || e.bitsPerDimension == 6 || e.bitsPerDimension == 8,
-                      "encoding bits", " must be 4, 6 or 8");
+                      "encoding bits must be 4, 6 or 8");
                 break;
             }
         }
@@ -134,7 +139,66 @@ namespace vectorsearch {
     }
 
 
+    int64_t IndexSpec::effectiveTrainingCount(int64_t numVectors) const {
+        auto count = numVectors;
+        if (minTrainingCount && count < *minTrainingCount)
+            return 0;
+        auto trainingCentroids = numCentroidsToTrain();
+        auto needed = trainingCentroids * kMinTrainingVectorsPerCentroid;
+        if (count < needed)
+            return 0;   // Not enough vectors to train on
+        if (maxTrainingCount)
+            count = min(count, max(*maxTrainingCount, needed));
+        count = min(count, trainingCentroids * kMaxTrainingVectorsPerCentroid);
+        return count;
+    }
+
+
 #pragma mark - PARSING:
+
+
+    static constexpr string_view kNameOfMetric[] = {
+        "euclidean2",                                           // Name recognized by LiteCore 3.2
+        "cosine",                                               // Name recognized by LiteCore 3.2
+        "euclidean",
+        "cosine_similarity",
+        "dot",
+        "dot_product_similarity"
+    };
+
+    static_assert(std::size(kNameOfMetric) == size_t(Metric::MaxValue)+1);
+
+    static constexpr pair<string_view,Metric> kMetricNames[] = { // (These are case-insensitive)
+        {"euclidean",               Metric::Euclidean},             // used by SQL++
+        {"L2",                      Metric::Euclidean},             // used by SQL++
+        {"euclidean2",              Metric::Euclidean2},            // used by LiteCore 3.2
+        {"L2_squared",              Metric::Euclidean2},            // used by SQL++
+        {"euclidean_squared",       Metric::Euclidean2},            // used by SQL++
+        {"cosine",                  Metric::CosineDistance},        // used by SQL++ and LiteCore 3.2
+        {"dot",                     Metric::DotProductDistance},    // used by SQL++
+        {"cosine_distance",         Metric::CosineDistance},
+        {"cosine_similarity",       Metric::CosineSimilarity},
+        {"dot_product_distance",    Metric::DotProductDistance},
+        {"dot_product_similarity",  Metric::DotProductSimilarity},
+        {"default",                 Metric::Default},
+    };
+
+
+    string_view NameOfMetric(Metric m) {
+        auto val = int(m);
+        if (val < 0 || val > int(Metric::MaxValue))
+            throw std::invalid_argument("invalid Metric value");
+        return kNameOfMetric[val];
+    }
+
+    optional<Metric> MetricNamed(string_view name) {
+        auto len = name.size();
+        for (auto [aName, aMetric] : kMetricNames) {
+            if (aName.size() == len && 0 == strncasecmp(aName.data(), name.data(), len))
+                return aMetric;
+        }
+        return nullopt;
+    }
 
 
     static bool popPrefix(string_view &str, string_view prefix) {
@@ -171,12 +235,9 @@ namespace vectorsearch {
         if (key == "dimensions") {
             dimensions = asUInt(value, "dimensions");
         } else if (key == "metric") {
-            if (value == "euclidean2")
-                metric = Metric::Euclidean2;
-            else if (value == "cosine")
-                metric = Metric::Cosine;
-            else
-                throw std::invalid_argument("unknown metric");
+            optional<Metric> m = MetricNamed(value);
+            check(m.has_value(), "unknown metric");
+            metric = m.value();
         } else if (key == "clustering") {
             if (popPrefix(value, "flat")) {
                 clustering = FlatClustering{asUInt(value, key)};
@@ -239,15 +300,30 @@ namespace vectorsearch {
     }
 
 
+    void IndexSpec::readArgs(string_view args) {
+        while (!args.empty()) {
+            string_view arg;
+            if (auto comma = args.find(','); comma != string::npos) {
+                arg = args.substr(0, comma);
+                args = args.substr(comma + 1);
+            } else {
+                arg = args;
+                args = "";
+            }
+            if (!readArg(arg))
+                throw std::invalid_argument("unknown virtual-table argument " + string(arg));
+        }
+    }
+
+
+
 #pragma mark - GENERATING TEXT:
 
-
-    static constexpr const char* kMetricNames[] = {"euclidean2", "cosine"};
 
     std::ostream& IndexSpec::writeArgs(std::ostream& out) const {
         out << "dimensions=" << dimensions;
         if (metric != Metric::Default)
-            out << ",metric=" << kMetricNames[int(metric)];
+            out << ",metric=" << NameOfMetric(metric);
         switch (clusteringType()) {
             case ClusteringType::Flat: {
                 auto& c = std::get<FlatClustering>(clustering);

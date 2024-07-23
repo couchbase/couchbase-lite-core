@@ -39,8 +39,10 @@ namespace litecore {
      Index table:
         - name (string primary key)
         - type (integer)
-        - expression (JSON)
+        - keyStore (string)
+        - expression (JSON or N1QL)
         - table name (string)
+        - indexed sequence (JSON)  --only for lazy vector indexes
      The SQL index always is always named `name`.
      */
 

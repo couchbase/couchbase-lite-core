@@ -420,13 +420,22 @@ namespace litecore {
                         auto& vecOpt      = options.emplace<IndexSpec::VectorOptions>();
                         vecOpt.dimensions = c4Opt.dimensions;
                         switch ( c4Opt.metric ) {
-                            case kC4VectorMetricEuclidean:
+                            case kC4VectorMetricEuclidean1:
+                                vecOpt.metric = vectorsearch::Metric::Euclidean;
+                                break;
+                            case kC4VectorMetricEuclidean2:
                                 vecOpt.metric = vectorsearch::Metric::Euclidean2;
+                                break;
                             case kC4VectorMetricCosine:
-                                vecOpt.metric = vectorsearch::Metric::Cosine;
+                                vecOpt.metric = vectorsearch::Metric::CosineDistance;
+                                break;
+                            case kC4VectorMetricDot:
+                                vecOpt.metric = vectorsearch::Metric::DotProductDistance;
                                 break;
                             case kC4VectorMetricDefault:
                                 break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorMetricType");
                         }
                         switch ( c4Opt.clustering.type ) {
                             case kC4VectorClusteringFlat:
@@ -436,6 +445,8 @@ namespace litecore {
                                 vecOpt.clustering = vectorsearch::MultiIndexClustering{
                                         c4Opt.clustering.multi_subquantizers, c4Opt.clustering.multi_bits};
                                 break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorClusteringType");
                         }
                         switch ( c4Opt.encoding.type ) {
                             case kC4VectorEncodingNone:
@@ -450,11 +461,13 @@ namespace litecore {
                                 break;
                             case kC4VectorEncodingDefault:
                                 break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorEncodingType");
                         }
                         vecOpt.minTrainingCount = c4Opt.minTrainingSize;
                         vecOpt.maxTrainingCount = c4Opt.maxTrainingSize;
-                        vecOpt.probeCount       = c4Opt.numProbes;
-                        vecOpt.lazyEmbedding    = c4Opt.lazy;
+                        if ( c4Opt.numProbes > 0 ) vecOpt.probeCount = c4Opt.numProbes;
+                        vecOpt.lazyEmbedding = c4Opt.lazy;
                         vecOpt.validate();
                     } else {
                         error::_throw(error::InvalidParameter, "Vector index requires options");
