@@ -187,8 +187,7 @@ namespace litecore { namespace blip {
         // websocket::Delegate interface:
         virtual void onWebSocketConnect() override {
             _timeOpen.reset();
-            _connection->connected();
-            onWebSocketWriteable();
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_onWebSocketConnect));
         }
 
         virtual void onWebSocketClose(websocket::CloseStatus status) override {
@@ -216,6 +215,13 @@ namespace litecore { namespace blip {
         void _gotHTTPResponse(int status, websocket::Headers headers) {
             // _connection is reset to nullptr in _closed.
             if ( _connection ) _connection->gotHTTPResponse(status, headers);
+        }
+
+        void _onWebSocketConnect() {
+            if ( _connection ) {
+                _connection->connected();
+                _onWebSocketWriteable();
+            }
         }
 
         /** Implementation of public close() method. Closes the WebSocket. */

@@ -128,30 +128,6 @@ namespace litecore { namespace repl {
       protected:
         virtual std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "repl"; }
 
-        // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
-        // pass the collectionIndex manually for log calls
-        template <class... Args>
-        inline void cLogInfo(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logInfo(fmt_, idx, args...);
-        }
-
-        template <class... Args>
-        inline void cLogVerbose(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, idx, args...);
-        }
-#if DEBUG
-        template <class... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {
-            const char* fmt_ = formatWithCollection(fmt);
-            Logging::logVerbose(fmt_, idx, args...);
-        }
-#else
-        template <class... Args>
-        inline void cLogDebug(CollectionIndex idx, const char* fmt, Args... args) const {}
-#endif
-
         // BLIP ConnectionDelegate API:
         virtual void onHTTPResponse(int status, const websocket::Headers &headers) override;
         virtual void onTLSCertificate(slice certData) override;
@@ -260,6 +236,7 @@ namespace litecore { namespace repl {
         alloc_slice       _remoteURL;
         bool              _setMsgHandlerFor3_0_ClientDone {false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+        alloc_slice _correlationID {};
     };
 
 } }
