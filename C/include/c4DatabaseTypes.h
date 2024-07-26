@@ -37,7 +37,7 @@ typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
     kC4DB_VersionVectors= 0x08, ///< Upgrade DB to version vectors instead of rev trees [EXPERIMENTAL]
     kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
     kC4DB_NonObservable = 0x40, ///< Disable database/collection observers, for slightly faster writes
-    kC4DB_DiskSyncFull  = 0x80, ///< Write to disk after each transaction
+    kC4DB_DiskSyncFull  = 0x80, ///< Flush to disk after each transaction
 };
 
 
