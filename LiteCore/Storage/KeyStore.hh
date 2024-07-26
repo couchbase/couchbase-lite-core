@@ -11,7 +11,9 @@
 //
 
 #pragma once
-#define LITECORE_CPP_API 1
+#ifndef LITECORE_CPP_API
+#   define LITECORE_CPP_API 1
+#endif
 #include "IndexSpec.hh"
 #include "fleece/RefCounted.hh"
 #include "RecordEnumerator.hh"

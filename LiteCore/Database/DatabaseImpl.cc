@@ -151,6 +151,7 @@ namespace litecore {
         options.writeable = (_config.flags & kC4DB_ReadOnly) == 0;
         options.upgradeable = (_config.flags & kC4DB_NoUpgrade) == 0;
         options.useDocumentKeys = true;
+        options.diskSyncFull = (_config.flags & kC4DB_DiskSyncFull) != 0;
         options.encryptionAlgorithm = (EncryptionAlgorithm)_config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
