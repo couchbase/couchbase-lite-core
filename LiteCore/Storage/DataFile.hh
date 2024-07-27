@@ -72,6 +72,7 @@ namespace litecore {
             bool                writeable      :1;      ///< If false, db is opened read-only
             bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
             bool                upgradeable    :1;      ///< DB schema can be upgraded
+            bool                diskSyncFull   :1;      ///< SQLite PRAGMA synchronous
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
             DatabaseTag         dbTag;
@@ -258,6 +259,7 @@ namespace litecore {
         void withFileLock(function_ref<void(void)> fn);
 
         void setOptions(const Options &o)               {_options = o;}
+        const Options& getOptions() const               {return _options;}
 
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
 
