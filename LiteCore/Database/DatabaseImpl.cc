@@ -132,6 +132,7 @@ namespace litecore {
         options.create              = (_config.flags & kC4DB_Create) != 0;
         options.writeable           = (_config.flags & kC4DB_ReadOnly) == 0;
         options.upgradeable         = (_config.flags & kC4DB_NoUpgrade) == 0;
+        options.diskSyncFull        = (_config.flags & kC4DB_DiskSyncFull) != 0;
         options.useDocumentKeys     = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)_config.encryptionKey.algorithm;
         if ( options.encryptionAlgorithm != kNoEncryption ) {

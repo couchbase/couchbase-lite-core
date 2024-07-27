@@ -301,11 +301,12 @@ namespace litecore {
 
             _exec(format("PRAGMA cache_size=%d; "             // Memory cache
                          "PRAGMA mmap_size=%d; "              // Memory-mapped reads
-                         "PRAGMA synchronous=normal; "        // Speeds up commits
+                         "PRAGMA synchronous=%s; "            // Speeds up commits
                          "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
                          "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
                          "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
-                         -(int)kCacheSize / 1024, kMMapSize, (long long)kJournalSize));
+                         -(int)kCacheSize / 1024, kMMapSize, getOptions().diskSyncFull ? "full" : "normal",
+                         (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount, "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
