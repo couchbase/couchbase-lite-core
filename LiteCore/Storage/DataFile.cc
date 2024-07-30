@@ -108,11 +108,9 @@ namespace litecore {
 
 
     const DataFile::Options DataFile::Options::defaults = {
-            {true},  // sequences
-            true,
-            true,
-            true,
-            true  // create, writeable, useDocumentKeys, upgradeable
+            {true},                    // sequences
+            true,   true, true, true,  // create, writeable, useDocumentKeys, upgradeable
+            false                      // diskSyncFull
     };
 
     DataFile::DataFile(const FilePath& path, Delegate* delegate, const DataFile::Options* options)
