@@ -139,7 +139,6 @@ namespace litecore {
         _ins->bind(1, (long long)rowid);
         _ins->bindNoCopy(2, (const void*)vec, int(dimension * sizeof(float)));
         _ins->exec();
-        _ins->reset();
     }
 
     void LazyIndex::del(int64_t rowid) {
@@ -150,7 +149,6 @@ namespace litecore {
         UsingStatement u(_del);
         _del->bind(1, (long long)rowid);
         _del->exec();
-        _del->reset();
     }
 
     void LazyIndex::updateIndexedSequences(SequenceSet const& seq) {
@@ -173,7 +171,7 @@ namespace litecore {
         for ( ; _enum->next(); ++row ) {
             _lastSeq = sequence_t{_enum->columns()[kSequenceCol]->asUnsigned()};
             if ( !_enum->isColumnMissing(kValueCol) && !_indexedSequences.contains(_lastSeq) )
-                _items.push_back({row, nullptr, false});
+                _items.push_back({row, nullptr, ItemStatus::Unset});
         }
         _incomplete = (row == limit);
         if ( !_incomplete ) _lastSeq = _atSeq;
@@ -199,17 +197,23 @@ namespace litecore {
             heapVec = unique_ptr<float[]>(new float[dimension]);
             std::copy(vec, vec + dimension, heapVec.get());
         }
-        _items[i].vector  = std::move(heapVec);
-        _items[i].skipped = false;
+        _items[i].vector = std::move(heapVec);
+        _items[i].status = ItemStatus::Set;
     }
 
     void LazyIndexUpdate::skipVectorAt(size_t i) {
         AssertArg(i < _count);
-        _items[i].vector  = nullptr;
-        _items[i].skipped = true;
+        _items[i].vector = nullptr;
+        _items[i].status = ItemStatus::Skipped;
     }
 
     bool LazyIndexUpdate::finish(ExclusiveTransaction& txn) {
+        // Finishing an update without either updating or skipping at least one vector is unsupported.
+        if ( anyVectorNotModified() ) {
+            litecore::error::_throw(litecore::error::UnsupportedOperation,
+                                    "Cannot finish an update without all vectors updated or skipped.");
+        }
+
         sequence_t curSeq = _manager->_sqlKeyStore.lastSequence();
 
         // First mark all sequences covered by the query as indexed:
@@ -236,7 +240,7 @@ namespace litecore {
                 if ( !_enum->isColumnMissing(kValueCol) ) {
                     Assert(item->queryRow == row);
                     vec  = std::move(item->vector);
-                    skip = item->skipped;
+                    skip = item->status == ItemStatus::Skipped;
                     ++item;
                 }
                 int64_t rowid = _enum->columns()[kRowIDCol]->asInt();
@@ -259,6 +263,12 @@ namespace litecore {
         _manager = nullptr;
 
         return newIndexedSequences.contains(sequence_t{1}, curSeq + 1);
+    }
+
+    /// Returns true if any vector has NOT been updated or skipped in this updater.
+    bool LazyIndexUpdate::anyVectorNotModified() const {
+        return std::any_of(_items.begin(), _items.end(),
+                           [](const Item& item) { return item.status == ItemStatus::Unset; });
     }
 
 

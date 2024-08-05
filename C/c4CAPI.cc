@@ -374,6 +374,10 @@ C4SliceResult c4coll_getIndexesInfo(C4Collection* coll, C4Error* C4NULLABLE outE
 
 void c4_setExtensionPath(C4String path) noexcept { C4Database::setExtensionPath(path); }
 
+bool c4_enableExtension(C4String name, C4String extensionPath, C4Error* outError) noexcept {
+    return tryCatch(outError, [=] { C4Database::enableExtension(name, extensionPath); });
+}
+
 bool c4db_exists(C4String name, C4String inDirectory) noexcept { return C4Database::exists(name, inDirectory); }
 
 bool c4key_setPassword(C4EncryptionKey* outKey, C4String password, C4EncryptionAlgorithm alg) noexcept {
@@ -553,8 +557,8 @@ bool c4db_createIndex2(C4Database* database, C4Slice name, C4Slice indexSpec, C4
 }
 
 bool c4coll_isIndexTrained(C4Collection* collection, C4Slice name, C4Error* outError) noexcept {
-    memset(outError, 0, sizeof(C4Error));
-    return tryCatch(outError, [=] { return collection->isIndexTrained(name); });
+    if ( outError ) *outError = kC4NoError;
+    return tryCatch<bool>(outError, [=] { return collection->isIndexTrained(name); });
 }
 
 // semi-deprecated
@@ -901,6 +905,26 @@ C4Document* c4enum_getDocument(C4DocEnumerator* e, C4Error* outError) noexcept {
     });
 }
 
+#pragma mark - INDEXES:
+
+C4IndexType c4index_getType(C4Index* index) C4API { return index->getType(); }
+
+C4Slice c4index_getName(C4Index* index) noexcept { return C4Slice(index->getName()); }
+
+C4Collection* c4index_getCollection(C4Index* index) noexcept { return index->getCollection(); }
+
+C4QueryLanguage c4index_getQueryLanguage(C4Index* index) C4API { return index->getQueryLanguage(); }
+
+C4String c4index_getExpression(C4Index* index) C4API { return index->getExpression(); }
+
+bool c4index_getOptions(C4Index* index, C4IndexOptions* outOpts) C4API { return index->getOptions(*outOpts); }
+
+#ifdef COUCHBASE_ENTERPRISE
+bool c4index_isTrained(C4Index* index, C4Error* C4NULLABLE outError) C4API {
+    return c4coll_isIndexTrained(index->getCollection(), index->getName(), outError);
+}
+#endif
+
 #pragma mark - OBSERVERS:
 
 C4DatabaseObserver* c4dbobs_createOnCollection(C4Collection* coll, C4CollectionObserverCallback callback,
@@ -1031,13 +1055,21 @@ void c4queryenum_release(C4QueryEnumerator* e) noexcept { release(asInternal(e))
 #pragma mark - QUERY OBSERVER API:
 
 C4QueryObserver* c4queryobs_create(C4Query* query, C4QueryObserverCallback cb, void* ctx) noexcept {
-    auto fn = [cb, ctx](C4QueryObserver* obs) { cb(obs, obs->query(), ctx); };
-    return new C4QueryObserverImpl(query, fn);
+    C4Error error;
+    return tryCatch<C4QueryObserver*>(&error, [&] {
+        auto fn = [cb, ctx](C4QueryObserver* obs) { cb(obs, obs->query(), ctx); };
+        return C4QueryObserverImpl::newQueryObserver(query, fn).detach();
+    });
 }
 
 void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) noexcept { obs->setEnabled(enabled); }
 
-void c4queryobs_free(C4QueryObserver* obs) noexcept { delete obs; }
+void c4queryobs_free(C4QueryObserver* obs) noexcept {
+    if ( obs ) {
+        c4queryobs_setEnabled(obs, false);
+        c4base_release(obs);
+    }
+}
 
 C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver* obs, bool forget, C4Error* outError) noexcept {
     return asInternal(obs)->getEnumeratorImpl(forget, outError).detach();
@@ -1053,7 +1085,7 @@ C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit, C4E
 
 size_t c4indexupdater_count(C4IndexUpdater* update) noexcept { return update->count(); }
 
-FLValue c4indexupdater_valueAt(C4IndexUpdater* update, size_t i) noexcept {
+FLValue C4NULLABLE c4indexupdater_valueAt(C4IndexUpdater* update, size_t i) noexcept {
     return tryCatch<FLValue>(nullptr, [&] { return update->valueAt(i); });
 }
 

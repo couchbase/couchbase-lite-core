@@ -69,6 +69,8 @@ add_executable(
     SQLiteFunctionsTest.cc
     SequenceTrackerTest.cc
     UpgraderTest.cc
+    VectorQueryTest.cc
+    LazyVectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
     ${TOP}REST/tests/RESTClientTest.cc
@@ -152,6 +154,7 @@ target_include_directories(
     ${TOP}REST/tests
     ${TOP}vendor/sockpp/include
     ${TOP}vendor/fleece/vendor/date/include
+    ${TOP}vendor/vector_search
 )
 
 target_link_libraries(

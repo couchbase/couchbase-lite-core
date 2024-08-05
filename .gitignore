@@ -53,3 +53,5 @@ packages/
 C/tests/data/imagePrediction/MobileNet.mlmodel
 C/tests/data/faces/OpenFace.mlmodel
 docs/overview/.Ulysses-Settings.plist
+.vimtasks.json
+cmake-build-debug

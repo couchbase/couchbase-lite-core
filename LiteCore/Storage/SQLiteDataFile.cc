@@ -38,6 +38,9 @@
 #include <mutex>
 #include <thread>
 #include <cinttypes>
+#ifdef _WIN32
+#    include <Windows.h>
+#endif
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"
@@ -77,9 +80,11 @@ namespace litecore {
     // Maximum size WAL journal will be left at after a commit
     static const int64_t kJournalSize = 5 * MB;
 
+    static map<string, int> kValidExtensionVersions = {
 #ifdef COUCHBASE_ENTERPRISE
-    static constexpr int kVectorSearchCompatibleVersion = 1;
+            {"CouchbaseLiteVectorSearch", 1}
 #endif
+    };
 
     // Amount of file to memory-map
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
@@ -133,9 +138,10 @@ namespace litecore {
 
     UsingStatement::UsingStatement(SQLite::Statement& stmt) noexcept : _stmt(stmt) { LogStatement(stmt); }
 
-    UsingStatement::~UsingStatement() {
+    UsingStatement::~UsingStatement() noexcept {
         try {
             _stmt.reset();
+            _stmt.clearBindings();
         } catch ( ... ) {}
     }
 
@@ -182,6 +188,34 @@ namespace litecore {
 
     void SQLiteDataFile::setExtensionPath(string path) { sExtensionPath = std::move(path); }
 
+    void SQLiteDataFile::enableExtension(const string& name, string path) {
+        auto extensionEntry = kValidExtensionVersions.find(name);
+        if ( extensionEntry == kValidExtensionVersions.end() ) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "'%s' is not a known extension", name.c_str());
+        }
+
+        // NOTE: This logic will need to be changed later if we have more than one extension
+        // and they reside in different directories
+        if ( !sExtensionPath.empty() && sExtensionPath != path ) {
+            WarnError("Extension path previously set to '%s' but being reset to '%s'.  This is not advisable!",
+                      sExtensionPath.c_str(), path.c_str());
+        }
+
+        sExtensionPath = std::move(path);
+
+#if defined(__ANDROID__)
+        string pluginPath = sExtensionPath + FilePath::kSeparator + "lib" + name;
+#else
+        string pluginPath = sExtensionPath + FilePath::kSeparator + name;
+#endif
+
+        if ( !extension::check_extension_version(pluginPath, extensionEntry->second) ) {
+            error::_throw(error::UnsupportedOperation,
+                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
+                          name.c_str());
+        }
+    }
+
     SQLiteDataFile::SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options* options)
         : DataFile(path, delegate, options) {
         reopen();
@@ -214,12 +248,14 @@ namespace litecore {
         };
 
         string pluginPath = sExtensionPath + FilePath::kSeparator + extensionName;
-        if ( !litecore::extension::check_extension_version(pluginPath, kVectorSearchCompatibleVersion) ) {
-            // This function logs the reason for the version match failure, no need to log here.
-            error::_throw(error::UnsupportedOperation,
-                          "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
-                          extensionName);
-        }
+
+#    if defined(_WIN32) && defined(_M_X64)
+        // Flimsy hack to get around the fact that we need to load this dep from a non-standard
+        // location, and SQLite only uses the basic LoadLibraryA
+        string  windowsDependentPath = sExtensionPath + FilePath::kSeparator + "libomp140.x86_64.dll";
+        HMODULE dep                  = LoadLibraryA(windowsDependentPath.c_str());
+        if ( !dep ) { error::_throw(error::CantOpenFile, "Unable to load libomp140.x86_64.dll..."); }
+#    endif
 
         char* message = nullptr;
         rc            = sqlite3_load_extension(sqlite, pluginPath.c_str(), nullptr, &message);
@@ -289,6 +325,14 @@ namespace litecore {
                  }) ) {
                 error::_throw(error::CantUpgradeDatabase);
             }
+
+            (void)upgradeSchema(SchemaVersion::WithIndexesLastSeq, "Adding indexes.lastSeq column", [&] {
+                string sql;
+                if ( getSchema("indexes", "table", "indexes", sql) ) {
+                    // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+                    if ( sql.find("lastSeq") == string::npos ) { _exec("ALTER TABLE indexes ADD COLUMN lastSeq TEXT"); }
+                }
+            });
         });
 
         // Configure number of extra threads to be used by SQLite:
@@ -836,8 +880,34 @@ namespace litecore {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
     }
 
-    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& property) const {
-        return auxiliaryTableName(onTable, KeyStore::kVectorSeparator, property);
+    static vectorsearch::Metric actual(vectorsearch::Metric m) {
+        return (m == vectorsearch::Metric::Default) ? vectorsearch::Metric::Euclidean2 : m;
+    }
+
+    string SQLiteDataFile::vectorTableName(const string& onTable, const std::string& expression,
+                                           string_view metricName) const {
+        if ( auto specp = findIndexOnExpression(expression, IndexSpec::kVector, onTable) ) {
+            if ( !metricName.empty() ) {
+                // If a metric name is given, verify that it matches the index:
+                auto metricp = vectorsearch::MetricNamed(metricName);
+                if ( !metricp )
+                    error::_throw(error::InvalidQuery,
+                                  "in 3rd argument to APPROX_VECTOR_DISTANCE, '%.*s' is not a valid metric name",
+                                  int(metricName.size()), metricName.data());
+                auto realMetric = actual(specp->vectorOptions()->metric);
+                if ( actual(*metricp) != realMetric ) {
+                    string_view realName = vectorsearch::NameOfMetric(realMetric);
+                    error::_throw(
+                            error::InvalidQuery,
+                            "in 3rd argument to APPROX_VECTOR_DISTANCE, %.*s does not match the index's metric, %.*s",
+                            int(metricName.size()), metricName.data(), int(realName.size()), realName.data());
+                }
+            }
+            return specp->indexTableName;
+        } else {
+            error::_throw(error::NoSuchIndex, "vector search with APPROX_VECTOR_DISTANCE requires a vector index on %s",
+                          expression.c_str());
+        }
     }
 #endif
 

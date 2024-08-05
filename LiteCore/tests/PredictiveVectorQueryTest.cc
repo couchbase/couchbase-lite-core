@@ -82,9 +82,7 @@ class PredictiveVectorQueryTest : public VectorQueryTest {
     }
 
     void createVectorIndex(QueryLanguage lang) {
-        IndexSpec::VectorOptions options(5);
-        options.clustering.type           = IndexSpec::VectorOptions::Flat;
-        options.clustering.flat_centroids = 16;
+        IndexSpec::VectorOptions options(5, vectorsearch::FlatClustering{16}, IndexSpec::DefaultEncoding);
         if ( lang == QueryLanguage::kJSON ) {
             VectorQueryTest::createVectorIndex(
                     "factorsindex", "[ ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'] ]", options, lang);
@@ -134,9 +132,9 @@ N_WAY_TEST_CASE_METHOD(PredictiveVectorQueryTest, "Vector Index Of Prediction", 
     }
     string          queryStr = R"(
          ['SELECT', {
-            WHERE:    ['VECTOR_MATCH()', 'factorsindex', ['$target'], 5],
-            WHAT:     [ ['._id'], ['AS', ['VECTOR_DISTANCE()', 'factorsindex'], 'distance'] ],
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['PREDICTION()', 'factors', {number: ['.num']}, '.vec'], ['$target']], 'distance'] ],
             ORDER_BY: [ ['.distance'] ],
+            LIMIT:    5
          }] )";
     Retained<Query> query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
     REQUIRE(query != nullptr);

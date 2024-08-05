@@ -16,11 +16,11 @@
 #include "c4DocumentTypes.h"
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
-#include "fleece/InstanceCounted.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/RefCounted.hh"
 #include <functional>
 #include <memory>
+#include <fleece/InstanceCounted.hh>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -49,8 +49,7 @@ struct C4Collection
 
     C4CollectionSpec getSpec() const noexcept { return {_name, _scope}; }
 
-    C4Database* getDatabase();
-
+    C4Database*       getDatabase();
     const C4Database* getDatabase() const;
 
     virtual uint64_t getDocumentCount() const = 0;
@@ -119,39 +118,13 @@ struct C4Collection
 
     // Internal use only:
 
-    ~C4Collection() override = default;
+    virtual ~C4Collection() = default;
 
-    /** This method figures out what to do with a bunch of incoming revisions from a peer.
-        It's used by the replicator's \ref RevFinder::findRevs.
-
-        Given a list of docIDs with associated revIDs, looks up each document in the collection
-        looking for a match for the revID, returning each status as a string:
-
-        - A match string may be `nullslice`; this indicates that the document doesn't exist locally.
-          You can treat it as equivalent to the flag \ref kRevsLocalIsNewer with no ancestors.
-        - Otherwise, it begins with a char that's a \ref C4FindDocAncestorsResultFlags value
-          encoded by adding '0' (ASCII 0x30) to it.
-        - If the flags contain \ref kRevsLocalIsOlder, the string may continue with a JSON array
-          of strings, each the revID of an existing revision that might be an ancestor of the given
-          one.
-
-        @param docIDs  List of document IDs to look up.
-        @param revIDs  Parallel list of revIDs, one per document.
-        @param maxAncestors  The maximum number of possible-ancestor revisions to return per doc.
-        @param mustHaveBodies  If true, ignores stored revisions whose bodies have been pruned.
-        @param remoteDBID  The local identifier of the remote database these revisions come from.
-        @returns  A vector of strings, one per input docID; see above for details. */
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs,
                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,
-                                                      bool mustHaveBodies, C4RemoteID remoteDBID) const = 0;
-
-    /** Records persistently that the given document revision has been successfully pushed to
-        a given remote database. */
+                                                      bool mustHaveBodies, C4RemoteID remoteDBID) const       = 0;
     virtual bool markDocumentSynced(slice docID, slice revID, C4SequenceNumber sequence, C4RemoteID remoteID) = 0;
 
-    /** For each blob/attachment in each stored revision of each document in the collection,
-        calls the given callback with the blob's metadata.
-        For details on the callback, see \ref C4Blob::findBlobReferences. */
     virtual void findBlobReferences(const fleece::function_ref<bool(FLDict)>&) = 0;
 
   protected:
@@ -168,7 +141,7 @@ struct C4Collection
     revision(s) against the requested revID. */
 typedef C4_OPTIONS(uint8_t, C4FindDocAncestorsResultFlags){
         kRevsSame         = 0,  // Current revision is equal
-        kRevsLocalIsOlder = 1,  // Current revision is older; possible ancestors follow as JSON array
+        kRevsLocalIsOlder = 1,  // Current revision is older
         kRevsLocalIsNewer = 2,  // Current revision is newer
         kRevsConflict     = 3,  // Current revision conflicts (== LocalIsOlder | LocalIsNewer)
         kRevsAtThisRemote = 4,  // The given C4RemoteID has this revID

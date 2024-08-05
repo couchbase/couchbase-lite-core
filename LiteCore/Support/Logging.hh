@@ -19,6 +19,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cinttypes>  //for stdint.h fmt specifiers
+#include <vector>
 
 /*
     This is a configurable console-logging facility that lets logging be turned on and off independently for various subsystems or areas of the code. It's used similarly to printf:
@@ -47,6 +48,8 @@
 
 namespace litecore {
 
+    using namespace fleece;
+
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
 
     struct LogFileOptions {
@@ -57,14 +60,21 @@ namespace litecore {
         bool        isPlaintext;
     };
 
+    class Logging;
+
     class LogDomain {
       public:
         // objectRef -> (loggingName, parentObectRef)
         using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
 
-        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info)
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false)
             : _level(level), _name(name), _next(sFirstDomain) {
             sFirstDomain = this;
+            if ( internName ) {
+                slice nslice{_name};
+                sInternedNames.push_back(alloc_slice::nullPaddedString(nslice));
+                _name = (const char*)sInternedNames.back().buf;
+            }
         }
 
         static LogDomain* named(const char* name);
@@ -133,7 +143,7 @@ namespace litecore {
         static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
 
         static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
-        void vlog(LogLevel level, unsigned obj, bool callback, const char* fmt, va_list) __printflike(5, 0);
+        void vlog(LogLevel level, const Logging* logger, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
       private:
         static LogLevel _callbackLogLevel() noexcept;
@@ -141,18 +151,20 @@ namespace litecore {
         LogLevel        levelFromEnvironment() const noexcept;
         static void     _invalidateEffectiveLevels() noexcept;
 
-        void dylog(LogLevel level, const char* domain, unsigned objRef, const char* fmt, va_list) __printflike(5, 0);
+        void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix, const char* fmt,
+                   va_list) __printflike(6, 0);
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
-        const char* const     _name;
+        const char*           _name;
         LogDomain* const      _next;
 
-        static unsigned   slastObjRef;
-        static ObjectMap  sObjectMap;
-        static LogDomain* sFirstDomain;
-        static LogLevel   sCallbackMinLevel;
-        static LogLevel   sFileMinLevel;
+        static unsigned                 slastObjRef;
+        static ObjectMap                sObjectMap;
+        static LogDomain*               sFirstDomain;
+        static LogLevel                 sCallbackMinLevel;
+        static LogLevel                 sFileMinLevel;
+        static std::vector<alloc_slice> sInternedNames;
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
@@ -238,44 +250,22 @@ namespace litecore {
 
         void logError(const char* format, ...) const __printflike(2, 3) { LOGBODY(Error) }
 
-        virtual void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
+        // For performance reasons, logInfo(), logVerbose(), logDebug() are macros (below)
+        void _logInfo(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info) }
 
-        virtual void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
+        void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        virtual void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
+        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
-        virtual bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
+        bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char* format, va_list) const;
+        void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
-        inline void _logAt(LogLevel level, const char* format, va_list args) const {
-            if ( _usuallyFalse(this->willLog(level)) ) this->_logv(level, format, args);
-        }
-
-        inline void logInfo(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Info, format, args);
-            va_end(args);
-        }
-
-        inline void logVerbose(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Verbose, format, args);
-            va_end(args);
-        }
-#if DEBUG
-        inline void logDebug(const char* format, ...) const {
-            va_list args;
-            va_start(args, format);
-            _logAt(LogLevel::Debug, format, args);
-            va_end(args);
-        }
-#else
-        virtual inline void logDebug(const char* format, ...) const {}
-#endif
+        // Add key=value pairs to the output. They are space separated. If output is not empty
+        // upon entry, add a space to start new key=value pairs.
+        // Warning: the string must not include printf format specifier, '%'.
+        virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
 
         LogDomain& _domain;
 
@@ -285,8 +275,24 @@ namespace litecore {
 
         mutable unsigned _objectRef{0};
     };
+
 #ifdef LITECORE_CPPTEST
     std::string createLogPath_forUnitTest(LogLevel level);
     void        resetRotateSerialNo();
 #endif
+
+#define _logAt(LEVEL, FMT, ...)                                                                                        \
+    do {                                                                                                               \
+        if ( _usuallyFalse(this->willLog(litecore::LogLevel::LEVEL)) )                                                 \
+            this->_log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                                 \
+    } while ( 0 )
+#define logInfo(FMT, ...)    _logAt(Info, FMT, ##__VA_ARGS__)
+#define logVerbose(FMT, ...) _logAt(Verbose, FMT, ##__VA_ARGS__)
+
+#if DEBUG
+#    define logDebug(FMT, ...) _logAt(Debug, FMT, ##__VA_ARGS__)
+#else
+#    define logDebug(FMT, ...)
+#endif
+
 }  // namespace litecore

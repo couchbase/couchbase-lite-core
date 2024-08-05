@@ -13,7 +13,7 @@
 #pragma once
 #include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
-#include "c4IndexTypes.h"
+#include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -26,6 +26,11 @@ C4API_BEGIN_DECLS
     Observer-related functions are in c4Observer.h:
     - c4dbobs_createOnCollection
     - c4docobs_createWithCollection
+    Index-related functions are in c4Index.h:
+    - c4coll_createIndex
+    - c4coll_deleteIndex
+    - c4coll_getIndex
+    - c4coll_getIndexesInfo
 */
 
 
@@ -262,53 +267,6 @@ CBL_CORE_API C4Timestamp c4coll_nextDocExpiration(C4Collection*) C4API;
     @return  The number of documents purged, or -1 on error. */
 NODISCARD CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection*, C4Error* C4NULLABLE) C4API;
 
-
-/** @} */
-/** \name Indexes
-    @{ */
-
-
-/** Creates a collection index, of the values of specific expressions across all documents.
-    The name is used to identify the index for later updating or deletion; if an index with the
-    same name already exists, it will be replaced unless it has the exact same expressions.
-
-    The `indexSpec` argument is an expression, relative to a document, that describes what to index.
-    It can be in either the JSON query schema, or in N1QL syntax. It usually names a property,
-    but may also be a computed value based on properties.
-
-    @param collection  The collection to index.
-    @param name  The name of the index. Any existing index with the same name will be replaced,
-                 unless it has the identical expressions (in which case this is a no-op.)
-    @param indexSpec  The definition of the index in JSON or N1QL form. (See above.)
-    @param queryLanguage  The language of `indexSpec`, either JSON or N1QL.
-    @param indexType  The type of index (value full-text, etc.)
-    @param indexOptions  Options for the index. If NULL, each option will get a default value.
-    @param outError  On failure, will be set to the error status.
-    @return  True on success, false on failure. */
-NODISCARD CBL_CORE_API bool c4coll_createIndex(C4Collection* collection, C4String name, C4String indexSpec,
-                                               C4QueryLanguage queryLanguage, C4IndexType indexType,
-                                               const C4IndexOptions* C4NULLABLE indexOptions,
-                                               C4Error* C4NULLABLE              outError) C4API;
-
-/** Returns an object representing an existing index. */
-CBL_CORE_API C4Index* C4NULLABLE c4coll_getIndex(C4Collection* collection, C4String name,
-                                                 C4Error* C4NULLABLE outError) C4API;
-
-/** Deletes an index that was created by `c4coll_createIndex`.
-    @param collection  The collection to index.
-    @param name The name of the index to delete
-    @param outError  On failure, will be set to the error status.
-    @return  True on success, false on failure. */
-NODISCARD CBL_CORE_API bool c4coll_deleteIndex(C4Collection* collection, C4String name,
-                                               C4Error* C4NULLABLE outError) C4API;
-
-/** Returns information about all indexes in the collection.
-    The result is a Fleece-encoded array of dictionaries, one per index.
-    Each dictionary has keys `"name"`, `"type"` (a `C4IndexType`), and `"expr"` (the source expression).
-    @param collection  The collection to check
-    @param outError  On failure, will be set to the error status.
-    @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
-CBL_CORE_API C4SliceResult c4coll_getIndexesInfo(C4Collection* collection, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
 /** @} */  // end Collections group

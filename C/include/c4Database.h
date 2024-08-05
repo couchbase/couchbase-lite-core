@@ -45,9 +45,20 @@ NODISCARD CBL_CORE_API bool c4key_setPassword(C4EncryptionKey* encryptionKey, C4
 NODISCARD CBL_CORE_API bool c4key_setPasswordSHA1(C4EncryptionKey* encryptionKey, C4String password,
                                                   C4EncryptionAlgorithm alg) C4API;
 
-/** Registers a directory path to load extension libraries from, such as Vector Search.
-    Must be called before opening a database that will use an extension. */
+// Deprecated in favor of c4_enableExtension
 CBL_CORE_API void c4_setExtensionPath(C4String path) C4API;
+
+/** Asks LiteCore to look for and validate the presence of an extension given the name
+ * of the extension and the path in which it is supposed to reside.  It makes an attempt
+ * to only check things that have the possibility of being corrected by the user (i.e.
+ * if there is a bug in the extension and it cannot load functionally that won't be caught)
+ * @param name The name of the extension (corresponds to the filename
+ *             without the extension or "lib" prefix)
+ * @param extensionPath The path in which the extension should be found
+ * @param outError On failure, will store the error.
+ * @return True on success, false on failure
+ */
+CBL_CORE_API bool c4_enableExtension(C4String name, C4String extensionPath, C4Error* outError) C4API;
 
 /** @} */
 

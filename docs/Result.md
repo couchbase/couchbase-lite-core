@@ -29,11 +29,17 @@ Result<double> squareRoot(double n) {
         return C4Error{LiteCoreDomain, kC4ErrorInvalidParameter};
 }
 ```
+
 >  Note that one branch returns a `double` and the other a `C4Error`. That’s fine since they both convert implicitly to the actual return type, `Result<double>`.
+
 ### `Result<void>`
+
 `Result<void>` is a special case where there isn’t any value to return, just “no error”. This subtype has no `value()` method, but you can otherwise treat it like other Results.
+
 ## 3. What Do You Do With One?
+
 If you called a function that returned a Result, you can check what it holds and do the appropriate thing:
+
 ```c++
 if (auto r = squareRoot(n); r.ok()) {
     cout << "√n = " << r.value() << endl;
@@ -54,8 +60,11 @@ Result<void> showSquareRoot(double n) {
     }
 }
 ```
+
 ### CatchResult()
+
 `CatchResult` lets you safely call a function that may throw an exception. Itakes a function/lambda that returns `T` (or `Result<T>`), calls it, and returns the result as a `Result<T>`. If the function throws an exception, it is caught and returned as the `error` in the result.
+
 ```c++
 extern string read_line(stream*);  // throws exception on I/O error
 Result<string> input = CatchResult( []{ return read_line(in); });
@@ -76,7 +85,9 @@ Here `T` is `double`, `U` is `string`, and the function returns `U`:
 ```c++
 Result<string> str = squareRoot(n).then( [](double root) {return to_string(root);} );
 ```
+
 Here’s an example that goes the other direction, `string` to `double`, and the function returns a `Result`:
+
 ```c++
 Result<double> root = parseDouble(str).then( [](double n) {return sqareRoot(n);} );
 ```
@@ -96,11 +107,14 @@ squareRoot(n).then( [](double root) {
     cerr << "squareRoot failed: " << error.description() << endl;
 });
 ```
+
 ### TRY()
+
 This one’s sort of an experiment to emulate Swift’s `try` statement (`try mightFail()`). Here’s an example:
+
 ```c++
 Result<string> rootStr(double n) {
-	TRY(double root, squareRoot(n));
+    TRY(double root, squareRoot(n));
     return std::to_string(root);
 }
 ```

@@ -108,6 +108,15 @@ namespace litecore {
 
 
       protected:
+        std::string loggingClassName() const override {
+            static std::string logName{};
+            if ( logName.empty() ) {
+                logName = "C4RemoteRepl";
+                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
+            }
+            return logName;
+        }
+
         alloc_slice URL() const noexcept override { return _url; }
 
         void createReplicator() override {
