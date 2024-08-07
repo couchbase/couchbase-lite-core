@@ -78,7 +78,7 @@ namespace litecore::qt {
 
         Node const* parent() const { return _parent; }
 
-        void setParent(Node const* p) { _parent = p; }
+        void setParent(Node const*);
 
         virtual SourceNode* source() const { return nullptr; }
 
@@ -143,6 +143,7 @@ namespace litecore::qt {
     class LiteralNode final : public ExprNode {
       public:
         explicit LiteralNode(Value);
+        explicit LiteralNode(int64_t);
         explicit LiteralNode(string_view);
 
         Value literal() const { return _literal; }

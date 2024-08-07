@@ -25,11 +25,8 @@ namespace litecore::qt {
       public:
         IndexType indexType() const { return _type; }
 
-        string_view property() const { return _property; }
-
-        /// True if this expression defines the indexed lookup, false if it's just an accessory function;
-        /// i.e. true for `match()` but not for `rank()`.
-        bool isIndexOwner() const { return _isIndexOwner; }
+        /// JSON of the indexed expression, usually a property
+        string_view indexExpressionJSON() const { return _indexExpressionJSON; }
 
         /// The collection being searched.
         SourceNode* sourceCollection() const { return _sourceCollection; }
@@ -43,26 +40,31 @@ namespace litecore::qt {
             _select      = select;
         }
 
+        /// True if this is just an accessory function that requires another function to define the index search.
+        /// Currently only true for a RankNode.
+        bool isAuxiliary() const { return _isAuxiliary; }
+
         /// Writes SQL for the index table name (or SELECT expression)
         virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const;
 
       protected:
-        IndexedNode(IndexType type, bool isOwner);
-        void writeIndex(SQLWriter&) const;
+        IndexedNode(IndexType type);
 
         IndexType   _type;                        // Index type
-        string      _property;                    // Collection property that's indexed
+        string      _indexExpressionJSON;         // Expression/property that's indexed, as JSON
         SourceNode* _sourceCollection = nullptr;  // The collection being queried
         SourceNode* _indexSource      = nullptr;  // Source representing the index
-        SelectNode* _select           = nullptr;
-        bool        _isIndexOwner;  // False if this is an auxiliary expression (e.g. `RANK()`)
+        SelectNode* _select           = nullptr;  // The containing SELECT statement
+        bool        _isAuxiliary = false;                // True if this is an auxiliary expression (e.g. `RANK()`)
     };
 
     /** Abstract base class of FTS nodes. */
     class FTSNode : public IndexedNode {
-      public:
       protected:
-        FTSNode(Array::iterator& args, ParseContext&, const char* name, bool isOwner);
+        FTSNode(Array::iterator& args, ParseContext&, const char* name);
+
+        void writeIndex(SQLWriter&) const;
+
     };
 
     /** An FTS `match()` function call. */
@@ -81,9 +83,9 @@ namespace litecore::qt {
     class RankNode final : public FTSNode {
       public:
         RankNode(Array::iterator& args, ParseContext& ctx);
-        void writeSQL(SQLWriter&) const override;
-
+        
         OpFlags opFlags() const override { return kOpNumberResult; }
+        void writeSQL(SQLWriter&) const override;
     };
 
 
@@ -97,7 +99,6 @@ namespace litecore::qt {
         string_view metric() const { return _metric; }
 
         OpFlags opFlags() const override { return kOpNumberResult; }
-
         void visitChildren(ChildVisitor const&) override;
         void setIndexSource(SourceNode* source, SelectNode* select) override;
         void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;

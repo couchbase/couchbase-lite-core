@@ -59,7 +59,8 @@ namespace litecore {
             } else if ( source->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
                 auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front());
-                tableName = _delegate.vectorTableName(tableName, string(vecSource->property()), vecSource->metric());
+                tableName      = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
+                                                           vecSource->metric());
 #endif
             } else if ( source->isCollection() ) {
                 if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table

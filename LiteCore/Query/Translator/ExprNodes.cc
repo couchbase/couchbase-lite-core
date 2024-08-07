@@ -24,6 +24,12 @@ namespace litecore::qt {
     using namespace fleece;
     using namespace std;
 
+    void Node::setParent(Node const* p) {
+        DebugAssert(!_parent || !p);
+        _parent = p;
+    }
+
+
     void Node::visit(Visitor const& visitor, bool preorder, unsigned depth) {
         if ( preorder ) visitor(*this, depth);
         visitChildren([&](Node& child) { child.visit(visitor, preorder, depth + 1); });
@@ -216,6 +222,7 @@ namespace litecore::qt {
         if ( v.isMutable() ) _retained = v;
     }
 
+    LiteralNode::LiteralNode(int64_t i) : LiteralNode(RetainedValue::newInt(i)) {}
     LiteralNode::LiteralNode(string_view str) : LiteralNode(RetainedValue::newString(str)) {}
 
     MetaNode::MetaNode(Array::iterator& args, ParseContext& ctx) {
@@ -355,6 +362,7 @@ namespace litecore::qt {
 
     CollateNode::CollateNode(unique_ptr<ExprNode> child, ParseContext& ctx)
         : _collation(ctx.collation), _child(std::move(child)) {
+            _child->setParent(this);
         ctx.collationApplied = true;
     }
 
@@ -367,8 +375,11 @@ namespace litecore::qt {
     OpNode::OpNode(Operation const& op, Array::iterator& operands, ParseContext& ctx) : OpNode(op) {
         for ( ; operands; ++operands ) addArg(ExprNode::parse(*operands, ctx));
 
-        if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) )
+        if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) ) {
+            _operands[0]->setParent(nullptr);
             _operands[0] = make_unique<CollateNode>(std::move(_operands[0]), ctx);
+            _operands[0]->setParent(this);
+        }
     }
 
     OpFlags OpNode::opFlags() const { return _op.flags; }
@@ -404,6 +415,7 @@ namespace litecore::qt {
             if ( auto prop = dynamic_cast<PropertyNode*>(fn->_args[0].get()) ) {
                 // Special case: "array_count(propertyname)" turns into a call to fl_count:
                 prop->setSQLiteFn(kCountFnName);
+                prop->setParent(nullptr);
                 return std::move(fn->_args[0]);
             }
         }

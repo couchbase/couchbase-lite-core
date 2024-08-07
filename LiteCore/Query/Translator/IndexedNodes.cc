@@ -25,13 +25,8 @@ namespace litecore::qt {
     // These are indexed by IndexType:
     constexpr const char* kOwnerFnName[3] = {nullptr, "MATCH", "APPROX_VECTOR_DISTANCE"};
 
-    IndexedNode::IndexedNode(IndexType type, bool isOwner) : _type(type), _isIndexOwner(isOwner) {
+    IndexedNode::IndexedNode(IndexType type) : _type(type) {
         DebugAssert(type != IndexType::none);
-    }
-
-    void IndexedNode::writeIndex(SQLWriter& ctx) const {
-        Assert(_indexSource, "IndexedNode's indexSource wasn't set");
-        ctx << sqlIdentifier(_indexSource->alias()) << '.' << sqlIdentifier(_indexSource->tableName());
     }
 
     void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const { ctx << sqlIdentifier(tableName); }
@@ -39,8 +34,8 @@ namespace litecore::qt {
 #pragma mark - FTS:
 
     // Initializes using the index name as the first argument (for FTS)
-    FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name, bool isOwner)
-        : IndexedNode(IndexType::FTS, isOwner) {
+    FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name)
+        : IndexedNode(IndexType::FTS) {
         slice pathStr = args[0].asString();
         require(!pathStr.empty(), "first arg of %s() must be an index name", name);
         KeyPath path = parsePath(pathStr);
@@ -49,11 +44,16 @@ namespace litecore::qt {
         require(_sourceCollection, "unknown source collection for %s()", name);
         require(_sourceCollection->isCollection(), "invalid source collection for %s()", name);
         require(path.count() > 0, "missing property after collection alias in %s()", name);
-        _property = string(path.toString());
+        _indexExpressionJSON = string(path.toString());
+    }
+
+    void FTSNode::writeIndex(SQLWriter& sql) const {
+        Assert(_indexSource, "FTSNode's indexSource wasn't set");
+        sql << sqlIdentifier(_indexSource->alias()) << '.' << sqlIdentifier(_indexSource->tableName());
     }
 
     MatchNode::MatchNode(Array::iterator& args, ParseContext& ctx)
-        : FTSNode(args, ctx, "MATCH", true), _searchString(ExprNode::parse(args[1], ctx)) {}
+        : FTSNode(args, ctx, "MATCH"), _searchString(ExprNode::parse(args[1], ctx)) {}
 
     void MatchNode::visitChildren(ChildVisitor const& visitor) { visitor(*_searchString); }
 
@@ -63,7 +63,7 @@ namespace litecore::qt {
         ctx << " MATCH " << _searchString;
     }
 
-    RankNode::RankNode(Array::iterator& args, ParseContext& ctx) : FTSNode(args, ctx, "RANK", false) {}
+    RankNode::RankNode(Array::iterator& args, ParseContext& ctx) : FTSNode(args, ctx, "RANK") {_isAuxiliary = true;}
 
     void RankNode::writeSQL(SQLWriter& ctx) const {
         ctx << "rank(matchinfo(";
@@ -76,8 +76,8 @@ namespace litecore::qt {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-    // A SQLite vector MATCH expression
-    class VectorMatchNode : public ExprNode {
+    // A SQLite vector MATCH expression; used by VectorDistanceNode to add a join condition.
+    class VectorMatchNode final : public ExprNode {
       public:
         VectorMatchNode(SourceNode* index, ExprNode* vector) : _index(index), _vector(vector) {}
 
@@ -91,9 +91,8 @@ namespace litecore::qt {
     };
 
     VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(IndexType::vector, true) {
+        : IndexedNode(IndexType::vector) {
         _indexedExpr = parse(args[0], ctx);
-        _property    = args[0].toJSON(false, true);
 
         // Determine which collection the vector is based on:
         _indexedExpr->visit([&](Node& n, unsigned depth) {
@@ -105,15 +104,17 @@ namespace litecore::qt {
         });
         if ( !_sourceCollection ) _sourceCollection = ctx.from;
 
-        bool fixed = false;
+        // Create the JSON expression used to locate the index:
+        _indexExpressionJSON = args[0].toJSON(false, true);
+        bool fixed           = false;
         if ( string const& alias = _sourceCollection->alias(); !alias.empty() ) {
-            fixed = replace(_property, "[\"." + alias + ".", "[\".");
+            fixed = replace(_indexExpressionJSON, "[\"." + alias + ".", "[\".");
         }
         if ( !fixed ) {
             if ( string prefix = _sourceCollection->collection(); !prefix.empty() ) {
                 // A kludge to remove the collection name from the path:
                 if ( string const& scope = _sourceCollection->scope(); !scope.empty() ) prefix = scope + "." + prefix;
-                replace(_property, "[\"." + prefix + ".", "[\".");
+                replace(_indexExpressionJSON, "[\"." + prefix + ".", "[\".");
             }
         }
 
@@ -136,11 +137,6 @@ namespace litecore::qt {
                     "5th argument (accurate) to APPROX_VECTOR_DISTANCE must be `false`, if given");
             require(accurate.asBool() == false, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true");
         }
-    }
-
-    void VectorDistanceNode::visitChildren(ChildVisitor const& visitor) {
-        visitor(*_indexedExpr);
-        visitor(*_vector);
     }
 
     void VectorDistanceNode::setIndexSource(SourceNode* source, SelectNode* select) {
@@ -189,8 +185,13 @@ namespace litecore::qt {
             require(limit, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
             sql << " LIMIT " << limit << ")";
         } else {
-            sql << sqlIdentifier(tableName);
+            IndexedNode::writeSourceTable(sql, tableName);
         }
+    }
+
+    void VectorDistanceNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_indexedExpr);
+        visitor(*_vector);
     }
 
     void VectorDistanceNode::writeSQL(SQLWriter& ctx) const {
@@ -211,7 +212,7 @@ namespace litecore::qt {
         if ( indexType() == IndexType::FTS ) {
             // There must be exactly one MATCH node:
             size_t n = std::count_if(_indexedNodes.begin(), _indexedNodes.end(),
-                                     [](IndexedNode* node) { return node->isIndexOwner(); });
+                                     [](IndexedNode* node) { return !dynamic_cast<FTSNode*>(node)->isAuxiliary(); });
             if ( n == 0 ) fail("RANK() cannot be used without MATCH()");
             else if ( n > 1 )
                 fail("Sorry, multiple MATCHes of the same property are not allowed");
@@ -241,7 +242,7 @@ namespace litecore::qt {
                 validToDepth = std::min(validToDepth, depth);
                 if ( auto op = dynamic_cast<OpNode*>(&node); op && op->op().name == "AND" ) {
                     if ( depth == validToDepth ) ++validToDepth;
-                } else if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && ind->isIndexOwner() ) {
+                } else if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && !ind->isAuxiliary() ) {
                     // Add JOINs on FTS indexes for MATCH or RANK nodes:
                     if ( ind->indexType() == IndexType::FTS ) {
                         require(depth == validToDepth, "%s can only appear at top-level, or in a top-level AND",
@@ -254,7 +255,7 @@ namespace litecore::qt {
 
         visit([&](Node& node, unsigned depth) {
             if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && !ind->indexSource() ) {
-                require(ind->indexType() != IndexType::FTS || !ind->isIndexOwner(),
+                require(ind->indexType() != IndexType::FTS || ind->isAuxiliary(),
                         "a %s is not allowed outside the WHERE clause", kOwnerFnName[int(ind->indexType())]);
                 addIndexForNode(*ind, ctx);
             }
@@ -268,12 +269,12 @@ namespace litecore::qt {
     /// Sets the source as its indexSource.
     void SelectNode::addIndexForNode(IndexedNode& node, ParseContext& ctx) {
         DebugAssert(node.indexType() != IndexType::none);
-        DebugAssert(!node.property().empty());
+        DebugAssert(!node.indexExpressionJSON().empty());
 
         // Look for an existing index source:
         SourceNode* indexSrc = nullptr;
         for ( auto& s : _sources ) {
-            if ( s->indexType() == node.indexType() && s->indexedProperty() == node.property()
+            if ( s->indexType() == node.indexType() && s->indexedProperty() == node.indexExpressionJSON()
                  && s->collection() == node.sourceCollection()->collection()
                  && s->scope() == node.sourceCollection()->scope() ) {
                 indexSrc = s.get();

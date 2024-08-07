@@ -225,7 +225,7 @@ namespace litecore::qt {
 
     IndexType SourceNode::indexType() const { return isIndex() ? _indexedNodes[0]->indexType() : IndexType::none; }
 
-    string_view SourceNode::indexedProperty() const { return isIndex() ? _indexedNodes[0]->property() : ""; }
+    string_view SourceNode::indexedProperty() const { return isIndex() ? _indexedNodes[0]->indexExpressionJSON() : ""; }
 
     void SourceNode::visitChildren(ChildVisitor const& visitor) {
         if ( _joinOn ) visitor(*_joinOn);
@@ -244,7 +244,7 @@ namespace litecore::qt {
         } else {
             auto fixed = make_unique<FunctionNode>(lookupFn("GREATEST", 2));
             fixed->addArg(std::move(expr));
-            fixed->addArg(make_unique<LiteralNode>(RetainedValue::newInt(0)));
+            fixed->addArg(make_unique<LiteralNode>(0));
             expr = std::move(fixed);
         }
         return expr;
@@ -425,6 +425,7 @@ namespace litecore::qt {
                 auto                  m    = make_unique<MetaNode>(MetaProperty::_notDeleted, source.get());
                 unique_ptr<ExprNode>& cond = source->isJoin() ? source->_joinOn : _where;
                 if ( cond ) {
+                    cond->setParent(nullptr);
                     auto a = make_unique<OpNode>(*lookupOp("AND", 2));
                     a->addArg(std::move(cond));
                     a->addArg(std::move(m));
@@ -432,6 +433,7 @@ namespace litecore::qt {
                 } else {
                     cond = std::move(m);
                 }
+                cond->setParent(source->isJoin() ? (Node*)source.get() : (Node*)this);
             }
         }
 
